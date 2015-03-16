@@ -1,0 +1,115 @@
+Mdi:ArrangeIcons
+ScopeSigMgr:loadpffile /home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/spice_test/results/s298_K6_N10_ace_top.tr0 1 openonly
+# PF:1
+wm geometry .sigmgr._PF:1 256x354+919+578
+wm geometry .sigmgr._PF:1 381x420+919+578
+wm geometry .sigmgr._PF:1 428x448+919+578
+wm geometry .sigmgr._PF:1 450x467+919+578
+wm geometry .sigmgr._PF:1 452x468+919+578
+wm geometry .sigmgr._PF:1 452x468+888+553
+wm geometry .sigmgr._PF:1 452x468+809+482
+wm geometry .sigmgr._PF:1 452x468+752+399
+wm geometry .sigmgr._PF:1 452x468+720+336
+wm geometry .sigmgr._PF:1 452x468+712+317
+wm geometry .sigmgr._PF:1 452x468+703+304
+wm geometry .sigmgr._PF:1 452x468+700+298
+wm geometry .sigmgr._PF:1 452x468+687+283
+wm geometry .sigmgr._PF:1 452x468+659+241
+wm geometry .sigmgr._PF:1 452x468+616+176
+wm geometry .sigmgr._PF:1 452x468+615+175
+wm geometry .sigmgr._PF:1 453x468+615+175
+wm geometry .sigmgr._PF:1 456x469+615+175
+wm geometry .sigmgr._PF:1 523x518+615+175
+wm geometry .sigmgr._PF:1 647x617+615+175
+wm geometry .sigmgr._PF:1 740x699+615+175
+wm geometry .sigmgr._PF:1 790x762+615+175
+wm geometry .sigmgr._PF:1 801x795+615+175
+wm geometry .sigmgr._PF:1 802x811+615+175
+wm geometry .sigmgr._PF:1 808x840+615+175
+wm geometry .sigmgr._PF:1 813x853+615+175
+wm geometry .sigmgr._PF:1 819x863+615+175
+pf:read PF:1 v(gclock)
+# WF:1:1
+Graph addsignal WF:1:1 -region new -yview real(y) -xview real(x) -tracehi 2
+# Signal0
+Mdi:ArrangeIcons
+wm geometry . 1839x1052+0+25
+Mdi:FullSize
+Graph axisconfig {AxisY(0,0) AxisX(0)} -gridvis {yes yes}
+Graph config -grid yes
+ScopeSigMgr:loadpffile /home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/spice_test/results/s298_K6_N10_ace_top.tr0 1 openonly
+# PF:1
+pf:read PF:1 {xgrid[1][1];xgrid[1][1][0];v(fle[0]->out[0])}
+# WF:1:2
+Graph addsignal WF:1:2 -region new -yview real(y) -xview real(x) -tracehi 2
+# Signal1
+pf:read PF:1 {xgrid[1][1];xgrid[1][1][0];v(fle[0]->out[1])}
+# WF:1:3
+Graph addsignal WF:1:3 -region new -yview real(y) -xview real(x) -tracehi 2
+# Signal2
+Graph:Select Graph0
+Graph:DSel
+Graph itemselect Signal2 add
+# Signal2
+Graph itemselect Signal2 rem
+Graph itemselect Signal2 add
+# Signal2
+Graph itemselect Signal1 add
+# Signal1
+Graph delsignal selected
+Graph:DSel
+pf:read PF:1 {xgrid[1][1];xgrid[1][1][0];v(fle[1]->out[0])}
+# WF:1:4
+Graph addsignal WF:1:4 -region new -yview real(y) -xview real(x) -tracehi 2
+# Signal3
+Graph:Select Graph0
+Graph:DSel
+Graph itemselect Signal3 add
+# Signal3
+Graph delsignal selected
+Graph:DSel
+pf:read PF:1 {xgrid[1][1];xgrid[1][1][0];v(fle[2]->out[0])}
+# WF:1:5
+Graph addsignal WF:1:5 -region new -yview real(y) -xview real(x) -tracehi 2
+# Signal4
+Graph:Select Graph0
+Graph:DSel
+Graph itemselect Signal4 add
+# Signal4
+Graph delsignal selected
+Graph:DSel
+pf:read PF:1 {xgrid[1][1];xgrid[1][1][0];v(fle[2]->out[1])}
+# WF:1:6
+Graph addsignal WF:1:6 -region new -yview real(y) -xview real(x) -tracehi 2
+# Signal5
+Graph:Select Graph0
+Graph:DSel
+Graph itemselect Signal5 add
+# Signal5
+Graph delsignal selected
+Graph:DSel
+pf:read PF:1 {xgrid[1][1];xgrid[1][1][0];v(fle[5]->out[0])}
+# WF:1:7
+Graph addsignal WF:1:7 -region new -yview real(y) -xview real(x) -tracehi 2
+# Signal6
+pf:read PF:1 {xgrid[1][1];xgrid[1][1][0];v(fle[5]->out[1])}
+# WF:1:8
+Graph addsignal WF:1:8 -region new -yview real(y) -xview real(x) -tracehi 2
+# Signal7
+Graph:Select Graph0
+Graph:DSel
+Graph itemselect Signal6 add
+# Signal6
+Graph delsignal selected
+Graph:DSel
+Graph itemselect Signal7 add
+# Signal7
+Graph delsignal selected
+Mdi:ArrangeIcons
+wm geometry . 1814x1077+0+0
+Mdi:ArrangeIcons
+wm geometry . 1839x1052+0+25
+Mdi:ArrangeIcons
+wm geometry . 1814x1077+0+0
+Mdi:ArrangeIcons
+wm geometry . 1839x1052+0+25

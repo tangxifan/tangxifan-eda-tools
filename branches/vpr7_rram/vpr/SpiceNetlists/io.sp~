@@ -1,0 +1,10 @@
+* Sub Circuit
+* IO pads
+* Inpad
+.subckt inpad in out svdd sgnd
+Xbuf0 in out svdd sgnd 
+.eom inpad
+* Inpad
+.subckt inpad in out svdd sgnd
+Xbuf0 in out svdd sgnd 
+.eom inpad
