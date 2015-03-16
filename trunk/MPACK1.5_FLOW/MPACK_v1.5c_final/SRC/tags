@@ -1,0 +1,282 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.6	//
+ACCESS_H_	./access.h	6;"	d
+AND2	./mpack.h	/^enum gate_types {NONE =0, ZERO, ONE, INV1A, INV1B, BUF1A, BUF1B, AND2, NAND2, OR2, NOR2, NOTAND2, ANDNOT2, NOTOR2, ORNOT2, XOR2, XNOR2};$/;"	e	enum:gate_types
+ANDNOT2	./mpack.h	/^enum gate_types {NONE =0, ZERO, ONE, INV1A, INV1B, BUF1A, BUF1B, AND2, NAND2, OR2, NOR2, NOTAND2, ANDNOT2, NOTOR2, ORNOT2, XOR2, XNOR2};$/;"	e	enum:gate_types
+BANYAN	./matrix_architecture.h	/^enum interconnect_topology {OMEGA, BANYAN, FLIP, BASELINE, NO};$/;"	e	enum:interconnect_topology
+BASELINE	./matrix_architecture.h	/^enum interconnect_topology {OMEGA, BANYAN, FLIP, BASELINE, NO};$/;"	e	enum:interconnect_topology
+BUF	./mpack.h	/^enum block_types {INPAD = -2, OUTPAD, GATE, BUF, LATCH, EMPTY};$/;"	e	enum:block_types
+BUF1A	./mpack.h	/^enum gate_types {NONE =0, ZERO, ONE, INV1A, INV1B, BUF1A, BUF1B, AND2, NAND2, OR2, NOR2, NOTAND2, ANDNOT2, NOTOR2, ORNOT2, XOR2, XNOR2};$/;"	e	enum:gate_types
+BUF1B	./mpack.h	/^enum gate_types {NONE =0, ZERO, ONE, INV1A, INV1B, BUF1A, BUF1B, AND2, NAND2, OR2, NOR2, NOTAND2, ANDNOT2, NOTOR2, ORNOT2, XOR2, XNOR2};$/;"	e	enum:gate_types
+BUFSIZE	./mpack.h	16;"	d
+CLUSTER_H_	./cluster.h	10;"	d
+DRIVER	./mpack.h	26;"	d
+EMPTY	./mpack.h	/^enum block_types {INPAD = -2, OUTPAD, GATE, BUF, LATCH, EMPTY};$/;"	e	enum:block_types
+FALSE	./mpack.h	/^typedef enum {FALSE, TRUE} boolean;$/;"	e	enum:__anon1
+FEASIBLE	./cluster.c	/^enum e_feasibility {FEASIBLE, INFEASIBLE};$/;"	e	enum:e_feasibility	file:
+FLIP	./matrix_architecture.h	/^enum interconnect_topology {OMEGA, BANYAN, FLIP, BASELINE, NO};$/;"	e	enum:interconnect_topology
+FUNCTION_H_	./function.h	7;"	d
+GAIN	./cluster.c	/^enum e_gain_update {GAIN, NO_GAIN};$/;"	e	enum:e_gain_update	file:
+GATE	./mpack.h	/^enum block_types {INPAD = -2, OUTPAD, GATE, BUF, LATCH, EMPTY};$/;"	e	enum:block_types
+GATE_MAX_INPUT_NB	./mpack.h	11;"	d
+GATE_MAX_OUTPUT_NB	./mpack.h	12;"	d
+GLOBALS_H_	./globals.h	6;"	d
+HASHSIZE	./mpack.h	14;"	d
+INFEASIBLE	./cluster.c	/^enum e_feasibility {FEASIBLE, INFEASIBLE};$/;"	e	enum:e_feasibility	file:
+INPAD	./mpack.h	/^enum block_types {INPAD = -2, OUTPAD, GATE, BUF, LATCH, EMPTY};$/;"	e	enum:block_types
+INPUT_REDUCTION	./cluster.c	/^enum e_gain_type {SHARED_PINS, INPUT_REDUCTION};$/;"	e	enum:e_gain_type	file:
+INV1A	./mpack.h	/^enum gate_types {NONE =0, ZERO, ONE, INV1A, INV1B, BUF1A, BUF1B, AND2, NAND2, OR2, NOR2, NOTAND2, ANDNOT2, NOTOR2, ORNOT2, XOR2, XNOR2};$/;"	e	enum:gate_types
+INV1B	./mpack.h	/^enum gate_types {NONE =0, ZERO, ONE, INV1A, INV1B, BUF1A, BUF1B, AND2, NAND2, OR2, NOR2, NOTAND2, ANDNOT2, NOTOR2, ORNOT2, XOR2, XNOR2};$/;"	e	enum:gate_types
+LATCH	./mpack.h	/^enum block_types {INPAD = -2, OUTPAD, GATE, BUF, LATCH, EMPTY};$/;"	e	enum:block_types
+LEAVE_CLUSTERED	./cluster.c	/^enum e_removal_policy {REMOVE_CLUSTERED, LEAVE_CLUSTERED};$/;"	e	enum:e_removal_policy	file:
+LINELENGTH	./output_clustering.c	18;"	d	file:
+MARKED_FRAC	./cluster.c	38;"	d	file:
+MATRIX_ARCHITECTURE_H_	./matrix_architecture.h	7;"	d
+MATRIX_PACKER_H_	./matrix_packer.h	11;"	d
+MPACK_H_	./mpack.h	6;"	d
+NAMELENGTH	./mpack.h	15;"	d
+NAND2	./mpack.h	/^enum gate_types {NONE =0, ZERO, ONE, INV1A, INV1B, BUF1A, BUF1B, AND2, NAND2, OR2, NOR2, NOTAND2, ANDNOT2, NOTOR2, ORNOT2, XOR2, XNOR2};$/;"	e	enum:gate_types
+NEVER_CLUSTER	./cluster.c	25;"	d	file:
+NO	./matrix_architecture.h	/^enum interconnect_topology {OMEGA, BANYAN, FLIP, BASELINE, NO};$/;"	e	enum:interconnect_topology
+NONE	./mpack.h	/^enum gate_types {NONE =0, ZERO, ONE, INV1A, INV1B, BUF1A, BUF1B, AND2, NAND2, OR2, NOR2, NOTAND2, ANDNOT2, NOTOR2, ORNOT2, XOR2, XNOR2};$/;"	e	enum:gate_types
+NOR2	./mpack.h	/^enum gate_types {NONE =0, ZERO, ONE, INV1A, INV1B, BUF1A, BUF1B, AND2, NAND2, OR2, NOR2, NOTAND2, ANDNOT2, NOTOR2, ORNOT2, XOR2, XNOR2};$/;"	e	enum:gate_types
+NOTAND2	./mpack.h	/^enum gate_types {NONE =0, ZERO, ONE, INV1A, INV1B, BUF1A, BUF1B, AND2, NAND2, OR2, NOR2, NOTAND2, ANDNOT2, NOTOR2, ORNOT2, XOR2, XNOR2};$/;"	e	enum:gate_types
+NOTOR2	./mpack.h	/^enum gate_types {NONE =0, ZERO, ONE, INV1A, INV1B, BUF1A, BUF1B, AND2, NAND2, OR2, NOR2, NOTAND2, ANDNOT2, NOTOR2, ORNOT2, XOR2, XNOR2};$/;"	e	enum:gate_types
+NOT_VALID	./cluster.c	26;"	d	file:
+NO_CLUSTER	./cluster.c	24;"	d	file:
+NO_GAIN	./cluster.c	/^enum e_gain_update {GAIN, NO_GAIN};$/;"	e	enum:e_gain_update	file:
+OMEGA	./matrix_architecture.h	/^enum interconnect_topology {OMEGA, BANYAN, FLIP, BASELINE, NO};$/;"	e	enum:interconnect_topology
+ONE	./mpack.h	/^enum gate_types {NONE =0, ZERO, ONE, INV1A, INV1B, BUF1A, BUF1B, AND2, NAND2, OR2, NOR2, NOTAND2, ANDNOT2, NOTOR2, ORNOT2, XOR2, XNOR2};$/;"	e	enum:gate_types
+OPEN	./mpack.h	28;"	d
+OR2	./mpack.h	/^enum gate_types {NONE =0, ZERO, ONE, INV1A, INV1B, BUF1A, BUF1B, AND2, NAND2, OR2, NOR2, NOTAND2, ANDNOT2, NOTOR2, ORNOT2, XOR2, XNOR2};$/;"	e	enum:gate_types
+ORNOT2	./mpack.h	/^enum gate_types {NONE =0, ZERO, ONE, INV1A, INV1B, BUF1A, BUF1B, AND2, NAND2, OR2, NOR2, NOTAND2, ANDNOT2, NOTOR2, ORNOT2, XOR2, XNOR2};$/;"	e	enum:gate_types
+OUTPAD	./mpack.h	/^enum block_types {INPAD = -2, OUTPAD, GATE, BUF, LATCH, EMPTY};$/;"	e	enum:block_types
+OUTPUT_CLUSTERING_H_	./output_clustering.h	6;"	d
+READ_BLIF_H_	./read_blif.h	8;"	d
+RECEIVER	./mpack.h	27;"	d
+REMOVE_CLUSTERED	./cluster.c	/^enum e_removal_policy {REMOVE_CLUSTERED, LEAVE_CLUSTERED};$/;"	e	enum:e_removal_policy	file:
+SHARED_PINS	./cluster.c	/^enum e_gain_type {SHARED_PINS, INPUT_REDUCTION};$/;"	e	enum:e_gain_type	file:
+TOKENS	./read_blif.c	221;"	d	file:
+TRUE	./mpack.h	/^typedef enum {FALSE, TRUE} boolean;$/;"	e	enum:__anon1
+XNOR2	./mpack.h	/^enum gate_types {NONE =0, ZERO, ONE, INV1A, INV1B, BUF1A, BUF1B, AND2, NAND2, OR2, NOR2, NOTAND2, ANDNOT2, NOTOR2, ORNOT2, XOR2, XNOR2};$/;"	e	enum:gate_types
+XOR2	./mpack.h	/^enum gate_types {NONE =0, ZERO, ONE, INV1A, INV1B, BUF1A, BUF1B, AND2, NAND2, OR2, NOR2, NOTAND2, ANDNOT2, NOTOR2, ORNOT2, XOR2, XNOR2};$/;"	e	enum:gate_types
+ZERO	./mpack.h	/^enum gate_types {NONE =0, ZERO, ONE, INV1A, INV1B, BUF1A, BUF1B, AND2, NAND2, OR2, NOR2, NOTAND2, ANDNOT2, NOTOR2, ORNOT2, XOR2, XNOR2};$/;"	e	enum:gate_types
+add_gate	./read_blif.c	/^static void add_gate (int doall) $/;"	f	file:
+add_latch	./read_blif.c	/^static void add_latch (int doall) $/;"	f	file:
+add_net	./read_blif.c	/^static int add_net (char *ptr, int type, int bnum, int doall) $/;"	f	file:
+add_node	./function.c	/^int add_node(function *fct, int level, int register_buf)$/;"	f
+add_to_cluster	./cluster.c	/^static void add_to_cluster (int new_blk, int cluster_index, boolean *is_clock, boolean global_clocks, int *inputs_used, int *output_used, int *cells_used) {$/;"	f	file:
+adjacency_matrix	./matrix_architecture.h	/^   int ** adjacency_matrix; \/\/ Adjacency matrix of the cluster graph structure$/;"	m	struct:matrix
+adjm	./function.h	/^   int ** adjm; \/\/ adjacency matrix$/;"	m	struct:function
+adjm_size	./matrix_architecture.h	/^   int adjm_size; \/\/ Adjacency matrix size.$/;"	m	struct:matrix
+alloc_and_fill_full_connectivity_matrix	./access.c	/^int ** alloc_and_fill_full_connectivity_matrix(int ** fadjm, int size)$/;"	f
+alloc_and_init_clustering	./cluster.c	/^static void alloc_and_init_clustering (int cell_size, int nets_per_matrix) {$/;"	f	file:
+alloc_and_load_is_clock	./read_blif.c	/^boolean *alloc_and_load_is_clock (boolean global_clocks) {$/;"	f
+alloc_matrix_contents	./cluster.c	/^static void alloc_matrix_contents (int num_clusters, matrix *arch) {$/;"	f	file:
+arch	./cluster.c	/^static matrix arch;$/;"	v	file:
+arch	./matrix_packer.h	/^   matrix *arch; \/\/ The physical matrix to map on$/;"	m	struct:mapping
+are_connected	./matrix_packer.c	/^int are_connected(int **fconm, int *connected_nodes_mapped, int nb_connected_nodes_mapped, int pos)$/;"	f
+autofill_level	./function.c	/^void autofill_level (function *fct)$/;"	f
+blif	./read_blif.c	/^static FILE *blif;$/;"	v	file:
+block	./main.c	/^struct s_block *block, *block_validated, *block_current;$/;"	v	typeref:struct:s_block
+block_current	./main.c	/^struct s_block *block, *block_validated, *block_current;$/;"	v	typeref:struct:
+block_types	./mpack.h	/^enum block_types {INPAD = -2, OUTPAD, GATE, BUF, LATCH, EMPTY};$/;"	g
+block_validated	./main.c	/^struct s_block *block, *block_validated, *block_current;$/;"	v	typeref:struct:
+boolean	./mpack.h	/^typedef enum {FALSE, TRUE} boolean;$/;"	t	typeref:enum:__anon1
+boolean	./mpack.h	/^typedef int boolean;$/;"	t
+buffer_counting_current	./main.c	/^int buffer_counting_validated, buffer_counting_current, buffer_counting_rollback;$/;"	v
+buffer_counting_rollback	./main.c	/^int buffer_counting_validated, buffer_counting_current, buffer_counting_rollback;$/;"	v
+buffer_counting_validated	./main.c	/^int buffer_counting_validated, buffer_counting_current, buffer_counting_rollback;$/;"	v
+buffers_processing	./cluster.c	/^static void buffers_processing (int imatrix, function fct_original, function fct_current) {  $/;"	f	file:
+check_clocks	./cluster.c	/^static void check_clocks (boolean *is_clock) {$/;"	f	file:
+check_inter_level_connections	./function.c	/^void check_inter_level_connections(function * fct)$/;"	f
+check_net	./read_blif.c	/^static void check_net (int cell_size) $/;"	f	file:
+clean_table	./access.c	/^int clean_table(int **tab, int size)$/;"	f
+cluster_inputs_outputs_extraction	./cluster.c	/^static void cluster_inputs_outputs_extraction (int **inputs, int **outputs, int *inb, int *onb, int *cnets, int netnb, int *nodes, int nnb) {$/;"	f	file:
+cluster_nets_extraction	./cluster.c	/^static int cluster_nets_extraction (int **cnets, int *nodes, int nnb) {$/;"	f	file:
+cluster_nodes_extraction	./cluster.c	/^static int cluster_nodes_extraction (int **nodes, int imatrix, int iblk) {$/;"	f	file:
+cluster_of_block	./cluster.c	/^static int *cluster_of_block;$/;"	v	file:
+cont	./read_blif.c	/^static int cont;$/;"	v	file:
+copy_function	./function.c	/^void copy_function (function * fctd, function * fcts)$/;"	f
+count	./mpack.h	/^struct hash_nets {char *name; int index; int count; $/;"	m	struct:hash_nets
+create_architecture	./matrix_architecture.c	/^void create_architecture(matrix *arch, enum interconnect_topology topo, int width, int depth)$/;"	f
+create_omega_interconnect	./matrix_architecture.c	/^void create_omega_interconnect(int ** matrix, int width, int depth)$/;"	f
+delete_full_connectivity_matrix	./access.c	/^int ** delete_full_connectivity_matrix(int ** fconm, int size)$/;"	f
+delete_multiple_connections_to_output	./function.c	/^void delete_multiple_connections_to_output(function * fct)$/;"	f
+depth	./matrix_architecture.h	/^   int depth;$/;"	m	struct:matrix
+do_clustering	./cluster.c	/^void do_clustering (int matrix_width, int matrix_depth, int matrix_topo, int cell_size, boolean global_clocks, boolean *is_clock, char *out_fname, boolean echo_dot) {$/;"	f
+dot_print_architecture	./matrix_architecture.c	/^void dot_print_architecture(matrix *arch)$/;"	f
+dot_print_function	./function.c	/^void dot_print_function(function *fct, char name[])$/;"	f
+dot_print_function_with_name	./function.c	/^void dot_print_function_with_name(function *fct, char name[])$/;"	f
+dot_print_mapping	./matrix_packer.c	/^void dot_print_mapping(mapping *map, char filename[])$/;"	f
+dot_print_mapping_with_name	./matrix_packer.c	/^void dot_print_mapping_with_name(mapping *map, char filename[])$/;"	f
+dum_parse	./read_blif.c	/^static void dum_parse (char *buf) {$/;"	f	file:
+e_feasibility	./cluster.c	/^enum e_feasibility {FEASIBLE, INFEASIBLE};$/;"	g	file:
+e_gain_type	./cluster.c	/^enum e_gain_type {SHARED_PINS, INPUT_REDUCTION};$/;"	g	file:
+e_gain_update	./cluster.c	/^enum e_gain_update {GAIN, NO_GAIN};$/;"	g	file:
+e_removal_policy	./cluster.c	/^enum e_removal_policy {REMOVE_CLUSTERED, LEAVE_CLUSTERED};$/;"	g	file:
+echo_clustering_info	./cluster.c	/^void echo_clustering_info (char *echo_file)$/;"	f
+echo_clustering_validated_info	./cluster.c	/^void echo_clustering_validated_info (char *echo_file)$/;"	f
+echo_debug_current	./output_clustering.c	/^void echo_debug_current (char *blif_file, char *echo_file) $/;"	f
+echo_debug_validated	./output_clustering.c	/^void echo_debug_validated (char *blif_file, char *echo_file) $/;"	f
+echo_input	./read_blif.c	/^void echo_input (char *blif_file, char *echo_file) $/;"	f
+endlines	./read_blif.c	/^static int linenum, ilines, olines, model_lines, endlines;  $/;"	v	file:
+extended_output_level_correction	./function.c	/^void extended_output_level_correction(function * fct, int wlevel)$/;"	f
+fconm	./function.h	/^   int ** fconm; \/\/ full connectivity matrix$/;"	m	struct:function
+fconm	./matrix_architecture.h	/^   int ** fconm; \/\/ Extended adjacency matrix representing both upstream and downstream interconnections (all connections)$/;"	m	struct:matrix
+feedback_correction	./function.c	/^void feedback_correction(function *fct)$/;"	f
+fill_test_fct1	./function.c	/^void fill_test_fct1 (function * fct)$/;"	f
+filling_routine	./function.c	/^int filling_routine(function *fct, int *node_ticked, int idx, int level)$/;"	f
+find_free_place	./matrix_packer.c	/^int find_free_place(mapping *map, int ** pos_list, int current)$/;"	f
+first_clusterable_block	./cluster.c	/^static int first_clusterable_block = -1;$/;"	v	file:
+free_architecture	./matrix_architecture.c	/^void free_architecture(matrix *arch)$/;"	f
+free_clustering	./cluster.c	/^static void free_clustering (void) {$/;"	f	file:
+free_function	./function.c	/^void free_function (function * fct)$/;"	f
+free_globals	./main.c	/^static void free_globals() {$/;"	f	file:
+free_mapping	./matrix_packer.c	/^void free_mapping(mapping *map)$/;"	f
+free_parse	./read_blif.c	/^static void free_parse (void)$/;"	f	file:
+function	./function.h	/^typedef struct function{$/;"	s
+function	./function.h	/^} function;$/;"	t	typeref:struct:function
+function	./matrix_packer.h	/^   function *function; \/\/ The function to map$/;"	m	struct:mapping
+function_creation_from_cluster_informations	./cluster.c	/^static void function_creation_from_cluster_informations (function *fct, int *inputs, int inb, int *outputs, int onb, int *cnets, int netnb, int *nodes, int nnb) {$/;"	f	file:
+function_formatting	./function.c	/^void function_formatting(function *fct, int max_depth)$/;"	f
+function_node_sort	./matrix_packer.c	/^void function_node_sort (function *fct, int ** list)$/;"	f
+gain	./cluster.c	/^static int *gain;$/;"	v	file:
+gate_type	./mpack.h	/^struct s_block {char *name; enum block_types type; enum gate_types gate_type; int num_nets; int num_in; int num_out; int nets[GATE_MAX_INPUT_NB+GATE_MAX_OUTPUT_NB];};  $/;"	m	struct:s_block	typeref:enum:s_block::gate_types
+gate_types	./mpack.h	/^enum gate_types {NONE =0, ZERO, ONE, INV1A, INV1B, BUF1A, BUF1B, AND2, NAND2, OR2, NOR2, NOTAND2, ANDNOT2, NOTOR2, ORNOT2, XOR2, XNOR2};$/;"	g
+get_block_by_num_ext_inputs	./cluster.c	/^static int get_block_by_num_ext_inputs (int ext_inps, enum e_removal_policy remove_flag) {$/;"	f	file:
+get_free_block_with_most_ext_inputs	./cluster.c	/^static int get_free_block_with_most_ext_inputs (int cell_size, int inputs_avail, int current_cluster, boolean echo_dot) {$/;"	f	file:
+get_gate_for_matrix	./cluster.c	/^static int get_gate_for_matrix(int inputs_avail, int cell_size, int cells_used, int outputs_used, boolean *is_clock, int current_cluster, int ** matrix_contents, boolean echo_dot)$/;"	f	file:
+get_highest_gain_block_for_matrix	./cluster.c	/^static int get_highest_gain_block_for_matrix (int inputs_avail, boolean *is_clock, int current_cluster, boolean echo_dot) {$/;"	f	file:
+get_tok	./read_blif.c	/^static void get_tok (char *buffer, int pass, int doall, int *done) {$/;"	f	file:
+hash	./read_blif.c	/^static struct hash_nets **hash;$/;"	v	typeref:struct:hash_nets	file:
+hash_nets	./mpack.h	/^struct hash_nets {char *name; int index; int count; $/;"	s
+hash_value	./read_blif.c	/^static int hash_value (char *name) $/;"	f	file:
+iblk	./cluster.c	/^struct s_ilink {int iblk; struct s_ilink *next;};$/;"	m	struct:s_ilink	file:
+ilines	./read_blif.c	/^static int linenum, ilines, olines, model_lines, endlines;  $/;"	v	file:
+index	./mpack.h	/^struct hash_nets {char *name; int index; int count; $/;"	m	struct:hash_nets
+init_architecture	./matrix_architecture.c	/^void init_architecture(matrix *arch)$/;"	f
+init_function	./function.c	/^void init_function (function * fct)$/;"	f
+init_mapping	./matrix_packer.c	/^void init_mapping(mapping *map, matrix *arch, function * fct)$/;"	f
+init_parse	./read_blif.c	/^static void init_parse(int doall) {$/;"	f	file:
+input_level_correction	./function.c	/^void input_level_correction(function *fct)$/;"	f
+interconnect_topology	./matrix_architecture.h	/^enum interconnect_topology {OMEGA, BANYAN, FLIP, BASELINE, NO};$/;"	g
+io_line	./read_blif.c	/^static void io_line(int in_or_out, int doall) $/;"	f	file:
+jump_correction	./function.c	/^void jump_correction(function * fct)$/;"	f
+levels	./function.h	/^   int * levels; \/\/ Levels (logic depth) of the different nodes$/;"	m	struct:function
+levels	./matrix_architecture.h	/^   int * levels; \/\/ Level of a given cell in the MCluster pipeline$/;"	m	struct:matrix
+linenum	./read_blif.c	/^static int linenum, ilines, olines, model_lines, endlines;  $/;"	v	file:
+low_fanout_gate_formatting	./read_blif.c	/^static void low_fanout_gate_formatting() {$/;"	f	file:
+main	./main.c	/^int main (int argc, char *argv[]) {$/;"	f
+map	./matrix_packer.h	/^   int * map; \/\/ The assignements of the blocks on the cells available in arch$/;"	m	struct:mapping
+mapping	./matrix_packer.h	/^typedef struct mapping{$/;"	s
+mapping	./matrix_packer.h	/^}mapping;$/;"	t	typeref:struct:mapping
+mapping_callback	./matrix_packer.c	/^int mapping_callback (mapping *map, int *exploration_list, int current_idx)$/;"	f
+mapping_stat	./output_clustering.c	/^void mapping_stat (matrix *arch, int num_clusters, int **matrix_contents) {$/;"	f
+mark_and_update_gain	./cluster.c	/^static void mark_and_update_gain (int inet, enum e_gain_update gain_flag, enum e_gain_type gain_type) {$/;"	f	file:
+marked_blocks	./cluster.c	/^static int *marked_nets, *marked_blocks;$/;"	v	file:
+marked_nets	./cluster.c	/^static int *marked_nets, *marked_blocks;$/;"	v	file:
+matrix	./matrix_architecture.h	/^typedef struct matrix{$/;"	s
+matrix	./matrix_architecture.h	/^} matrix;$/;"	t	typeref:struct:matrix
+matrix_access	./access.c	/^int* matrix_access(int ** matrix, int depth_indix, int width_indix)$/;"	f
+matrix_add_line_column	./access.c	/^int matrix_add_line_column(int *** matrix, int msize, int idx)$/;"	f
+matrix_contents	./cluster.c	/^static int **matrix_contents, **matrix_contents_tmp;$/;"	v	file:
+matrix_contents_tmp	./cluster.c	/^static int **matrix_contents, **matrix_contents_tmp;$/;"	v	file:
+matrix_feasible	./cluster.c	/^static boolean matrix_feasible (int iblk, int imatrix, boolean echo_dot) {$/;"	f	file:
+matrix_mapping	./matrix_packer.c	/^int matrix_mapping(matrix *arch, function * fct, int *matrix_content, boolean echo_dot, char *filename)$/;"	f
+matrix_remove_line_column	./access.c	/^int matrix_remove_line_column(int *** matrix, int msize, int idx)$/;"	f
+max	./mpack.h	31;"	d
+max_in_table	./access.c	/^int max_in_table(int * tab, int size)$/;"	f
+memory_pool	./cluster.c	/^static struct s_ilink *memory_pool; \/\/ Declared here to be freeed easily.$/;"	v	typeref:struct:s_ilink	file:
+min	./mpack.h	32;"	d
+model_lines	./read_blif.c	/^static int linenum, ilines, olines, model_lines, endlines;  $/;"	v	file:
+modified_depth_first_search	./matrix_packer.c	/^int modified_depth_first_search(function * fct, int **list, int **node_ticked, int node)$/;"	f
+msize	./function.h	/^   int msize; \/\/ Size of the adjacency matrix$/;"	m	struct:function
+my_fgets	./read_blif.c	/^char *my_fgets(char *buf, int max_size, FILE *fp) {$/;"	f
+my_strtok	./read_blif.c	/^char *my_strtok(char *ptr, char *tokens, FILE *fp, char *buf) {$/;"	f
+name	./mpack.h	/^struct hash_nets {char *name; int index; int count; $/;"	m	struct:hash_nets
+name	./mpack.h	/^struct s_block {char *name; enum block_types type; enum gate_types gate_type; int num_nets; int num_in; int num_out; int nets[GATE_MAX_INPUT_NB+GATE_MAX_OUTPUT_NB];};  $/;"	m	struct:s_block
+name	./mpack.h	/^struct s_net {char *name; int num_pins; int *pins;};$/;"	m	struct:s_net
+names	./function.h	/^   char **names; \/\/ Names of the logic nodes$/;"	m	struct:function
+nb_buf	./function.h	/^   int nb_buf; \/\/ Number of inserted buffers (after formatting)$/;"	m	struct:function
+nb_input	./function.h	/^   int nb_input; \/\/ Number of inputs of the function (from nets)$/;"	m	struct:function
+nb_nodes	./function.h	/^   int nb_nodes; \/\/ Number of logic gates (from the initial netlist)$/;"	m	struct:function
+nb_output	./function.h	/^   int nb_output; \/\/ Number of outputs of the function (from nets)$/;"	m	struct:function
+net	./main.c	/^struct s_net *net, *net_validated, *net_current;$/;"	v	typeref:struct:s_net
+net_current	./main.c	/^struct s_net *net, *net_validated, *net_current;$/;"	v	typeref:struct:
+net_output_feeds_driving_block_input	./cluster.c	/^static boolean *net_output_feeds_driving_block_input;$/;"	v	file:
+net_output_in_cluster	./cluster.c	/^static boolean *net_output_in_cluster;$/;"	v	file:
+net_validated	./main.c	/^struct s_net *net, *net_validated, *net_current;$/;"	v	typeref:struct:
+nets	./mpack.h	/^struct s_block {char *name; enum block_types type; enum gate_types gate_type; int num_nets; int num_in; int num_out; int nets[GATE_MAX_INPUT_NB+GATE_MAX_OUTPUT_NB];};  $/;"	m	struct:s_block
+nets_and_blocks_temporary_storage	./cluster.c	/^static void nets_and_blocks_temporary_storage () {   $/;"	f	file:
+next	./cluster.c	/^struct s_ilink {int iblk; struct s_ilink *next;};$/;"	m	struct:s_ilink	typeref:struct:s_ilink::s_ilink	file:
+next	./mpack.h	/^   struct hash_nets *next;}; $/;"	m	struct:hash_nets	typeref:struct:hash_nets::hash_nets
+num_blocks	./main.c	/^int num_blocks, num_blocks_validated, num_blocks_current;$/;"	v
+num_blocks_current	./main.c	/^int num_blocks, num_blocks_validated, num_blocks_current;$/;"	v
+num_blocks_validated	./main.c	/^int num_blocks, num_blocks_validated, num_blocks_current;$/;"	v
+num_driver	./read_blif.c	/^static int *num_driver, *temp_num_pins;$/;"	v	file:
+num_ext_inputs	./cluster.c	/^static int num_ext_inputs (int iblk) {$/;"	f	file:
+num_gates	./main.c	/^int num_gates, num_latches;$/;"	v
+num_in	./mpack.h	/^struct s_block {char *name; enum block_types type; enum gate_types gate_type; int num_nets; int num_in; int num_out; int nets[GATE_MAX_INPUT_NB+GATE_MAX_OUTPUT_NB];};  $/;"	m	struct:s_block
+num_input_pins	./cluster.c	/^int num_input_pins (int iblk) {$/;"	f
+num_latches	./main.c	/^int num_gates, num_latches;$/;"	v
+num_marked_blocks	./cluster.c	/^static int num_marked_nets, num_marked_blocks;$/;"	v	file:
+num_marked_nets	./cluster.c	/^static int num_marked_nets, num_marked_blocks;$/;"	v	file:
+num_nets	./main.c	/^int num_nets, num_nets_validated, num_nets_current;$/;"	v
+num_nets	./mpack.h	/^struct s_block {char *name; enum block_types type; enum gate_types gate_type; int num_nets; int num_in; int num_out; int nets[GATE_MAX_INPUT_NB+GATE_MAX_OUTPUT_NB];};  $/;"	m	struct:s_block
+num_nets_current	./main.c	/^int num_nets, num_nets_validated, num_nets_current;$/;"	v
+num_nets_validated	./main.c	/^int num_nets, num_nets_validated, num_nets_current;$/;"	v
+num_out	./mpack.h	/^struct s_block {char *name; enum block_types type; enum gate_types gate_type; int num_nets; int num_in; int num_out; int nets[GATE_MAX_INPUT_NB+GATE_MAX_OUTPUT_NB];};  $/;"	m	struct:s_block
+num_p_inputs	./main.c	/^int num_p_inputs, num_p_outputs;$/;"	v
+num_p_outputs	./main.c	/^int num_p_inputs, num_p_outputs;$/;"	v
+num_pins	./mpack.h	/^struct s_net {char *name; int num_pins; int *pins;};$/;"	m	struct:s_net
+num_pins_of_net_in_cluster	./cluster.c	/^static int *num_pins_of_net_in_cluster;$/;"	v	file:
+number_of_inputs	./matrix_architecture.c	/^int number_of_inputs(matrix *arch)$/;"	f
+number_of_nets	./matrix_architecture.c	/^int number_of_nets(matrix * arch)$/;"	f
+number_of_nodes	./matrix_architecture.c	/^int number_of_nodes(matrix *arch)$/;"	f
+number_of_outputs	./matrix_architecture.c	/^int number_of_outputs(matrix *arch)$/;"	f
+olines	./read_blif.c	/^static int linenum, ilines, olines, model_lines, endlines;  $/;"	v	file:
+original_netlist_idx	./function.h	/^   int * original_netlist_idx; \/\/ Correspondance of the nodes to the block indices of the netlist$/;"	m	struct:function
+output_level_correction	./function.c	/^void output_level_correction(function *fct)$/;"	f
+parse_command	./main.c	/^static void parse_command (int argc, char *argv[], char *blif_file, char *output_file, boolean *global_clocks, int *matrix_width, int *matrix_depth, int *matrix_topo, int *cell_size, boolean *echo_dot) {$/;"	f	file:
+pins	./mpack.h	/^struct s_net {char *name; int num_pins; int *pins;};$/;"	m	struct:s_net
+print_blif_cluster	./output_clustering.c	/^void print_blif_cluster (matrix *arch, int num_clusters, int **matrix_contents, boolean global_clocks, boolean *is_clock, char *out_fname) {$/;"	f
+print_blif_gate	./output_clustering.c	/^void print_blif_gate (matrix *arch, int num_clusters, int **matrix_contents, boolean global_clocks, boolean *is_clock, char *out_fname) {$/;"	f
+print_blif_names	./output_clustering.c	/^void print_blif_names (matrix *arch, int num_clusters, int **matrix_contents, boolean global_clocks, boolean *is_clock, char *out_fname) {$/;"	f
+print_cell	./output_clustering.c	/^void print_cell (FILE *fpout, matrix *arch, int num_clusters, int **matrix_contents)$/;"	f
+print_cell_model	./output_clustering.c	/^void print_cell_model (FILE *fpout, matrix *arch)$/;"	f
+print_char_table	./access.c	/^void print_char_table(char ** table, int size)$/;"	f
+print_matrix	./access.c	/^void print_matrix(int ** matrix, int nb_line, int nb_column)$/;"	f
+print_matrix_cluster	./output_clustering.c	/^void print_matrix_cluster (FILE *fpout, matrix *arch, int num_clusters, int **matrix_contents)$/;"	f
+print_matrix_model	./output_clustering.c	/^void print_matrix_model (FILE *fpout, matrix *arch)$/;"	f
+print_names	./output_clustering.c	/^void print_names (FILE *fpout, matrix *arch, int num_clusters, int **matrix_contents)$/;"	f
+print_rpt_mapping	./output_clustering.c	/^void print_rpt_mapping (matrix *arch, int num_clusters, int **matrix_contents, boolean global_clocks, boolean *is_clock, char *out_fname) {$/;"	f
+print_string	./output_clustering.c	/^static void print_string (char *str_ptr, int *column, FILE *fpout) {$/;"	f	file:
+print_table	./access.c	/^void print_table(int * table, int size)$/;"	f
+print_uncluster_list	./cluster.c	/^void print_uncluster_list(int ext_inps)$/;"	f
+read_blif	./read_blif.c	/^void read_blif (char *blif_file, int cell_size) {$/;"	f
+read_int_option	./main.c	/^static int read_int_option (int argc, char *argv[], int iarg) {$/;"	f	file:
+reset_cluster	./cluster.c	/^static void reset_cluster (int *inputs_used, int *outputs_used, int *cells_used, int *clocks_used) {$/;"	f	file:
+s_block	./mpack.h	/^struct s_block {char *name; enum block_types type; enum gate_types gate_type; int num_nets; int num_in; int num_out; int nets[GATE_MAX_INPUT_NB+GATE_MAX_OUTPUT_NB];};  $/;"	s
+s_ilink	./cluster.c	/^struct s_ilink {int iblk; struct s_ilink *next;};$/;"	s	file:
+s_net	./mpack.h	/^struct s_net {char *name; int num_pins; int *pins;};$/;"	s
+sort_by_level	./function.c	/^void sort_by_level(function * fct)$/;"	f
+table_add_case	./access.c	/^void table_add_case(int **tab, int size, int idx)$/;"	f
+table_add_pchar	./access.c	/^void table_add_pchar(char ***tab, int size, int idx)$/;"	f
+table_remove_case	./access.c	/^int table_remove_case(int **tab, int size, int idx)$/;"	f
+table_remove_pchar	./access.c	/^int table_remove_pchar(char ***tab, int size, int idx)$/;"	f
+temp_num_pins	./read_blif.c	/^static int *num_driver, *temp_num_pins;$/;"	v	file:
+terminal_generation_omega_interconnect	./matrix_architecture.c	/^void terminal_generation_omega_interconnect(int ** matrix, int width, int depth)$/;"	f
+terminal_interconnect_matrix	./matrix_architecture.h	/^   int ** terminal_interconnect_matrix; \/\/ Adjacency matrix representing the terminals instead of the nodes$/;"	m	struct:matrix
+topo	./matrix_architecture.h	/^   enum interconnect_topology topo;$/;"	m	struct:matrix	typeref:enum:matrix::interconnect_topology
+type	./mpack.h	/^struct s_block {char *name; enum block_types type; enum gate_types gate_type; int num_nets; int num_in; int num_out; int nets[GATE_MAX_INPUT_NB+GATE_MAX_OUTPUT_NB];};  $/;"	m	struct:s_block	typeref:enum:s_block::block_types
+unclustered_list_head	./cluster.c	/^static struct s_ilink *unclustered_list_head;$/;"	v	typeref:struct:s_ilink	file:
+unique_input_connection_correction	./function.c	/^void unique_input_connection_correction(function * fct)$/;"	f
+unique_output_connection_correction	./function.c	/^void unique_output_connection_correction(function * fct)$/;"	f
+update_node_count	./function.c	/^void update_node_count(function *fct)$/;"	f
+validate_mapping_copy	./cluster.c	/^static void validate_mapping_copy(int num_clusters) {$/;"	f	file:
+width	./matrix_architecture.h	/^   int width; \/\/ Assuming square matrices: dimensions of the matrix$/;"	m	struct:matrix

@@ -1,0 +1,57 @@
+/**
+ * Filename : Options.h
+ * Author : Xifan TANG, EPFL
+ * Description : Header file contains structs and enumeration 
+ *               types for option reading purpose.
+ */
+
+/*Determine whether it is a mandatory option*/
+enum opt_manda
+{MAND,NONMAND};
+
+/*The option has been appeared in the command line */
+enum opt_default
+{DEF,NONDEF};
+
+/*Determine whether the option contains a value*/
+enum opt_with_val
+{NONVAL,WITHVAL};
+
+/*Determine the date type of value*/
+enum opt_val_type
+{INT,FLOAT,CHAR,DOUBLE};
+
+/*Basic struct stores option information*/
+typedef struct s_optinfo t_optinfo;
+struct s_optinfo
+{
+  char* name; /*The name of option*/
+  char* val;  /*The value*/
+  enum opt_with_val with_val;
+  enum opt_val_type val_type; 
+  enum opt_manda mandatory;
+  enum opt_default opt_def;
+};
+
+/*Add any option by following the format of s_optinfo*/
+const t_optinfo opt_list[] = 
+{
+  {"net",NULL,WITHVAL,CHAR,MAND,DEF},
+  {"rpd",NULL,WITHVAL,CHAR,MAND,DEF},
+  {"height",NULL,WITHVAL,INT,NONMAND,DEF},
+  {"width",NULL,WITHVAL,INT,NONMAND,DEF},
+  {"ratio",NULL,WITHVAL,FLOAT,NONMAND,DEF},
+  {"fixed_place",NULL,NONVAL,INT,NONMAND,DEF},
+  {NULL,NULL,NONVAL,INT,NONMAND,DEF}
+}; 
+
+/*****Subroutines*****/
+int read_options(IN int argc,
+                 IN char **argv);
+
+int process_arg_opt(IN char** argv,
+                    INOUT int* iarg,
+                    IN char* curarg);
+
+
+

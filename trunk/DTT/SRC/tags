@@ -1,0 +1,37 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+add_inv_node	add_inverter.m	/^function [ stree ] = add_inv_node(stree,nidx,ci,r,co,debug)$/;"	f
+add_inverter	add_inverter.m	/^function [ stree ] = add_inverter( stree,n,nidxes,lci,lr,lco,debug) $/;"	f
+add_lc_bank	add_lc_bank.m	/^function [ stree ] = add_lc_bank( stree,n,nidxes,rls,lls,cls,debug )$/;"	f
+add_lc_bank_node	add_lc_bank.m	/^function [ stree ] = add_lc_bank_node(stree,nodeidx,rval,lval,cval,debug)$/;"	f
+add_rin	add_rin.m	/^function [ stree newnode] = add_rin( stree,srcidx,rin,debug) $/;"	f
+build_binary_tree	build_binary_tree.m	/^function [ stree ] = build_binary_tree( stree,nodes,debug )$/;"	f
+cal_denominator	dtt.m	/^function [ stree ] = cal_denominator( srcidx,stree,debug )$/;"	f
+cal_input_impedance	cal_input_impedance.m	/^function [ stree ] = cal_input_impedance( stree,srcidx,freq,debug )$/;"	f
+cal_transfer_func	cal_transfer_func.m	/^function [ stree ] = cal_transfer_func( stree,nodes,srcidx,freq )$/;"	f
+check_dtt_result	full_dtt.m	/^function [ stree ] = check_dtt_result(stree)$/;"	f
+check_tree	check_tree.m	/^function [ stree ] = check_tree(stree,srcidx,debug)$/;"	f
+clear_dml	dtt.m	/^function [ stree ] = clear_dml(stree)$/;"	f
+correct_numerators	dtt.m	/^function [ stree ] = correct_numerators(srcidx,stree,fin,debug)$/;"	f
+dtt	dtt.m	/^function [ stree ] = dtt( srcidx,stree,debug )$/;"	f
+full_dtt	full_dtt.m	/^function [ stree ] = full_dtt(stree,srcidx,n,idxlst,nodes,freq,debug)$/;"	f
+full_rinsert_lc_bank	full_rinsert_lc_bank.m	/^function [ stree,dircands,indircands] = full_rinsert_lc_bank(stree,nodes,srcidx,rthres,r,l,c,debug)$/;"	f
+get_candidate_nodes	get_candidate_nodes.m	/^function [ direct_lst indirect_lst ] = get_candidate_nodes(stree,nodes,rthres,debug)$/;"	f
+new_build_tree	new_build_tree.m	/^function [ stree ] = new_build_tree(nodes,sinks,wire,wires,debug)$/;"	f
+new_cal_trans_func	full_dtt.m	/^function [ stree ] = new_cal_trans_func(stree,nodes,freq,debug)$/;"	f
+rdfs_binary_tree	rdfs_binary_tree.m	/^function [ stree ] = rdfs_binary_tree( stree,srcidx,rsum,debug)$/;"	f
+rinsert_lc_bank	rinsert_lc_bank.m	/^function [ stree ] = rinsert_lc_bank( stree,nidxes,rthres,r,l,c,debug )$/;"	f
+rinsert_lc_bank_node	rinsert_lc_bank.m	/^function [ stree ] = rinsert_lc_bank_node(stree,nodeidx,rthres,rval,lval,cval,debug)$/;"	f
+rm_inv_node	rm_inverter.m	/^function [ stree ] = rm_inv_node(stree,nidx,debug)$/;"	f
+rm_inverter	rm_inverter.m	/^function [ stree ] = rm_inverter(stree,n,nidxes,debug)$/;"	f
+rm_lc_bank	rm_lc_bank.m	/^function [ stree ] = rm_lc_bank( stree,n,nidxes,debug )$/;"	f
+rm_lc_bank_node	rm_lc_bank.m	/^function [ stree ] = rm_lc_bank_node(stree,nodeidx,debug)$/;"	f
+rm_rin	rm_rin.m	/^function [ stree newsrc] = rm_rin(stree,srcidx,debug)$/;"	f
+rm_rinser_lc_bank	rm_rinser_lc_bank.m	/^function [ stree ] = rm_rinser_lc_bank( stree,dirlst,indirlst,debug )$/;"	f
+rm_rinsert_lc_bank_node	rm_rinser_lc_bank.m	/^function [ stree ] = rm_rinsert_lc_bank_node(stree,nextidx,debug)$/;"	f
+truncate_zeros_array	truncate_zeros_array.m	/^function [ array_out ] = truncate_zeros_array(array_in)$/;"	f
+update_denom_each_sink	full_dtt.m	/^function [ stree ] = update_denom_each_sink(stree,nodes,srcidx,idxlst,debug)$/;"	f

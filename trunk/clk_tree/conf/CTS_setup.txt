@@ -1,0 +1,30 @@
+IFILENAME ../benchmark/IBM/r5_p3.txt //input file name
+
+TREENODECNT 0	// tree node counter
+TSVBOUND 100	// max # of tsv within one tier
+SRCZ 3 // index of tier of clk src
+
+FCLK 3.2e9 // Hz
+
+BUFR 800	// output r of buffers, ohm
+BUFC 13e-15	// input c of buffers, F
+BUFD 20e-12	// intrinsic delay of buffers, s
+WIRER 388.007e-4	// r of wires, ohm/0.1um, the unit of the circuit
+WIREC 69.962e-19	// c of wires, F/0.1um
+TSVR 0.133	// r of TSVs, ohm/tier
+TSVC 52e-15	// c of TSVs, F/tier
+BUFLOAD 50e-15	// largest c load a buffer can drive
+
+WID_LB 4.87e-10	// WID variations, m
+D2D_LB 8.33e-10	// D2D variations, m
+WID_VTH 2.67e-3 // V
+D2D_VTH 5.33e-3
+WID_RW 12.9 // ohm/mm
+D2D_RW 6.47
+WID_CW 2.33e-15 // F/mm
+D2D_CW 1.17e-15
+WID_RT 13.3e-3 // ohm, TSV
+D2D_RT 13.3e-3 
+WID_CT 15.6e-15 // F
+D2D_CT 15.6e-15
+

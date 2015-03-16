@@ -1,0 +1,28 @@
+# Benchmark "unknown" written by ABC on Tue Jun 25 12:03:15 2013
+.model unknown
+.inputs n50 n276 n287 n604 i_4_ i_11_ n23 i_12_ n114 n406 n488 i_13_ i_3_ \
+ n323 n542 i_8_ n421 n453
+.outputs [291]
+.gate NOTOR2_2_1  A=n604 B=i_12_ Y=n19
+.gate NOTAND2_2_1 A=i_11_ B=n276 Y=n20
+.gate OR2_2_1     A=n20 B=n23 Y=n21
+.gate NOTOR2_2_1  A=n19 B=n21 Y=n22
+.gate NOTAND2_2_1 A=i_4_ B=n22 Y=n23_1
+.gate NAND2_2_1   A=n488 B=n114 Y=n24
+.gate AND2_2_1    A=n406 B=n276 Y=n25
+.gate NOTAND2_2_1 A=n25 B=n24 Y=n26
+.gate NOTAND2_2_1 A=n26 B=i_4_ Y=n27
+.gate AND2_2_1    A=n287 B=n276 Y=n28
+.gate AND2_2_1    A=i_13_ B=n23 Y=n29
+.gate AND2_2_1    A=n604 B=n50 Y=n30
+.gate OR2_2_1     A=n30 B=n29 Y=n31
+.gate OR2_2_1     A=n31 B=n28 Y=n32
+.gate AND2_2_1    A=n323 B=i_3_ Y=n33
+.gate NOTAND2_2_1 A=n542 B=n33 Y=n34
+.gate NAND2_2_1   A=n421 B=i_8_ Y=n35
+.gate NOTAND2_2_1 A=n35 B=n453 Y=n36
+.gate OR2_2_1     A=n36 B=n34 Y=n37
+.gate OR2_2_1     A=n37 B=n32 Y=n38
+.gate OR2_2_1     A=n38 B=n27 Y=n39
+.gate OR2_2_1     A=n39 B=n23_1 Y=[291]
+.end

@@ -1,0 +1,41 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+CHAR	Options.h	/^{INT,FLOAT,CHAR,DOUBLE};$/;"	e	enum:opt_val_type
+DEF	Options.h	/^{DEF,NONDEF};$/;"	e	enum:opt_default
+DOUBLE	Options.h	/^{INT,FLOAT,CHAR,DOUBLE};$/;"	e	enum:opt_val_type
+FALSE	util.h	/^{TRUE,FALSE};$/;"	e	enum:e_bool
+FLOAT	Options.h	/^{INT,FLOAT,CHAR,DOUBLE};$/;"	e	enum:opt_val_type
+IN	util.h	7;"	d
+INOUT	util.h	9;"	d
+INT	Options.h	/^{INT,FLOAT,CHAR,DOUBLE};$/;"	e	enum:opt_val_type
+MAND	Options.h	/^{MAND,NONMAND};$/;"	e	enum:opt_manda
+NONDEF	Options.h	/^{DEF,NONDEF};$/;"	e	enum:opt_default
+NONMAND	Options.h	/^{MAND,NONMAND};$/;"	e	enum:opt_manda
+NONVAL	Options.h	/^{NONVAL,WITHVAL};$/;"	e	enum:opt_with_val
+OUT	util.h	8;"	d
+TRUE	util.h	/^{TRUE,FALSE};$/;"	e	enum:e_bool
+WITHVAL	Options.h	/^{NONVAL,WITHVAL};$/;"	e	enum:opt_with_val
+bool	util.h	/^typedef enum e_bool bool;$/;"	t	typeref:enum:e_bool
+e_bool	util.h	/^enum e_bool$/;"	g
+main	main.c	/^int main(int argc,char **argv)$/;"	f
+mandatory	Options.h	/^  enum opt_manda mandatory;$/;"	m	struct:s_optinfo	typeref:enum:s_optinfo::opt_manda
+my_malloc	util.c	/^my_malloc(size_t size)$/;"	f
+my_strdup	util.c	/^my_strdup(const char* str)$/;"	f
+name	Options.h	/^  char* name; \/*The name of option*\/$/;"	m	struct:s_optinfo
+opt_def	Options.h	/^  enum opt_default opt_def;$/;"	m	struct:s_optinfo	typeref:enum:s_optinfo::opt_default
+opt_default	Options.h	/^enum opt_default$/;"	g
+opt_list	Options.h	/^const t_optinfo opt_list[] = $/;"	v
+opt_manda	Options.h	/^enum opt_manda$/;"	g
+opt_val_type	Options.h	/^enum opt_val_type$/;"	g
+opt_with_val	Options.h	/^enum opt_with_val$/;"	g
+process_arg_opt	read_opts.c	/^int process_arg_opt(IN char** argv,$/;"	f
+read_options	read_opts.c	/^int read_options(IN int argc,$/;"	f
+s_optinfo	Options.h	/^struct s_optinfo$/;"	s
+t_optinfo	Options.h	/^typedef struct s_optinfo t_optinfo;$/;"	t	typeref:struct:s_optinfo
+val	Options.h	/^  char* val;  \/*The value*\/$/;"	m	struct:s_optinfo
+val_type	Options.h	/^  enum opt_val_type val_type; $/;"	m	struct:s_optinfo	typeref:enum:s_optinfo::opt_val_type
+with_val	Options.h	/^  enum opt_with_val with_val;$/;"	m	struct:s_optinfo	typeref:enum:s_optinfo::opt_with_val

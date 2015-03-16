@@ -1,0 +1,22 @@
+/**
+ * Filename : util.h
+ * Author : Xifan TANG, EPFL
+ * Description : Define most useful types for general purpose
+ */
+
+#define IN
+#define OUT
+#define INOUT
+
+/*Boolean enum, C does not support*/
+typedef e_bool bool;
+enum e_bool
+{TRUE,FALSE};
+
+/*****Subroutines*****/
+void* 
+my_malloc(size_t size);
+
+
+
+

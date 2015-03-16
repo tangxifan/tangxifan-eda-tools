@@ -1,0 +1,1218 @@
+# Benchmark "top" written by ABC on Wed Jul  3 16:12:33 2013
+.model top
+.inputs p_50_15_ p_133_66_ p_169_92_ p_182_105_ p_12_3_ p_94_49_ p_205_128_ \
+ p_212_135_ p_1197_165_ p_2211_176_ p_4432_203_ p_4526_205_ p_26_7_ \
+ p_53_16_ p_54_17_ p_192_115_ p_1496_173_ p_2208_175_ p_113_58_ p_153_76_ \
+ p_222_145_ p_4393_195_ p_103_52_ p_195_118_ p_3749_194_ p_4405_198_ \
+ p_4528_206_ p_114_59_ p_166_89_ p_176_99_ p_179_102_ p_197_120_ p_232_155_ \
+ p_3737_192_ p_4394_196_ p_23_6_ p_55_18_ p_56_19_ p_60_23_ p_61_24_ \
+ p_115_60_ p_159_82_ p_185_108_ p_163_86_ p_189_112_ p_1492_172_ \
+ p_2204_174_ p_3698_185_ p_186_109_ p_193_116_ p_207_130_ p_18_5_ p_69_30_ \
+ p_150_73_ p_152_75_ p_156_79_ p_177_100_ p_199_122_ p_201_124_ p_216_139_ \
+ p_223_146_ p_230_153_ p_2236_180_ p_62_25_ p_63_26_ p_66_29_ p_73_32_ \
+ p_74_33_ p_130_65_ p_147_72_ p_183_106_ p_196_119_ p_217_140_ p_187_110_ \
+ p_204_127_ p_213_136_ p_226_149_ p_240_163_ p_3717_189_ p_3729_191_ \
+ p_35_10_ p_70_31_ p_227_150_ p_3711_188_ p_15_4_ p_110_55_ p_162_85_ \
+ p_172_95_ p_210_133_ p_236_159_ p_1469_169_ p_2224_178_ p_2239_181_ p_1_0_ \
+ p_38_11_ p_64_27_ p_65_28_ p_237_160_ p_127_64_ p_175_98_ p_220_143_ \
+ p_233_156_ p_1455_166_ p_3701_186_ p_9_2_ p_135_68_ p_144_71_ p_167_90_ \
+ p_218_141_ p_1480_170_ p_3723_190_ p_188_111_ p_234_157_ p_82_41_ p_83_42_ \
+ p_86_45_ p_87_46_ p_157_80_ p_208_131_ p_3705_187_ p_41_12_ p_47_14_ \
+ p_58_21_ p_124_63_ p_161_84_ p_165_88_ p_178_101_ p_200_123_ p_231_154_ \
+ p_97_50_ p_118_61_ p_180_103_ p_238_161_ p_1459_167_ p_59_22_ p_160_83_ \
+ p_174_97_ p_203_126_ p_214_137_ p_221_144_ p_1462_168_ p_2230_179_ \
+ p_75_34_ p_76_35_ p_81_40_ p_88_47_ p_89_48_ p_100_51_ p_190_113_ \
+ p_228_151_ p_4420_201_ p_44_13_ p_111_56_ p_121_62_ p_155_78_ p_171_94_ \
+ p_206_129_ p_211_134_ p_224_147_ p_2247_182_ p_109_54_ p_134_67_ p_168_91_ \
+ p_229_152_ p_154_77_ p_2218_177_ p_77_36_ p_78_37_ p_141_70_ p_239_162_ \
+ p_173_96_ p_235_158_ p_2256_184_ p_4437_204_ p_184_107_ p_191_114_ \
+ p_209_132_ p_5_1_ p_32_9_ p_57_20_ p_112_57_ p_164_87_ p_170_93_ \
+ p_225_148_ p_3743_193_ p_4410_199_ p_29_8_ p_79_38_ p_84_43_ p_85_44_ \
+ p_106_53_ p_138_69_ p_158_81_ p_181_104_ p_194_117_ p_219_142_ p_4400_197_ \
+ p_4427_202_ p_80_39_ p_151_74_ p_198_121_ p_202_125_ p_215_138_ \
+ p_1486_171_ p_2253_183_ p_4415_200_
+.outputs p_279_304_ p_382_3148_ p_432_428_ p_450_288_ p_440_277_ p_444_282_ \
+ p_488_260_ p_494_267_ p_524_210_ p_246_3110_ p_373_2994_ p_376_3206_ \
+ p_530_216_ p_560_248_ p_316_3397_ p_534_220_ p_278_536_ p_370_3718_ \
+ p_544_230_ p_252_3450_ p_273_3402_ p_327_3408_ p_338_3716_ p_406_388_ \
+ p_422_3451_ p_484_256_ p_550_236_ p_321_3715_ p_368_3431_ p_448_284_ \
+ p_453_596_ p_540_227_ p_554_240_ p_3_312_ p_264_3121_ p_307_3389_ \
+ p_353_3425_ p_391_3094_ p_480_250_ p_301_3388_ p_388_3093_ p_438_274_ \
+ p_490_263_ p_528_214_ p_333_3416_ p_410_387_ p_469_3452_ p_486_258_ \
+ p_359_3426_ p_385_3151_ p_397_3097_ p_471_3445_ p_538_224_ p_281_547_ \
+ p_292_392_ p_310_3393_ p_324_3363_ p_412_3369_ p_548_234_ p_289_383_ \
+ p_379_3207_ p_418_3449_ p_404_390_ p_558_244_ p_2_313_ p_542_246_ \
+ p_313_3396_ p_319_3398_ p_546_232_ p_552_238_ p_270_3109_ p_556_242_ \
+ p_276_3401_ p_446_393_ p_496_271_ p_522_226_ p_304_3390_ p_336_3412_ \
+ p_341_420_ p_365_3430_ p_492_265_ p_526_212_ p_330_3411_ p_344_3382_ \
+ p_347_3420_ p_399_3717_ p_436_286_ p_532_218_ p_286_419_ p_408_385_ \
+ p_536_222_ p_362_3429_ p_394_3095_ p_416_3368_ p_414_3338_ p_478_269_ \
+ p_284_384_ p_402_395_ p_419_3444_ p_350_3421_ p_249_3418_ p_258_3122_ \
+ p_298_3387_ p_442_280_ p_482_253_ p_295_3352_ p_356_3424_
+.gate INV1_1_1    A=p_15_4_ Y=p_279_304_
+.gate NOTOR2_2_1  A=p_127_64_ B=p_18_5_ Y=n315
+.gate AND2_2_1    A=p_233_156_ B=p_18_5_ Y=n316
+.gate NOTAND2_2_1 A=n316 B=n315 Y=n317
+.gate XOR2_2_1    A=n317 B=p_3737_192_ Y=n318
+.gate NOTOR2_2_1  A=p_130_65_ B=p_18_5_ Y=n319
+.gate AND2_2_1    A=p_234_157_ B=p_18_5_ Y=n320
+.gate NOTAND2_2_1 A=n320 B=n319 Y=n321
+.gate OR2_2_1     A=n321 B=p_3729_191_ Y=n322
+.gate INV1_1_1    A=p_3717_189_ Y=n323
+.gate NOTOR2_2_1  A=p_23_6_ B=p_18_5_ Y=n324
+.gate AND2_2_1    A=p_236_159_ B=p_18_5_ Y=n325
+.gate NOTAND2_2_1 A=n325 B=n324 Y=n326
+.gate NOTAND2_2_1 A=n326 B=n323 Y=n327
+.gate INV1_1_1    A=p_3711_188_ Y=n328
+.gate NOTOR2_2_1  A=p_26_7_ B=p_18_5_ Y=n329
+.gate AND2_2_1    A=p_237_160_ B=p_18_5_ Y=n330
+.gate NOTAND2_2_1 A=n330 B=n329 Y=n331
+.gate NOTAND2_2_1 A=n331 B=n328 Y=n332
+.gate INV1_1_1    A=p_3705_187_ Y=n333
+.gate NOTOR2_2_1  A=p_29_8_ B=p_18_5_ Y=n334
+.gate AND2_2_1    A=p_238_161_ B=p_18_5_ Y=n335
+.gate NOTAND2_2_1 A=n335 B=n334 Y=n336
+.gate NOTAND2_2_1 A=n336 B=n333 Y=n337
+.gate NOTAND2_2_1 A=n328 B=n331 Y=n338
+.gate NOTAND2_2_1 A=n338 B=n337 Y=n339
+.gate OR2_2_1     A=n339 B=n332 Y=n340
+.gate XOR2_2_1    A=n331 B=p_3711_188_ Y=n341
+.gate NOTOR2_2_1  A=p_41_12_ B=p_18_5_ Y=n342
+.gate OR2_2_1     A=n342 B=p_3701_186_ Y=n343
+.gate XOR2_2_1    A=n336 B=n333 Y=n344
+.gate OR2_2_1     A=n344 B=n343 Y=n345
+.gate NOTAND2_2_1 A=n345 B=n341 Y=n346
+.gate OR2_2_1     A=n346 B=n340 Y=n347
+.gate OR2_2_1     A=n347 B=n327 Y=n348
+.gate INV1_1_1    A=p_3723_190_ Y=n349
+.gate NOTOR2_2_1  A=p_103_52_ B=p_18_5_ Y=n350
+.gate AND2_2_1    A=p_235_158_ B=p_18_5_ Y=n351
+.gate NOTAND2_2_1 A=n351 B=n350 Y=n352
+.gate NOTAND2_2_1 A=n349 B=n352 Y=n353
+.gate NOTAND2_2_1 A=n323 B=n326 Y=n354
+.gate OR2_2_1     A=n354 B=n353 Y=n355
+.gate NOTAND2_2_1 A=n355 B=n348 Y=n356
+.gate NOTAND2_2_1 A=n352 B=n349 Y=n357
+.gate INV1_1_1    A=n344 Y=n358
+.gate XOR2_2_1    A=n331 B=n328 Y=n359
+.gate XOR2_2_1    A=n326 B=n323 Y=n360
+.gate OR2_2_1     A=n360 B=n359 Y=n361
+.gate NOTAND2_2_1 A=n361 B=n358 Y=n362
+.gate INV1_1_1    A=n343 Y=n363
+.gate AND2_2_1    A=p_229_152_ B=p_18_5_ Y=n364
+.gate NOTAND2_2_1 A=n364 B=n342 Y=n365
+.gate NOTOR2_2_1  A=p_3701_186_ B=p_18_5_ Y=n366
+.gate NOTAND2_2_1 A=n366 B=n365 Y=n367
+.gate OR2_2_1     A=n367 B=n363 Y=n368
+.gate INV1_1_1    A=p_4526_205_ Y=n369
+.gate XOR2_2_1    A=n352 B=n349 Y=n370
+.gate OR2_2_1     A=n370 B=n369 Y=n371
+.gate OR2_2_1     A=n371 B=n368 Y=n372
+.gate NOTAND2_2_1 A=n372 B=n362 Y=n373
+.gate OR2_2_1     A=n373 B=n357 Y=n374
+.gate OR2_2_1     A=n374 B=n356 Y=n375
+.gate AND2_2_1    A=n321 B=p_3729_191_ Y=n376
+.gate NOTAND2_2_1 A=n376 B=n375 Y=n377
+.gate NOTOR2_2_1  A=n322 B=n377 Y=n378
+.gate XOR2_2_1    A=n378 B=n318 Y=p_382_3148_
+.gate NAND2_2_1   A=p_1492_172_ B=p_1496_173_ Y=n380
+.gate NOTAND2_2_1 A=n380 B=p_4528_206_ Y=n381
+.gate NOTAND2_2_1 A=n381 B=p_38_11_ Y=n382
+.gate INV1_1_1    A=p_38_11_ Y=n383
+.gate AND2_2_1    A=p_4528_206_ B=p_1496_173_ Y=n384
+.gate XOR2_2_1    A=n384 B=n383 Y=n385
+.gate AND2_2_1    A=p_1492_172_ B=p_4528_206_ Y=n386
+.gate XOR2_2_1    A=n386 B=p_38_11_ Y=n387
+.gate NOTOR2_2_1  A=p_100_51_ B=p_18_5_ Y=n388
+.gate AND2_2_1    A=p_231_154_ B=p_18_5_ Y=n389
+.gate NOTAND2_2_1 A=n389 B=n388 Y=n390
+.gate XOR2_2_1    A=n390 B=p_3749_194_ Y=n391
+.gate INV1_1_1    A=n391 Y=n392
+.gate NOTOR2_2_1  A=p_124_63_ B=p_18_5_ Y=n393
+.gate AND2_2_1    A=p_18_5_ B=p_232_155_ Y=n394
+.gate NOTAND2_2_1 A=n394 B=n393 Y=n395
+.gate XOR2_2_1    A=n395 B=p_3743_193_ Y=n396
+.gate INV1_1_1    A=n396 Y=n397
+.gate XOR2_2_1    A=n321 B=p_3729_191_ Y=n398
+.gate NAND2_2_1   A=n398 B=n318 Y=n399
+.gate NOTOR2_2_1  A=n375 B=n399 Y=n400
+.gate OR2_2_1     A=n400 B=n397 Y=n401
+.gate NOR2_2_1    A=n401 B=n392 Y=n402
+.gate NAND2_2_1   A=n390 B=p_3749_194_ Y=n403
+.gate OR2_2_1     A=n390 B=p_3749_194_ Y=n404
+.gate INV1_1_1    A=p_3743_193_ Y=n405
+.gate NOTAND2_2_1 A=n395 B=n405 Y=n406
+.gate NOTAND2_2_1 A=n405 B=n395 Y=n407
+.gate OR2_2_1     A=n317 B=p_3737_192_ Y=n408
+.gate NOTAND2_2_1 A=n322 B=n318 Y=n409
+.gate NOTAND2_2_1 A=n409 B=n408 Y=n410
+.gate NOR2_2_1    A=n410 B=n407 Y=n411
+.gate OR2_2_1     A=n411 B=n406 Y=n412
+.gate NOTAND2_2_1 A=n412 B=n404 Y=n413
+.gate NOTAND2_2_1 A=n413 B=n403 Y=n414
+.gate OR2_2_1     A=n414 B=n402 Y=n415
+.gate NOTOR2_2_1  A=p_66_29_ B=p_18_5_ Y=n416
+.gate AND2_2_1    A=p_219_142_ B=p_18_5_ Y=n417
+.gate NOTAND2_2_1 A=n417 B=n416 Y=n418
+.gate XOR2_2_1    A=n418 B=p_4437_204_ Y=n419
+.gate NOTOR2_2_1  A=p_32_9_ B=p_18_5_ Y=n420
+.gate AND2_2_1    A=p_221_144_ B=p_18_5_ Y=n421
+.gate NOTAND2_2_1 A=n421 B=n420 Y=n422
+.gate XOR2_2_1    A=n422 B=p_4427_202_ Y=n423
+.gate INV1_1_1    A=p_4420_201_ Y=n424
+.gate NOTOR2_2_1  A=p_35_10_ B=p_18_5_ Y=n425
+.gate AND2_2_1    A=p_18_5_ B=p_222_145_ Y=n426
+.gate NOTAND2_2_1 A=n426 B=n425 Y=n427
+.gate NOTAND2_2_1 A=n424 B=n427 Y=n428
+.gate NOTAND2_2_1 A=n428 B=n423 Y=n429
+.gate NOTOR2_2_1  A=p_50_15_ B=p_18_5_ Y=n430
+.gate AND2_2_1    A=p_220_143_ B=p_18_5_ Y=n431
+.gate NOTAND2_2_1 A=n431 B=n430 Y=n432
+.gate XNOR2_2_1   A=n432 B=p_4432_203_ Y=n433
+.gate NOTAND2_2_1 A=n427 B=n424 Y=n434
+.gate OR2_2_1     A=n434 B=n433 Y=n435
+.gate NOTOR2_2_1  A=n429 B=n435 Y=n436
+.gate NOTOR2_2_1  A=n419 B=n436 Y=n437
+.gate NOTOR2_2_1  A=p_47_14_ B=p_18_5_ Y=n438
+.gate AND2_2_1    A=p_223_146_ B=p_18_5_ Y=n439
+.gate NOTAND2_2_1 A=n439 B=n438 Y=n440
+.gate XOR2_2_1    A=n440 B=p_4415_200_ Y=n441
+.gate INV1_1_1    A=n441 Y=n442
+.gate INV1_1_1    A=p_4400_197_ Y=n443
+.gate NOTOR2_2_1  A=p_97_50_ B=p_18_5_ Y=n444
+.gate AND2_2_1    A=p_226_149_ B=p_18_5_ Y=n445
+.gate NOTAND2_2_1 A=n445 B=n444 Y=n446
+.gate XOR2_2_1    A=n446 B=n443 Y=n447
+.gate NOTOR2_2_1  A=p_118_61_ B=p_18_5_ Y=n448
+.gate AND2_2_1    A=p_217_140_ B=p_18_5_ Y=n449
+.gate NOTAND2_2_1 A=n449 B=n448 Y=n450
+.gate XNOR2_2_1   A=n450 B=p_4394_196_ Y=n451
+.gate NOR2_2_1    A=n451 B=n447 Y=n452
+.gate INV1_1_1    A=p_4410_199_ Y=n453
+.gate NOTOR2_2_1  A=p_121_62_ B=p_18_5_ Y=n454
+.gate AND2_2_1    A=p_224_147_ B=p_18_5_ Y=n455
+.gate NOTAND2_2_1 A=n455 B=n454 Y=n456
+.gate XOR2_2_1    A=n456 B=n453 Y=n457
+.gate NOTOR2_2_1  A=p_94_49_ B=p_18_5_ Y=n458
+.gate AND2_2_1    A=p_225_148_ B=p_18_5_ Y=n459
+.gate NOTAND2_2_1 A=n459 B=n458 Y=n460
+.gate XOR2_2_1    A=n460 B=p_4405_198_ Y=n461
+.gate NOTAND2_2_1 A=n457 B=n461 Y=n462
+.gate NAND2_2_1   A=n462 B=n452 Y=n463
+.gate OR2_2_1     A=n463 B=n442 Y=n464
+.gate OR2_2_1     A=n464 B=n437 Y=n465
+.gate NOTAND2_2_1 A=n465 B=n415 Y=n466
+.gate INV1_1_1    A=p_2256_184_ Y=n467
+.gate AND2_2_1    A=p_9_2_ B=p_12_3_ Y=n468
+.gate NOTAND2_2_1 A=p_153_76_ B=p_18_5_ Y=n469
+.gate NOR2_2_1    A=n469 B=n468 Y=n470
+.gate XOR2_2_1    A=n470 B=n467 Y=n471
+.gate INV1_1_1    A=n471 Y=n472
+.gate NOTAND2_2_1 A=p_155_78_ B=p_18_5_ Y=n473
+.gate NOR2_2_1    A=n473 B=n468 Y=n474
+.gate XNOR2_2_1   A=n474 B=p_2247_182_ Y=n475
+.gate NOTAND2_2_1 A=p_156_79_ B=p_18_5_ Y=n476
+.gate NOR2_2_1    A=n476 B=n468 Y=n477
+.gate NOTAND2_2_1 A=n477 B=p_2239_181_ Y=n478
+.gate NOTAND2_2_1 A=n478 B=n475 Y=n479
+.gate NOTAND2_2_1 A=p_154_77_ B=p_18_5_ Y=n480
+.gate NOR2_2_1    A=n480 B=n468 Y=n481
+.gate XOR2_2_1    A=n481 B=p_2253_183_ Y=n482
+.gate NOTAND2_2_1 A=p_2239_181_ B=n477 Y=n483
+.gate OR2_2_1     A=n483 B=n482 Y=n484
+.gate NOTOR2_2_1  A=n479 B=n484 Y=n485
+.gate NOR2_2_1    A=n485 B=n472 Y=n486
+.gate INV1_1_1    A=p_2236_180_ Y=n487
+.gate NOTAND2_2_1 A=p_157_80_ B=p_18_5_ Y=n488
+.gate NOR2_2_1    A=n488 B=n468 Y=n489
+.gate XOR2_2_1    A=n489 B=n487 Y=n490
+.gate INV1_1_1    A=p_2218_177_ Y=n491
+.gate NAND2_2_1   A=p_160_83_ B=p_18_5_ Y=n492
+.gate NOTAND2_2_1 A=p_18_5_ B=p_138_69_ Y=n493
+.gate NOTAND2_2_1 A=n493 B=n492 Y=n494
+.gate XOR2_2_1    A=n494 B=n491 Y=n495
+.gate NAND2_2_1   A=p_151_74_ B=p_18_5_ Y=n496
+.gate NOTAND2_2_1 A=p_18_5_ B=p_147_72_ Y=n497
+.gate NOTAND2_2_1 A=n497 B=n496 Y=n498
+.gate XOR2_2_1    A=n498 B=p_2211_176_ Y=n499
+.gate NOTAND2_2_1 A=n495 B=n499 Y=n500
+.gate NAND2_2_1   A=p_158_81_ B=p_18_5_ Y=n501
+.gate NOTAND2_2_1 A=p_18_5_ B=p_135_68_ Y=n502
+.gate NOTAND2_2_1 A=n502 B=n501 Y=n503
+.gate XOR2_2_1    A=n503 B=p_2230_179_ Y=n504
+.gate NAND2_2_1   A=p_18_5_ B=p_159_82_ Y=n505
+.gate NOTAND2_2_1 A=p_18_5_ B=p_144_71_ Y=n506
+.gate NOTAND2_2_1 A=n506 B=n505 Y=n507
+.gate XOR2_2_1    A=n507 B=p_2224_178_ Y=n508
+.gate AND2_2_1    A=n508 B=n504 Y=n509
+.gate NAND2_2_1   A=n509 B=n500 Y=n510
+.gate NOTAND2_2_1 A=n510 B=n490 Y=n511
+.gate NAND2_2_1   A=n511 B=n486 Y=n512
+.gate NOTAND2_2_1 A=n512 B=n466 Y=n513
+.gate NAND2_2_1   A=n489 B=n487 Y=n514
+.gate OR2_2_1     A=n489 B=n487 Y=n515
+.gate NOR2_2_1    A=n503 B=p_2230_179_ Y=n516
+.gate NAND2_2_1   A=n503 B=p_2230_179_ Y=n517
+.gate INV1_1_1    A=p_2224_178_ Y=n518
+.gate NOTAND2_2_1 A=n518 B=n507 Y=n519
+.gate OR2_2_1     A=n498 B=p_2211_176_ Y=n520
+.gate OR2_2_1     A=n520 B=n495 Y=n521
+.gate NOTAND2_2_1 A=n494 B=n491 Y=n522
+.gate NOTAND2_2_1 A=n507 B=n518 Y=n523
+.gate OR2_2_1     A=n523 B=n522 Y=n524
+.gate NOTAND2_2_1 A=n524 B=n521 Y=n525
+.gate OR2_2_1     A=n525 B=n519 Y=n526
+.gate NOTAND2_2_1 A=n526 B=n517 Y=n527
+.gate NOR2_2_1    A=n527 B=n516 Y=n528
+.gate NOTAND2_2_1 A=n528 B=n515 Y=n529
+.gate NOTAND2_2_1 A=n529 B=n514 Y=n530
+.gate INV1_1_1    A=p_4415_200_ Y=n531
+.gate NOTAND2_2_1 A=n531 B=n440 Y=n532
+.gate INV1_1_1    A=p_4405_198_ Y=n533
+.gate NOTAND2_2_1 A=n533 B=n460 Y=n534
+.gate OR2_2_1     A=n450 B=p_4394_196_ Y=n535
+.gate OR2_2_1     A=n535 B=n447 Y=n536
+.gate NOTAND2_2_1 A=n446 B=n443 Y=n537
+.gate NOTAND2_2_1 A=n460 B=n533 Y=n538
+.gate OR2_2_1     A=n538 B=n537 Y=n539
+.gate NOTAND2_2_1 A=n539 B=n536 Y=n540
+.gate OR2_2_1     A=n540 B=n534 Y=n541
+.gate OR2_2_1     A=n541 B=n457 Y=n542
+.gate NOTAND2_2_1 A=n440 B=n531 Y=n543
+.gate NOTAND2_2_1 A=n456 B=n453 Y=n544
+.gate OR2_2_1     A=n544 B=n543 Y=n545
+.gate NOTAND2_2_1 A=n545 B=n542 Y=n546
+.gate OR2_2_1     A=n546 B=n532 Y=n547
+.gate NOR2_2_1    A=n547 B=n437 Y=n548
+.gate OR2_2_1     A=n418 B=p_4437_204_ Y=n549
+.gate NAND2_2_1   A=n418 B=p_4437_204_ Y=n550
+.gate OR2_2_1     A=n432 B=p_4432_203_ Y=n551
+.gate NAND2_2_1   A=n432 B=p_4432_203_ Y=n552
+.gate OR2_2_1     A=n422 B=p_4427_202_ Y=n553
+.gate AND2_2_1    A=n434 B=n423 Y=n554
+.gate NOTAND2_2_1 A=n554 B=n553 Y=n555
+.gate NOTAND2_2_1 A=n555 B=n552 Y=n556
+.gate NOTOR2_2_1  A=n551 B=n556 Y=n557
+.gate NAND2_2_1   A=n557 B=n550 Y=n558
+.gate NAND2_2_1   A=n558 B=n549 Y=n559
+.gate OR2_2_1     A=n559 B=n548 Y=n560
+.gate AND2_2_1    A=n560 B=n511 Y=n561
+.gate NOTAND2_2_1 A=n561 B=n530 Y=n562
+.gate NOTAND2_2_1 A=n562 B=n486 Y=n563
+.gate NOTAND2_2_1 A=p_2256_184_ B=n470 Y=n564
+.gate OR2_2_1     A=n470 B=n467 Y=n565
+.gate NOTOR2_2_1  A=n481 B=p_2253_183_ Y=n566
+.gate NOTAND2_2_1 A=n481 B=p_2253_183_ Y=n567
+.gate NOTAND2_2_1 A=p_2247_182_ B=n474 Y=n568
+.gate INV1_1_1    A=n568 Y=n569
+.gate AND2_2_1    A=n483 B=n475 Y=n570
+.gate NOTAND2_2_1 A=n570 B=n569 Y=n571
+.gate NOR2_2_1    A=n571 B=n567 Y=n572
+.gate NOTAND2_2_1 A=n572 B=n566 Y=n573
+.gate NOTAND2_2_1 A=n573 B=n565 Y=n574
+.gate OR2_2_1     A=n574 B=n564 Y=n575
+.gate OR2_2_1     A=n575 B=n563 Y=n576
+.gate OR2_2_1     A=n576 B=n513 Y=n577
+.gate INV1_1_1    A=p_1486_171_ Y=n578
+.gate NOTAND2_2_1 A=p_213_136_ B=p_18_5_ Y=n579
+.gate NOR2_2_1    A=n579 B=n468 Y=n580
+.gate XOR2_2_1    A=n580 B=n578 Y=n581
+.gate INV1_1_1    A=p_1480_170_ Y=n582
+.gate NOTAND2_2_1 A=p_214_137_ B=p_18_5_ Y=n583
+.gate NOR2_2_1    A=n583 B=n468 Y=n584
+.gate XOR2_2_1    A=n584 B=n582 Y=n585
+.gate NAND2_2_1   A=n585 B=n581 Y=n586
+.gate NOTAND2_2_1 A=p_215_138_ B=p_18_5_ Y=n587
+.gate NOR2_2_1    A=n587 B=n468 Y=n588
+.gate XNOR2_2_1   A=n588 B=p_106_53_ Y=n589
+.gate INV1_1_1    A=n589 Y=n590
+.gate NOTAND2_2_1 A=p_216_139_ B=p_18_5_ Y=n591
+.gate NOR2_2_1    A=n591 B=n468 Y=n592
+.gate XNOR2_2_1   A=n592 B=p_1469_169_ Y=n593
+.gate NOTAND2_2_1 A=p_209_132_ B=p_18_5_ Y=n594
+.gate NOR2_2_1    A=n594 B=n468 Y=n595
+.gate XNOR2_2_1   A=n595 B=p_1462_168_ Y=n596
+.gate NAND2_2_1   A=n596 B=n593 Y=n597
+.gate OR2_2_1     A=n597 B=n590 Y=n598
+.gate OR2_2_1     A=n598 B=n586 Y=n599
+.gate NOTOR2_2_1  A=n577 B=n599 Y=n600
+.gate NOTAND2_2_1 A=n588 B=p_106_53_ Y=n601
+.gate NOTAND2_2_1 A=p_1462_168_ B=n595 Y=n602
+.gate AND2_2_1    A=n602 B=n593 Y=n603
+.gate NOTAND2_2_1 A=p_106_53_ B=n588 Y=n604
+.gate NOTAND2_2_1 A=p_1469_169_ B=n592 Y=n605
+.gate OR2_2_1     A=n605 B=n604 Y=n606
+.gate NOR2_2_1    A=n606 B=n603 Y=n607
+.gate NOR2_2_1    A=n607 B=n601 Y=n608
+.gate NOTAND2_2_1 A=n586 B=n608 Y=n609
+.gate NOTAND2_2_1 A=p_1486_171_ B=n580 Y=n610
+.gate OR2_2_1     A=n580 B=n578 Y=n611
+.gate NAND2_2_1   A=n584 B=n582 Y=n612
+.gate NOTAND2_2_1 A=n612 B=n611 Y=n613
+.gate OR2_2_1     A=n613 B=n610 Y=n614
+.gate OR2_2_1     A=n614 B=n609 Y=n615
+.gate NOTAND2_2_1 A=n615 B=n600 Y=n616
+.gate OR2_2_1     A=n616 B=n387 Y=n617
+.gate NOTAND2_2_1 A=n617 B=n385 Y=n618
+.gate OR2_2_1     A=n618 B=n382 Y=p_246_3110_
+.gate XOR2_2_1    A=n368 B=n369 Y=p_373_2994_
+.gate NOTAND2_2_1 A=n412 B=n401 Y=n621
+.gate XOR2_2_1    A=n621 B=n392 Y=p_376_3206_
+.gate INV1_1_1    A=n499 Y=n623
+.gate OR2_2_1     A=n560 B=n466 Y=n624
+.gate NOTAND2_2_1 A=n623 B=n624 Y=n625
+.gate NOTAND2_2_1 A=n625 B=n520 Y=n626
+.gate NOR2_2_1    A=n626 B=n495 Y=n627
+.gate OR2_2_1     A=n627 B=n522 Y=n628
+.gate XOR2_2_1    A=n628 B=n508 Y=p_316_3397_
+.gate AND2_2_1    A=p_1_0_ B=p_163_86_ Y=p_278_536_
+.gate NOTAND2_2_1 A=n537 B=n536 Y=n631
+.gate XOR2_2_1    A=n631 B=n451 Y=n632
+.gate NOTOR2_2_1  A=n541 B=n535 Y=n633
+.gate NOTOR2_2_1  A=n535 B=n534 Y=n634
+.gate NOTAND2_2_1 A=n634 B=n539 Y=n635
+.gate NOTAND2_2_1 A=n635 B=n633 Y=n636
+.gate XOR2_2_1    A=n636 B=n442 Y=n637
+.gate XOR2_2_1    A=n637 B=n632 Y=n638
+.gate NAND2_2_1   A=n456 B=p_4410_199_ Y=n639
+.gate NOTAND2_2_1 A=n541 B=n639 Y=n640
+.gate NOR2_2_1    A=n640 B=n544 Y=n641
+.gate XOR2_2_1    A=n641 B=n447 Y=n642
+.gate XOR2_2_1    A=n642 B=n638 Y=n643
+.gate NOR2_2_1    A=n643 B=n415 Y=n644
+.gate AND2_2_1    A=n641 B=n463 Y=n645
+.gate XOR2_2_1    A=n645 B=n441 Y=n646
+.gate XNOR2_2_1   A=n535 B=n447 Y=n647
+.gate NOTAND2_2_1 A=n452 B=n631 Y=n648
+.gate NAND2_2_1   A=n461 B=n452 Y=n649
+.gate NAND2_2_1   A=n649 B=n541 Y=n650
+.gate XOR2_2_1    A=n650 B=n648 Y=n651
+.gate XOR2_2_1    A=n651 B=n647 Y=n652
+.gate XOR2_2_1    A=n652 B=n646 Y=n653
+.gate NOTAND2_2_1 A=n653 B=n415 Y=n654
+.gate OR2_2_1     A=n654 B=n644 Y=n655
+.gate XOR2_2_1    A=n461 B=n457 Y=n656
+.gate NOTAND2_2_1 A=n429 B=n553 Y=n657
+.gate XOR2_2_1    A=n434 B=n423 Y=n658
+.gate NOTAND2_2_1 A=n557 B=n436 Y=n659
+.gate XOR2_2_1    A=n659 B=n433 Y=n660
+.gate XNOR2_2_1   A=n660 B=n658 Y=n661
+.gate XNOR2_2_1   A=n661 B=n419 Y=n662
+.gate XOR2_2_1    A=n662 B=n657 Y=n663
+.gate AND2_2_1    A=n547 B=n464 Y=n664
+.gate NOTAND2_2_1 A=n664 B=n415 Y=n665
+.gate NAND2_2_1   A=n665 B=n663 Y=n666
+.gate NOTAND2_2_1 A=n464 B=n415 Y=n667
+.gate NOTOR2_2_1  A=n547 B=n667 Y=n668
+.gate XNOR2_2_1   A=n428 B=n423 Y=n669
+.gate XOR2_2_1    A=n669 B=n419 Y=n670
+.gate NAND2_2_1   A=n555 B=n552 Y=n671
+.gate NOTAND2_2_1 A=n555 B=n551 Y=n672
+.gate NOTAND2_2_1 A=n672 B=n671 Y=n673
+.gate XOR2_2_1    A=n673 B=n670 Y=n674
+.gate NOR2_2_1    A=n674 B=n668 Y=n675
+.gate OR2_2_1     A=n547 B=n415 Y=n676
+.gate NOTAND2_2_1 A=n676 B=n663 Y=n677
+.gate OR2_2_1     A=n677 B=n675 Y=n678
+.gate NOTAND2_2_1 A=n678 B=n666 Y=n679
+.gate XOR2_2_1    A=n679 B=n656 Y=n680
+.gate XOR2_2_1    A=n680 B=n655 Y=p_370_3718_
+.gate AND2_2_1    A=p_18_5_ B=p_207_130_ Y=n682
+.gate NOTOR2_2_1  A=n334 B=n682 Y=n683
+.gate NAND2_2_1   A=p_3705_187_ B=p_18_5_ Y=n684
+.gate NOR2_2_1    A=p_74_33_ B=p_18_5_ Y=n685
+.gate NOTOR2_2_1  A=n684 B=n685 Y=n686
+.gate NOTAND2_2_1 A=n686 B=n683 Y=n687
+.gate NOTAND2_2_1 A=n342 B=p_70_31_ Y=n688
+.gate OR2_2_1     A=n688 B=n687 Y=n689
+.gate AND2_2_1    A=p_206_129_ B=p_18_5_ Y=n690
+.gate NOTOR2_2_1  A=n329 B=n690 Y=n691
+.gate NAND2_2_1   A=p_3711_188_ B=p_18_5_ Y=n692
+.gate NOR2_2_1    A=p_76_35_ B=p_18_5_ Y=n693
+.gate NOTOR2_2_1  A=n692 B=n693 Y=n694
+.gate NOTAND2_2_1 A=n691 B=n694 Y=n695
+.gate NOTAND2_2_1 A=n683 B=n686 Y=n696
+.gate OR2_2_1     A=n696 B=n695 Y=n697
+.gate NOTOR2_2_1  A=n689 B=n697 Y=n698
+.gate AND2_2_1    A=p_18_5_ B=p_205_128_ Y=n699
+.gate NOTOR2_2_1  A=n324 B=n699 Y=n700
+.gate NAND2_2_1   A=p_3717_189_ B=p_18_5_ Y=n701
+.gate NOR2_2_1    A=p_75_34_ B=p_18_5_ Y=n702
+.gate NOTOR2_2_1  A=n701 B=n702 Y=n703
+.gate NOTOR2_2_1  A=n700 B=n703 Y=n704
+.gate NOTAND2_2_1 A=n694 B=n691 Y=n705
+.gate NOTAND2_2_1 A=n705 B=n704 Y=n706
+.gate NAND2_2_1   A=n706 B=n698 Y=n707
+.gate NOTAND2_2_1 A=n700 B=n703 Y=n708
+.gate AND2_2_1    A=p_204_127_ B=p_18_5_ Y=n709
+.gate NOTAND2_2_1 A=n709 B=n350 Y=n710
+.gate NAND2_2_1   A=p_3723_190_ B=p_18_5_ Y=n711
+.gate NOR2_2_1    A=p_73_32_ B=p_18_5_ Y=n712
+.gate NOTAND2_2_1 A=n712 B=n711 Y=n713
+.gate NOTAND2_2_1 A=n713 B=n710 Y=n714
+.gate OR2_2_1     A=n714 B=n708 Y=n715
+.gate NOTAND2_2_1 A=n715 B=n707 Y=n716
+.gate NOTAND2_2_1 A=n710 B=n713 Y=n717
+.gate OR2_2_1     A=p_70_31_ B=p_18_5_ Y=n718
+.gate OR2_2_1     A=n718 B=p_41_12_ Y=n719
+.gate NAND2_2_1   A=n719 B=p_89_48_ Y=n720
+.gate OR2_2_1     A=n720 B=n717 Y=n721
+.gate NOTAND2_2_1 A=n721 B=n706 Y=n722
+.gate OR2_2_1     A=n715 B=n697 Y=n723
+.gate OR2_2_1     A=n723 B=n689 Y=n724
+.gate NOTAND2_2_1 A=n724 B=n722 Y=n725
+.gate OR2_2_1     A=n725 B=n717 Y=n726
+.gate OR2_2_1     A=n726 B=n716 Y=n727
+.gate AND2_2_1    A=p_201_124_ B=p_18_5_ Y=n728
+.gate NOTOR2_2_1  A=n393 B=n728 Y=n729
+.gate NAND2_2_1   A=p_3743_193_ B=p_18_5_ Y=n730
+.gate NOR2_2_1    A=p_18_5_ B=p_55_18_ Y=n731
+.gate NOTOR2_2_1  A=n730 B=n731 Y=n732
+.gate NOTAND2_2_1 A=n732 B=n729 Y=n733
+.gate AND2_2_1    A=p_202_125_ B=p_18_5_ Y=n734
+.gate NOTAND2_2_1 A=n734 B=n315 Y=n735
+.gate NAND2_2_1   A=p_18_5_ B=p_3737_192_ Y=n736
+.gate NOR2_2_1    A=p_18_5_ B=p_54_17_ Y=n737
+.gate NOTAND2_2_1 A=n737 B=n736 Y=n738
+.gate NOTAND2_2_1 A=n735 B=n738 Y=n739
+.gate OR2_2_1     A=n739 B=n733 Y=n740
+.gate NOTAND2_2_1 A=n729 B=n732 Y=n741
+.gate NOTAND2_2_1 A=n738 B=n735 Y=n742
+.gate OR2_2_1     A=n742 B=n741 Y=n743
+.gate AND2_2_1    A=p_200_123_ B=p_18_5_ Y=n744
+.gate NOTAND2_2_1 A=n744 B=n388 Y=n745
+.gate NAND2_2_1   A=p_18_5_ B=p_3749_194_ Y=n746
+.gate NOR2_2_1    A=p_18_5_ B=p_56_19_ Y=n747
+.gate NOTAND2_2_1 A=n747 B=n746 Y=n748
+.gate XOR2_2_1    A=n748 B=n745 Y=n749
+.gate OR2_2_1     A=n749 B=n743 Y=n750
+.gate NOR2_2_1    A=n750 B=n740 Y=n751
+.gate AND2_2_1    A=p_203_126_ B=p_18_5_ Y=n752
+.gate NOTAND2_2_1 A=n752 B=n319 Y=n753
+.gate AND2_2_1    A=p_3729_191_ B=p_18_5_ Y=n754
+.gate NOR2_2_1    A=p_18_5_ B=p_53_16_ Y=n755
+.gate NOR2_2_1    A=n755 B=n754 Y=n756
+.gate XNOR2_2_1   A=n756 B=n753 Y=n757
+.gate NAND2_2_1   A=n757 B=n751 Y=n758
+.gate NOTAND2_2_1 A=n758 B=n727 Y=n759
+.gate NOTOR2_2_1  A=n756 B=n753 Y=n760
+.gate NOTAND2_2_1 A=n760 B=n751 Y=n761
+.gate NOTAND2_2_1 A=n745 B=n748 Y=n762
+.gate NOTAND2_2_1 A=n748 B=n745 Y=n763
+.gate OR2_2_1     A=n763 B=n741 Y=n764
+.gate NOTAND2_2_1 A=n764 B=n740 Y=n765
+.gate OR2_2_1     A=n765 B=n762 Y=n766
+.gate OR2_2_1     A=n766 B=n761 Y=n767
+.gate OR2_2_1     A=n767 B=n759 Y=n768
+.gate NAND2_2_1   A=p_194_117_ B=p_18_5_ Y=n769
+.gate NAND2_2_1   A=n769 B=n454 Y=n770
+.gate NAND2_2_1   A=p_4410_199_ B=p_18_5_ Y=n771
+.gate NOR2_2_1    A=p_81_40_ B=p_18_5_ Y=n772
+.gate NOTAND2_2_1 A=n772 B=n771 Y=n773
+.gate AND2_2_1    A=n773 B=n770 Y=n774
+.gate AND2_2_1    A=p_196_119_ B=p_18_5_ Y=n775
+.gate NOTAND2_2_1 A=n775 B=n444 Y=n776
+.gate NAND2_2_1   A=p_4400_197_ B=p_18_5_ Y=n777
+.gate NOR2_2_1    A=p_78_37_ B=p_18_5_ Y=n778
+.gate NOTAND2_2_1 A=n778 B=n777 Y=n779
+.gate NOTOR2_2_1  A=n779 B=n776 Y=n780
+.gate NOTOR2_2_1  A=n780 B=n774 Y=n781
+.gate AND2_2_1    A=p_18_5_ B=p_195_118_ Y=n782
+.gate NOTOR2_2_1  A=n458 B=n782 Y=n783
+.gate NAND2_2_1   A=p_18_5_ B=p_4405_198_ Y=n784
+.gate NOR2_2_1    A=p_59_22_ B=p_18_5_ Y=n785
+.gate NOTOR2_2_1  A=n784 B=n785 Y=n786
+.gate NOTAND2_2_1 A=n783 B=n786 Y=n787
+.gate AND2_2_1    A=p_18_5_ B=p_193_116_ Y=n788
+.gate NOTAND2_2_1 A=n788 B=n438 Y=n789
+.gate AND2_2_1    A=p_4415_200_ B=p_18_5_ Y=n790
+.gate NOR2_2_1    A=p_80_39_ B=p_18_5_ Y=n791
+.gate NOR2_2_1    A=n791 B=n790 Y=n792
+.gate NOTAND2_2_1 A=n789 B=n792 Y=n793
+.gate OR2_2_1     A=n793 B=n787 Y=n794
+.gate OR2_2_1     A=n794 B=n781 Y=n795
+.gate NOR2_2_1    A=n773 B=n770 Y=n796
+.gate NOTAND2_2_1 A=n792 B=n789 Y=n797
+.gate NOR2_2_1    A=n797 B=n796 Y=n798
+.gate AND2_2_1    A=p_187_110_ B=p_18_5_ Y=n799
+.gate NOTOR2_2_1  A=n448 B=n799 Y=n800
+.gate AND2_2_1    A=p_18_5_ B=p_4394_196_ Y=n801
+.gate NOR2_2_1    A=p_77_36_ B=p_18_5_ Y=n802
+.gate OR2_2_1     A=n802 B=n801 Y=n803
+.gate XOR2_2_1    A=n803 B=n800 Y=n804
+.gate NOTAND2_2_1 A=n786 B=n783 Y=n805
+.gate NOTAND2_2_1 A=n779 B=n776 Y=n806
+.gate OR2_2_1     A=n806 B=n805 Y=n807
+.gate NOR2_2_1    A=n807 B=n804 Y=n808
+.gate NAND2_2_1   A=n808 B=n798 Y=n809
+.gate OR2_2_1     A=n809 B=n795 Y=n810
+.gate NOTAND2_2_1 A=n810 B=n768 Y=n811
+.gate NOTAND2_2_1 A=n803 B=n800 Y=n812
+.gate NOTAND2_2_1 A=n812 B=n780 Y=n813
+.gate OR2_2_1     A=n806 B=n787 Y=n814
+.gate OR2_2_1     A=n814 B=n813 Y=n815
+.gate OR2_2_1     A=n805 B=n774 Y=n816
+.gate NOTAND2_2_1 A=n816 B=n815 Y=n817
+.gate NOTAND2_2_1 A=n817 B=n798 Y=n818
+.gate OR2_2_1     A=n818 B=n793 Y=n819
+.gate OR2_2_1     A=n819 B=n811 Y=n820
+.gate AND2_2_1    A=p_190_113_ B=p_18_5_ Y=n821
+.gate NOTAND2_2_1 A=n821 B=n430 Y=n822
+.gate AND2_2_1    A=p_18_5_ B=p_4432_203_ Y=n823
+.gate NOR2_2_1    A=p_18_5_ B=p_61_24_ Y=n824
+.gate NOR2_2_1    A=n824 B=n823 Y=n825
+.gate NOTAND2_2_1 A=n822 B=n825 Y=n826
+.gate AND2_2_1    A=p_191_114_ B=p_18_5_ Y=n827
+.gate NOTAND2_2_1 A=n827 B=n420 Y=n828
+.gate AND2_2_1    A=p_4427_202_ B=p_18_5_ Y=n829
+.gate NOR2_2_1    A=p_18_5_ B=p_60_23_ Y=n830
+.gate NOR2_2_1    A=n830 B=n829 Y=n831
+.gate NOTAND2_2_1 A=n828 B=n831 Y=n832
+.gate OR2_2_1     A=n832 B=n826 Y=n833
+.gate NOTAND2_2_1 A=n825 B=n822 Y=n834
+.gate NOTAND2_2_1 A=n831 B=n828 Y=n835
+.gate OR2_2_1     A=n835 B=n834 Y=n836
+.gate AND2_2_1    A=p_18_5_ B=p_189_112_ Y=n837
+.gate NOTAND2_2_1 A=n837 B=n416 Y=n838
+.gate NAND2_2_1   A=p_4437_204_ B=p_18_5_ Y=n839
+.gate NOR2_2_1    A=p_62_25_ B=p_18_5_ Y=n840
+.gate NOTAND2_2_1 A=n840 B=n839 Y=n841
+.gate XOR2_2_1    A=n841 B=n838 Y=n842
+.gate OR2_2_1     A=n842 B=n836 Y=n843
+.gate NOR2_2_1    A=n843 B=n833 Y=n844
+.gate AND2_2_1    A=p_18_5_ B=p_192_115_ Y=n845
+.gate NOTAND2_2_1 A=n845 B=n425 Y=n846
+.gate AND2_2_1    A=p_4420_201_ B=p_18_5_ Y=n847
+.gate NOR2_2_1    A=p_79_38_ B=p_18_5_ Y=n848
+.gate NOR2_2_1    A=n848 B=n847 Y=n849
+.gate XNOR2_2_1   A=n849 B=n846 Y=n850
+.gate NAND2_2_1   A=n850 B=n844 Y=n851
+.gate NOTAND2_2_1 A=n851 B=n820 Y=n852
+.gate NOTOR2_2_1  A=n849 B=n846 Y=n853
+.gate NOTAND2_2_1 A=n853 B=n844 Y=n854
+.gate NOTAND2_2_1 A=n838 B=n841 Y=n855
+.gate NOTAND2_2_1 A=n841 B=n838 Y=n856
+.gate OR2_2_1     A=n856 B=n834 Y=n857
+.gate NOTAND2_2_1 A=n857 B=n833 Y=n858
+.gate OR2_2_1     A=n858 B=n855 Y=n859
+.gate OR2_2_1     A=n859 B=n854 Y=n860
+.gate OR2_2_1     A=n860 B=n852 Y=p_252_3450_
+.gate NOTAND2_2_1 A=n584 B=p_1480_170_ Y=n862
+.gate NOTAND2_2_1 A=n608 B=n612 Y=n863
+.gate NOR2_2_1    A=n863 B=n862 Y=n864
+.gate OR2_2_1     A=n864 B=n577 Y=n865
+.gate AND2_2_1    A=n863 B=n598 Y=n866
+.gate OR2_2_1     A=n866 B=n862 Y=n867
+.gate NOTAND2_2_1 A=n867 B=n865 Y=n868
+.gate XOR2_2_1    A=n868 B=n581 Y=p_327_3408_
+.gate INV1_1_1    A=n605 Y=n870
+.gate NOTAND2_2_1 A=n592 B=p_1469_169_ Y=n871
+.gate NOR2_2_1    A=n602 B=n871 Y=n872
+.gate NOTAND2_2_1 A=n872 B=n870 Y=n873
+.gate XOR2_2_1    A=n873 B=n864 Y=n874
+.gate INV1_1_1    A=n602 Y=n875
+.gate OR2_2_1     A=n608 B=n875 Y=n876
+.gate OR2_2_1     A=n602 B=n601 Y=n877
+.gate NOTAND2_2_1 A=n877 B=n606 Y=n878
+.gate XOR2_2_1    A=n878 B=n596 Y=n879
+.gate NOTOR2_2_1  A=n876 B=n879 Y=n880
+.gate XOR2_2_1    A=n880 B=n581 Y=n881
+.gate XOR2_2_1    A=n881 B=n874 Y=n882
+.gate OR2_2_1     A=n882 B=n577 Y=n883
+.gate NOTAND2_2_1 A=n595 B=p_1462_168_ Y=n884
+.gate NOTAND2_2_1 A=n603 B=n870 Y=n885
+.gate NOTAND2_2_1 A=n885 B=n884 Y=n886
+.gate NOTAND2_2_1 A=n884 B=n871 Y=n887
+.gate OR2_2_1     A=n887 B=n886 Y=n888
+.gate INV1_1_1    A=n593 Y=n889
+.gate NOTAND2_2_1 A=n608 B=n598 Y=n890
+.gate XOR2_2_1    A=n890 B=n889 Y=n891
+.gate XOR2_2_1    A=n891 B=n888 Y=n892
+.gate XNOR2_2_1   A=n596 B=n581 Y=n893
+.gate XOR2_2_1    A=n893 B=n892 Y=n894
+.gate XOR2_2_1    A=n894 B=n867 Y=n895
+.gate NOTAND2_2_1 A=n895 B=n577 Y=n896
+.gate NOTAND2_2_1 A=n896 B=n883 Y=n897
+.gate XOR2_2_1    A=n589 B=n585 Y=n898
+.gate XOR2_2_1    A=n898 B=n897 Y=n899
+.gate NOTAND2_2_1 A=n386 B=n383 Y=n900
+.gate XNOR2_2_1   A=n900 B=n384 Y=n901
+.gate NOTAND2_2_1 A=n901 B=n616 Y=n902
+.gate NAND2_2_1   A=n385 B=p_1492_172_ Y=n903
+.gate OR2_2_1     A=p_1492_172_ B=p_1496_173_ Y=n904
+.gate NAND2_2_1   A=n904 B=p_4528_206_ Y=n905
+.gate NOTAND2_2_1 A=n905 B=n903 Y=n906
+.gate OR2_2_1     A=n906 B=n616 Y=n907
+.gate NOTAND2_2_1 A=n902 B=n907 Y=n908
+.gate XOR2_2_1    A=n908 B=n899 Y=p_338_3716_
+.gate NAND2_2_1   A=p_218_141_ B=p_210_133_ Y=n910
+.gate NAND2_2_1   A=p_230_153_ B=p_152_75_ Y=n911
+.gate OR2_2_1     A=n911 B=n910 Y=p_406_388_
+.gate NOTAND2_2_1 A=n906 B=n616 Y=n913
+.gate NOTAND2_2_1 A=n616 B=n901 Y=n914
+.gate OR2_2_1     A=n914 B=n913 Y=p_422_3451_
+.gate XOR2_2_1    A=n508 B=n504 Y=n916
+.gate XOR2_2_1    A=n916 B=n482 Y=n917
+.gate AND2_2_1    A=n624 B=n511 Y=n918
+.gate NOTOR2_2_1  A=n530 B=n918 Y=n919
+.gate XNOR2_2_1   A=n478 B=n475 Y=n920
+.gate NAND2_2_1   A=n571 B=n566 Y=n921
+.gate NOTAND2_2_1 A=n572 B=n921 Y=n922
+.gate XOR2_2_1    A=n922 B=n472 Y=n923
+.gate XOR2_2_1    A=n923 B=n920 Y=n924
+.gate NOR2_2_1    A=n924 B=n919 Y=n925
+.gate NOTAND2_2_1 A=n479 B=n569 Y=n926
+.gate NAND2_2_1   A=n573 B=n485 Y=n927
+.gate XOR2_2_1    A=n483 B=n475 Y=n928
+.gate XOR2_2_1    A=n928 B=n927 Y=n929
+.gate XOR2_2_1    A=n929 B=n472 Y=n930
+.gate XOR2_2_1    A=n930 B=n926 Y=n931
+.gate NOTAND2_2_1 A=n931 B=n919 Y=n932
+.gate OR2_2_1     A=n932 B=n925 Y=n933
+.gate NOTAND2_2_1 A=n520 B=n526 Y=n934
+.gate NOTOR2_2_1  A=n520 B=n519 Y=n935
+.gate NOTAND2_2_1 A=n935 B=n524 Y=n936
+.gate XOR2_2_1    A=n936 B=n499 Y=n937
+.gate OR2_2_1     A=n937 B=n934 Y=n938
+.gate NOTAND2_2_1 A=n491 B=n494 Y=n939
+.gate NOTOR2_2_1  A=n520 B=n939 Y=n940
+.gate NOTAND2_2_1 A=n522 B=n940 Y=n941
+.gate XOR2_2_1    A=n941 B=n528 Y=n942
+.gate XOR2_2_1    A=n942 B=n490 Y=n943
+.gate XOR2_2_1    A=n943 B=n938 Y=n944
+.gate OR2_2_1     A=n944 B=n624 Y=n945
+.gate AND2_2_1    A=n528 B=n510 Y=n946
+.gate XOR2_2_1    A=n946 B=n490 Y=n947
+.gate XNOR2_2_1   A=n520 B=n495 Y=n948
+.gate NAND2_2_1   A=n508 B=n500 Y=n949
+.gate NAND2_2_1   A=n949 B=n526 Y=n950
+.gate OR2_2_1     A=n500 B=n522 Y=n951
+.gate NOTAND2_2_1 A=n951 B=n521 Y=n952
+.gate XOR2_2_1    A=n952 B=n950 Y=n953
+.gate XOR2_2_1    A=n953 B=n948 Y=n954
+.gate XOR2_2_1    A=n954 B=n947 Y=n955
+.gate NOTAND2_2_1 A=n955 B=n624 Y=n956
+.gate NOTAND2_2_1 A=n956 B=n945 Y=n957
+.gate XOR2_2_1    A=n957 B=n933 Y=n958
+.gate XOR2_2_1    A=n958 B=n917 Y=p_321_3715_
+.gate NOTAND2_2_1 A=n451 B=n415 Y=n960
+.gate NOTAND2_2_1 A=n960 B=n535 Y=n961
+.gate XOR2_2_1    A=n961 B=n447 Y=p_368_3431_
+.gate NOTAND2_2_1 A=p_174_97_ B=p_18_5_ Y=n963
+.gate NOR2_2_1    A=n963 B=n468 Y=n964
+.gate NOR2_2_1    A=p_109_54_ B=p_18_5_ Y=n965
+.gate AND2_2_1    A=p_2253_183_ B=p_18_5_ Y=n966
+.gate NOR2_2_1    A=n966 B=n965 Y=n967
+.gate XOR2_2_1    A=n967 B=n964 Y=n968
+.gate AND2_2_1    A=p_171_94_ B=p_18_5_ Y=n969
+.gate OR2_2_1     A=n969 B=n497 Y=n970
+.gate NOR2_2_1    A=p_65_28_ B=p_18_5_ Y=n971
+.gate AND2_2_1    A=p_18_5_ B=p_2211_176_ Y=n972
+.gate OR2_2_1     A=n972 B=n971 Y=n973
+.gate NOTAND2_2_1 A=n973 B=n970 Y=n974
+.gate AND2_2_1    A=p_180_103_ B=p_18_5_ Y=n975
+.gate NOR2_2_1    A=n975 B=n493 Y=n976
+.gate OR2_2_1     A=p_83_42_ B=p_18_5_ Y=n977
+.gate AND2_2_1    A=p_2218_177_ B=p_18_5_ Y=n978
+.gate NOTAND2_2_1 A=n978 B=n977 Y=n979
+.gate NOTAND2_2_1 A=n976 B=n979 Y=n980
+.gate OR2_2_1     A=n980 B=n974 Y=n981
+.gate AND2_2_1    A=p_18_5_ B=p_179_102_ Y=n982
+.gate NOR2_2_1    A=n982 B=n506 Y=n983
+.gate OR2_2_1     A=p_84_43_ B=p_18_5_ Y=n984
+.gate AND2_2_1    A=p_2224_178_ B=p_18_5_ Y=n985
+.gate NOTOR2_2_1  A=n984 B=n985 Y=n986
+.gate OR2_2_1     A=n986 B=n983 Y=n987
+.gate AND2_2_1    A=p_178_101_ B=p_18_5_ Y=n988
+.gate OR2_2_1     A=n988 B=n502 Y=n989
+.gate NOR2_2_1    A=p_85_44_ B=p_18_5_ Y=n990
+.gate AND2_2_1    A=p_2230_179_ B=p_18_5_ Y=n991
+.gate OR2_2_1     A=n991 B=n990 Y=n992
+.gate NOTAND2_2_1 A=n992 B=n989 Y=n993
+.gate NOTAND2_2_1 A=n993 B=n987 Y=n994
+.gate NOTAND2_2_1 A=n981 B=n994 Y=n995
+.gate NAND2_2_1   A=n995 B=n968 Y=n996
+.gate NOTAND2_2_1 A=p_173_96_ B=p_18_5_ Y=n997
+.gate NOR2_2_1    A=n997 B=n468 Y=n998
+.gate NOR2_2_1    A=p_110_55_ B=p_18_5_ Y=n999
+.gate AND2_2_1    A=p_2256_184_ B=p_18_5_ Y=n1000
+.gate NOR2_2_1    A=n1000 B=n999 Y=n1001
+.gate XNOR2_2_1   A=n1001 B=n998 Y=n1002
+.gate NOTAND2_2_1 A=p_175_98_ B=p_18_5_ Y=n1003
+.gate NOR2_2_1    A=n1003 B=n468 Y=n1004
+.gate NOR2_2_1    A=p_86_45_ B=p_18_5_ Y=n1005
+.gate AND2_2_1    A=p_2247_182_ B=p_18_5_ Y=n1006
+.gate NOR2_2_1    A=n1006 B=n1005 Y=n1007
+.gate XNOR2_2_1   A=n1007 B=n1004 Y=n1008
+.gate OR2_2_1     A=n1008 B=n1002 Y=n1009
+.gate AND2_2_1    A=n986 B=n983 Y=n1010
+.gate NOTAND2_2_1 A=n979 B=n976 Y=n1011
+.gate OR2_2_1     A=n1011 B=n1010 Y=n1012
+.gate NOTAND2_2_1 A=p_176_99_ B=p_18_5_ Y=n1013
+.gate OR2_2_1     A=n1013 B=n468 Y=n1014
+.gate OR2_2_1     A=p_63_26_ B=p_18_5_ Y=n1015
+.gate AND2_2_1    A=p_2239_181_ B=p_18_5_ Y=n1016
+.gate NOTAND2_2_1 A=n1016 B=n1015 Y=n1017
+.gate XOR2_2_1    A=n1017 B=n1014 Y=n1018
+.gate OR2_2_1     A=n1018 B=n1012 Y=n1019
+.gate NOTAND2_2_1 A=p_177_100_ B=p_18_5_ Y=n1020
+.gate NOR2_2_1    A=n1020 B=n468 Y=n1021
+.gate OR2_2_1     A=p_64_27_ B=p_18_5_ Y=n1022
+.gate AND2_2_1    A=p_2236_180_ B=p_18_5_ Y=n1023
+.gate NOTAND2_2_1 A=n1023 B=n1022 Y=n1024
+.gate NOR2_2_1    A=n1024 B=n1021 Y=n1025
+.gate NOTAND2_2_1 A=n989 B=n992 Y=n1026
+.gate OR2_2_1     A=n1026 B=n1025 Y=n1027
+.gate AND2_2_1    A=n1024 B=n1021 Y=n1028
+.gate NOTAND2_2_1 A=n970 B=n973 Y=n1029
+.gate OR2_2_1     A=n1029 B=n1028 Y=n1030
+.gate OR2_2_1     A=n1030 B=n1027 Y=n1031
+.gate OR2_2_1     A=n1031 B=n1019 Y=n1032
+.gate OR2_2_1     A=n1032 B=n1009 Y=n1033
+.gate OR2_2_1     A=n1033 B=n996 Y=n1034
+.gate NOTAND2_2_1 A=n1034 B=p_252_3450_ Y=n1035
+.gate NAND2_2_1   A=n1007 B=n1004 Y=n1036
+.gate OR2_2_1     A=n1036 B=n1002 Y=n1037
+.gate NOTAND2_2_1 A=n1014 B=n1017 Y=n1038
+.gate NOTAND2_2_1 A=n1012 B=n981 Y=n1039
+.gate NOTOR2_2_1  A=n994 B=n1039 Y=n1040
+.gate NOTAND2_2_1 A=n1026 B=n1040 Y=n1041
+.gate OR2_2_1     A=n1041 B=n1028 Y=n1042
+.gate NOTAND2_2_1 A=n1025 B=n1042 Y=n1043
+.gate OR2_2_1     A=n1043 B=n1038 Y=n1044
+.gate NOTAND2_2_1 A=n1017 B=n1014 Y=n1045
+.gate OR2_2_1     A=n1045 B=n1009 Y=n1046
+.gate NOTAND2_2_1 A=n1046 B=n1044 Y=n1047
+.gate NOTAND2_2_1 A=n1047 B=n1037 Y=n1048
+.gate NOTAND2_2_1 A=n1048 B=n968 Y=n1049
+.gate AND2_2_1    A=n1001 B=n998 Y=n1050
+.gate AND2_2_1    A=n967 B=n964 Y=n1051
+.gate NOR2_2_1    A=n1001 B=n998 Y=n1052
+.gate NOTAND2_2_1 A=n1052 B=n1051 Y=n1053
+.gate OR2_2_1     A=n1053 B=n1050 Y=n1054
+.gate OR2_2_1     A=n1054 B=n1049 Y=n1055
+.gate OR2_2_1     A=n1055 B=n1035 Y=n1056
+.gate NOTAND2_2_1 A=p_168_91_ B=p_18_5_ Y=n1057
+.gate NOR2_2_1    A=n1057 B=n468 Y=n1058
+.gate NOR2_2_1    A=p_87_46_ B=p_18_5_ Y=n1059
+.gate AND2_2_1    A=p_106_53_ B=p_18_5_ Y=n1060
+.gate NOR2_2_1    A=n1060 B=n1059 Y=n1061
+.gate XNOR2_2_1   A=n1061 B=n1058 Y=n1062
+.gate NOR2_2_1    A=p_18_5_ B=p_113_58_ Y=n1063
+.gate AND2_2_1    A=p_1462_168_ B=p_18_5_ Y=n1064
+.gate OR2_2_1     A=n1064 B=n1063 Y=n1065
+.gate NOR2_2_1    A=n1065 B=n468 Y=n1066
+.gate NOTAND2_2_1 A=p_167_90_ B=p_18_5_ Y=n1067
+.gate NOR2_2_1    A=n1067 B=n468 Y=n1068
+.gate NOR2_2_1    A=p_112_57_ B=p_18_5_ Y=n1069
+.gate AND2_2_1    A=p_1480_170_ B=p_18_5_ Y=n1070
+.gate NOR2_2_1    A=n1070 B=n1069 Y=n1071
+.gate AND2_2_1    A=n1071 B=n1068 Y=n1072
+.gate OR2_2_1     A=n1072 B=n1066 Y=n1073
+.gate OR2_2_1     A=n1073 B=n1062 Y=n1074
+.gate NOTAND2_2_1 A=p_169_92_ B=p_18_5_ Y=n1075
+.gate NOR2_2_1    A=n1075 B=n468 Y=n1076
+.gate NOR2_2_1    A=p_111_56_ B=p_18_5_ Y=n1077
+.gate AND2_2_1    A=p_1469_169_ B=p_18_5_ Y=n1078
+.gate NOR2_2_1    A=n1078 B=n1077 Y=n1079
+.gate AND2_2_1    A=n1079 B=n1076 Y=n1080
+.gate AND2_2_1    A=n1065 B=n468 Y=n1081
+.gate OR2_2_1     A=n1081 B=n1080 Y=n1082
+.gate NOR2_2_1    A=n1071 B=n1068 Y=n1083
+.gate NOR2_2_1    A=n1079 B=n1076 Y=n1084
+.gate OR2_2_1     A=n1084 B=n1083 Y=n1085
+.gate NOTAND2_2_1 A=p_166_89_ B=p_18_5_ Y=n1086
+.gate NOR2_2_1    A=n1086 B=n468 Y=n1087
+.gate NOR2_2_1    A=p_88_47_ B=p_18_5_ Y=n1088
+.gate AND2_2_1    A=p_1486_171_ B=p_18_5_ Y=n1089
+.gate NOR2_2_1    A=n1089 B=n1088 Y=n1090
+.gate XNOR2_2_1   A=n1090 B=n1087 Y=n1091
+.gate OR2_2_1     A=n1091 B=n1085 Y=n1092
+.gate OR2_2_1     A=n1092 B=n1082 Y=n1093
+.gate OR2_2_1     A=n1093 B=n1074 Y=n1094
+.gate NOTAND2_2_1 A=n1094 B=n1056 Y=n1095
+.gate OR2_2_1     A=n1090 B=n1087 Y=n1096
+.gate NOTOR2_2_1  A=n1066 B=n1084 Y=n1097
+.gate AND2_2_1    A=n1061 B=n1058 Y=n1098
+.gate OR2_2_1     A=n1080 B=n1098 Y=n1099
+.gate NOTAND2_2_1 A=n1099 B=n1097 Y=n1100
+.gate NOR2_2_1    A=n1061 B=n1058 Y=n1101
+.gate OR2_2_1     A=n1083 B=n1101 Y=n1102
+.gate OR2_2_1     A=n1102 B=n1100 Y=n1103
+.gate AND2_2_1    A=n1090 B=n1087 Y=n1104
+.gate OR2_2_1     A=n1104 B=n1072 Y=n1105
+.gate NOTAND2_2_1 A=n1105 B=n1103 Y=n1106
+.gate NOTAND2_2_1 A=n1106 B=n1096 Y=n1107
+.gate OR2_2_1     A=n1107 B=n1095 Y=n1108
+.gate NAND2_2_1   A=p_1455_166_ B=p_2204_174_ Y=n1109
+.gate NOTOR2_2_1  A=p_4528_206_ B=p_38_11_ Y=n1110
+.gate NOTAND2_2_1 A=n1110 B=n1109 Y=n1111
+.gate NOTAND2_2_1 A=n1111 B=n1108 Y=n1112
+.gate OR2_2_1     A=p_1455_166_ B=p_2204_174_ Y=n1113
+.gate NOTAND2_2_1 A=n1113 B=p_4528_206_ Y=n1114
+.gate NOTAND2_2_1 A=n1114 B=p_38_11_ Y=n1115
+.gate OR2_2_1     A=n1115 B=n1112 Y=p_264_3121_
+.gate XNOR2_2_1   A=n477 B=p_2239_181_ Y=n1117
+.gate XOR2_2_1    A=n1117 B=n919 Y=p_307_3389_
+.gate OR2_2_1     A=n668 B=n658 Y=n1119
+.gate NOTAND2_2_1 A=n669 B=n668 Y=n1120
+.gate NOTAND2_2_1 A=n1120 B=n1119 Y=p_353_3425_
+.gate NOTAND2_2_1 A=n368 B=p_4526_205_ Y=n1122
+.gate NOTAND2_2_1 A=n344 B=n341 Y=n1123
+.gate AND2_2_1    A=n1123 B=n1122 Y=n1124
+.gate NOR2_2_1    A=n1124 B=n347 Y=n1125
+.gate XOR2_2_1    A=n1125 B=n360 Y=p_391_3094_
+.gate OR2_2_1     A=n919 B=n571 Y=n1127
+.gate NOTAND2_2_1 A=n926 B=n919 Y=n1128
+.gate NOTAND2_2_1 A=n1128 B=n1127 Y=n1129
+.gate XOR2_2_1    A=n1129 B=n482 Y=p_301_3388_
+.gate NOTOR2_2_1  A=n347 B=n354 Y=n1131
+.gate NOTAND2_2_1 A=n327 B=n1131 Y=n1132
+.gate NOTAND2_2_1 A=n360 B=n1124 Y=n1133
+.gate NOTAND2_2_1 A=n1133 B=n1132 Y=n1134
+.gate XOR2_2_1    A=n1134 B=n370 Y=p_388_3093_
+.gate AND2_2_1    A=n596 B=n577 Y=n1136
+.gate NOTAND2_2_1 A=n1136 B=n875 Y=n1137
+.gate NOTAND2_2_1 A=n1137 B=n593 Y=n1138
+.gate NOTAND2_2_1 A=n1138 B=n870 Y=n1139
+.gate XOR2_2_1    A=n1139 B=n590 Y=p_333_3416_
+.gate NAND2_2_1   A=p_188_111_ B=p_162_85_ Y=n1141
+.gate NAND2_2_1   A=p_172_95_ B=p_199_122_ Y=n1142
+.gate OR2_2_1     A=n1142 B=n1141 Y=p_410_387_
+.gate NOTOR2_2_1  A=n415 B=n649 Y=n1144
+.gate NOTAND2_2_1 A=n1144 B=n639 Y=n1145
+.gate NOTAND2_2_1 A=n1145 B=n641 Y=n1146
+.gate XOR2_2_1    A=n1146 B=n442 Y=p_359_3426_
+.gate XOR2_2_1    A=n398 B=n375 Y=p_385_3151_
+.gate NOTAND2_2_1 A=n1122 B=n343 Y=n1149
+.gate XOR2_2_1    A=n1149 B=n344 Y=p_397_3097_
+.gate XOR2_2_1    A=n616 B=n387 Y=p_471_3445_
+.gate NAND2_2_1   A=p_134_67_ B=p_133_66_ Y=n1152
+.gate OR2_2_1     A=n1152 B=p_5_1_ Y=p_281_547_
+.gate NOTAND2_2_1 A=n624 B=n528 Y=n1154
+.gate NOR2_2_1    A=n1154 B=n946 Y=n1155
+.gate XOR2_2_1    A=n1155 B=n490 Y=p_310_3393_
+.gate XOR2_2_1    A=n596 B=n577 Y=p_324_3363_
+.gate XOR2_2_1    A=n507 B=n503 Y=n1158
+.gate AND2_2_1    A=p_161_84_ B=p_18_5_ Y=n1159
+.gate NOTAND2_2_1 A=p_18_5_ B=p_141_70_ Y=n1160
+.gate OR2_2_1     A=n1160 B=n1159 Y=n1161
+.gate XNOR2_2_1   A=n498 B=n489 Y=n1162
+.gate XOR2_2_1    A=n1162 B=n1161 Y=n1163
+.gate AND2_2_1    A=n476 B=n474 Y=n1164
+.gate AND2_2_1    A=n477 B=n473 Y=n1165
+.gate OR2_2_1     A=n1165 B=n1164 Y=n1166
+.gate NAND2_2_1   A=n480 B=n470 Y=n1167
+.gate AND2_2_1    A=n481 B=n469 Y=n1168
+.gate NOTAND2_2_1 A=n1168 B=n1167 Y=n1169
+.gate XNOR2_2_1   A=n1169 B=n1166 Y=n1170
+.gate XOR2_2_1    A=n1170 B=n494 Y=n1171
+.gate XOR2_2_1    A=n1171 B=n1163 Y=n1172
+.gate XOR2_2_1    A=n1172 B=n1158 Y=n1173
+.gate NOTAND2_2_1 A=n468 B=p_18_5_ Y=n1174
+.gate XNOR2_2_1   A=p_211_134_ B=p_212_135_ Y=n1175
+.gate NOTAND2_2_1 A=n1175 B=n1174 Y=n1176
+.gate NOTOR2_2_1  A=n594 B=n468 Y=n1177
+.gate AND2_2_1    A=n591 B=n588 Y=n1178
+.gate AND2_2_1    A=n592 B=n587 Y=n1179
+.gate OR2_2_1     A=n1179 B=n1178 Y=n1180
+.gate NAND2_2_1   A=n583 B=n580 Y=n1181
+.gate AND2_2_1    A=n584 B=n579 Y=n1182
+.gate NOTAND2_2_1 A=n1182 B=n1181 Y=n1183
+.gate XOR2_2_1    A=n1183 B=n1180 Y=n1184
+.gate XOR2_2_1    A=n1184 B=n1177 Y=n1185
+.gate XOR2_2_1    A=n1185 B=n1176 Y=n1186
+.gate XNOR2_2_1   A=n422 B=n418 Y=n1187
+.gate XNOR2_2_1   A=n432 B=n427 Y=n1188
+.gate XOR2_2_1    A=n1188 B=n1187 Y=n1189
+.gate XOR2_2_1    A=n1189 B=n446 Y=n1190
+.gate NOTAND2_2_1 A=p_18_5_ B=p_115_60_ Y=n1191
+.gate AND2_2_1    A=p_227_150_ B=p_18_5_ Y=n1192
+.gate OR2_2_1     A=n1192 B=n1191 Y=n1193
+.gate XNOR2_2_1   A=n456 B=n450 Y=n1194
+.gate XOR2_2_1    A=n1194 B=n1193 Y=n1195
+.gate XNOR2_2_1   A=n460 B=n440 Y=n1196
+.gate XOR2_2_1    A=n1196 B=n1195 Y=n1197
+.gate XOR2_2_1    A=n1197 B=n1190 Y=n1198
+.gate NOTOR2_2_1  A=p_44_13_ B=p_18_5_ Y=n1199
+.gate AND2_2_1    A=p_239_162_ B=p_18_5_ Y=n1200
+.gate NOTAND2_2_1 A=n1200 B=n1199 Y=n1201
+.gate XNOR2_2_1   A=n390 B=n317 Y=n1202
+.gate XNOR2_2_1   A=n395 B=n321 Y=n1203
+.gate XOR2_2_1    A=n1203 B=n1202 Y=n1204
+.gate XOR2_2_1    A=n1204 B=n1201 Y=n1205
+.gate XOR2_2_1    A=n352 B=n331 Y=n1206
+.gate XOR2_2_1    A=n1206 B=n336 Y=n1207
+.gate XNOR2_2_1   A=n365 B=n326 Y=n1208
+.gate XOR2_2_1    A=n1208 B=n1207 Y=n1209
+.gate XOR2_2_1    A=n1209 B=n1205 Y=n1210
+.gate OR2_2_1     A=n1210 B=n1198 Y=n1211
+.gate OR2_2_1     A=n1211 B=n1186 Y=n1212
+.gate OR2_2_1     A=n1212 B=n1173 Y=p_412_3369_
+.gate NOTOR2_2_1  A=p_1197_165_ B=p_5_1_ Y=p_289_383_
+.gate AND2_2_1    A=n410 B=n400 Y=n1215
+.gate XOR2_2_1    A=n1215 B=n397 Y=p_379_3207_
+.gate XOR2_2_1    A=n1024 B=n979 Y=n1217
+.gate NOTOR2_2_1  A=p_18_5_ B=p_2208_175_ Y=n1218
+.gate NOTAND2_2_1 A=p_18_5_ B=p_82_41_ Y=n1219
+.gate NOTAND2_2_1 A=n1219 B=n1218 Y=n1220
+.gate XNOR2_2_1   A=n992 B=n973 Y=n1221
+.gate XOR2_2_1    A=n1221 B=n1220 Y=n1222
+.gate XNOR2_2_1   A=n1007 B=n1001 Y=n1223
+.gate XNOR2_2_1   A=n1017 B=n967 Y=n1224
+.gate XOR2_2_1    A=n1224 B=n1223 Y=n1225
+.gate XOR2_2_1    A=n1225 B=n986 Y=n1226
+.gate XOR2_2_1    A=n1226 B=n1222 Y=n1227
+.gate XOR2_2_1    A=n1227 B=n1217 Y=n1228
+.gate NOTAND2_2_1 A=p_4393_195_ B=p_18_5_ Y=n1229
+.gate NOTAND2_2_1 A=p_18_5_ B=p_58_21_ Y=n1230
+.gate NOR2_2_1    A=n1230 B=n1229 Y=n1231
+.gate XOR2_2_1    A=n803 B=n792 Y=n1232
+.gate XOR2_2_1    A=n1232 B=n1231 Y=n1233
+.gate XNOR2_2_1   A=n779 B=n773 Y=n1234
+.gate XNOR2_2_1   A=n841 B=n831 Y=n1235
+.gate XNOR2_2_1   A=n849 B=n825 Y=n1236
+.gate XOR2_2_1    A=n1236 B=n1235 Y=n1237
+.gate XOR2_2_1    A=n1237 B=n786 Y=n1238
+.gate XOR2_2_1    A=n1238 B=n1234 Y=n1239
+.gate NOR2_2_1    A=n1239 B=n1233 Y=n1240
+.gate AND2_2_1    A=n1239 B=n1233 Y=n1241
+.gate NOTAND2_2_1 A=p_1459_167_ B=p_18_5_ Y=n1242
+.gate NOTAND2_2_1 A=p_18_5_ B=p_114_59_ Y=n1243
+.gate OR2_2_1     A=n1243 B=n1242 Y=n1244
+.gate XOR2_2_1    A=n1071 B=n1065 Y=n1245
+.gate XOR2_2_1    A=n1245 B=n1244 Y=n1246
+.gate XOR2_2_1    A=n1090 B=n1061 Y=n1247
+.gate XOR2_2_1    A=n1247 B=n1079 Y=n1248
+.gate XOR2_2_1    A=p_1492_172_ B=p_1496_173_ Y=n1249
+.gate NOTAND2_2_1 A=n1249 B=p_18_5_ Y=n1250
+.gate XOR2_2_1    A=p_1455_166_ B=p_2204_174_ Y=n1251
+.gate OR2_2_1     A=n1251 B=p_18_5_ Y=n1252
+.gate NOTAND2_2_1 A=n1250 B=n1252 Y=n1253
+.gate XOR2_2_1    A=n1253 B=n1248 Y=n1254
+.gate XOR2_2_1    A=n1254 B=n1246 Y=n1255
+.gate XOR2_2_1    A=n748 B=n738 Y=n1256
+.gate XOR2_2_1    A=n756 B=n732 Y=n1257
+.gate XOR2_2_1    A=n1257 B=n1256 Y=n1258
+.gate NOTOR2_2_1  A=p_18_5_ B=p_3698_185_ Y=n1259
+.gate NOTAND2_2_1 A=p_18_5_ B=p_69_30_ Y=n1260
+.gate NOTAND2_2_1 A=n1260 B=n1259 Y=n1261
+.gate XOR2_2_1    A=n1261 B=n1258 Y=n1262
+.gate XOR2_2_1    A=n713 B=n686 Y=n1263
+.gate XOR2_2_1    A=n1263 B=n694 Y=n1264
+.gate AND2_2_1    A=p_3701_186_ B=p_18_5_ Y=n1265
+.gate NOTAND2_2_1 A=n1265 B=n718 Y=n1266
+.gate XOR2_2_1    A=n1266 B=n703 Y=n1267
+.gate XOR2_2_1    A=n1267 B=n1264 Y=n1268
+.gate XOR2_2_1    A=n1268 B=n1262 Y=n1269
+.gate OR2_2_1     A=n1269 B=n1255 Y=n1270
+.gate OR2_2_1     A=n1270 B=n1241 Y=n1271
+.gate OR2_2_1     A=n1271 B=n1240 Y=n1272
+.gate OR2_2_1     A=n1272 B=n1228 Y=p_414_3338_
+.gate INV1_1_1    A=n1075 Y=n1274
+.gate NOTAND2_2_1 A=p_170_93_ B=p_18_5_ Y=n1275
+.gate XOR2_2_1    A=n1275 B=n1057 Y=n1276
+.gate NOTAND2_2_1 A=n1274 B=n1276 Y=n1277
+.gate NOTAND2_2_1 A=n1276 B=n1274 Y=n1278
+.gate OR2_2_1     A=n1278 B=n468 Y=n1279
+.gate OR2_2_1     A=n1279 B=n1277 Y=n1280
+.gate NAND2_2_1   A=n1087 B=n1067 Y=n1281
+.gate AND2_2_1    A=n1086 B=n1068 Y=n1282
+.gate NOTAND2_2_1 A=n1282 B=n1281 Y=n1283
+.gate XNOR2_2_1   A=p_164_87_ B=p_165_88_ Y=n1284
+.gate NOTAND2_2_1 A=n1284 B=n1174 Y=n1285
+.gate XOR2_2_1    A=n1285 B=n1283 Y=n1286
+.gate XOR2_2_1    A=n1286 B=n1280 Y=n1287
+.gate XNOR2_2_1   A=n838 B=n828 Y=n1288
+.gate XNOR2_2_1   A=n846 B=n822 Y=n1289
+.gate XOR2_2_1    A=n1289 B=n1288 Y=n1290
+.gate XOR2_2_1    A=n1290 B=n783 Y=n1291
+.gate AND2_2_1    A=p_18_5_ B=p_197_120_ Y=n1292
+.gate NOR2_2_1    A=n1292 B=n1191 Y=n1293
+.gate XOR2_2_1    A=n800 B=n789 Y=n1294
+.gate XOR2_2_1    A=n1294 B=n1293 Y=n1295
+.gate XOR2_2_1    A=n776 B=n770 Y=n1296
+.gate XNOR2_2_1   A=n1296 B=n1295 Y=n1297
+.gate NOR2_2_1    A=n1297 B=n1291 Y=n1298
+.gate OR2_2_1     A=n1298 B=n1287 Y=n1299
+.gate AND2_2_1    A=p_208_131_ B=p_18_5_ Y=n1300
+.gate NOTAND2_2_1 A=n1300 B=n1199 Y=n1301
+.gate XNOR2_2_1   A=n745 B=n735 Y=n1302
+.gate XOR2_2_1    A=n753 B=n729 Y=n1303
+.gate XOR2_2_1    A=n1303 B=n1302 Y=n1304
+.gate XNOR2_2_1   A=n1304 B=n1301 Y=n1305
+.gate XOR2_2_1    A=n710 B=n683 Y=n1306
+.gate XNOR2_2_1   A=n1306 B=n691 Y=n1307
+.gate AND2_2_1    A=p_198_121_ B=p_18_5_ Y=n1308
+.gate NOTAND2_2_1 A=n1308 B=n342 Y=n1309
+.gate XOR2_2_1    A=n1309 B=n700 Y=n1310
+.gate XNOR2_2_1   A=n1310 B=n1307 Y=n1311
+.gate AND2_2_1    A=n1311 B=n1305 Y=n1312
+.gate NOR2_2_1    A=n1311 B=n1305 Y=n1313
+.gate AND2_2_1    A=n1297 B=n1291 Y=n1314
+.gate OR2_2_1     A=n1314 B=n1313 Y=n1315
+.gate OR2_2_1     A=n1315 B=n1312 Y=n1316
+.gate OR2_2_1     A=n1316 B=n1299 Y=n1317
+.gate NAND2_2_1   A=p_181_104_ B=p_18_5_ Y=n1318
+.gate NOTAND2_2_1 A=n1160 B=n1318 Y=n1319
+.gate XNOR2_2_1   A=n989 B=n970 Y=n1320
+.gate XOR2_2_1    A=n1320 B=n1319 Y=n1321
+.gate XNOR2_2_1   A=n1021 B=n976 Y=n1322
+.gate AND2_2_1    A=n1013 B=n1004 Y=n1323
+.gate NOTAND2_2_1 A=n1014 B=n1003 Y=n1324
+.gate OR2_2_1     A=n1324 B=n1323 Y=n1325
+.gate NAND2_2_1   A=n998 B=n963 Y=n1326
+.gate AND2_2_1    A=n997 B=n964 Y=n1327
+.gate NOTAND2_2_1 A=n1327 B=n1326 Y=n1328
+.gate XNOR2_2_1   A=n1328 B=n1325 Y=n1329
+.gate XOR2_2_1    A=n1329 B=n983 Y=n1330
+.gate XOR2_2_1    A=n1330 B=n1322 Y=n1331
+.gate XOR2_2_1    A=n1331 B=n1321 Y=n1332
+.gate OR2_2_1     A=n1332 B=n1317 Y=p_416_3368_
+.gate NAND2_2_1   A=p_228_151_ B=p_150_73_ Y=n1334
+.gate NAND2_2_1   A=p_184_107_ B=p_240_163_ Y=n1335
+.gate OR2_2_1     A=n1335 B=n1334 Y=p_404_390_
+.gate OR2_2_1     A=p_404_390_ B=p_406_388_ Y=n1337
+.gate NAND2_2_1   A=p_183_106_ B=p_185_108_ Y=n1338
+.gate NAND2_2_1   A=p_186_109_ B=p_182_105_ Y=n1339
+.gate OR2_2_1     A=n1339 B=n1338 Y=p_408_385_
+.gate OR2_2_1     A=p_408_385_ B=p_410_387_ Y=n1341
+.gate OR2_2_1     A=n1341 B=n1337 Y=n1342
+.gate OR2_2_1     A=n1342 B=p_416_3368_ Y=n1343
+.gate OR2_2_1     A=n1343 B=p_412_3369_ Y=n1344
+.gate OR2_2_1     A=n1344 B=p_414_3338_ Y=p_418_3449_
+.gate NOTAND2_2_1 A=n624 B=n526 Y=n1346
+.gate NOTAND2_2_1 A=n1346 B=n950 Y=n1347
+.gate XOR2_2_1    A=n1347 B=n504 Y=p_313_3396_
+.gate XOR2_2_1    A=n626 B=n495 Y=p_319_3398_
+.gate OR2_2_1     A=n928 B=n919 Y=n1350
+.gate NOTAND2_2_1 A=n920 B=n919 Y=n1351
+.gate NOTAND2_2_1 A=n1351 B=n1350 Y=p_304_3390_
+.gate XOR2_2_1    A=n1137 B=n889 Y=p_336_3412_
+.gate NOR2_2_1    A=n961 B=n447 Y=n1354
+.gate OR2_2_1     A=n1354 B=n537 Y=n1355
+.gate XOR2_2_1    A=n1355 B=n461 Y=p_365_3430_
+.gate OR2_2_1     A=n608 B=n577 Y=n1357
+.gate NOTAND2_2_1 A=n890 B=n1357 Y=n1358
+.gate XOR2_2_1    A=n1358 B=n585 Y=p_330_3411_
+.gate XNOR2_2_1   A=n451 B=n415 Y=p_344_3382_
+.gate OR2_2_1     A=n668 B=n557 Y=n1361
+.gate NOTAND2_2_1 A=n659 B=n1361 Y=n1362
+.gate XOR2_2_1    A=n1362 B=n419 Y=p_347_3420_
+.gate NOTAND2_2_1 A=n1132 B=n368 Y=n1364
+.gate NOTAND2_2_1 A=n368 B=n1132 Y=n1365
+.gate NOTAND2_2_1 A=n362 B=n1365 Y=n1366
+.gate OR2_2_1     A=n1366 B=n1364 Y=n1367
+.gate NAND2_2_1   A=n367 B=n340 Y=n1368
+.gate NOR2_2_1    A=n1123 B=n340 Y=n1369
+.gate NOTAND2_2_1 A=n367 B=n1369 Y=n1370
+.gate NOTAND2_2_1 A=n1370 B=n1368 Y=n1371
+.gate NOTAND2_2_1 A=n337 B=n345 Y=n1372
+.gate NAND2_2_1   A=n336 B=p_3705_187_ Y=n1373
+.gate NOTAND2_2_1 A=n368 B=n1373 Y=n1374
+.gate NOTAND2_2_1 A=n1374 B=n1372 Y=n1375
+.gate XOR2_2_1    A=n1375 B=n344 Y=n1376
+.gate XOR2_2_1    A=n1376 B=n1371 Y=n1377
+.gate XOR2_2_1    A=n1377 B=n370 Y=n1378
+.gate XOR2_2_1    A=n1378 B=n1367 Y=n1379
+.gate OR2_2_1     A=n1379 B=n369 Y=n1380
+.gate XNOR2_2_1   A=n1132 B=n368 Y=n1381
+.gate OR2_2_1     A=n363 B=n340 Y=n1382
+.gate NOTAND2_2_1 A=n1369 B=n363 Y=n1383
+.gate NOTAND2_2_1 A=n1383 B=n1382 Y=n1384
+.gate XOR2_2_1    A=n1384 B=n358 Y=n1385
+.gate XOR2_2_1    A=n1372 B=n370 Y=n1386
+.gate XOR2_2_1    A=n1386 B=n1385 Y=n1387
+.gate XOR2_2_1    A=n1387 B=n1381 Y=n1388
+.gate NOTAND2_2_1 A=n1388 B=n369 Y=n1389
+.gate NOTAND2_2_1 A=n1389 B=n1380 Y=n1390
+.gate XOR2_2_1    A=n360 B=n341 Y=n1391
+.gate XNOR2_2_1   A=n376 B=n318 Y=n1392
+.gate NOTAND2_2_1 A=n406 B=n410 Y=n1393
+.gate NOR2_2_1    A=n1393 B=n411 Y=n1394
+.gate XOR2_2_1    A=n1394 B=n392 Y=n1395
+.gate XOR2_2_1    A=n1395 B=n1392 Y=n1396
+.gate XOR2_2_1    A=n1396 B=n396 Y=n1397
+.gate OR2_2_1     A=n1397 B=n375 Y=n1398
+.gate XNOR2_2_1   A=n322 B=n318 Y=n1399
+.gate XOR2_2_1    A=n1399 B=n391 Y=n1400
+.gate NOTAND2_2_1 A=n376 B=n318 Y=n1401
+.gate NOTAND2_2_1 A=n1401 B=n408 Y=n1402
+.gate NAND2_2_1   A=n1402 B=n407 Y=n1403
+.gate NOTAND2_2_1 A=n1402 B=n406 Y=n1404
+.gate NOTAND2_2_1 A=n1404 B=n1403 Y=n1405
+.gate XOR2_2_1    A=n1405 B=n1400 Y=n1406
+.gate NOTAND2_2_1 A=n1406 B=n375 Y=n1407
+.gate NOTAND2_2_1 A=n1407 B=n1398 Y=n1408
+.gate XOR2_2_1    A=n1408 B=n1391 Y=n1409
+.gate XOR2_2_1    A=n1409 B=n1390 Y=p_399_3717_
+.gate AND2_2_1    A=n1144 B=n541 Y=n1411
+.gate XOR2_2_1    A=n1411 B=n457 Y=p_362_3429_
+.gate OR2_2_1     A=n1149 B=n344 Y=n1413
+.gate NOTAND2_2_1 A=n337 B=n1413 Y=n1414
+.gate XOR2_2_1    A=n1414 B=n359 Y=p_394_3095_
+.gate OR2_2_1     A=p_57_20_ B=p_5_1_ Y=p_402_395_
+.gate OR2_2_1     A=n668 B=n555 Y=n1417
+.gate NOTAND2_2_1 A=n657 B=n668 Y=n1418
+.gate NOTAND2_2_1 A=n1418 B=n1417 Y=n1419
+.gate XOR2_2_1    A=n1419 B=n433 Y=p_350_3421_
+.gate NOTAND2_2_1 A=n919 B=n573 Y=n1421
+.gate NOTAND2_2_1 A=n1421 B=n927 Y=n1422
+.gate XOR2_2_1    A=n1422 B=n471 Y=p_298_3387_
+.gate XNOR2_2_1   A=n624 B=n623 Y=p_295_3352_
+.gate XOR2_2_1    A=n427 B=p_4420_201_ Y=n1425
+.gate XOR2_2_1    A=n1425 B=n668 Y=p_356_3424_
+.gate BUF1_1_1    A=p_1_0_ Y=p_432_428_
+.gate BUF1_1_1    A=p_1459_167_ Y=p_450_288_
+.gate BUF1_1_1    A=p_1492_172_ Y=p_440_277_
+.gate BUF1_1_1    A=p_1480_170_ Y=p_444_282_
+.gate BUF1_1_1    A=p_2236_180_ Y=p_488_260_
+.gate BUF1_1_1    A=p_2218_177_ Y=p_494_267_
+.gate BUF1_1_1    A=p_4437_204_ Y=p_524_210_
+.gate BUF1_1_1    A=p_4420_201_ Y=p_530_216_
+.gate BUF1_1_1    A=p_3698_185_ Y=p_560_248_
+.gate BUF1_1_1    A=p_4410_199_ Y=p_534_220_
+.gate BUF1_1_1    A=p_3749_194_ Y=p_544_230_
+.gate OR2_2_1     A=n618 B=n382 Y=p_273_3402_
+.gate BUF1_1_1    A=p_2247_182_ Y=p_484_256_
+.gate BUF1_1_1    A=p_3729_191_ Y=p_550_236_
+.gate BUF1_1_1    A=p_1469_169_ Y=p_448_284_
+.gate BUF1_1_1    A=p_1_0_ Y=p_453_596_
+.gate BUF1_1_1    A=p_4393_195_ Y=p_540_227_
+.gate BUF1_1_1    A=p_3717_189_ Y=p_554_240_
+.gate BUF1_1_1    A=p_1_0_ Y=p_3_312_
+.gate BUF1_1_1    A=p_2256_184_ Y=p_480_250_
+.gate BUF1_1_1    A=p_1496_173_ Y=p_438_274_
+.gate BUF1_1_1    A=p_2230_179_ Y=p_490_263_
+.gate BUF1_1_1    A=p_4427_202_ Y=p_528_214_
+.gate OR2_2_1     A=n914 B=n913 Y=p_469_3452_
+.gate BUF1_1_1    A=p_2239_181_ Y=p_486_258_
+.gate BUF1_1_1    A=p_4400_197_ Y=p_538_224_
+.gate OR2_2_1     A=n1152 B=p_5_1_ Y=p_292_392_
+.gate BUF1_1_1    A=p_3737_192_ Y=p_548_234_
+.gate BUF1_1_1    A=p_3705_187_ Y=p_558_244_
+.gate BUF1_1_1    A=p_1_0_ Y=p_2_313_
+.gate BUF1_1_1    A=p_3701_186_ Y=p_542_246_
+.gate BUF1_1_1    A=p_3743_193_ Y=p_546_232_
+.gate BUF1_1_1    A=p_3723_190_ Y=p_552_238_
+.gate OR2_2_1     A=n618 B=n382 Y=p_270_3109_
+.gate BUF1_1_1    A=p_3711_188_ Y=p_556_242_
+.gate OR2_2_1     A=n618 B=n382 Y=p_276_3401_
+.gate BUF1_1_1    A=p_106_53_ Y=p_446_393_
+.gate BUF1_1_1    A=p_2208_175_ Y=p_496_271_
+.gate BUF1_1_1    A=p_4394_196_ Y=p_522_226_
+.gate INV1_1_1    A=p_15_4_ Y=p_341_420_
+.gate BUF1_1_1    A=p_2224_178_ Y=p_492_265_
+.gate BUF1_1_1    A=p_4432_203_ Y=p_526_212_
+.gate BUF1_1_1    A=p_1462_168_ Y=p_436_286_
+.gate BUF1_1_1    A=p_4415_200_ Y=p_532_218_
+.gate INV1_1_1    A=p_15_4_ Y=p_286_419_
+.gate BUF1_1_1    A=p_4405_198_ Y=p_536_222_
+.gate BUF1_1_1    A=p_2211_176_ Y=p_478_269_
+.gate NOTOR2_2_1  A=p_1197_165_ B=p_5_1_ Y=p_284_384_
+.gate XOR2_2_1    A=n616 B=n387 Y=p_419_3444_
+.gate OR2_2_1     A=n1115 B=n1112 Y=p_249_3418_
+.gate OR2_2_1     A=n1115 B=n1112 Y=p_258_3122_
+.gate BUF1_1_1    A=p_1486_171_ Y=p_442_280_
+.gate BUF1_1_1    A=p_2253_183_ Y=p_482_253_
+.end
