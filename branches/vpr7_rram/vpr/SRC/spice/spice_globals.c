@@ -23,7 +23,9 @@ char* stimu_header_file_name = "stimulate_params.sp";
 
 /* Testbench names */
 char* top_netlist_postfix = "_top.sp";
+char* spice_grid_testbench_postfix = "_grid_testbench.sp";
 char* spice_mux_testbench_postfix = "_mux_testbench.sp";
+char* spice_routing_mux_testbench_postfix = "_routing_mux_testbench.sp";
 /* RUN HSPICE Shell Script Name */
 char* run_hspice_shell_script_name = "run_hspice_sim.sh";
 char* sim_results_dir_path = "results/";

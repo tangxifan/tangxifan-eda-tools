@@ -60,7 +60,10 @@ struct s_TokenPair OptionBaseTokenList[] = {
         /* Xifan TANG: FPGA SPICE Support */
         { "fpga_spice", OT_FPGA_SPICE },/* Xifan TANG: SPICE Model Support, turn on the functionality*/
         { "spice_dir", OT_SPICE_DIR },/* Xifan TANG: SPICE Model Support, directory of spice netlists*/
+        { "print_spice_top_testbench", OT_PRINT_SPICE_TOP_TESTBENCH }, /* Print the SPICE TOP Testbench for MUXes */
         { "print_spice_mux_testbench", OT_PRINT_SPICE_MUX_TESTBENCH }, /* Print the SPICE Testbench for MUXes */
+        { "print_spice_routing_mux_testbench", OT_PRINT_SPICE_ROUTING_MUX_TESTBENCH }, /* Print the SPICE Testbench for Routing MUXes */
+        { "print_spice_grid_testbench", OT_PRINT_SPICE_GRID_TESTBENCH }, /* Print the SPICE Testbench for Grids  */
         { "fpga_spice_leakage_only", OT_FPGA_SPICE_LEAKAGE_ONLY }, /* Only simulate leakage power in FPGA SPICE */
         /* mrFPGA: Xifan TANG */
         {"show_sram", OT_SHOW_SRAM},

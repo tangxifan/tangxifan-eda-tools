@@ -69,14 +69,14 @@ int generate_spice_nmos_pmos(char* subckt_dir,
   /* print sub circuit for PMOS*/
   fprintf(fp,"* NMOS\n");
   fprintf(fp,".subckt %s drain gate source bulk L=nl W=wn\n", nmos_subckt_name);
-  fprintf(fp,"M1 drain gate source bulk %s L=L W=W\n", nmos_trans->model_name);
+  fprintf(fp,"%s1 drain gate source bulk %s L=L W=W\n", tech_lib.model_ref, nmos_trans->model_name);
   fprintf(fp,".eom %s\n", nmos_subckt_name);
 
   fprintf(fp,"\n");
   /* Print sub circuit for PMOS*/
   fprintf(fp,"* PMOS\n");
   fprintf(fp,".subckt %s drain gate source bulk L=pl W=wp\n", pmos_subckt_name);
-  fprintf(fp,"M1 drain gate source bulk %s L=L W=W\n", pmos_trans->model_name);
+  fprintf(fp,"%s1 drain gate source bulk %s L=L W=W\n", tech_lib.model_ref, pmos_trans->model_name);
   fprintf(fp,".eom %s\n", pmos_subckt_name);
 
   fclose(fp);
@@ -173,7 +173,7 @@ int generate_spice_basics(char* subckt_dir, t_spice spice) {
   fprintf(fp,"* Inverter\n"); 
   fprintf(fp,".subckt inv in out svdd sgnd size=1\n");
   fprintf(fp,"Xn0_inv out in sgnd sgnd %s L=nl W=\'size*wn\'\n",nmos_subckt_name);
-  fprintf(fp,"Xp0_inv out in svdd svdd %s L=pl W=\'size*wp\'\n",pmos_subckt_name);
+  fprintf(fp,"Xp0_inv out in svdd svdd %s L=pl W=\'size*beta*wp\'\n",pmos_subckt_name);
   fprintf(fp,".eom inv\n");
   fprintf(fp,"\n");
   /* Buffer */

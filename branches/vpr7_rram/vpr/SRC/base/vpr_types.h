@@ -1072,6 +1072,9 @@ enum e_cost_indices {
 typedef struct s_spice_opts t_spice_opts;
 struct s_spice_opts {
   boolean do_spice;
+  boolean print_spice_top_testbench; 
+  boolean print_spice_grid_testbench; 
+  boolean print_spice_routing_mux_testbench; 
   boolean print_spice_mux_testbench; 
   boolean fpga_spice_leakage_only;
 

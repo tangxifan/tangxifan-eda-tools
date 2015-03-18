@@ -86,6 +86,8 @@ void fprint_top_netlist_global_ports(FILE* fp,
   fprint_global_vdds_spice_model(fp, SPICE_MODEL_LUT, spice);
   /*Global Vdds for FFs*/
   fprint_global_vdds_spice_model(fp, SPICE_MODEL_FF, spice);
+  /*Global Vdds for Hardlogics*/
+  /* fprint_global_vdds_spice_model(fp, SPICE_MODEL_HARDLOGIC, spice);*/
   /* Global Vdds for Switch Boxes */
   fprint_spice_global_vdd_switch_boxes(fp);
 
@@ -634,7 +636,7 @@ void fprint_spice_top_netlist(char* circuit_name,
 
   /* Quote defined Logic blocks subckts (Grids) */
   fprint_call_defined_grids(fp);
-  fprint_stimulate_dangling_grid_pins(fp);
+  fprint_stimulate_dangling_grid_pins(fp); 
 
   /* Quote Routing structures: Channels */
   fprint_call_defined_channels(fp);

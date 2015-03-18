@@ -1215,7 +1215,7 @@ void fprint_stimulate_dangling_one_grid_pin(FILE* fp,
     rr_node_index = get_rr_node_index(x, y, OPIN, pin_index, rr_node_indices); 
     /* Zero fan-out OPIN */
     if (0 == rr_node[rr_node_index].num_edges) {
-      fprintf(fp, "Vdangling_grid[%d][%d]_pin[%d][%d][%d] grid[%d][%d]_pin[%d][%d][%d] ggnd 0\n",
+      fprintf(fp, "Rdangling_grid[%d][%d]_pin[%d][%d][%d] grid[%d][%d]_pin[%d][%d][%d] ggnd 1Meg\n",
               x, y, height, side, pin_index,
               x, y, height, side, pin_index);
     }
@@ -1225,7 +1225,7 @@ void fprint_stimulate_dangling_one_grid_pin(FILE* fp,
     rr_node_index = get_rr_node_index(x, y, IPIN, pin_index, rr_node_indices); 
     /* Zero fan-in IPIN */
     if (0 == rr_node[rr_node_index].fan_in) {
-      fprintf(fp, "Vdangling_grid[%d][%d]_pin[%d][%d][%d] grid[%d][%d]_pin[%d][%d][%d] ggnd 0\n",
+      fprintf(fp, "Rdangling_grid[%d][%d]_pin[%d][%d][%d] grid[%d][%d]_pin[%d][%d][%d] ggnd 1Meg\n",
               x, y, height, side, pin_index,
               x, y, height, side, pin_index);
     }
@@ -1359,3 +1359,4 @@ void fprint_stimulate_dangling_grid_pins(FILE* fp) {
 
   return;
 }
+

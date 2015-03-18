@@ -940,7 +940,10 @@ static void SetupSpiceOpts(t_options Options,
                            t_arch* arch) {
   /* Initialze */  
   spice_opts->do_spice = FALSE;
+  spice_opts->print_spice_top_testbench = FALSE;
   spice_opts->print_spice_mux_testbench = FALSE;
+  spice_opts->print_spice_grid_testbench = TRUE;
+  spice_opts->print_spice_routing_mux_testbench = TRUE;
   spice_opts->fpga_spice_leakage_only = FALSE;
 
   /* Turn on the spice option if it is selected*/
@@ -950,8 +953,17 @@ static void SetupSpiceOpts(t_options Options,
     /* TODO: this could be more flexible*/
     spice_opts->include_dir = "include/";
     spice_opts->subckt_dir = "subckt/";
+    if (Options.Count[OT_PRINT_SPICE_TOP_TESTBENCH]) {
+      spice_opts->print_spice_top_testbench = TRUE;
+    }
     if (Options.Count[OT_PRINT_SPICE_MUX_TESTBENCH]) {
       spice_opts->print_spice_mux_testbench = TRUE;
+    }
+    if (Options.Count[OT_PRINT_SPICE_ROUTING_MUX_TESTBENCH]) {
+      spice_opts->print_spice_routing_mux_testbench = TRUE;
+    }
+    if (Options.Count[OT_PRINT_SPICE_GRID_TESTBENCH]) {
+      spice_opts->print_spice_grid_testbench = TRUE;
     }
     if (Options.Count[OT_FPGA_SPICE_LEAKAGE_ONLY]) {
       spice_opts->fpga_spice_leakage_only = TRUE;

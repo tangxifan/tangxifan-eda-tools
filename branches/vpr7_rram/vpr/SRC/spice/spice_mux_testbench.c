@@ -151,7 +151,7 @@ void fprint_spice_mux_testbench_global_ports(FILE* fp,
 
 static 
 int find_spice_mux_testbench_pb_pin_mux_load_inv_size(t_spice_model* fan_out_spice_model) {
-  int load_inv_size = 0;
+  float load_inv_size = 0;
 
   /* Check */
   assert(NULL != fan_out_spice_model);
@@ -735,7 +735,7 @@ void fprint_spice_mux_testbench_pb_muxes_rec(FILE* fp,
 static 
 float find_spice_mux_testbench_rr_mux_load_inv_size(t_rr_node* load_rr_node,
                                                     int switch_index) {
-  int load_inv_size = 0;
+  float load_inv_size = 0;
   t_spice_model* fan_out_spice_model = NULL;
 
   fan_out_spice_model = switch_inf[switch_index].spice_model;
@@ -1252,6 +1252,34 @@ void fprint_spice_mux_testbench_sb_muxes(FILE* fp,
   my_free(chan_rr_nodes);
 }
 
+static 
+void fprint_spice_mux_testbench_call_routing_muxes(FILE* fp,
+                                                   t_ivec*** LL_rr_node_indices) {
+  int ix, iy;
+
+  /* Find all routing Switch Boxes and Connection Blocks */
+  /* Print Connection Block MUXes */
+  for (iy = 0; iy < (ny + 1); iy++) { 
+    for (ix = 1; ix < (nx + 1); ix++) {
+      fprint_spice_mux_testbench_cb_muxes(fp, CHANX, ix, iy, LL_rr_node_indices);
+    }
+  }
+
+  for (ix = 0; ix < (nx + 1); ix++) { 
+    for (iy = 1; iy < (ny + 1); iy++) {
+      fprint_spice_mux_testbench_cb_muxes(fp, CHANY, ix, iy, LL_rr_node_indices);
+    }
+  }
+
+  /* Print Switch Box MUXes */
+  for (iy = 0; iy < (ny + 1); iy++) { 
+    for (ix = 0; ix < (nx + 1); ix++) {
+      fprint_spice_mux_testbench_sb_muxes(fp, ix, iy, LL_rr_node_indices);
+    }
+  }
+
+  return;
+}
 
 static 
 void fprint_spice_mux_testbench_call_defined_muxes(FILE* fp,
@@ -1438,6 +1466,10 @@ void fprint_spice_mux_testbench(char* formatted_spice_dir,
   fprint_spice_mux_testbench_global_ports(fp, spice);
  
   /* Quote defined Logic blocks subckts (Grids) */
+  testbench_mux_cnt = 0;
+  testbench_sram_cnt = 0;
+  testbench_load_cnt = 0;
+  testbench_muxes_head = NULL; 
   fprint_spice_mux_testbench_call_defined_muxes(fp, LL_rr_node_indices);
 
   /* Add stimulations */
@@ -1460,3 +1492,85 @@ void fprint_spice_mux_testbench(char* formatted_spice_dir,
   return;
 }
 
+/* Top-level function in this source file */
+void fprint_spice_routing_mux_testbench(char* formatted_spice_dir,
+                                        char* circuit_name,
+                                        char* mux_testbench_name,
+                                        char* include_dir_path,
+                                        char* subckt_dir_path,
+                                        t_ivec*** LL_rr_node_indices,
+                                        int num_clocks,
+                                        t_spice spice,
+                                        boolean leakage_only) {
+  FILE* fp = NULL;
+  char* formatted_subckt_dir_path = format_dir_path(subckt_dir_path);
+  char* temp_include_file_path = NULL;
+  char* title = my_strcat("FPGA SPICE Routing MUX Test Bench for Design: ", circuit_name);
+  char* mux_testbench_file_path = my_strcat(formatted_spice_dir, mux_testbench_name);
+
+  /* Check if the path exists*/
+  fp = fopen(mux_testbench_file_path,"w");
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in create SPICE MUX Test bench netlist %s!\n",__FILE__, __LINE__, mux_testbench_file_path); 
+    exit(1);
+  } 
+  
+  vpr_printf(TIO_MESSAGE_INFO, "Writing SPICE Routing MUX Test Bench for %s...\n", circuit_name);
+ 
+  /* Print the title */
+  fprint_spice_head(fp, title);
+  my_free(title);
+
+  /* print technology library and design parameters*/
+  fprint_tech_lib(fp, spice.tech_lib);
+
+  /* Include parameter header files */
+  fprint_spice_include_param_headers(fp, include_dir_path);
+
+  /* Include Key subckts */
+  fprint_spice_include_key_subckts(fp, subckt_dir_path);
+
+  /* Include user-defined sub-circuit netlist */
+  init_include_user_defined_netlists(spice);
+  fprint_include_user_defined_netlists(fp, spice);
+  
+  /* Special subckts for Top-level SPICE netlist */
+  /*
+  fprintf(fp, "****** Include subckt netlists: Look-Up Tables (LUTs) *****\n");
+  temp_include_file_path = my_strcat(formatted_subckt_dir_path, luts_spice_file_name);
+  fprintf(fp, ".include %s\n", temp_include_file_path);
+  my_free(temp_include_file_path);
+  */
+
+  /* Print simulation temperature and other options for SPICE */
+  fprint_spice_options(fp, spice.spice_params);
+
+  /* Global nodes: Vdd for SRAMs, Logic Blocks(Include IO), Switch Boxes, Connection Boxes */
+  fprint_spice_mux_testbench_global_ports(fp, spice);
+ 
+  /* Quote defined Logic blocks subckts (Grids) */
+  testbench_mux_cnt = 0;
+  testbench_sram_cnt = 0;
+  testbench_load_cnt = 0;
+  testbench_muxes_head = NULL; 
+  fprint_spice_mux_testbench_call_routing_muxes(fp, LL_rr_node_indices);
+
+  /* Add stimulations */
+  fprint_spice_mux_testbench_stimulations(fp, spice);
+
+  /* Add measurements */  
+  fprint_spice_mux_testbench_measurements(fp, spice);
+
+  /* SPICE ends*/
+  fprintf(fp, ".end\n");
+
+  /* Close the file*/
+  fclose(fp);
+
+  /* Free */
+  //my_free(formatted_subckt_dir_path);
+  //my_free(mux_testbench_file_path);
+  //my_free(title);
+
+  return;
+}

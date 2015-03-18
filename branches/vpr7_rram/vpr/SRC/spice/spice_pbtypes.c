@@ -542,7 +542,7 @@ void fprint_spice_dangling_des_pb_graph_pin_interc(FILE* fp,
     sprintf(des_pin_prefix, "%s[%d]",
             des_pb_type->name, des_pb_type_index);
     /* This is a start point, we connect it to gnd*/
-    fprintf(fp, "Vdangling_%s->%s[%d] %s->%s[%d] ggnd 0\n", 
+    fprintf(fp, "Rdangling_%s->%s[%d] %s->%s[%d] ggnd 100Meg\n", 
             des_pin_prefix, des_pb_graph_pin->port->name, des_pb_graph_pin->pin_number, 
             des_pin_prefix, des_pb_graph_pin->port->name, des_pb_graph_pin->pin_number); 
     break;
@@ -566,7 +566,7 @@ void fprint_spice_dangling_des_pb_graph_pin_interc(FILE* fp,
     sprintf(des_pin_prefix, "%s[%d]",
             des_pb_type->name, des_pb_type_index);
     /* This is a start point, we connect it to gnd*/
-    fprintf(fp, "Vdangling_%s->%s[%d] %s->%s[%d] ggnd 0\n", 
+    fprintf(fp, "Rdangling_%s->%s[%d] %s->%s[%d] ggnd 100Meg\n", 
             des_pin_prefix, des_pb_graph_pin->port->name, des_pb_graph_pin->pin_number, 
             des_pin_prefix, des_pb_graph_pin->port->name, des_pb_graph_pin->pin_number); 
     break;

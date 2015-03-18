@@ -15,7 +15,9 @@
 #include "physical_types.h"
 #include "vpr_types.h"
 #include "globals.h"
+#include "rr_graph_util.h"
 #include "rr_graph.h"
+#include "rr_graph2.h"
 #include "vpr_utils.h"
 
 /* Include spice support headers*/
@@ -51,7 +53,8 @@ void fprint_grid_testbench_global_ports(FILE* fp,
   } 
   /* Global nodes: Vdd for SRAMs, Logic Blocks(Include IO), Switch Boxes, Connection Boxes */
   fprintf(fp, ".global gvdd ggnd gset greset\n");
-  fprintf(fp, ".global gvdd_sram gvdd_local_interc gvdd_hardlogic\n");
+  fprintf(fp, ".global gvdd_io gvdd_local_interc gvdd_hardlogic\n");
+  fprintf(fp, ".global gvdd_sram_local_routing gvdd_sram_luts\n");
   fprintf(fp, ".global gvdd_load\n");
   /* Define a global clock port if we need one*/
   if (1 == num_clock) {
@@ -68,118 +71,141 @@ void fprint_grid_testbench_global_ports(FILE* fp,
   return;
 }
 
-static void fprint_grid_rr_node_loads_rec(FILE* fp,
-                                          char* input_spice_port_name,
-                                          t_rr_node* src_rr_node,
-                                          t_spice spice) {
-  int iedge = 0;
-  int to_node = 0;
-  int to_node_switch = 0;
-  t_spice_model* to_node_spice_model = NULL;
-  int inv_size = 0;
-  int num_drive_rr_nodes = 0;
-  t_rr_node** drive_rr_nodes = NULL;
-  int* switch_indices = NULL;
-  int path_id;
+void fprint_call_defined_core_grids(FILE* fp) {
+  int ix, iy;
 
-  /* A valid file handler*/
   if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File Handler!\n",__FILE__, __LINE__); 
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
     exit(1);
-  } 
+  }
 
-  for (iedge = 0; iedge < src_rr_node->num_edges; iedge++) {
-    /* For each edge, 
-     * 1. if the corresponding spice model of rr_node is buffered, 
-     *    we add an inverter
-     * 2. if not buffered, we should trace util a rr_node with buffered spice_model.
-     */
-    to_node = src_rr_node->edges[iedge];
-    to_node_switch = rr_node[to_node].switches[iedge];
-    to_node_spice_model = switch_inf[to_node_switch].spice_model;
-    assert(NULL != to_node_spice_model);
-    if (TRUE == switch_inf[to_node_switch].buffered) {
-      /* Check the spice model, add an inverter load */
-      if (1 == to_node_spice_model->input_buffer->exist) {
-        /* This case is simple, we need an inverter*/
-        switch (to_node_spice_model->input_buffer->type) {
-        case SPICE_MODEL_BUF_INV:
-          inv_size = to_node_spice_model->input_buffer->size;
-          break;
-        case SPICE_MODEL_BUF_BUF:
-          inv_size = 1;
-          break;
-        default:
-          vpr_printf(TIO_MESSAGE_ERROR, "(Files:%s, [LINE%d])Invalid type of input buffer of spice_model(%s)!\n", 
-                     __FILE__, __LINE__, to_node_spice_model->name);
-          exit(1);
-        }
-        /* Print the inverter */
-        fprintf(fp, "Xgrid_load[%d]_inv %s grid_load[%d]_out inv gvdd_load ggnd size=%d\n",
-                num_inv_load, input_spice_port_name, num_inv_load, inv_size);
-        /* Update the load inverter number */
-        num_inv_load++;
-        num_grid_load++;
-      } else {
-        assert(1 == to_node_spice_model->output_buffer->exist);
-        assert(SPICE_MODEL_MUX == to_node_spice_model->type);
-        /* In this case, we need to call the spice subckt */
-        fprintf(fp, "Xgrid_load[%d]_%s ", num_noninv_load, to_node_spice_model->name);
-        /* Find all the inputs drive_rr_nodes*/
-        find_prev_rr_nodes_with_src(&(rr_node[to_node]), &num_drive_rr_nodes, &drive_rr_nodes, &switch_indices);
-        /* Find the path id*/
-        path_id = find_path_id_prev_rr_node(num_drive_rr_nodes, drive_rr_nodes, &(rr_node[to_node]));
-        /* Free */
-        my_free(drive_rr_nodes);
-        my_free(switch_indices);
-      }
-    } else {
-      /* Add the spice_model, and then go recursively */
-    } 
-  }      
+  /* Normal Grids */
+  for (ix = 1; ix < (nx + 1); ix++) {
+    for (iy = 1; iy < (ny + 1); iy++) {
+      assert(IO_TYPE != grid[ix][iy].type);
+      fprintf(fp, "Xgrid[%d][%d] ", ix, iy);
+      fprint_grid_pins(fp, ix, iy, 1);
+      fprintf(fp, "gvdd ggnd grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
+    }
+  } 
 
   return;
 }
 
-static 
-void fprint_grid_testbench_loads(FILE* fp,
-                                t_spice spice) {
-  int inode;
+void fprint_grid_testbench_one_grid_pin_stimulation(FILE* fp, int x, int y, 
+                                                    int height, int side, 
+                                                    int ipin,
+                                                    t_ivec*** LL_rr_node_indices) {
+  int ipin_rr_node_index;
+  float ipin_density, ipin_probability;
 
-  /* A valid file handler*/
   if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File Handler!\n",__FILE__, __LINE__); 
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
     exit(1);
-  } 
-  
-  /* For each grid output port, we generate equivalent capacitive load(inverters) */
-  /* Search all rr_nodes, we only care SOURCE/OPIN type */
-  for (inode = 0; inode < num_rr_nodes; inode++) { 
-    switch (rr_node[inode].type) {
-    case SOURCE:
-    case OPIN:
-      /*  Make sure 0 fan-in, 1 fan-in is connected to SOURCE */
-      assert((0 == rr_node[inode].fan_in)||(1 == rr_node[inode].fan_in));
-      if (1 == rr_node[inode].fan_in) {
-        assert(SOURCE == rr_node[rr_node[inode].prev_node].type);
+  }
+
+  /* Check */
+  assert((!(0 > x))&&(!(x > (nx + 1)))); 
+  assert((!(0 > y))&&(!(y > (ny + 1)))); 
+
+  /* Print a voltage source according to density and probability */
+  ipin_rr_node_index = get_rr_node_index(x, y, IPIN, ipin, LL_rr_node_indices);
+  /* Get density and probability */
+  ipin_density = get_rr_node_net_density(rr_node[ipin_rr_node_index]); 
+  ipin_probability = get_rr_node_net_probability(rr_node[ipin_rr_node_index]); 
+  /* Print voltage source */
+  fprintf(fp, "Vgrid[%d][%d]_pin[%d][%d][%d] grid[%d][%d]_pin[%d][%d][%d] 0 \n",
+          x, y, height, side, ipin, x, y, height, side, ipin);
+  fprint_voltage_pulse_params(fp, 0, ipin_density, ipin_probability);
+
+  return;
+}
+
+void fprint_grid_testbench_one_grid_pin_loads(FILE* fp, int x, int y, 
+                                              int height, int side, 
+                                              int ipin,
+                                              t_ivec*** LL_rr_node_indices) {
+
+  int ipin_rr_node_index;
+  int iedge, iswitch, inode;
+  char* prefix = NULL;
+  t_spice_model* switch_spice_model = NULL;
+  int inv_cnt = 0;
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /* Check */
+  assert((!(0 > x))&&(!(x > (nx + 1)))); 
+  assert((!(0 > y))&&(!(y > (ny + 1)))); 
+
+  /* Print a voltage source according to density and probability */
+  ipin_rr_node_index = get_rr_node_index(x, y, OPIN, ipin, LL_rr_node_indices);
+  /* Generate prefix */
+  prefix = (char*)my_malloc(sizeof(char)*(5 + strlen(my_itoa(x))
+             + 2 + strlen(my_itoa(y)) + 6 + strlen(my_itoa(height))
+             + 2 + strlen(my_itoa(side)) + 2 + strlen(my_itoa(ipin))
+             + 2 + 1));
+  sprintf(prefix, "grid[%d][%d]_pin[%d][%d][%d]",
+          x, y, height, side, ipin);
+
+  /* Print all the inverter load now*/
+  for (iedge = 0; iedge < rr_node[ipin_rr_node_index].num_edges; iedge++) {
+    /* Get the switch spice model */
+    inode = rr_node[ipin_rr_node_index].edges[iedge];
+    iswitch = rr_node[ipin_rr_node_index].switches[iedge]; 
+    switch_spice_model = switch_inf[iswitch].spice_model;
+    if (NULL == switch_spice_model) {
+      continue;
+    }
+    /* Add inv/buf here */
+    fprintf(fp, "X%s_inv %s %s_out[%d] gvdd_load ggnd inv size=%g\n",
+            prefix, prefix, prefix, iedge, switch_spice_model->input_buffer->size);
+    inv_cnt++;
+  }
+ 
+  /* TODO: Generate loads recursively */
+  /*fprint_rr_node_loads_rec(fp, rr_node[ipin_rr_node_index],prefix);*/
+
+  /*Free */
+  my_free(prefix);
+
+  return;
+}
+
+void fprint_grid_testbench_one_grid_stimulation(FILE* fp, 
+                                                t_spice spice,
+                                                t_ivec*** LL_rr_node_indices,
+                                                int x, int y) {
+  int ipin, class_id, side, iheight;
+  t_type_ptr type = NULL;
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /* Check */
+  assert((!(0 > x))&&(!(x > (nx + 1)))); 
+  assert((!(0 > y))&&(!(y > (ny + 1)))); 
+  type = grid[x][y].type;
+  assert(NULL != type);
+   
+  /* For each input pin, we give a stimulate*/ 
+  for (side = 0; side < 4; side++) {
+    for (iheight = 0; iheight < type->height; iheight++) {
+      for (ipin = 0; ipin < type->num_pins; ipin++) {
+        if (1 == type->pinloc[iheight][side][ipin]) {
+          class_id = type->pin_class[ipin];
+          if (RECEIVER == type->class_inf[class_id].type) { 
+            fprint_grid_testbench_one_grid_pin_stimulation(fp, x, y, iheight, side, ipin, LL_rr_node_indices);
+          } else if (DRIVER == type->class_inf[class_id].type) { 
+            fprint_grid_testbench_one_grid_pin_loads(fp, x, y, iheight, side, ipin, LL_rr_node_indices);
+          }
+        }
       }
-      /* Check out the number of fan-out (edge) */
-      if (0 == rr_node[inode].num_edges) {
-        break;
-      }
-      /* Check all the fanouts*/
-      fprint_grid_rr_node_loads_rec(fp, "grid_", &(rr_node[inode]), spice);
-      break; 
-    case SINK:
-    case IPIN:
-    case CHANX:
-    case CHANY:
-    case INTRA_CLUSTER_EDGE:
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid rr_node type!\n",
-                 __FILE__, __LINE__);
-      exit(1);
     }
   }
 
@@ -188,41 +214,107 @@ void fprint_grid_testbench_loads(FILE* fp,
 
 static 
 void fprint_grid_testbench_stimulations(FILE* fp, 
-                                      t_spice spice) {
-  /* For each grid input port, we generate the voltage pulses  */
+                                        t_spice spice,
+                                        t_ivec*** LL_rr_node_indices) {
+  int ix, iy;
 
+  /* For each grid input port, we generate the voltage pulses  */
+  for (ix = 1; ix < (nx + 1); ix++) {
+    for (iy = 1; iy < (ny + 1); iy++) {
+      assert(IO_TYPE != grid[ix][iy].type);
+      fprint_grid_testbench_one_grid_stimulation(fp, spice, LL_rr_node_indices,
+                                                 ix, iy);
+    }
+  }
 
   return;
 }
 
 static 
 void fprint_grid_testbench_measurements(FILE* fp, 
-                                      t_spice spice) {
+                                      t_spice spice,
+                                      boolean leakage_only) {
+  /* First cycle reserved for measuring leakage */
+  int num_clock_cycle = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
+  
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+  
+  fprint_spice_netlist_transient_setting(fp, spice, leakage_only);
+
+  /* TODO: Measure the delay of each mapped net and logical block */
+
+  /* Measure the power */
+  /* Leakage ( the first cycle is reserved for leakage measurement) */
+  if (TRUE == leakage_only) {
+    /* Leakage power of SRAMs */
+    fprintf(fp, ".measure tran leakage_power_sram_local_routing find p(Vgvdd_sram_local_routing) at=0\n");
+    fprintf(fp, ".measure tran leakage_power_sram_luts find p(Vgvdd_sram_luts) at=0\n");
+    /* Global power of Local Interconnections*/
+    fprintf(fp, ".measure tran leakage_power_local_interc find p(Vgvdd_local_interc) at=0\n");
+  } else {
+    /* Leakage power of SRAMs */
+    fprintf(fp, ".measure tran leakage_power_sram_local_routing avg p(Vgvdd_sram_local_routing) from=0 to='clock_period'\n");
+    fprintf(fp, ".measure tran leakage_power_sram_luts avg p(Vgvdd_sram_luts) from=0 to='clock_period'\n");
+    /* Global power of Local Interconnections*/
+    fprintf(fp, ".measure tran leakage_power_local_interc avg p(Vgvdd_local_interc) from=0 to='clock_period'\n");
+  }
+  /* Leakge power of Hard logic */
+  fprint_measure_vdds_spice_model(fp, SPICE_MODEL_HARDLOGIC, SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, spice, leakage_only);
+  /* Leakage power of LUTs*/
+  fprint_measure_vdds_spice_model(fp, SPICE_MODEL_LUT, SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, spice, leakage_only);
+  /* Leakage power of FFs*/
+  fprint_measure_vdds_spice_model(fp, SPICE_MODEL_FF, SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, spice, leakage_only);
+
+  if (TRUE == leakage_only) {
+    return;
+  }
+
+  /* Dynamic power */
+  /* Dynamic power of SRAMs */
+  fprintf(fp, ".measure tran dynamic_power_sram_local_routing avg p(Vgvdd_sram_local_routing) from='clock_period' to='%d*clock_period'\n", num_clock_cycle);
+  fprintf(fp, ".measure tran dynamic_power_sram_luts avg p(Vgvdd_sram_luts) from='clock_period' to='%d*clock_period'\n", num_clock_cycle);
+  /* Dynamic power of Local Interconnections */
+  fprintf(fp, ".measure tran dynamic_power_local_interc avg p(Vgvdd_local_interc) from='clock_period' to='%d*clock_period'\n", num_clock_cycle);
+  /* Dynamic power of Hard Logic */
+  fprint_measure_vdds_spice_model(fp, SPICE_MODEL_HARDLOGIC, SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, spice, leakage_only);
+  /* Dynamic power of LUTs */
+  fprint_measure_vdds_spice_model(fp, SPICE_MODEL_LUT, SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, spice, leakage_only);
+  /* Dynamic power of FFs */
+  fprint_measure_vdds_spice_model(fp, SPICE_MODEL_FF, SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, spice, leakage_only);
+
   return;
 }
 
 /* Top-level function in this source file */
-void fprint_spice_grid_testbench(char* circuit_name,
+void fprint_spice_grid_testbench(char* formatted_spice_dir,
+                                 char* circuit_name,
                                  char* grid_test_bench_name,
                                  char* include_dir_path,
                                  char* subckt_dir_path,
                                  t_ivec*** LL_rr_node_indices,
                                  int num_clock,
-                                 t_spice spice) {
+                                 t_spice spice,
+                                 boolean leakage_only) {
   FILE* fp = NULL;
   char* formatted_subckt_dir_path = format_dir_path(subckt_dir_path);
   char* temp_include_file_path = NULL;
-  char* title = my_strcat("FPGA SPICE Netlist for Design: ", circuit_name);
+  char* title = my_strcat("FPGA Grid Testbench for Design: ", circuit_name);
   int i;
+  char* grid_testbench_file_path = my_strcat(formatted_spice_dir, grid_test_bench_name);
 
   /* Check if the path exists*/
-  fp = fopen(grid_test_bench_name,"w");
+  fp = fopen(grid_testbench_file_path,"w");
   if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in create top SPICE netlist %s!",__FILE__, __LINE__, grid_test_bench_name); 
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in create Grid Testbench SPICE netlist %s!",__FILE__, __LINE__, grid_testbench_file_path); 
     exit(1);
   } 
   
-  vpr_printf(TIO_MESSAGE_INFO, "Writing Top-level FPGA Netlist for %s...\n", circuit_name);
+  vpr_printf(TIO_MESSAGE_INFO, "Writing Grid Testbench for %s...\n", circuit_name);
  
   /* Print the title */
   fprint_spice_head(fp, title);
@@ -236,17 +328,16 @@ void fprint_spice_grid_testbench(char* circuit_name,
 
   /* Include Key subckts */
   fprint_spice_include_key_subckts(fp, subckt_dir_path);
-
   
   /* Special subckts for Top-level SPICE netlist */
   fprintf(fp, "****** Include subckt netlists: Look-Up Tables (LUTs) *****\n");
   temp_include_file_path = my_strcat(formatted_subckt_dir_path, luts_spice_file_name);
-  fprintf(fp, ".include %s\n", temp_include_file_path);
+  fprintf(fp, ".include \'%s\'\n", temp_include_file_path);
   my_free(temp_include_file_path);
 
   fprintf(fp, "****** Include subckt netlists: Logic Blocks *****\n");
   temp_include_file_path = my_strcat(formatted_subckt_dir_path, logic_block_spice_file_name);
-  fprintf(fp, ".include %s\n", temp_include_file_path);
+  fprintf(fp, ".include \'%s'\\n", temp_include_file_path);
   my_free(temp_include_file_path);
 
   /* Print simulation temperature and other options for SPICE */
@@ -256,19 +347,17 @@ void fprint_spice_grid_testbench(char* circuit_name,
   fprint_grid_testbench_global_ports(fp, num_clock, spice);
  
   /* Quote defined Logic blocks subckts (Grids) */
-  fprint_call_defined_grids(fp);
-
-  fprint_grid_testbench_loads(fp, spice);
+  fprint_call_defined_core_grids(fp);
 
   /* Back-anotate activity information to each routing resource node 
    * (We should have activity of each Grid port) 
    */
 
   /* Add stimulations */
-  fprint_grid_testbench_stimulations(fp, spice);
+  fprint_grid_testbench_stimulations(fp, spice, LL_rr_node_indices);
 
   /* Add measurements */  
-  fprint_grid_testbench_measurements(fp, spice);
+  fprint_grid_testbench_measurements(fp, spice, leakage_only);
 
   /* SPICE ends*/
   fprintf(fp, ".end\n");
