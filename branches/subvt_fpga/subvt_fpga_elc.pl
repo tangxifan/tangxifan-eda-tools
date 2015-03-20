@@ -234,6 +234,7 @@ sub print_usage()
   print "      -wprog_sweep <max_wprog>: sweep the wprog when turn on enhancements for RRAM (Valid for MUX only)\n";
   print "      -enum_mux_leakage: test all cases for multiplexer leakages\n";
   print "      -auto_out_tapered_buffer <level>: automatically add a tapered buffer at output port for high-fan-out nets.\n";
+  print "      -mux_unbuffered: turn off adding buffers to inputs and outputs of MUXes\n";
   print "      -hspice64 : use 64-bit hspice, by default it is 32bit.\n";
   print "      -debug : debug mode\n";
   print "      -help : print usage\n";
@@ -328,7 +329,8 @@ sub opts_read()
   if (-1 == $#ARGV)
   {
     print "Error : No input arguments!\n";
-    print "Try: -help for usage.\n";
+    print "Help desk:\n";
+    &print_usage();
     exit(1);
   }
   # Read in the options
@@ -374,7 +376,8 @@ sub opts_read()
     &read_opt_into_hash("rram_enhance","off","off");  # Check -rram_enhance
     &read_opt_into_hash("wprog_sweep","on","off");  # Check -wprog_sweep
     &read_opt_into_hash("enum_mux_leakage","on","off");  # Check -enum_mux_leakage
-    &read_opt_into_hash("one_level_mux","on","off");  # Check -one_level_mux
+    &read_opt_into_hash("one_level_mux","off","off");  # Check -one_level_mux
+    &read_opt_into_hash("mux_unbuffered","off","off");  # Check -mux_unbuffered
   }
 
   if ("on" eq $opt_ptr->{rram2t1r}) {
@@ -1223,6 +1226,11 @@ sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $)
   &tab_print($spfh,"* Include Circuits Library\n",0);
 
   &tab_print($spfh,".include $cwd/$opt_ptr->{mux_val}\n",0);
+
+  my ($buf_val) = ("buffer");
+  if ($opt_ptr->{mux_unbuffered}) {
+    $buf_val = "unbuffered";
+  }
  
   if ("on" eq $opt_ptr->{one_level_mux}) {
     # Generate the sub circuit of 1-level N-input MUX
@@ -1505,12 +1513,12 @@ sub gen_multilevel_mux_subckt($ $ $ $ $ $)
       if ($rram_enhance) {
         my ($nextnextj) = ($nextj + 1);
         if (0 == $j) { 
-          &tab_print($spfh,"Xprog_extral$i $mux2_in$j sgnd sgnd sgnd $conf_ptr->{general_settings}->{nmos_name}->{val} L=$conf_ptr->{general_settings}->{nl}->{val} W=\'wprog*$conf_ptr->{general_settings}->{min_wn}->{val}\'\n",0);
+          &tab_print($spfh,"Xprog_extral$i $mux2_in$j sgnd sgnd sgnd elc_nmos L=$conf_ptr->{general_settings}->{nl}->{val} W=\'wprog*$conf_ptr->{general_settings}->{min_wn}->{val}\'\n",0);
         }
         if ($nextnextj < $num_input_cur_level) {
-          &tab_print($spfh,"Xprog_no$mux2_cnt $mux2_in$nextj gnd $mux2_in$nextnextj sgnd $conf_ptr->{general_settings}->{nmos_name}->{val} L=$conf_ptr->{general_settings}->{nl}->{val} W=\'wprog*$conf_ptr->{general_settings}->{min_wn}->{val}\'\n",0);
+          &tab_print($spfh,"Xprog_no$mux2_cnt $mux2_in$nextj gnd $mux2_in$nextnextj sgnd elc_nmos L=$conf_ptr->{general_settings}->{nl}->{val} W=\'wprog*$conf_ptr->{general_settings}->{min_wn}->{val}\'\n",0);
         } else {
-          &tab_print($spfh,"Xprog_no$mux2_cnt $mux2_in$nextj sgnd sgnd sgnd $conf_ptr->{general_settings}->{nmos_name}->{val} L=$conf_ptr->{general_settings}->{nl}->{val} W=\'wprog*$conf_ptr->{general_settings}->{min_wn}->{val}\'\n",0);
+          &tab_print($spfh,"Xprog_no$mux2_cnt $mux2_in$nextj sgnd sgnd sgnd elc_nmos L=$conf_ptr->{general_settings}->{nl}->{val} W=\'wprog*$conf_ptr->{general_settings}->{min_wn}->{val}\'\n",0);
         }
       }
       $j = $nextj;
@@ -1541,7 +1549,7 @@ sub gen_multilevel_mux_subckt($ $ $ $ $ $)
 
   # Add programming transistor at the output
   if ($rram_enhance) {
-    &tab_print($spfh,"Xprog_out mux2_l0_in0 sgnd sgnd sgnd $conf_ptr->{general_settings}->{nmos_name}->{val} L=$conf_ptr->{general_settings}->{nl}->{val} W=\'wprog*$conf_ptr->{general_settings}->{min_wn}->{val}\'\n",0);
+    &tab_print($spfh,"Xprog_out mux2_l0_in0 sgnd sgnd sgnd elc_nmos L=$conf_ptr->{general_settings}->{nl}->{val} W=\'wprog*$conf_ptr->{general_settings}->{min_wn}->{val}\'\n",0);
   }
 
   # Print end of subckt
@@ -1728,6 +1736,7 @@ sub get_sim_results($ $ $)
       $results->{$tmp} = "failed";
     } elsif ("failed" ne $results->{$tmp}) {
       $results->{$tmp} = &process_unit($results->{$tmp},"empty");
+      $results->{$tmp} = sprintf("%.2g", $results->{$tmp});
     }
     print "Sim Results: $tmp = $results->{$tmp}\n";
   }
@@ -3105,15 +3114,15 @@ sub gen_basic_sp() {
     &tab_print($spfh,"* Process Type : $conf_ptr->{general_settings}->{process_type}->{val}\n",0);
     &tab_print($spfh,"* NMOS \n",0);
     &tab_print($spfh,".subckt elc_nmos drain gate source bulk L=nl W=wn\n",0);
-    #&tab_print($spfh,"M1 drain gate source bulk $conf_ptr->{general_settings}->{nmos_name}->{val} L=L W=W\n",0);
-    &tab_print($spfh,"X1 drain gate source bulk $conf_ptr->{general_settings}->{nmos_name}->{val} lr=L wr=W nr=1\n",0);
+    &tab_print($spfh,"M1 drain gate source bulk $conf_ptr->{general_settings}->{nmos_name}->{val} L=L W=W\n",0);
+    #&tab_print($spfh,"X1 drain gate source bulk $conf_ptr->{general_settings}->{nmos_name}->{val} L=L W=W\n",0);
     &tab_print($spfh,".eom elc_nmos\n",0);
     &tab_print($spfh,"\n",0);
    
     &tab_print($spfh,"* PMOS\n",0);
     &tab_print($spfh,".subckt elc_pmos drain gate source bulk L=pl W=wp\n",0);
-    #&tab_print($spfh,"M1 drain gate source bulk $conf_ptr->{general_settings}->{pmos_name}->{val} L=L W=W\n",0);
-    &tab_print($spfh,"X1 drain gate source bulk $conf_ptr->{general_settings}->{pmos_name}->{val} lr=L wr=W nr=1\n",0);
+    &tab_print($spfh,"M1 drain gate source bulk $conf_ptr->{general_settings}->{pmos_name}->{val} L=L W=W\n",0);
+    #&tab_print($spfh,"X1 drain gate source bulk $conf_ptr->{general_settings}->{pmos_name}->{val} L=L W=W\n",0);
     &tab_print($spfh,".eom elc_pmos\n",0);
     &tab_print($spfh,"\n",0);
 

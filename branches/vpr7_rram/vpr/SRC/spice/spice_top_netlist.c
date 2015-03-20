@@ -72,7 +72,7 @@ void fprint_top_netlist_global_ports(FILE* fp,
   }
 
   /* Global nodes: Vdd for SRAMs, Logic Blocks(Include IO), Switch Boxes, Connection Boxes */
-  fprintf(fp, ".global gvdd ggnd gset greset\n");
+  fprintf(fp, ".global gvdd gset greset\n");
   fprintf(fp, ".global gvdd_local_interc gvdd_io gvdd_hardlogic\n");
   fprintf(fp, ".global gvdd_sram_local_routing gvdd_sram_luts gvdd_sram_cbs gvdd_sram_sbs\n");
   /* Define a global clock port if we need one*/
@@ -130,7 +130,7 @@ void fprint_top_netlist_stimulations(FILE* fp,
   fprintf(fp, "***** Global VDD port *****\n");
   fprintf(fp, "Vgvdd gvdd 0 0\n");
   fprintf(fp, "***** Global GND port *****\n");
-  fprintf(fp, "Vggnd ggnd 0 0\n");
+  fprintf(fp, "*Rggnd ggnd 0 0\n");
 
   /* Global set and reset */
   fprintf(fp, "***** Global Net for reset signal *****\n");
@@ -174,6 +174,7 @@ void fprint_top_netlist_stimulations(FILE* fp,
   */
   fprintf(fp, "V%s->in %s->in 0 0\n", 
           sram_spice_model->prefix, sram_spice_model->prefix);
+  fprintf(fp, ".nodeset V(%s->in) 0\n", sram_spice_model->prefix);
   
   /* Every Switch Box (SB) use an independent Voltage source */
   fprintf(fp, "***** Global VDD for Switch Boxes(SBs) *****\n");

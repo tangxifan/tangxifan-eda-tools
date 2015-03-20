@@ -1,8 +1,8 @@
-Automated spice simuation: Sun Mar 15 21:33:14 2015
+Automated spice simuation: Fri Mar 20 10:55:45 2015
 .global Vdd gnd
-.include '/home/xitang/tangxifan-eda-tools/branches/fpga_flow/tech/22nm_HP.pm'
-.param tech = 22e-9
-.param Vol = 0.6
+.include '/home/xitang/tangxifan-eda-tools/branches/fpga_flow/tech/45nm_LP.pm'
+.param tech = 45e-9
+.param Vol = 0.9
 .param simt = 5n
 .param rise = 'simt/500'
 .param fall = 'simt/500'
@@ -10,12 +10,66 @@ Automated spice simuation: Sun Mar 15 21:33:14 2015
 .include '/home/xitang/tangxifan-eda-tools/branches/fpga_flow/power_tech_script/spice/subckt/inv.sp'
 .include '/home/xitang/tangxifan-eda-tools/branches/fpga_flow/power_tech_script/spice/subckt/level_restorer.sp'
 Vdd Vdd 0 'Vol'
-Vin in 0 0.6
-X0 in 0 0 0 nfet size='22.74'
+Vin in 0 0.675
+X0a in Vdd outa 0 nfet size='9.31'
+X1a in 0 outa 0 nfet size='9.31'
+X2a in 0 outa 0 nfet size='9.31'
+X3a in 0 outa 0 nfet size='9.31'
+X4a in 0 outa 0 nfet size='9.31'
+X5a in 0 outa 0 nfet size='9.31'
+X6a in 0 outa 0 nfet size='9.31'
+X7a in 0 outa 0 nfet size='9.31'
+X8a in 0 outa 0 nfet size='9.31'
+X9a in 0 outa 0 nfet size='9.31'
+X10a in 0 outa 0 nfet size='9.31'
+X11a in 0 outa 0 nfet size='9.31'
+X12a in 0 outa 0 nfet size='9.31'
+X13a in 0 outa 0 nfet size='9.31'
+X14a in 0 outa 0 nfet size='9.31'
+X15a in 0 outa 0 nfet size='9.31'
+X16a in 0 outa 0 nfet size='9.31'
+X17a in 0 outa 0 nfet size='9.31'
+X18a in 0 outa 0 nfet size='9.31'
+X19a in 0 outa 0 nfet size='9.31'
+X20a in 0 outa 0 nfet size='9.31'
+X21a in 0 outa 0 nfet size='9.31'
+X22a in 0 outa 0 nfet size='9.31'
+X23a in 0 outa 0 nfet size='9.31'
+X24a in 0 outa 0 nfet size='9.31'
+X25a in 0 outa 0 nfet size='9.31'
+X26a in 0 outa 0 nfet size='9.31'
+X0b in Vdd outb 0 nfet size='9.31'
+X1b 0 0 outb 0 nfet size='9.31'
+X2b 0 0 outb 0 nfet size='9.31'
+X3b 0 0 outb 0 nfet size='9.31'
+X4b 0 0 outb 0 nfet size='9.31'
+X5b 0 0 outb 0 nfet size='9.31'
+X6b 0 0 outb 0 nfet size='9.31'
+X7b 0 0 outb 0 nfet size='9.31'
+X8b 0 0 outb 0 nfet size='9.31'
+X9b 0 0 outb 0 nfet size='9.31'
+X10b 0 0 outb 0 nfet size='9.31'
+X11b 0 0 outb 0 nfet size='9.31'
+X12b 0 0 outb 0 nfet size='9.31'
+X13b 0 0 outb 0 nfet size='9.31'
+X14b 0 0 outb 0 nfet size='9.31'
+X15b 0 0 outb 0 nfet size='9.31'
+X16b 0 0 outb 0 nfet size='9.31'
+X17b 0 0 outb 0 nfet size='9.31'
+X18b 0 0 outb 0 nfet size='9.31'
+X19b 0 0 outb 0 nfet size='9.31'
+X20b 0 0 outb 0 nfet size='9.31'
+X21b 0 0 outb 0 nfet size='9.31'
+X22b 0 0 outb 0 nfet size='9.31'
+X23b 0 0 outb 0 nfet size='9.31'
+X24b 0 0 outb 0 nfet size='9.31'
+X25b 0 0 outb 0 nfet size='9.31'
+X26b 0 0 outb 0 nfet size='9.31'
 .TEMP 25
 .OP
 .OPTIONS LIST NODE POST CAPTAB
 .tran 'simt/10' simt
-.measure tran leakage avg I(Vin)
+.measure tran vout_min avg V(outb)
+.measure tran vout_max avg V(outa)
 .end
 

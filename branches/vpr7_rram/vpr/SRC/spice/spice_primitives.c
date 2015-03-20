@@ -142,25 +142,29 @@ void fprint_pb_primitive_ff(FILE* fp,
       init_val = 0;
     }
 
-    /* Add nodeset */
-    pb_type_output_ports = find_pb_type_ports_match_spice_model_port_type(prim_pb_type, SPICE_MODEL_PORT_OUTPUT, &num_pb_type_output_port); 
-    for (iport = 0; iport < num_pb_type_output_port; iport++) {
-      for (ipin = 0; ipin < pb_type_output_ports[iport]->num_pins; ipin++) {
-        fprintf(fp, ".nodeset %s->%s[%d] ", port_prefix, pb_type_output_ports[iport]->name, ipin);
-        if (0 == init_val) { 
-          fprintf(fp, "0\n");
-        } else {
-          assert(1 == init_val);
-          fprintf(fp, "vsp\n");
-        }
-      }
-    }
     /* Back-annotate to logical block */
     mapped_logical_block->mapped_spice_model = spice_model;
     mapped_logical_block->mapped_spice_model_index = spice_model->cnt;
+  } else {
+    trigger_type = FF_RE;
+    init_val = 0;
   }
   /* TODO: apply falling edge, initial value to FF!!!*/
-  fprintf(fp, "\n");
+  /*fprintf(fp, "\n");*/
+
+  /* Add nodeset */
+  pb_type_output_ports = find_pb_type_ports_match_spice_model_port_type(prim_pb_type, SPICE_MODEL_PORT_OUTPUT, &num_pb_type_output_port); 
+  for (iport = 0; iport < num_pb_type_output_port; iport++) {
+    for (ipin = 0; ipin < pb_type_output_ports[iport]->num_pins; ipin++) {
+      fprintf(fp, ".nodeset V(%s->%s[%d]) ", port_prefix, pb_type_output_ports[iport]->name, ipin);
+      if (0 == init_val) { 
+        fprintf(fp, "0\n");
+      } else {
+        assert(1 == init_val);
+        fprintf(fp, "vsp\n");
+      }
+    }
+  }
 
   /* End */
   fprintf(fp, ".eom\n");

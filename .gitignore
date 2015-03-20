@@ -27,3 +27,16 @@
 *.i*86
 *.x86_64
 *.hex
+
+# Temp file
+*.c~
+*.h~
+*.pl~
+*.conf~
+*.txt~
+# SPICE results
+*.lis
+*.pa0
+*.mt0
+*.ic0
+*.st0

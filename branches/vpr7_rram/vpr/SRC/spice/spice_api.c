@@ -953,20 +953,20 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   if (vpr_setup.SpiceOpts.print_spice_grid_testbench) {
     grid_testbench_file = my_strcat(chomped_circuit_name, spice_grid_testbench_postfix); 
     fprint_spice_grid_testbench(spice_dir_formatted, circuit_name, grid_testbench_file, include_dir_path, subckt_dir_path,
-                                rr_node_indices, num_clocks, *(Arch.spice), vpr_setup.SpiceOpts.fpga_spice_leakage_only);
+                                rr_node_indices, num_clocks, Arch, vpr_setup.SpiceOpts.fpga_spice_leakage_only);
   }
 
   /* Print MUX testbench if needed */
   if (vpr_setup.SpiceOpts.print_spice_mux_testbench) {
     mux_testbench_file = my_strcat(chomped_circuit_name, spice_mux_testbench_postfix); 
     fprint_spice_mux_testbench(spice_dir_formatted, circuit_name, mux_testbench_file, include_dir_path, subckt_dir_path,
-                               rr_node_indices, num_clocks, *(Arch.spice), vpr_setup.SpiceOpts.fpga_spice_leakage_only);
+                               rr_node_indices, num_clocks, Arch, vpr_setup.SpiceOpts.fpga_spice_leakage_only);
   }
 
   if (vpr_setup.SpiceOpts.print_spice_routing_mux_testbench) {
     routing_mux_testbench_file = my_strcat(chomped_circuit_name, spice_routing_mux_testbench_postfix); 
     fprint_spice_routing_mux_testbench(spice_dir_formatted, circuit_name, routing_mux_testbench_file, include_dir_path, subckt_dir_path,
-                                       rr_node_indices, num_clocks, *(Arch.spice), vpr_setup.SpiceOpts.fpga_spice_leakage_only);
+                                       rr_node_indices, num_clocks, Arch, vpr_setup.SpiceOpts.fpga_spice_leakage_only);
   }
 
   /* Generate a shell script for running HSPICE simulations */

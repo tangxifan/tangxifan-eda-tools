@@ -9,16 +9,18 @@
 
 *.lib 'PTM_MG/models' ptm20lstp
 *.lib '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/process/MM180_LVT18_V113.lib' TT
-.include './process/22nm_HP.pm'
+*.include '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/process/st_28nm.sp'
 *.include './process/32nmHP.pm'
 *.include './process/tsmc40nm.sp'
+*.include './process/22nm_HP.pm'
+.include './process/45nm_LP.pm'
 .include '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/spice/nmos_pmos.sp'
 .temp 25
-.param beta = 1.45
+.param beta = 1.7
 .param alpha = 3
-.param nl = 22e-9
-.param pl = 22e-9
-.param wn = '66e-9'
+.param nl = 45e-9
+.param pl = 45e-9
+.param wn = '160e-9'
 .param wp = 'wn*beta'
 
 .option POST 
@@ -27,7 +29,7 @@
 *Beginning of circuit and device definitions
 ***************************************************
 *Supplies and voltage params:
-.param Supply=1.2	
+.param Supply=2	
 .param Vg='Supply'
 .param Vd='Supply'
 .param Wprog='wn'

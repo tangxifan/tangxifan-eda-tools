@@ -26,6 +26,7 @@ struct s_spice_tech_lib {
   char* path;
   float nominal_vdd;
   float pn_ratio;
+  char* model_ref;
   int num_transistor_type;
   t_spice_transistor_type* transistor_types;
 };

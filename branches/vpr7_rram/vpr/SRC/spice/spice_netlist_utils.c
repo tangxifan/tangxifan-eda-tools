@@ -55,7 +55,7 @@ void fprint_include_user_defined_netlists(FILE* fp,
   for (i = 0; i < spice.num_include_netlist; i++) {
     if (0 == spice.include_netlists[i].included) {
       assert(NULL != spice.include_netlists[i].path);
-      fprintf(fp, ".include %s\n", spice.include_netlists[i].path);
+      fprintf(fp, ".include \'%s\'\n", spice.include_netlists[i].path);
       spice.include_netlists[i].included = 1;
     } else {
       assert(1 == spice.include_netlists[i].included);
@@ -323,7 +323,7 @@ void fprint_call_defined_grids(FILE* fp) {
       assert(IO_TYPE != grid[ix][iy].type);
       fprintf(fp, "Xgrid[%d][%d] ", ix, iy);
       fprint_grid_pins(fp, ix, iy, 1);
-      fprintf(fp, "gvdd ggnd grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
+      fprintf(fp, "gvdd 0 grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
     }
   } 
 
@@ -335,7 +335,7 @@ void fprint_call_defined_grids(FILE* fp) {
     fprintf(fp, "Xgrid[%d][%d] ", ix, iy);
     fprint_io_grid_pins(fp, ix, iy, 1);
     /* Connect to a speical vdd port for statistics power */
-    fprintf(fp, "gvdd_io ggnd grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
+    fprintf(fp, "gvdd_io 0 grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
   }
 
   /* RIGHT side */
@@ -345,7 +345,7 @@ void fprint_call_defined_grids(FILE* fp) {
     fprintf(fp, "Xgrid[%d][%d] ", ix, iy);
     fprint_io_grid_pins(fp, ix, iy, 1);
     /* Connect to a speical vdd port for statistics power */
-    fprintf(fp, "gvdd_io ggnd grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
+    fprintf(fp, "gvdd_io 0 grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
   }
 
   /* BOTTOM side */
@@ -355,7 +355,7 @@ void fprint_call_defined_grids(FILE* fp) {
     fprintf(fp, "Xgrid[%d][%d] ", ix, iy);
     fprint_io_grid_pins(fp, ix, iy, 1);
     /* Connect to a speical vdd port for statistics power */
-    fprintf(fp, "gvdd_io ggnd grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
+    fprintf(fp, "gvdd_io 0 grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
   } 
 
   /* TOP side */
@@ -365,7 +365,7 @@ void fprint_call_defined_grids(FILE* fp) {
     fprintf(fp, "Xgrid[%d][%d] ", ix, iy);
     fprint_io_grid_pins(fp, ix, iy, 1);
     /* Connect to a speical vdd port for statistics power */
-    fprintf(fp, "gvdd_io ggnd grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
+    fprintf(fp, "gvdd_io 0 grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
   } 
 
   return;
@@ -405,7 +405,7 @@ void fprint_call_defined_chan(FILE* fp,
     for (itrack = 0; itrack < chan_width; itrack++) {
       fprintf(fp, "chanx[%d][%d]_midout[%d] ", x, y, itrack);
     }
-    fprintf(fp, "gvdd ggnd chanx[%d][%d]\n", x, y);
+    fprintf(fp, "gvdd 0 chanx[%d][%d]\n", x, y);
     break;
   case CHANY:
     /* check x*/
@@ -424,7 +424,7 @@ void fprint_call_defined_chan(FILE* fp,
     for (itrack = 0; itrack < chan_width; itrack++) {
       fprintf(fp, "chany[%d][%d]_midout[%d] ", x, y, itrack);
     }
-    fprintf(fp, "gvdd ggnd chany[%d][%d]\n", x, y);
+    fprintf(fp, "gvdd 0 chany[%d][%d]\n", x, y);
     break;
   default: 
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid Channel Type!\n", __FILE__, __LINE__);
@@ -644,12 +644,12 @@ void fprint_call_defined_connection_box(FILE* fp,
   switch(chan_type) {
   case CHANX:
     /* Need split vdd port for each Connection Box */
-    fprintf(fp, "gvdd_cbx[%d][%d] ggnd ", x, y);
+    fprintf(fp, "gvdd_cbx[%d][%d] 0 ", x, y);
     fprintf(fp, "cbx[%d][%d]\n", x, y);
     break;
   case CHANY:
     /* Need split vdd port for each Connection Box */
-    fprintf(fp, "gvdd_cby[%d][%d] ggnd ", x, y);
+    fprintf(fp, "gvdd_cby[%d][%d] 0 ", x, y);
     fprintf(fp, "cby[%d][%d]\n", x, y);
     break;
   default: 
@@ -812,7 +812,7 @@ void fprint_call_defined_switch_box(FILE* fp,
   }
 
   /* Connect to separate vdd port for each switch box??? */
-  fprintf(fp, "gvdd_sb[%d][%d] ggnd sb[%d][%d]\n", x, y, x, y);
+  fprintf(fp, "gvdd_sb[%d][%d] 0 sb[%d][%d]\n", x, y, x, y);
 
   /* Free */
   my_free(chan_width);
@@ -1191,7 +1191,8 @@ void fprint_spice_netlist_transient_setting(FILE* fp,
 
 void fprint_stimulate_dangling_one_grid_pin(FILE* fp,
                                             int x, int y,
-                                            int height, int side, int pin_index) {
+                                            int height, int side, int pin_index,
+                                            t_ivec*** LL_rr_node_indices) {
   t_type_ptr type_descriptor = grid[x][y].type;
   int capacity = grid[x][y].type->capacity;
   int class_id;
@@ -1212,21 +1213,25 @@ void fprint_stimulate_dangling_one_grid_pin(FILE* fp,
 
   class_id = type_descriptor->pin_class[pin_index];
   if (DRIVER == type_descriptor->class_inf[class_id].type) {
-    rr_node_index = get_rr_node_index(x, y, OPIN, pin_index, rr_node_indices); 
+    rr_node_index = get_rr_node_index(x, y, OPIN, pin_index, LL_rr_node_indices); 
     /* Zero fan-out OPIN */
     if (0 == rr_node[rr_node_index].num_edges) {
-      fprintf(fp, "Rdangling_grid[%d][%d]_pin[%d][%d][%d] grid[%d][%d]_pin[%d][%d][%d] ggnd 1Meg\n",
+      fprintf(fp, "Rdangling_grid[%d][%d]_pin[%d][%d][%d] grid[%d][%d]_pin[%d][%d][%d] 0 100Meg\n",
               x, y, height, side, pin_index,
+              x, y, height, side, pin_index);
+      fprintf(fp, ".nodeset V(grid[%d][%d]_pin[%d][%d][%d]) 0 \n",
               x, y, height, side, pin_index);
     }
     return;
   }
   if (RECEIVER == type_descriptor->class_inf[class_id].type) {
-    rr_node_index = get_rr_node_index(x, y, IPIN, pin_index, rr_node_indices); 
+    rr_node_index = get_rr_node_index(x, y, IPIN, pin_index, LL_rr_node_indices); 
     /* Zero fan-in IPIN */
     if (0 == rr_node[rr_node_index].fan_in) {
-      fprintf(fp, "Rdangling_grid[%d][%d]_pin[%d][%d][%d] grid[%d][%d]_pin[%d][%d][%d] ggnd 1Meg\n",
+      fprintf(fp, "Rdangling_grid[%d][%d]_pin[%d][%d][%d] grid[%d][%d]_pin[%d][%d][%d] 0 0\n",
               x, y, height, side, pin_index,
+              x, y, height, side, pin_index);
+      fprintf(fp, ".nodeset V(grid[%d][%d]_pin[%d][%d][%d]) 0\n",
               x, y, height, side, pin_index);
     }
     return;
@@ -1266,7 +1271,7 @@ void fprint_stimulate_dangling_io_grid_pins(FILE* fp,
   for (iheight = 0; iheight < type_descriptor->height; iheight++) {
     for (ipin = 0; ipin < type_descriptor->num_pins; ipin++) {
       if (1 == type_descriptor->pinloc[iheight][side][ipin]) {
-        fprint_stimulate_dangling_one_grid_pin(fp, x, y, iheight, side, ipin);
+        fprint_stimulate_dangling_one_grid_pin(fp, x, y, iheight, side, ipin, rr_node_indices);
       }
     }
   }  
@@ -1301,7 +1306,7 @@ void fprint_stimulate_dangling_normal_grid_pins(FILE* fp,
     for (iheight = 0; iheight < type_descriptor->height; iheight++) {
       for (ipin = 0; ipin < type_descriptor->num_pins; ipin++) {
         if (1 == type_descriptor->pinloc[iheight][side][ipin]) {
-          fprint_stimulate_dangling_one_grid_pin(fp, x, y, iheight, side, ipin);
+          fprint_stimulate_dangling_one_grid_pin(fp, x, y, iheight, side, ipin, rr_node_indices);
         }
       }
     }  

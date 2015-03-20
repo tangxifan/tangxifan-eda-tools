@@ -14,7 +14,7 @@ export BUILD_TYPE = debug
 # can be debug or release - this option gets inherited by the library libarchfpga 
 # by default, though libarchfpga's build type can be set independently in libarchfpga's Makefile.
 
-COMPILER = g++
+COMPILER = g++44
 
 OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD = -O3
 # can be -O0 (no optimization) to -O3 (full optimization), or -Os (optimize space)

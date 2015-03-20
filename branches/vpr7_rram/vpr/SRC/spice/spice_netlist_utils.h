@@ -76,7 +76,8 @@ void fprint_spice_netlist_transient_setting(FILE* fp,
 
 void fprint_stimulate_dangling_one_grid_pin(FILE* fp,
                                             int x, int y,
-                                            int height, int side, int pin_index);
+                                            int height, int side, int pin_index,
+                                            t_ivec*** LL_rr_node_indices);
 
 void fprint_stimulate_dangling_io_grid_pins(FILE* fp,
                                             int x, int y);

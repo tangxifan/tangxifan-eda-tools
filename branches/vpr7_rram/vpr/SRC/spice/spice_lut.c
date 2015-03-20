@@ -497,7 +497,9 @@ void fprint_pb_primitive_lut(FILE* fp,
     fprintf(fp, "%s[%d]->out %s[%d]->outb ", 
             sram_spice_model->prefix, cur_sram, sram_spice_model->prefix, cur_sram); /* Outputs */
     fprintf(fp, "gvdd_sram_luts sgnd %s\n", sram_spice_model->name);  //
-    
+    /* Add nodeset to help convergence */ 
+    fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, cur_sram);
+    fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, cur_sram);
     cur_sram++;
   }
 
@@ -513,10 +515,10 @@ void fprint_pb_primitive_lut(FILE* fp,
     /* the pull UP/down vdd/gnd should be connected to the local interc gvdd*/
     /* TODO: we want to see the dynamic power of each LUT, we may split these global vdd*/
     case 0: 
-      fprintf(fp, "%s[%d]->out ", sram_spice_model->name, cur_sram); 
+      fprintf(fp, "%s[%d]->out ", sram_spice_model->prefix, cur_sram); 
       break;
     case 1: 
-      fprintf(fp, "%s[%d]->outb ", sram_spice_model->name, cur_sram); 
+      fprintf(fp, "%s[%d]->outb ", sram_spice_model->prefix, cur_sram); 
       break;
     default:
       vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid sram_bit(=%d)! Should be [0|1]).\n", __FILE__, __LINE__, sram_bits[i]);

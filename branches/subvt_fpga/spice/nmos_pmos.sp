@@ -37,3 +37,12 @@ M1 drain gate source bulk nmos L=L W=W
 M1 drain gate source bulk pmos L=L W=W
 .eom pmos
 
+* ST 28nm Models
+*.subckt nmos drain gate source bulk L=nl W=wn
+*X1 drain gate source bulk nfet L=L W=W
+*.eom nmos
+
+*.subckt pmos drain gate source bulk L=pl W=wp
+*X1 drain gate source bulk pfet L=L W=W
+*.eom pmos
+

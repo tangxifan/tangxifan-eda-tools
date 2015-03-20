@@ -986,6 +986,7 @@ void fprint_switch_box_mux(FILE* fp,
   /* TODO: What about RRAM-based MUX? */
   cur_num_sram = sram_spice_model->cnt;
   for (ilevel = 0; ilevel < mux_level; ilevel++) {
+    /* Configure the SRAMs*/
     switch (mux_sram_bits[mux_level - ilevel - 1]) {
     case 0:
       fprintf(fp,"%s[%d]->out %s[%d]->outb ", 
@@ -1023,7 +1024,9 @@ void fprint_switch_box_mux(FILE* fp,
     fprintf(fp, "%s[%d]->out ", sram_spice_model->prefix, sram_spice_model->cnt);
     fprintf(fp, "%s[%d]->outb ", sram_spice_model->prefix, sram_spice_model->cnt);
     fprintf(fp, "gvdd_sram_sbs sgnd %s\n", sram_spice_model->name);
-    /* Configure the SRAMs*/
+    /* Add nodeset to help convergence */ 
+    fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, sram_spice_model->cnt);
+    fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, sram_spice_model->cnt);
     /* Pull Up/Down the SRAM outputs*/
     sram_spice_model->cnt++;
   }
@@ -1628,6 +1631,9 @@ void fprint_connection_box_mux(FILE* fp,
     fprintf(fp, "%s[%d]->out ", sram_spice_model->prefix, sram_spice_model->cnt);
     fprintf(fp, "%s[%d]->outb ", sram_spice_model->prefix, sram_spice_model->cnt);
     fprintf(fp, "gvdd_sram_cbs sgnd %s\n", sram_spice_model->name);
+    /* Add nodeset to help convergence */ 
+    fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, sram_spice_model->cnt);
+    fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, sram_spice_model->cnt);
     sram_spice_model->cnt++;
   }
 

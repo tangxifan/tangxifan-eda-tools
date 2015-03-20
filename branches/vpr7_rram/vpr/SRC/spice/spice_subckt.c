@@ -344,17 +344,6 @@ void fprint_spice_wire_model(FILE* fp,
     /* Add an output at middle point for connecting CB inputs */
     fprintf(fp, ".subckt %s %s %s mid_out svdd sgnd\n",
             wire_subckt_name, input_port[0]->prefix, output_port[0]->prefix);
-    /* Direct shortcut */
-    if ((0. == cap_per_level)&&(0. == res_per_level)
-      &&(0 == spice_model.input_buffer->exist)
-      &&(0 == spice_model.output_buffer->exist)) {
-      fprintf(fp, "Rshortcut %s %s 0\n", input_port[0]->prefix, output_port[0]->prefix);
-      fprintf(fp, "Rshortcut_mid %s mid_out 0\n", input_port[0]->prefix);
-      /* Finish*/ 
-      fprintf(fp, ".eom\n");
-      fprintf(fp, "\n");
-      return;
-    }
     break;
   case SPICE_MODEL_WIRE: 
     /* Add an output at middle point for connecting CB inputs */

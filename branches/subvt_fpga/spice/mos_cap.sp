@@ -2,14 +2,16 @@ MOS capacitance
 * Technology
 *.lib '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/process/MM180_LVT18_V113.lib' TT
 *.include '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/process/tsmc40nm.sp'
-.include './process/22nm_HP.pm'
+*.include './process/22nm_HP.pm'
+.include './process/45nm_LP.pm'
+*.include './process/st_28nm.sp'
 .include '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/spice/nmos_pmos.sp'
 .temp 25
-.param beta = 1.45
+.param beta = 1.7
 .param alpha = 1
-.param nl = 22e-9
+.param nl = 45e-9
 .param pl = nl
-.param wn = '66e-9'
+.param wn = '160e-9'
 .param wp = 'beta*wn'
 .param clk_freq = 1e8
 
@@ -30,7 +32,7 @@ MOS capacitance
 .option POST
 .option captab
 
-.param vsp = 0.8
+.param vsp = 1.1
 
 * Test case 1 : NMOS OPEN CAP, VDD
 X1 i1 vdd t1 gnd nmos L=nl W=wn
@@ -81,6 +83,7 @@ Vi11 i11 gnd 0
 Vt11 t11 gnd 0
 * Transistion
 .tran 1e-15 2.21e-08
+.measure tran leak_power find p(Vsupply) at=1e-08
 .measure tran dly_t7 trig v(i7) val='input_threshold_pct_rise*vsp' rise=1
 +                     targ v(t7) val='output_threshold_pct_fall*vsp' fall=1       td='input_pwl'
 .measure tran dly_t8 trig v(i8) val='input_threshold_pct_fall*vsp' fall=1

@@ -20,6 +20,7 @@ sub components;
 sub muxes;
 sub nmos_leakages;
 
+
 #my $hspice      = "/edadk/bin/eda snps hspice";
 my $hspice      = "hspice";
 my $script_path = ( fileparse( abs_path($0) ) )[1];
@@ -130,6 +131,60 @@ nmos_leakages();
 components();
 
 print "</technology>\n";
+
+# Detect and convert unit, NO Case Insentive.
+sub process_unit($ $)
+{
+  my ($unit,$type) = @_;
+  my ($ret,$coeff) = (0,0);
+
+  # Check type, can be <time|power|voltage|capacitance>
+  if ("time" eq $type) {
+    $unit =~ s/s$//i;
+  } elsif ("current" eq $type) {
+    $unit =~ s/A$//; # Special should not mix with "a" = 1e-18
+  } elsif ("power" eq $type) {
+    $unit =~ s/W$//;
+  } elsif ("voltage" eq $type) {
+    $unit =~ s/V$//;
+  } elsif ("capacitance" eq $type) {
+    $unit =~ s/F$//; # Special should not mix with "f" = 1e-15
+  } elsif ("empty" ne $type) {
+    die "Error: (process_unit)Unknown type!Should be <time|power|voltage|capacitance|empty>\n";
+  }
+  
+  # Accepte unit: m = 1e-3, u = 1e-6, n = 1e-9, p = 1e-12, f = 1e-15, a = 1e-18
+  if ($unit =~ m/a$/) { 
+    $unit =~ s/a$//;
+    $coeff = 1e-18;
+  } elsif ($unit =~ m/f$/) {
+    $unit =~ s/f$//;
+    $coeff = 1e-15;
+  } elsif ($unit =~ m/p$/) {
+    $unit =~ s/p$//;
+    $coeff = 1e-12;
+  } elsif ($unit =~ m/n$/) {
+    $unit =~ s/n$//;
+    $coeff = 1e-9;
+  } elsif ($unit =~ m/u$/) {
+    $unit =~ s/u$//;
+    $coeff = 1e-6;
+  } elsif ($unit =~ m/m$/) {
+    $unit =~ s/m$//;
+    $coeff = 1e-3;
+  } elsif ($unit =~ m/k$/) {
+    $unit =~ s/k$//;
+    $coeff = 1e3;
+  } elsif ($unit =~ m/\d$/i) {
+    $coeff = 1;
+  }
+  # Quick check, there should be only numbers in remaining
+  if (!($unit =~ m/\d$/)) {
+    die "Error: (process_unit) Invalid number($unit)!\n";
+  }  
+
+  return $ret = $unit*$coeff;
+}
 
 sub transistors() {
 	foreach my $type (@transistor_types) {
@@ -254,6 +309,7 @@ sub components() {
 				#				print $cmd;
 				my $result = `$cmd`;
 				chomp($result);
+                $result = &process_unit($result, "power");
 				print "\t\t\t\t<size transistor_size=\"" . $size
 				  . "\" power=\""
 				  . $result
@@ -307,6 +363,7 @@ sub get_nmos_leakage_for_Vds {
 	$s = $s . spice_end();
 
 	my @results = spice_run( $s, ["leakage"] );
+    $results[0] = &process_unit($results[0], "current");
 	return $results[0];
 }
 
@@ -326,6 +383,10 @@ sub get_mux_out_voltage_min {
 	$s = $s . spice_end();
 
 	my @results = spice_run( $s, ["vout"] );
+
+    for (my $i=0; $i < ($#results + 1); $i++) {
+      $results[$i] = &process_unit($results[$i], "capacitance");
+    }
 
 	return $results[0];
 }
@@ -350,6 +411,10 @@ sub get_mux_out_voltage {
 	$s = $s . ".measure tran vout_max avg V(outa)\n";
 	$s = $s . spice_end();
 	my @results = spice_run( $s, [ "vout_min", "vout_max" ] );
+
+    for (my $i=0; $i < ($#results + 1); $i++) {
+      $results[$i] = &process_unit($results[$i], "voltage");
+    }
 
 	return @results;
 }
@@ -700,6 +765,10 @@ sub get_riset_fallt_diff {
 
 	my @results = spice_run( $s, [ "fallt", "riset" ] );
 
+    for (my $i=0; $i < ($#results + 1); $i++) {
+      $results[$i] = &process_unit($results[$i], "time");
+    }
+
 	return abs( $results[0] - $results[1] ) / $results[1];
 }
 
@@ -821,7 +890,7 @@ sub get_leakage_long {
 	$s = $s . spice_end();
 	my @results = spice_run( $s, ["leakage"] );
 
-	return $results[0];
+	return &process_unit($results[0], "power");
 }
 
 sub get_gate_leakage {
@@ -853,7 +922,7 @@ sub get_gate_leakage {
 	$s = $s . spice_end();
 	my @results = spice_run( $s, ["leakage"] );
 
-	return $results[0];
+	return &process_unit($results[0], "power");
 
 }
 
@@ -886,7 +955,7 @@ sub get_leakage {
 	$s = $s . spice_end();
 	my @results = spice_run( $s, ["leakage"] );
 
-	return $results[0];
+	return &process_unit($results[0], "power");
 
 }
 
@@ -982,6 +1051,10 @@ sub get_capacitances {
 
 	$s = $s . spice_end();
 	my @results = spice_run( $s, [ "c_g", "c_s", "c_d" ] );
+
+    for (my $i=0; $i < ($#results + 1); $i++) {
+      $results[$i] = &process_unit($results[$i], "capacitance");
+    }
 
 	return @results;
 }

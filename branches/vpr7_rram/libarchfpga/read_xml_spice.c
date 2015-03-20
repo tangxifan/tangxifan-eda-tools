@@ -716,7 +716,9 @@ static void ProcessSpiceTechLibTransistors(ezxml_t Parent,
   Node = FindElement(Parent, "transistors", TRUE);
   if (Node) {
     spice_tech_lib->pn_ratio = GetFloatProperty(Node,"pn_ratio", TRUE, 0);
-	ezxml_set_attr(Node, "pn_ratio", NULL);
+    spice_tech_lib->model_ref = my_strdup(FindProperty(Node,"model_ref", TRUE));
+    ezxml_set_attr(Node, "pn_ratio", NULL);
+    ezxml_set_attr(Node, "model_ref", NULL);
     /* Fill transistor_type number*/
     spice_tech_lib->num_transistor_type = 0;
     spice_tech_lib->num_transistor_type += CountChildren(Node, "nmos", 1);
@@ -739,6 +741,7 @@ static void ProcessSpiceTechLibTransistors(ezxml_t Parent,
     /* Finish parsing this node*/
     FreeNode(Node);
   }
+
   return;
 }
 

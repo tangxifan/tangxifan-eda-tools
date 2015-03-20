@@ -469,6 +469,10 @@ void fprint_pb_type_ports(FILE* fp,
 
   /* Free */
   free(formatted_port_prefix);
+  my_free(pb_type_input_ports);
+  my_free(pb_type_output_ports);
+  my_free(pb_type_inout_ports);
+  my_free(pb_type_clk_ports);
 
   return;
 }
@@ -488,7 +492,7 @@ void fprint_spice_dangling_des_pb_graph_pin_interc(FILE* fp,
   t_interconnect* cur_interc = NULL;
   char* des_pin_prefix = NULL;
   
-  //char* formatted_parent_pin_prefix = format_spice_node_prefix(parent_pin_prefix); /* Complete a "_" at the end if needed*/
+  /* char* formatted_parent_pin_prefix = format_spice_node_prefix(parent_pin_prefix);*/  /* Complete a "_" at the end if needed*/
   //char* chomped_parent_pin_prefix = chomp_spice_node_prefix(parent_pin_prefix); /* Remove a "_" at the end if needed*/
 
   /* Check the file handler*/ 
@@ -507,9 +511,12 @@ void fprint_spice_dangling_des_pb_graph_pin_interc(FILE* fp,
 
   find_interc_fan_in_des_pb_graph_pin(des_pb_graph_pin, cur_mode, &cur_interc, &fan_in);
   if ((NULL != cur_interc)&&(0 != fan_in)) {
+    return;
+    /*
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Cur_interc not NULL & fan_in not zero!\n", 
                __FILE__, __LINE__); 
     exit(1);
+    */
   }
 
   /* Initialize */
@@ -530,20 +537,22 @@ void fprint_spice_dangling_des_pb_graph_pin_interc(FILE* fp,
      * des_pin_prefix = <formatted_parent_pin_prefix>mode[<mode_name>]_<des_pb_type>[<des_pb_type_index>]_
      */
     /*
-    (*des_pin_prefix) = (char*)my_malloc(sizeof(char)*
-                        (strlen(formatted_parent_pin_prefix) + 5 + strlen(pin2pin_interc_parent_mode->name)
+    des_pin_prefix = (char*)my_malloc(sizeof(char)*
+                        (strlen(formatted_parent_pin_prefix) + 5 + strlen(cur_mode->name)
                          + 2 + strlen(des_pb_type->name) + 1 + strlen(my_itoa(des_pb_type_index)) + 1 + 1));
-    sprintf((*des_pin_prefix), "%smode[%s]_%s[%d]",
-            formatted_parent_pin_prefix, pin2pin_interc_parent_mode->name, des_pb_type->name, des_pb_type_index);
+    sprintf(des_pin_prefix, "%smode[%s]_%s[%d]",
+            formatted_parent_pin_prefix, cur_mode->name, des_pb_type->name, des_pb_type_index);
     */
     /*Simplify the prefix, make the SPICE netlist readable*/
     des_pin_prefix = (char*)my_malloc(sizeof(char)*
-                     (strlen(des_pb_type->name) + 1 + strlen(my_itoa(des_pb_type_index)) + 1 + 1));
+                        (strlen(des_pb_type->name) + 1 + strlen(my_itoa(des_pb_type_index)) + 1 + 1));
     sprintf(des_pin_prefix, "%s[%d]",
-            des_pb_type->name, des_pb_type_index);
+             des_pb_type->name, des_pb_type_index);
     /* This is a start point, we connect it to gnd*/
-    fprintf(fp, "Rdangling_%s->%s[%d] %s->%s[%d] ggnd 100Meg\n", 
+    fprintf(fp, "Vdangling_%s->%s[%d] %s->%s[%d] 0 0\n", 
             des_pin_prefix, des_pb_graph_pin->port->name, des_pb_graph_pin->pin_number, 
+            des_pin_prefix, des_pb_graph_pin->port->name, des_pb_graph_pin->pin_number); 
+    fprintf(fp, ".nodeset V(%s->%s[%d]) 0\n", 
             des_pin_prefix, des_pb_graph_pin->port->name, des_pb_graph_pin->pin_number); 
     break;
   case OUTPUT2OUTPUT_INTERC:
@@ -554,20 +563,28 @@ void fprint_spice_dangling_des_pb_graph_pin_interc(FILE* fp,
      * des_pin_prefix = <formatted_parent_pin_prefix>
      */
     /*
-      (*des_pin_prefix) = (char*)my_malloc(sizeof(char)*
-                           (strlen(formatted_parent_pin_prefix) + 5 + strlen(pin2pin_interc_parent_mode->name)
-                           + 2 + strlen(des_pb_type->name) + 1 + strlen(my_itoa(des_pb_type_index)) + 1 + 1));
-      sprintf((*des_pin_prefix), "%smode[%s]_%s[%d]",
-              formatted_parent_pin_prefix, pin2pin_interc_parent_mode->name, des_pb_type->name, des_pb_type_index);
-      */
-    /*Simplify the prefix, make the SPICE netlist readable*/
     des_pin_prefix = (char*)my_malloc(sizeof(char)*
-                     (strlen(des_pb_type->name) + 1 + strlen(my_itoa(des_pb_type_index)) + 1 + 1));
-    sprintf(des_pin_prefix, "%s[%d]",
-            des_pb_type->name, des_pb_type_index);
+                         (strlen(formatted_parent_pin_prefix) + 5 + strlen(cur_mode->name)
+                         + 2 + strlen(des_pb_type->name) + 1 + strlen(my_itoa(des_pb_type_index)) + 1 + 1));
+    sprintf(des_pin_prefix, "%smode[%s]_%s[%d]",
+            formatted_parent_pin_prefix, cur_mode->name, des_pb_type->name, des_pb_type_index);
+    */
+    if (des_pb_type == cur_mode->parent_pb_type) { /* Interconnection from parent pb_type*/
+      des_pin_prefix = (char*)my_malloc(sizeof(char)*
+                           (5 + strlen(cur_mode->name) + 2 ));
+      sprintf(des_pin_prefix, "mode[%s]", cur_mode->name);
+    } else {
+      des_pin_prefix = (char*)my_malloc(sizeof(char)*
+                          (strlen(des_pb_type->name) + 1 + strlen(my_itoa(des_pb_type_index)) + 1 + 1));
+      sprintf(des_pin_prefix, "%s[%d]",
+               des_pb_type->name, des_pb_type_index);
+    }
+    /*Simplify the prefix, make the SPICE netlist readable*/
     /* This is a start point, we connect it to gnd*/
-    fprintf(fp, "Rdangling_%s->%s[%d] %s->%s[%d] ggnd 100Meg\n", 
+    fprintf(fp, "Vdangling_%s->%s[%d] %s->%s[%d] 0 0\n", 
             des_pin_prefix, des_pb_graph_pin->port->name, des_pb_graph_pin->pin_number, 
+            des_pin_prefix, des_pb_graph_pin->port->name, des_pb_graph_pin->pin_number); 
+    fprintf(fp, ".nodeset V(%s->%s[%d]) 0\n", 
             des_pin_prefix, des_pb_graph_pin->port->name, des_pb_graph_pin->pin_number); 
     break;
   default:
@@ -805,8 +822,9 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
   if ((NULL == cur_interc)||(0 == fan_in)) { 
     /* No interconnection matched */
     /* Connect this pin to GND for better convergence */
-   fprint_spice_dangling_des_pb_graph_pin_interc(fp, des_pb_graph_pin, cur_mode, pin2pin_interc_type,
-                                                 formatted_parent_pin_prefix);
+    /* TODO: find the correct pin name!!!*/
+    fprint_spice_dangling_des_pb_graph_pin_interc(fp, des_pb_graph_pin, cur_mode, pin2pin_interc_type,
+                                                  formatted_parent_pin_prefix);
     return;
   }
   /* Initialize the interconnection type that will be implemented in SPICE netlist*/
@@ -959,11 +977,11 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
       /* TODO: we want to see the dynamic power of each multiplexer, we may split these global vdd*/
       case 0: 
         fprintf(fp, "%s[%d]->out %s[%d]->outb ", 
-                sram_spice_model->prefix, cur_sram, sram_spice_model->prefix, cur_sram); /* Outputs */
+                sram_spice_model->prefix, num_sram, sram_spice_model->prefix, num_sram); /* Outputs */
         break;
       case 1:
         fprintf(fp, "%s[%d]->outb %s[%d]->out ", 
-                sram_spice_model->prefix, cur_sram, sram_spice_model->prefix, cur_sram); /* Outputs */
+                sram_spice_model->prefix, num_sram, sram_spice_model->prefix, num_sram); /* Outputs */
         break;
       default:
         vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid sram_bit(=%d)! Should be [0|1].\n", __FILE__, __LINE__, sram_bits[ilevel]);
@@ -992,6 +1010,9 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
       fprintf(fp, "%s[%d]->out %s[%d]->outb ", 
               sram_spice_model->prefix, cur_sram, sram_spice_model->prefix, cur_sram); /* Outputs */
       fprintf(fp, "gvdd_sram_local_routing sgnd %s\n", sram_spice_model->name);  //
+      /* Add nodeset to help convergence */ 
+      fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, cur_sram);
+      fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, cur_sram);
       
       cur_sram++;
     }
