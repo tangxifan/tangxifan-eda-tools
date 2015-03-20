@@ -219,6 +219,7 @@ void fprint_grid_testbench_one_grid_stimulation(FILE* fp,
 
 static 
 void fprint_grid_testbench_stimulations(FILE* fp, 
+                                        int num_clock,
                                         t_spice spice,
                                         t_ivec*** LL_rr_node_indices) {
   int ix, iy;
@@ -266,6 +267,19 @@ void fprint_grid_testbench_stimulations(FILE* fp,
   fprintf(fp, "V%s->in %s->in 0 0\n", 
           sram_spice_model->prefix, sram_spice_model->prefix);
   fprintf(fp, ".nodeset %s->in 0\n", sram_spice_model->prefix);
+
+  fprintf(fp, "***** Global Clock signal *****\n");
+  if (0 < num_clock) {
+    /* First cycle reserved for measuring leakage */
+    fprintf(fp, "***** pulse(vlow vhigh tdelay trise tfall pulse_width period *****\n");
+    fprintf(fp, "Vgclock gclock 0 pulse(0 vsp 'clock_period'\n");
+    fprintf(fp, "+                      'clock_slew_pct_rise*clock_period' 'clock_slew_pct_fall*clock_period'\n");
+    fprintf(fp, "+                      '0.5*(1-clock_slew_pct_rise-clock_slew_pct_fall)*clock_period' 'clock_period')\n");
+  } else {
+    assert(0 == num_clock);
+    fprintf(fp, "***** clock off *****\n");
+    fprintf(fp, "Vgclock gclock 0 0\n");
+  }
 
   /* For each grid input port, we generate the voltage pulses  */
   for (ix = 1; ix < (nx + 1); ix++) {
@@ -406,7 +420,7 @@ void fprint_spice_grid_testbench(char* formatted_spice_dir,
    */
 
   /* Add stimulations */
-  fprint_grid_testbench_stimulations(fp, (*arch.spice), LL_rr_node_indices);
+  fprint_grid_testbench_stimulations(fp, num_clock, (*arch.spice), LL_rr_node_indices);
 
   /* Add measurements */  
   fprint_grid_testbench_measurements(fp, (*arch.spice), leakage_only);
