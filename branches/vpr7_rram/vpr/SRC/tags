@@ -983,7 +983,7 @@ WHITE	base/easygl_constants.h	/^enum color_types {WHITE, BLACK, DARKGREY, LIGHTG
 WILTON	../../libarchfpga/include/physical_types.h	/^	SUBSET, WILTON, UNIVERSAL, FULL$/;"	e	enum:e_switch_block_type
 WIRE_MODEL_PIE	../../libarchfpga/include/spice_types.h	/^  WIRE_MODEL_PIE,$/;"	e	enum:e_wire_model_type
 WIRE_MODEL_T	../../libarchfpga/include/spice_types.h	/^  WIRE_MODEL_T$/;"	e	enum:e_wire_model_type
-WIRE_SEGMENT_LENGTH	base/vpr_api.c	421;"	d	file:
+WIRE_SEGMENT_LENGTH	base/vpr_api.c	422;"	d	file:
 WL	base/place_and_route.h	5;"	d
 WNEED	base/place_and_route.h	4;"	d
 W_seed	base/globals.c	/^int W_seed = -1;$/;"	v
@@ -1881,7 +1881,6 @@ fprint_grid_testbench_one_grid_pin_loads	spice/spice_grid_testbench.c	/^void fpr
 fprint_grid_testbench_one_grid_pin_stimulation	spice/spice_grid_testbench.c	/^void fprint_grid_testbench_one_grid_pin_stimulation(FILE* fp, int x, int y, $/;"	f
 fprint_grid_testbench_one_grid_stimulation	spice/spice_grid_testbench.c	/^void fprint_grid_testbench_one_grid_stimulation(FILE* fp, $/;"	f
 fprint_grid_testbench_stimulations	spice/spice_grid_testbench.c	/^void fprint_grid_testbench_stimulations(FILE* fp, $/;"	f	file:
-fprint_idle_pb_graph_node_mux_rec	spice/spice_mux_testbench.c	/^void fprint_idle_pb_graph_node_mux_rec(FILE* fp, $/;"	f
 fprint_include_user_defined_netlists	spice/spice_netlist_utils.c	/^void fprint_include_user_defined_netlists(FILE* fp,$/;"	f
 fprint_io_grid_block_subckt_pins	spice/spice_pbtypes.c	/^void fprint_io_grid_block_subckt_pins(FILE* fp,$/;"	f
 fprint_io_grid_pins	spice/spice_pbtypes.c	/^void fprint_io_grid_pins(FILE* fp,$/;"	f
@@ -1918,21 +1917,17 @@ fprint_spice_mux_model_cmos_subckt	spice/spice_mux.c	/^void fprint_spice_mux_mod
 fprint_spice_mux_model_rram_subckt	spice/spice_mux.c	/^void fprint_spice_mux_model_rram_subckt(FILE* fp,$/;"	f
 fprint_spice_mux_model_subckt	spice/spice_mux.c	/^void fprint_spice_mux_model_subckt(FILE* fp,$/;"	f
 fprint_spice_mux_testbench	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench(char* formatted_spice_dir,$/;"	f
-fprint_spice_mux_testbench_call_defined_muxes	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_call_defined_muxes(FILE* fp,$/;"	f	file:
-fprint_spice_mux_testbench_call_routing_muxes	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_call_routing_muxes(FILE* fp,$/;"	f	file:
-fprint_spice_mux_testbench_cb_interc	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_cb_interc(FILE* fp, $/;"	f
-fprint_spice_mux_testbench_cb_muxes	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_cb_muxes(FILE* fp, $/;"	f	file:
-fprint_spice_mux_testbench_cb_one_mux	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_cb_one_mux(FILE* fp,$/;"	f	file:
 fprint_spice_mux_testbench_global_ports	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_global_ports(FILE* fp,$/;"	f	file:
+fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec(FILE* fp, $/;"	f
 fprint_spice_mux_testbench_measurements	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_measurements(FILE* fp, $/;"	f	file:
 fprint_spice_mux_testbench_one_mux	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_one_mux(FILE* fp,$/;"	f	file:
+fprint_spice_mux_testbench_pb_graph_node_interc	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_pb_graph_node_interc(FILE* fp,$/;"	f	file:
+fprint_spice_mux_testbench_pb_graph_node_pin_interc	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_pb_graph_node_pin_interc(FILE* fp,$/;"	f	file:
+fprint_spice_mux_testbench_pb_graph_node_pin_mux	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_pb_graph_node_pin_mux(FILE* fp,$/;"	f	file:
 fprint_spice_mux_testbench_pb_interc	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_pb_interc(FILE* fp,$/;"	f	file:
 fprint_spice_mux_testbench_pb_muxes_rec	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_pb_muxes_rec(FILE* fp,$/;"	f	file:
 fprint_spice_mux_testbench_pb_pin_interc	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_pb_pin_interc(FILE* fp,$/;"	f	file:
 fprint_spice_mux_testbench_pb_pin_mux	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_pb_pin_mux(FILE* fp,$/;"	f	file:
-fprint_spice_mux_testbench_rr_node_load_version	spice/spice_mux_testbench.c	/^char* fprint_spice_mux_testbench_rr_node_load_version(FILE* fp,$/;"	f	file:
-fprint_spice_mux_testbench_sb_muxes	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_sb_muxes(FILE* fp, $/;"	f	file:
-fprint_spice_mux_testbench_sb_one_mux	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_sb_one_mux(FILE* fp,$/;"	f	file:
 fprint_spice_mux_testbench_stimulations	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_stimulations(FILE* fp, $/;"	f	file:
 fprint_spice_netlist_transient_setting	spice/spice_netlist_utils.c	/^void fprint_spice_netlist_transient_setting(FILE* fp, $/;"	f
 fprint_spice_options	spice/spice_netlist_utils.c	/^void fprint_spice_options(FILE* fp,$/;"	f
@@ -2755,7 +2750,6 @@ num_fc_constraints	base/vpr_types.h	/^	int num_fc_constraints; \/* number of spe
 num_feasible_blocks	base/vpr_types.h	/^	int num_feasible_blocks; \/* [0..num_marked_models-1] *\/$/;"	m	struct:s_pb_stats
 num_ff_constraints	base/vpr_types.h	/^	int num_ff_constraints; \/* number of special-case flipflop-to-flipflop constraints *\/$/;"	m	struct:s_timing_constraints
 num_global_clocks	../../libarchfpga/include/physical_types.h	/^	int num_global_clocks;$/;"	m	struct:s_clock_arch
-num_grid_load	spice/spice_grid_testbench.c	/^static int num_grid_load = 0;$/;"	v	file:
 num_grid_loc_def	../../libarchfpga/include/physical_types.h	/^	int num_grid_loc_def;$/;"	m	struct:s_type_descriptor
 num_heap_allocated	route/route_common.c	/^static int num_heap_allocated = 0;$/;"	v	file:
 num_include_netlist	../../libarchfpga/include/spice_types.h	/^  int num_include_netlist;$/;"	m	struct:s_spice
@@ -2774,7 +2768,6 @@ num_inputs	power/power.h	/^	int num_inputs; \/* Number of inputs *\/$/;"	m	struc
 num_inputs	power/power.h	/^	int num_inputs;$/;"	m	struct:s_mux_arch
 num_inputs	power/power.h	/^	short num_inputs; \/* Number of inputs *\/$/;"	m	struct:s_rr_node_power
 num_interconnect	../../libarchfpga/include/physical_types.h	/^	int num_interconnect;$/;"	m	struct:s_mode
-num_inv_load	spice/spice_grid_testbench.c	/^static int num_inv_load = 0;$/;"	v	file:
 num_latches	base/read_blif.c	/^static int num_luts = 0, num_latches = 0, num_subckts = 0;$/;"	v	file:
 num_leakage_pairs	power/power.h	/^	int num_leakage_pairs;$/;"	m	struct:s_power_nmos_leakage_inf
 num_legal_pos	place/place.c	/^static int *num_legal_pos = NULL; \/* [0..num_legal_pos-1] *\/$/;"	v	file:
@@ -2800,7 +2793,6 @@ num_nets	base/globals_declare.h	/^int num_nets, num_blocks;$/;"	v
 num_nets_in_cluster	pack/cluster_legality.c	/^static int num_nets_in_cluster;$/;"	v	file:
 num_nmos_leakage_info	power/power.h	/^	int num_nmos_leakage_info;$/;"	m	struct:s_power_tech
 num_nmos_mux_info	power/power.h	/^	int num_nmos_mux_info;$/;"	m	struct:s_power_tech
-num_noninv_load	spice/spice_grid_testbench.c	/^static int num_noninv_load = 0;$/;"	v	file:
 num_normal_switch	../../libarchfpga/include/arch_types_mrfpga.h	/^  short num_normal_switch;$/;"	m	struct:s_arch_mrfpga
 num_normal_switch	mrfpga/mrfpga_globals.c	/^short num_normal_switch;$/;"	v
 num_opin_drivers	base/vpr_types.h	/^	int num_opin_drivers; \/* UDSD by WMF (could use "short") *\/$/;"	m	struct:s_rr_node

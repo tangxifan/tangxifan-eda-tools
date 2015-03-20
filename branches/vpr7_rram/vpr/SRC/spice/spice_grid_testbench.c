@@ -58,15 +58,11 @@ void fprint_grid_testbench_global_ports(FILE* fp,
   fprintf(fp, ".global gvdd gset greset\n");
   fprintf(fp, ".global gvdd_local_interc gvdd_hardlogic\n");
   fprintf(fp, ".global gvdd_sram_local_routing gvdd_sram_luts\n");
-  fprintf(fp, ".global sram->in\n");
+  fprintf(fp, ".global %s->in\n", sram_spice_model->prefix);
   fprintf(fp, ".global gvdd_load\n");
-  /* Define a global clock port if we need one*/
-  if (1 == num_clock) {
-    fprintf(fp, "***** Global Clock Signals *****\n");
-    fprintf(fp, ".global gclock\n");
-  } else {
-    assert(0 == num_clock);
-  }
+  fprintf(fp, "***** Global Clock Signals *****\n");
+  fprintf(fp, ".global gclock\n");
+
   /*Global Vdds for LUTs*/
   fprint_global_vdds_spice_model(fp, SPICE_MODEL_LUT, spice);
   /*Global Vdds for FFs*/
@@ -207,9 +203,10 @@ void fprint_grid_testbench_one_grid_stimulation(FILE* fp,
             fprint_grid_testbench_one_grid_pin_stimulation(fp, x, y, iheight, side, ipin, LL_rr_node_indices);
           } else if (DRIVER == type->class_inf[class_id].type) { 
             fprint_grid_testbench_one_grid_pin_loads(fp, x, y, iheight, side, ipin, LL_rr_node_indices);
+          } else {
+            fprint_stimulate_dangling_one_grid_pin(fp, x, y, iheight, side, ipin, LL_rr_node_indices);
           }
         }
-        fprint_stimulate_dangling_one_grid_pin(fp, x, y, iheight, side, ipin, LL_rr_node_indices);
       }
     }
   }
@@ -226,7 +223,7 @@ void fprint_grid_testbench_stimulations(FILE* fp,
 
   /* Global GND */
   fprintf(fp, "***** Global VDD port *****\n");
-  fprintf(fp, "Vgvdd gvdd 0 0\n");
+  fprintf(fp, "Vgvdd gvdd 0 vsp\n");
   fprintf(fp, "***** Global GND port *****\n");
   fprintf(fp, "*Rggnd ggnd 0 0\n");
 
@@ -235,6 +232,9 @@ void fprint_grid_testbench_stimulations(FILE* fp,
   fprintf(fp, "Vgvreset greset 0 0\n");
   fprintf(fp, "***** Global Net for set signal *****\n");
   fprintf(fp, "Vgvset gset 0 0\n");
+  /* Global vdd load */
+  fprintf(fp, "***** Global Net for load vdd *****\n");
+  fprintf(fp, "Vgvdd_load gvdd_load 0 vsp\n");
 
   /* Global Vdd ports */
   fprintf(fp, "***** Global VDD for Local Interconnection *****\n");
@@ -266,7 +266,7 @@ void fprint_grid_testbench_stimulations(FILE* fp,
   */
   fprintf(fp, "V%s->in %s->in 0 0\n", 
           sram_spice_model->prefix, sram_spice_model->prefix);
-  fprintf(fp, ".nodeset %s->in 0\n", sram_spice_model->prefix);
+  fprintf(fp, ".nodeset V(%s->in) 0\n", sram_spice_model->prefix);
 
   fprintf(fp, "***** Global Clock signal *****\n");
   if (0 < num_clock) {

@@ -1,4 +1,4 @@
-Automated spice simuation: Fri Mar 20 11:34:01 2015
+Automated spice simuation: Fri Mar 20 11:41:07 2015
 .global Vdd gnd
 .include '/home/xitang/tangxifan-eda-tools/branches/fpga_flow/tech/45nm_LP.pm'
 .param tech = 45e-9
@@ -10,8 +10,8 @@ Automated spice simuation: Fri Mar 20 11:34:01 2015
 .include '/home/xitang/tangxifan-eda-tools/branches/fpga_flow/power_tech_script/spice/subckt/inv.sp'
 .include '/home/xitang/tangxifan-eda-tools/branches/fpga_flow/power_tech_script/spice/subckt/level_restorer.sp'
 Vdd Vdd 0 'Vol'
-Vin in 0 0.522
-X0 in 0 0 0 nfet size='2.44'
+Vin in 0 0.9
+X0 in 0 0 0 nfet size='22.74'
 .TEMP 25
 .OP
 .OPTIONS LIST NODE POST CAPTAB

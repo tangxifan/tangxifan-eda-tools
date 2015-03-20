@@ -530,6 +530,7 @@ void fprint_pb_primitive_lut(FILE* fp,
    * Every LUT has a special VDD for statistics
    */
   fprintf(fp, "gvdd_%s[%d] sgnd %s\n", spice_model->prefix, spice_model->cnt, spice_model->name);
+  /* TODO: Add a nodeset for convergence */
 
   /* End of subckt*/
   fprintf(fp, ".eom\n");

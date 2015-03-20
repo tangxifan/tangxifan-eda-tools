@@ -147,6 +147,7 @@ void fprint_spice_mux_testbench_global_ports(FILE* fp,
   fprintf(fp, ".global gvdd gset greset\n");
   fprintf(fp, ".global gvdd_sram\n");
   fprintf(fp, ".global gvdd_load\n");
+  fprintf(fp, ".global %s->in\n", sram_spice_model->prefix);
 
   return;
 }
@@ -391,6 +392,103 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
  * --|---|
  */
 static 
+void fprint_spice_mux_testbench_pb_graph_node_pin_mux(FILE* fp,
+                                                      t_mode* cur_mode,
+                                                      t_pb_graph_pin* des_pb_graph_pin,
+                                                      t_interconnect* cur_interc,
+                                                      int fan_in,
+                                                      int select_edge) {
+  int cur_input = 0;  
+  float* input_density = NULL;
+  float* input_probability = NULL;
+  int iedge;
+  int* sram_bits = NULL; 
+  t_spice_model* fan_out_spice_model = NULL;
+  float load_inv_size = 0.;
+  char* meas_tag = NULL;
+
+  /* A valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File Handler!\n",__FILE__, __LINE__); 
+    exit(1);
+  } 
+  /* Check : 
+   * MUX should have at least 2 fan_in
+   */
+  assert((2 == fan_in)||(2 < fan_in));
+  /* 2. spice_model is a wire */ 
+  assert(NULL != cur_interc->spice_model);
+  assert(SPICE_MODEL_MUX == cur_interc->spice_model->type);
+ 
+  /* Test bench : Add voltage sources */
+  cur_input = 0;
+  input_density = (float*)my_malloc(sizeof(float)*fan_in);
+  input_probability = (float*)my_malloc(sizeof(float)*fan_in);
+  for (iedge = 0; iedge < des_pb_graph_pin->num_input_edges; iedge++) {
+    if (cur_mode != des_pb_graph_pin->input_edges[iedge]->interconnect->parent_mode) {
+       continue;
+    }
+    check_pb_graph_edge(*(des_pb_graph_pin->input_edges[iedge]));
+    /* Find activity information */
+    input_density[cur_input] = 0; 
+    input_probability[cur_input] = 0; 
+    cur_input++;
+  }
+  /* Check fan-in number is correct */
+  assert(fan_in == cur_input);
+
+  /* Build a measurement tag: <des_pb:spice_name_tag>_<des_port>[pin_index]_<interc_name> */
+  meas_tag = (char*)my_malloc(sizeof(char)* (10 + strlen(my_itoa(fan_in)) + strlen(my_itoa(testbench_mux_cnt)) + 2
+                                            + strlen(des_pb_graph_pin->port->name) + 1 
+                                            + strlen(my_itoa(des_pb_graph_pin->pin_number)) + 2
+                                            + strlen(cur_interc->name) + 1)); /* Add '0'*/
+  sprintf(meas_tag, "idle_mux%d[%d]_%s[%d]_%s", 
+          fan_in, testbench_mux_cnt, des_pb_graph_pin->port->name, des_pb_graph_pin->pin_number, cur_interc->name);
+  /* Print the main part of a single MUX testbench */
+  fprint_spice_mux_testbench_one_mux(fp, meas_tag, cur_interc->spice_model,
+                                     fan_in, input_density, input_probability, select_edge);
+
+  /* Test bench : Capactive load */
+  /* Search all the fan-outs of des_pb_graph_pin */
+  for (iedge = 0; iedge < des_pb_graph_pin->num_output_edges; iedge++) {
+    /* Bypass fan-out not in this mode */
+    if (cur_mode != des_pb_graph_pin->output_edges[iedge]->interconnect->parent_mode) {
+       continue;
+    }
+    check_pb_graph_edge(*(des_pb_graph_pin->output_edges[iedge]));
+    /* For each fan-out, give inv/buf loads depending on its fanout interc. */
+    if (0 == des_pb_graph_pin->num_output_edges) { /* If there is zero fan-out, this could be a primitive block */
+      fan_out_spice_model = des_pb_graph_pin->output_edges[iedge]->output_pins[0]->parent_node->pb_type->spice_model; 
+      assert(NULL != fan_out_spice_model);
+      /* Detect its input buffers */
+      load_inv_size = find_spice_mux_testbench_pb_pin_mux_load_inv_size(fan_out_spice_model);
+      /* Print an inverter */
+      fprintf(fp, "Xload_inv[%d] %s_size%d[%d]->out load_inv[%d]_out gvdd_load 0 inv size=%g\n",
+              testbench_load_cnt, cur_interc->spice_model->prefix, fan_in, testbench_mux_cnt, testbench_load_cnt, load_inv_size);
+      testbench_load_cnt++;
+    }
+  }
+
+  /* Update the counter */
+  testbench_mux_cnt++;
+
+  /* Free */
+  my_free(sram_bits);
+  my_free(input_density);
+  my_free(input_probability);
+
+  return;
+}
+
+
+/** Print a mulitplexer testbench of a given pb pin
+ * --|---|
+ * --| M |
+ * ..| U |--- des_pb_graph_in
+ * --| X |
+ * --|---|
+ */
+static 
 void fprint_spice_mux_testbench_pb_pin_mux(FILE* fp,
                                            t_rr_node* pb_rr_graph,
                                            t_pb* des_pb,
@@ -477,6 +575,91 @@ void fprint_spice_mux_testbench_pb_pin_mux(FILE* fp,
   my_free(sram_bits);
   my_free(input_density);
   my_free(input_probability);
+
+  return;
+}
+
+static 
+void fprint_spice_mux_testbench_pb_graph_node_pin_interc(FILE* fp,
+                                                         enum e_pin2pin_interc_type pin2pin_interc_type,
+                                                         t_pb_graph_pin* des_pb_graph_pin,
+                                                         t_mode* cur_mode,
+                                                         int select_path_id) {
+  int fan_in;
+  int iedge;
+  t_interconnect* cur_interc = NULL;
+  enum e_interconnect spice_interc_type;
+
+  /* A valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File Handler!\n",__FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  /* 1. identify pin interconnection type, 
+   * 2. Identify the number of fan-in (Consider interconnection edges of only selected mode)
+   * 3. Select and print the SPICE netlist
+   */
+  fan_in = 0;
+  cur_interc = NULL;
+  /* Search the input edges only, stats on the size of MUX we may need (fan-in) */
+  for (iedge = 0; iedge < des_pb_graph_pin->num_input_edges; iedge++) {
+    /* 1. First, we should make sure this interconnect is in the selected mode!!!*/
+    if (cur_mode == des_pb_graph_pin->input_edges[iedge]->interconnect->parent_mode) {
+      /* Check this edge*/
+      check_pb_graph_edge(*(des_pb_graph_pin->input_edges[iedge]));
+      /* Record the interconnection*/
+      if (NULL == cur_interc) {
+        cur_interc = des_pb_graph_pin->input_edges[iedge]->interconnect;
+      } else { /* Make sure the interconnections for this pin is the same!*/
+        assert(cur_interc == des_pb_graph_pin->input_edges[iedge]->interconnect);
+      }
+      /* Search the input_pins of input_edges only*/
+      fan_in += des_pb_graph_pin->input_edges[iedge]->num_input_pins;
+    }
+  }
+  if (NULL == cur_interc) { 
+    /* No interconnection matched */
+    return;
+  }
+  /* Initialize the interconnection type that will be implemented in SPICE netlist*/
+  switch (cur_interc->type) {
+    case DIRECT_INTERC:
+      assert(1 == fan_in);
+      spice_interc_type = DIRECT_INTERC;
+      break;
+    case COMPLETE_INTERC:
+      if (1 == fan_in) {
+        spice_interc_type = DIRECT_INTERC;
+      } else {
+        assert((2 == fan_in)||(2 < fan_in));
+        spice_interc_type = MUX_INTERC;
+      }
+      break;
+    case MUX_INTERC:
+      assert((2 == fan_in)||(2 < fan_in));
+      spice_interc_type = MUX_INTERC;
+      break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid interconnection type for %s (Arch[LINE%d])!\n",
+               __FILE__, __LINE__, cur_interc->name, cur_interc->line_num);
+    exit(1);
+  }
+
+  /* Print all the multiplexers at current level */
+  switch (spice_interc_type) {
+  case DIRECT_INTERC:
+    break;
+  case MUX_INTERC:
+    assert(SPICE_MODEL_MUX == cur_interc->spice_model->type);
+    fprint_spice_mux_testbench_pb_graph_node_pin_mux(fp, cur_mode, des_pb_graph_pin, 
+                                                     cur_interc, fan_in, select_path_id); 
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid interconnection type!\n", 
+               __FILE__, __LINE__);
+    exit(1);
+  }
 
   return;
 }
@@ -569,9 +752,123 @@ void fprint_spice_mux_testbench_pb_pin_interc(FILE* fp,
   return;
 }
 
-void fprint_idle_pb_graph_node_mux_rec(FILE* fp, 
-                                       t_pb_graph_node* cur_pb_graph_node, 
-                                       int pb_graph_node_index) {
+/* For each pb, we search the input pins and output pins for local interconnections */
+static 
+void fprint_spice_mux_testbench_pb_graph_node_interc(FILE* fp,
+                                                     t_pb_graph_node* cur_pb_graph_node) {
+  int iport, ipin;
+  int ipb, jpb;
+  t_pb_type* cur_pb_type = NULL;
+  t_mode* cur_mode = NULL;
+  t_pb_graph_node* child_pb_graph_node = NULL;
+  int select_mode_index = -1;
+
+  int path_id = -1;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+  
+  assert(NULL != cur_pb_graph_node);
+  cur_pb_type = cur_pb_graph_node->pb_type;
+  assert(NULL != cur_pb_type);
+  select_mode_index = find_pb_type_idle_mode_index(*(cur_pb_type));
+  cur_mode = &(cur_pb_type->modes[select_mode_index]);
+  assert(NULL != cur_mode);
+
+  /* We check output_pins of cur_pb_graph_node and its the input_edges
+   * Built the interconnections between outputs of cur_pb_graph_node and outputs of child_pb_graph_node
+   *   child_pb_graph_node.output_pins -----------------> cur_pb_graph_node.outpins
+   *                                        /|\
+   *                                         |
+   *                         input_pins,   edges,       output_pins
+   */ 
+  for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
+      path_id = 0; 
+      fprint_spice_mux_testbench_pb_graph_node_pin_interc(fp, 
+                                                          OUTPUT2OUTPUT_INTERC,
+                                                          &(cur_pb_graph_node->output_pins[iport][ipin]),
+                                                          cur_mode,
+                                                          path_id);
+    }
+  }
+  
+  /* We check input_pins of child_pb_graph_node and its the input_edges
+   * Built the interconnections between inputs of cur_pb_graph_node and inputs of child_pb_graph_node
+   *   cur_pb_graph_node.input_pins -----------------> child_pb_graph_node.input_pins
+   *                                        /|\
+   *                                         |
+   *                         input_pins,   edges,       output_pins
+   */ 
+  for (ipb = 0; ipb < cur_pb_type->modes[select_mode_index].num_pb_type_children; ipb++) {
+    for (jpb = 0; jpb < cur_pb_type->modes[select_mode_index].pb_type_children[ipb].num_pb; jpb++) {
+      child_pb_graph_node = &(cur_pb_graph_node->child_pb_graph_nodes[select_mode_index][ipb][jpb]);
+      /* For each child_pb_graph_node input pins*/
+      for (iport = 0; iport < child_pb_graph_node->num_input_ports; iport++) {
+        for (ipin = 0; ipin < child_pb_graph_node->num_input_pins[iport]; ipin++) {
+          path_id = 0;
+          /* Write the interconnection*/
+          fprint_spice_mux_testbench_pb_graph_node_pin_interc(fp, 
+                                                              INPUT2INPUT_INTERC,
+                                                              &(child_pb_graph_node->input_pins[iport][ipin]),
+                                                              cur_mode,
+                                                              path_id);
+        }
+      }
+      /* TODO: for clock pins, we should do the same work */
+      for (iport = 0; iport < child_pb_graph_node->num_clock_ports; iport++) {
+        for (ipin = 0; ipin < child_pb_graph_node->num_clock_pins[iport]; ipin++) {
+          path_id = 0;
+          /* Write the interconnection*/
+          fprint_spice_mux_testbench_pb_graph_node_pin_interc(fp, 
+                                                              INPUT2INPUT_INTERC,
+                                                              &(child_pb_graph_node->clock_pins[iport][ipin]),
+                                                              cur_mode,
+                                                              path_id);
+        }
+      }
+    }
+  }
+
+  return; 
+}
+
+void fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec(FILE* fp, 
+                                                             t_pb_graph_node* cur_pb_graph_node) {
+  int ipb, jpb;
+  int mode_index;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+  /* Check */
+  assert(NULL != cur_pb_graph_node);
+
+  /* If we touch the leaf, there is no need print interc*/
+  if (NULL == cur_pb_graph_node->pb_type->spice_model) {
+    /* Print MUX interc at current-level pb*/
+    fprint_spice_mux_testbench_pb_graph_node_interc(fp, cur_pb_graph_node);
+  } else {
+    return;
+  }
+  
+  /* Go recursively ... */
+  mode_index = find_pb_type_idle_mode_index(*(cur_pb_graph_node->pb_type));
+  for (ipb = 0; ipb < cur_pb_graph_node->pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+    for (jpb = 0; jpb < cur_pb_graph_node->pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+      /* Print idle muxes */
+      fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec(fp, &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]));
+    }
+  }
+  
+  return;
 }
 
 /* For each pb, we search the input pins and output pins for local interconnections */
@@ -655,7 +952,31 @@ void fprint_spice_mux_testbench_pb_interc(FILE* fp,
       child_pb = &(cur_pb->child_pbs[ipb][jpb]);
       /* Check if child_pb is empty */
       if (NULL == child_pb->name) { 
-        fprint_idle_pb_graph_node_mux_rec(fp, child_pb->pb_graph_node, jpb);
+        /* fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec(fp, child_pb->pb_graph_node, jpb); */
+        /* For each child_pb_graph_node input pins*/
+        for (iport = 0; iport < child_pb_graph_node->num_input_ports; iport++) {
+          for (ipin = 0; ipin < child_pb_graph_node->num_input_pins[iport]; ipin++) {
+            path_id = 0;
+            /* Write the interconnection*/
+            fprint_spice_mux_testbench_pb_graph_node_pin_interc(fp, 
+                                                                INPUT2INPUT_INTERC,
+                                                                &(child_pb_graph_node->input_pins[iport][ipin]),
+                                                                cur_mode,
+                                                                path_id);
+          }
+        }
+        /* TODO: for clock pins, we should do the same work */
+        for (iport = 0; iport < child_pb_graph_node->num_clock_ports; iport++) {
+          for (ipin = 0; ipin < child_pb_graph_node->num_clock_pins[iport]; ipin++) {
+            path_id = 0;
+            /* Write the interconnection*/
+            fprint_spice_mux_testbench_pb_graph_node_pin_interc(fp, 
+                                                                INPUT2INPUT_INTERC,
+                                                                &(child_pb_graph_node->clock_pins[iport][ipin]),
+                                                                cur_mode,
+                                                                path_id);
+          }  
+        }
         break;
       }
       /* Get pb_rr_graph of current pb*/
@@ -746,7 +1067,7 @@ void fprint_spice_mux_testbench_pb_muxes_rec(FILE* fp,
         fprint_spice_mux_testbench_pb_muxes_rec(fp, &(cur_pb->child_pbs[ipb][jpb]));
       } else {
         /* Print idle muxes */
-        fprint_idle_pb_graph_node_mux_rec(fp, cur_pb->child_pbs[ipb][jpb].pb_graph_node, jpb);
+        fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec(fp, cur_pb->child_pbs[ipb][jpb].pb_graph_node);
       }
     }
   }
@@ -894,9 +1215,11 @@ void fprint_spice_mux_testbench_cb_interc(FILE* fp,
   assert((!(0 > cb_x))&&(!(cb_x > (nx + 1)))); 
   assert((!(0 > cb_y))&&(!(cb_y > (ny + 1)))); 
   /* Skip non-mapped CB MUX */
+  /*
   if (OPEN == src_rr_node->net_num) {
     return;
   }
+  */
 
   if (1 == src_rr_node->fan_in) {
     /* By-pass a direct connection*/
@@ -1379,11 +1702,22 @@ void fprint_spice_mux_testbench_call_defined_muxes(FILE* fp,
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File Handler!\n",__FILE__, __LINE__); 
     exit(1);
   } 
-  /* Search each block */
-  for (iblk = 0; iblk < num_blocks; iblk++) {
-    /* Only for mapped block */
-    if (NULL != block[iblk].pb) {
-      fprint_spice_mux_testbench_pb_muxes_rec(fp, block[iblk].pb); 
+  /* Print all the grid */
+  for (iy = 1; iy < (ny + 1); iy++) { 
+    for (ix = 1; ix < (nx + 1); ix++) {
+      if (NULL == grid[ix][iy].type) {
+        continue;
+      }
+      /* Used blocks */
+      for (iblk = 0; iblk < grid[ix][iy].usage; iblk++) {
+        /* Only for mapped block */
+        assert(NULL != block[grid[ix][iy].blocks[iblk]].pb);
+        fprint_spice_mux_testbench_pb_muxes_rec(fp, block[grid[ix][iy].blocks[iblk]].pb); 
+      }  
+      /* Unused blocks */
+      for (iblk = grid[ix][iy].usage; iblk < grid[ix][iy].type->capacity; iblk++) {
+        fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec(fp, grid[ix][iy].type->pb_graph_head);
+      } 
     }
   }
   /* Find all routing Switch Boxes and Connection Blocks */
@@ -1441,8 +1775,9 @@ void fprint_spice_mux_testbench_stimulations(FILE* fp,
   fprintf(fp, "***** Global VDD for load inverters *****\n");
   fprintf(fp, "Vgvdd_load gvdd_load 0 vsp\n");
   fprintf(fp, "***** Global Force for all SRAMs *****\n");
-  fprintf(fp,"V%s->in %s->in 0 0\n", 
+  fprintf(fp, "V%s->in %s->in 0 0\n", 
           sram_spice_model->prefix, sram_spice_model->prefix);
+  fprintf(fp, ".nodeset V(%s->in) 0\n", sram_spice_model->prefix);
 
   return;
 }

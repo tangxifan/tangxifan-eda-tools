@@ -75,13 +75,10 @@ void fprint_top_netlist_global_ports(FILE* fp,
   fprintf(fp, ".global gvdd gset greset\n");
   fprintf(fp, ".global gvdd_local_interc gvdd_io gvdd_hardlogic\n");
   fprintf(fp, ".global gvdd_sram_local_routing gvdd_sram_luts gvdd_sram_cbs gvdd_sram_sbs\n");
+  fprintf(fp, ".global %s->in\n", sram_spice_model->prefix);
   /* Define a global clock port if we need one*/
-  if (1 == num_clock) {
-    fprintf(fp, "***** Global Clock Signals *****\n");
-    fprintf(fp, ".global gclock\n");
-  } else {
-    assert(0 == num_clock);
-  }
+  fprintf(fp, "***** Global Clock Signals *****\n");
+  fprintf(fp, ".global gclock\n");
   /*Global Vdds for LUTs*/
   fprint_global_vdds_spice_model(fp, SPICE_MODEL_LUT, spice);
   /*Global Vdds for FFs*/
