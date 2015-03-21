@@ -40,6 +40,9 @@
 static int testbench_mux_cnt = 0;
 static int testbench_sram_cnt = 0;
 static int testbench_load_cnt = 0;
+static int testbench_pb_mux_cnt = 0;
+static int testbench_cb_mux_cnt = 0;
+static int testbench_sb_mux_cnt = 0;
 static t_llist* testbench_muxes_head = NULL; 
 static int num_segments = 0;
 static t_segment_inf* segments = NULL;
@@ -135,6 +138,16 @@ void fprint_spice_mux_testbench_measurements(FILE* fp,
                                              t_spice spice);
 
 /***** Local Subroutines *****/
+static void init_spice_mux_testbench_globals() {
+  testbench_mux_cnt = 0;
+  testbench_sram_cnt = 0;
+  testbench_load_cnt = 0;
+  testbench_muxes_head = NULL; 
+  testbench_pb_mux_cnt = 0;
+  testbench_cb_mux_cnt = 0;
+  testbench_sb_mux_cnt = 0;
+}
+
 static 
 void fprint_spice_mux_testbench_global_ports(FILE* fp,
                                              t_spice spice) {
@@ -182,6 +195,87 @@ int find_spice_mux_testbench_pb_pin_mux_load_inv_size(t_spice_model* fan_out_spi
   }
  
   return load_inv_size;
+}
+
+static 
+void fprint_spice_mux_testbench_pb_mux_meas(FILE* fp,
+                                            char* meas_tag) {
+  /* A valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File Handler!\n",__FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  if (0 == testbench_pb_mux_cnt) {
+    fprintf(fp, ".meas tran sum_leakage_power_pb_mux[0to%d] \n", testbench_pb_mux_cnt);
+    fprintf(fp, "+          param=\'leakage_%s\'\n", meas_tag);
+    fprintf(fp, ".meas tran sum_dynamic_power_pb_mux[0to%d] \n", testbench_pb_mux_cnt);
+    fprintf(fp, "+          param=\'dynamic_%s\'\n", meas_tag);
+  } else {
+    fprintf(fp, ".meas tran sum_leakage_power_pb_mux[0to%d] \n", testbench_pb_mux_cnt);
+    fprintf(fp, "+          param=\'sum_leakage_power_pb_mux[0to%d]+leakage_%s\'\n", testbench_pb_mux_cnt-1, meas_tag);
+    fprintf(fp, ".meas tran sum_dynamic_power_pb_mux[0to%d] \n", testbench_pb_mux_cnt);
+    fprintf(fp, "+          param=\'sum_dynamic_power_pb_mux[0to%d]+dynamic_%s\'\n", testbench_pb_mux_cnt-1, meas_tag);
+  }
+
+  /* Update the counter */
+  testbench_pb_mux_cnt++;
+
+  return;
+}
+
+static 
+void fprint_spice_mux_testbench_cb_mux_meas(FILE* fp,
+                                            char* meas_tag) {
+  /* A valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File Handler!\n",__FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  if (0 == testbench_cb_mux_cnt) {
+    fprintf(fp, ".meas tran sum_leakage_power_cb_mux[0to%d] \n", testbench_cb_mux_cnt);
+    fprintf(fp, "+          param=\'leakage_%s\'\n", meas_tag);
+    fprintf(fp, ".meas tran sum_dynamic_power_cb_mux[0to%d] \n", testbench_cb_mux_cnt);
+    fprintf(fp, "+          param=\'dynamic_%s\'\n", meas_tag);
+  } else {
+    fprintf(fp, ".meas tran sum_leakage_power_cb_mux[0to%d] \n", testbench_cb_mux_cnt);
+    fprintf(fp, "+          param=\'sum_leakage_power_cb_mux[0to%d]+leakage_%s\'\n", testbench_cb_mux_cnt-1, meas_tag);
+    fprintf(fp, ".meas tran sum_dynamic_power_cb_mux[0to%d] \n", testbench_cb_mux_cnt);
+    fprintf(fp, "+          param=\'sum_dynamic_power_cb_mux[0to%d]+dynamic_%s\'\n", testbench_cb_mux_cnt-1, meas_tag);
+  }
+
+  /* Update the counter */
+  testbench_cb_mux_cnt++;
+
+  return;
+}
+
+static 
+void fprint_spice_mux_testbench_sb_mux_meas(FILE* fp,
+                                            char* meas_tag) {
+  /* A valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File Handler!\n",__FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  if (0 == testbench_sb_mux_cnt) {
+    fprintf(fp, ".meas tran sum_leakage_power_sb_mux[0to%d] \n", testbench_sb_mux_cnt);
+    fprintf(fp, "+          param=\'leakage_%s\'\n", meas_tag);
+    fprintf(fp, ".meas tran sum_dynamic_power_sb_mux[0to%d] \n", testbench_sb_mux_cnt);
+    fprintf(fp, "+          param=\'dynamic_%s\'\n", meas_tag);
+  } else {
+    fprintf(fp, ".meas tran sum_leakage_power_sb_mux[0to%d] \n", testbench_sb_mux_cnt);
+    fprintf(fp, "+          param=\'sum_leakage_power_sb_mux[0to%d]+leakage_%s\'\n", testbench_sb_mux_cnt-1, meas_tag);
+    fprintf(fp, ".meas tran sum_dynamic_power_sb_mux[0to%d] \n", testbench_sb_mux_cnt);
+    fprintf(fp, "+          param=\'sum_dynamic_power_sb_mux[0to%d]+dynamic_%s\'\n", testbench_sb_mux_cnt-1, meas_tag);
+  }
+
+  /* Update the counter */
+  testbench_sb_mux_cnt++;
+
+  return;
 }
 
 static 
@@ -469,6 +563,7 @@ void fprint_spice_mux_testbench_pb_graph_node_pin_mux(FILE* fp,
     }
   }
 
+  fprint_spice_mux_testbench_pb_mux_meas(fp, meas_tag);
   /* Update the counter */
   testbench_mux_cnt++;
 
@@ -567,6 +662,8 @@ void fprint_spice_mux_testbench_pb_pin_mux(FILE* fp,
       testbench_load_cnt++;
     }
   }
+
+  fprint_spice_mux_testbench_pb_mux_meas(fp, meas_tag);
 
   /* Update the counter */
   testbench_mux_cnt++;
@@ -1191,6 +1288,7 @@ void fprint_spice_mux_testbench_cb_one_mux(FILE* fp,
     testbench_load_cnt++;
   }
 
+  fprint_spice_mux_testbench_cb_mux_meas(fp, meas_tag);
   /* Update the counter */
   testbench_mux_cnt++;
 
@@ -1522,6 +1620,8 @@ void fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
     testbench_load_cnt++;
   }
 
+  fprint_spice_mux_testbench_sb_mux_meas(fp, meas_tag);
+
   /* Update the counter */
   testbench_mux_cnt++;
 
@@ -1801,14 +1901,29 @@ void fprint_spice_mux_testbench_measurements(FILE* fp,
 
   fprint_spice_netlist_transient_setting(fp, spice, FALSE);
   /* Measure the leakage and dynamic power of SRAMs*/
-  fprintf(fp, ".meas tran total_leakage_srams avg p(gvdd_sram) from=0 to=\'clock_period\'\n");
-  fprintf(fp, ".meas tran total_dynamic_srams avg p(gvdd_sram) from=\'clock_period\' to=\'%d*clock_period\'\n", num_clock_cycle);
+  fprintf(fp, ".meas tran total_leakage_srams avg p(Vgvdd_sram) from=0 to=\'clock_period\'\n");
+  fprintf(fp, ".meas tran total_dynamic_srams avg p(Vgvdd_sram) from=\'clock_period\' to=\'%d*clock_period\'\n", num_clock_cycle);
 
   /* Measure the total leakage and dynamic power */
   fprintf(fp, ".meas tran total_leakage_power_mux[0to%d] \n", testbench_mux_cnt - 1);
   fprintf(fp, "+          param=\'sum_leakage_power_mux[0to%d]\'\n", testbench_mux_cnt-1);
   fprintf(fp, ".meas tran total_dynamic_power_mux[0to%d] \n", testbench_mux_cnt - 1);
   fprintf(fp, "+          param=\'sum_dynamic_power_mux[0to%d]\'\n", testbench_mux_cnt-1);
+  /* pb_muxes */
+  fprintf(fp, ".meas tran total_leakage_power_pb_mux \n");
+  fprintf(fp, "+          param=\'sum_leakage_power_pb_mux[0to%d]\'\n", testbench_pb_mux_cnt-1);
+  fprintf(fp, ".meas tran total_dynamic_power_pb_mux \n");
+  fprintf(fp, "+          param=\'sum_dynamic_power_pb_mux[0to%d]\'\n", testbench_pb_mux_cnt-1);
+  /* cb_muxes */
+  fprintf(fp, ".meas tran total_leakage_power_cb_mux \n");
+  fprintf(fp, "+          param=\'sum_leakage_power_cb_mux[0to%d]\'\n", testbench_cb_mux_cnt-1);
+  fprintf(fp, ".meas tran total_dynamic_power_cb_mux \n");
+  fprintf(fp, "+          param=\'sum_dynamic_power_cb_mux[0to%d]\'\n", testbench_cb_mux_cnt-1);
+  /* sb_muxes */
+  fprintf(fp, ".meas tran total_leakage_power_sb_mux \n");
+  fprintf(fp, "+          param=\'sum_leakage_power_sb_mux[0to%d]\'\n", testbench_sb_mux_cnt-1);
+  fprintf(fp, ".meas tran total_dynamic_power_sb_mux \n");
+  fprintf(fp, "+          param=\'sum_dynamic_power_sb_mux[0to%d]\'\n", testbench_sb_mux_cnt-1);
 
   /* We don not measure the power of SRAM and load !*/
   /* Sum the total MUX leakage power and dynamic power */
@@ -1901,10 +2016,7 @@ void fprint_spice_mux_testbench(char* formatted_spice_dir,
   fprint_spice_mux_testbench_global_ports(fp, *(arch.spice));
  
   /* Quote defined Logic blocks subckts (Grids) */
-  testbench_mux_cnt = 0;
-  testbench_sram_cnt = 0;
-  testbench_load_cnt = 0;
-  testbench_muxes_head = NULL; 
+  init_spice_mux_testbench_globals();
   fprint_spice_mux_testbench_call_defined_muxes(fp, LL_rr_node_indices);
 
   /* Add stimulations */
@@ -1987,10 +2099,7 @@ void fprint_spice_routing_mux_testbench(char* formatted_spice_dir,
   fprint_spice_mux_testbench_global_ports(fp, (*arch.spice));
  
   /* Quote defined Logic blocks subckts (Grids) */
-  testbench_mux_cnt = 0;
-  testbench_sram_cnt = 0;
-  testbench_load_cnt = 0;
-  testbench_muxes_head = NULL; 
+  init_spice_mux_testbench_globals();
   fprint_spice_mux_testbench_call_routing_muxes(fp, LL_rr_node_indices);
 
   /* Add stimulations */

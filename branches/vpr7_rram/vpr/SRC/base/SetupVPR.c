@@ -942,10 +942,10 @@ static void SetupSpiceOpts(t_options Options,
   spice_opts->do_spice = FALSE;
   spice_opts->print_spice_top_testbench = FALSE;
   spice_opts->print_spice_mux_testbench = TRUE;
-  spice_opts->print_spice_grid_testbench = FALSE;
   spice_opts->print_spice_lut_testbench = TRUE;
   spice_opts->print_spice_dff_testbench = TRUE;
-  spice_opts->print_spice_routing_mux_testbench = TRUE;
+  spice_opts->print_spice_grid_testbench = FALSE;
+  spice_opts->print_spice_routing_mux_testbench = FALSE;
   spice_opts->fpga_spice_leakage_only = FALSE;
 
   /* Turn on the spice option if it is selected*/
