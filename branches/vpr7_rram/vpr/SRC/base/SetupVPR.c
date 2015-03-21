@@ -941,8 +941,10 @@ static void SetupSpiceOpts(t_options Options,
   /* Initialze */  
   spice_opts->do_spice = FALSE;
   spice_opts->print_spice_top_testbench = FALSE;
-  spice_opts->print_spice_mux_testbench = FALSE;
-  spice_opts->print_spice_grid_testbench = TRUE;
+  spice_opts->print_spice_mux_testbench = TRUE;
+  spice_opts->print_spice_grid_testbench = FALSE;
+  spice_opts->print_spice_lut_testbench = TRUE;
+  spice_opts->print_spice_dff_testbench = TRUE;
   spice_opts->print_spice_routing_mux_testbench = TRUE;
   spice_opts->fpga_spice_leakage_only = FALSE;
 
@@ -964,6 +966,12 @@ static void SetupSpiceOpts(t_options Options,
     }
     if (Options.Count[OT_PRINT_SPICE_GRID_TESTBENCH]) {
       spice_opts->print_spice_grid_testbench = TRUE;
+    }
+    if (Options.Count[OT_PRINT_SPICE_LUT_TESTBENCH]) {
+      spice_opts->print_spice_lut_testbench = TRUE;
+    }
+    if (Options.Count[OT_PRINT_SPICE_DFF_TESTBENCH]) {
+      spice_opts->print_spice_dff_testbench = TRUE;
     }
     if (Options.Count[OT_FPGA_SPICE_LEAKAGE_ONLY]) {
       spice_opts->fpga_spice_leakage_only = TRUE;

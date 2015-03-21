@@ -122,3 +122,16 @@ void backup_one_pb_rr_node_pack_prev_node_edge(t_rr_node* pb_rr_node);
 void update_one_grid_pack_prev_node_edge(int x, int y);
 
 void update_grid_pbs_post_route_rr_graph();
+
+int find_pb_mapped_logical_block_rec(t_pb* cur_pb,
+                                     t_spice_model* pb_spice_model, 
+                                     char* pb_spice_name_tag);
+
+int find_grid_mapped_logical_block(int x, int y,
+                                   t_spice_model* pb_spice_model,
+                                   char* pb_spice_name_tag);
+
+void stats_pb_graph_node_port_pin_numbers(t_pb_graph_node* cur_pb_graph_node,
+                                          int* num_inputs,
+                                          int* num_outputs,
+                                          int* num_clock_pins);

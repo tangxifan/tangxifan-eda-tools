@@ -32,6 +32,8 @@
 #include "spice_top_netlist.h"
 #include "spice_mux_testbench.h"
 #include "spice_grid_testbench.h"
+#include "spice_lut_testbench.h"
+#include "spice_dff_testbench.h"
 
 /* For mrFPGA */
 #ifdef MRFPGA_H
@@ -75,8 +77,10 @@ void fprint_run_hspice_shell_script(char* spice_dir_path,
                                     char* subckt_dir_path,
                                     char* top_netlist_file, 
                                     char* grid_testbench_file, 
-                                    char* routing_testbench_file, 
-                                    char* mux_testbench_file);
+                                    char* routing_mux_testbench_file, 
+                                    char* mux_testbench_file,
+                                    char* lut_testbench_file,
+                                    char* dff_testbench_file);
 
 /***** Subroutines *****/
 /* Initialize and check spice models in architecture
@@ -769,13 +773,17 @@ void fprint_run_hspice_shell_script(char* spice_dir_path,
                                     char* top_netlist_file, 
                                     char* grid_testbench_file, 
                                     char* routing_mux_testbench_file, 
-                                    char* mux_testbench_file) {
+                                    char* mux_testbench_file,
+                                    char* lut_testbench_file,
+                                    char* dff_testbench_file) {
   FILE* fp = NULL;
   /* Format the directory path */
   char* spice_dir_formatted = format_dir_path(spice_dir_path);
   char* shell_script_path = my_strcat(spice_dir_path, run_hspice_shell_script_name);
   char* chomped_top_netlist_file = NULL;
   char* chomped_mux_testbench_file = NULL; 
+  char* chomped_lut_testbench_file = NULL; 
+  char* chomped_dff_testbench_file = NULL; 
   char* chomped_routing_mux_testbench_file = NULL; 
   char* chomped_grid_testbench_file = NULL; 
 
@@ -792,13 +800,32 @@ void fprint_run_hspice_shell_script(char* spice_dir_path,
   /* For VerilogA initilization */
   fprintf(fp, "source /softs/synopsys/hspice/2013.12/hspice/bin/cshrc.meta\n");
  
-  /* Run hspice Top Netlist */
-  if (NULL != top_netlist_file) {
-    chomped_top_netlist_file = chomp_file_name_postfix(top_netlist_file);
+
+  /* Run hspice lut testbench netlist */
+  if (NULL != lut_testbench_file) {
+    chomped_lut_testbench_file = chomp_file_name_postfix(lut_testbench_file);
     fprintf(fp, "hspice64 -mt 10 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
-            /*spice_dir_formatted, */top_netlist_file, /*spice_dir_formatted,*/ sim_results_dir_path,
-            chomped_top_netlist_file);
+            /*spice_dir_formatted,*/ lut_testbench_file, /*spice_dir_formatted,*/ sim_results_dir_path,
+            chomped_lut_testbench_file);
   }
+
+  /* Run hspice dff testbench netlist */
+  if (NULL != dff_testbench_file) {
+    chomped_dff_testbench_file = chomp_file_name_postfix(dff_testbench_file);
+    fprintf(fp, "hspice64 -mt 10 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
+            /*spice_dir_formatted,*/ dff_testbench_file, /*spice_dir_formatted,*/ sim_results_dir_path,
+            chomped_dff_testbench_file);
+  }
+
+  /* Run hspice routing mux testbench netlist */
+  if (NULL != routing_mux_testbench_file) {
+    chomped_routing_mux_testbench_file = chomp_file_name_postfix(routing_mux_testbench_file);
+    fprintf(fp, "hspice64 -mt 10 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
+            /*spice_dir_formatted,*/ routing_mux_testbench_file, /*spice_dir_formatted,*/ sim_results_dir_path,
+            chomped_routing_mux_testbench_file);
+  }
+
+
   /* Run hspice Mux Testbench Netlist */
   if (NULL != mux_testbench_file) {
     chomped_mux_testbench_file = chomp_file_name_postfix(mux_testbench_file);
@@ -814,13 +841,14 @@ void fprint_run_hspice_shell_script(char* spice_dir_path,
             chomped_grid_testbench_file);
   }
   
-  /* Run hspice routing mux testbench netlist */
-  if (NULL != routing_mux_testbench_file) {
-    chomped_routing_mux_testbench_file = chomp_file_name_postfix(routing_mux_testbench_file);
+  /* Run hspice Top Netlist */
+  if (NULL != top_netlist_file) {
+    chomped_top_netlist_file = chomp_file_name_postfix(top_netlist_file);
     fprintf(fp, "hspice64 -mt 10 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
-            /*spice_dir_formatted,*/ routing_mux_testbench_file, /*spice_dir_formatted,*/ sim_results_dir_path,
-            chomped_routing_mux_testbench_file);
+            /*spice_dir_formatted, */top_netlist_file, /*spice_dir_formatted,*/ sim_results_dir_path,
+            chomped_top_netlist_file);
   }
+
   
   fprintf(fp, "cd %s\n", spice_dir_path);
 
@@ -859,6 +887,8 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   char* mux_testbench_file = NULL;
   char* grid_testbench_file = NULL;
   char* routing_mux_testbench_file = NULL;
+  char* lut_testbench_file = NULL;
+  char* dff_testbench_file = NULL;
 
   /* Check if the routing architecture we support*/
   if (UNI_DIRECTIONAL != vpr_setup.RoutingArch.directionality) {
@@ -969,10 +999,22 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
                                        rr_node_indices, num_clocks, Arch, vpr_setup.SpiceOpts.fpga_spice_leakage_only);
   }
 
+  if (vpr_setup.SpiceOpts.print_spice_lut_testbench) {
+    lut_testbench_file = my_strcat(chomped_circuit_name, spice_lut_testbench_postfix); 
+    fprint_spice_lut_testbench(spice_dir_formatted, circuit_name, lut_testbench_file, include_dir_path, subckt_dir_path,
+                               rr_node_indices, num_clocks, Arch, vpr_setup.SpiceOpts.fpga_spice_leakage_only);
+  }
+
+  if (vpr_setup.SpiceOpts.print_spice_dff_testbench) {
+    dff_testbench_file = my_strcat(chomped_circuit_name, spice_dff_testbench_postfix); 
+    fprint_spice_dff_testbench(spice_dir_formatted, circuit_name, dff_testbench_file, include_dir_path, subckt_dir_path,
+                               rr_node_indices, num_clocks, Arch, vpr_setup.SpiceOpts.fpga_spice_leakage_only);
+  }
+
   /* Generate a shell script for running HSPICE simulations */
   fprint_run_hspice_shell_script(spice_dir_formatted, subckt_dir_path, 
                                  top_netlist_name, grid_testbench_file, routing_mux_testbench_file,
-                                 mux_testbench_file);
+                                 mux_testbench_file, lut_testbench_file, dff_testbench_file);
 
   /* END Clocking*/
   t_end = clock();

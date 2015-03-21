@@ -136,6 +136,7 @@ struct s_spice_model {
 
   /* Counter for print spice netlist*/
   int cnt;
+  int tb_cnt;
 };
 
 enum e_spice_accuracy_type {

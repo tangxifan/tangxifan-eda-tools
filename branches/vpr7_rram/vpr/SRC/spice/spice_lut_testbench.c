@@ -152,7 +152,7 @@ void fprint_spice_lut_testbench_one_pb_graph_node_lut(FILE* fp,
   /* Add loads: two inverters */
   /* TODO: be more smart to idenity the loads */
   for (iedge = 0; iedge < 2; iedge++) {
-  fprintf(fp, "Xinv[%d]_lut[%d]_out lut[%d]_out lut[%d]_out_load[%d] gvdd_load 0 inv\n",
+  fprintf(fp, "Xinv[%d]_lut[%d]->out lut[%d]->out lut[%d]->out_load[%d] gvdd_load 0 inv\n",
           iedge, tb_num_luts, tb_num_luts, tb_num_luts, iedge);
   }
 
@@ -282,19 +282,27 @@ void fprint_spice_lut_testbench_call_defined_luts(FILE* fp) {
       if (NULL == grid[ix][iy].type) {
         continue; 
       }
-      assert(NULL != grid[ix][iy].type->pb_graph_head);
-      prefix = (char*)my_malloc(sizeof(char)* (5 + strlen(my_itoa(ix)) 
-                                + 2 + strlen(my_itoa(iy)) + 3 ));
-      sprintf(prefix, "grid[%d][%d]_", ix, iy);
       for (iblk = 0; iblk < grid[ix][iy].usage; iblk++) {
+        prefix = (char*)my_malloc(sizeof(char)* (5 
+                      + strlen(my_itoa(block[grid[ix][iy].blocks[iblk]].x)) 
+                      + 2 + strlen(my_itoa(block[grid[ix][iy].blocks[iblk]].y)) 
+                      + 3 ));
+        sprintf(prefix, "grid[%d][%d]_", 
+                block[grid[ix][iy].blocks[iblk]].x,
+                block[grid[ix][iy].blocks[iblk]].y);
         /* Only for mapped block */
         assert(NULL != block[grid[ix][iy].blocks[iblk]].pb);
         fprint_spice_lut_testbench_rec_pb_luts(fp, block[grid[ix][iy].blocks[iblk]].pb, prefix, ix, iy);
+        my_free(prefix);
       }
       for (iblk = grid[ix][iy].usage; iblk < grid[ix][iy].type->capacity; iblk++) {
+        prefix = (char*)my_malloc(sizeof(char)* (5 + strlen(my_itoa(ix)) 
+                                  + 2 + strlen(my_itoa(iy)) + 3 ));
+        sprintf(prefix, "grid[%d][%d]_", ix, iy);
+        assert(NULL != grid[ix][iy].type->pb_graph_head);
         fprint_spice_lut_testbench_rec_pb_graph_node_luts(fp, grid[ix][iy].type->pb_graph_head, prefix, ix, iy); 
+        my_free(prefix);
       }
-      my_free(prefix);
     }
   }
 

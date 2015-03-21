@@ -18,6 +18,8 @@ extern char* top_netlist_postfix;
 extern char* spice_grid_testbench_postfix;
 extern char* spice_mux_testbench_postfix;
 extern char* spice_routing_mux_testbench_postfix;
+extern char* spice_lut_testbench_postfix;
+extern char* spice_dff_testbench_postfix;
 /* RUN HSPICE Shell Script Name */
 extern char* run_hspice_shell_script_name;
 extern char* sim_results_dir_path;

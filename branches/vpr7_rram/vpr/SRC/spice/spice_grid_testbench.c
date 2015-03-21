@@ -40,15 +40,15 @@ static int num_grid_load = 0;
 
 /* Local subroutines only accessible in this C-source file */
 static 
-void fprint_grid_testbench_global_ports(FILE* fp, 
-                                        int num_clock, 
-                                        t_spice spice);
+void fprint_spice_grid_testbench_global_ports(FILE* fp, 
+                                              int num_clock, 
+                                              t_spice spice);
 
 /* Subroutines in this source file*/
 static 
-void fprint_grid_testbench_global_ports(FILE* fp, 
-                                        int num_clock, 
-                                        t_spice spice) {
+void fprint_spice_grid_testbench_global_ports(FILE* fp, 
+                                              int num_clock, 
+                                              t_spice spice) {
   /* A valid file handler*/
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File Handler!\n",__FILE__, __LINE__); 
@@ -71,7 +71,7 @@ void fprint_grid_testbench_global_ports(FILE* fp,
   return;
 }
 
-void fprint_call_defined_core_grids(FILE* fp) {
+void fprint_spice_grid_testbench_call_defined_core_grids(FILE* fp) {
   int ix, iy;
 
   if (NULL == fp) {
@@ -215,10 +215,10 @@ void fprint_grid_testbench_one_grid_stimulation(FILE* fp,
 }
 
 static 
-void fprint_grid_testbench_stimulations(FILE* fp, 
-                                        int num_clock,
-                                        t_spice spice,
-                                        t_ivec*** LL_rr_node_indices) {
+void fprint_spice_grid_testbench_stimulations(FILE* fp, 
+                                              int num_clock,
+                                              t_spice spice,
+                                              t_ivec*** LL_rr_node_indices) {
   int ix, iy;
 
   /* Global GND */
@@ -294,9 +294,9 @@ void fprint_grid_testbench_stimulations(FILE* fp,
 }
 
 static 
-void fprint_grid_testbench_measurements(FILE* fp, 
-                                      t_spice spice,
-                                      boolean leakage_only) {
+void fprint_spice_grid_testbench_measurements(FILE* fp, 
+                                              t_spice spice,
+                                              boolean leakage_only) {
   /* First cycle reserved for measuring leakage */
   int num_clock_cycle = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
   
@@ -410,20 +410,20 @@ void fprint_spice_grid_testbench(char* formatted_spice_dir,
   fprint_spice_options(fp, arch.spice->spice_params);
 
   /* Global nodes: Vdd for SRAMs, Logic Blocks(Include IO), Switch Boxes, Connection Boxes */
-  fprint_grid_testbench_global_ports(fp, num_clock, (*arch.spice));
+  fprint_spice_grid_testbench_global_ports(fp, num_clock, (*arch.spice));
  
   /* Quote defined Logic blocks subckts (Grids) */
-  fprint_call_defined_core_grids(fp);
+  fprint_spice_grid_testbench_call_defined_core_grids(fp);
 
   /* Back-anotate activity information to each routing resource node 
    * (We should have activity of each Grid port) 
    */
 
   /* Add stimulations */
-  fprint_grid_testbench_stimulations(fp, num_clock, (*arch.spice), LL_rr_node_indices);
+  fprint_spice_grid_testbench_stimulations(fp, num_clock, (*arch.spice), LL_rr_node_indices);
 
   /* Add measurements */  
-  fprint_grid_testbench_measurements(fp, (*arch.spice), leakage_only);
+  fprint_spice_grid_testbench_measurements(fp, (*arch.spice), leakage_only);
 
   /* SPICE ends*/
   fprintf(fp, ".end\n");

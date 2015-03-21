@@ -163,6 +163,8 @@ void vpr_print_usage(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--spice_dir <directory_path_output_spice_netlists>\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--print_spice_top_testbench\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--print_spice_lut_testbench\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--print_spice_dff_testbench\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--print_spice_mux_testbench\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--print_spice_routing_mux_testbench\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--print_spice_grid_testbench\n");

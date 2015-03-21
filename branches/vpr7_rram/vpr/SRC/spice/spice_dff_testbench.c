@@ -153,7 +153,7 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
   /* Add loads: 1 inverters */
   /* TODO: be more smart to idenity the loads */
   for (iedge = 0; iedge < 1; iedge++) {
-  fprintf(fp, "Xinv[%d]_dff[%d]_out dff[%d]_out dff[%d]_out_load[%d] gvdd_load 0 inv\n",
+  fprintf(fp, "Xinv[%d]_dff[%d]->out dff[%d]->out dff[%d]->out_load[%d] gvdd_load 0 inv\n",
           iedge, tb_num_dffs, tb_num_dffs, tb_num_dffs, iedge);
   }
 
@@ -283,19 +283,27 @@ void fprint_spice_dff_testbench_call_defined_dffs(FILE* fp) {
       if (NULL == grid[ix][iy].type) {
         continue; 
       }
-      prefix = (char*)my_malloc(sizeof(char)* (5 + strlen(my_itoa(ix)) 
-                                + 2 + strlen(my_itoa(iy)) + 3 ));
-      sprintf(prefix, "grid[%d][%d]_", ix, iy);
       for (iblk = 0; iblk < grid[ix][iy].usage; iblk++) {
+        prefix = (char*)my_malloc(sizeof(char)* (5 
+                      + strlen(my_itoa(block[grid[ix][iy].blocks[iblk]].x)) 
+                      + 2 + strlen(my_itoa(block[grid[ix][iy].blocks[iblk]].y)) 
+                      + 3 ));
+        sprintf(prefix, "grid[%d][%d]_", 
+                block[grid[ix][iy].blocks[iblk]].x,
+                block[grid[ix][iy].blocks[iblk]].y);
         /* Only for mapped block */
         assert(NULL != block[grid[ix][iy].blocks[iblk]].pb);
         fprint_spice_dff_testbench_rec_pb_dffs(fp, block[grid[ix][iy].blocks[iblk]].pb, prefix, ix, iy);
+        my_free(prefix);
       }
       for (iblk = grid[ix][iy].usage; iblk < grid[ix][iy].type->capacity; iblk++) {
+        prefix = (char*)my_malloc(sizeof(char)* (5 + strlen(my_itoa(ix)) 
+                                  + 2 + strlen(my_itoa(iy)) + 3 ));
+        sprintf(prefix, "grid[%d][%d]_", ix, iy);
         assert(NULL != grid[ix][iy].type->pb_graph_head);
         fprint_spice_dff_testbench_rec_pb_graph_node_dffs(fp, grid[ix][iy].type->pb_graph_head, prefix, ix, iy); 
+        my_free(prefix);
       }
-      my_free(prefix);
     }
   }
 

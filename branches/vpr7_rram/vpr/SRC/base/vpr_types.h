@@ -1076,6 +1076,8 @@ struct s_spice_opts {
   boolean print_spice_grid_testbench; 
   boolean print_spice_routing_mux_testbench; 
   boolean print_spice_mux_testbench; 
+  boolean print_spice_lut_testbench; 
+  boolean print_spice_dff_testbench; 
   boolean fpga_spice_leakage_only;
 
   /*Xifan TANG: FPGA SPICE Model Support*/

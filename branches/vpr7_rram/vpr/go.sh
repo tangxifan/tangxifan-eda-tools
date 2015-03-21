@@ -6,7 +6,7 @@
 #./vpr sample_arch.xml or1200.latren.blif
 rm -rf spice_test
 #valgrind 
-./vpr ARCH/K6_N10_I33_frac_UMC180nm_1p8V.xml Circuits/s298_K6_N10_ace.blif --activity_file Circuits/s298_K6_N10_ace.act --nodisp --fpga_spice --spice_dir /home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/spice_test --print_spice_top_testbench --print_spice_mux_testbench  #--fpga_spice_leakage_only
+./vpr ARCH/K6_N10_I33_frac_UMC180nm_1p8V.xml Circuits/s298_K6_N10_ace.blif --activity_file Circuits/s298_K6_N10_ace.act --nodisp --fpga_spice --spice_dir /home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/spice_test  #--fpga_spice_leakage_only
 #valgrind 
 #rm -rf spice_test_rram
 #./vpr ARCH/K6_N10_I33_frac_UMC180nm_1p2V_rram.xml Circuits/s298_K6_N10_ace.blif --activity_file Circuits/s298_K6_N10_ace.act --nodisp --fpga_spice --spice_dir /home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/spice_test_rram --print_spice_mux_testbench --fpga_spice_leakage_only

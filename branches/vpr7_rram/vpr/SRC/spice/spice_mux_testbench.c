@@ -1785,7 +1785,7 @@ void fprint_spice_mux_testbench_stimulations(FILE* fp,
 static 
 void fprint_spice_mux_testbench_measurements(FILE* fp, 
                                              t_spice spice) {
-  /*int num_clock_cycle = spice.spice_params.meas_params.sim_num_clock_cycle + 1;*/
+  int num_clock_cycle = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
   /*
   int i;
   t_llist* head = NULL;
@@ -1800,6 +1800,9 @@ void fprint_spice_mux_testbench_measurements(FILE* fp,
   }
 
   fprint_spice_netlist_transient_setting(fp, spice, FALSE);
+  /* Measure the leakage and dynamic power of SRAMs*/
+  fprintf(fp, ".meas tran total_leakage_srams avg p(gvdd_sram) from=0 to=\'clock_period\'\n");
+  fprintf(fp, ".meas tran total_dynamic_srams avg p(gvdd_sram) from=\'clock_period\' to=\'%d*clock_period\'\n", num_clock_cycle);
 
   /* Measure the total leakage and dynamic power */
   fprintf(fp, ".meas tran total_leakage_power_mux[0to%d] \n", testbench_mux_cnt - 1);

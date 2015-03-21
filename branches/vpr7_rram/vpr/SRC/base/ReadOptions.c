@@ -487,6 +487,10 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
       return Args;
     case OT_PRINT_SPICE_GRID_TESTBENCH:
       return Args;
+    case OT_PRINT_SPICE_LUT_TESTBENCH:
+      return Args;
+    case OT_PRINT_SPICE_DFF_TESTBENCH:
+      return Args;
     case OT_FPGA_SPICE_LEAKAGE_ONLY:
       return Args;
     /* mrFPGA: Xifan TANG */

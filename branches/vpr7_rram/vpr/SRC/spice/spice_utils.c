@@ -1094,29 +1094,39 @@ void gen_spice_name_tag_pb_rec(t_pb* cur_pb,
   mode_index = cur_pb->mode;
 
   /* Free previous name_tag if there is */
-  my_free(cur_pb->spice_name_tag);
+  /* my_free(cur_pb->spice_name_tag); */
 
   /* Generate the name_tag */
-  prefix_rec = (char*)my_malloc(sizeof(char)*(strlen(prefix) + 1 + strlen(cur_pb->pb_graph_node->pb_type->name) + 1
-                                              + strlen(my_itoa(cur_pb->pb_graph_node->placement_index)) + 2));
-  sprintf(prefix_rec, "%s_%s[%d]", 
-          prefix, cur_pb->pb_graph_node->pb_type->name, cur_pb->pb_graph_node->placement_index);
-  cur_pb->spice_name_tag = my_strdup(prefix_rec);
+  if ((0 < cur_pb->pb_graph_node->pb_type->num_modes)
+    &&(NULL == cur_pb->pb_graph_node->pb_type->spice_model_name)) {
+    prefix_rec = (char*)my_malloc(sizeof(char)*(strlen(prefix) + 1 + strlen(cur_pb->pb_graph_node->pb_type->name) + 1
+                                              + strlen(my_itoa(cur_pb->pb_graph_node->placement_index)) + 7 + strlen(cur_pb->pb_graph_node->pb_type->modes[mode_index].name) + 2 ));
+    sprintf(prefix_rec, "%s_%s[%d]_mode[%s]", 
+            prefix, cur_pb->pb_graph_node->pb_type->name, cur_pb->pb_graph_node->placement_index, cur_pb->pb_graph_node->pb_type->modes[mode_index].name);
+    cur_pb->spice_name_tag = my_strdup(prefix_rec);
+  } else {
+    assert((0 == cur_pb->pb_graph_node->pb_type->num_modes)
+          ||(NULL != cur_pb->pb_graph_node->pb_type->spice_model_name));
+    prefix_rec = (char*)my_malloc(sizeof(char)*(strlen(prefix) + 1 + strlen(cur_pb->pb_graph_node->pb_type->name) + 1
+                                              + strlen(my_itoa(cur_pb->pb_graph_node->placement_index)) + 2 ));
+    sprintf(prefix_rec, "%s_%s[%d]", 
+            prefix, cur_pb->pb_graph_node->pb_type->name, cur_pb->pb_graph_node->placement_index);
+    cur_pb->spice_name_tag = my_strdup(prefix_rec);
+  }
 
   /* When reach the leaf, we directly return */
-  if (OPEN != cur_pb->logical_block) {
+  /* Recursive until reach the leaf */
+  if ((0 == cur_pb->pb_graph_node->pb_type->num_modes)
+     ||(NULL == cur_pb->child_pbs)) {
     return;
-  } else {
-    /* Recursive until reach the leaf */
-    for (ipb = 0; ipb < cur_pb->pb_graph_node->pb_type->modes[mode_index].num_pb_type_children; ipb++) {
-      for (jpb = 0; jpb < cur_pb->pb_graph_node->pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
-        /* Refer to pack/output_clustering.c [LINE 392] */
-        if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) { 
-          /* Try to simplify the name tag... to avoid exceeding the length of SPICE name (up to 1024 chars) */
-          /* gen_spice_name_tag_pb_rec(&(cur_pb->child_pbs[ipb][jpb]),prefix); */
-          gen_spice_name_tag_pb_rec(&(cur_pb->child_pbs[ipb][jpb]),prefix_rec); 
-        }
-      }
+  }
+  for (ipb = 0; ipb < cur_pb->pb_graph_node->pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+    for (jpb = 0; jpb < cur_pb->pb_graph_node->pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+      /* Refer to pack/output_clustering.c [LINE 392] */
+      //if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) { 
+        /* Try to simplify the name tag... to avoid exceeding the length of SPICE name (up to 1024 chars) */
+        /* gen_spice_name_tag_pb_rec(&(cur_pb->child_pbs[ipb][jpb]),prefix); */
+        gen_spice_name_tag_pb_rec(&(cur_pb->child_pbs[ipb][jpb]),prefix_rec); 
     }
   }
  
@@ -1134,9 +1144,8 @@ void gen_spice_name_tags_all_pbs() {
   char* prefix = NULL;
 
   for (iblk = 0; iblk < num_blocks; iblk++) {
-    prefix = (char*)my_malloc(sizeof(char)*(6 + strlen(my_itoa(block[iblk].x)) + 2 + strlen(my_itoa(block[iblk].y)) + 2
-                                            + strlen(my_itoa(block[iblk].z)) + 2));
-    sprintf(prefix, "block[%d][%d][%d]", block[iblk].x, block[iblk].y, block[iblk].z);
+    prefix = (char*)my_malloc(sizeof(char)*(5 + strlen(my_itoa(block[iblk].x)) + 2 + strlen(my_itoa(block[iblk].y)) + 2));
+    sprintf(prefix, "grid[%d][%d]", block[iblk].x, block[iblk].y);
     gen_spice_name_tag_pb_rec(block[iblk].pb, prefix);
     my_free(prefix);
   }
@@ -1254,6 +1263,96 @@ void update_grid_pbs_post_route_rr_graph() {
         update_one_grid_pack_prev_node_edge(ix, iy);
       }
     }
+  }
+
+  return;
+}
+
+int find_pb_mapped_logical_block_rec(t_pb* cur_pb,
+                                     t_spice_model* pb_spice_model, 
+                                     char* pb_spice_name_tag) {
+  int logical_block_index = OPEN;
+  int mode_index, ipb, jpb;
+
+  assert(NULL != cur_pb);
+
+  if ((pb_spice_model == cur_pb->pb_graph_node->pb_type->spice_model)
+    &&(0 == strcmp(cur_pb->spice_name_tag, pb_spice_name_tag))) {
+    /* Special for LUT... They have sub modes!!!*/
+    if (SPICE_MODEL_LUT == pb_spice_model->type) {
+      mode_index = cur_pb->mode;
+      assert(NULL != cur_pb->child_pbs);
+      return cur_pb->child_pbs[0][0].logical_block; 
+    }
+    assert(pb_spice_model == logical_block[cur_pb->logical_block].mapped_spice_model);
+    return cur_pb->logical_block;
+  }
+  
+  /* Go recursively ... */
+  mode_index = cur_pb->mode;
+  if (0 == cur_pb->pb_graph_node->pb_type->num_modes) {
+    return logical_block_index;
+  }
+  for (ipb = 0; ipb < cur_pb->pb_graph_node->pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+    for (jpb = 0; jpb < cur_pb->pb_graph_node->pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+      /* Refer to pack/output_clustering.c [LINE 392] */
+      if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
+        logical_block_index = 
+        find_pb_mapped_logical_block_rec(&(cur_pb->child_pbs[ipb][jpb]), pb_spice_model, pb_spice_name_tag);
+        if (OPEN != logical_block_index) {
+          return logical_block_index;
+        }
+      }
+    }
+  }
+  
+  return logical_block_index;
+}
+
+int find_grid_mapped_logical_block(int x, int y,
+                                   t_spice_model* pb_spice_model,
+                                   char* pb_spice_name_tag) {
+  int logical_block_index = OPEN;
+  int iblk;
+
+  /* Find the grid usage */
+  if (0 == grid[x][y].usage) { 
+    return logical_block_index;
+  } else {
+    assert(0 < grid[x][y].usage);
+    /* search each block */
+    for (iblk = 0; iblk < grid[x][y].usage; iblk++) {
+      /* Get the pb */
+      logical_block_index = find_pb_mapped_logical_block_rec(block[grid[x][y].blocks[iblk]].pb,
+                                                             pb_spice_model, pb_spice_name_tag);
+      if (OPEN != logical_block_index) {
+        return logical_block_index;
+      }
+    }
+  }
+  
+  return logical_block_index;
+}
+
+void stats_pb_graph_node_port_pin_numbers(t_pb_graph_node* cur_pb_graph_node,
+                                          int* num_inputs,
+                                          int* num_outputs,
+                                          int* num_clock_pins) {
+  int iport;
+
+  assert(NULL != cur_pb_graph_node);
+
+  (*num_inputs) = 0;
+  for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
+    (*num_inputs) += cur_pb_graph_node->num_input_pins[iport];
+  }
+  (*num_outputs) = 0;
+  for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
+    (*num_outputs) += cur_pb_graph_node->num_output_pins[iport];
+  }
+  (*num_clock_pins) = 0;
+  for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
+    (*num_clock_pins) += cur_pb_graph_node->num_clock_pins[iport];
   }
 
   return;
