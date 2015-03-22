@@ -86,3 +86,15 @@ void fprint_stimulate_dangling_normal_grid_pins(FILE* fp,
                                                 int x, int y);
 
 void fprint_stimulate_dangling_grid_pins(FILE* fp);
+
+void fprint_global_vdds_logical_block_spice_model(FILE* fp,
+                                                  t_spice_model* spice_model);
+
+void fprint_splited_vdds_logical_block_spice_model(FILE* fp,
+                                                   t_spice_model* spice_model);
+
+void fprint_measure_vdds_logical_block_spice_model(FILE* fp,
+                                                   t_spice_model* spice_model,
+                                                   enum e_measure_type meas_type,
+                                                   int num_clock_cycle,
+                                                   boolean leakage_only);

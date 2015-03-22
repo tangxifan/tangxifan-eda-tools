@@ -1365,3 +1365,137 @@ void fprint_stimulate_dangling_grid_pins(FILE* fp) {
   return;
 }
 
+void fprint_global_vdds_logical_block_spice_model(FILE* fp,
+                                                  t_spice_model* spice_model) {
+  int i;
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /* For each logical block, we print a vdd */
+  for (i = 0; i < num_logical_blocks; i++) {
+    if (logical_block[i].mapped_spice_model == spice_model) {
+      fprintf(fp, ".global gvdd_%s[%d]\n",
+              spice_model->prefix, logical_block[i].mapped_spice_model_index);
+    } 
+  }
+
+  return;
+}
+
+void fprint_splited_vdds_logical_block_spice_model(FILE* fp,
+                                                   t_spice_model* spice_model) {
+  int i;
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /* For each logical block, we print a vdd */
+  for (i = 0; i < num_logical_blocks; i++) {
+    if (logical_block[i].mapped_spice_model == spice_model) {
+      fprintf(fp, "Vgvdd_%s[%d] gvdd_%s[%d] 0 vsp\n",
+              spice_model->prefix, logical_block[i].mapped_spice_model_index,
+              spice_model->prefix, logical_block[i].mapped_spice_model_index);
+    } 
+  }
+
+  return;
+}
+
+void fprint_measure_vdds_logical_block_spice_model(FILE* fp,
+                                                   t_spice_model* spice_model,
+                                                   enum e_measure_type meas_type,
+                                                   int num_clock_cycle,
+                                                   boolean leakage_only) {
+  int i, cur;
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /* For each logical block, we print a vdd */
+  for (i = 0; i < num_logical_blocks; i++) {
+    if (logical_block[i].mapped_spice_model == spice_model) {
+      switch (meas_type) {
+      case SPICE_MEASURE_LEAKAGE_POWER:
+        if (TRUE == leakage_only) {
+          fprintf(fp, ".measure tran leakage_power_%s[%d] find p(Vgvdd_%s[%d]) at=0\n",
+              spice_model->prefix, logical_block[i].mapped_spice_model_index,
+              spice_model->prefix, logical_block[i].mapped_spice_model_index);
+        } else {
+          fprintf(fp, ".measure tran leakage_power_%s[%d] avg p(Vgvdd_%s[%d]) from=0 to='clock_period'\n",
+              spice_model->prefix, logical_block[i].mapped_spice_model_index,
+              spice_model->prefix, logical_block[i].mapped_spice_model_index);
+        }
+        break;
+      case SPICE_MEASURE_DYNAMIC_POWER:
+        fprintf(fp, ".measure tran dynamic_power_%s[%d] avg p(Vgvdd_%s[%d]) from='clock_period' to='%d*clock_period'\n",
+              spice_model->prefix, logical_block[i].mapped_spice_model_index,
+              spice_model->prefix, logical_block[i].mapped_spice_model_index,
+              num_clock_cycle);
+        break;
+      default: 
+        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid meas_type!\n", __FILE__, __LINE__);
+        exit(1);
+      }
+    } 
+  }
+
+  /* Measure the total power of this kind of spice model */
+  cur = 0;
+  switch (meas_type) {
+  case SPICE_MEASURE_LEAKAGE_POWER:
+    for (i = 0; i < num_logical_blocks; i++) {
+      if (logical_block[i].mapped_spice_model == spice_model) {
+        fprintf(fp, ".measure tran leakage_power_%s[0to%d] \n",
+              spice_model->prefix, cur);
+        if (0 == cur) {
+          fprintf(fp, "+ param = 'leakage_power_%s[%d]'\n",
+              spice_model->prefix, logical_block[i].mapped_spice_model_index);
+        } else {
+          fprintf(fp, "+ param = 'leakage_power_%s[%d]+leakage_power_%s[0to%d]'\n", 
+              spice_model->prefix, logical_block[i].mapped_spice_model_index,
+              spice_model->prefix, cur-1);
+        }
+        cur++;
+      }
+    }
+    /* Spot the total leakage power of this spice model */
+    fprintf(fp, ".measure tran total_leakage_power_%s \n", spice_model->prefix);
+    fprintf(fp, "+ param = 'leakage_power_%s[0to%d]'\n", 
+       spice_model->prefix, cur-1);
+    break;
+  case SPICE_MEASURE_DYNAMIC_POWER:
+    for (i = 0; i < num_logical_blocks; i++) {
+      if (logical_block[i].mapped_spice_model == spice_model) {
+        fprintf(fp, ".measure tran dynamic_power_%s[0to%d] \n",
+            spice_model->prefix, cur);
+        if (0 == cur) {
+          fprintf(fp, "+ param = 'dynamic_power_%s[%d]'\n",
+              spice_model->prefix, logical_block[i].mapped_spice_model_index);
+        } else {
+          fprintf(fp, "+ param = 'dynamic_power_%s[%d]+dynamic_power_%s[0to%d]'\n", 
+              spice_model->prefix, logical_block[i].mapped_spice_model_index,
+             spice_model->prefix, cur-1);
+        }
+        cur++;
+      }
+    }
+    /* Spot the total dynamic power of this spice model */
+    fprintf(fp, ".measure tran total_dynamic_power_%s \n", spice_model->prefix);
+    fprintf(fp, "+ param = 'dynamic_power_%s[0to%d]'\n", 
+            spice_model->prefix, cur-1);
+    break;
+  default: 
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid meas_type!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+
+  return;
+}
+

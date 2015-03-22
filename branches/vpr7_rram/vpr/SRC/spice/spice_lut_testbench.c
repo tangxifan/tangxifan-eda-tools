@@ -38,6 +38,7 @@ static
 void fprint_spice_lut_testbench_global_ports(FILE* fp, 
                                              int num_clock, 
                                              t_spice spice) {
+  int i;
   /* A valid file handler*/
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File Handler!\n",__FILE__, __LINE__); 
@@ -53,7 +54,12 @@ void fprint_spice_lut_testbench_global_ports(FILE* fp,
   fprintf(fp, ".global gclock\n");
 
   /*Global Vdds for LUTs*/
-  fprint_global_vdds_spice_model(fp, SPICE_MODEL_LUT, spice);
+  for (i = 0; i < spice.num_spice_model; i++) {
+    if (SPICE_MODEL_LUT == spice.spice_models[i].type) {
+      fprint_global_vdds_logical_block_spice_model(fp, &(spice.spice_models[i]));
+    }
+  }
+
 
   return;
 }
@@ -106,6 +112,11 @@ void fprint_spice_lut_testbench_one_pb_graph_node_lut(FILE* fp,
   /* Try to find the mapped logic block index */
   logical_block_index = find_grid_mapped_logical_block(x, y, 
                                                        pb_spice_model, prefix);
+
+  /* Bypass unmapped luts */
+  if (OPEN == logical_block_index) {
+    return;
+  }
 
   /* Allocate input_density and probability */
   stats_pb_graph_node_port_pin_numbers(cur_pb_graph_node,&num_inputs,&num_outputs, &num_clock_pins);
@@ -270,6 +281,7 @@ void fprint_spice_lut_testbench_rec_pb_luts(FILE* fp,
         fprint_spice_lut_testbench_rec_pb_graph_node_luts(fp, cur_pb->child_pbs[ipb][jpb].pb_graph_node, rec_prefix, x, y);
         */
       }
+      my_free(rec_prefix);
     }
   }
   
@@ -320,6 +332,7 @@ void fprint_spice_lut_testbench_stimulations(FILE* fp,
                                              int num_clock, 
                                              t_spice spice, 
                                              t_ivec*** LL_rr_node_indices) {
+  int i;
   /* Global GND */
   fprintf(fp, "***** Global VDD port *****\n");
   fprintf(fp, "Vgvdd gvdd 0 vsp\n");
@@ -341,7 +354,11 @@ void fprint_spice_lut_testbench_stimulations(FILE* fp,
 
   /* Every LUT use an independent Voltage source */
   fprintf(fp, "***** Global VDD for Look-Up Tables (LUTs) *****\n");
-  fprint_splited_vdds_spice_model(fp, SPICE_MODEL_LUT, spice);
+  for (i = 0; i < spice.num_spice_model; i++) {
+    if (SPICE_MODEL_LUT == spice.spice_models[i].type) {
+      fprint_splited_vdds_logical_block_spice_model(fp, &(spice.spice_models[i]));
+    }
+  }
 
   /* Every SRAM inputs should have a voltage source */
   fprintf(fp, "***** Global Inputs for SRAMs *****\n");
@@ -373,7 +390,7 @@ void fprint_spice_lut_testbench_stimulations(FILE* fp,
 void fprint_spice_lut_testbench_measurements(FILE* fp, 
                                              t_spice spice, 
                                              boolean leakage_only) {
- 
+  int i;
   /* First cycle reserved for measuring leakage */
   int num_clock_cycle = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
   
@@ -398,7 +415,12 @@ void fprint_spice_lut_testbench_measurements(FILE* fp,
     fprintf(fp, ".measure tran leakage_power_sram_luts avg p(Vgvdd_sram_luts) from=0 to='clock_period'\n");
   }
   /* Leakage power of LUTs*/
-  fprint_measure_vdds_spice_model(fp, SPICE_MODEL_LUT, SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, spice, leakage_only);
+  for (i = 0; i < spice.num_spice_model; i++) {
+    if (SPICE_MODEL_LUT == spice.spice_models[i].type) {
+      fprint_measure_vdds_logical_block_spice_model(fp, &(spice.spice_models[i]), SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, leakage_only);
+    }
+  }
+
 
   if (TRUE == leakage_only) {
     return;
@@ -408,7 +430,12 @@ void fprint_spice_lut_testbench_measurements(FILE* fp,
   /* Dynamic power of SRAMs */
   fprintf(fp, ".measure tran dynamic_power_sram_luts avg p(Vgvdd_sram_luts) from='clock_period' to='%d*clock_period'\n", num_clock_cycle);
   /* Dynamic power of LUTs */
-  fprint_measure_vdds_spice_model(fp, SPICE_MODEL_LUT, SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, spice, leakage_only);
+  for (i = 0; i < spice.num_spice_model; i++) {
+    if (SPICE_MODEL_LUT == spice.spice_models[i].type) {
+      fprint_measure_vdds_logical_block_spice_model(fp, &(spice.spice_models[i]), SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, leakage_only);
+    }
+  }
+
 
   return;
 }
