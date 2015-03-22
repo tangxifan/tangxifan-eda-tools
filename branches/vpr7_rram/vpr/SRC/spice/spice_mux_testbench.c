@@ -1016,6 +1016,10 @@ void fprint_spice_mux_testbench_pb_interc(FILE* fp,
       assert(NULL != cur_pb);
       pb_rr_nodes = cur_pb->rr_graph;
       node_index = cur_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
+      /* Bypass unmapped interc */
+      if (OPEN == pb_rr_nodes[node_index].net_num) {
+        continue;
+      }
       prev_node = pb_rr_nodes[node_index].prev_node;
       /* prev_edge is the index of edge of prev_node !!! */
       prev_edge = pb_rr_nodes[node_index].prev_edge;
@@ -1050,6 +1054,7 @@ void fprint_spice_mux_testbench_pb_interc(FILE* fp,
       /* Check if child_pb is empty */
       if (NULL == child_pb->name) { 
         /* fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec(fp, child_pb->pb_graph_node, jpb); */
+        continue; /* by pass*/
         /* For each child_pb_graph_node input pins*/
         for (iport = 0; iport < child_pb_graph_node->num_input_ports; iport++) {
           for (ipin = 0; ipin < child_pb_graph_node->num_input_pins[iport]; ipin++) {
@@ -1085,6 +1090,10 @@ void fprint_spice_mux_testbench_pb_interc(FILE* fp,
           node_index = child_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
           prev_node = pb_rr_nodes[node_index].prev_node;
           prev_edge = pb_rr_nodes[node_index].prev_edge;
+          /* Bypass unmapped interc */
+          if (OPEN == pb_rr_nodes[node_index].net_num) {
+            continue;
+          }
           /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
           if (OPEN == prev_node) {
             path_id = 0;
@@ -1109,6 +1118,10 @@ void fprint_spice_mux_testbench_pb_interc(FILE* fp,
           node_index = child_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
           prev_node = pb_rr_nodes[node_index].prev_node;
           prev_edge = pb_rr_nodes[node_index].prev_edge;
+          /* Bypass unmapped interc */
+          if (OPEN == pb_rr_nodes[node_index].net_num) {
+            continue;
+          }
           /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
           if (OPEN == prev_node) {
             path_id = 0;
@@ -1164,7 +1177,10 @@ void fprint_spice_mux_testbench_pb_muxes_rec(FILE* fp,
         fprint_spice_mux_testbench_pb_muxes_rec(fp, &(cur_pb->child_pbs[ipb][jpb]));
       } else {
         /* Print idle muxes */
+        /* Bypass idle muxes */
+        /*
         fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec(fp, cur_pb->child_pbs[ipb][jpb].pb_graph_node);
+        */
       }
     }
   }
@@ -1313,11 +1329,9 @@ void fprint_spice_mux_testbench_cb_interc(FILE* fp,
   assert((!(0 > cb_x))&&(!(cb_x > (nx + 1)))); 
   assert((!(0 > cb_y))&&(!(cb_y > (ny + 1)))); 
   /* Skip non-mapped CB MUX */
-  /*
   if (OPEN == src_rr_node->net_num) {
     return;
   }
-  */
 
   if (1 == src_rr_node->fan_in) {
     /* By-pass a direct connection*/
@@ -1553,6 +1567,11 @@ void fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
   /* Check */
   assert((!(0 > switch_box_x))&&(!(switch_box_x > (nx + 1)))); 
   assert((!(0 > switch_box_y))&&(!(switch_box_y > (ny + 1)))); 
+
+  /* ignore idle sb mux */
+  if (OPEN == src_rr_node->net_num) {
+    return;
+  }
 
   find_drive_rr_nodes_switch_box(switch_box_x, switch_box_y, src_rr_node, chan_side, 0, 
                                  &num_drive_rr_nodes, &drive_rr_nodes, &switch_index);
@@ -1814,10 +1833,13 @@ void fprint_spice_mux_testbench_call_defined_muxes(FILE* fp,
         assert(NULL != block[grid[ix][iy].blocks[iblk]].pb);
         fprint_spice_mux_testbench_pb_muxes_rec(fp, block[grid[ix][iy].blocks[iblk]].pb); 
       }  
-      /* Unused blocks */
+      continue;
+      /* By pass Unused blocks */
+      /*
       for (iblk = grid[ix][iy].usage; iblk < grid[ix][iy].type->capacity; iblk++) {
         fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec(fp, grid[ix][iy].type->pb_graph_head);
       } 
+      */
     }
   }
   /* Find all routing Switch Boxes and Connection Blocks */

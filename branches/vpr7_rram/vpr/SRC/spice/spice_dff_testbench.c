@@ -266,7 +266,10 @@ void fprint_spice_dff_testbench_rec_pb_dffs(FILE* fp,
         fprint_spice_dff_testbench_rec_pb_dffs(fp, &(cur_pb->child_pbs[ipb][jpb]), rec_prefix, x, y);
       } else {
         /* Print idle graph_node muxes */
+        /* Bypass unused blocks */
+        /*
         fprint_spice_dff_testbench_rec_pb_graph_node_dffs(fp, cur_pb->child_pbs[ipb][jpb].pb_graph_node, rec_prefix, x, y);
+        */
       }
     }
   }
@@ -296,6 +299,9 @@ void fprint_spice_dff_testbench_call_defined_dffs(FILE* fp) {
         fprint_spice_dff_testbench_rec_pb_dffs(fp, block[grid[ix][iy].blocks[iblk]].pb, prefix, ix, iy);
         my_free(prefix);
       }
+      continue;
+      /* Bypass unused blocks */
+      /*
       for (iblk = grid[ix][iy].usage; iblk < grid[ix][iy].type->capacity; iblk++) {
         prefix = (char*)my_malloc(sizeof(char)* (5 + strlen(my_itoa(ix)) 
                                   + 2 + strlen(my_itoa(iy)) + 3 ));
@@ -304,6 +310,7 @@ void fprint_spice_dff_testbench_call_defined_dffs(FILE* fp) {
         fprint_spice_dff_testbench_rec_pb_graph_node_dffs(fp, grid[ix][iy].type->pb_graph_head, prefix, ix, iy); 
         my_free(prefix);
       }
+      */
     }
   }
 

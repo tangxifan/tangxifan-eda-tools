@@ -910,7 +910,7 @@ sub gen_csv_rpt_one_tb($ $ $ $) {
   foreach my $benchmark(@benchmark_names) {
     print $RPTFH "$benchmark,";
     print $RPTFH "$rpt_ptr->{$benchmark}->{$tbname_tag}->{peak_mem_used},";
-    print $RPTFH "$rpt_ptr->{$benchmark}->{$tbname_tag}->{total_elasped_time},";
+    print $RPTFH "$rpt_ptr->{$benchmark}->{$tbname_tag}->{total_elapsed_time},";
     foreach my $tag(@leakage_tags) {
       print $RPTFH "$rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag},";
     }

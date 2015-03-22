@@ -1083,7 +1083,7 @@ sub run_standard_flow($ $ $ $ $)
  
   if ("abc_black_box" eq $flow_enhance) {
     my ($pre_abc_blif) = ("$prefix"."pre_abc.blif");
-    `perl pro_blif.pl -i "$abc_bm" -o $pre_abc_blif`;
+    `perl pro_blif.pl -i $abc_bm -o $pre_abc_blif`;
     &run_abc_bb_fpgamap($pre_abc_blif,$abc_blif_out_bak,$abc_log);
   } elsif ("classic" eq $flow_enhance) {
     &run_abc_fpgamap($abc_bm,$abc_blif_out_bak,$abc_log);
@@ -1104,6 +1104,10 @@ sub run_standard_flow($ $ $ $ $)
       &run_ace($abc_blif_out,$act_file,$ace_new_blif,$ace_log);
       $abc_blif_out = $ace_new_blif;
     }
+  }
+
+  if (!(-e $act_file)) {
+    die "ERROR: Fail ACE2 for benchmark $act_file.\n";
   }
 
   $vpr_net = "$prefix"."vpr.net";

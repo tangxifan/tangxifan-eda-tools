@@ -699,7 +699,8 @@ void back_annotate_rr_node_map_info() {
    */
   for (inode = 0; inode < num_rr_nodes; inode++) {
     rr_node[inode].prev_node = OPEN;
-    rr_node[inode].prev_edge = 0;
+    /* set 0 if we want print all unused mux!!!*/
+    rr_node[inode].prev_edge = OPEN;
   }
   for (inode = 0; inode < num_rr_nodes; inode++) {
     if (0 == rr_node[inode].num_edges) {
@@ -844,7 +845,7 @@ void fprint_run_hspice_shell_script(char* spice_dir_path,
   /* Run hspice Top Netlist */
   if (NULL != top_netlist_file) {
     chomped_top_netlist_file = chomp_file_name_postfix(top_netlist_file);
-    fprintf(fp, "hspice64 -mt 10 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
+    fprintf(fp, "hspice64 -mt 5 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
             /*spice_dir_formatted, */top_netlist_file, /*spice_dir_formatted,*/ sim_results_dir_path,
             chomped_top_netlist_file);
   }
