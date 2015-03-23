@@ -98,3 +98,4 @@ void fprint_measure_vdds_logical_block_spice_model(FILE* fp,
                                                    enum e_measure_type meas_type,
                                                    int num_clock_cycle,
                                                    boolean leakage_only);
+

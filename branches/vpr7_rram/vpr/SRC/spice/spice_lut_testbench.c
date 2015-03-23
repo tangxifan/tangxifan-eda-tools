@@ -162,7 +162,7 @@ void fprint_spice_lut_testbench_one_pb_graph_node_lut(FILE* fp,
                                      input_density, input_probability);
   /* Add loads: two inverters */
   /* TODO: be more smart to idenity the loads */
-  for (iedge = 0; iedge < 2; iedge++) {
+  for (iedge = 0; iedge < cur_pb_graph_node->output_pins[0][0].num_output_edges; iedge++) {
   fprintf(fp, "Xinv[%d]_lut[%d]->out lut[%d]->out lut[%d]->out_load[%d] gvdd_load 0 inv\n",
           iedge, tb_num_luts, tb_num_luts, tb_num_luts, iedge);
   }

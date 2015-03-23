@@ -951,6 +951,7 @@ struct s_rr_node {
     int num_drive_rr_nodes;
     t_rr_node** drive_rr_nodes;
     int* drive_switches;
+    t_pb* pb;
     // int seg_index; /* Valid only for CHANX or CHANY*/
     /* END */
 

@@ -157,7 +157,7 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
                                      input_density, input_probability);
   /* Add loads: 1 inverters */
   /* TODO: be more smart to idenity the loads */
-  for (iedge = 0; iedge < 1; iedge++) {
+  for (iedge = 0; iedge < cur_pb_graph_node->output_pins[0][0].num_output_edges; iedge++) {
   fprintf(fp, "Xinv[%d]_dff[%d]->out dff[%d]->out dff[%d]->out_load[%d] gvdd_load 0 inv\n",
           iedge, tb_num_dffs, tb_num_dffs, tb_num_dffs, iedge);
   }

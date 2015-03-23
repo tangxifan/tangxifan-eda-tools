@@ -805,7 +805,7 @@ void fprint_run_hspice_shell_script(char* spice_dir_path,
   /* Run hspice lut testbench netlist */
   if (NULL != lut_testbench_file) {
     chomped_lut_testbench_file = chomp_file_name_postfix(lut_testbench_file);
-    fprintf(fp, "hspice64 -mt 10 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
+    fprintf(fp, "hspice64 -mt 8 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
             /*spice_dir_formatted,*/ lut_testbench_file, /*spice_dir_formatted,*/ sim_results_dir_path,
             chomped_lut_testbench_file);
   }
@@ -813,7 +813,7 @@ void fprint_run_hspice_shell_script(char* spice_dir_path,
   /* Run hspice dff testbench netlist */
   if (NULL != dff_testbench_file) {
     chomped_dff_testbench_file = chomp_file_name_postfix(dff_testbench_file);
-    fprintf(fp, "hspice64 -mt 10 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
+    fprintf(fp, "hspice64 -mt 8 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
             /*spice_dir_formatted,*/ dff_testbench_file, /*spice_dir_formatted,*/ sim_results_dir_path,
             chomped_dff_testbench_file);
   }
@@ -821,7 +821,7 @@ void fprint_run_hspice_shell_script(char* spice_dir_path,
   /* Run hspice routing mux testbench netlist */
   if (NULL != routing_mux_testbench_file) {
     chomped_routing_mux_testbench_file = chomp_file_name_postfix(routing_mux_testbench_file);
-    fprintf(fp, "hspice64 -mt 10 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
+    fprintf(fp, "hspice64 -mt 8 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
             /*spice_dir_formatted,*/ routing_mux_testbench_file, /*spice_dir_formatted,*/ sim_results_dir_path,
             chomped_routing_mux_testbench_file);
   }
@@ -830,14 +830,14 @@ void fprint_run_hspice_shell_script(char* spice_dir_path,
   /* Run hspice Mux Testbench Netlist */
   if (NULL != mux_testbench_file) {
     chomped_mux_testbench_file = chomp_file_name_postfix(mux_testbench_file);
-    fprintf(fp, "hspice64 -mt 10 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
+    fprintf(fp, "hspice64 -mt 8 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
             /*spice_dir_formatted,*/ mux_testbench_file, /*spice_dir_formatted,*/ sim_results_dir_path,
             chomped_mux_testbench_file);
   }
   /* Run hspice grid testbench netlist */
   if (NULL != grid_testbench_file) {
     chomped_grid_testbench_file = chomp_file_name_postfix(grid_testbench_file);
-    fprintf(fp, "hspice64 -mt 10 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
+    fprintf(fp, "hspice64 -mt 8 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
             /*spice_dir_formatted,*/ grid_testbench_file, /*spice_dir_formatted,*/ sim_results_dir_path,
             chomped_grid_testbench_file);
   }
@@ -845,7 +845,7 @@ void fprint_run_hspice_shell_script(char* spice_dir_path,
   /* Run hspice Top Netlist */
   if (NULL != top_netlist_file) {
     chomped_top_netlist_file = chomp_file_name_postfix(top_netlist_file);
-    fprintf(fp, "hspice64 -mt 5 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
+    fprintf(fp, "hspice64 -mt 8 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
             /*spice_dir_formatted, */top_netlist_file, /*spice_dir_formatted,*/ sim_results_dir_path,
             chomped_top_netlist_file);
   }
@@ -1006,7 +1006,8 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
                                rr_node_indices, num_clocks, Arch, vpr_setup.SpiceOpts.fpga_spice_leakage_only);
   }
 
-  if (vpr_setup.SpiceOpts.print_spice_dff_testbench) {
+  /* By pass dff testbench file if there is no clock */
+  if ((0 < num_clocks)&&(vpr_setup.SpiceOpts.print_spice_dff_testbench)) {
     dff_testbench_file = my_strcat(chomped_circuit_name, spice_dff_testbench_postfix); 
     fprint_spice_dff_testbench(spice_dir_formatted, circuit_name, dff_testbench_file, include_dir_path, subckt_dir_path,
                                rr_node_indices, num_clocks, Arch, vpr_setup.SpiceOpts.fpga_spice_leakage_only);

@@ -135,3 +135,5 @@ void stats_pb_graph_node_port_pin_numbers(t_pb_graph_node* cur_pb_graph_node,
                                           int* num_inputs,
                                           int* num_outputs,
                                           int* num_clock_pins);
+
+void map_clb_pins_to_pb_graph_pins();

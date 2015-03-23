@@ -21,7 +21,7 @@ Xset0 s1_n2 set_b vdd vdd elc_pmos L=pl W='wp'
 Xrst0 s1_n2 rst gnd gnd elc_nmos L=nl W='wn' 
 Xinv1 s1_n2 s1_q vdd gnd inv
 Xinv2 s1_q s1_n3 vdd gnd inv 
-Xcpt1 s1_3 s1_n2 clk clk_b vdd gnd cpt 
+Xcpt1 s1_n3 s1_n2 clk clk_b vdd gnd cpt 
 * Stage 2
 Xinv3 s1_q s2_n1 vdd gnd inv 
 Xcpt2 s2_n1 s2_n2 clk clk_b vdd gnd cpt

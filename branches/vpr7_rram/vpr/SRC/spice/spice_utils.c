@@ -1229,6 +1229,8 @@ void update_one_grid_pack_prev_node_edge(int x, int y) {
       if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
         continue;
       }
+      /* back annotate pb ! */
+      rr_node[pin_global_rr_node_id].pb = pb;
       vpack_net_id = clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num];
       assert(ipin == local_rr_graph[ipin].pb_graph_pin->pin_count_in_cluster);
       /* Update net_num */
@@ -1358,3 +1360,4 @@ void stats_pb_graph_node_port_pin_numbers(t_pb_graph_node* cur_pb_graph_node,
 
   return;
 }
+

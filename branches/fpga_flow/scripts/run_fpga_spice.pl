@@ -744,8 +744,12 @@ sub run_one_fpga_spice_task($ $ $) {
     die "ERROR: File($luttb_sp_path) does not exist!";
   }
 
-  if (("on" eq $opt_ptr->{parse_dff_tb})&&(!(-e $dfftb_sp_path))) {
-    die "ERROR: File($dfftb_sp_path) does not exist!";
+  # Special, if there is no dff, this is comb circuit, we don't collect the information
+  if ("on" eq $opt_ptr->{parse_dff_tb}) {
+    if (!(-e $dfftb_sp_path)) {
+      $opt_ptr->{parse_dff_tb} = "off";
+    } 
+    print "INFO: File($dfftb_sp_path) does not exist! This may caused by a combinational circuit\n";
   }
 
   if (("on" eq $opt_ptr->{parse_grid_tb})&&(!(-e $gridtb_sp_path))) {
