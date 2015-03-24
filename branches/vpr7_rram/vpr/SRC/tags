@@ -1352,7 +1352,6 @@ clb_net	base/globals.c	/^struct s_net *clb_net = NULL;$/;"	v	typeref:struct:s_ne
 clb_net_density	power/power_util.c	/^float clb_net_density(int net_idx) {$/;"	f
 clb_net_prob	power/power_util.c	/^float clb_net_prob(int net_idx) {$/;"	f
 clb_opins_used_locally	place/timing_place_lookup.c	/^static t_ivec **clb_opins_used_locally;$/;"	v	file:
-clb_pin_to_pb_graph_pin	../../libarchfpga/include/physical_types.h	/^    t_pb_graph_pin** clb_pin_to_pb_graph_pin;$/;"	m	struct:s_type_descriptor
 clb_to_vpack_net_mapping	base/globals.c	/^int *clb_to_vpack_net_mapping = NULL; \/* [0..num_clb_nets - 1] *\/$/;"	v
 clear_buffer	mrfpga/buffer_insertion.c	/^void clear_buffer( )$/;"	f
 clearscreen	base/graphics.c	/^clearscreen (void) $/;"	f
@@ -1827,8 +1826,8 @@ find_pb_type_port_match_spice_model_port	spice/spice_utils.c	/^t_port* find_pb_t
 find_pb_type_ports_match_spice_model_port_type	spice/spice_utils.c	/^t_port** find_pb_type_ports_match_spice_model_port_type(t_pb_type* pb_type,$/;"	f
 find_prev_rr_nodes_with_src	spice/spice_utils.c	/^void find_prev_rr_nodes_with_src(t_rr_node* src_rr_node,$/;"	f
 find_spice_model_ports	spice/spice_utils.c	/^t_spice_model_port** find_spice_model_ports(t_spice_model* spice_model,$/;"	f
-find_spice_mux_testbench_pb_pin_mux_load_inv_size	spice/spice_mux_testbench.c	/^float find_spice_mux_testbench_pb_pin_mux_load_inv_size(t_spice_model* fan_out_spice_model) {$/;"	f	file:
-find_spice_mux_testbench_rr_mux_load_inv_size	spice/spice_mux_testbench.c	/^float find_spice_mux_testbench_rr_mux_load_inv_size(t_rr_node* load_rr_node,$/;"	f	file:
+find_spice_mux_testbench_pb_pin_mux_load_inv_size	spice/spice_mux_testbench.c	/^float find_spice_mux_testbench_pb_pin_mux_load_inv_size(t_spice_model* fan_out_spice_model) {$/;"	f
+find_spice_mux_testbench_rr_mux_load_inv_size	spice/spice_mux_testbench.c	/^float find_spice_mux_testbench_rr_mux_load_inv_size(t_rr_node* load_rr_node,$/;"	f
 find_src_pb_pin_to_rr_nodes	clb_pin_remap/clb_pin_remap_util.c	/^void find_src_pb_pin_to_rr_nodes(t_pb* src_pb,$/;"	f
 find_tnode_net_name	timing/path_delay.c	/^static char * find_tnode_net_name(int inode, boolean is_prepacked) {$/;"	f	file:
 find_to	place/place.c	/^static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim, int *x_to, int *y_to) {$/;"	f	file:
@@ -1941,27 +1940,38 @@ fprint_spice_mux_basis_subckt	spice/spice_mux.c	/^void fprint_spice_mux_basis_su
 fprint_spice_mux_model_cmos_subckt	spice/spice_mux.c	/^void fprint_spice_mux_model_cmos_subckt(FILE* fp,$/;"	f
 fprint_spice_mux_model_rram_subckt	spice/spice_mux.c	/^void fprint_spice_mux_model_rram_subckt(FILE* fp,$/;"	f
 fprint_spice_mux_model_subckt	spice/spice_mux.c	/^void fprint_spice_mux_model_subckt(FILE* fp,$/;"	f
+fprint_spice_mux_testbench	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench(char* formatted_spice_dir,$/;"	f
+fprint_spice_mux_testbench_call_defined_muxes	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_call_defined_muxes(FILE* fp,$/;"	f	file:
+fprint_spice_mux_testbench_call_routing_muxes	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_call_routing_muxes(FILE* fp,$/;"	f	file:
+fprint_spice_mux_testbench_cb_interc	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_cb_interc(FILE* fp, $/;"	f
 fprint_spice_mux_testbench_cb_mux_meas	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_cb_mux_meas(FILE* fp,$/;"	f	file:
+fprint_spice_mux_testbench_cb_muxes	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_cb_muxes(FILE* fp, $/;"	f	file:
 fprint_spice_mux_testbench_cb_one_mux	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_cb_one_mux(FILE* fp,$/;"	f	file:
 fprint_spice_mux_testbench_global_ports	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_global_ports(FILE* fp,$/;"	f	file:
 fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec(FILE* fp, $/;"	f
+fprint_spice_mux_testbench_measurements	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_measurements(FILE* fp, $/;"	f	file:
 fprint_spice_mux_testbench_one_cb_mux_loads	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_one_cb_mux_loads(FILE* fp,$/;"	f	file:
 fprint_spice_mux_testbench_one_mux	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_one_mux(FILE* fp,$/;"	f	file:
 fprint_spice_mux_testbench_pb_graph_node_interc	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_pb_graph_node_interc(FILE* fp,$/;"	f	file:
 fprint_spice_mux_testbench_pb_graph_node_pin_interc	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_pb_graph_node_pin_interc(FILE* fp,$/;"	f	file:
 fprint_spice_mux_testbench_pb_graph_node_pin_mux	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_pb_graph_node_pin_mux(FILE* fp,$/;"	f	file:
-fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(FILE* fp, $/;"	f	file:
+fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(FILE* fp, $/;"	f
 fprint_spice_mux_testbench_pb_interc	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_pb_interc(FILE* fp,$/;"	f	file:
 fprint_spice_mux_testbench_pb_mux_meas	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_pb_mux_meas(FILE* fp,$/;"	f	file:
 fprint_spice_mux_testbench_pb_muxes_rec	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_pb_muxes_rec(FILE* fp,$/;"	f	file:
 fprint_spice_mux_testbench_pb_pin_interc	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_pb_pin_interc(FILE* fp,$/;"	f	file:
 fprint_spice_mux_testbench_pb_pin_mux	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_pb_pin_mux(FILE* fp,$/;"	f	file:
+fprint_spice_mux_testbench_rr_node_load_version	spice/spice_mux_testbench.c	/^char* fprint_spice_mux_testbench_rr_node_load_version(FILE* fp,$/;"	f	file:
 fprint_spice_mux_testbench_sb_mux_meas	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_sb_mux_meas(FILE* fp,$/;"	f	file:
+fprint_spice_mux_testbench_sb_muxes	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_sb_muxes(FILE* fp, $/;"	f	file:
+fprint_spice_mux_testbench_sb_one_mux	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_sb_one_mux(FILE* fp,$/;"	f	file:
+fprint_spice_mux_testbench_stimulations	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_stimulations(FILE* fp, $/;"	f	file:
 fprint_spice_netlist_transient_setting	spice/spice_netlist_utils.c	/^void fprint_spice_netlist_transient_setting(FILE* fp, $/;"	f
 fprint_spice_options	spice/spice_netlist_utils.c	/^void fprint_spice_options(FILE* fp,$/;"	f
 fprint_spice_pb_graph_interc	spice/spice_pbtypes.c	/^void fprint_spice_pb_graph_interc(FILE* fp, $/;"	f
 fprint_spice_pb_graph_node_rec	spice/spice_pbtypes.c	/^void fprint_spice_pb_graph_node_rec(FILE* fp, $/;"	f
 fprint_spice_pb_graph_primitive_node	spice/spice_pbtypes.c	/^void fprint_spice_pb_graph_primitive_node(FILE* fp,$/;"	f
+fprint_spice_routing_mux_testbench	spice/spice_mux_testbench.c	/^void fprint_spice_routing_mux_testbench(char* formatted_spice_dir,$/;"	f
 fprint_spice_stimulate_header	spice/spice_heads.c	/^void fprint_spice_stimulate_header(char* stimulate_file_name,$/;"	f	file:
 fprint_spice_top_netlist	spice/spice_top_netlist.c	/^void fprint_spice_top_netlist(char* circuit_name,$/;"	f
 fprint_spice_wire_model	spice/spice_subckt.c	/^void fprint_spice_wire_model(FILE* fp,$/;"	f
@@ -2545,7 +2555,6 @@ main	main.c	/^int main(int argc, char **argv) {$/;"	f
 main_best_buffer_list	../../libarchfpga/include/arch_types_mrfpga.h	/^  t_linked_int* main_best_buffer_list;$/;"	m	struct:s_arch_mrfpga
 main_best_buffer_list	mrfpga/mrfpga_globals.c	/^t_linked_int* main_best_buffer_list;$/;"	v
 map_button	base/graphics.c	/^static void map_button (int bnum) $/;"	f	file:
-map_clb_pins_to_pb_graph_pins	spice/spice_utils.c	/^void map_clb_pins_to_pb_graph_pins() {$/;"	f
 mapped_spice_model	base/vpr_types.h	/^    t_spice_model* mapped_spice_model;$/;"	m	struct:s_logical_block
 mapped_spice_model_index	base/vpr_types.h	/^    int mapped_spice_model_index; \/* index of spice_model in completed FPGA netlist *\/$/;"	m	struct:s_logical_block
 mark_and_update_partial_gain	pack/cluster.c	/^static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,$/;"	f	file:
