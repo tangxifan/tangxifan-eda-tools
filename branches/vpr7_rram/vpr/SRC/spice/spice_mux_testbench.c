@@ -309,7 +309,7 @@ void fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(FILE* fp,
     cur_interc = src_pb_graph_pin->output_edges[iedge]->interconnect;
     assert(NULL != cur_interc);
     if (mode_index == cur_interc->parent_mode_index) {
-      rec_outport_name = (char*)my_malloc(sizeof(char)* (strlen(outport_name) + 4 + strlen(my_itoa(iedge)) +2 ));
+      rec_outport_name = (char*)my_malloc(sizeof(char)* (strlen(outport_name) + 5 + strlen(my_itoa(iedge)) +2 ));
       sprintf(rec_outport_name, "%s_out[%d]", outport_name, iedge);
       /* check the interc has spice_model and if it is buffered */
       assert(NULL != cur_interc->spice_model);
