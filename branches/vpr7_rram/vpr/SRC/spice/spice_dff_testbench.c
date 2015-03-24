@@ -153,6 +153,8 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
   }
  
   /* Call the subckt and give stimulates, measurements */
+  fprintf(fp,"***** DFF[%d]: logical_block_index[%d], gvdd_index[%d]*****\n", 
+          tb_num_dffs, logical_block_index, logical_block[logical_block_index].mapped_spice_model_index);
   fprint_spice_dff_testbench_one_dff(fp, prefix, num_inputs, num_outputs,
                                      input_density, input_probability);
   /* Add loads: 1 inverters */

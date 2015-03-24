@@ -46,6 +46,7 @@ static int testbench_sb_mux_cnt = 0;
 static t_llist* testbench_muxes_head = NULL; 
 static int num_segments = 0;
 static t_segment_inf* segments = NULL;
+static int sim_num_clock_cycle = 0.;
 
 /***** Local Subroutines Declaration *****/
 static 
@@ -154,7 +155,7 @@ void fprint_spice_mux_testbench_measurements(FILE* fp,
                                              t_spice spice);
 
 /***** Local Subroutines *****/
-static void init_spice_mux_testbench_globals() {
+static void init_spice_mux_testbench_globals(t_spice spice) {
   testbench_mux_cnt = 0;
   testbench_sram_cnt = 0;
   testbench_load_cnt = 0;
@@ -162,6 +163,7 @@ static void init_spice_mux_testbench_globals() {
   testbench_pb_mux_cnt = 0;
   testbench_cb_mux_cnt = 0;
   testbench_sb_mux_cnt = 0;
+  sim_num_clock_cycle = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
 }
 
 static 
@@ -320,9 +322,11 @@ void fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(FILE* fp,
                 testbench_load_cnt, outport_name, rec_outport_name, load_inv_size);
         testbench_load_cnt++;
       } else {
+        /*
         fprintf(fp, "R%s_to_%s %s %s 0\n",
                 outport_name, rec_outport_name,  
                 outport_name, rec_outport_name); 
+        */
         /* Go recursively */
         if (NULL == src_pb) {
           des_pb = NULL;
@@ -343,7 +347,7 @@ void fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(FILE* fp,
           }
         }
         fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(fp, grid_x, grid_y, src_pb_graph_pin->output_edges[iedge]->output_pins[0],
-                                                              des_pb, rec_outport_name, LL_rr_node_indices);
+                                                              des_pb, outport_name, LL_rr_node_indices);
         
       }
     }
@@ -364,13 +368,13 @@ void fprint_spice_mux_testbench_pb_mux_meas(FILE* fp,
   if (0 == testbench_pb_mux_cnt) {
     fprintf(fp, ".meas tran sum_leakage_power_pb_mux[0to%d] \n", testbench_pb_mux_cnt);
     fprintf(fp, "+          param=\'leakage_%s\'\n", meas_tag);
-    fprintf(fp, ".meas tran sum_dynamic_power_pb_mux[0to%d] \n", testbench_pb_mux_cnt);
-    fprintf(fp, "+          param=\'dynamic_%s\'\n", meas_tag);
+    fprintf(fp, ".meas tran sum_energy_per_cycle_pb_mux[0to%d] \n", testbench_pb_mux_cnt);
+    fprintf(fp, "+          param=\'energy_per_cycle_%s\'\n", meas_tag);
   } else {
     fprintf(fp, ".meas tran sum_leakage_power_pb_mux[0to%d] \n", testbench_pb_mux_cnt);
     fprintf(fp, "+          param=\'sum_leakage_power_pb_mux[0to%d]+leakage_%s\'\n", testbench_pb_mux_cnt-1, meas_tag);
-    fprintf(fp, ".meas tran sum_dynamic_power_pb_mux[0to%d] \n", testbench_pb_mux_cnt);
-    fprintf(fp, "+          param=\'sum_dynamic_power_pb_mux[0to%d]+dynamic_%s\'\n", testbench_pb_mux_cnt-1, meas_tag);
+    fprintf(fp, ".meas tran sum_energy_per_cycle_pb_mux[0to%d] \n", testbench_pb_mux_cnt);
+    fprintf(fp, "+          param=\'sum_energy_per_cycle_pb_mux[0to%d]+energy_per_cycle_%s\'\n", testbench_pb_mux_cnt-1, meas_tag);
   }
 
   /* Update the counter */
@@ -391,13 +395,13 @@ void fprint_spice_mux_testbench_cb_mux_meas(FILE* fp,
   if (0 == testbench_cb_mux_cnt) {
     fprintf(fp, ".meas tran sum_leakage_power_cb_mux[0to%d] \n", testbench_cb_mux_cnt);
     fprintf(fp, "+          param=\'leakage_%s\'\n", meas_tag);
-    fprintf(fp, ".meas tran sum_dynamic_power_cb_mux[0to%d] \n", testbench_cb_mux_cnt);
-    fprintf(fp, "+          param=\'dynamic_%s\'\n", meas_tag);
+    fprintf(fp, ".meas tran sum_energy_per_cycle_cb_mux[0to%d] \n", testbench_cb_mux_cnt);
+    fprintf(fp, "+          param=\'energy_per_cycle_%s\'\n", meas_tag);
   } else {
     fprintf(fp, ".meas tran sum_leakage_power_cb_mux[0to%d] \n", testbench_cb_mux_cnt);
     fprintf(fp, "+          param=\'sum_leakage_power_cb_mux[0to%d]+leakage_%s\'\n", testbench_cb_mux_cnt-1, meas_tag);
-    fprintf(fp, ".meas tran sum_dynamic_power_cb_mux[0to%d] \n", testbench_cb_mux_cnt);
-    fprintf(fp, "+          param=\'sum_dynamic_power_cb_mux[0to%d]+dynamic_%s\'\n", testbench_cb_mux_cnt-1, meas_tag);
+    fprintf(fp, ".meas tran sum_energy_per_cycle_cb_mux[0to%d] \n", testbench_cb_mux_cnt);
+    fprintf(fp, "+          param=\'sum_energy_per_cycle_cb_mux[0to%d]+energy_per_cycle_%s\'\n", testbench_cb_mux_cnt-1, meas_tag);
   }
 
   /* Update the counter */
@@ -418,13 +422,13 @@ void fprint_spice_mux_testbench_sb_mux_meas(FILE* fp,
   if (0 == testbench_sb_mux_cnt) {
     fprintf(fp, ".meas tran sum_leakage_power_sb_mux[0to%d] \n", testbench_sb_mux_cnt);
     fprintf(fp, "+          param=\'leakage_%s\'\n", meas_tag);
-    fprintf(fp, ".meas tran sum_dynamic_power_sb_mux[0to%d] \n", testbench_sb_mux_cnt);
-    fprintf(fp, "+          param=\'dynamic_%s\'\n", meas_tag);
+    fprintf(fp, ".meas tran sum_energy_per_cycle_sb_mux[0to%d] \n", testbench_sb_mux_cnt);
+    fprintf(fp, "+          param=\'energy_per_cycle_%s\'\n", meas_tag);
   } else {
     fprintf(fp, ".meas tran sum_leakage_power_sb_mux[0to%d] \n", testbench_sb_mux_cnt);
     fprintf(fp, "+          param=\'sum_leakage_power_sb_mux[0to%d]+leakage_%s\'\n", testbench_sb_mux_cnt-1, meas_tag);
-    fprintf(fp, ".meas tran sum_dynamic_power_sb_mux[0to%d] \n", testbench_sb_mux_cnt);
-    fprintf(fp, "+          param=\'sum_dynamic_power_sb_mux[0to%d]+dynamic_%s\'\n", testbench_sb_mux_cnt-1, meas_tag);
+    fprintf(fp, ".meas tran sum_energy_per_cycle_sb_mux[0to%d] \n", testbench_sb_mux_cnt);
+    fprintf(fp, "+          param=\'sum_energy_per_cycle_sb_mux[0to%d]+energy_per_cycle_%s\'\n", testbench_sb_mux_cnt-1, meas_tag);
   }
 
   /* Update the counter */
@@ -605,24 +609,38 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
   fprintf(fp, ".meas tran %s_size%d[%d]_leakage_power param='leakage_%s'\n",
           mux_spice_model->prefix, mux_size, testbench_mux_cnt, meas_tag);
   /* Measure the dynamic power of MUX */
-  fprintf(fp, ".meas tran dynamic_%s avg p(Vgvdd_%s_size%d[%d]) from='clock_period' to='2*clock_period'\n",
+  fprintf(fp, ".meas tran %s_size%d[%d]_dynamic_power avg p(Vgvdd_%s_size%d[%d]) from='clock_period' to='%d*clock_period'\n",
+           mux_spice_model->prefix, mux_size, testbench_mux_cnt,
+           mux_spice_model->prefix, mux_size, testbench_mux_cnt, sim_num_clock_cycle);
+  fprintf(fp, ".meas tran %s_size%d[%d]_energy_per_cycle param='%s_size%d[%d]_dynamic_power*clock_period'\n",
+           mux_spice_model->prefix, mux_size, testbench_mux_cnt,
+           mux_spice_model->prefix, mux_size, testbench_mux_cnt);
+  /* Important: to give dynamic power measurement per toggle !!!! 
+   * it is not fair to compare dynamic power when clock_period is different from designs to designs !!!
+   */
+  fprintf(fp, ".meas tran energy_per_cycle_%s  param='%s_size%d[%d]_dynamic_power*clock_period'\n",
           meas_tag, mux_spice_model->prefix, mux_size, testbench_mux_cnt);
-  fprintf(fp, ".meas tran %s_size%d[%d]_dynamic_power param='dynamic_%s'\n",
-          mux_spice_model->prefix, mux_size, testbench_mux_cnt, meas_tag);
   fprintf(fp, ".meas tran dynamic_rise_%s avg p(Vgvdd_%s_size%d[%d]) from='start_rise_%s' to='start_rise_%s+switch_rise_%s'\n",
           meas_tag, mux_spice_model->prefix, mux_size, testbench_mux_cnt, meas_tag, meas_tag, meas_tag);
   fprintf(fp, ".meas tran dynamic_fall_%s avg p(Vgvdd_%s_size%d[%d]) from='start_fall_%s' to='start_fall_%s+switch_fall_%s'\n",
           meas_tag, mux_spice_model->prefix, mux_size, testbench_mux_cnt, meas_tag, meas_tag, meas_tag);
+  /*
+  fprintf(fp, ".meas tran %s_size%d[%d]_dynamic_power param='(dynamic_rise_%s)*(%g*%d)'\n",
+           mux_spice_model->prefix, mux_size, testbench_mux_cnt,
+           meas_tag, input_density[path_id], sim_num_clock_cycle-1);
+  fprintf(fp, ".meas tran dynamic_%s  param='(dynamic_rise_%s)*(%g*%d)'\n",
+          meas_tag, meas_tag, input_density[path_id], sim_num_clock_cycle-1);
+  */
   if (0 == testbench_mux_cnt) {
     fprintf(fp, ".meas tran sum_leakage_power_mux[0to%d] \n", testbench_mux_cnt);
     fprintf(fp, "+          param=\'leakage_%s\'\n", meas_tag);
-    fprintf(fp, ".meas tran sum_dynamic_power_mux[0to%d] \n", testbench_mux_cnt);
-    fprintf(fp, "+          param=\'dynamic_%s\'\n", meas_tag);
+    fprintf(fp, ".meas tran sum_energy_per_cycle_mux[0to%d] \n", testbench_mux_cnt);
+    fprintf(fp, "+          param=\'energy_per_cycle_%s\'\n", meas_tag);
   } else {
     fprintf(fp, ".meas tran sum_leakage_power_mux[0to%d] \n", testbench_mux_cnt);
     fprintf(fp, "+          param=\'sum_leakage_power_mux[0to%d]+leakage_%s\'\n", testbench_mux_cnt-1, meas_tag);
-    fprintf(fp, ".meas tran sum_dynamic_power_mux[0to%d] \n", testbench_mux_cnt);
-    fprintf(fp, "+          param=\'sum_dynamic_power_mux[0to%d]+dynamic_%s\'\n", testbench_mux_cnt-1, meas_tag);
+    fprintf(fp, ".meas tran sum_energy_per_cycle_mux[0to%d] \n", testbench_mux_cnt);
+    fprintf(fp, "+          param=\'sum_energy_per_cycle_mux[0to%d]+energy_per_cycle_%s\'\n", testbench_mux_cnt-1, meas_tag);
   }
 
   /* Update the counter */
@@ -2165,27 +2183,28 @@ void fprint_spice_mux_testbench_measurements(FILE* fp,
   /* Measure the leakage and dynamic power of SRAMs*/
   fprintf(fp, ".meas tran total_leakage_srams avg p(Vgvdd_sram) from=0 to=\'clock_period\'\n");
   fprintf(fp, ".meas tran total_dynamic_srams avg p(Vgvdd_sram) from=\'clock_period\' to=\'%d*clock_period\'\n", num_clock_cycle);
+  fprintf(fp, ".meas tran total_energy_per_cycle_srams param=\'total_dynamic_srams*clock_period\'\n");
 
   /* Measure the total leakage and dynamic power */
   fprintf(fp, ".meas tran total_leakage_power_mux[0to%d] \n", testbench_mux_cnt - 1);
   fprintf(fp, "+          param=\'sum_leakage_power_mux[0to%d]\'\n", testbench_mux_cnt-1);
-  fprintf(fp, ".meas tran total_dynamic_power_mux[0to%d] \n", testbench_mux_cnt - 1);
-  fprintf(fp, "+          param=\'sum_dynamic_power_mux[0to%d]\'\n", testbench_mux_cnt-1);
+  fprintf(fp, ".meas tran total_energy_per_cycle_mux[0to%d] \n", testbench_mux_cnt - 1);
+  fprintf(fp, "+          param=\'sum_energy_per_cycle_mux[0to%d]\'\n", testbench_mux_cnt-1);
   /* pb_muxes */
   fprintf(fp, ".meas tran total_leakage_power_pb_mux \n");
   fprintf(fp, "+          param=\'sum_leakage_power_pb_mux[0to%d]\'\n", testbench_pb_mux_cnt-1);
-  fprintf(fp, ".meas tran total_dynamic_power_pb_mux \n");
-  fprintf(fp, "+          param=\'sum_dynamic_power_pb_mux[0to%d]\'\n", testbench_pb_mux_cnt-1);
+  fprintf(fp, ".meas tran total_energy_per_cycle_pb_mux \n");
+  fprintf(fp, "+          param=\'sum_energy_per_cycle_pb_mux[0to%d]\'\n", testbench_pb_mux_cnt-1);
   /* cb_muxes */
   fprintf(fp, ".meas tran total_leakage_power_cb_mux \n");
   fprintf(fp, "+          param=\'sum_leakage_power_cb_mux[0to%d]\'\n", testbench_cb_mux_cnt-1);
-  fprintf(fp, ".meas tran total_dynamic_power_cb_mux \n");
-  fprintf(fp, "+          param=\'sum_dynamic_power_cb_mux[0to%d]\'\n", testbench_cb_mux_cnt-1);
+  fprintf(fp, ".meas tran total_energy_per_cycle_cb_mux \n");
+  fprintf(fp, "+          param=\'sum_energy_per_cycle_cb_mux[0to%d]\'\n", testbench_cb_mux_cnt-1);
   /* sb_muxes */
   fprintf(fp, ".meas tran total_leakage_power_sb_mux \n");
   fprintf(fp, "+          param=\'sum_leakage_power_sb_mux[0to%d]\'\n", testbench_sb_mux_cnt-1);
-  fprintf(fp, ".meas tran total_dynamic_power_sb_mux \n");
-  fprintf(fp, "+          param=\'sum_dynamic_power_sb_mux[0to%d]\'\n", testbench_sb_mux_cnt-1);
+  fprintf(fp, ".meas tran total_energy_per_cylce_sb_mux \n");
+  fprintf(fp, "+          param=\'sum_energy_per_cycle_sb_mux[0to%d]\'\n", testbench_sb_mux_cnt-1);
 
   /* We don not measure the power of SRAM and load !*/
   /* Sum the total MUX leakage power and dynamic power */
@@ -2278,7 +2297,7 @@ void fprint_spice_mux_testbench(char* formatted_spice_dir,
   fprint_spice_mux_testbench_global_ports(fp, *(arch.spice));
  
   /* Quote defined Logic blocks subckts (Grids) */
-  init_spice_mux_testbench_globals();
+  init_spice_mux_testbench_globals(*(arch.spice));
   fprint_spice_mux_testbench_call_defined_muxes(fp, LL_rr_node_indices);
 
   /* Add stimulations */
@@ -2358,10 +2377,10 @@ void fprint_spice_routing_mux_testbench(char* formatted_spice_dir,
   fprint_spice_options(fp, arch.spice->spice_params);
 
   /* Global nodes: Vdd for SRAMs, Logic Blocks(Include IO), Switch Boxes, Connection Boxes */
-  fprint_spice_mux_testbench_global_ports(fp, (*arch.spice));
+  fprint_spice_mux_testbench_global_ports(fp, *(arch.spice));
  
   /* Quote defined Logic blocks subckts (Grids) */
-  init_spice_mux_testbench_globals();
+  init_spice_mux_testbench_globals(*(arch.spice));
   fprint_spice_mux_testbench_call_routing_muxes(fp, LL_rr_node_indices);
 
   /* Add stimulations */

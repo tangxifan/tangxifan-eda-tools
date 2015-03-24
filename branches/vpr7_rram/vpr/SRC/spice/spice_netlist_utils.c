@@ -1125,8 +1125,8 @@ void fprint_voltage_pulse_params(FILE* fp,
 
   /* TODO: check codes for density and probability, init_val */
   /* If density = 0, this is a constant signal */
-  if (0 == density) {
-    if (0 == probability) {
+  if (0. == density) {
+    if (0. == probability) {
       fprintf(fp, "+  0\n");
     } else {
       fprintf(fp, "+  vsp\n");
@@ -1141,12 +1141,12 @@ void fprint_voltage_pulse_params(FILE* fp,
   }
   /*
   fprintf(fp, "+  'input_slew_pct_rise*%g*clock_period' 'input_slew_pct_fall*%g*clock_period'\n",
-          1./density, 1./density);
+          2./density, 2./density);
   */
   /* TODO: Think about a reasonable slew for signals with diverse density */
   fprintf(fp, "+  'input_slew_pct_rise*clock_period' 'input_slew_pct_fall*clock_period'\n");
   fprintf(fp, "+  '%g*%g*(1-input_slew_pct_rise-input_slew_pct_fall)*clock_period' '%g*clock_period')\n",
-          probability, 1./density, 1./density);
+          probability, 2./density, 2./density);
 
   return;
 }
@@ -1411,7 +1411,9 @@ void fprint_measure_vdds_logical_block_spice_model(FILE* fp,
                                                    enum e_measure_type meas_type,
                                                    int num_clock_cycle,
                                                    boolean leakage_only) {
-  int i, cur;
+  int i, iport, ipin, cur;
+  float average_output_density = 0.;
+  int output_cnt = 0;
 
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
@@ -1421,6 +1423,15 @@ void fprint_measure_vdds_logical_block_spice_model(FILE* fp,
   /* For each logical block, we print a vdd */
   for (i = 0; i < num_logical_blocks; i++) {
     if (logical_block[i].mapped_spice_model == spice_model) {
+      /* Get the average output density */
+      output_cnt = 0;
+      for (iport = 0; iport < logical_block[i].pb->pb_graph_node->num_output_ports; iport++) {
+        for (ipin = 0; ipin < logical_block[i].pb->pb_graph_node->num_output_pins[iport]; ipin++) {
+          average_output_density += vpack_net[logical_block[i].output_nets[iport][ipin]].spice_net_info->density; 
+          output_cnt++;
+        }
+      }
+      average_output_density = average_output_density/output_cnt;
       switch (meas_type) {
       case SPICE_MEASURE_LEAKAGE_POWER:
         if (TRUE == leakage_only) {
@@ -1435,9 +1446,12 @@ void fprint_measure_vdds_logical_block_spice_model(FILE* fp,
         break;
       case SPICE_MEASURE_DYNAMIC_POWER:
         fprintf(fp, ".measure tran dynamic_power_%s[%d] avg p(Vgvdd_%s[%d]) from='clock_period' to='%d*clock_period'\n",
-              spice_model->prefix, logical_block[i].mapped_spice_model_index,
-              spice_model->prefix, logical_block[i].mapped_spice_model_index,
-              num_clock_cycle);
+                spice_model->prefix, logical_block[i].mapped_spice_model_index,
+                spice_model->prefix, logical_block[i].mapped_spice_model_index,
+                num_clock_cycle);
+        fprintf(fp, ".measure tran energy_per_cycle_%s[%d] param='dynamic_power_%s[%d]*clock_period'\n",
+                spice_model->prefix, logical_block[i].mapped_spice_model_index,
+                spice_model->prefix, logical_block[i].mapped_spice_model_index);
         break;
       default: 
         vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid meas_type!\n", __FILE__, __LINE__);
@@ -1473,13 +1487,13 @@ void fprint_measure_vdds_logical_block_spice_model(FILE* fp,
   case SPICE_MEASURE_DYNAMIC_POWER:
     for (i = 0; i < num_logical_blocks; i++) {
       if (logical_block[i].mapped_spice_model == spice_model) {
-        fprintf(fp, ".measure tran dynamic_power_%s[0to%d] \n",
+        fprintf(fp, ".measure tran energy_per_cycle_%s[0to%d] \n",
             spice_model->prefix, cur);
         if (0 == cur) {
-          fprintf(fp, "+ param = 'dynamic_power_%s[%d]'\n",
+          fprintf(fp, "+ param = 'energy_per_cycle_%s[%d]'\n",
               spice_model->prefix, logical_block[i].mapped_spice_model_index);
         } else {
-          fprintf(fp, "+ param = 'dynamic_power_%s[%d]+dynamic_power_%s[0to%d]'\n", 
+          fprintf(fp, "+ param = 'energy_per_cycle_%s[%d]+energy_per_cycle_%s[0to%d]'\n", 
               spice_model->prefix, logical_block[i].mapped_spice_model_index,
              spice_model->prefix, cur-1);
         }
@@ -1487,8 +1501,8 @@ void fprint_measure_vdds_logical_block_spice_model(FILE* fp,
       }
     }
     /* Spot the total dynamic power of this spice model */
-    fprintf(fp, ".measure tran total_dynamic_power_%s \n", spice_model->prefix);
-    fprintf(fp, "+ param = 'dynamic_power_%s[0to%d]'\n", 
+    fprintf(fp, ".measure tran total_energy_per_cycle_%s \n", spice_model->prefix);
+    fprintf(fp, "+ param = 'energy_per_cycle_%s[0to%d]'\n", 
             spice_model->prefix, cur-1);
     break;
   default: 

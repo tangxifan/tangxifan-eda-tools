@@ -158,6 +158,8 @@ void fprint_spice_lut_testbench_one_pb_graph_node_lut(FILE* fp,
   }
  
   /* Call the subckt and give stimulates, measurements */
+  fprintf(fp,"***** LUT[%d]: logical_block_index[%d], gvdd_index[%d]*****\n", 
+          tb_num_luts, logical_block_index, logical_block[logical_block_index].mapped_spice_model_index);
   fprint_spice_lut_testbench_one_lut(fp, prefix, num_inputs, num_outputs,
                                      input_density, input_probability);
   /* Add loads: two inverters */
@@ -429,6 +431,7 @@ void fprint_spice_lut_testbench_measurements(FILE* fp,
   /* Dynamic power */
   /* Dynamic power of SRAMs */
   fprintf(fp, ".measure tran dynamic_power_sram_luts avg p(Vgvdd_sram_luts) from='clock_period' to='%d*clock_period'\n", num_clock_cycle);
+  fprintf(fp, ".measure tran energy_per_cycle_sram_luts param='dynamic_power_sram_luts*clock_period'\n");
   /* Dynamic power of LUTs */
   for (i = 0; i < spice.num_spice_model; i++) {
     if (SPICE_MODEL_LUT == spice.spice_models[i].type) {

@@ -748,8 +748,8 @@ sub run_one_fpga_spice_task($ $ $) {
   if ("on" eq $opt_ptr->{parse_dff_tb}) {
     if (!(-e $dfftb_sp_path)) {
       $opt_ptr->{parse_dff_tb} = "off";
+      print "INFO: File($dfftb_sp_path) does not exist! This may caused by a combinational circuit\n";
     } 
-    print "INFO: File($dfftb_sp_path) does not exist! This may caused by a combinational circuit\n";
   }
 
   if (("on" eq $opt_ptr->{parse_grid_tb})&&(!(-e $gridtb_sp_path))) {
