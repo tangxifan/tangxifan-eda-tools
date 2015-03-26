@@ -481,9 +481,11 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
       return ReadString(Args, &Options->spice_dir);
     case OT_PRINT_SPICE_TOP_TESTBENCH:
       return Args;
-    case OT_PRINT_SPICE_MUX_TESTBENCH:
+    case OT_PRINT_SPICE_PB_MUX_TESTBENCH:
       return Args;
-    case OT_PRINT_SPICE_ROUTING_MUX_TESTBENCH:
+    case OT_PRINT_SPICE_CB_MUX_TESTBENCH:
+      return Args;
+    case OT_PRINT_SPICE_SB_MUX_TESTBENCH:
       return Args;
     case OT_PRINT_SPICE_GRID_TESTBENCH:
       return Args;

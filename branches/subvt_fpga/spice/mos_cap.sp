@@ -7,7 +7,7 @@ MOS capacitance
 *.include './process/st_28nm.sp'
 .include '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/spice/nmos_pmos.sp'
 .temp 25
-.param beta = 1.7
+.param beta = 1.4
 .param alpha = 1
 .param nl = 45e-9
 .param pl = nl

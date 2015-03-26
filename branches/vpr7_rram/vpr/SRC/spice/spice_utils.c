@@ -24,6 +24,7 @@
 #include "vpr_utils.h"
 
 /* Include SPICE support headers*/
+#include "linkedlist.h"
 #include "spice_globals.h"
 #include "spice_utils.h"
 
@@ -84,6 +85,16 @@ int try_access_file(char* file_path) {
     vpr_printf(TIO_MESSAGE_WARNING,"File(%s) exists! Will overwrite it!\n",file_path);
   }
   return ret;
+}
+
+void my_remove_file(char* file_path) {
+  if (NULL == file_path) {
+    return;
+  } 
+  if (0 != remove(file_path)) {
+    vpr_printf(TIO_MESSAGE_WARNING, "Fail to remove file(%s)!\n", file_path);
+  }
+  return;
 }
 
 enum e_dir_err try_access_dir(char* dir_path) {
@@ -670,6 +681,27 @@ int mux_last_level_input_num(int num_level,
   return ret;
 }
 
+int determine_lut_path_id(int lut_size,
+                          int* lut_inputs) {
+  int path_id = OPEN;
+  int i;
+  
+  for (i = 0; i < lut_size; i++) {
+    switch (lut_inputs[i]) {
+    case 0:
+      path_id += (int)pow(2., (double)(i));
+      break;
+    case 1:
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid sram_bits[%d]!\n", 
+                 __FILE__, __LINE__, i);
+      exit(1);
+    }
+  }
+
+  return path_id;
+}
 
 /* Decode the configuration to sram_bits
  * A path_id is in the range of [0..fan_in-1]
@@ -848,6 +880,7 @@ void init_spice_net_info(t_spice_net_info* spice_net_info) {
   spice_net_info->probability = 0.;
   spice_net_info->density = 0.;
   spice_net_info->freq = 0.;
+  spice_net_info->init_val = 0;
 
   spice_net_info->pwl = 0.;
   spice_net_info->pwh = 0.;
@@ -1046,6 +1079,23 @@ float pb_pin_probability(t_rr_node* pb_rr_graph,
   return probability;
 }
 
+int pb_pin_init_value(t_rr_node* pb_rr_graph, 
+                      t_pb_graph_pin* pin) {
+  float init_val = 0;
+  int net_num;
+
+  if (NULL == pb_rr_graph) {
+    return init_val;
+  }
+  net_num = pb_rr_graph[pin->pin_count_in_cluster].net_num;
+
+  if (net_num != OPEN) {
+    init_val = vpack_net[net_num].spice_net_info->init_val;
+  }
+
+  return init_val;
+}
+
 float get_rr_node_net_density(t_rr_node node) {
   /* If we found this net is OPEN, we assume it zero-density */
   if (OPEN == node.net_num) { 
@@ -1061,6 +1111,15 @@ float get_rr_node_net_probability(t_rr_node node) {
     return 0.;
   } else {
     return clb_net[node.net_num].spice_net_info->probability;
+  }
+}
+
+int get_rr_node_net_init_value(t_rr_node node) {
+  /* If we found this net is OPEN, we assume it zero-probability */
+  if (OPEN == node.net_num) { 
+    return 0;
+  } else {
+    return clb_net[node.net_num].spice_net_info->init_val;
   }
 }
 

@@ -98,6 +98,7 @@ void fprint_grid_testbench_one_grid_pin_stimulation(FILE* fp, int x, int y,
                                                     t_ivec*** LL_rr_node_indices) {
   int ipin_rr_node_index;
   float ipin_density, ipin_probability;
+  int ipin_init_value;
 
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
@@ -113,10 +114,11 @@ void fprint_grid_testbench_one_grid_pin_stimulation(FILE* fp, int x, int y,
   /* Get density and probability */
   ipin_density = get_rr_node_net_density(rr_node[ipin_rr_node_index]); 
   ipin_probability = get_rr_node_net_probability(rr_node[ipin_rr_node_index]); 
+  ipin_init_value = get_rr_node_net_init_value(rr_node[ipin_rr_node_index]); 
   /* Print voltage source */
   fprintf(fp, "Vgrid[%d][%d]_pin[%d][%d][%d] grid[%d][%d]_pin[%d][%d][%d] 0 \n",
           x, y, height, side, ipin, x, y, height, side, ipin);
-  fprint_voltage_pulse_params(fp, 0, ipin_density, ipin_probability);
+  fprint_voltage_pulse_params(fp, ipin_init_value, ipin_density, ipin_probability);
 
   return;
 }
@@ -368,6 +370,7 @@ void fprint_spice_grid_testbench(char* formatted_spice_dir,
   char* temp_include_file_path = NULL;
   char* title = my_strcat("FPGA Grid Testbench for Design: ", circuit_name);
   char* grid_testbench_file_path = my_strcat(formatted_spice_dir, grid_test_bench_name);
+  t_llist* temp = NULL;
 
   /* Check if the path exists*/
   fp = fopen(grid_testbench_file_path,"w");
@@ -430,6 +433,14 @@ void fprint_spice_grid_testbench(char* formatted_spice_dir,
 
   /* Close the file*/
   fclose(fp);
+
+  if (NULL == tb_head) {
+    tb_head = create_llist(1);
+    tb_head->dptr = (void*)my_strdup(grid_testbench_file_path);
+  } else {
+    temp = insert_llist_node(tb_head);
+    temp->dptr = (void*)my_strdup(grid_testbench_file_path);
+  }
 
   return;
 }

@@ -941,11 +941,12 @@ static void SetupSpiceOpts(t_options Options,
   /* Initialze */  
   spice_opts->do_spice = FALSE;
   spice_opts->print_spice_top_testbench = FALSE;
-  spice_opts->print_spice_mux_testbench = TRUE;
+  spice_opts->print_spice_pb_mux_testbench = TRUE;
+  spice_opts->print_spice_cb_mux_testbench = TRUE;
+  spice_opts->print_spice_sb_mux_testbench = TRUE;
   spice_opts->print_spice_lut_testbench = TRUE;
   spice_opts->print_spice_dff_testbench = TRUE;
   spice_opts->print_spice_grid_testbench = FALSE;
-  spice_opts->print_spice_routing_mux_testbench = FALSE;
   spice_opts->fpga_spice_leakage_only = FALSE;
 
   /* Turn on the spice option if it is selected*/
@@ -958,11 +959,14 @@ static void SetupSpiceOpts(t_options Options,
     if (Options.Count[OT_PRINT_SPICE_TOP_TESTBENCH]) {
       spice_opts->print_spice_top_testbench = TRUE;
     }
-    if (Options.Count[OT_PRINT_SPICE_MUX_TESTBENCH]) {
-      spice_opts->print_spice_mux_testbench = TRUE;
+    if (Options.Count[OT_PRINT_SPICE_PB_MUX_TESTBENCH]) {
+      spice_opts->print_spice_pb_mux_testbench = TRUE;
     }
-    if (Options.Count[OT_PRINT_SPICE_ROUTING_MUX_TESTBENCH]) {
-      spice_opts->print_spice_routing_mux_testbench = TRUE;
+    if (Options.Count[OT_PRINT_SPICE_CB_MUX_TESTBENCH]) {
+      spice_opts->print_spice_cb_mux_testbench = TRUE;
+    }
+    if (Options.Count[OT_PRINT_SPICE_SB_MUX_TESTBENCH]) {
+      spice_opts->print_spice_sb_mux_testbench = TRUE;
     }
     if (Options.Count[OT_PRINT_SPICE_GRID_TESTBENCH]) {
       spice_opts->print_spice_grid_testbench = TRUE;

@@ -1,9 +1,9 @@
 Auto Spice
-.include '/home/xitang/tangxifan-eda-tools/branches/fpga_flow/tech/45nm_LP.pm'
+.include '/home/xitang/tangxifan-eda-tools/branches/fpga_flow/tech/45nm_HP.pm'
 .param tech = 45e-9
 .param tempr = 25
 .param simt = 5n
-.param Vol=0.9
+.param Vol=1.0
 .param pnratio=2
 .include /home/xitang/tangxifan-eda-tools/branches/fpga_flow/power_tech_script/spice/subckt/nmos_pmos.sp
 .include /home/xitang/tangxifan-eda-tools/branches/fpga_flow/power_tech_script/spice/subckt/mux2.sp

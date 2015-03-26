@@ -51,21 +51,47 @@ my @sctgy;
 # refer to the keywords of dir_path
 @{$sctgy[0]} = ("result_dir",
                 "shell_script_name",
+                "top_tb_dir_name",
+                "grid_tb_dir_name",
+                "lut_tb_dir_name",
+                "dff_tb_dir_name",
+                "pb_mux_tb_dir_name",
+                "cb_mux_tb_dir_name",
+                "sb_mux_tb_dir_name",
+                "top_tb_prefix",
+                "pb_mux_tb_prefix",
+                "cb_mux_tb_prefix",
+                "sb_mux_tb_prefix",
+                "lut_tb_prefix",
+                "dff_tb_prefix",
+                "grid_tb_prefix",
                 "top_tb_postfix",
-                "mux_tb_postfix",
+                "pb_mux_tb_postfix",
+                "cb_mux_tb_postfix",
+                "sb_mux_tb_postfix",
                 "lut_tb_postfix",
                 "dff_tb_postfix",
                 "grid_tb_postfix",
-                "routing_mux_tb_postfix",
                );
 # refer to the keywords of flow_type
 @{$sctgy[1]} = ("auto_check",
+                "num_pb_mux_tb",
+                "num_cb_mux_tb",
+                "num_sb_mux_tb",
+                "num_lut_mux_tb",
+                "num_dff_mux_tb",
+                "num_grid_mux_tb",
+                "num_top_mux_tb",
                 );
 # refer to the keywords of csv_tags
 @{$sctgy[2]} = ("top_tb_leakage_power_tags",
                 "top_tb_dynamic_power_tags",
-                "mux_tb_leakage_power_tags",
-                "mux_tb_dynamic_power_tags",
+                "pb_mux_tb_leakage_power_tags",
+                "pb_mux_tb_dynamic_power_tags",
+                "cb_mux_tb_leakage_power_tags",
+                "cb_mux_tb_dynamic_power_tags",
+                "sb_mux_tb_leakage_power_tags",
+                "sb_mux_tb_dynamic_power_tags",
                 "lut_tb_leakage_power_tags",
                 "lut_tb_dynamic_power_tags",
                 "dff_tb_leakage_power_tags",
@@ -107,11 +133,12 @@ sub print_usage()
   print "      -task <file> : the configuration file contains benchmark file names\n"; 
   print "      -rpt <file> : CSV file consists of data\n";
   print "      Other Options:\n";
-  print "      -parse_mux_tb: parse the results in mux_testbench\n";
+  print "      -parse_pb_mux_tb: parse the results in pb_mux_testbench\n";
+  print "      -parse_cb_mux_tb: parse the results in cb_mux_testbench\n";
+  print "      -parse_sb_mux_tb: parse the results in sb_mux_testbench\n";
   print "      -parse_lut_tb: parse the results in lut_testbench\n";
   print "      -parse_dff_tb: parse the results in dff_testbench\n";
   print "      -parse_grid_tb: parse the results in grid_testbench\n";
-  print "      -parse_routing_mux_tb: parse the results in routing_mux_testbench\n";
   print "      -parse_top_tb: parse the results in top_testbench\n";
   print "      -multi_thread <int>: turn on multi-thread mode, specify the number of processors could be pushed\n";
   print "      -sim_leakage_power_only : simulate leakage power only.\n";
@@ -217,11 +244,12 @@ sub opts_read() {
   &read_opt_into_hash("sim_leakage_power_only","off","off");
   &read_opt_into_hash("parse_results_only","off","off");
   &read_opt_into_hash("multi_thread","on","off");
-  &read_opt_into_hash("parse_mux_tb","off","off");
+  &read_opt_into_hash("parse_pb_mux_tb","off","off");
+  &read_opt_into_hash("parse_cb_mux_tb","off","off");
+  &read_opt_into_hash("parse_sb_mux_tb","off","off");
   &read_opt_into_hash("parse_lut_tb","off","off");
   &read_opt_into_hash("parse_dff_tb","off","off");
   &read_opt_into_hash("parse_grid_tb","off","off");
-  &read_opt_into_hash("parse_routing_mux_tb","off","off");
   &read_opt_into_hash("parse_top_tb","off","off");
 
   &print_opts(); 
@@ -301,6 +329,9 @@ sub read_conf() {
       } else {
         $post_line =~ s/\s//g;
         @equation = split /=/,$post_line;
+        if (!(defined($equation[1]))) {
+          $equation[1] = "";
+        }
         $conf_ptr->{$cur}->{$equation[0]}->{val} = $equation[1];   
       }
     }
@@ -510,12 +541,33 @@ sub gen_fpga_spice_netlists_path($ $ $) {
   return ($sp_path);
 }
 
+sub gen_fpga_tb_spice_netlist_path($ $ $ $ $) {
+  my ($spice_dir, $sp_prefix, $tb_prefix, $no, $sp_postfix) = @_;
+  my ($formatted_spice_dir) = &format_dir_path($spice_dir);
+
+  my ($sp_path) = ($formatted_spice_dir.$sp_prefix.$tb_prefix.$no.$sp_postfix);
+  
+  return ($sp_path);
+}
+
 sub gen_fpga_spice_measure_results_path($ $ $) {
   my ($spice_dir, $sp_prefix, $sp_postfix) = @_;
   my ($formatted_spice_dir) = &format_dir_path($spice_dir);
   my ($formatted_result_dir) = &format_dir_path($conf_ptr->{dir_path}->{result_dir}->{val});
 
   my ($mt_path) = ($formatted_spice_dir.$formatted_result_dir.$sp_prefix.$sp_postfix);
+
+  $mt_path =~ s/\.sp/.mt0/;
+  
+  return ($mt_path);
+}
+
+sub gen_fpga_tb_spice_measure_results_path($ $ $ $ $) {
+  my ($spice_dir, $sp_prefix, $tb_prefix, $no, $sp_postfix) = @_;
+  my ($formatted_spice_dir) = &format_dir_path($spice_dir);
+  my ($formatted_result_dir) = &format_dir_path($conf_ptr->{dir_path}->{result_dir}->{val});
+
+  my ($mt_path) = ($formatted_spice_dir.$formatted_result_dir.$sp_prefix.$tb_prefix.$no.$sp_postfix);
 
   $mt_path =~ s/\.sp/.mt0/;
   
@@ -563,41 +615,54 @@ sub check_one_fpga_spice_task_lis($ $ $) {
   my ($benchmark, $spice_netlist_prefix, $spice_dir) = @_; 
   my ($formatted_spice_dir) = &format_dir_path($spice_dir);
   my ($shell_script_path) = $formatted_spice_dir.$conf_ptr->{dir_path}->{shell_script_name}->{val};
+  my ($itb);
 
   if ("on" eq $opt_ptr->{parse_top_tb}) {
-    my ($top_lis_path) = &gen_fpga_spice_measure_results_path($spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{top_tb_postfix}->{val});
+    my ($top_lis_path) = &gen_fpga_spice_measure_results_path($formatted_spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{top_tb_postfix}->{val});
     $top_lis_path =~ s/\.mt0/.lis/;
     &check_one_spice_lis_error($top_lis_path);
   }
 
-  if ("on" eq $opt_ptr->{parse_mux_tb}) {
-    my ($muxtb_lis_path) = &gen_fpga_spice_measure_results_path($spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{mux_tb_postfix}->{val});
-    $muxtb_lis_path =~ s/\.mt0/.lis/;
-    &check_one_spice_lis_error($muxtb_lis_path);
+  if ("on" eq $opt_ptr->{parse_pb_mux_tb}) {
+    for ($itb = 0; $itb < $conf_ptr->{task_conf}->{num_pb_mux_tb}->{val}; $itb++) { 
+      my ($pb_muxtb_lis_path) = &gen_fpga_tb_spice_measure_results_path($formatted_spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{pb_mux_tb_prefix}->{val},$itb,$conf_ptr->{dir_path}->{pb_mux_tb_postfix}->{val});
+      $pb_muxtb_lis_path =~ s/\.mt0/.lis/;
+      &check_one_spice_lis_error($pb_muxtb_lis_path);
+    }
+  }
+
+  if ("on" eq $opt_ptr->{parse_cb_mux_tb}) {
+    for ($itb = 0; $itb < $conf_ptr->{task_conf}->{num_cb_mux_tb}->{val}; $itb++) { 
+      my ($cb_muxtb_lis_path) = &gen_fpga_tb_spice_measure_results_path($formatted_spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{cb_mux_tb_prefix}->{val},$itb,$conf_ptr->{dir_path}->{cb_mux_tb_postfix}->{val});
+      $cb_muxtb_lis_path =~ s/\.mt0/.lis/;
+      &check_one_spice_lis_error($cb_muxtb_lis_path);
+    }
+  }
+
+  if ("on" eq $opt_ptr->{parse_sb_mux_tb}) {
+    for ($itb = 0; $itb < $conf_ptr->{task_conf}->{num_sb_mux_tb}->{val}; $itb++) { 
+      my ($sb_muxtb_lis_path) = &gen_fpga_tb_spice_measure_results_path($formatted_spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{sb_mux_tb_prefix}->{val},$itb,$conf_ptr->{dir_path}->{sb_mux_tb_postfix}->{val});
+      $sb_muxtb_lis_path =~ s/\.mt0/.lis/;
+      &check_one_spice_lis_error($sb_muxtb_lis_path);
+    }
   }
 
   if ("on" eq $opt_ptr->{parse_lut_tb}) {
-    my ($luttb_lis_path) = &gen_fpga_spice_measure_results_path($spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{lut_tb_postfix}->{val});
+    my ($luttb_lis_path) = &gen_fpga_spice_measure_results_path($formatted_spice_dir,$spice_netlist_prefix,$conf_ptr->{dir_path}->{lut_tb_postfix}->{val});
     $luttb_lis_path =~ s/\.mt0/.lis/;
     &check_one_spice_lis_error($luttb_lis_path);
   }
 
   if ("on" eq $opt_ptr->{parse_dff_tb}) {
-    my ($dfftb_lis_path) = &gen_fpga_spice_measure_results_path($spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{dff_tb_postfix}->{val});
+    my ($dfftb_lis_path) = &gen_fpga_spice_measure_results_path($formatted_spice_dir,$spice_netlist_prefix,$conf_ptr->{dir_path}->{dff_tb_postfix}->{val});
     $dfftb_lis_path =~ s/\.mt0/.lis/;
     &check_one_spice_lis_error($dfftb_lis_path);
   }
 
   if ("on" eq $opt_ptr->{parse_grid_tb}) {
-    my ($gridtb_lis_path) = &gen_fpga_spice_measure_results_path($spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{grid_tb_postfix}->{val});
+    my ($gridtb_lis_path) = &gen_fpga_spice_measure_results_path($formatted_spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{grid_tb_postfix}->{val});
     $gridtb_lis_path =~ s/\.mt0/.lis/;
     &check_one_spice_lis_error($gridtb_lis_path);
-  }
-
-  if ("on" eq $opt_ptr->{parse_routing_mux_tb}) {
-    my ($routingmuxtb_lis_path) = &gen_fpga_spice_measure_results_path($spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{routing_mux_tb_postfix}->{val});
-    $routingmuxtb_lis_path =~ s/\.mt0/.lis/;
-    &check_one_spice_lis_error($routingmuxtb_lis_path);
   }
 
   return;
@@ -609,6 +674,7 @@ sub parse_one_fpga_spice_task_one_tb_results($ $ $ $ $ $) {
   my (@dynamic_tags) = split('\|', $tb_dynamic_tags);
   my ($line, $found_tran_analysis);
   my ($LISFH) = FileHandle->new;
+  my ($temp);
 
   # Check if there is any conflict to reserved words
   foreach my $tag(@leakage_tags) {
@@ -639,23 +705,27 @@ sub parse_one_fpga_spice_task_one_tb_results($ $ $ $ $ $) {
       }
       # Special: get peak memory used and total elapsed time
       if ($line =~ m/peak\s+memory\s+used\s+([\d.]+)\s+megabytes/i) {
-        $rpt_ptr->{$benchmark}->{$tbname_tag}->{peak_mem_used} = $1;
+        $temp = $1;
+        $rpt_ptr->{$benchmark}->{$tbname_tag}->{peak_mem_used} += $temp;
       }
       if ($line =~ m/total\s+elapsed\s+time\s+([\d.]+)\s+seconds/i) {
-        $rpt_ptr->{$benchmark}->{$tbname_tag}->{total_elapsed_time} = $1;
+        $temp = $1;
+        $rpt_ptr->{$benchmark}->{$tbname_tag}->{total_elapsed_time} += $temp;
       }
       foreach my $tag(@leakage_tags) {
         if ($line =~ m/$tag\s*=\s*([\d.\w\-\+]+)/i) {
-          $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag} = $1;
-          $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag} = &process_unit($rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}, "empty");
+          $temp = $1;
+          $temp = &process_unit($temp, "empty");
+          $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag} += $temp;
 
         }
       }
       if ("off" eq $opt_ptr->{sim_leakage_power_only}) {
         foreach my $tag(@dynamic_tags) {
           if ($line =~ m/$tag\s*=\s*([\d.\w\-\+]+)/i) {
-            $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag} = $1;
-            $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag} = &process_unit($rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}, "empty");
+            $temp = $1;
+            $temp = &process_unit($temp, "empty");
+            $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag} += $temp;
           }
         }
       } 
@@ -668,11 +738,60 @@ sub parse_one_fpga_spice_task_one_tb_results($ $ $ $ $ $) {
 
   return;
 }
+ 
+sub count_num_tb_one_folder($) {
+  my ($dir) = @_;
+  my (@files) = <$dir/*.sp>; 
+  my ($count) = $#files + 1;
+  return $count;
+}
+
+sub auto_check_tb_num($) {
+  my ($spice_dir) = @_;
+  my ($formatted_spice_dir) = &format_dir_path($spice_dir);
+  
+  print "Autocheck Results:\n";
+
+  # count pb_mux_tb
+  $conf_ptr->{task_conf}->{num_pb_mux_tb}->{val} = &count_num_tb_one_folder($formatted_spice_dir.$conf_ptr->{dir_path}->{pb_mux_tb_dir_name}->{val});
+  print "INFO: num_pb_mux_tb=$conf_ptr->{task_conf}->{num_pb_mux_tb}->{val}\n";
+
+  # count sb_mux_tb
+  $conf_ptr->{task_conf}->{num_sb_mux_tb}->{val} = &count_num_tb_one_folder($formatted_spice_dir.$conf_ptr->{dir_path}->{sb_mux_tb_dir_name}->{val});
+  print "INFO: num_sb_mux_tb=$conf_ptr->{task_conf}->{num_sb_mux_tb}->{val}\n";
+
+  # count cb_mux_tb
+  $conf_ptr->{task_conf}->{num_cb_mux_tb}->{val} = &count_num_tb_one_folder($formatted_spice_dir.$conf_ptr->{dir_path}->{cb_mux_tb_dir_name}->{val});
+  print "INFO: num_cb_mux_tb=$conf_ptr->{task_conf}->{num_cb_mux_tb}->{val}\n";
+
+  # count top_tb
+  $conf_ptr->{task_conf}->{num_top_tb}->{val} = &count_num_tb_one_folder($formatted_spice_dir.$conf_ptr->{dir_path}->{top_tb_dir_name}->{val});
+  print "INFO: num_top_tb=$conf_ptr->{task_conf}->{num_top_tb}->{val}\n";
+
+  # count lut_tb
+  $conf_ptr->{task_conf}->{num_lut_tb}->{val} = &count_num_tb_one_folder($formatted_spice_dir.$conf_ptr->{dir_path}->{lut_tb_dir_name}->{val});
+  print "INFO: num_lut_tb=$conf_ptr->{task_conf}->{num_lut_tb}->{val}\n";
+
+  # count dff_tb
+  $conf_ptr->{task_conf}->{num_dff_tb}->{val} = &count_num_tb_one_folder($formatted_spice_dir.$conf_ptr->{dir_path}->{dff_tb_dir_name}->{val});
+  print "INFO: num_dff_tb=$conf_ptr->{task_conf}->{num_dff_tb}->{val}\n";
+
+  # count grid_tb
+  $conf_ptr->{task_conf}->{num_grid_tb}->{val} = &count_num_tb_one_folder($formatted_spice_dir.$conf_ptr->{dir_path}->{grid_tb_dir_name});
+  print "INFO: num_grid_tb=$conf_ptr->{task_conf}->{num_grid_tb}->{val}\n";
+
+  return;
+}
 
 sub parse_one_fpga_spice_task_results($ $ $) {
   my ($benchmark, $spice_netlist_prefix, $spice_dir) = @_; 
   my ($formatted_spice_dir) = &format_dir_path($spice_dir);
   my ($shell_script_path) = $formatted_spice_dir.$conf_ptr->{dir_path}->{shell_script_name}->{val};
+  my ($itb);
+
+  if ("on" eq $conf_ptr->{task_conf}->{auto_check}->{val}) {
+    &auto_check_tb_num($spice_dir);
+  }
 
   if ("on" eq $opt_ptr->{parse_top_tb}) {
     my ($top_mt_path) = &gen_fpga_spice_measure_results_path($spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{top_tb_postfix}->{val});
@@ -681,11 +800,31 @@ sub parse_one_fpga_spice_task_results($ $ $) {
     &parse_one_fpga_spice_task_one_tb_results($benchmark,"top_tb", $top_lis_path, $top_mt_path, $conf_ptr->{csv_tags}->{top_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{top_tb_dynamic_power_tags}->{val});
   }
 
-  if ("on" eq $opt_ptr->{parse_mux_tb}) {
-    my ($muxtb_mt_path) = &gen_fpga_spice_measure_results_path($spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{mux_tb_postfix}->{val});
-    my ($muxtb_lis_path) = ($muxtb_mt_path);
-    $muxtb_lis_path =~ s/\.mt0/.lis/;
-    &parse_one_fpga_spice_task_one_tb_results($benchmark,"mux_tb", $muxtb_lis_path, $muxtb_mt_path, $conf_ptr->{csv_tags}->{mux_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{mux_tb_dynamic_power_tags}->{val});
+  if ("on" eq $opt_ptr->{parse_pb_mux_tb}) {
+    for ($itb = 0; $itb < $conf_ptr->{task_conf}->{num_pb_mux_tb}->{val}; $itb++) { 
+      my ($pb_muxtb_mt_path) = &gen_fpga_tb_spice_measure_results_path($spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{pb_mux_tb_prefix}->{val}, $itb, $conf_ptr->{dir_path}->{pb_mux_tb_postfix}->{val});
+      my ($pb_muxtb_lis_path) = ($pb_muxtb_mt_path);
+      $pb_muxtb_lis_path =~ s/\.mt0/.lis/;
+      &parse_one_fpga_spice_task_one_tb_results($benchmark,"pb_mux_tb", $pb_muxtb_lis_path, $pb_muxtb_mt_path, $conf_ptr->{csv_tags}->{pb_mux_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{pb_mux_tb_dynamic_power_tags}->{val});
+    }
+  }
+
+  if ("on" eq $opt_ptr->{parse_cb_mux_tb}) {
+    for ($itb = 0; $itb < $conf_ptr->{task_conf}->{num_cb_mux_tb}->{val}; $itb++) { 
+      my ($cb_muxtb_mt_path) = &gen_fpga_tb_spice_measure_results_path($spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{cb_mux_tb_prefix}->{val}, $itb, $conf_ptr->{dir_path}->{cb_mux_tb_postfix}->{val});
+      my ($cb_muxtb_lis_path) = ($cb_muxtb_mt_path);
+      $cb_muxtb_lis_path =~ s/\.mt0/.lis/;
+      &parse_one_fpga_spice_task_one_tb_results($benchmark,"cb_mux_tb", $cb_muxtb_lis_path, $cb_muxtb_mt_path, $conf_ptr->{csv_tags}->{cb_mux_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{cb_mux_tb_dynamic_power_tags}->{val});
+    }
+  }
+
+  if ("on" eq $opt_ptr->{parse_sb_mux_tb}) {
+    for ($itb = 0; $itb < $conf_ptr->{task_conf}->{num_sb_mux_tb}->{val}; $itb++) { 
+      my ($sb_muxtb_mt_path) = &gen_fpga_tb_spice_measure_results_path($spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{sb_mux_tb_prefix}->{val}, $itb, $conf_ptr->{dir_path}->{sb_mux_tb_postfix}->{val});
+      my ($sb_muxtb_lis_path) = ($sb_muxtb_mt_path);
+      $sb_muxtb_lis_path =~ s/\.mt0/.lis/;
+      &parse_one_fpga_spice_task_one_tb_results($benchmark,"sb_mux_tb", $sb_muxtb_lis_path, $sb_muxtb_mt_path, $conf_ptr->{csv_tags}->{sb_mux_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{sb_mux_tb_dynamic_power_tags}->{val});
+    }
   }
 
   if ("on" eq $opt_ptr->{parse_lut_tb}) {
@@ -707,11 +846,6 @@ sub parse_one_fpga_spice_task_results($ $ $) {
     # TODO:
   }
 
-  if ("on" eq $opt_ptr->{parse_routing_mux_tb}) {
-    my ($routingmuxtb_mt_path) = &gen_fpga_spice_measure_results_path($spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{routing_mux_tb_postfix}->{val});
-    # TODO: 
-  }
-
   return;
 }
 
@@ -720,24 +854,50 @@ sub run_one_fpga_spice_task($ $ $) {
   my ($benchmark, $spice_netlist_prefix, $spice_dir) = @_; 
   my ($formatted_spice_dir) = &format_dir_path($spice_dir);
   my ($shell_script_path) = $formatted_spice_dir.$conf_ptr->{dir_path}->{shell_script_name}->{val};
+  my ($itb);
 
   # change to the spice_dir
   chdir $spice_dir;
   # Check all the SPICE netlists and shell scripts exist
 
-  my ($toptb_sp_path) = &gen_fpga_spice_netlists_path($spice_dir, $spice_netlist_prefix, $conf_ptr->{dir_path}->{top_tb_postfix}->{val});
-  my ($muxtb_sp_path) = &gen_fpga_spice_netlists_path($spice_dir, $spice_netlist_prefix, $conf_ptr->{dir_path}->{mux_tb_postfix}->{val});
-  my ($luttb_sp_path) = &gen_fpga_spice_netlists_path($spice_dir, $spice_netlist_prefix, $conf_ptr->{dir_path}->{lut_tb_postfix}->{val});
-  my ($dfftb_sp_path) = &gen_fpga_spice_netlists_path($spice_dir, $spice_netlist_prefix, $conf_ptr->{dir_path}->{dff_tb_postfix}->{val});
-  my ($gridtb_sp_path) = &gen_fpga_spice_netlists_path($spice_dir, $spice_netlist_prefix, $conf_ptr->{dir_path}->{grid_tb_postfix}->{val});
-  my ($routing_muxtb_sp_path) = &gen_fpga_spice_netlists_path($spice_dir, $spice_netlist_prefix, $conf_ptr->{dir_path}->{routing_mux_tb_postfix}->{val});
+  if ("on" eq $conf_ptr->{task_conf}->{auto_check}->{val}) {
+    &auto_check_tb_num($spice_dir);
+  }
+
+  my ($toptb_sp_path) = &gen_fpga_spice_netlists_path($formatted_spice_dir.$conf_ptr->{dir_path}->{top_tb_dir_name}->{val}, $spice_netlist_prefix, $conf_ptr->{dir_path}->{top_tb_postfix}->{val});
+  my ($luttb_sp_path) = &gen_fpga_spice_netlists_path($formatted_spice_dir.$conf_ptr->{dir_path}->{lut_tb_dir_name}->{val}, $spice_netlist_prefix, $conf_ptr->{dir_path}->{lut_tb_postfix}->{val});
+  my ($dfftb_sp_path) = &gen_fpga_spice_netlists_path($formatted_spice_dir.$conf_ptr->{dir_path}->{dff_tb_dir_name}->{val}, $spice_netlist_prefix, $conf_ptr->{dir_path}->{dff_tb_postfix}->{val});
+  my ($gridtb_sp_path) = &gen_fpga_spice_netlists_path($formatted_spice_dir.$conf_ptr->{dir_path}->{grid_tb_dir_name}->{val}, $spice_netlist_prefix, $conf_ptr->{dir_path}->{grid_tb_postfix}->{val});
     
   if (("on" eq $opt_ptr->{parse_top_tb})&&(!(-e $toptb_sp_path))) {
     die "ERROR: File($toptb_sp_path) does not exist!";
   } 
 
-  if (("on" eq $opt_ptr->{parse_mux_tb})&&(!(-e $muxtb_sp_path))) {
-    die "ERROR: File($muxtb_sp_path) does not exist!";
+  if ("on" eq $opt_ptr->{parse_pb_mux_tb}) {
+    for ($itb = 0; $itb < $conf_ptr->{task_conf}->{num_pb_mux_tb}->{val}; $itb++) { 
+      my ($pb_muxtb_sp_path) = &gen_fpga_tb_spice_netlist_path($formatted_spice_dir.$conf_ptr->{dir_path}->{pb_mux_tb_dir_name}->{val}, $spice_netlist_prefix, $conf_ptr->{dir_path}->{pb_mux_tb_prefix}->{val},$itb,$conf_ptr->{dir_path}->{pb_mux_tb_postfix}->{val});
+      if (!(-e $pb_muxtb_sp_path)) {
+        die "ERROR: File($pb_muxtb_sp_path) does not exist!";
+      }
+    }
+  }
+
+  if ("on" eq $opt_ptr->{parse_cb_mux_tb}) {
+    for ($itb = 0; $itb < $conf_ptr->{task_conf}->{num_cb_mux_tb}->{val}; $itb++) { 
+      my ($cb_muxtb_sp_path) = &gen_fpga_tb_spice_netlist_path($formatted_spice_dir.$conf_ptr->{dir_path}->{cb_mux_tb_dir_name}->{val}, $spice_netlist_prefix, $conf_ptr->{dir_path}->{cb_mux_tb_prefix}->{val},$itb,$conf_ptr->{dir_path}->{cb_mux_tb_postfix}->{val});
+      if (!(-e $cb_muxtb_sp_path)) {
+        die "ERROR: File($cb_muxtb_sp_path) does not exist!";
+      }
+    }
+  }
+
+  if ("on" eq $opt_ptr->{parse_sb_mux_tb}) {
+    for ($itb = 0; $itb < $conf_ptr->{task_conf}->{num_sb_mux_tb}->{val}; $itb++) { 
+      my ($sb_muxtb_sp_path) = &gen_fpga_tb_spice_netlist_path($formatted_spice_dir.$conf_ptr->{dir_path}->{sb_mux_tb_dir_name}->{val}, $spice_netlist_prefix, $conf_ptr->{dir_path}->{sb_mux_tb_prefix}->{val},$itb,$conf_ptr->{dir_path}->{sb_mux_tb_postfix}->{val});
+      if (!(-e $sb_muxtb_sp_path)) {
+        die "ERROR: File($sb_muxtb_sp_path) does not exist!";
+      }
+    }
   }
 
   if (("on" eq $opt_ptr->{parse_lut_tb})&&(!(-e $luttb_sp_path))) {
@@ -756,10 +916,6 @@ sub run_one_fpga_spice_task($ $ $) {
     die "ERROR: File($gridtb_sp_path) does not exist!";
   }
 
-  if (("on" eq $opt_ptr->{parse_routing_mux_tb})&&(!(-e $routing_muxtb_sp_path))) {
-    die "ERROR: File($routing_muxtb_sp_path) does not exist!";
-  }
-
   if (!(-e $shell_script_path)) {
     die "ERROR: File($shell_script_path) does not exist!";
   }
@@ -773,6 +929,7 @@ sub run_one_fpga_spice_task($ $ $) {
   chdir $cwd;  
 
   &check_one_fpga_spice_task_lis($benchmark, $spice_netlist_prefix, $spice_dir); 
+  print "INFO: Check LIS file finished.\n";
 
   return; 
 }
@@ -913,8 +1070,8 @@ sub gen_csv_rpt_one_tb($ $ $ $) {
   print $RPTFH "\n";
   foreach my $benchmark(@benchmark_names) {
     print $RPTFH "$benchmark,";
-    print $RPTFH "$rpt_ptr->{$benchmark}->{$tbname_tag}->{peak_mem_used},";
     print $RPTFH "$rpt_ptr->{$benchmark}->{$tbname_tag}->{total_elapsed_time},";
+    print $RPTFH "$rpt_ptr->{$benchmark}->{$tbname_tag}->{peak_mem_used},";
     foreach my $tag(@leakage_tags) {
       print $RPTFH "$rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag},";
     }
@@ -938,9 +1095,21 @@ sub gen_csv_rpt($) {
     die "ERROR: fail to create $rpt_file!\n";
   }
 
-  if ("on" eq $opt_ptr->{parse_mux_tb}) {
-    print $RPTFH "***** mux_tb Results Table *****\n";
-    &gen_csv_rpt_one_tb($RPTFH, "mux_tb", $conf_ptr->{csv_tags}->{mux_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{mux_tb_dynamic_power_tags}->{val});
+  if ("on" eq $opt_ptr->{parse_pb_mux_tb}) {
+    print $RPTFH "***** pb_mux_tb Results Table *****\n";
+    &gen_csv_rpt_one_tb($RPTFH, "pb_mux_tb", $conf_ptr->{csv_tags}->{pb_mux_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{pb_mux_tb_dynamic_power_tags}->{val});
+    print $RPTFH "\n";
+  }
+
+  if ("on" eq $opt_ptr->{parse_cb_mux_tb}) {
+    print $RPTFH "***** cb_mux_tb Results Table *****\n";
+    &gen_csv_rpt_one_tb($RPTFH, "cb_mux_tb", $conf_ptr->{csv_tags}->{cb_mux_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{cb_mux_tb_dynamic_power_tags}->{val});
+    print $RPTFH "\n";
+  }
+
+  if ("on" eq $opt_ptr->{parse_sb_mux_tb}) {
+    print $RPTFH "***** sb_mux_tb Results Table *****\n";
+    &gen_csv_rpt_one_tb($RPTFH, "sb_mux_tb", $conf_ptr->{csv_tags}->{sb_mux_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{sb_mux_tb_dynamic_power_tags}->{val});
     print $RPTFH "\n";
   }
 
@@ -985,6 +1154,7 @@ sub main() {
   &read_conf();
   &read_benchmarks();
   &check_fpga_spice();
+  # Auto check the number tbs
   if ("on" eq $opt_ptr->{parse_results_only}) {
     &mark_all_fpga_spice_tasks_done();
     &parse_all_tasks_results();

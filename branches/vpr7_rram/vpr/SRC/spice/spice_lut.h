@@ -25,6 +25,8 @@ void generate_spice_luts(char* subckt_dir,
 char** assign_lut_truth_table(t_logical_block* mapped_logical_block,
                               int* truth_table_length);
 
+int get_lut_output_init_val(t_logical_block* lut_logical_block);
+
 void fprint_pb_primitive_lut(FILE* fp,
                              char* subckt_prefix,
                              t_logical_block* mapped_logical_block,

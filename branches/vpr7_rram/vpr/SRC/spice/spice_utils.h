@@ -6,6 +6,8 @@ char* format_dir_path(char* dir_path);
 
 int try_access_file(char* file_path);
 
+void my_remove_file(char* file_path);
+
 int create_dir_path(char* dir_path);
 
 char* my_strcat(char* str1,
@@ -59,6 +61,9 @@ int determine_mux_level(int mux_size);
 int mux_last_level_input_num(int num_level,
                              int mux_size);
 
+int determine_lut_path_id(int lut_size,
+                          int* lut_inputs);
+
 int* decode_mux_sram_bits(int fan_in,
                           int mux_level,
                           int path_id);
@@ -95,9 +100,14 @@ float pb_pin_density(t_rr_node* pb_rr_graph,
 float pb_pin_probability(t_rr_node* pb_rr_graph, 
                          t_pb_graph_pin* pin);
 
+int pb_pin_init_value(t_rr_node* pb_rr_graph, 
+                      t_pb_graph_pin* pin);
+
 float get_rr_node_net_density(t_rr_node node);
 
 float get_rr_node_net_probability(t_rr_node node);
+
+int get_rr_node_net_init_value(t_rr_node node);
 
 void fprint_voltage_pulse_params(FILE* fp,
                                  int init_val,

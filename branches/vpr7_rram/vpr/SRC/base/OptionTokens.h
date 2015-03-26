@@ -78,8 +78,9 @@ enum e_OptionBaseToken {
     OT_FPGA_SPICE, /* Xifan TANG: FPGA SPICE Model Support */
     OT_SPICE_DIR, /* Xifan TANG: FPGA SPICE Model Support */
     OT_PRINT_SPICE_TOP_TESTBENCH, /* Xifan TANG: Print Top-level SPICE Testbench */
-    OT_PRINT_SPICE_MUX_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for MUXes */
-    OT_PRINT_SPICE_ROUTING_MUX_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for MUXes */
+    OT_PRINT_SPICE_PB_MUX_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for MUXes */
+    OT_PRINT_SPICE_CB_MUX_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for MUXes */
+    OT_PRINT_SPICE_SB_MUX_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for MUXes */
     OT_PRINT_SPICE_GRID_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for Grids */
     OT_PRINT_SPICE_LUT_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for LUTs */
     OT_PRINT_SPICE_DFF_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for FFs */

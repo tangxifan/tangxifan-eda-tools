@@ -5,6 +5,7 @@
 /* Include SPICE support headers*/
 #include <stdio.h>
 #include "spice_types.h"
+#include "linkedlist.h"
 #include "spice_globals.h"
 
 char* nmos_subckt_name = "vpr_nmos";
@@ -22,17 +23,23 @@ char* meas_header_file_name = "meas_params.sp";
 char* stimu_header_file_name = "stimulate_params.sp";
 
 /* Testbench names */
-char* top_netlist_postfix = "_top.sp";
+char* spice_top_testbench_postfix = "_top.sp";
 char* spice_grid_testbench_postfix = "_grid_testbench.sp";
-char* spice_mux_testbench_postfix = "_mux_testbench.sp";
-char* spice_routing_mux_testbench_postfix = "_routing_mux_testbench.sp";
+char* spice_pb_mux_testbench_postfix = "_pbmux_testbench.sp";
+char* spice_cb_mux_testbench_postfix = "_cbmux_testbench.sp";
+char* spice_sb_mux_testbench_postfix = "_sbmux_testbench.sp";
 char* spice_lut_testbench_postfix = "_lut_testbench.sp";
 char* spice_dff_testbench_postfix = "_dff_testbench.sp";
-/* RUN HSPICE Shell Script Name */
-char* run_hspice_shell_script_name = "run_hspice_sim.sh";
-char* sim_results_dir_path = "results/";
-char* default_spice_dir_path = "spice_netlists/";
 
 /* SRAM SPICE MODEL should be set as global*/
 t_spice_model* sram_spice_model = NULL;
+/* Global counters */
 int rram_design_tech = 0;
+int num_used_grids = 0;
+int num_used_cbs = 0;
+int num_used_sbs = 0;
+int num_used_luts = 0;
+int num_used_dffs = 0;
+
+t_llist* tb_head = NULL;
+

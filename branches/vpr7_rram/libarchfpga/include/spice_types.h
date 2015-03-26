@@ -240,6 +240,7 @@ struct s_spice_net_info {
   float probability;
   float density;
   /* The following paramters can be calculated by the above properties*/
+  int init_val;
   float freq; 
   float pwl;
   float pwh;

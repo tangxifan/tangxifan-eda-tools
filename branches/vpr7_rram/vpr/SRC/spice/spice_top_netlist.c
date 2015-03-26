@@ -240,7 +240,7 @@ void fprint_top_netlist_stimulations(FILE* fp,
         fprintf(fp, "Vgfpga_input[%d]_%s[%d] gfpga_input[%d]_%s[%d] 0 \n", 
                 inpad_idx, inpad_spice_model->prefix, inpad_idx,
                 inpad_idx, inpad_spice_model->prefix, inpad_idx);
-        fprint_voltage_pulse_params(fp, 0, cur_spice_net_info->density, cur_spice_net_info->probability);
+        fprint_voltage_pulse_params(fp, cur_spice_net_info->init_val, cur_spice_net_info->density, cur_spice_net_info->probability);
         found_mapped_inpad++;
       }
     } 
@@ -584,6 +584,7 @@ void fprint_spice_top_netlist(char* circuit_name,
   char* formatted_subckt_dir_path = format_dir_path(subckt_dir_path);
   char* temp_include_file_path = NULL;
   char* title = my_strcat("FPGA SPICE Netlist for Design: ", circuit_name);
+  t_llist* temp = NULL;
 
   /* Check if the path exists*/
   fp = fopen(top_netlist_name,"w");
@@ -660,6 +661,13 @@ void fprint_spice_top_netlist(char* circuit_name,
   /* Free */
   //my_free(title);
   //my_free(formatted_subckt_dir_path);
+  if (NULL == tb_head) {
+    tb_head = create_llist(1);
+    tb_head->dptr = (void*)my_strdup(top_netlist_name);
+  } else {
+    temp = insert_llist_node(tb_head);
+    temp->dptr = (void*)my_strdup(top_netlist_name);
+  }
 
   return;
 }

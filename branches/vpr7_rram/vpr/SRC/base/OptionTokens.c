@@ -61,8 +61,9 @@ struct s_TokenPair OptionBaseTokenList[] = {
         { "fpga_spice", OT_FPGA_SPICE },/* Xifan TANG: SPICE Model Support, turn on the functionality*/
         { "spice_dir", OT_SPICE_DIR },/* Xifan TANG: SPICE Model Support, directory of spice netlists*/
         { "print_spice_top_testbench", OT_PRINT_SPICE_TOP_TESTBENCH }, /* Print the SPICE TOP Testbench for MUXes */
-        { "print_spice_mux_testbench", OT_PRINT_SPICE_MUX_TESTBENCH }, /* Print the SPICE Testbench for MUXes */
-        { "print_spice_routing_mux_testbench", OT_PRINT_SPICE_ROUTING_MUX_TESTBENCH }, /* Print the SPICE Testbench for Routing MUXes */
+        { "print_spice_pb_mux_testbench", OT_PRINT_SPICE_PB_MUX_TESTBENCH }, /* Print the SPICE Testbench for MUXes */
+        { "print_spice_cb_mux_testbench", OT_PRINT_SPICE_CB_MUX_TESTBENCH }, /* Print the SPICE Testbench for MUXes */
+        { "print_spice_sb_mux_testbench", OT_PRINT_SPICE_SB_MUX_TESTBENCH }, /* Print the SPICE Testbench for MUXes */
         { "print_spice_grid_testbench", OT_PRINT_SPICE_GRID_TESTBENCH }, /* Print the SPICE Testbench for Grids  */
         { "print_spice_lut_testbench", OT_PRINT_SPICE_LUT_TESTBENCH }, /* Print the SPICE Testbench for Grids  */
         { "print_spice_dff_testbench", OT_PRINT_SPICE_DFF_TESTBENCH }, /* Print the SPICE Testbench for Grids  */

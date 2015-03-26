@@ -66,6 +66,7 @@ void fprint_spice_dff_testbench_global_ports(FILE* fp,
 void fprint_spice_dff_testbench_one_dff(FILE* fp, 
                                         char* subckt_name, 
                                         int num_inputs, int num_outputs,
+                                        int* input_init_value, 
                                         float* input_density, 
                                         float* input_probability) {
   int ipin;
@@ -85,7 +86,7 @@ void fprint_spice_dff_testbench_one_dff(FILE* fp,
   for (ipin = 0; ipin < num_inputs; ipin++) {
     fprintf(fp, "Vdff[%d]->in[%d] dff[%d]->in[%d] 0 \n",
             tb_num_dffs, ipin, tb_num_dffs, ipin);
-    fprint_voltage_pulse_params(fp, 0, input_density[ipin], input_probability[ipin]);
+    fprint_voltage_pulse_params(fp, input_init_value[ipin], input_density[ipin], input_probability[ipin]);
   }
   return; 
 }
@@ -101,6 +102,7 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
   float* input_probability = NULL;
   int iport, ipin, iedge, cur_pin;
   int num_inputs, num_outputs, num_clock_pins, vpack_net_index;
+  int* input_init_value = NULL;
 
   assert(NULL != cur_pb_graph_node);
   assert(NULL != prefix);
@@ -121,6 +123,7 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
 
   input_density = (float*)my_malloc(sizeof(float)*num_inputs); 
   input_probability = (float*)my_malloc(sizeof(float)*num_inputs); 
+  input_init_value = (int*)my_malloc(sizeof(int)*num_inputs); 
 
   /* if we find a mapped logic block */
   if (OPEN != logical_block_index) {
@@ -135,10 +138,12 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
           assert(OPEN != vpack_net_index);
           input_density[cur_pin] = vpack_net[vpack_net_index].spice_net_info->density;
           input_probability[cur_pin] = vpack_net[vpack_net_index].spice_net_info->probability;
+          input_init_value[cur_pin] = vpack_net[vpack_net_index].spice_net_info->init_val;
         } else {
           assert(OPEN == vpack_net_index);
           input_density[cur_pin] = 0.;
           input_probability[cur_pin] = 0.;
+          input_init_value[cur_pin] = 0;
         }
         cur_pin++;
       }
@@ -149,6 +154,7 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
     for (cur_pin = 0; cur_pin < num_inputs; cur_pin++) {
       input_density[cur_pin] = 0.;
       input_probability[cur_pin] = 0.;
+      input_init_value[cur_pin] = 0;
     } 
   }
  
@@ -156,7 +162,7 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
   fprintf(fp,"***** DFF[%d]: logical_block_index[%d], gvdd_index[%d]*****\n", 
           tb_num_dffs, logical_block_index, logical_block[logical_block_index].mapped_spice_model_index);
   fprint_spice_dff_testbench_one_dff(fp, prefix, num_inputs, num_outputs,
-                                     input_density, input_probability);
+                                     input_init_value, input_density, input_probability);
   /* Add loads: 1 inverters */
   /* TODO: be more smart to idenity the loads */
   for (iedge = 0; iedge < cur_pb_graph_node->output_pins[0][0].num_output_edges; iedge++) {
@@ -165,6 +171,11 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
   }
 
   tb_num_dffs++;
+
+  /* Free */
+  my_free(input_init_value);
+  my_free(input_density);
+  my_free(input_probability);
   
   return; 
 }
@@ -438,6 +449,7 @@ void fprint_spice_dff_testbench(char* formatted_spice_dir,
   char* temp_include_file_path = NULL;
   char* title = my_strcat("FPGA DFF Testbench for Design: ", circuit_name);
   char* dff_testbench_file_path = my_strcat(formatted_spice_dir, dff_testbench_name);
+  t_llist* temp = NULL;
 
   /* Check if the path exists*/
   fp = fopen(dff_testbench_file_path,"w");
@@ -500,6 +512,14 @@ void fprint_spice_dff_testbench(char* formatted_spice_dir,
 
   /* Close the file*/
   fclose(fp);
+
+  if (NULL == tb_head) {
+    tb_head = create_llist(1);
+    tb_head->dptr = (void*)my_strdup(dff_testbench_file_path);
+  } else {
+    temp = insert_llist_node(tb_head);
+    temp->dptr = (void*)my_strdup(dff_testbench_file_path);
+  }
 
   return;
 }

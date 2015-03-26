@@ -30,6 +30,7 @@
 #include "spice_routing.h"
 #include "spice_subckt.h"
 #include "spice_netlist_utils.h"
+#include "spice_mux_testbench.h"
 
 /** In this test bench. 
  * All the multiplexers (Local routing, Switch Boxes, Connection Blocks) in the FPGA are examined 
@@ -71,6 +72,7 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
                                         char* meas_tag,
                                         t_spice_model* mux_spice_model,
                                         int mux_size,
+                                        int* input_init_value,
                                         float* input_density,
                                         float* input_probability,
                                         int path_id);
@@ -126,33 +128,21 @@ void fprint_spice_mux_testbench_cb_interc(FILE* fp,
                                           t_ivec*** LL_rr_node_indices);
 
 static 
-void fprint_spice_mux_testbench_cb_muxes(FILE* fp, 
-                                         t_rr_type chan_type,
-                                         int x, int y,
-                                         t_ivec*** LL_rr_node_indices);
+int fprint_spice_mux_testbench_one_grid_cb_muxes(FILE* fp, 
+                                                 t_rr_type chan_type,
+                                                 int x, int y,
+                                                 t_ivec*** LL_rr_node_indices);
 
 static 
-void fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
-                                           int switch_box_x, int switch_box_y,
-                                           int chan_side,
-                                           t_rr_node* src_rr_node);
+int fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
+                                          int switch_box_x, int switch_box_y,
+                                          int chan_side,
+                                          t_rr_node* src_rr_node);
 
 static 
-void fprint_spice_mux_testbench_sb_muxes(FILE* fp, 
-                                         int x, int y, 
-                                         t_ivec*** LL_rr_node_indices);
-
-static 
-void fprint_spice_mux_testbench_call_defined_muxes(FILE* fp,
-                                                   t_ivec*** LL_rr_node_indices);
-
-static 
-void fprint_spice_mux_testbench_stimulations(FILE* fp, 
-                                             t_spice spice);
-
-static 
-void fprint_spice_mux_testbench_measurements(FILE* fp, 
-                                             t_spice spice);
+int fprint_spice_mux_testbench_call_one_grid_sb_muxes(FILE* fp, 
+                                                      int x, int y, 
+                                                      t_ivec*** LL_rr_node_indices);
 
 /***** Local Subroutines *****/
 static void init_spice_mux_testbench_globals(t_spice spice) {
@@ -443,6 +433,7 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
                                         char* meas_tag,
                                         t_spice_model* mux_spice_model,
                                         int mux_size,
+                                        int* input_init_value,
                                         float* input_density,
                                         float* input_probability,
                                         int path_id) {
@@ -568,7 +559,7 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
     fprintf(fp, "V%s_size%d[%d]->in[%d] %s_size%d[%d]->in[%d] 0 \n", 
             mux_spice_model->prefix, mux_size, testbench_mux_cnt, inode,
             mux_spice_model->prefix, mux_size, testbench_mux_cnt, inode);
-    fprint_voltage_pulse_params(fp, 0, input_density[inode], input_probability[inode]);
+    fprint_voltage_pulse_params(fp, input_init_value[inode], input_density[inode], input_probability[inode]);
   }
   /* global voltage supply */
   fprintf(fp, "Vgvdd_%s_size%d[%d] gvdd_%s_size%d[%d] 0 vsp\n",
@@ -671,6 +662,7 @@ void fprint_spice_mux_testbench_pb_graph_node_pin_mux(FILE* fp,
   int cur_input = 0;  
   float* input_density = NULL;
   float* input_probability = NULL;
+  int* input_init_value = NULL; 
   int iedge;
   int* sram_bits = NULL; 
   char* meas_tag = NULL;
@@ -693,14 +685,16 @@ void fprint_spice_mux_testbench_pb_graph_node_pin_mux(FILE* fp,
   cur_input = 0;
   input_density = (float*)my_malloc(sizeof(float)*fan_in);
   input_probability = (float*)my_malloc(sizeof(float)*fan_in);
+  input_init_value = (int*)my_malloc(sizeof(int)*fan_in);
   for (iedge = 0; iedge < des_pb_graph_pin->num_input_edges; iedge++) {
     if (cur_mode != des_pb_graph_pin->input_edges[iedge]->interconnect->parent_mode) {
        continue;
     }
     check_pb_graph_edge(*(des_pb_graph_pin->input_edges[iedge]));
     /* Find activity information */
-    input_density[cur_input] = 0; 
-    input_probability[cur_input] = 0; 
+    input_init_value[cur_input] = 0; 
+    input_density[cur_input] = 0.; 
+    input_probability[cur_input] = 0.; 
     cur_input++;
   }
   /* Check fan-in number is correct */
@@ -715,7 +709,7 @@ void fprint_spice_mux_testbench_pb_graph_node_pin_mux(FILE* fp,
           fan_in, testbench_mux_cnt, des_pb_graph_pin->port->name, des_pb_graph_pin->pin_number, cur_interc->name);
   /* Print the main part of a single MUX testbench */
   fprint_spice_mux_testbench_one_mux(fp, meas_tag, cur_interc->spice_model,
-                                     fan_in, input_density, input_probability, select_edge);
+                                     fan_in, input_init_value, input_density, input_probability, select_edge);
 
   /* Test bench : Capactive load */
   /* TODO: Search all the fan-outs of des_pb_graph_pin */
@@ -732,6 +726,7 @@ void fprint_spice_mux_testbench_pb_graph_node_pin_mux(FILE* fp,
 
   /* Free */
   my_free(sram_bits);
+  my_free(input_init_value);
   my_free(input_density);
   my_free(input_probability);
   my_free(outport_name);
@@ -761,6 +756,7 @@ void fprint_spice_mux_testbench_pb_pin_mux(FILE* fp,
   int cur_input = 0;  
   float* input_density = NULL;
   float* input_probability = NULL;
+  int* input_init_value = NULL; 
   int iedge;
   int* sram_bits = NULL; 
   char* meas_tag = NULL;
@@ -783,6 +779,7 @@ void fprint_spice_mux_testbench_pb_pin_mux(FILE* fp,
   cur_input = 0;
   input_density = (float*)my_malloc(sizeof(float)*fan_in);
   input_probability = (float*)my_malloc(sizeof(float)*fan_in);
+  input_init_value = (int*)my_malloc(sizeof(int)*fan_in);
   for (iedge = 0; iedge < des_pb_graph_pin->num_input_edges; iedge++) {
     if (cur_mode != des_pb_graph_pin->input_edges[iedge]->interconnect->parent_mode) {
        continue;
@@ -791,6 +788,7 @@ void fprint_spice_mux_testbench_pb_pin_mux(FILE* fp,
     /* Find activity information */
     input_density[cur_input] = pb_pin_density(pb_rr_graph, des_pb_graph_pin->input_edges[iedge]->input_pins[0]); 
     input_probability[cur_input] = pb_pin_probability(pb_rr_graph, des_pb_graph_pin->input_edges[iedge]->input_pins[0]); 
+    input_init_value[cur_input] = pb_pin_init_value(pb_rr_graph, des_pb_graph_pin->input_edges[iedge]->input_pins[0]); 
     cur_input++;
   }
   /* Check fan-in number is correct */
@@ -805,7 +803,7 @@ void fprint_spice_mux_testbench_pb_pin_mux(FILE* fp,
           des_pb->spice_name_tag, des_pb_graph_pin->port->name, des_pb_graph_pin->pin_number, cur_interc->name);
   /* Print the main part of a single MUX testbench */
   fprint_spice_mux_testbench_one_mux(fp, meas_tag, cur_interc->spice_model,
-                                     fan_in, input_density, input_probability, select_edge);
+                                     fan_in, input_init_value, input_density, input_probability, select_edge);
 
   /* Test bench : Capactive load */
   /* Search all the fan-outs of des_pb_graph_pin */
@@ -825,6 +823,7 @@ void fprint_spice_mux_testbench_pb_pin_mux(FILE* fp,
 
   /* Free */
   my_free(sram_bits);
+  my_free(input_init_value);
   my_free(input_density);
   my_free(input_probability);
   my_free(outport_name);
@@ -1404,6 +1403,7 @@ void fprint_spice_mux_testbench_cb_one_mux(FILE* fp,
   int* mux_sram_bits = NULL;
   float* input_density = NULL;
   float* input_probability = NULL;
+  int* input_init_value = NULL;
   char* meas_tag = NULL;
   char* outport_name = NULL;
 
@@ -1445,10 +1445,12 @@ void fprint_spice_mux_testbench_cb_one_mux(FILE* fp,
 
   input_density = (float*)my_malloc(sizeof(float)*mux_size);
   input_probability = (float*)my_malloc(sizeof(float)*mux_size);
+  input_init_value = (int*)my_malloc(sizeof(int)*mux_size);
   for (inode = 0; inode < mux_size; inode++) {
     /* Find activity information */
     input_density[inode] = get_rr_node_net_density(*(drive_rr_nodes[inode]));
     input_probability[inode] = get_rr_node_net_probability(*(drive_rr_nodes[inode]));
+    input_init_value[inode] = get_rr_node_net_init_value(*(drive_rr_nodes[inode]));
   }
 
   /* Build meas_tag: cb_mux[cb_x][cb_y]_rrnode[node]*/
@@ -1457,8 +1459,8 @@ void fprint_spice_mux_testbench_cb_one_mux(FILE* fp,
                                             + strlen(my_itoa(src_rr_node-rr_node)) + 2)); /* Add '0'*/
   sprintf(meas_tag, "cb_mux[%d][%d]_rrnode[%ld]", cb_x, cb_y, src_rr_node-rr_node);
   /* Print the main part of a single MUX testbench */
-  fprint_spice_mux_testbench_one_mux(fp, meas_tag, mux_spice_model,
-                                     src_rr_node->fan_in, input_density, input_probability, path_id);
+  fprint_spice_mux_testbench_one_mux(fp, meas_tag, mux_spice_model, src_rr_node->fan_in, 
+                                     input_init_value, input_density, input_probability, path_id);
 
   /* Generate loads */
   outport_name = (char*)my_malloc(sizeof(char)*( strlen(mux_spice_model->prefix) + 5 
@@ -1474,6 +1476,9 @@ void fprint_spice_mux_testbench_cb_one_mux(FILE* fp,
 
   /* Free */
   my_free(mux_sram_bits);
+  my_free(input_init_value);
+  my_free(input_density);
+  my_free(input_probability);
 
   return;
 }
@@ -1510,16 +1515,17 @@ void fprint_spice_mux_testbench_cb_interc(FILE* fp,
 }
 
 static 
-void fprint_spice_mux_testbench_cb_muxes(FILE* fp, 
-                                         t_rr_type chan_type,
-                                         int x, int y,
-                                         t_ivec*** LL_rr_node_indices) {
+int fprint_spice_mux_testbench_one_grid_cb_muxes(FILE* fp, 
+                                                 t_rr_type chan_type,
+                                                 int x, int y,
+                                                 t_ivec*** LL_rr_node_indices) {
   int inode, side;
   int side_cnt = 0;
   int num_ipin_rr_node = 0;
   t_rr_node** ipin_rr_nodes = NULL;
   int num_temp_rr_node = 0;
   t_rr_node** temp_rr_nodes = NULL;
+  int used = 0;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -1645,6 +1651,9 @@ void fprint_spice_mux_testbench_cb_muxes(FILE* fp,
   assert(2 == side_cnt);
 
   /* Print multiplexers */
+  if (0 < num_ipin_rr_node) {
+    used = 1;
+  }
   for (inode = 0; inode < num_ipin_rr_node; inode++) {
     fprint_spice_mux_testbench_cb_interc(fp, chan_type, x, y, ipin_rr_nodes[inode], LL_rr_node_indices);
   } 
@@ -1652,7 +1661,7 @@ void fprint_spice_mux_testbench_cb_muxes(FILE* fp,
   /* Free */
   my_free(ipin_rr_nodes);
 
-  return;
+  return used;
 }
 
 static 
@@ -1815,7 +1824,7 @@ char* fprint_spice_mux_testbench_rr_node_load_version(FILE* fp,
 } 
 
 static 
-void fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
+int fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
                                            int switch_box_x, int switch_box_y,
                                            int chan_side,
                                            t_rr_node* src_rr_node) {
@@ -1823,12 +1832,14 @@ void fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
   t_spice_model* mux_spice_model = NULL;
   float* input_density = NULL;
   float* input_probability = NULL;
+  int* input_init_value = NULL;
   int path_id = -1;
   char* meas_tag = NULL;
   int num_drive_rr_nodes = 0;  
   t_rr_node** drive_rr_nodes = NULL;
   char* outport_name = NULL;
   char* rr_node_outport_name = NULL;
+  int used = 0;
 
   /* Check */
   assert((!(0 > switch_box_x))&&(!(switch_box_x > (nx + 1)))); 
@@ -1836,7 +1847,7 @@ void fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
 
   /* ignore idle sb mux */
   if (OPEN == src_rr_node->net_num) {
-    return;
+    return used;
   }
 
   find_drive_rr_nodes_switch_box(switch_box_x, switch_box_y, src_rr_node, chan_side, 0, 
@@ -1844,7 +1855,7 @@ void fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
 
   /* Print MUX only when fan-in >= 2 */
   if (2 > num_drive_rr_nodes) {
-    return;
+    return used;
   }
 
   /* Check the file handler*/ 
@@ -1865,9 +1876,11 @@ void fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
   /* input_density, input_probability */
   input_density = (float*)my_malloc(sizeof(float)*mux_size);
   input_probability = (float*)my_malloc(sizeof(float)*mux_size);
+  input_init_value = (int*)my_malloc(sizeof(int)*mux_size);
   for (inode = 0; inode < mux_size; inode++) {
     input_density[inode] = get_rr_node_net_density(*(drive_rr_nodes[inode]));
     input_probability[inode] = get_rr_node_net_probability(*(drive_rr_nodes[inode]));
+    input_init_value[inode] = get_rr_node_net_init_value(*(drive_rr_nodes[inode]));
   }
 
   /* Find path_id */
@@ -1887,7 +1900,7 @@ void fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
   sprintf(meas_tag, "sb_mux[%d][%d]_rrnode[%ld]", switch_box_x, switch_box_y, src_rr_node-rr_node);
   /* Print MUX */
   fprint_spice_mux_testbench_one_mux(fp, meas_tag, mux_spice_model, mux_size,
-                                     input_density, input_probability, path_id);
+                                     input_init_value, input_density, input_probability, path_id);
 
   /* Print a channel wire !*/
   outport_name = (char*)my_malloc(sizeof(char)*( strlen(mux_spice_model->prefix)
@@ -1904,19 +1917,21 @@ void fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
 
   /* Free */
   my_free(drive_rr_nodes);
+  my_free(input_init_value);
   my_free(input_density);
   my_free(input_probability);
 
-  return;
+  return 1;
 }
 
 static 
-void fprint_spice_mux_testbench_sb_muxes(FILE* fp, 
-                                         int x, int y, 
-                                         t_ivec*** LL_rr_node_indices) {
+int fprint_spice_mux_testbench_call_one_grid_sb_muxes(FILE* fp, 
+                                                      int x, int y, 
+                                                      t_ivec*** LL_rr_node_indices) {
   int itrack, inode, side, ix, iy;
   t_rr_node*** chan_rr_nodes = (t_rr_node***)my_malloc(sizeof(t_rr_node**)*4); /* 4 sides*/
   int* chan_width = (int*)my_malloc(sizeof(int)*4); /* 4 sides */
+  int used = 0;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -1950,7 +1965,7 @@ void fprint_spice_mux_testbench_sb_muxes(FILE* fp,
         inode = get_rr_node_index(ix, iy, CHANY, itrack, LL_rr_node_indices);
         chan_rr_nodes[0][itrack] = &(rr_node[inode]);
         if (INC_DIRECTION == chan_rr_nodes[side][itrack]->direction) {
-          fprint_spice_mux_testbench_sb_one_mux(fp, ix, iy, side, chan_rr_nodes[side][itrack]);
+          used += fprint_spice_mux_testbench_sb_one_mux(fp, ix, iy, side, chan_rr_nodes[side][itrack]);
         }
       }
       break;
@@ -1973,7 +1988,7 @@ void fprint_spice_mux_testbench_sb_muxes(FILE* fp,
         inode = get_rr_node_index(ix, iy, CHANX, itrack, LL_rr_node_indices);
         chan_rr_nodes[1][itrack] = &(rr_node[inode]);
         if (INC_DIRECTION == chan_rr_nodes[side][itrack]->direction) {
-          fprint_spice_mux_testbench_sb_one_mux(fp, ix, iy, side, chan_rr_nodes[side][itrack]);
+          used += fprint_spice_mux_testbench_sb_one_mux(fp, ix, iy, side, chan_rr_nodes[side][itrack]);
         }
       }
       /* Print MUXes of RIGHT side */
@@ -1997,7 +2012,7 @@ void fprint_spice_mux_testbench_sb_muxes(FILE* fp,
         inode = get_rr_node_index(ix, iy, CHANY, itrack, LL_rr_node_indices);
         chan_rr_nodes[2][itrack] = &(rr_node[inode]);
         if (DEC_DIRECTION == chan_rr_nodes[side][itrack]->direction) {
-          fprint_spice_mux_testbench_sb_one_mux(fp, ix, iy, side, chan_rr_nodes[side][itrack]);
+          used += fprint_spice_mux_testbench_sb_one_mux(fp, ix, iy, side, chan_rr_nodes[side][itrack]);
         }
       }
       /* Print MUXes of BOTTOM side */
@@ -2021,7 +2036,7 @@ void fprint_spice_mux_testbench_sb_muxes(FILE* fp,
         inode = get_rr_node_index(ix, iy, CHANX, itrack, LL_rr_node_indices);
         chan_rr_nodes[3][itrack] = &(rr_node[inode]);
         if (DEC_DIRECTION == chan_rr_nodes[side][itrack]->direction) {
-          fprint_spice_mux_testbench_sb_one_mux(fp, ix, iy, side, chan_rr_nodes[side][itrack]);
+          used += fprint_spice_mux_testbench_sb_one_mux(fp, ix, iy, side, chan_rr_nodes[side][itrack]);
         }
       }
       /* Print MUXes of LEFT side */
@@ -2038,41 +2053,57 @@ void fprint_spice_mux_testbench_sb_muxes(FILE* fp,
     my_free(chan_rr_nodes[side]);
   }
   my_free(chan_rr_nodes);
+
+  if (0 < used) {
+    used = 1;
+  }
+
+  return used;
 }
 
+/*
 static 
-void fprint_spice_mux_testbench_call_routing_muxes(FILE* fp,
-                                                   t_ivec*** LL_rr_node_indices) {
+void fprint_spice_mux_testbench_call_cb_muxes(FILE* fp,
+                                              t_ivec*** LL_rr_node_indices) {
   int ix, iy;
 
-  /* Find all routing Switch Boxes and Connection Blocks */
-  /* Print Connection Block MUXes */
   for (iy = 0; iy < (ny + 1); iy++) { 
     for (ix = 1; ix < (nx + 1); ix++) {
-      fprint_spice_mux_testbench_cb_muxes(fp, CHANX, ix, iy, LL_rr_node_indices);
+      fprint_spice_mux_testbench_one_grid_cb_muxes(fp, CHANX, ix, iy, LL_rr_node_indices);
     }
   }
 
   for (ix = 0; ix < (nx + 1); ix++) { 
     for (iy = 1; iy < (ny + 1); iy++) {
-      fprint_spice_mux_testbench_cb_muxes(fp, CHANY, ix, iy, LL_rr_node_indices);
-    }
-  }
-
-  /* Print Switch Box MUXes */
-  for (iy = 0; iy < (ny + 1); iy++) { 
-    for (ix = 0; ix < (nx + 1); ix++) {
-      fprint_spice_mux_testbench_sb_muxes(fp, ix, iy, LL_rr_node_indices);
+      fprint_spice_mux_testbench_one_grid_cb_muxes(fp, CHANY, ix, iy, LL_rr_node_indices);
     }
   }
 
   return;
 }
+*/
+
+/*
+static 
+void fprint_spice_mux_testbench_call_sb_muxes(FILE* fp,
+                                              t_ivec*** LL_rr_node_indices) {
+  int ix, iy;
+
+  for (iy = 0; iy < (ny + 1); iy++) { 
+    for (ix = 0; ix < (nx + 1); ix++) {
+      fprint_spice_mux_testbench_call_one_grid_sb_muxes(fp, ix, iy, LL_rr_node_indices);
+    }
+  }
+
+  return;
+}
+*/
 
 static 
-void fprint_spice_mux_testbench_call_defined_muxes(FILE* fp,
-                                                   t_ivec*** LL_rr_node_indices) {
-  int iblk, ix, iy;
+int fprint_spice_mux_testbench_call_one_grid_pb_muxes(FILE* fp, int ix, int iy,
+                                                      t_ivec*** LL_rr_node_indices) {
+  int iblk;
+  int used = 0;
 
   /* A valid file handler*/
   if (NULL == fp) {
@@ -2080,49 +2111,40 @@ void fprint_spice_mux_testbench_call_defined_muxes(FILE* fp,
     exit(1);
   } 
   /* Print all the grid */
+  if ((NULL == grid[ix][iy].type)||(0 == grid[ix][iy].usage)) {
+    return used;
+  }
+  /* Used blocks */
+  for (iblk = 0; iblk < grid[ix][iy].usage; iblk++) {
+    /* Only for mapped block */
+    assert(NULL != block[grid[ix][iy].blocks[iblk]].pb);
+    fprint_spice_mux_testbench_pb_muxes_rec(fp, block[grid[ix][iy].blocks[iblk]].pb, ix, iy, LL_rr_node_indices); 
+    used = 1;
+  }  
+  /* By pass Unused blocks */
+  /*
+  for (iblk = grid[ix][iy].usage; iblk < grid[ix][iy].type->capacity; iblk++) {
+    fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec(fp, grid[ix][iy].type->pb_graph_head, ix, iy, LL_rr_node_indices);
+  } 
+  */
+
+  return used;
+}
+
+/*
+static 
+void fprint_spice_mux_testbench_call_pb_muxes(FILE* fp, 
+                                              t_ivec*** LL_rr_node_indices) {
+  int ix, iy;
+  
   for (iy = 1; iy < (ny + 1); iy++) { 
     for (ix = 1; ix < (nx + 1); ix++) {
-      if (NULL == grid[ix][iy].type) {
-        continue;
-      }
-      /* Used blocks */
-      for (iblk = 0; iblk < grid[ix][iy].usage; iblk++) {
-        /* Only for mapped block */
-        assert(NULL != block[grid[ix][iy].blocks[iblk]].pb);
-        fprint_spice_mux_testbench_pb_muxes_rec(fp, block[grid[ix][iy].blocks[iblk]].pb, ix, iy, LL_rr_node_indices); 
-      }  
-      continue;
-      /* By pass Unused blocks */
-      /*
-      for (iblk = grid[ix][iy].usage; iblk < grid[ix][iy].type->capacity; iblk++) {
-        fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec(fp, grid[ix][iy].type->pb_graph_head, ix, iy, LL_rr_node_indices);
-      } 
-      */
+      fprint_spice_mux_testbench_call_one_grid_pb_muxes(fp, ix, iy, LL_rr_node_indices);
     }
   }
-  /* Find all routing Switch Boxes and Connection Blocks */
-  /* Print Connection Block MUXes */
-  for (iy = 0; iy < (ny + 1); iy++) { 
-    for (ix = 1; ix < (nx + 1); ix++) {
-      fprint_spice_mux_testbench_cb_muxes(fp, CHANX, ix, iy, LL_rr_node_indices);
-    }
-  }
-
-  for (ix = 0; ix < (nx + 1); ix++) { 
-    for (iy = 1; iy < (ny + 1); iy++) {
-      fprint_spice_mux_testbench_cb_muxes(fp, CHANY, ix, iy, LL_rr_node_indices);
-    }
-  }
-
-  /* Print Switch Box MUXes */
-  for (iy = 0; iy < (ny + 1); iy++) { 
-    for (ix = 0; ix < (nx + 1); ix++) {
-      fprint_spice_mux_testbench_sb_muxes(fp, ix, iy, LL_rr_node_indices);
-    }
-  }
-
   return;
 }
+*/
 
 static 
 void fprint_spice_mux_testbench_stimulations(FILE* fp, 
@@ -2164,6 +2186,7 @@ void fprint_spice_mux_testbench_stimulations(FILE* fp,
 
 static 
 void fprint_spice_mux_testbench_measurements(FILE* fp, 
+                                             enum e_spice_mux_tb_type mux_tb_type,
                                              t_spice spice) {
   int num_clock_cycle = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
   /*
@@ -2190,215 +2213,291 @@ void fprint_spice_mux_testbench_measurements(FILE* fp,
   fprintf(fp, "+          param=\'sum_leakage_power_mux[0to%d]\'\n", testbench_mux_cnt-1);
   fprintf(fp, ".meas tran total_energy_per_cycle_mux[0to%d] \n", testbench_mux_cnt - 1);
   fprintf(fp, "+          param=\'sum_energy_per_cycle_mux[0to%d]\'\n", testbench_mux_cnt-1);
-  /* pb_muxes */
-  fprintf(fp, ".meas tran total_leakage_power_pb_mux \n");
-  fprintf(fp, "+          param=\'sum_leakage_power_pb_mux[0to%d]\'\n", testbench_pb_mux_cnt-1);
-  fprintf(fp, ".meas tran total_energy_per_cycle_pb_mux \n");
-  fprintf(fp, "+          param=\'sum_energy_per_cycle_pb_mux[0to%d]\'\n", testbench_pb_mux_cnt-1);
-  /* cb_muxes */
-  fprintf(fp, ".meas tran total_leakage_power_cb_mux \n");
-  fprintf(fp, "+          param=\'sum_leakage_power_cb_mux[0to%d]\'\n", testbench_cb_mux_cnt-1);
-  fprintf(fp, ".meas tran total_energy_per_cycle_cb_mux \n");
-  fprintf(fp, "+          param=\'sum_energy_per_cycle_cb_mux[0to%d]\'\n", testbench_cb_mux_cnt-1);
-  /* sb_muxes */
-  fprintf(fp, ".meas tran total_leakage_power_sb_mux \n");
-  fprintf(fp, "+          param=\'sum_leakage_power_sb_mux[0to%d]\'\n", testbench_sb_mux_cnt-1);
-  fprintf(fp, ".meas tran total_energy_per_cylce_sb_mux \n");
-  fprintf(fp, "+          param=\'sum_energy_per_cycle_sb_mux[0to%d]\'\n", testbench_sb_mux_cnt-1);
 
-  /* We don not measure the power of SRAM and load !*/
-  /* Sum the total MUX leakage power and dynamic power */
-  /*
-  fprintf(fp, ".measure tran total_leakage_power param='0+\n");
-  head = testbench_muxes_head; 
-  while(head) {
-    spice_mux_model = (t_spice_mux_model*)(head->dptr);
-    for (i = 0; i < spice_mux_model->cnt; i++) {
-      fprintf(fp, "+ %s_size%d[%d]_leakage_power+\n",
-              spice_mux_model->spice_model->prefix, spice_mux_model->size, i);
-    } 
-    head = head->next;
+  switch (mux_tb_type) {
+  case SPICE_PB_MUX_TB:
+    /* pb_muxes */
+    fprintf(fp, ".meas tran total_leakage_power_pb_mux \n");
+    fprintf(fp, "+          param=\'sum_leakage_power_pb_mux[0to%d]\'\n", testbench_pb_mux_cnt-1);
+    fprintf(fp, ".meas tran total_energy_per_cycle_pb_mux \n");
+    fprintf(fp, "+          param=\'sum_energy_per_cycle_pb_mux[0to%d]\'\n", testbench_pb_mux_cnt-1);
+    break;
+  case SPICE_CB_MUX_TB:
+    /* cb_muxes */
+    fprintf(fp, ".meas tran total_leakage_power_cb_mux \n");
+    fprintf(fp, "+          param=\'sum_leakage_power_cb_mux[0to%d]\'\n", testbench_cb_mux_cnt-1);
+    fprintf(fp, ".meas tran total_energy_per_cycle_cb_mux \n");
+    fprintf(fp, "+          param=\'sum_energy_per_cycle_cb_mux[0to%d]\'\n", testbench_cb_mux_cnt-1);
+    break;
+  case SPICE_SB_MUX_TB:
+    /* sb_muxes */
+    fprintf(fp, ".meas tran total_leakage_power_sb_mux \n");
+    fprintf(fp, "+          param=\'sum_leakage_power_sb_mux[0to%d]\'\n", testbench_sb_mux_cnt-1);
+    fprintf(fp, ".meas tran total_energy_per_cycle_sb_mux \n");
+    fprintf(fp, "+          param=\'sum_energy_per_cycle_sb_mux[0to%d]\'\n", testbench_sb_mux_cnt-1);
+    break;
+   default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d]) Invalid mux_tb_type!\n", __FILE__, __LINE__);
+    exit(1);
   }
-  fprintf(fp, "+ 0'\n");
-
-  fprintf(fp, ".measure tran total_dynamic_power param='0+\n");
-  head = testbench_muxes_head; 
-  while(head) {
-    spice_mux_model = (t_spice_mux_model*)(head->dptr);
-    for (i = 0; i < spice_mux_model->cnt; i++) {
-      fprintf(fp, "+ %s_size%d[%d]_dynamic_power+\n",
-              spice_mux_model->spice_model->prefix, spice_mux_model->size, i);
-    } 
-    head = head->next;
-  }
-  fprintf(fp, "+ 0'\n");
-  */
 
   return;
 }
 
 /* Top-level function in this source file */
+int fprint_spice_one_mux_testbench(char* formatted_spice_dir,
+                                   char* circuit_name,
+                                   char* mux_testbench_name, 
+                                   char* include_dir_path,
+                                   char* subckt_dir_path,
+                                   t_ivec*** LL_rr_node_indices,
+                                   int num_clocks,
+                                   t_arch arch,
+                                   int grid_x, int grid_y, t_rr_type cb_type,
+                                   enum e_spice_mux_tb_type mux_tb_type,
+                                   boolean leakage_only) {
+  FILE* fp = NULL;
+  char* formatted_subckt_dir_path = format_dir_path(subckt_dir_path);
+  char* title = my_strcat("FPGA SPICE Routing MUX Test Bench for Design: ", circuit_name);
+  char* mux_testbench_file_path = my_strcat(formatted_spice_dir, mux_testbench_name);
+  char* mux_tb_name = NULL;
+  int used = 0;
+  t_llist* temp = NULL;
+
+  switch (mux_tb_type) {
+  case SPICE_PB_MUX_TB:
+    mux_tb_name = "CLB MUX";
+    break;
+  case SPICE_CB_MUX_TB:
+    mux_tb_name = "Connection Box MUX";
+    break;
+  case SPICE_SB_MUX_TB:
+    mux_tb_name = "Switch Block MUX";
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d]) Invalid mux_tb_type!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /* Check if the path exists*/
+  fp = fopen(mux_testbench_file_path,"w");
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in create SPICE %s Test bench netlist %s!\n", 
+               __FILE__, __LINE__, mux_tb_name, mux_testbench_file_path); 
+    exit(1);
+  }
+
+  /*
+  vpr_printf(TIO_MESSAGE_INFO, "Writing Grid[%d][%d] SPICE %s MUX Test Bench for %s...\n", 
+             grid_x, grid_y, mux_tb_name, circuit_name);
+  */
+
+  /* Load global vars in this source file */
+  num_segments = arch.num_segments;
+  segments = arch.Segments;
+ 
+  /* Print the title */
+  fprint_spice_head(fp, title);
+  my_free(title);
+
+  /* print technology library and design parameters*/
+  fprint_tech_lib(fp, arch.spice->tech_lib);
+
+  /* Include parameter header files */
+  fprint_spice_include_param_headers(fp, include_dir_path);
+
+  /* Include Key subckts */
+  fprint_spice_include_key_subckts(fp, formatted_subckt_dir_path);
+
+  /* Include user-defined sub-circuit netlist */
+  init_include_user_defined_netlists(*(arch.spice));
+  fprint_include_user_defined_netlists(fp, *(arch.spice));
+  
+  /* Special subckts for Top-level SPICE netlist */
+  /*
+  fprintf(fp, "****** Include subckt netlists: Look-Up Tables (LUTs) *****\n");
+  temp_include_file_path = my_strcat(formatted_subckt_dir_path, luts_spice_file_name);
+  fprintf(fp, ".include %s\n", temp_include_file_path);
+  my_free(temp_include_file_path);
+  */
+
+  /* Print simulation temperature and other options for SPICE */
+  fprint_spice_options(fp, arch.spice->spice_params);
+
+  /* Global nodes: Vdd for SRAMs, Logic Blocks(Include IO), Switch Boxes, Connection Boxes */
+  fprint_spice_mux_testbench_global_ports(fp, *(arch.spice));
+ 
+  /* Quote defined Logic blocks subckts (Grids) */
+  init_spice_mux_testbench_globals(*(arch.spice));
+
+  switch (mux_tb_type) {
+  case SPICE_PB_MUX_TB:
+    used = fprint_spice_mux_testbench_call_one_grid_pb_muxes(fp, grid_x, grid_y, LL_rr_node_indices);
+    break;
+  case SPICE_CB_MUX_TB:
+    /* one cbx, one cby*/
+    switch (cb_type) {
+    case CHANX:
+    case CHANY:
+      used = fprint_spice_mux_testbench_one_grid_cb_muxes(fp, cb_type, grid_x, grid_y, LL_rr_node_indices);
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d]) Invalid connection_box_type!\n", __FILE__, __LINE__);
+      exit(1);
+    }
+    break;
+  case SPICE_SB_MUX_TB:
+    used = fprint_spice_mux_testbench_call_one_grid_sb_muxes(fp, grid_x, grid_y, LL_rr_node_indices);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d]) Invalid mux_tb_type!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /* Add stimulations */
+  fprint_spice_mux_testbench_stimulations(fp, *(arch.spice));
+
+  /* Add measurements */  
+  fprint_spice_mux_testbench_measurements(fp, mux_tb_type, *(arch.spice));
+
+  /* SPICE ends*/
+  fprintf(fp, ".end\n");
+
+  /* Close the file*/
+  fclose(fp);
+
+  /* Free */
+  //my_free(formatted_subckt_dir_path);
+  //my_free(mux_testbench_file_path);
+  //my_free(title);
+
+  if (0 < testbench_mux_cnt) {
+    vpr_printf(TIO_MESSAGE_INFO, "Writing Grid[%d][%d] SPICE %s MUX Test Bench for %s...\n", 
+               grid_x, grid_y, mux_tb_name, circuit_name);
+    if (NULL == tb_head) {
+      tb_head = create_llist(1);
+      tb_head->dptr = (void*)(my_strdup(mux_testbench_file_path));
+    } else {
+      temp = insert_llist_node(tb_head);
+      temp->dptr = (void*)(my_strdup(mux_testbench_file_path));
+    }
+    used = 1;
+  } else {
+    /* Remove the file generated */
+    my_remove_file(mux_testbench_file_path);
+    used = 0;
+  }
+
+  return used;
+}
+
 void fprint_spice_mux_testbench(char* formatted_spice_dir,
                                 char* circuit_name,
-                                char* mux_testbench_name,
                                 char* include_dir_path,
                                 char* subckt_dir_path,
                                 t_ivec*** LL_rr_node_indices,
                                 int num_clocks,
                                 t_arch arch,
+                                enum e_spice_mux_tb_type mux_tb_type,
                                 boolean leakage_only) {
-  FILE* fp = NULL;
-  char* formatted_subckt_dir_path = format_dir_path(subckt_dir_path);
-  char* title = my_strcat("FPGA SPICE MUX Test Bench for Design: ", circuit_name);
-  char* mux_testbench_file_path = my_strcat(formatted_spice_dir, mux_testbench_name);
+  char* mux_testbench_name = NULL; 
+  int ix, iy;
+  int cnt = 0;
+  int used = 0;
 
-  /* Check if the path exists*/
-  fp = fopen(mux_testbench_file_path,"w");
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in create SPICE MUX Test bench netlist %s!\n",__FILE__, __LINE__, mux_testbench_file_path); 
+  /* Depend on the type of testbench, we generate the a list of testbenches */
+  switch (mux_tb_type) {
+  case SPICE_PB_MUX_TB:
+    cnt = 0;
+    for (ix = 1; ix < (nx+1); ix++) {
+      for (iy = 1; iy < (ny+1); iy++) {
+        mux_testbench_name = (char*)my_malloc(sizeof(char)*( strlen(circuit_name) 
+                                              + 6 + strlen(my_itoa(cnt)) + 1
+                                              + strlen(spice_pb_mux_testbench_postfix)  + 1 ));
+        sprintf(mux_testbench_name, "%s_grid%d%s",
+                circuit_name, cnt, spice_pb_mux_testbench_postfix);
+        used = fprint_spice_one_mux_testbench(formatted_spice_dir, circuit_name, mux_testbench_name, 
+                                              include_dir_path, subckt_dir_path, LL_rr_node_indices,
+                                              num_clocks, arch, ix, iy, NUM_RR_TYPES, SPICE_PB_MUX_TB, 
+                                              leakage_only);
+        if (1 == used) {
+          cnt += used;
+        }
+        /* free */
+        my_free(mux_testbench_name);
+      }  
+    } 
+    /* Update the global counter */
+    num_used_grids = cnt;
+    break;
+  case SPICE_CB_MUX_TB:
+    cnt = 0;
+    for (iy = 0; iy < (ny+1); iy++) {
+      for (ix = 1; ix < (nx+1); ix++) {
+        mux_testbench_name = (char*)my_malloc(sizeof(char)*( strlen(circuit_name) 
+                                              + 10 + strlen(my_itoa(cnt)) + 1 
+                                              + strlen(spice_pb_mux_testbench_postfix)  + 1 ));
+        sprintf(mux_testbench_name, "%s_cb%d%s",
+                circuit_name, cnt, spice_cb_mux_testbench_postfix);
+        used = fprint_spice_one_mux_testbench(formatted_spice_dir, circuit_name, mux_testbench_name, 
+                                              include_dir_path, subckt_dir_path, LL_rr_node_indices,
+                                              num_clocks, arch, ix, iy, CHANX, SPICE_CB_MUX_TB, 
+                                              leakage_only);
+        if (1 == used) {
+          cnt += used;
+        }
+        /* free */
+        my_free(mux_testbench_name);
+      }  
+    } 
+    for (ix = 0; ix < (nx+1); ix++) {
+      for (iy = 1; iy < (ny+1); iy++) {
+        mux_testbench_name = (char*)my_malloc(sizeof(char)*( strlen(circuit_name) 
+                                              + 10 + strlen(my_itoa(cnt)) + 1
+                                              + strlen(spice_pb_mux_testbench_postfix)  + 1 ));
+        sprintf(mux_testbench_name, "%s_cb%d%s",
+                circuit_name, cnt, spice_cb_mux_testbench_postfix);
+        used = fprint_spice_one_mux_testbench(formatted_spice_dir, circuit_name, mux_testbench_name, 
+                                              include_dir_path, subckt_dir_path, LL_rr_node_indices,
+                                              num_clocks, arch, ix, iy, CHANY, SPICE_CB_MUX_TB, 
+                                              leakage_only);
+        if (1 == used) {
+          cnt += used;
+        }
+        /* free */
+        my_free(mux_testbench_name);
+      }  
+    } 
+    /* Update the global counter */
+    num_used_cbs = cnt;
+    break;
+  case SPICE_SB_MUX_TB:
+    cnt = 0;
+    for (ix = 0; ix < (nx+1); ix++) {
+      for (iy = 0; iy < (ny+1); iy++) {
+        mux_testbench_name = (char*)my_malloc(sizeof(char)*( strlen(circuit_name) 
+                                              + 9 + strlen(my_itoa(cnt)) + 1
+                                              + strlen(spice_sb_mux_testbench_postfix)  + 1 ));
+        sprintf(mux_testbench_name, "%s_sb%d%s",
+                circuit_name, cnt, spice_sb_mux_testbench_postfix);
+        used = fprint_spice_one_mux_testbench(formatted_spice_dir, circuit_name, mux_testbench_name, 
+                                              include_dir_path, subckt_dir_path, LL_rr_node_indices,
+                                              num_clocks, arch, ix, iy, NUM_RR_TYPES, SPICE_SB_MUX_TB, 
+                                              leakage_only);
+        if (1 == used) {
+          cnt += used;
+        }
+        /* free */
+        my_free(mux_testbench_name);
+      }  
+    } 
+    /* Update the global counter */
+    num_used_sbs = cnt;
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d]) Invalid mux_tb_type!\n", __FILE__, __LINE__);
     exit(1);
-  } 
-  
-  vpr_printf(TIO_MESSAGE_INFO, "Writing SPICE MUX Test Bench for %s...\n", circuit_name);
- 
-  /* Load global vars in this source file */
-  num_segments = arch.num_segments;
-  segments = arch.Segments;
-
-  /* Print the title */
-  fprint_spice_head(fp, title);
-  my_free(title);
-
-  /* print technology library and design parameters*/
-  fprint_tech_lib(fp, arch.spice->tech_lib);
-
-  /* Include parameter header files */
-  fprint_spice_include_param_headers(fp, include_dir_path);
-
-  /* Include Key subckts */
-  fprint_spice_include_key_subckts(fp, formatted_subckt_dir_path);
-
-  /* Include user-defined sub-circuit netlist */
-  init_include_user_defined_netlists(*(arch.spice));
-  fprint_include_user_defined_netlists(fp, *(arch.spice));
-  
-  /* Special subckts for Top-level SPICE netlist */
-  /*
-  fprintf(fp, "****** Include subckt netlists: Look-Up Tables (LUTs) *****\n");
-  temp_include_file_path = my_strcat(formatted_subckt_dir_path, luts_spice_file_name);
-  fprintf(fp, ".include %s\n", temp_include_file_path);
-  my_free(temp_include_file_path);
-  */
-
-  /* Print simulation temperature and other options for SPICE */
-  fprint_spice_options(fp, arch.spice->spice_params);
-
-  /* Global nodes: Vdd for SRAMs, Logic Blocks(Include IO), Switch Boxes, Connection Boxes */
-  fprint_spice_mux_testbench_global_ports(fp, *(arch.spice));
- 
-  /* Quote defined Logic blocks subckts (Grids) */
-  init_spice_mux_testbench_globals(*(arch.spice));
-  fprint_spice_mux_testbench_call_defined_muxes(fp, LL_rr_node_indices);
-
-  /* Add stimulations */
-  fprint_spice_mux_testbench_stimulations(fp, *(arch.spice));
-
-  /* Add measurements */  
-  fprint_spice_mux_testbench_measurements(fp, *(arch.spice));
-
-  /* SPICE ends*/
-  fprintf(fp, ".end\n");
-
-  /* Close the file*/
-  fclose(fp);
-
-  /* Free */
-  //my_free(formatted_subckt_dir_path);
-  //my_free(mux_testbench_file_path);
-  //my_free(title);
-
-  return;
-}
-
-/* Top-level function in this source file */
-void fprint_spice_routing_mux_testbench(char* formatted_spice_dir,
-                                        char* circuit_name,
-                                        char* mux_testbench_name,
-                                        char* include_dir_path,
-                                        char* subckt_dir_path,
-                                        t_ivec*** LL_rr_node_indices,
-                                        int num_clocks,
-                                        t_arch arch,
-                                        boolean leakage_only) {
-  FILE* fp = NULL;
-  char* formatted_subckt_dir_path = format_dir_path(subckt_dir_path);
-  char* title = my_strcat("FPGA SPICE Routing MUX Test Bench for Design: ", circuit_name);
-  char* mux_testbench_file_path = my_strcat(formatted_spice_dir, mux_testbench_name);
-
-  /* Check if the path exists*/
-  fp = fopen(mux_testbench_file_path,"w");
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in create SPICE MUX Test bench netlist %s!\n",__FILE__, __LINE__, mux_testbench_file_path); 
-    exit(1);
-  } 
-  
-  vpr_printf(TIO_MESSAGE_INFO, "Writing SPICE Routing MUX Test Bench for %s...\n", circuit_name);
-
-  /* Load global vars in this source file */
-  num_segments = arch.num_segments;
-  segments = arch.Segments;
- 
-  /* Print the title */
-  fprint_spice_head(fp, title);
-  my_free(title);
-
-  /* print technology library and design parameters*/
-  fprint_tech_lib(fp, arch.spice->tech_lib);
-
-  /* Include parameter header files */
-  fprint_spice_include_param_headers(fp, include_dir_path);
-
-  /* Include Key subckts */
-  fprint_spice_include_key_subckts(fp, formatted_subckt_dir_path);
-
-  /* Include user-defined sub-circuit netlist */
-  init_include_user_defined_netlists(*(arch.spice));
-  fprint_include_user_defined_netlists(fp, *(arch.spice));
-  
-  /* Special subckts for Top-level SPICE netlist */
-  /*
-  fprintf(fp, "****** Include subckt netlists: Look-Up Tables (LUTs) *****\n");
-  temp_include_file_path = my_strcat(formatted_subckt_dir_path, luts_spice_file_name);
-  fprintf(fp, ".include %s\n", temp_include_file_path);
-  my_free(temp_include_file_path);
-  */
-
-  /* Print simulation temperature and other options for SPICE */
-  fprint_spice_options(fp, arch.spice->spice_params);
-
-  /* Global nodes: Vdd for SRAMs, Logic Blocks(Include IO), Switch Boxes, Connection Boxes */
-  fprint_spice_mux_testbench_global_ports(fp, *(arch.spice));
- 
-  /* Quote defined Logic blocks subckts (Grids) */
-  init_spice_mux_testbench_globals(*(arch.spice));
-  fprint_spice_mux_testbench_call_routing_muxes(fp, LL_rr_node_indices);
-
-  /* Add stimulations */
-  fprint_spice_mux_testbench_stimulations(fp, *(arch.spice));
-
-  /* Add measurements */  
-  fprint_spice_mux_testbench_measurements(fp, *(arch.spice));
-
-  /* SPICE ends*/
-  fprintf(fp, ".end\n");
-
-  /* Close the file*/
-  fclose(fp);
-
-  /* Free */
-  //my_free(formatted_subckt_dir_path);
-  //my_free(mux_testbench_file_path);
-  //my_free(title);
+  }
 
   return;
 }

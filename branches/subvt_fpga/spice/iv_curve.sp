@@ -13,10 +13,11 @@
 *.include './process/32nmHP.pm'
 *.include './process/tsmc40nm.sp'
 *.include './process/22nm_HP.pm'
-.include './process/45nm_LP.pm'
+*.include './process/45nm_LP.pm'
+.include './process/45nm_HP.pm'
 .include '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/spice/nmos_pmos.sp'
 .temp 25
-.param beta = 1.7
+.param beta = 1.4
 .param alpha = 3
 .param nl = 45e-9
 .param pl = 45e-9
@@ -29,7 +30,7 @@
 *Beginning of circuit and device definitions
 ***************************************************
 *Supplies and voltage params:
-.param Supply=2	
+.param Supply=1.0	
 .param Vg='Supply'
 .param Vd='Supply'
 .param Wprog='wn'

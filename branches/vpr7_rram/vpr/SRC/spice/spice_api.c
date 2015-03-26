@@ -29,17 +29,29 @@
 #include "spice_subckt.h"
 #include "spice_pbtypes.h"
 #include "spice_heads.h"
+#include "spice_lut.h"
 #include "spice_top_netlist.h"
 #include "spice_mux_testbench.h"
 #include "spice_grid_testbench.h"
 #include "spice_lut_testbench.h"
 #include "spice_dff_testbench.h"
+#include "spice_run_scripts.h"
 
 /* For mrFPGA */
 #ifdef MRFPGA_H
 #include "mrfpga_globals.h"
 #endif
 
+/* RUN HSPICE Shell Script Name */
+static char* default_spice_dir_path = "spice_netlists/";
+static char* spice_top_tb_dir_name = "top_tb/";
+static char* spice_grid_tb_dir_name = "grid_tb/";
+static char* spice_pb_mux_tb_dir_name = "pb_mux_tb/";
+static char* spice_cb_mux_tb_dir_name = "cb_mux_tb/";
+static char* spice_sb_mux_tb_dir_name = "sb_mux_tb/";
+static char* spice_lut_tb_dir_name = "lut_tb/";
+static char* spice_dff_tb_dir_name = "dff_tb/";
+  
 /***** Subroutines Declarations *****/
 static 
 void back_annotate_rr_node_map_info();
@@ -71,16 +83,6 @@ void rec_backannotate_rr_node_net_num(int LL_num_rr_nodes,
 static 
 void build_prev_node_list_rr_nodes(int LL_num_rr_nodes,
                                    t_rr_node* LL_rr_nodes);
-
-static 
-void fprint_run_hspice_shell_script(char* spice_dir_path,
-                                    char* subckt_dir_path,
-                                    char* top_netlist_file, 
-                                    char* grid_testbench_file, 
-                                    char* routing_mux_testbench_file, 
-                                    char* mux_testbench_file,
-                                    char* lut_testbench_file,
-                                    char* dff_testbench_file);
 
 /***** Subroutines *****/
 /* Initialize and check spice models in architecture
@@ -290,21 +292,95 @@ void backannotate_rr_nodes_net_info() {
 }
 
 static 
+void backannotate_clb_nets_init_val() {
+  int inet, iblk;
+
+  /* Analysis init values !!! */
+  for (inet = 0; inet < num_logical_nets; inet++) {
+    assert (NULL != vpack_net[inet].spice_net_info);
+    /* if the source is a inpad or dff, we update the initial value */ 
+    iblk = vpack_net[inet].node_block[0];
+    switch (logical_block[iblk].type) {
+    case VPACK_INPAD:
+    case VPACK_LATCH:
+      vpack_net[inet].spice_net_info->init_val = logical_block[iblk].init_val;
+      break;
+    case VPACK_OUTPAD:
+    case VPACK_COMB:
+    case VPACK_EMPTY:
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid logical block type!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+  }
+  /* Update LUT init_val */
+  for (inet = 0; inet < num_logical_nets; inet++) {
+    assert(NULL != vpack_net[inet].spice_net_info);
+    /* if the source is a inpad or dff, we update the initial value */ 
+    iblk = vpack_net[inet].node_block[0];
+    switch (logical_block[iblk].type) {
+    case VPACK_COMB:
+      vpack_net[inet].spice_net_info->init_val = get_lut_output_init_val(&(logical_block[iblk]));
+      break;
+    case VPACK_INPAD:
+    case VPACK_LATCH:
+    case VPACK_OUTPAD:
+    case VPACK_EMPTY:
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid logical block type!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+  }
+  /* Update OUTPAD init_val */
+  for (inet = 0; inet < num_logical_nets; inet++) {
+    assert(NULL != vpack_net[inet].spice_net_info);
+    /* if the source is a inpad or dff, we update the initial value */ 
+    iblk = vpack_net[inet].node_block[0];
+    switch (logical_block[iblk].type) {
+    case VPACK_OUTPAD:
+      vpack_net[inet].spice_net_info->init_val = logical_block[iblk].init_val;
+      break;
+    case VPACK_COMB:
+    case VPACK_INPAD:
+    case VPACK_LATCH:
+    case VPACK_EMPTY:
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid logical block type!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+  }
+
+  /* Initial values for clb nets !!! */
+  for (inet = 0; inet < num_nets; inet++) {
+    assert (NULL != clb_net[inet].spice_net_info);
+    /* if the source is a inpad or dff, we update the initial value */ 
+    switch (logical_block[iblk].type) {
+    case VPACK_INPAD:
+    case VPACK_LATCH:
+    case VPACK_OUTPAD:
+    case VPACK_COMB:
+    case VPACK_EMPTY:
+      clb_net[inet].spice_net_info->init_val = vpack_net[clb_to_vpack_net_mapping[inet]].spice_net_info->init_val;
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid logical block type!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+  }
+
+  return;
+}
+
+static 
 void backannotate_clb_nets_act_info() {
   int inet;
-  
-  /* Free all spice_net_info and reallocate */
-  for (inet = 0; inet < num_nets; inet++) {
-    if (NULL == clb_net[inet].spice_net_info) {
-      /* Allocate */
-      clb_net[inet].spice_net_info = (t_spice_net_info*)my_malloc(sizeof(t_spice_net_info));
-    } 
-    /* Initialize to zero */
-    init_spice_net_info(clb_net[inet].spice_net_info);
-    /* Load activity info */
-    clb_net[inet].spice_net_info->probability = vpack_net[clb_to_vpack_net_mapping[inet]].net_power->probability;
-    clb_net[inet].spice_net_info->density = vpack_net[clb_to_vpack_net_mapping[inet]].net_power->density;
-  }
 
   /* Free all spice_net_info and reallocate */
   for (inet = 0; inet < num_logical_nets; inet++) {
@@ -317,6 +393,19 @@ void backannotate_clb_nets_act_info() {
     /* Load activity info */
     vpack_net[inet].spice_net_info->probability = vpack_net[inet].net_power->probability;
     vpack_net[inet].spice_net_info->density = vpack_net[inet].net_power->density;
+  }
+  
+  /* Free all spice_net_info and reallocate */
+  for (inet = 0; inet < num_nets; inet++) {
+    if (NULL == clb_net[inet].spice_net_info) {
+      /* Allocate */
+      clb_net[inet].spice_net_info = (t_spice_net_info*)my_malloc(sizeof(t_spice_net_info));
+    } 
+    /* Initialize to zero */
+    init_spice_net_info(clb_net[inet].spice_net_info);
+    /* Load activity info */
+    clb_net[inet].spice_net_info->probability = vpack_net[clb_to_vpack_net_mapping[inet]].net_power->probability;
+    clb_net[inet].spice_net_info->density = vpack_net[clb_to_vpack_net_mapping[inet]].net_power->density;
   }
 
   return;
@@ -769,97 +858,15 @@ void back_annotate_rr_node_map_info() {
 }
 
 static 
-void fprint_run_hspice_shell_script(char* spice_dir_path,
-                                    char* subckt_dir_path,
-                                    char* top_netlist_file, 
-                                    char* grid_testbench_file, 
-                                    char* routing_mux_testbench_file, 
-                                    char* mux_testbench_file,
-                                    char* lut_testbench_file,
-                                    char* dff_testbench_file) {
-  FILE* fp = NULL;
-  /* Format the directory path */
-  char* spice_dir_formatted = format_dir_path(spice_dir_path);
-  char* shell_script_path = my_strcat(spice_dir_path, run_hspice_shell_script_name);
-  char* chomped_top_netlist_file = NULL;
-  char* chomped_mux_testbench_file = NULL; 
-  char* chomped_lut_testbench_file = NULL; 
-  char* chomped_dff_testbench_file = NULL; 
-  char* chomped_routing_mux_testbench_file = NULL; 
-  char* chomped_grid_testbench_file = NULL; 
+void free_spice_tb_llist() {
+  t_llist* temp = tb_head;
 
-  /* Check if the path exists*/
-  fp = fopen(shell_script_path,"w");
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in create Shell Script for running HSPICE %s!",__FILE__, __LINE__, shell_script_path); 
-    exit(1);
-  } 
-
-  /* Go to the subckt dir for HSPICE VerilogA sim*/
-  fprintf(fp, "cd %s\n", subckt_dir_path);
-
-  /* For VerilogA initilization */
-  fprintf(fp, "source /softs/synopsys/hspice/2013.12/hspice/bin/cshrc.meta\n");
- 
-
-  /* Run hspice lut testbench netlist */
-  if (NULL != lut_testbench_file) {
-    chomped_lut_testbench_file = chomp_file_name_postfix(lut_testbench_file);
-    fprintf(fp, "hspice64 -mt 8 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
-            /*spice_dir_formatted,*/ lut_testbench_file, /*spice_dir_formatted,*/ sim_results_dir_path,
-            chomped_lut_testbench_file);
+  while (temp) {
+    my_free(temp->dptr);
+    temp->dptr = NULL;
+    temp = temp->next;
   }
-
-  /* Run hspice dff testbench netlist */
-  if (NULL != dff_testbench_file) {
-    chomped_dff_testbench_file = chomp_file_name_postfix(dff_testbench_file);
-    fprintf(fp, "hspice64 -mt 8 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
-            /*spice_dir_formatted,*/ dff_testbench_file, /*spice_dir_formatted,*/ sim_results_dir_path,
-            chomped_dff_testbench_file);
-  }
-
-  /* Run hspice routing mux testbench netlist */
-  if (NULL != routing_mux_testbench_file) {
-    chomped_routing_mux_testbench_file = chomp_file_name_postfix(routing_mux_testbench_file);
-    fprintf(fp, "hspice64 -mt 8 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
-            /*spice_dir_formatted,*/ routing_mux_testbench_file, /*spice_dir_formatted,*/ sim_results_dir_path,
-            chomped_routing_mux_testbench_file);
-  }
-
-
-  /* Run hspice Mux Testbench Netlist */
-  if (NULL != mux_testbench_file) {
-    chomped_mux_testbench_file = chomp_file_name_postfix(mux_testbench_file);
-    fprintf(fp, "hspice64 -mt 8 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
-            /*spice_dir_formatted,*/ mux_testbench_file, /*spice_dir_formatted,*/ sim_results_dir_path,
-            chomped_mux_testbench_file);
-  }
-  /* Run hspice grid testbench netlist */
-  if (NULL != grid_testbench_file) {
-    chomped_grid_testbench_file = chomp_file_name_postfix(grid_testbench_file);
-    fprintf(fp, "hspice64 -mt 8 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
-            /*spice_dir_formatted,*/ grid_testbench_file, /*spice_dir_formatted,*/ sim_results_dir_path,
-            chomped_grid_testbench_file);
-  }
-  
-  /* Run hspice Top Netlist */
-  if (NULL != top_netlist_file) {
-    chomped_top_netlist_file = chomp_file_name_postfix(top_netlist_file);
-    fprintf(fp, "hspice64 -mt 8 -i ../%s -o ../%s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
-            /*spice_dir_formatted, */top_netlist_file, /*spice_dir_formatted,*/ sim_results_dir_path,
-            chomped_top_netlist_file);
-  }
-
-  
-  fprintf(fp, "cd %s\n", spice_dir_path);
-
-  /* close fp */
-  fclose(fp);
-
-  /* Free */  
-  my_free(spice_dir_formatted);
-  my_free(chomped_top_netlist_file);
-  my_free(chomped_mux_testbench_file);
+  free_llist(tb_head);
 
   return;
 }
@@ -882,12 +889,22 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   char* top_netlist_path = NULL;
   char* include_dir_name = vpr_setup.SpiceOpts.include_dir;
   char* subckt_dir_name = vpr_setup.SpiceOpts.subckt_dir;
-  char* top_netlist_name = NULL;
   char* chomped_circuit_name = NULL;
   char* chomped_spice_dir = NULL;
-  char* mux_testbench_file = NULL;
+  char* top_testbench_dir_path = NULL;
+  char* pb_mux_testbench_dir_path = NULL;
+  char* cb_mux_testbench_dir_path = NULL;
+  char* sb_mux_testbench_dir_path = NULL;
+  char* grid_testbench_dir_path = NULL;
+  char* lut_testbench_dir_path = NULL;
+  char* dff_testbench_dir_path = NULL;
+  char* top_testbench_file = NULL;
   char* grid_testbench_file = NULL;
-  char* routing_mux_testbench_file = NULL;
+  /* 
+  char* pb_mux_testbench_file = NULL;
+  char* cb_mux_testbench_file = NULL;
+  char* sb_mux_testbench_file = NULL;
+  */
   char* lut_testbench_file = NULL;
   char* dff_testbench_file = NULL;
 
@@ -935,7 +952,6 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   create_dir_path(spice_dir_formatted);
   create_dir_path(include_dir_path);
   create_dir_path(subckt_dir_path);
-  create_dir_path(my_strcat(spice_dir_formatted, sim_results_dir_path));
 
   /* determine the VPR clock frequency */
   vpr_crit_path_delay = get_critical_path_delay()/1e9;
@@ -959,6 +975,7 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   vpr_printf(TIO_MESSAGE_INFO, "Backannoating Net Activities...\n");
   backannotate_rr_nodes_net_info();
   backannotate_clb_nets_act_info();
+  backannotate_clb_nets_init_val();
   /* Give spice_name_tag for each pb*/
   gen_spice_name_tags_all_pbs();
   /* Update local_rr_graphs to match post-route results*/
@@ -973,50 +990,78 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
 
   /* Print Netlists of the given FPGA*/
   if (vpr_setup.SpiceOpts.print_spice_top_testbench) {
-    top_netlist_name = my_strcat(chomped_circuit_name, top_netlist_postfix);
+    top_testbench_file = my_strcat(chomped_circuit_name, spice_top_testbench_postfix);
     /* Process top_netlist_path */
-    (top_netlist_path) = my_strcat(spice_dir_formatted,top_netlist_name); 
-    fprint_spice_top_netlist(circuit_name, top_netlist_path, include_dir_path, subckt_dir_path, 
-                             rr_node_indices, num_clocks, *(Arch.spice), vpr_setup.SpiceOpts.fpga_spice_leakage_only);
+    top_testbench_dir_path = my_strcat(spice_dir_formatted, spice_top_tb_dir_name); 
+    create_dir_path(top_testbench_dir_path);
+    top_netlist_path = my_strcat(top_testbench_dir_path, top_testbench_file); 
+    fprint_spice_top_netlist(chomped_circuit_name, top_netlist_path, 
+                             include_dir_path, subckt_dir_path, 
+                             rr_node_indices, num_clocks, *(Arch.spice), 
+                             vpr_setup.SpiceOpts.fpga_spice_leakage_only);
   }
 
   /* Print Grid testbench if needed */
   if (vpr_setup.SpiceOpts.print_spice_grid_testbench) {
     grid_testbench_file = my_strcat(chomped_circuit_name, spice_grid_testbench_postfix); 
-    fprint_spice_grid_testbench(spice_dir_formatted, circuit_name, grid_testbench_file, include_dir_path, subckt_dir_path,
-                                rr_node_indices, num_clocks, Arch, vpr_setup.SpiceOpts.fpga_spice_leakage_only);
+    grid_testbench_dir_path = my_strcat(spice_dir_formatted, spice_grid_tb_dir_name);
+    create_dir_path(grid_testbench_dir_path);
+    fprint_spice_grid_testbench(grid_testbench_dir_path, chomped_circuit_name, 
+                                grid_testbench_file, include_dir_path, 
+                                subckt_dir_path,
+                                rr_node_indices, num_clocks, Arch, 
+                                vpr_setup.SpiceOpts.fpga_spice_leakage_only);
   }
 
   /* Print MUX testbench if needed */
-  if (vpr_setup.SpiceOpts.print_spice_mux_testbench) {
-    mux_testbench_file = my_strcat(chomped_circuit_name, spice_mux_testbench_postfix); 
-    fprint_spice_mux_testbench(spice_dir_formatted, circuit_name, mux_testbench_file, include_dir_path, subckt_dir_path,
-                               rr_node_indices, num_clocks, Arch, vpr_setup.SpiceOpts.fpga_spice_leakage_only);
+  if (vpr_setup.SpiceOpts.print_spice_pb_mux_testbench) {
+    pb_mux_testbench_dir_path = my_strcat(spice_dir_formatted, spice_pb_mux_tb_dir_name);
+    printf("%s\n",spice_dir_formatted);
+    create_dir_path(pb_mux_testbench_dir_path);
+    fprint_spice_mux_testbench(pb_mux_testbench_dir_path, chomped_circuit_name, 
+                               include_dir_path, subckt_dir_path,
+                               rr_node_indices, num_clocks, Arch, 
+                               SPICE_PB_MUX_TB, 
+                               vpr_setup.SpiceOpts.fpga_spice_leakage_only);
   }
 
-  if (vpr_setup.SpiceOpts.print_spice_routing_mux_testbench) {
-    routing_mux_testbench_file = my_strcat(chomped_circuit_name, spice_routing_mux_testbench_postfix); 
-    fprint_spice_routing_mux_testbench(spice_dir_formatted, circuit_name, routing_mux_testbench_file, include_dir_path, subckt_dir_path,
-                                       rr_node_indices, num_clocks, Arch, vpr_setup.SpiceOpts.fpga_spice_leakage_only);
+  if (vpr_setup.SpiceOpts.print_spice_cb_mux_testbench) {
+    cb_mux_testbench_dir_path = my_strcat(spice_dir_formatted, spice_cb_mux_tb_dir_name);
+    create_dir_path(cb_mux_testbench_dir_path);
+    fprint_spice_mux_testbench(cb_mux_testbench_dir_path, chomped_circuit_name,
+                               include_dir_path, subckt_dir_path,
+                               rr_node_indices, num_clocks, Arch, SPICE_CB_MUX_TB, 
+                               vpr_setup.SpiceOpts.fpga_spice_leakage_only);
+  }
+
+  if (vpr_setup.SpiceOpts.print_spice_sb_mux_testbench) {
+    sb_mux_testbench_dir_path = my_strcat(spice_dir_formatted, spice_sb_mux_tb_dir_name);
+    create_dir_path(sb_mux_testbench_dir_path);
+    fprint_spice_mux_testbench(sb_mux_testbench_dir_path, chomped_circuit_name, 
+                               include_dir_path, subckt_dir_path,
+                               rr_node_indices, num_clocks, Arch, SPICE_SB_MUX_TB, 
+                               vpr_setup.SpiceOpts.fpga_spice_leakage_only);
   }
 
   if (vpr_setup.SpiceOpts.print_spice_lut_testbench) {
+    lut_testbench_dir_path = my_strcat(spice_dir_formatted, spice_lut_tb_dir_name); 
     lut_testbench_file = my_strcat(chomped_circuit_name, spice_lut_testbench_postfix); 
-    fprint_spice_lut_testbench(spice_dir_formatted, circuit_name, lut_testbench_file, include_dir_path, subckt_dir_path,
+    create_dir_path(lut_testbench_dir_path);
+    fprint_spice_lut_testbench(lut_testbench_dir_path, chomped_circuit_name, lut_testbench_file, include_dir_path, subckt_dir_path,
                                rr_node_indices, num_clocks, Arch, vpr_setup.SpiceOpts.fpga_spice_leakage_only);
   }
 
   /* By pass dff testbench file if there is no clock */
   if ((0 < num_clocks)&&(vpr_setup.SpiceOpts.print_spice_dff_testbench)) {
+    dff_testbench_dir_path = my_strcat(spice_dir_formatted, spice_dff_tb_dir_name); 
     dff_testbench_file = my_strcat(chomped_circuit_name, spice_dff_testbench_postfix); 
-    fprint_spice_dff_testbench(spice_dir_formatted, circuit_name, dff_testbench_file, include_dir_path, subckt_dir_path,
+    create_dir_path(dff_testbench_dir_path);
+    fprint_spice_dff_testbench(dff_testbench_dir_path, chomped_circuit_name, dff_testbench_file, include_dir_path, subckt_dir_path,
                                rr_node_indices, num_clocks, Arch, vpr_setup.SpiceOpts.fpga_spice_leakage_only);
   }
 
   /* Generate a shell script for running HSPICE simulations */
-  fprint_run_hspice_shell_script(spice_dir_formatted, subckt_dir_path, 
-                                 top_netlist_name, grid_testbench_file, routing_mux_testbench_file,
-                                 mux_testbench_file, lut_testbench_file, dff_testbench_file);
+  fprint_run_hspice_shell_script(spice_dir_formatted, subckt_dir_path);
 
   /* END Clocking*/
   t_end = clock();
@@ -1026,6 +1071,8 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
 
   /* Free spice_net_info */
   free_clb_nets_spice_net_info();
+  /* TODO: Free tb_llist */
+  free_spice_tb_llist(); 
   /* Free */
   my_free(spice_dir_formatted);
   my_free(include_dir_path);
