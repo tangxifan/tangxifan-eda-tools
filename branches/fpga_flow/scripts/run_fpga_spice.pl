@@ -648,15 +648,19 @@ sub check_one_fpga_spice_task_lis($ $ $) {
   }
 
   if ("on" eq $opt_ptr->{parse_lut_tb}) {
-    my ($luttb_lis_path) = &gen_fpga_spice_measure_results_path($formatted_spice_dir,$spice_netlist_prefix,$conf_ptr->{dir_path}->{lut_tb_postfix}->{val});
-    $luttb_lis_path =~ s/\.mt0/.lis/;
-    &check_one_spice_lis_error($luttb_lis_path);
+    for ($itb = 0; $itb < $conf_ptr->{task_conf}->{num_lut_tb}->{val}; $itb++) { 
+      my ($luttb_lis_path) = &gen_fpga_tb_spice_measure_results_path($formatted_spice_dir,$spice_netlist_prefix,$conf_ptr->{dir_path}->{lut_tb_prefix}->{val}, $itb, $conf_ptr->{dir_path}->{lut_tb_postfix}->{val});
+      $luttb_lis_path =~ s/\.mt0/.lis/;
+      &check_one_spice_lis_error($luttb_lis_path);
+    }
   }
 
   if ("on" eq $opt_ptr->{parse_dff_tb}) {
-    my ($dfftb_lis_path) = &gen_fpga_spice_measure_results_path($formatted_spice_dir,$spice_netlist_prefix,$conf_ptr->{dir_path}->{dff_tb_postfix}->{val});
-    $dfftb_lis_path =~ s/\.mt0/.lis/;
-    &check_one_spice_lis_error($dfftb_lis_path);
+    for ($itb = 0; $itb < $conf_ptr->{task_conf}->{num_dff_tb}->{val}; $itb++) { 
+      my ($dfftb_lis_path) = &gen_fpga_tb_spice_measure_results_path($formatted_spice_dir,$spice_netlist_prefix,$conf_ptr->{dir_path}->{dff_tb_prefix}->{val}, $itb, $conf_ptr->{dir_path}->{dff_tb_postfix}->{val});
+      $dfftb_lis_path =~ s/\.mt0/.lis/;
+      &check_one_spice_lis_error($dfftb_lis_path);
+    }
   }
 
   if ("on" eq $opt_ptr->{parse_grid_tb}) {
@@ -828,17 +832,21 @@ sub parse_one_fpga_spice_task_results($ $ $) {
   }
 
   if ("on" eq $opt_ptr->{parse_lut_tb}) {
-    my ($luttb_mt_path) = &gen_fpga_spice_measure_results_path($spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{lut_tb_postfix}->{val});
-    my ($luttb_lis_path) = ($luttb_mt_path);
-    $luttb_lis_path =~ s/\.mt0/.lis/;
-    &parse_one_fpga_spice_task_one_tb_results($benchmark,"lut_tb", $luttb_lis_path, $luttb_mt_path, $conf_ptr->{csv_tags}->{lut_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{lut_tb_dynamic_power_tags}->{val});
+    for ($itb = 0; $itb < $conf_ptr->{task_conf}->{num_lut_tb}->{val}; $itb++) { 
+      my ($luttb_mt_path) = &gen_fpga_tb_spice_measure_results_path($spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{lut_tb_prefix}->{val}, $itb, $conf_ptr->{dir_path}->{lut_tb_postfix}->{val});
+      my ($luttb_lis_path) = ($luttb_mt_path);
+      $luttb_lis_path =~ s/\.mt0/.lis/;
+      &parse_one_fpga_spice_task_one_tb_results($benchmark,"lut_tb", $luttb_lis_path, $luttb_mt_path, $conf_ptr->{csv_tags}->{lut_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{lut_tb_dynamic_power_tags}->{val});
+    }
   }
 
   if ("on" eq $opt_ptr->{parse_dff_tb}) {
-    my ($dfftb_mt_path) = &gen_fpga_spice_measure_results_path($spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{dff_tb_postfix}->{val});
-    my ($dfftb_lis_path) = ($dfftb_mt_path);
-    $dfftb_lis_path =~ s/\.mt0/.lis/;
-    &parse_one_fpga_spice_task_one_tb_results($benchmark,"dff_tb", $dfftb_lis_path, $dfftb_mt_path, $conf_ptr->{csv_tags}->{dff_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{dff_tb_dynamic_power_tags}->{val});
+    for ($itb = 0; $itb < $conf_ptr->{task_conf}->{num_dff_tb}->{val}; $itb++) { 
+      my ($dfftb_mt_path) = &gen_fpga_tb_spice_measure_results_path($spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{lut_tb_prefix}->{val}, $itb,$conf_ptr->{dir_path}->{dff_tb_postfix}->{val});
+      my ($dfftb_lis_path) = ($dfftb_mt_path);
+      $dfftb_lis_path =~ s/\.mt0/.lis/;
+      &parse_one_fpga_spice_task_one_tb_results($benchmark,"dff_tb", $dfftb_lis_path, $dfftb_mt_path, $conf_ptr->{csv_tags}->{dff_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{dff_tb_dynamic_power_tags}->{val});
+    }
   }
 
   if ("on" eq $opt_ptr->{parse_grid_tb}) {
@@ -865,8 +873,6 @@ sub run_one_fpga_spice_task($ $ $) {
   }
 
   my ($toptb_sp_path) = &gen_fpga_spice_netlists_path($formatted_spice_dir.$conf_ptr->{dir_path}->{top_tb_dir_name}->{val}, $spice_netlist_prefix, $conf_ptr->{dir_path}->{top_tb_postfix}->{val});
-  my ($luttb_sp_path) = &gen_fpga_spice_netlists_path($formatted_spice_dir.$conf_ptr->{dir_path}->{lut_tb_dir_name}->{val}, $spice_netlist_prefix, $conf_ptr->{dir_path}->{lut_tb_postfix}->{val});
-  my ($dfftb_sp_path) = &gen_fpga_spice_netlists_path($formatted_spice_dir.$conf_ptr->{dir_path}->{dff_tb_dir_name}->{val}, $spice_netlist_prefix, $conf_ptr->{dir_path}->{dff_tb_postfix}->{val});
   my ($gridtb_sp_path) = &gen_fpga_spice_netlists_path($formatted_spice_dir.$conf_ptr->{dir_path}->{grid_tb_dir_name}->{val}, $spice_netlist_prefix, $conf_ptr->{dir_path}->{grid_tb_postfix}->{val});
     
   if (("on" eq $opt_ptr->{parse_top_tb})&&(!(-e $toptb_sp_path))) {
@@ -900,15 +906,27 @@ sub run_one_fpga_spice_task($ $ $) {
     }
   }
 
-  if (("on" eq $opt_ptr->{parse_lut_tb})&&(!(-e $luttb_sp_path))) {
-    die "ERROR: File($luttb_sp_path) does not exist!";
+  if ("on" eq $opt_ptr->{parse_lut_tb}) {
+    for ($itb = 0; $itb < $conf_ptr->{task_conf}->{num_lut_tb}->{val}; $itb++) { 
+      my ($luttb_sp_path) = &gen_fpga_tb_spice_netlist_path($formatted_spice_dir.$conf_ptr->{dir_path}->{lut_tb_dir_name}->{val}, $spice_netlist_prefix, $conf_ptr->{dir_path}->{lut_tb_prefix}->{val}, $itb, $conf_ptr->{dir_path}->{lut_tb_postfix}->{val});
+      if (!(-e $luttb_sp_path)) {
+        die "ERROR: File($luttb_sp_path) does not exist!";
+      }
+    }
   }
 
   # Special, if there is no dff, this is comb circuit, we don't collect the information
   if ("on" eq $opt_ptr->{parse_dff_tb}) {
-    if (!(-e $dfftb_sp_path)) {
+    if (0 == $conf_ptr->{task_conf}->{num_dff_tb}->{val}) {
       $opt_ptr->{parse_dff_tb} = "off";
-      print "INFO: File($dfftb_sp_path) does not exist! This may caused by a combinational circuit\n";
+      print "INFO: None DFF testbenches detected... This may caused by a combinational circuit!\n";
+    } else {
+      for ($itb = 0; $itb < $conf_ptr->{task_conf}->{num_dff_tb}->{val}; $itb++) { 
+        my ($dfftb_sp_path) = &gen_fpga_tb_spice_netlist_path($formatted_spice_dir.$conf_ptr->{dir_path}->{dff_tb_dir_name}->{val}, $spice_netlist_prefix, $conf_ptr->{dir_path}->{dff_tb_prefix}->{val}, $itb, $conf_ptr->{dir_path}->{dff_tb_postfix}->{val});
+        if (!(-e $dfftb_sp_path)) {
+          die "ERROR: File($dfftb_sp_path) does not exist!\n";
+        }
+      }
     } 
   }
 

@@ -1878,6 +1878,7 @@ fprint_connection_box_interc	spice/spice_routing.c	/^void fprint_connection_box_
 fprint_connection_box_mux	spice/spice_routing.c	/^void fprint_connection_box_mux(FILE* fp,$/;"	f
 fprint_connection_box_short_interc	spice/spice_routing.c	/^void fprint_connection_box_short_interc(FILE* fp,$/;"	f
 fprint_global_pad_ports_spice_model	spice/spice_netlist_utils.c	/^void fprint_global_pad_ports_spice_model(FILE* fp, $/;"	f
+fprint_global_vdds_logical_block_spice_model	spice/spice_netlist_utils.c	/^void fprint_global_vdds_logical_block_spice_model(FILE* fp,$/;"	f
 fprint_global_vdds_spice_model	spice/spice_netlist_utils.c	/^void fprint_global_vdds_spice_model(FILE* fp, $/;"	f
 fprint_grid_block_subckt_pins	spice/spice_pbtypes.c	/^void fprint_grid_block_subckt_pins(FILE* fp,$/;"	f
 fprint_grid_blocks	spice/spice_pbtypes.c	/^void fprint_grid_blocks(FILE* fp,$/;"	f
@@ -1893,6 +1894,7 @@ fprint_include_user_defined_netlists	spice/spice_netlist_utils.c	/^void fprint_i
 fprint_io_grid_block_subckt_pins	spice/spice_pbtypes.c	/^void fprint_io_grid_block_subckt_pins(FILE* fp,$/;"	f
 fprint_io_grid_pins	spice/spice_pbtypes.c	/^void fprint_io_grid_pins(FILE* fp,$/;"	f
 fprint_measure_vdds_cbs	spice/spice_top_netlist.c	/^void fprint_measure_vdds_cbs(FILE* fp,$/;"	f	file:
+fprint_measure_vdds_logical_block_spice_model	spice/spice_netlist_utils.c	/^void fprint_measure_vdds_logical_block_spice_model(FILE* fp,$/;"	f
 fprint_measure_vdds_sbs	spice/spice_top_netlist.c	/^void fprint_measure_vdds_sbs(FILE* fp,$/;"	f	file:
 fprint_measure_vdds_spice_model	spice/spice_netlist_utils.c	/^void fprint_measure_vdds_spice_model(FILE* fp,$/;"	f
 fprint_pb_primitive_ff	spice/spice_primitives.c	/^void fprint_pb_primitive_ff(FILE* fp,$/;"	f
@@ -1986,6 +1988,7 @@ fprint_spice_pb_graph_primitive_node	spice/spice_pbtypes.c	/^void fprint_spice_p
 fprint_spice_stimulate_header	spice/spice_heads.c	/^void fprint_spice_stimulate_header(char* stimulate_file_name,$/;"	f	file:
 fprint_spice_top_netlist	spice/spice_top_netlist.c	/^void fprint_spice_top_netlist(char* circuit_name,$/;"	f
 fprint_spice_wire_model	spice/spice_subckt.c	/^void fprint_spice_wire_model(FILE* fp,$/;"	f
+fprint_splited_vdds_logical_block_spice_model	spice/spice_netlist_utils.c	/^void fprint_splited_vdds_logical_block_spice_model(FILE* fp,$/;"	f
 fprint_splited_vdds_spice_model	spice/spice_netlist_utils.c	/^void fprint_splited_vdds_spice_model(FILE* fp,$/;"	f
 fprint_stimulate_dangling_grid_pins	spice/spice_netlist_utils.c	/^void fprint_stimulate_dangling_grid_pins(FILE* fp) {$/;"	f
 fprint_stimulate_dangling_io_grid_pins	spice/spice_netlist_utils.c	/^void fprint_stimulate_dangling_io_grid_pins(FILE* fp,$/;"	f

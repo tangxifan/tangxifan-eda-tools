@@ -1530,6 +1530,9 @@ void fprint_measure_vdds_logical_block_spice_model(FILE* fp,
         cur++;
       }
     }
+    if (0 == cur) {
+      break;
+    }
     /* Spot the total leakage power of this spice model */
     fprintf(fp, ".measure tran total_leakage_power_%s \n", spice_model->prefix);
     fprintf(fp, "+ param = 'leakage_power_%s[0to%d]'\n", 
@@ -1551,6 +1554,9 @@ void fprint_measure_vdds_logical_block_spice_model(FILE* fp,
         }
         cur++;
       }
+    }
+    if (0 == cur) {
+      break;
     }
     /* Spot the total dynamic power of this spice model */
     fprintf(fp, ".measure tran total_energy_per_cycle_%s \n", spice_model->prefix);
