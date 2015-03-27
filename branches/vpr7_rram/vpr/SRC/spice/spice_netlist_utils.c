@@ -87,6 +87,26 @@ void fprint_splited_vdds_spice_model(FILE* fp,
   return;
 }
 
+void fprint_grid_splited_vdds_spice_model(FILE* fp,
+                                          enum e_spice_model_type spice_model_type,
+                                          int grid_x, int grid_y,
+                                          t_spice spice) {
+  int imodel;
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+
+  for (imodel = 0; imodel < spice.num_spice_model; imodel++) {  
+    if (spice_model_type == spice.spice_models[imodel].type) {
+      /*TODO: How to identify in one grid, which spice models have been used??? */
+    }
+  }
+ 
+  return;
+}
+
 void fprint_global_vdds_spice_model(FILE* fp, 
                                     enum e_spice_model_type spice_model_type,
                                     t_spice spice) {
@@ -1365,6 +1385,33 @@ void fprint_stimulate_dangling_grid_pins(FILE* fp) {
   return;
 }
 
+void init_logical_block_spice_model_temp_used(t_spice_model* spice_model) {
+  int i;
+
+  /* For each logical block, we print a vdd */
+  for (i = 0; i < num_logical_blocks; i++) {
+    if (logical_block[i].mapped_spice_model == spice_model) {
+      logical_block[i].temp_used = 0;
+    }
+  }
+
+  return;  
+}
+
+void init_logical_block_spice_model_type_temp_used(int num_spice_models, t_spice_model* spice_model,
+                                                   enum e_spice_model_type spice_model_type) {
+  int i;
+
+  /* For each logical block, we print a vdd */
+  for (i = 0; i < num_spice_models; i++) {
+    if (spice_model_type == spice_model[i].type) {
+      init_logical_block_spice_model_temp_used(&(spice_model[i]));
+    }
+  }
+
+  return;  
+}
+
 void fprint_global_vdds_logical_block_spice_model(FILE* fp,
                                                   t_spice_model* spice_model) {
   int i;
@@ -1376,7 +1423,8 @@ void fprint_global_vdds_logical_block_spice_model(FILE* fp,
 
   /* For each logical block, we print a vdd */
   for (i = 0; i < num_logical_blocks; i++) {
-    if (logical_block[i].mapped_spice_model == spice_model) {
+    if ((logical_block[i].mapped_spice_model == spice_model)
+       &&(1 == logical_block[i].temp_used)){
       fprintf(fp, ".global gvdd_%s[%d]\n",
               spice_model->prefix, logical_block[i].mapped_spice_model_index);
     } 
@@ -1396,7 +1444,8 @@ void fprint_splited_vdds_logical_block_spice_model(FILE* fp,
 
   /* For each logical block, we print a vdd */
   for (i = 0; i < num_logical_blocks; i++) {
-    if (logical_block[i].mapped_spice_model == spice_model) {
+    if ((logical_block[i].mapped_spice_model == spice_model) 
+       &&(1 == logical_block[i].temp_used)){
       fprintf(fp, "Vgvdd_%s[%d] gvdd_%s[%d] 0 vsp\n",
               spice_model->prefix, logical_block[i].mapped_spice_model_index,
               spice_model->prefix, logical_block[i].mapped_spice_model_index);
@@ -1422,7 +1471,8 @@ void fprint_measure_vdds_logical_block_spice_model(FILE* fp,
 
   /* For each logical block, we print a vdd */
   for (i = 0; i < num_logical_blocks; i++) {
-    if (logical_block[i].mapped_spice_model == spice_model) {
+    if ((logical_block[i].mapped_spice_model == spice_model) 
+       &&(1 == logical_block[i].temp_used)) {
       /* Get the average output density */
       output_cnt = 0;
       for (iport = 0; iport < logical_block[i].pb->pb_graph_node->num_output_ports; iport++) {
@@ -1465,7 +1515,8 @@ void fprint_measure_vdds_logical_block_spice_model(FILE* fp,
   switch (meas_type) {
   case SPICE_MEASURE_LEAKAGE_POWER:
     for (i = 0; i < num_logical_blocks; i++) {
-      if (logical_block[i].mapped_spice_model == spice_model) {
+      if ((logical_block[i].mapped_spice_model == spice_model) 
+        &&(1 == logical_block[i].temp_used)) {
         fprintf(fp, ".measure tran leakage_power_%s[0to%d] \n",
               spice_model->prefix, cur);
         if (0 == cur) {
@@ -1486,7 +1537,8 @@ void fprint_measure_vdds_logical_block_spice_model(FILE* fp,
     break;
   case SPICE_MEASURE_DYNAMIC_POWER:
     for (i = 0; i < num_logical_blocks; i++) {
-      if (logical_block[i].mapped_spice_model == spice_model) {
+      if ((logical_block[i].mapped_spice_model == spice_model)
+        &&(1 == logical_block[i].temp_used)) {
         fprintf(fp, ".measure tran energy_per_cycle_%s[0to%d] \n",
             spice_model->prefix, cur);
         if (0 == cur) {

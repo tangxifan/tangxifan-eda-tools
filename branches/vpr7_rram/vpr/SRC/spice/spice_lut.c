@@ -408,22 +408,34 @@ int get_lut_output_init_val(t_logical_block* lut_logical_block) {
   /* Get the truth table */
   truth_table = assign_lut_truth_table(lut_logical_block, &truth_table_length); 
   lut_size = lut_logical_block->used_input_pins;
-  /* Generate sram bits*/
-  sram_bits = generate_lut_sram_bits(truth_table_length, truth_table, lut_size);
+  assert(!(0 > lut_size));
+  /* Special for LUT_size = 0 */
+  if (0 == lut_size) {
+    /* Generate sram bits*/
+    sram_bits = generate_lut_sram_bits(truth_table_length, truth_table, 1);
+    /* This is constant generator, SRAM bits should be the same */
+    output_init_val = sram_bits[0];
+    for (i = 0; i < (int)pow(2.,(double)lut_size); i++) { 
+      assert(sram_bits[i] == output_init_val);
+    } 
+  } else { 
+    /* Generate sram bits*/
+    sram_bits = generate_lut_sram_bits(truth_table_length, truth_table, lut_size);
 
-  assert(1 == lut_logical_block->pb->pb_graph_node->num_input_ports);
-  assert(1 == lut_logical_block->pb->pb_graph_node->num_output_ports);
-  /* Get the initial path id */
-  input_init_val = (int*)my_malloc(sizeof(int)*lut_size);
-  for (i = 0; i < lut_size; i++) {
-    input_net_index = lut_logical_block->input_nets[0][i]; 
-    input_init_val[i] = vpack_net[input_net_index].spice_net_info->init_val;
-  } 
+    assert(1 == lut_logical_block->pb->pb_graph_node->num_input_ports);
+    assert(1 == lut_logical_block->pb->pb_graph_node->num_output_ports);
+    /* Get the initial path id */
+    input_init_val = (int*)my_malloc(sizeof(int)*lut_size);
+    for (i = 0; i < lut_size; i++) {
+      input_net_index = lut_logical_block->input_nets[0][i]; 
+      input_init_val[i] = vpack_net[input_net_index].spice_net_info->init_val;
+    } 
 
-  init_path_id = determine_lut_path_id(lut_size, input_init_val);
-  /* Check */  
-  assert((!(0 > init_path_id))&&(init_path_id < (int)pow(2.,(double)lut_size)));
-  output_init_val = sram_bits[init_path_id]; 
+    init_path_id = determine_lut_path_id(lut_size, input_init_val);
+    /* Check */  
+    assert((!(0 > init_path_id))&&(init_path_id < (int)pow(2.,(double)lut_size)));
+    output_init_val = sram_bits[init_path_id]; 
+  }
    
   /*Free*/
   for (i = 0; i < truth_table_length; i++) {

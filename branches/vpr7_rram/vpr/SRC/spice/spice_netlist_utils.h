@@ -87,6 +87,11 @@ void fprint_stimulate_dangling_normal_grid_pins(FILE* fp,
 
 void fprint_stimulate_dangling_grid_pins(FILE* fp);
 
+void init_logical_block_spice_model_temp_used(t_spice_model* spice_model);
+
+void init_logical_block_spice_model_type_temp_used(int num_spice_models, t_spice_model* spice_model,
+                                                   enum e_spice_model_type spice_model_type);
+
 void fprint_global_vdds_logical_block_spice_model(FILE* fp,
                                                   t_spice_model* spice_model);
 

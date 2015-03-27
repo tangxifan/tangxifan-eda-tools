@@ -35,11 +35,11 @@ char* spice_dff_testbench_postfix = "_dff_testbench.sp";
 t_spice_model* sram_spice_model = NULL;
 /* Global counters */
 int rram_design_tech = 0;
-int num_used_grids = 0;
-int num_used_cbs = 0;
-int num_used_sbs = 0;
-int num_used_luts = 0;
-int num_used_dffs = 0;
+int num_used_grid_tb = 0;
+int num_used_cb_tb = 0;
+int num_used_sb_tb = 0;
+int num_used_lut_tb = 0;
+int num_used_dff_tb = 0;
 
 t_llist* tb_head = NULL;
 

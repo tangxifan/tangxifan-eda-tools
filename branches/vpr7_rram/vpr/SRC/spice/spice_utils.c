@@ -683,7 +683,7 @@ int mux_last_level_input_num(int num_level,
 
 int determine_lut_path_id(int lut_size,
                           int* lut_inputs) {
-  int path_id = OPEN;
+  int path_id = 0;
   int i;
   
   for (i = 0; i < lut_size; i++) {

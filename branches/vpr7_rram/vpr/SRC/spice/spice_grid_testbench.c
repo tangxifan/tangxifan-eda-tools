@@ -37,8 +37,14 @@ static int num_inv_load = 0;
 static int num_noninv_load = 0;
 static int num_grid_load = 0;
 */
+static int tb_num_grid = 0;
 
 /* Local subroutines only accessible in this C-source file */
+static 
+void init_spice_grid_testbench_globals() {
+  tb_num_grid = 0;
+}
+
 static 
 void fprint_spice_grid_testbench_global_ports(FILE* fp, 
                                               int num_clock, 
@@ -88,6 +94,32 @@ void fprint_spice_grid_testbench_call_defined_core_grids(FILE* fp) {
       fprintf(fp, "gvdd 0 grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
     }
   } 
+
+  return;
+}
+
+void fprint_spice_grid_testbench_call_one_defined_grid(FILE* fp, int ix, int iy) {
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+
+  if ((NULL == grid[ix][iy].type)||(0 == grid[ix][iy].usage)) {
+    return;
+  }
+
+  if (IO_TYPE == grid[ix][iy].type) {
+    fprintf(fp, "Xgrid[%d][%d] ", ix, iy);
+    fprint_io_grid_pins(fp, ix, iy, 1);
+    fprintf(fp, "gvdd 0 grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
+    tb_num_grid++;
+  } else {
+    fprintf(fp, "Xgrid[%d][%d] ", ix, iy);
+    fprint_grid_pins(fp, ix, iy, 1);
+    fprintf(fp, "gvdd 0 grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
+    tb_num_grid++;
+  }
 
   return;
 }
@@ -220,8 +252,9 @@ static
 void fprint_spice_grid_testbench_stimulations(FILE* fp, 
                                               int num_clock,
                                               t_spice spice,
+                                              int grid_x, int grid_y,
                                               t_ivec*** LL_rr_node_indices) {
-  int ix, iy;
+  /* int ix, iy; */
 
   /* Global GND */
   fprintf(fp, "***** Global VDD port *****\n");
@@ -284,13 +317,8 @@ void fprint_spice_grid_testbench_stimulations(FILE* fp,
   }
 
   /* For each grid input port, we generate the voltage pulses  */
-  for (ix = 1; ix < (nx + 1); ix++) {
-    for (iy = 1; iy < (ny + 1); iy++) {
-      assert(IO_TYPE != grid[ix][iy].type);
-      fprint_grid_testbench_one_grid_stimulation(fp, spice, LL_rr_node_indices,
-                                                 ix, iy);
-    }
-  }
+  fprint_grid_testbench_one_grid_stimulation(fp, spice, LL_rr_node_indices,
+                                             grid_x, grid_y);
 
   return;
 }
@@ -356,21 +384,23 @@ void fprint_spice_grid_testbench_measurements(FILE* fp,
 }
 
 /* Top-level function in this source file */
-void fprint_spice_grid_testbench(char* formatted_spice_dir,
-                                 char* circuit_name,
-                                 char* grid_test_bench_name,
-                                 char* include_dir_path,
-                                 char* subckt_dir_path,
-                                 t_ivec*** LL_rr_node_indices,
-                                 int num_clock,
-                                 t_arch arch,
-                                 boolean leakage_only) {
+int fprint_spice_one_grid_testbench(char* formatted_spice_dir,
+                                    char* circuit_name,
+                                    char* grid_test_bench_name,
+                                    char* include_dir_path,
+                                    char* subckt_dir_path,
+                                    t_ivec*** LL_rr_node_indices,
+                                    int num_clock,
+                                    t_arch arch,
+                                    int grid_x, int grid_y,
+                                    boolean leakage_only) {
   FILE* fp = NULL;
   char* formatted_subckt_dir_path = format_dir_path(subckt_dir_path);
   char* temp_include_file_path = NULL;
   char* title = my_strcat("FPGA Grid Testbench for Design: ", circuit_name);
   char* grid_testbench_file_path = my_strcat(formatted_spice_dir, grid_test_bench_name);
   t_llist* temp = NULL;
+  int used = 0;
 
   /* Check if the path exists*/
   fp = fopen(grid_testbench_file_path,"w");
@@ -379,7 +409,6 @@ void fprint_spice_grid_testbench(char* formatted_spice_dir,
     exit(1);
   } 
   
-  vpr_printf(TIO_MESSAGE_INFO, "Writing Grid Testbench for %s...\n", circuit_name);
  
   /* Print the title */
   fprint_spice_head(fp, title);
@@ -416,14 +445,15 @@ void fprint_spice_grid_testbench(char* formatted_spice_dir,
   fprint_spice_grid_testbench_global_ports(fp, num_clock, (*arch.spice));
  
   /* Quote defined Logic blocks subckts (Grids) */
-  fprint_spice_grid_testbench_call_defined_core_grids(fp);
+  init_spice_grid_testbench_globals();
+  fprint_spice_grid_testbench_call_one_defined_grid(fp, grid_x, grid_y);
 
   /* Back-anotate activity information to each routing resource node 
    * (We should have activity of each Grid port) 
    */
 
   /* Add stimulations */
-  fprint_spice_grid_testbench_stimulations(fp, num_clock, (*arch.spice), LL_rr_node_indices);
+  fprint_spice_grid_testbench_stimulations(fp, num_clock, (*arch.spice), grid_x, grid_y,  LL_rr_node_indices);
 
   /* Add measurements */  
   fprint_spice_grid_testbench_measurements(fp, (*arch.spice), leakage_only);
@@ -434,14 +464,59 @@ void fprint_spice_grid_testbench(char* formatted_spice_dir,
   /* Close the file*/
   fclose(fp);
 
-  if (NULL == tb_head) {
-    tb_head = create_llist(1);
-    tb_head->dptr = (void*)my_strdup(grid_testbench_file_path);
+  if (0 < tb_num_grid) {
+    vpr_printf(TIO_MESSAGE_INFO, "Writing Grid[%d][%d] Testbench for %s...\n", grid_x, grid_y, circuit_name);
+    if (NULL == tb_head) {
+      tb_head = create_llist(1);
+      tb_head->dptr = (void*)my_strdup(grid_testbench_file_path);
+    } else {
+      temp = insert_llist_node(tb_head);
+      temp->dptr = (void*)my_strdup(grid_testbench_file_path);
+    }
+    used = 1;
   } else {
-    temp = insert_llist_node(tb_head);
-    temp->dptr = (void*)my_strdup(grid_testbench_file_path);
+    my_remove_file(grid_testbench_file_path);
+    used = 0;
   }
+
+  return used;
+}
+
+
+/* Top-level function in this source file */
+void fprint_spice_grid_testbench(char* formatted_spice_dir,
+                                 char* circuit_name,
+                                 char* include_dir_path,
+                                 char* subckt_dir_path,
+                                 t_ivec*** LL_rr_node_indices,
+                                 int num_clock,
+                                 t_arch arch,
+                                 boolean leakage_only) {
+  char* grid_testbench_name = NULL;
+  int ix, iy;
+  int cnt = 0;
+  int used;
+
+  for (ix = 1; ix < (nx+1); ix++) {
+    for (iy = 1; iy < (ny+1); iy++) {
+      grid_testbench_name = (char*)my_malloc(sizeof(char)*( strlen(circuit_name) 
+                                            + 6 + strlen(my_itoa(cnt)) + 1
+                                            + strlen(spice_grid_testbench_postfix)  + 1 ));
+      sprintf(grid_testbench_name, "%s_grid%d%s",
+              circuit_name, cnt, spice_grid_testbench_postfix);
+      used = fprint_spice_one_grid_testbench(formatted_spice_dir, circuit_name, grid_testbench_name, 
+                                             include_dir_path, subckt_dir_path, LL_rr_node_indices,
+                                             num_clock, arch, ix, iy, 
+                                             leakage_only);
+      if (1 == used) {
+        cnt += used;
+      }
+      /* free */
+      my_free(grid_testbench_name);
+    }  
+  } 
+  /* Update the global counter */
+  num_used_grid_tb = cnt;
 
   return;
 }
-

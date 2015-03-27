@@ -35,6 +35,11 @@ static int tb_num_luts = 0;
 
 /* Subroutines in this source file*/
 static 
+void init_spice_lut_testbench_globals() {
+  tb_num_luts = 0;
+}
+
+static 
 void fprint_spice_lut_testbench_global_ports(FILE* fp, 
                                              int num_clock, 
                                              t_spice spice) {
@@ -175,6 +180,8 @@ void fprint_spice_lut_testbench_one_pb_graph_node_lut(FILE* fp,
           iedge, tb_num_luts, tb_num_luts, tb_num_luts, iedge);
   }
 
+  /* Mark temporary used */
+  logical_block[logical_block_index].temp_used = 1;
   tb_num_luts++;
 
   /* Free */
@@ -301,40 +308,53 @@ void fprint_spice_lut_testbench_rec_pb_luts(FILE* fp,
   return;
 }
 
-void fprint_spice_lut_testbench_call_defined_luts(FILE* fp) {
-  int ix, iy, iblk;
+void fprint_spice_lut_testbench_call_one_grid_defined_luts(FILE* fp, int ix, int iy) {
+  int iblk;
   char* prefix = NULL;
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
+    exit(1);
+  }
  
+  if (NULL == grid[ix][iy].type) {
+    return; 
+  }
+
+  for (iblk = 0; iblk < grid[ix][iy].usage; iblk++) {
+    prefix = (char*)my_malloc(sizeof(char)* (5 
+                    + strlen(my_itoa(block[grid[ix][iy].blocks[iblk]].x)) 
+                    + 2 + strlen(my_itoa(block[grid[ix][iy].blocks[iblk]].y)) 
+                    + 3 ));
+    sprintf(prefix, "grid[%d][%d]_", 
+            block[grid[ix][iy].blocks[iblk]].x,
+            block[grid[ix][iy].blocks[iblk]].y);
+    /* Only for mapped block */
+    assert(NULL != block[grid[ix][iy].blocks[iblk]].pb);
+    fprint_spice_lut_testbench_rec_pb_luts(fp, block[grid[ix][iy].blocks[iblk]].pb, prefix, ix, iy);
+    my_free(prefix);
+  }
+  /* By pass unused blocks */
+  /*
+  for (iblk = grid[ix][iy].usage; iblk < grid[ix][iy].type->capacity; iblk++) {
+    prefix = (char*)my_malloc(sizeof(char)* (5 + strlen(my_itoa(ix)) 
+                              + 2 + strlen(my_itoa(iy)) + 3 ));
+    sprintf(prefix, "grid[%d][%d]_", ix, iy);
+    assert(NULL != grid[ix][iy].type->pb_graph_head);
+    fprint_spice_lut_testbench_rec_pb_graph_node_luts(fp, grid[ix][iy].type->pb_graph_head, prefix, ix, iy); 
+    my_free(prefix);
+  }
+  */
+
+  return;
+}
+
+void fprint_spice_lut_testbench_call_defined_luts(FILE* fp) {
+  int ix, iy;
+
   for (ix = 1; ix < (nx + 1); ix++) {
     for (iy = 1; iy < (ny + 1); iy++) {
-      if (NULL == grid[ix][iy].type) {
-        continue; 
-      }
-      for (iblk = 0; iblk < grid[ix][iy].usage; iblk++) {
-        prefix = (char*)my_malloc(sizeof(char)* (5 
-                      + strlen(my_itoa(block[grid[ix][iy].blocks[iblk]].x)) 
-                      + 2 + strlen(my_itoa(block[grid[ix][iy].blocks[iblk]].y)) 
-                      + 3 ));
-        sprintf(prefix, "grid[%d][%d]_", 
-                block[grid[ix][iy].blocks[iblk]].x,
-                block[grid[ix][iy].blocks[iblk]].y);
-        /* Only for mapped block */
-        assert(NULL != block[grid[ix][iy].blocks[iblk]].pb);
-        fprint_spice_lut_testbench_rec_pb_luts(fp, block[grid[ix][iy].blocks[iblk]].pb, prefix, ix, iy);
-        my_free(prefix);
-      }
-      continue; 
-      /* By pass unused blocks */
-       /*
-      for (iblk = grid[ix][iy].usage; iblk < grid[ix][iy].type->capacity; iblk++) {
-        prefix = (char*)my_malloc(sizeof(char)* (5 + strlen(my_itoa(ix)) 
-                                  + 2 + strlen(my_itoa(iy)) + 3 ));
-        sprintf(prefix, "grid[%d][%d]_", ix, iy);
-        assert(NULL != grid[ix][iy].type->pb_graph_head);
-        fprint_spice_lut_testbench_rec_pb_graph_node_luts(fp, grid[ix][iy].type->pb_graph_head, prefix, ix, iy); 
-        my_free(prefix);
-      }
-      */
+      fprint_spice_lut_testbench_call_one_grid_defined_luts(fp, ix, iy);
     }
   }
 
@@ -455,21 +475,23 @@ void fprint_spice_lut_testbench_measurements(FILE* fp,
 }
 
 /* Top-level function in this source file */
-void fprint_spice_lut_testbench(char* formatted_spice_dir,
-                                char* circuit_name,
-                                char* lut_testbench_name,
-                                char* include_dir_path,
-                                char* subckt_dir_path,
-                                t_ivec*** LL_rr_node_indices,
-                                int num_clock,
-                                t_arch arch,
-                                boolean leakage_only) {
+int fprint_spice_one_lut_testbench(char* formatted_spice_dir,
+                                   char* circuit_name,
+                                   char* lut_testbench_name,
+                                   char* include_dir_path,
+                                   char* subckt_dir_path,
+                                   t_ivec*** LL_rr_node_indices,
+                                   int num_clock,
+                                   t_arch arch,
+                                   int grid_x, int grid_y,
+                                   boolean leakage_only) {
   FILE* fp = NULL;
   char* formatted_subckt_dir_path = format_dir_path(subckt_dir_path);
   char* temp_include_file_path = NULL;
   char* title = my_strcat("FPGA LUT Testbench for Design: ", circuit_name);
   char* lut_testbench_file_path = my_strcat(formatted_spice_dir, lut_testbench_name);
   t_llist* temp = NULL;
+  int used;
 
   /* Check if the path exists*/
   fp = fopen(lut_testbench_file_path,"w");
@@ -478,7 +500,7 @@ void fprint_spice_lut_testbench(char* formatted_spice_dir,
     exit(1);
   } 
   
-  vpr_printf(TIO_MESSAGE_INFO, "Writing LUT Testbench for %s...\n", circuit_name);
+  /*vpr_printf(TIO_MESSAGE_INFO, "Writing LUT Testbench for %s...\n", circuit_name);*/
  
   /* Print the title */
   fprint_spice_head(fp, title);
@@ -515,7 +537,9 @@ void fprint_spice_lut_testbench(char* formatted_spice_dir,
   fprint_spice_lut_testbench_global_ports(fp, num_clock, (*arch.spice));
  
   /* Quote defined Logic blocks subckts (Grids) */
-  fprint_spice_lut_testbench_call_defined_luts(fp);
+  init_spice_lut_testbench_globals();
+  init_logical_block_spice_model_type_temp_used(arch.spice->num_spice_model, arch.spice->spice_models, SPICE_MODEL_LUT);
+  fprint_spice_lut_testbench_call_one_grid_defined_luts(fp, grid_x, grid_y);
 
   /* Back-anotate activity information to each routing resource node 
    * (We should have activity of each Grid port) 
@@ -533,14 +557,61 @@ void fprint_spice_lut_testbench(char* formatted_spice_dir,
   /* Close the file*/
   fclose(fp);
 
-  if (NULL == tb_head) {
-    tb_head = create_llist(1);
-    tb_head->dptr = (void*)my_strdup(lut_testbench_file_path);
+  if (0 < tb_num_luts) {
+    vpr_printf(TIO_MESSAGE_INFO, "Writing Grid[%d][%d] SPICE LUT Testbench for %s...\n",
+               grid_x, grid_y, circuit_name);
+    if (NULL == tb_head) {
+      tb_head = create_llist(1);
+      tb_head->dptr = (void*)my_strdup(lut_testbench_file_path);
+    } else {
+      temp = insert_llist_node(tb_head);
+      temp->dptr = (void*)my_strdup(lut_testbench_file_path);
+    }
+    used = 1;
   } else {
-    temp = insert_llist_node(tb_head);
-    temp->dptr = (void*)my_strdup(lut_testbench_file_path);
+    /* Remove the file generated */
+    my_remove_file(lut_testbench_file_path);
+    used = 0;
   }
+
+  return used;
+}
+
+
+/* Top-level function in this source file */
+void fprint_spice_lut_testbench(char* formatted_spice_dir,
+                                char* circuit_name,
+                                char* include_dir_path,
+                                char* subckt_dir_path,
+                                t_ivec*** LL_rr_node_indices,
+                                int num_clock,
+                                t_arch arch,
+                                boolean leakage_only) {
+  char* lut_testbench_name = NULL;
+  int ix, iy;
+  int cnt = 0;
+  int used;
+
+  for (ix = 1; ix < (nx+1); ix++) {
+    for (iy = 1; iy < (ny+1); iy++) {
+      lut_testbench_name = (char*)my_malloc(sizeof(char)*( strlen(circuit_name) 
+                                            + 6 + strlen(my_itoa(cnt)) + 1
+                                            + strlen(spice_lut_testbench_postfix)  + 1 ));
+      sprintf(lut_testbench_name, "%s_grid%d%s",
+              circuit_name, cnt, spice_lut_testbench_postfix);
+      used = fprint_spice_one_lut_testbench(formatted_spice_dir, circuit_name, lut_testbench_name, 
+                                            include_dir_path, subckt_dir_path, LL_rr_node_indices,
+                                            num_clock, arch, ix, iy, 
+                                            leakage_only);
+      if (1 == used) {
+        cnt += used;
+      }
+      /* free */
+      my_free(lut_testbench_name);
+    }  
+  } 
+  /* Update the global counter */
+  num_used_lut_tb = cnt;
 
   return;
 }
-

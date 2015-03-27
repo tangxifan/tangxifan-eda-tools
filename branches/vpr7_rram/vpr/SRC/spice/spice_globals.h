@@ -37,11 +37,11 @@ extern char* spice_dff_tb_dir_name;
 
 extern t_spice_model* sram_spice_model;
 extern int rram_design_tech;
-extern int num_used_grids;
-extern int num_used_cbs;
-extern int num_used_sbs;
-extern int num_used_luts;
-extern int num_used_dffs;
+extern int num_used_grid_tb;
+extern int num_used_cb_tb;
+extern int num_used_sb_tb;
+extern int num_used_lut_tb;
+extern int num_used_dff_tb;
 extern t_llist* tb_head;
  
 /* Enumeration */

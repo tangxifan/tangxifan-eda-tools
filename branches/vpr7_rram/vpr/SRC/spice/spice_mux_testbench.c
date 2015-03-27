@@ -2372,7 +2372,7 @@ int fprint_spice_one_mux_testbench(char* formatted_spice_dir,
   //my_free(title);
 
   if (0 < testbench_mux_cnt) {
-    vpr_printf(TIO_MESSAGE_INFO, "Writing Grid[%d][%d] SPICE %s MUX Test Bench for %s...\n", 
+    vpr_printf(TIO_MESSAGE_INFO, "Writing Grid[%d][%d] SPICE %s Test Bench for %s...\n", 
                grid_x, grid_y, mux_tb_name, circuit_name);
     if (NULL == tb_head) {
       tb_head = create_llist(1);
@@ -2428,7 +2428,7 @@ void fprint_spice_mux_testbench(char* formatted_spice_dir,
       }  
     } 
     /* Update the global counter */
-    num_used_grids = cnt;
+    num_used_grid_tb = cnt;
     break;
   case SPICE_CB_MUX_TB:
     cnt = 0;
@@ -2469,7 +2469,7 @@ void fprint_spice_mux_testbench(char* formatted_spice_dir,
       }  
     } 
     /* Update the global counter */
-    num_used_cbs = cnt;
+    num_used_cb_tb = cnt;
     break;
   case SPICE_SB_MUX_TB:
     cnt = 0;
@@ -2492,7 +2492,7 @@ void fprint_spice_mux_testbench(char* formatted_spice_dir,
       }  
     } 
     /* Update the global counter */
-    num_used_sbs = cnt;
+    num_used_sb_tb = cnt;
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d]) Invalid mux_tb_type!\n", __FILE__, __LINE__);

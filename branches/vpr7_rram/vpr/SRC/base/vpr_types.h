@@ -236,6 +236,7 @@ typedef struct s_logical_block {
     /* For mapping */
     t_spice_model* mapped_spice_model;
     int mapped_spice_model_index; /* index of spice_model in completed FPGA netlist */
+    int temp_used;
     /* for Register/flip-flop */
     char* trigger_type;
     int init_val;
