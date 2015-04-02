@@ -39,7 +39,8 @@
 static char* run_hspice_shell_script_name = "run_hspice_sim.sh";
 static char* sim_results_dir_name = "results/";
 
-void fprint_run_hspice_shell_script(char* spice_dir_path,
+void fprint_run_hspice_shell_script(t_spice spice,
+                                    char* spice_dir_path,
                                     char* subckt_dir_path) {
   FILE* fp = NULL;
   /* Format the directory path */
@@ -51,6 +52,9 @@ void fprint_run_hspice_shell_script(char* spice_dir_path,
   char* chomped_testbench_name = NULL;
   char* sim_results_dir_path = my_strcat(spice_dir_formatted, sim_results_dir_name);
   t_llist* temp = tb_head;
+  int progress_cnt = 0;
+  int total_num_sim = 0;
+  int num_sim_clock_cycle = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
 
   create_dir_path(sim_results_dir_path);
 
@@ -65,17 +69,36 @@ void fprint_run_hspice_shell_script(char* spice_dir_path,
   fprintf(fp, "cd %s\n", subckt_dir_path);
 
   /* For VerilogA initilization */
-  fprintf(fp, "source /softs/synopsys/hspice/2013.12/hspice/bin/cshrc.meta\n");
- 
+  if (1 == rram_design_tech) {
+    fprintf(fp, "source /softs/synopsys/hspice/2013.12/hspice/bin/cshrc.meta\n");
+  }
 
+  total_num_sim = 0;
+  temp = tb_head;
+  while(temp) {
+    total_num_sim++;
+    temp = temp->next;
+  }
+
+  progress_cnt = 0;
+  temp = tb_head;
   /* Run hspice lut testbench netlist */
   while(temp) {
     testbench_file = (char*)(temp->dptr);
     chomped_testbench_file = chomp_file_name_postfix(testbench_file);
     split_path_prog_name(chomped_testbench_file,'/',&chomped_testbench_path ,&chomped_testbench_name);
-    fprintf(fp, "hspice64 -mt 8 -i %s -o %s%s.lis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n",
+    fprintf(fp, "echo Number of clock cycles in simulation: %d\n", num_sim_clock_cycle);
+    fprintf(fp, "echo Simulation progress: %d Finish, %d to go, total %d\n",
+            progress_cnt, total_num_sim-progress_cnt, total_num_sim);
+    progress_cnt++;
+    fprintf(fp, "hspice64 -mt 8 -i %s -o %s%s.lis ", 
             testbench_file, sim_results_dir_path, chomped_testbench_name);
     temp = temp->next;
+    if (1 == rram_design_tech) {
+      fprintf(fp, "-hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n");
+    } else { 
+      fprintf(fp, "\n");
+    }
   }
 
   fprintf(fp, "cd %s\n", spice_dir_path);

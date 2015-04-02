@@ -743,26 +743,25 @@ int* decode_mux_sram_bits(int fan_in,
   active_path_id = path_id; 
   if (num_last_level_input < (int)pow(2.,(double)(mux_level))) {
     if (path_id > num_last_level_input) {
-      active_path_id = path_id - num_last_level_input/2; 
       active_mux_level = mux_level - 1; 
+      active_path_id = (int)pow(2.,(double)(active_mux_level)) - (fan_in - path_id); 
     }
   } else {
     assert(num_last_level_input == (int)pow(2.,(double)(mux_level)));
   }
 
   temp = active_path_id;
-  for (i = active_mux_level; i > 0; i--) {
-    path_differ = (int)pow(2.,(double)(i-1));
+  for (i = mux_level - 1; i > (mux_level - active_mux_level - 1); i--) {
+    path_differ = (int)pow(2.,(double)(i+active_mux_level-mux_level));
     if (temp < path_differ) { 
-      ret[i-1] = 1; 
+      ret[i] = 1; 
     } else {
       temp = temp - path_differ;
-      ret[i-1] = 0;
+      ret[i] = 0;
     }
   }
 
   /* Check */
-  assert(0 == i);
   assert(0 == temp);
   
   return ret;
@@ -1064,7 +1063,7 @@ float pb_pin_density(t_rr_node* pb_rr_graph,
 
 float pb_pin_probability(t_rr_node* pb_rr_graph, 
                          t_pb_graph_pin* pin) {
-  float probability = 0.;
+  float probability = (float)(default_signal_init_value); 
   int net_num;
 
   if (NULL == pb_rr_graph) {
@@ -1081,10 +1080,13 @@ float pb_pin_probability(t_rr_node* pb_rr_graph,
 
 int pb_pin_init_value(t_rr_node* pb_rr_graph, 
                       t_pb_graph_pin* pin) {
-  float init_val = 0;
+  float init_val = (float)(default_signal_init_value); 
   int net_num;
 
   if (NULL == pb_rr_graph) {
+    /* TODO: we know initialize to vdd could reduce the leakage power od multiplexers!
+     *       But I can this as an option !
+     */
     return init_val;
   }
   net_num = pb_rr_graph[pin->pin_count_in_cluster].net_num;
@@ -1108,7 +1110,10 @@ float get_rr_node_net_density(t_rr_node node) {
 float get_rr_node_net_probability(t_rr_node node) {
   /* If we found this net is OPEN, we assume it zero-probability */
   if (OPEN == node.net_num) { 
-    return 0.;
+    /* TODO: we know initialize to vdd could reduce the leakage power od multiplexers!
+     *       But I can this as an option !
+     */
+    return (float)(default_signal_init_value); 
   } else {
     return clb_net[node.net_num].spice_net_info->probability;
   }
@@ -1117,7 +1122,10 @@ float get_rr_node_net_probability(t_rr_node node) {
 int get_rr_node_net_init_value(t_rr_node node) {
   /* If we found this net is OPEN, we assume it zero-probability */
   if (OPEN == node.net_num) { 
-    return 0;
+    /* TODO: we know initialize to vdd could reduce the leakage power od multiplexers!
+     *       But I can this as an option !
+     */
+    return (float)(default_signal_init_value); 
   } else {
     return clb_net[node.net_num].spice_net_info->init_val;
   }
@@ -1420,3 +1428,36 @@ void stats_pb_graph_node_port_pin_numbers(t_pb_graph_node* cur_pb_graph_node,
   return;
 }
 
+int recommend_num_sim_clock_cycle() {
+  float avg_density = 0.;
+  int recmd_num_sim_clock_cycle = 0;
+  int inet;
+  int net_cnt = 0;
+
+  /* get the average density of all the nets */
+  for (inet = 0; inet < num_logical_nets; inet++) {
+    assert(NULL != vpack_net[inet].spice_net_info);
+    if ((FALSE == vpack_net[inet].is_global)&&(FALSE == vpack_net[inet].is_const_gen)) {
+      avg_density += vpack_net[inet].spice_net_info->density;
+      net_cnt++;
+    }
+  }
+  avg_density = avg_density/net_cnt;
+  recmd_num_sim_clock_cycle = (int)(1/avg_density); 
+  vpr_printf(TIO_MESSAGE_INFO, "Average net density: %.2g\n", avg_density);
+  vpr_printf(TIO_MESSAGE_INFO, "Recommend no. of clock cycles: %d\n", recmd_num_sim_clock_cycle);
+
+  return recmd_num_sim_clock_cycle; 
+}
+
+void auto_select_num_sim_clock_cycle(t_spice* spice) {
+  int recmd_num_sim_clock_cycle = recommend_num_sim_clock_cycle();
+
+  /* Auto select number of simulation clock cycles*/
+  if (-1 == spice->spice_params.meas_params.sim_num_clock_cycle) {
+    vpr_printf(TIO_MESSAGE_INFO, "Auto select the no. of clock cycles in simulation: %d\n", recmd_num_sim_clock_cycle);
+    spice->spice_params.meas_params.sim_num_clock_cycle = recmd_num_sim_clock_cycle;
+  }
+
+  return; 
+}

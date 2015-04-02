@@ -93,6 +93,7 @@ void fprint_spice_stimulate_header(char* stimulate_file_name,
                                    int num_clock) {
   FILE* fp = NULL;
   float sim_clock_freq = 0.;
+  float sim_clock_period = 0.;
    
   /* Check */
   assert(NULL != stimulate_file_name);
@@ -105,22 +106,15 @@ void fprint_spice_stimulate_header(char* stimulate_file_name,
     exit(1);
   }
 
-  /* Print parameters */
   fprint_spice_head(fp, "Parameters for Stimulations");
-  fprintf(fp, "***** Parameters For Input Stimulations *****\n");
-  fprintf(fp, ".param input_slew_pct_rise=%g\n", spice_stimulate_params.input_slew_pct_rise);
-  fprintf(fp, ".param input_slew_pct_fall=%g\n", spice_stimulate_params.input_slew_pct_fall);
-  fprintf(fp, "***** Parameters For Clock Stimulations *****\n");
-  fprintf(fp, "***** Slew *****\n");
-  fprintf(fp, ".param clock_slew_pct_rise=%g\n", spice_stimulate_params.clock_slew_pct_rise);
-  fprintf(fp, ".param clock_slew_pct_fall=%g\n", spice_stimulate_params.clock_slew_pct_fall);
-  fprintf(fp, "***** Frequency *****\n");
+
   /* if estimated clock frequency from VPR is 0. 
    * this is a combinational circuit, clock frequency will never be used 
    */
   /* if the clock frequency is not specified in architecture file,
    * We define the clock frequency with estimated value and slack
    */
+  fprintf(fp, "***** Frequency *****\n");
   if (0. == spice_stimulate_params.clock_freq) {
     /* warning the negative slack ! TODO: move to the general check part??? */
     if (0. > spice_stimulate_params.sim_clock_freq_slack) {
@@ -135,6 +129,88 @@ void fprint_spice_stimulate_header(char* stimulate_file_name,
   assert(0. < sim_clock_freq); /*TODO: check this earlier!!! */
   vpr_printf(TIO_MESSAGE_INFO, "Use Clock freqency %.2f [MHz] in SPICE simulation.\n", sim_clock_freq/1e6);
   fprintf(fp, ".param clock_period=%g\n", 1. / sim_clock_freq);
+  sim_clock_period = 1./sim_clock_freq;
+
+  /* Print parameters */
+  fprintf(fp, "***** Parameters For Input Stimulations *****\n");
+  switch (spice_stimulate_params.input_slew_rise_type) {
+  case SPICE_ABS: 
+    if (sim_clock_period < (spice_stimulate_params.input_slew_rise_time
+       + spice_stimulate_params.input_slew_fall_time)) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid input_slew_rise_time(%.2g), should be smaller than clock period(%.2g)!\n",
+                 __FILE__, __LINE__, spice_stimulate_params.input_slew_rise_time, sim_clock_period);
+      exit(1);
+    }
+    fprintf(fp, ".param input_slew_pct_rise='%g/clock_period'\n", spice_stimulate_params.input_slew_rise_time);
+    break;
+  case SPICE_FRAC:
+    fprintf(fp, ".param input_slew_pct_rise='%g'\n", spice_stimulate_params.input_slew_rise_time);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid input_slew_rise_type!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  switch (spice_stimulate_params.input_slew_fall_type) {
+  case SPICE_ABS: 
+    if (sim_clock_period < (spice_stimulate_params.input_slew_rise_time
+       + spice_stimulate_params.input_slew_fall_time)) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid input_slew_fall_time(%.2g), should be smaller than clock period(%.2g)!\n",
+                 __FILE__, __LINE__, spice_stimulate_params.input_slew_fall_time, sim_clock_period);
+      exit(1);
+    }
+    fprintf(fp, ".param input_slew_pct_fall='%g/clock_period'\n", spice_stimulate_params.input_slew_fall_time);
+    break;
+  case SPICE_FRAC:
+    fprintf(fp, ".param input_slew_pct_fall='%g'\n", spice_stimulate_params.input_slew_fall_time);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid input_slew_fall_type!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  fprintf(fp, "***** Parameters For Clock Stimulations *****\n");
+  fprintf(fp, "***** Slew *****\n");
+
+  switch (spice_stimulate_params.clock_slew_rise_type) {
+  case SPICE_ABS: 
+    if (sim_clock_period < (spice_stimulate_params.clock_slew_rise_time
+       + spice_stimulate_params.clock_slew_fall_time)) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid clock_slew_rise_time(%.2g)+clock_slew_fall_time(%.2g), should be smaller than clock period(%.2g)!\n",
+                 __FILE__, __LINE__, spice_stimulate_params.clock_slew_rise_time,spice_stimulate_params.clock_slew_fall_time, sim_clock_period);
+      exit(1);
+    }
+    fprintf(fp, ".param clock_slew_pct_rise='%g/clock_period'\n", spice_stimulate_params.clock_slew_rise_time);
+    break;
+  case SPICE_FRAC:
+    fprintf(fp, ".param clock_slew_pct_rise='%g'\n", spice_stimulate_params.clock_slew_rise_time);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid clock_slew_rise_type!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  switch (spice_stimulate_params.clock_slew_fall_type) {
+  case SPICE_ABS: 
+    if (sim_clock_period < (spice_stimulate_params.clock_slew_rise_time
+       + spice_stimulate_params.clock_slew_fall_time)) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid clock_slew_rise_time(%.2g)+clock_slew_fall_time(%.2g), should be smaller than clock period(%.2g)!\n",
+                 __FILE__, __LINE__, spice_stimulate_params.clock_slew_rise_time,spice_stimulate_params.clock_slew_fall_time, sim_clock_period);
+      exit(1);
+    }
+    fprintf(fp, ".param clock_slew_pct_fall='%g/clock_period'\n", spice_stimulate_params.clock_slew_fall_time);
+    break;
+  case SPICE_FRAC:
+    fprintf(fp, ".param clock_slew_pct_fall='%g'\n", spice_stimulate_params.clock_slew_fall_time);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid input_slew_fall_type!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
 
   fclose(fp);
 

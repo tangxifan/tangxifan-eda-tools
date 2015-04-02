@@ -4,11 +4,11 @@
   <layout auto="1.0"/>
   <spice_settings>
     <parameters>
-      <options sim_temp="25" post="off" captab="off" fast="on"/>
-      <measure sim_num_clock_cycle="auto" accuracy="1e-14" accuracy_type="abs">
+      <options sim_temp="25" post="off" captab="off" fast="off"/>
+      <measure sim_num_clock_cycle="2" accuracy="1e-13" accuracy_type="abs">
         <slew>
-          <rise upper_thres_pct="0.9" lower_thres_pct="0.1"/>
-          <fall upper_thres_pct="0.1" lower_thres_pct="0.9"/>
+          <rise upper_thres_pct="0.95" lower_thres_pct="0.05"/>
+          <fall upper_thres_pct="0.05" lower_thres_pct="0.95"/>
         </slew>
         <delay>
           <rise input_thres_pct="0.5" output_thres_pct="0.5"/>
@@ -21,10 +21,10 @@
           <fall slew_time="50e-12" slew_type="abs"/>
         </clock>
         <input>
-          <rise slew_time="300e-12" slew_type="abs"/>
-          <fall slew_time="300e-12" slew_type="abs"/>
+          <rise slew_time="100e-12" slew_type="abs"/>
+          <fall slew_time="100e-12" slew_type="abs"/>
         </input>
-      </stimulate>   
+      </stimulate>    
     </parameters>
     <tech_lib lib_type="academia" transistor_type="TT" lib_path="/home/xitang/tangxifan-eda-tools/branches/fpga_flow/tech/45nm_HP.pm" nominal_vdd="0.85"/>
     <transistors pn_ratio="1.4" model_ref="M">

@@ -3,7 +3,7 @@ Auto Spice
 .param tech = 45e-9
 .param tempr = 25
 .param simt = 5n
-.param Vol=0.85
+.param Vol=0.8
 .param pnratio=2
 .include /home/xitang/tangxifan-eda-tools/branches/fpga_flow/power_tech_script/spice/subckt/nmos_pmos.sp
 .include /home/xitang/tangxifan-eda-tools/branches/fpga_flow/power_tech_script/spice/subckt/mux2.sp

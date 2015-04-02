@@ -169,12 +169,16 @@ struct s_spice_meas_params {
 typedef struct s_spice_stimulate_params t_spice_stimulate_params;
 struct s_spice_stimulate_params {
   /* Clock slew (unit: percentage of clock freqency) */
-  float clock_slew_pct_rise;  
-  float clock_slew_pct_fall;  
+  float clock_slew_rise_time;  
+  float clock_slew_fall_time;  
+  enum e_spice_accuracy_type clock_slew_rise_type;
+  enum e_spice_accuracy_type clock_slew_fall_type;
 
   /* Input signal slew (unit: percentage of clock freqency) */
-  float input_slew_pct_rise;  
-  float input_slew_pct_fall;  
+  float input_slew_rise_time;  
+  float input_slew_fall_time;  
+  enum e_spice_accuracy_type input_slew_rise_type;
+  enum e_spice_accuracy_type input_slew_fall_type;
   
   /* clock freqency: could be custimized or following the estimated critical path */
   float clock_freq;

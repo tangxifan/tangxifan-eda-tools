@@ -147,3 +147,7 @@ void stats_pb_graph_node_port_pin_numbers(t_pb_graph_node* cur_pb_graph_node,
                                           int* num_clock_pins);
 
 void map_clb_pins_to_pb_graph_pins();
+
+int recommend_num_sim_clock_cycle();
+
+void auto_select_num_sim_clock_cycle(t_spice* spice);

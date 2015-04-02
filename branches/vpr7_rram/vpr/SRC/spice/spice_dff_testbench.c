@@ -119,6 +119,10 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
   logical_block_index = find_grid_mapped_logical_block(x, y, 
                                                        pb_spice_model, prefix);
 
+  if (OPEN == logical_block_index) {
+    return;
+  }
+
   /* Allocate input_density and probability */
   stats_pb_graph_node_port_pin_numbers(cur_pb_graph_node,&num_inputs,&num_outputs, &num_clock_pins);
   assert(1 == num_clock_pins);
@@ -163,8 +167,13 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
   }
  
   /* Call the subckt and give stimulates, measurements */
-  fprintf(fp,"***** DFF[%d]: logical_block_index[%d], gvdd_index[%d]*****\n", 
-          tb_num_dffs, logical_block_index, logical_block[logical_block_index].mapped_spice_model_index);
+  if (OPEN != logical_block_index) {
+    fprintf(fp,"***** DFF[%d]: logical_block_index[%d], gvdd_index[%d]*****\n", 
+            tb_num_dffs, logical_block_index, logical_block[logical_block_index].mapped_spice_model_index);
+  } else {
+    fprintf(fp,"***** DFF[%d]: logical_block_index[%d], gvdd_index[%d]*****\n", 
+            tb_num_dffs, -1, -1);
+  }
   fprint_spice_dff_testbench_one_dff(fp, prefix, num_inputs, num_outputs,
                                      input_init_value, input_density, input_probability);
   /* Add loads: 1 inverters */
@@ -175,7 +184,9 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
   }
 
   /* Mark temporary used */
-  logical_block[logical_block_index].temp_used = 1;
+  if (OPEN != logical_block_index) {
+    logical_block[logical_block_index].temp_used = 1;
+  }
   tb_num_dffs++;
 
   /* Free */
@@ -274,6 +285,9 @@ void fprint_spice_dff_testbench_rec_pb_dffs(FILE* fp,
   
   /* Go recursively ... */
   mode_index = cur_pb->mode;
+  if (!(0 < cur_pb->pb_graph_node->pb_type->num_modes)) {
+    return;
+  }
   for (ipb = 0; ipb < cur_pb->pb_graph_node->pb_type->modes[mode_index].num_pb_type_children; ipb++) {
     for (jpb = 0; jpb < cur_pb->pb_graph_node->pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
       /* Generate rec_prefix */

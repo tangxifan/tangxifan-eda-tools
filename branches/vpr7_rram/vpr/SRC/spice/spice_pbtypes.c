@@ -972,7 +972,7 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
     num_sram = sram_spice_model->cnt;
     /* Create wires to sram outputs*/
     for (ilevel = 0; ilevel < mux_level; ilevel++) {
-      switch (sram_bits[mux_level - ilevel - 1]) {
+      switch (sram_bits[ilevel]) {
       /* the pull UP/down vdd/gnd should be connected to the local interc gvdd*/
       /* TODO: we want to see the dynamic power of each multiplexer, we may split these global vdd*/
       case 0: 

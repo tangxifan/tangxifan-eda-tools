@@ -987,7 +987,7 @@ void fprint_switch_box_mux(FILE* fp,
   cur_num_sram = sram_spice_model->cnt;
   for (ilevel = 0; ilevel < mux_level; ilevel++) {
     /* Configure the SRAMs*/
-    switch (mux_sram_bits[mux_level - ilevel - 1]) {
+    switch (mux_sram_bits[ilevel]) {
     case 0:
       fprintf(fp,"%s[%d]->out %s[%d]->outb ", 
               sram_spice_model->prefix, cur_num_sram, sram_spice_model->prefix, cur_num_sram);
@@ -1592,7 +1592,7 @@ void fprint_connection_box_mux(FILE* fp,
   for (ilevel = 0; ilevel < mux_level; ilevel++) {
     /* Configure the SRAMs*/
     /* Pull Up/Down the SRAM outputs*/
-    switch (mux_sram_bits[mux_level - ilevel - 1]) {
+    switch (mux_sram_bits[ilevel]) {
     case 0:
       /* Pull down power is considered as a part of subckt (CB or SB)*/
       fprintf(fp,"%s[%d]->out %s[%d]->outb ", 

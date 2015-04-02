@@ -165,10 +165,10 @@ void fprint_spice_mux_testbench_global_ports(FILE* fp,
     exit(1);
   } 
   /* Global nodes: Vdd for SRAMs, Logic Blocks(Include IO), Switch Boxes, Connection Boxes */
-  fprintf(fp, ".global gvdd gset greset\n");
-  fprintf(fp, ".global gvdd_sram\n");
-  fprintf(fp, ".global gvdd_load\n");
-  fprintf(fp, ".global %s->in\n", sram_spice_model->prefix);
+  fprintf(fp, "*.global gvdd gset greset\n");
+  fprintf(fp, "*.global gvdd_sram\n");
+  fprintf(fp, "*.global gvdd_load\n");
+  fprintf(fp, "*.global %s->in\n", sram_spice_model->prefix);
 
   return;
 }
@@ -488,7 +488,11 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
   cur_num_sram = testbench_sram_cnt;
   for (ilevel = 0; ilevel < mux_level; ilevel++) {
     /* Pull Up/Down the SRAM outputs*/
-    switch (mux_sram_bits[mux_level - ilevel - 1]) {
+    /* TODO: I change the sram_bits gen function, so it is different.
+     * I need to adapt those in spice_pbtypes.c as well !!!
+     */
+    /* switch (mux_sram_bits[mux_level - ilevel - 1]) { */
+    switch (mux_sram_bits[ilevel]) { 
     case 0:
       /* Pull down power is considered as a part of subckt (CB or SB)*/
       fprintf(fp, "%s[%d]->out ", sram_spice_model->prefix, cur_num_sram);
@@ -515,7 +519,7 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
 
   /* Print the encoding in SPICE netlist for debugging */
   fprintf(fp, "***** SRAM bits for MUX[%d], level=%d, select_path_id=%d. *****\n", 
-          mux_spice_model->cnt, mux_level, path_id);
+          testbench_mux_cnt, mux_level, path_id);
   fprintf(fp, "*****");
   for (ilevel = 0; ilevel < mux_level; ilevel++) {
     fprintf(fp, "%d", mux_sram_bits[ilevel]);
@@ -560,6 +564,7 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
             mux_spice_model->prefix, mux_size, testbench_mux_cnt, inode,
             mux_spice_model->prefix, mux_size, testbench_mux_cnt, inode);
     fprint_voltage_pulse_params(fp, input_init_value[inode], input_density[inode], input_probability[inode]);
+    /* fprint_voltage_pulse_params(fp, input_init_value[inode], 1, 0.5); */
   }
   /* global voltage supply */
   fprintf(fp, "Vgvdd_%s_size%d[%d] gvdd_%s_size%d[%d] 0 vsp\n",
@@ -595,11 +600,14 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
   fprintf(fp, "+          targ v(%s_size%d[%d]->out) val='slew_upper_thres_pct_fall*vsp' fall=1 td='clock_period'\n",
           mux_spice_model->prefix, mux_size, testbench_mux_cnt);
   /* Measure the leakage power of MUX */
-  fprintf(fp, ".meas tran leakage_%s avg p(Vgvdd_%s_size%d[%d]) from=0 to='clock_period'\n",
+  fprintf(fp, "***** Leakage Power Measurement *****\n");
+  fprintf(fp, ".meas tran %s_size%d[%d]_leakage_power avg p(Vgvdd_%s_size%d[%d]) from=0 to='clock_period'\n",
+          mux_spice_model->prefix, mux_size, testbench_mux_cnt,
+          mux_spice_model->prefix, mux_size, testbench_mux_cnt);
+  fprintf(fp, ".meas tran leakage_%s param='%s_size%d[%d]_leakage_power'\n",
           meas_tag, mux_spice_model->prefix, mux_size, testbench_mux_cnt);
-  fprintf(fp, ".meas tran %s_size%d[%d]_leakage_power param='leakage_%s'\n",
-          mux_spice_model->prefix, mux_size, testbench_mux_cnt, meas_tag);
   /* Measure the dynamic power of MUX */
+  fprintf(fp, "***** Dynamic Power Measurement *****\n");
   fprintf(fp, ".meas tran %s_size%d[%d]_dynamic_power avg p(Vgvdd_%s_size%d[%d]) from='clock_period' to='%d*clock_period'\n",
            mux_spice_model->prefix, mux_size, testbench_mux_cnt,
            mux_spice_model->prefix, mux_size, testbench_mux_cnt, sim_num_clock_cycle);
@@ -609,8 +617,10 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
   /* Important: to give dynamic power measurement per toggle !!!! 
    * it is not fair to compare dynamic power when clock_period is different from designs to designs !!!
    */
-  fprintf(fp, ".meas tran energy_per_cycle_%s  param='%s_size%d[%d]_dynamic_power*clock_period'\n",
+  fprintf(fp, ".meas tran dynamic_power_%s  param='%s_size%d[%d]_dynamic_power'\n",
           meas_tag, mux_spice_model->prefix, mux_size, testbench_mux_cnt);
+  fprintf(fp, ".meas tran energy_per_cycle_%s  param='dynamic_power_%s*clock_period'\n",
+          meas_tag, meas_tag);
   fprintf(fp, ".meas tran dynamic_rise_%s avg p(Vgvdd_%s_size%d[%d]) from='start_rise_%s' to='start_rise_%s+switch_rise_%s'\n",
           meas_tag, mux_spice_model->prefix, mux_size, testbench_mux_cnt, meas_tag, meas_tag, meas_tag);
   fprintf(fp, ".meas tran dynamic_fall_%s avg p(Vgvdd_%s_size%d[%d]) from='start_fall_%s' to='start_fall_%s+switch_fall_%s'\n",
@@ -1263,7 +1273,7 @@ void fprint_spice_mux_testbench_pb_interc(FILE* fp,
           /* Bypass unmapped interc */
           if (OPEN == pb_rr_nodes[node_index].net_num) {
             continue;
-          }
+          } 
           /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
           if (OPEN == prev_node) {
             path_id = 0;
@@ -1352,9 +1362,7 @@ void fprint_spice_mux_testbench_pb_muxes_rec(FILE* fp,
       } else {
         /* Print idle muxes */
         /* Bypass idle muxes */
-        /*
         fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec(fp, cur_pb->child_pbs[ipb][jpb].pb_graph_node, grid_x, grid_y, LL_rr_node_indices);
-        */
       }
     }
   }
@@ -2161,17 +2169,17 @@ void fprint_spice_mux_testbench_stimulations(FILE* fp,
   }
   /* Global GND */
   fprintf(fp, "***** Global GND port *****\n");
-  fprintf(fp, "Rggnd ggnd 0 0\n");
+  fprintf(fp, "*Rggnd ggnd 0 0\n");
 
   /* Global set and reset */
   fprintf(fp, "***** Global Net for reset signal *****\n");
-  fprintf(fp, "Vgvreset greset 0 0\n");
+  fprintf(fp, "*Vgvreset greset 0 0\n");
   fprintf(fp, "***** Global Net for set signal *****\n");
-  fprintf(fp, "Vgvset gset 0 0\n");
+  fprintf(fp, "*Vgvset gset 0 0\n");
 
   /* Global Vdd ports */
   fprintf(fp, "***** Global VDD ports *****\n");
-  fprintf(fp, "Vgvdd gvdd 0 vsp\n");
+  fprintf(fp, "*Vgvdd gvdd 0 vsp\n");
   fprintf(fp, "***** Global VDD for SRAMs *****\n");
   fprintf(fp, "Vgvdd_sram gvdd_sram 0 vsp\n");
   fprintf(fp, "***** Global VDD for load inverters *****\n");
@@ -2370,6 +2378,7 @@ int fprint_spice_one_mux_testbench(char* formatted_spice_dir,
   //my_free(formatted_subckt_dir_path);
   //my_free(mux_testbench_file_path);
   //my_free(title);
+  free_muxes_llist(testbench_muxes_head);
 
   if (0 < testbench_mux_cnt) {
     vpr_printf(TIO_MESSAGE_INFO, "Writing Grid[%d][%d] SPICE %s Test Bench for %s...\n", 

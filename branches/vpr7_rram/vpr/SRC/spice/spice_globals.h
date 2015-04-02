@@ -43,6 +43,8 @@ extern int num_used_sb_tb;
 extern int num_used_lut_tb;
 extern int num_used_dff_tb;
 extern t_llist* tb_head;
+
+extern int default_signal_init_value;
  
 /* Enumeration */
 enum e_pin2pin_interc_type {

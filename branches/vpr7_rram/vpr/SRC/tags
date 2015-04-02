@@ -707,18 +707,7 @@ ProcessPb_TypePowerPinToggle	../../libarchfpga/read_xml_arch_file.c	/^static voi
 ProcessPinToPinAnnotations	../../libarchfpga/read_xml_arch_file.c	/^static void ProcessPinToPinAnnotations(ezxml_t Parent,$/;"	f	file:
 ProcessPower	../../libarchfpga/read_xml_arch_file.c	/^static void ProcessPower( INOUTP ezxml_t parent,$/;"	f	file:
 ProcessSegments	../../libarchfpga/read_xml_arch_file.c	/^static void ProcessSegments(INOUTP ezxml_t Parent,$/;"	f	file:
-ProcessSpiceMeasParams	../../libarchfpga/read_xml_spice.c	/^static void ProcessSpiceMeasParams(ezxml_t Parent,$/;"	f	file:
-ProcessSpiceModel	../../libarchfpga/read_xml_spice.c	/^static void ProcessSpiceModel(ezxml_t Parent,$/;"	f	file:
-ProcessSpiceModelBuffer	../../libarchfpga/read_xml_spice.c	/^static void ProcessSpiceModelBuffer(ezxml_t Node,$/;"	f	file:
-ProcessSpiceModelPassGateLogic	../../libarchfpga/read_xml_spice.c	/^static void ProcessSpiceModelPassGateLogic(ezxml_t Node,$/;"	f	file:
-ProcessSpiceModelPort	../../libarchfpga/read_xml_spice.c	/^static void ProcessSpiceModelPort(ezxml_t Node,$/;"	f	file:
-ProcessSpiceModelWireParam	../../libarchfpga/read_xml_spice.c	/^static void ProcessSpiceModelWireParam(ezxml_t Parent,$/;"	f	file:
-ProcessSpiceParams	../../libarchfpga/read_xml_spice.c	/^static void ProcessSpiceParams(ezxml_t Parent,$/;"	f	file:
-ProcessSpiceSettings	../../libarchfpga/read_xml_spice.c	/^void ProcessSpiceSettings(ezxml_t Parent,$/;"	f
-ProcessSpiceStimulateParams	../../libarchfpga/read_xml_spice.c	/^static void ProcessSpiceStimulateParams(ezxml_t Parent,$/;"	f	file:
 ProcessSpiceStimulateParamsRiseFall	../../libarchfpga/read_xml_spice.c	/^static void ProcessSpiceStimulateParamsRiseFall(ezxml_t Parent,$/;"	f	file:
-ProcessSpiceTechLibTransistors	../../libarchfpga/read_xml_spice.c	/^static void ProcessSpiceTechLibTransistors(ezxml_t Parent,$/;"	f	file:
-ProcessSpiceTransistorType	../../libarchfpga/read_xml_spice.c	/^static void ProcessSpiceTransistorType(ezxml_t Parent,$/;"	f	file:
 ProcessSwitchSegmentPatterns	../../libarchfpga/read_xml_arch_file.c	/^static void ProcessSwitchSegmentPatterns(INOUTP ezxml_t Parent,$/;"	f	file:
 ProcessSwitches	../../libarchfpga/read_xml_arch_file.c	/^static void ProcessSwitches(INOUTP ezxml_t Parent,$/;"	f	file:
 ProcessTechComp	../../libarchfpga/read_xml_mrfpga.c	/^ProcessTechComp(INOUTP ezxml_t Node,$/;"	f
@@ -1328,7 +1317,6 @@ check_route	route/check_route.c	/^void check_route(enum e_route_type route_type,
 check_rr_graph	route/check_rr_graph.c	/^void check_rr_graph(INP t_graph_type graph_type, INP t_type_ptr types,$/;"	f
 check_sink	route/check_route.c	/^static void check_sink(int inode, int inet, boolean * pin_done) {$/;"	f	file:
 check_source	route/check_route.c	/^static void check_source(int inode, int inet) {$/;"	f	file:
-check_spice_models	../../libarchfpga/read_xml_spice.c	/^static void check_spice_models(int num_spice_model,$/;"	f	file:
 check_src_blk_pin	clb_pin_remap/clb_pin_remap_util.c	/^int check_src_blk_pin(int n_blks, t_block* blk,$/;"	f
 check_subblock_internal_nets	base/check_netlist.c	/^static int check_subblock_internal_nets(int iblk, int isub) {$/;"	f	file:
 check_subblocks	base/check_netlist.c	/^static int check_subblocks(int iblk) {$/;"	f	file:
@@ -1372,8 +1360,10 @@ clock_net	base/vpr_types.h	/^	int clock_net; \/* Clock net connected to this log
 clock_net	base/vpr_types.h	/^	int clock_net; \/* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs *\/$/;"	m	struct:s_pb
 clock_net_tnode	base/vpr_types.h	/^	struct s_tnode *clock_net_tnode; \/* correspnding clock net tnode *\/$/;"	m	struct:s_logical_block	typeref:struct:s_logical_block::s_tnode
 clock_pins	../../libarchfpga/include/physical_types.h	/^	t_pb_graph_pin **clock_pins; \/* [0..num_clock_ports-1] [0..num_port_pins-1]*\/$/;"	m	struct:s_pb_graph_node
-clock_slew_pct_fall	../../libarchfpga/include/spice_types.h	/^  float clock_slew_pct_fall;  $/;"	m	struct:s_spice_stimulate_params
-clock_slew_pct_rise	../../libarchfpga/include/spice_types.h	/^  float clock_slew_pct_rise;  $/;"	m	struct:s_spice_stimulate_params
+clock_slew_fall_time	../../libarchfpga/include/spice_types.h	/^  float clock_slew_fall_time;  $/;"	m	struct:s_spice_stimulate_params
+clock_slew_fall_type	../../libarchfpga/include/spice_types.h	/^  enum e_spice_accuracy_type clock_slew_fall_type;$/;"	m	struct:s_spice_stimulate_params	typeref:enum:s_spice_stimulate_params::e_spice_accuracy_type
+clock_slew_rise_time	../../libarchfpga/include/spice_types.h	/^  float clock_slew_rise_time;  $/;"	m	struct:s_spice_stimulate_params
+clock_slew_rise_type	../../libarchfpga/include/spice_types.h	/^  enum e_spice_accuracy_type clock_slew_rise_type;$/;"	m	struct:s_spice_stimulate_params	typeref:enum:s_spice_stimulate_params::e_spice_accuracy_type
 clocks	../../libarchfpga/include/physical_types.h	/^	t_clock_arch * clocks;$/;"	m	struct:s_arch
 close	../../libarchfpga/ezxml.c	61;"	d	file:
 close_graphics	base/graphics.c	/^close_graphics (void) $/;"	f
@@ -1483,6 +1473,7 @@ dealloc_mux_graph_rec	power/power.c	/^static void dealloc_mux_graph_rec(t_mux_no
 decode_mux_sram_bits	spice/spice_utils.c	/^int* decode_mux_sram_bits(int fan_in,$/;"	f
 default_message	base/draw.c	/^static char default_message[BUFSIZE]; \/* Default screen message on screen *\/$/;"	v	file:
 default_output_name	base/globals.c	/^char *default_output_name = NULL;$/;"	v
+default_signal_init_value	spice/spice_globals.c	/^int default_signal_init_value = 1;$/;"	v
 default_spice_dir_path	spice/spice_api.c	/^static char* default_spice_dir_path = "spice_netlists\/";$/;"	v	file:
 define_idle_mode	../../libarchfpga/include/physical_types.h	/^    int define_idle_mode;   $/;"	m	struct:s_mode
 delay	base/vpr_types.h	/^	float delay; \/* Delay through the I\/O in this constraint *\/$/;"	m	struct:s_io
@@ -2370,8 +2361,10 @@ input_pins	../../libarchfpga/include/physical_types.h	/^	struct s_pb_graph_pin *
 input_pins	../../libarchfpga/include/physical_types.h	/^	t_pb_graph_pin **input_pins; \/* [0..num_input_ports-1] [0..num_port_pins-1]*\/$/;"	m	struct:s_pb_graph_node
 input_pins	../../libarchfpga/include/physical_types.h	/^	t_pb_graph_pin **input_pins;$/;"	m	struct:s_pb_graph_edge
 input_pins_used	base/vpr_types.h	/^	int **input_pins_used; \/* [0..pb_graph_node->num_pin_classes-1][0..pin_class_size] number of input pins of this class that are used *\/$/;"	m	struct:s_pb_stats
-input_slew_pct_fall	../../libarchfpga/include/spice_types.h	/^  float input_slew_pct_fall;  $/;"	m	struct:s_spice_stimulate_params
-input_slew_pct_rise	../../libarchfpga/include/spice_types.h	/^  float input_slew_pct_rise;  $/;"	m	struct:s_spice_stimulate_params
+input_slew_fall_time	../../libarchfpga/include/spice_types.h	/^  float input_slew_fall_time;  $/;"	m	struct:s_spice_stimulate_params
+input_slew_fall_type	../../libarchfpga/include/spice_types.h	/^  enum e_spice_accuracy_type input_slew_fall_type;$/;"	m	struct:s_spice_stimulate_params	typeref:enum:s_spice_stimulate_params::e_spice_accuracy_type
+input_slew_rise_time	../../libarchfpga/include/spice_types.h	/^  float input_slew_rise_time;  $/;"	m	struct:s_spice_stimulate_params
+input_slew_rise_type	../../libarchfpga/include/spice_types.h	/^  enum e_spice_accuracy_type input_slew_rise_type;$/;"	m	struct:s_spice_stimulate_params	typeref:enum:s_spice_stimulate_params::e_spice_accuracy_type
 input_string	../../libarchfpga/include/physical_types.h	/^	char *input_string;$/;"	m	struct:s_interconnect
 input_thres_pct_fall	../../libarchfpga/include/spice_types.h	/^  float input_thres_pct_fall;$/;"	m	struct:s_spice_meas_params
 input_thres_pct_rise	../../libarchfpga/include/spice_types.h	/^  float input_thres_pct_rise;$/;"	m	struct:s_spice_meas_params
@@ -3334,6 +3327,7 @@ rec_add_pb_type_keywords_to_list	spice/spice_api.c	/^void rec_add_pb_type_keywor
 rec_backannotate_rr_node_net_num	spice/spice_api.c	/^void rec_backannotate_rr_node_net_num(int LL_num_rr_nodes,$/;"	f
 rec_stat_pb_type_keywords	spice/spice_api.c	/^void rec_stat_pb_type_keywords(t_pb_type* cur_pb_type,$/;"	f	file:
 rec_update_net_info_local_rr_node_tree	clb_pin_remap/clb_pin_remap_util.c	/^void rec_update_net_info_local_rr_node_tree(t_pb* src_pb,$/;"	f
+recommend_num_sim_clock_cycle	spice/spice_utils.c	/^int recommend_num_sim_clock_cycle() {$/;"	f
 recompute_bb_cost	place/place.c	/^static float recompute_bb_cost(void) {$/;"	f	file:
 recompute_crit_iter	base/vpr_types.h	/^	int recompute_crit_iter;$/;"	m	struct:s_placer_opts
 recompute_occupancy_from_scratch	route/check_route.c	/^static void recompute_occupancy_from_scratch(t_ivec ** clb_opins_used_locally) {$/;"	f	file:

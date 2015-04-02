@@ -40,6 +40,8 @@ int num_used_cb_tb = 0;
 int num_used_sb_tb = 0;
 int num_used_lut_tb = 0;
 int num_used_dff_tb = 0;
+/* Default init_value */
+int default_signal_init_value = 1;
 
 t_llist* tb_head = NULL;
 

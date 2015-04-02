@@ -16,7 +16,9 @@ static void ProcessSpiceMeasParams(ezxml_t Parent,
 
 static void ProcessSpiceStimulateParamsRiseFall(ezxml_t Parent,
                                                 float* rise_param,
-                                                float* fall_param);
+                                                float* fall_param,
+                                                enum e_spice_accuracy_type* rise_type,
+                                                enum e_spice_accuracy_type* fall_type);
 
 static void ProcessSpiceStimulateParams(ezxml_t Parent,
                                         t_spice_stimulate_params* stimulate_params);
@@ -53,25 +55,29 @@ static void ProcessSpiceMeasParams(ezxml_t Parent,
     exit(1);
   }
   /* Number of simulation clock cycles */
-  meas_params->sim_num_clock_cycle = GetIntProperty(Parent, "sim_num_clock_cycle", FALSE, 2);
+  if (0 == strcmp("auto", FindProperty(Parent, "sim_num_clock_cycle", FALSE))) {
+    meas_params->sim_num_clock_cycle = -1;
+  } else {
+    meas_params->sim_num_clock_cycle = GetIntProperty(Parent, "sim_num_clock_cycle", FALSE, -1);
+  }
   ezxml_set_attr(Parent, "sim_num_clock_cycle", NULL);
   /* Accuracy type: either frac or abs, set frac by default*/
   if (NULL == FindProperty(Parent, "accuracy_type", FALSE)) {
-    meas_params->accuracy_type = SPICE_FRAC;
+    meas_params->accuracy_type = SPICE_ABS;
+    meas_params->accuracy = 1e-13;
   } else {
-    if (0 == strcmp(FindProperty(Parent, "accuracy_type", FALSE), "abs")) {
+    if (0 == strcmp(FindProperty(Parent, "accuracy_type", TRUE), "abs")) {
       meas_params->accuracy_type = SPICE_ABS;
-    } else if (0 == strcmp(FindProperty(Parent, "accuracy_type", FALSE), "frac")) {
+    } else if (0 == strcmp(FindProperty(Parent, "accuracy_type", TRUE), "frac")) {
       meas_params->accuracy_type = SPICE_FRAC;
     } else {
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid accuracy_type at ARCH_XML[LINE%d]! Expect [frac|abs].\n",
                  __FILE__, __LINE__, Parent->line);
     }
-    ezxml_set_attr(Parent, "accuracy_type", NULL);
+    meas_params->accuracy = GetFloatProperty(Parent, "accuracy", TRUE, 1e-13);
   }
-
-  meas_params->accuracy = GetFloatProperty(Parent, "accuracy", FALSE, 1e4);
   ezxml_set_attr(Parent, "accuracy", NULL);
+  ezxml_set_attr(Parent, "accuracy_type", NULL);
 
   /* Process slew parameters*/
   Node = FindElement(Parent, "slew", FALSE);
@@ -134,20 +140,37 @@ static void ProcessSpiceMeasParams(ezxml_t Parent,
 
 static void ProcessSpiceStimulateParamsRiseFall(ezxml_t Parent,
                                                 float* rise_param,
-                                                float* fall_param) {
+                                                float* fall_param,
+                                                enum e_spice_accuracy_type* rise_type,
+                                                enum e_spice_accuracy_type* fall_type) {
   ezxml_t Node;
 
   /* Check */
   assert(NULL != rise_param);
   assert(NULL != fall_param);
+  assert(NULL != rise_type);
+  assert(NULL != fall_type);
 
   /* initial to 0 */
   (*rise_param) = 0.;
   (*fall_param) = 0.;
+  (*rise_type) = SPICE_FRAC;
+  (*fall_type) = SPICE_FRAC;
   /* Rise parameters */
   Node = FindElement(Parent, "rise", TRUE);
   if (Node) {
-    (*rise_param) = GetFloatProperty(Node, "slew_pct", TRUE, 0.1);
+    if (0 == strcmp("frac", FindProperty(Node, "slew_type", TRUE))) {
+      (*rise_type) = SPICE_FRAC;
+    } else if (0 == strcmp("abs", FindProperty(Node, "slew_type", TRUE))) {
+      (*rise_type) = SPICE_ABS;
+    } else {
+      vpr_printf(TIO_MESSAGE_ERROR, "Property(%s) should be defined in [LINE%d]!\n",
+                 "slew_type" ,Node->line);
+      exit(1);
+    }
+    (*rise_param) = GetFloatProperty(Node, "slew_time", TRUE, 0.05);
+    ezxml_set_attr(Node, "slew_time", NULL);
+    ezxml_set_attr(Node, "slew_type", NULL);
     /* Free */ 
     FreeNode(Node);
   }
@@ -155,7 +178,18 @@ static void ProcessSpiceStimulateParamsRiseFall(ezxml_t Parent,
   /* Fall parameters */
   Node = FindElement(Parent, "fall", TRUE);
   if (Node) {
-    (*fall_param) = GetFloatProperty(Node, "slew_pct", TRUE, 0.1);
+    if (0 == strcmp("frac", FindProperty(Node, "slew_type", TRUE))) {
+      (*fall_type) = SPICE_FRAC;
+    } else if (0 == strcmp("abs", FindProperty(Node, "slew_type", TRUE))) {
+      (*fall_type) = SPICE_ABS;
+    } else {
+      vpr_printf(TIO_MESSAGE_ERROR, "Property(%s) should be defined in [LINE%d]!\n",
+                 "slew_type" ,Node->line);
+      exit(1);
+    }
+    (*fall_param) = GetFloatProperty(Node, "slew_time", TRUE, 0.05);
+    ezxml_set_attr(Node, "slew_time", NULL);
+    ezxml_set_attr(Node, "slew_type", NULL);
     /* Free */ 
     FreeNode(Node);
   }
@@ -179,10 +213,10 @@ static void ProcessSpiceStimulateParams(ezxml_t Parent,
     stimulate_params->clock_freq = 0.;
     stimulate_params->clock_freq = GetFloatProperty(Node, "freq", FALSE, 0);
     ezxml_set_attr(Node, "freq", NULL);
-    stimulate_params->sim_clock_freq_slack = GetFloatProperty(Node, "sim_slack", TRUE, 0.2);
+    stimulate_params->sim_clock_freq_slack = GetFloatProperty(Node, "sim_slack", FALSE, 0.2);
     ezxml_set_attr(Node, "sim_slack", NULL);
     /* For rising/falling slew */
-    ProcessSpiceStimulateParamsRiseFall(Node, &(stimulate_params->clock_slew_pct_rise), &(stimulate_params->clock_slew_pct_fall));
+    ProcessSpiceStimulateParamsRiseFall(Node, &(stimulate_params->clock_slew_rise_time), &(stimulate_params->clock_slew_fall_time), &(stimulate_params->clock_slew_rise_type), &(stimulate_params->clock_slew_fall_type));
     /* Free */
     FreeNode(Node);
   }
@@ -192,7 +226,7 @@ static void ProcessSpiceStimulateParams(ezxml_t Parent,
   if (Node) {
     /* Free */
     /* For rising/falling slew */
-    ProcessSpiceStimulateParamsRiseFall(Node, &(stimulate_params->input_slew_pct_rise), &(stimulate_params->input_slew_pct_fall));
+    ProcessSpiceStimulateParamsRiseFall(Node, &(stimulate_params->input_slew_rise_time), &(stimulate_params->input_slew_fall_time), &(stimulate_params->input_slew_rise_type), &(stimulate_params->input_slew_fall_type));
     FreeNode(Node);
   }
 

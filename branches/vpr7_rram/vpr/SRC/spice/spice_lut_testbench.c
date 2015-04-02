@@ -169,8 +169,13 @@ void fprint_spice_lut_testbench_one_pb_graph_node_lut(FILE* fp,
   }
  
   /* Call the subckt and give stimulates, measurements */
-  fprintf(fp,"***** LUT[%d]: logical_block_index[%d], gvdd_index[%d]*****\n", 
-          tb_num_luts, logical_block_index, logical_block[logical_block_index].mapped_spice_model_index);
+  if (OPEN != logical_block_index) {
+    fprintf(fp,"***** LUT[%d]: logical_block_index[%d], gvdd_index[%d]*****\n", 
+            tb_num_luts, logical_block_index, logical_block[logical_block_index].mapped_spice_model_index);
+  } else {
+    fprintf(fp,"***** LUT[%d]: logical_block_index[%d], gvdd_index[%d]*****\n",
+            tb_num_luts, -1, -1);
+  }
   fprint_spice_lut_testbench_one_lut(fp, prefix, num_inputs, num_outputs,
                                      input_init_value, input_density, input_probability);
   /* Add loads: two inverters */
@@ -181,7 +186,9 @@ void fprint_spice_lut_testbench_one_pb_graph_node_lut(FILE* fp,
   }
 
   /* Mark temporary used */
-  logical_block[logical_block_index].temp_used = 1;
+  if (OPEN != logical_block_index) {
+    logical_block[logical_block_index].temp_used = 1;
+  }
   tb_num_luts++;
 
   /* Free */

@@ -323,6 +323,7 @@ void backannotate_clb_nets_init_val() {
     switch (logical_block[iblk].type) {
     case VPACK_COMB:
       vpack_net[inet].spice_net_info->init_val = get_lut_output_init_val(&(logical_block[iblk]));
+      logical_block[iblk].init_val =  vpack_net[inet].spice_net_info->init_val;
       break;
     case VPACK_INPAD:
     case VPACK_LATCH:
@@ -360,19 +361,7 @@ void backannotate_clb_nets_init_val() {
   for (inet = 0; inet < num_nets; inet++) {
     assert (NULL != clb_net[inet].spice_net_info);
     /* if the source is a inpad or dff, we update the initial value */ 
-    switch (logical_block[iblk].type) {
-    case VPACK_INPAD:
-    case VPACK_LATCH:
-    case VPACK_OUTPAD:
-    case VPACK_COMB:
-    case VPACK_EMPTY:
-      clb_net[inet].spice_net_info->init_val = vpack_net[clb_to_vpack_net_mapping[inet]].spice_net_info->init_val;
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid logical block type!\n",
-                 __FILE__, __LINE__);
-      exit(1);
-    }
+    clb_net[inet].spice_net_info->init_val = vpack_net[clb_to_vpack_net_mapping[inet]].spice_net_info->init_val;
   }
 
   return;
@@ -973,7 +962,10 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   /* Update local_rr_graphs to match post-route results*/
   vpr_printf(TIO_MESSAGE_INFO, "Update CLB local routing graph to match post-route results...\n");
   update_grid_pbs_post_route_rr_graph();
-  
+
+  /* Auto check the density and recommend sim_num_clock_cylce */
+  auto_select_num_sim_clock_cycle(Arch.spice);
+
   /* Generate Header files */
   fprint_spice_headers(include_dir_path, vpr_crit_path_delay, num_clocks, *(Arch.spice));
 
@@ -1049,7 +1041,7 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   }
 
   /* Generate a shell script for running HSPICE simulations */
-  fprint_run_hspice_shell_script(spice_dir_formatted, subckt_dir_path);
+  fprint_run_hspice_shell_script(*(Arch.spice), spice_dir_formatted, subckt_dir_path);
 
   /* END Clocking*/
   t_end = clock();

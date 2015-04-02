@@ -980,7 +980,7 @@ sub gen_common_sp_parameters($ $)
   &tab_print($spfh,"* Working Temperature\n",0);
   &tab_print($spfh,".temp $conf_ptr->{general_settings}->{temperature}->{val}\n",0);
   &tab_print($spfh,"* Global Nodes\n",0);
-  &tab_print($spfh,".global $conf_ptr->{general_settings}->{VDD_port_name}->{val} $conf_ptr->{general_settings}->{GND_port_name}->{val} $conf_ptr->{general_settings}->{LOAD_VDD_port_name}->{val}\n",0);
+  &tab_print($spfh,".global $conf_ptr->{general_settings}->{VDD_port_name}->{val} $conf_ptr->{general_settings}->{LOAD_VDD_port_name}->{val}\n",0);
   &tab_print($spfh,"* Print Node Capacitance\n",0);
   &tab_print($spfh,".option captab\n",0);
   &tab_print($spfh,"* Print Waveforms\n",0);
@@ -1062,7 +1062,7 @@ sub gen_auto_out_tapered_buffer($ $ $) {
 # We use a a tree structure to shape inverters driving the loads
 sub gen_sp_inv_loads($ $ $ $) {
   my ($spfh, $outport_name, $inv_load_size, $inv_load_num) = @_;
-  my ($load_port_name) = ("inv_load_in");
+  my ($load_port_name) = ("out");
 
   for (my $i = 0; $i < $inv_load_num; $i++) {
     &tab_print($spfh, "Xinv_load$i $load_port_name inv_load$i\_out $conf_ptr->{general_settings}->{LOAD_VDD_port_name}->{val} $conf_ptr->{general_settings}->{GND_port_name}->{val} inv size=$inv_load_size\n", 0);
@@ -1123,8 +1123,8 @@ sub gen_lut_sp_common($ $ $ $ $ $ $)
   # Add Stimulates
   &tab_print($spfh,"Vsupply $conf_ptr->{general_settings}->{VDD_port_name}->{val} $conf_ptr->{general_settings}->{GND_port_name}->{val} vsp\n",0);
 
-  if ("gnd" ne $conf_ptr->{general_settings}->{GND_port_name}->{val}) {
-    &tab_print($spfh,"Vgnd $conf_ptr->{general_settings}->{GND_port_name}->{val} gnd 0\n",0);
+  if ("0" ne $conf_ptr->{general_settings}->{GND_port_name}->{val}) {
+    &tab_print($spfh,"Vgnd $conf_ptr->{general_settings}->{GND_port_name}->{val} 0 0\n",0);
   }
   
   &tab_print($spfh,"* Common Part Over.\n",0);
@@ -1268,8 +1268,8 @@ sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $)
   # Add Stimulates
   &tab_print($spfh,"Vsupply $conf_ptr->{general_settings}->{VDD_port_name}->{val} $conf_ptr->{general_settings}->{GND_port_name}->{val} vsp\n",0);
 
-  if ("gnd" ne $conf_ptr->{general_settings}->{GND_port_name}->{val}) {
-    &tab_print($spfh,"Vgnd $conf_ptr->{general_settings}->{GND_port_name}->{val} gnd 0\n",0);
+  if ("0" ne $conf_ptr->{general_settings}->{GND_port_name}->{val}) {
+    &tab_print($spfh,"Vgnd $conf_ptr->{general_settings}->{GND_port_name}->{val} 0 0\n",0);
   }
   
   &tab_print($spfh,"* Common Part Over.\n",0);
@@ -1415,7 +1415,7 @@ sub gen_1level_mux_subckt($ $ $ $ $ $) {
   if ("on" eq $opt_ptr->{auto_out_tapered_buffer}) {
     my ($tapbuf_size) = (4**$opt_ptr->{auto_out_tapered_buffer_val});
     # Call the subckt 
-    &tab_print($spfh, "Xtapbuf mux2_l0_in0 $conf_ptr->{mux_settings}->{OUT_port_name}->{val} $conf_ptr->{general_settings}->{VDD_port_name}->{val} $conf_ptr->{general_settings}->{GND_port_name}->{val} tapbuf_size$tapbuf_size\n", 0);
+    &tab_print($spfh, "Xtapbuf mux2_l0_in0 $conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd sgnd tapbuf_size$tapbuf_size\n", 0);
   } elsif ("buffered" eq $buffered) {
     &tab_print($spfh,"Xinv_out mux1level_out ",0); 
     &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd sgnd $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'inv_size_out\'\n",0);
@@ -1538,7 +1538,7 @@ sub gen_multilevel_mux_subckt($ $ $ $ $ $)
   if ("on" eq $opt_ptr->{auto_out_tapered_buffer}) {
     my ($tapbuf_size) = (4**$opt_ptr->{auto_out_tapered_buffer_val});
     # Call the subckt 
-    &tab_print($spfh, "Xtapbuf mux2_l0_in0 $conf_ptr->{mux_settings}->{OUT_port_name}->{val} $conf_ptr->{general_settings}->{VDD_port_name}->{val} $conf_ptr->{general_settings}->{GND_port_name}->{val} tapbuf_size$tapbuf_size\n", 0);
+    &tab_print($spfh, "Xtapbuf mux2_l0_in0 $conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd sgnd tapbuf_size$tapbuf_size\n", 0);
   } elsif ("buffered" eq $buffered) {
     &tab_print($spfh,"Xinv_out mux2_l0_in0 ",0); 
     &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd sgnd $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'inv_size_out\'\n",0);
@@ -1606,8 +1606,8 @@ sub gen_dff_sp_common($ $ $ $ $ $ $ $ $ $)
   # Add Stimulates
   &tab_print($spfh,"Vsupply $conf_ptr->{general_settings}->{VDD_port_name}->{val} $conf_ptr->{general_settings}->{GND_port_name}->{val} vsp\n",0);
 
-  if ("gnd" ne $conf_ptr->{general_settings}->{GND_port_name}->{val}) {
-    &tab_print($spfh,"Vgnd $conf_ptr->{general_settings}->{GND_port_name}->{val} gnd 0\n",0);
+  if ("0" ne $conf_ptr->{general_settings}->{GND_port_name}->{val}) {
+    &tab_print($spfh,"Vgnd $conf_ptr->{general_settings}->{GND_port_name}->{val} 0 0\n",0);
   }
   
   &tab_print($spfh,"* Common Part Over.\n",0);
@@ -1757,10 +1757,6 @@ sub run_lut_sim($ $ $ $ $ $ $ $)
   my ($lis_file) = ($lut_file);
   $lis_file =~ s/sp$/lis/;
   my @sim_keywds = ("dly_lut","slew_lut","pleak","pdynamic","avg_vlut");
-      
-  foreach my $tmp(@sim_keywds) {
-    $results->{$tmp} = "N/A";
-  }
 
   $output_vector = &lut_output_vector($lut_size,$SRAM_bits,$input_vectors); 
   $delay_measure_input = &determine_lut_delay_measure_input($lut_size,$input_vectors); 
@@ -1826,10 +1822,6 @@ sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
   $lis_file =~ s/sp$/lis/;
   my @sim_keywds = ("dly_mux","slew_mux","pleak","pdynamic","avg_vmux");
       
-  foreach my $tmp(@sim_keywds) {
-    $results->{$tmp} = "N/A";
-  }
-
   #print "SRAM_bits: $SRAM_bits\n";
   ($delay_measure_input,$output_vector) = &mux_output_vector($mux_size,$SRAM_bits,$input_vectors); 
   ($delay_measure,$input_vector_type,$output_vector_type) = &determine_lut_delay_measure($delay_measure_input,$input_vectors,$output_vector); 
@@ -2239,9 +2231,9 @@ sub run_lut_once($ $ $ $ $ $ $ $)
 
 }
 
-sub measure_mux_leakage($ $ $ $ $ $ $ $ $ $ $)
+sub measure_mux_leakage($ $ $ $ $ $ $ $ $ $ $ $)
 {
-  my ($tag,$vsp,$mux_size,$SRAM_bits,$input_vectors,$input_slew,$cload,$tran_step,$rram_enhance,$ron,$wprog) = @_;
+  my ($tag,$vsp,$mux_size,$SRAM_bits,$input_vectors,$input_slew,$cload,$tran_step,$rram_enhance,$ron,$wprog,$roff) = @_;
 
   my (%sim_results);
   my ($sim_results_ref) = \%sim_results;
@@ -2252,7 +2244,7 @@ sub measure_mux_leakage($ $ $ $ $ $ $ $ $ $ $)
   $input_pwh = 10*$slew_clk*$input_slew;
   $tran_stop = $input_pwl+$input_slew+$input_pwh;
 
-  &run_mux_sim($mux_size,$SRAM_bits,$input_vectors,$vsp,$input_slew,$input_pwl,$input_pwh,$cload,$tran_step,$tran_stop,\%sim_results,$conf_ptr->{mux_settings}->{inv_size_in}->{val},$conf_ptr->{mux_settings}->{inv_size_out}->{val},$rram_enhance,$ron,$wprog);
+  &run_mux_sim($mux_size,$SRAM_bits,$input_vectors,$vsp,$input_slew,$input_pwl,$input_pwh,$cload,$tran_step,$tran_stop,\%sim_results,$conf_ptr->{mux_settings}->{inv_size_in}->{val},$conf_ptr->{mux_settings}->{inv_size_out}->{val},$rram_enhance,$ron,$wprog,$roff);
 
   $rpt_ptr->{$tag}->{leakage_power} = $sim_results_ref->{pleak};
 
@@ -2361,9 +2353,9 @@ sub print_rpt_dff_leakage_description($)
   print $splib "*/\n";
 }
 
-sub enum_measure_mux_leakage($ $ $ $ $ $ $ $ $ $)
+sub enum_measure_mux_leakage($ $ $ $ $ $ $ $ $ $ $)
 {
-  my ($tag,$vsp,$mux_size,$d_slew,$ron,$wprog,$vprog,$rram_enhance,$avg_tag,$num_sram) = @_;
+  my ($tag,$vsp,$mux_size,$d_slew,$ron,$wprog,$vprog,$rram_enhance,$avg_tag,$num_sram,$roff) = @_;
   my ($sram_bits,$input_vectors);
   # Measure the leakage enumeration
   print "Info: Measure Leakage Power...";
@@ -2384,13 +2376,13 @@ sub enum_measure_mux_leakage($ $ $ $ $ $ $ $ $ $)
       $temp = int($temp/2);
     }
     $input_vectors =~ s/,$//;
-    &measure_mux_leakage($leakage_tag,$vsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($conf_ptr->{mux_settings}->{load_cap}->{val},"capacitance"),1e-15,$rram_enhance,$ron,$wprog);
+    &measure_mux_leakage($leakage_tag,$vsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($conf_ptr->{mux_settings}->{load_cap}->{val},"capacitance"),1e-15,$rram_enhance,$ron,$wprog,$roff);
     $rpt_ptr->{$avg_tag}->{leakage_power} += $rpt_ptr->{$leakage_tag}->{leakage_power}; 
     $case_cnt++;
     print "Case Tested: $case_cnt.\n";
   }
   $rpt_ptr->{$avg_tag}->{leakage_power} = $rpt_ptr->{$avg_tag}->{leakage_power}/$case_cnt; 
-  print "\nLeakage_power: $rpt_ptr->{$avg_tag}->{leakage_power}/$case_cnt\n"; 
+  print "\nLeakage_power: $rpt_ptr->{$avg_tag}->{leakage_power}\n"; 
 }
 
 
@@ -2700,7 +2692,12 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
         } 
         $sram_bits =~ s/,$//;
         for (my $i=0; $i<$mux_size; $i++) {
-          $input_vectors .= "r,";
+          # Test the worst case of leakage!
+          if (0 == $i%2) {
+            $input_vectors .= "r,";
+          } else { 
+            $input_vectors .= "r,";
+          } 
         }  
         $input_vectors =~ s/,$//;
 
@@ -2710,7 +2707,16 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
 
         # Test falling delay
         $fall_tag = $tag."_fall_wprog$wprog\_vprog$vprog";
-        $input_vectors =~ s/r/f/g;
+        $input_vectors = "";
+        for (my $i=0; $i<$mux_size; $i++) {
+          # Test the worst case of leakage!
+          if (0 == $i%2) {
+            $input_vectors .= "f,";
+          } else { 
+            $input_vectors .= "f,";
+          } 
+        }  
+        $input_vectors =~ s/,$//;
         &run_mux_once($fall_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-15,$rram_enhance,$ron,$wprog,$roff);
   
         # Average rise and fall
@@ -2738,6 +2744,9 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
                           $wprog,
                           $ron
                            );
+        if ("on" eq $opt_ptr->{enum_mux_leakage}) {
+          &enum_measure_mux_leakage($tag,$ivsp,$mux_size,$d_slew,$ron,$wprog,$vprog,$rram_enhance_on,$avg_tag,$num_sram,$roff);
+        }        
 
         &tab_print($rptfh,"$ron,$iwprog,",0);
         &print_rpt_mux_data($rptfh,$avg_tag);
@@ -2771,7 +2780,12 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
       } 
       $sram_bits =~ s/,$//;
       for (my $i=0; $i<$mux_size; $i++) {
-        $input_vectors .= "r,";
+        # Test the worst case of leakage!
+        if (0 == $i%2) {
+          $input_vectors .= "r,";
+        } else { 
+          $input_vectors .= "r,";
+        } 
       }  
       $input_vectors =~ s/,$//;
 
@@ -2781,7 +2795,16 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
 
       # Test falling delay
       $fall_tag = $tag."_fall_wprog$wprog\_vprog$vprog";
-      $input_vectors =~ s/r/f/g;
+      $input_vectors = "";
+      for (my $i=0; $i<$mux_size; $i++) {
+        # Test the worst case of leakage!
+        if (0 == $i%2) {
+          $input_vectors .= "f,";
+        } else { 
+          $input_vectors .= "f,";
+        } 
+      }  
+      $input_vectors =~ s/,$//;
       &run_mux_once($fall_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-15,$rram_enhance_on,$ron,$wprog,$roff);
   
       # Average rise and fall
@@ -2869,7 +2892,6 @@ sub gen_rram2t1r_sp_stimulates($ $) {
 
   &tab_print($spfh,"** Stimulates\n",0);
   &tab_print($spfh,"Vsupply vdd 0 vprog\n",0);
-  &tab_print($spfh,"Vgnd gnd 0 0\n",0);
   &tab_print($spfh,"Vprog_ron prog_ron 0 pulse(0 \'prog_trans_vdd\' \'t_init\' \'tprog_slew\' \'tprog_slew\' \'tprog\' \'2*tprog+2tprog_slew\')\n",0);
   &tab_print($spfh,"Vprog_ronb prog_ronb 0 pulse(\'vprog\' \'vprog-prog_trans_vdd\' \'t_init\' \'tprog_slew\' \'tprog_slew\' \'tprog\' \'2*tprog+2tprog_slew\')\n",0);
   # To match same Vgs as NMOS, but we can do this by using body effect
@@ -2927,10 +2949,6 @@ sub run_rram2t1r_sim($ $ $ $ $ $ $ $ $) {
   $lis_file =~ s/sp$/lis/;
   my @sim_keywds = ("vte","vbe","iprog","ron","iprog_per_wprog","vte_max","vbe_min");
       
-  foreach my $tmp(@sim_keywds) {
-    $results->{$tmp} = "N/A";
-  }
-
   my $spfh = FileHandle->new;
   if ($spfh->open("> $sp_file")) {
     # Build SPICE Netlist

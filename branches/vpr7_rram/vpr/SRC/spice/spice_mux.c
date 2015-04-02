@@ -367,8 +367,8 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
   fprintf(fp, "%s ", output_port[0]->prefix);
   /* Print sram ports*/
   for (i = 0; i < spice_mux_arch.num_level; i++) {
-    fprintf(fp, "%s%d ", sram_port[0]->prefix, i);
-    fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, i);
+    fprintf(fp, "%s%d ", sram_port[0]->prefix, spice_mux_arch.num_level-i-1);
+    fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, spice_mux_arch.num_level-i-1);
   } 
   /* Print local vdd and gnd*/
   fprintf(fp, "svdd sgnd");
@@ -556,8 +556,8 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
   fprintf(fp, "%s ", output_port[0]->prefix);
   /* Print sram ports*/
   for (i = 0; i < spice_mux_arch.num_level; i++) {
-    fprintf(fp, "%s%d ", sram_port[0]->prefix, i);
-    fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, i);
+    fprintf(fp, "%s%d ", sram_port[0]->prefix, spice_mux_arch.num_level-i-1);
+    fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, spice_mux_arch.num_level-i-1);
   } 
   /* Print local vdd and gnd*/
   fprintf(fp, "svdd sgnd ron=\'%g\' roff=\'%g\' wprog=\'%g*wn\'", 
