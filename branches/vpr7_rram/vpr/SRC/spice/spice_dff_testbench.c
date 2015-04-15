@@ -42,7 +42,7 @@ static
 void fprint_spice_dff_testbench_global_ports(FILE* fp, 
                                              int num_clock, 
                                              t_spice spice) {
-  int i;
+  /* int i; */
   /* A valid file handler*/
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File Handler!\n",__FILE__, __LINE__); 
@@ -58,11 +58,14 @@ void fprint_spice_dff_testbench_global_ports(FILE* fp,
   fprintf(fp, ".global gclock\n");
 
   /*Global Vdds for FFs*/
+  fprint_global_vdds_spice_model(fp, SPICE_MODEL_FF, spice);
+  /* 
   for (i = 0; i < spice.num_spice_model; i++) {
     if (SPICE_MODEL_FF == spice.spice_models[i].type) {
       fprint_global_vdds_logical_block_spice_model(fp, &(spice.spice_models[i]));
     }
   }
+  */
 
   return;
 }
@@ -305,9 +308,7 @@ void fprint_spice_dff_testbench_rec_pb_dffs(FILE* fp,
       } else {
         /* Print idle graph_node muxes */
         /* Bypass unused blocks */
-        /*
         fprint_spice_dff_testbench_rec_pb_graph_node_dffs(fp, cur_pb->child_pbs[ipb][jpb].pb_graph_node, rec_prefix, x, y);
-        */
       }
     }
   }
@@ -373,7 +374,7 @@ void fprint_spice_dff_testbench_stimulations(FILE* fp,
                                              int num_clock, 
                                              t_spice spice, 
                                              t_ivec*** LL_rr_node_indices) {
-  int i;
+  /* int i; */
   /* Global GND */
   fprintf(fp, "***** Global VDD port *****\n");
   fprintf(fp, "Vgvdd gvdd 0 vsp\n");
@@ -395,12 +396,14 @@ void fprint_spice_dff_testbench_stimulations(FILE* fp,
 
   /* Every LUT use an independent Voltage source */
   fprintf(fp, "***** Global VDD for FFs *****\n");
+  fprint_splited_vdds_spice_model(fp, SPICE_MODEL_FF, spice);
+  /*
   for (i = 0; i < spice.num_spice_model; i++) {
     if (SPICE_MODEL_FF == spice.spice_models[i].type) {
       fprint_splited_vdds_logical_block_spice_model(fp, &(spice.spice_models[i]));
     }
   }
-
+  */
 
   /* Every SRAM inputs should have a voltage source */
   fprintf(fp, "***** Global Inputs for SRAMs *****\n");
@@ -433,7 +436,7 @@ void fprint_spice_dff_testbench_measurements(FILE* fp,
                                              t_spice spice, 
                                              boolean leakage_only) {
  
-  int i;
+  /* int i; */
   /* First cycle reserved for measuring leakage */
   int num_clock_cycle = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
   
@@ -451,19 +454,28 @@ void fprint_spice_dff_testbench_measurements(FILE* fp,
   /* Measure the power */
   /* Leakage ( the first cycle is reserved for leakage measurement) */
   /* Leakage power of FFs*/
+  fprint_measure_vdds_spice_model(fp, SPICE_MODEL_FF, SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, spice, leakage_only);
+  /*
   for (i = 0; i < spice.num_spice_model; i++) {
     if (SPICE_MODEL_FF == spice.spice_models[i].type) {
       fprint_measure_vdds_logical_block_spice_model(fp, &(spice.spice_models[i]), SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, leakage_only);
     }
   }
+  */
+  if (TRUE == leakage_only) {
+    return;
+  }
 
   /* Dynamic power */
   /* Dynamic power of FFs */
+  fprint_measure_vdds_spice_model(fp, SPICE_MODEL_FF, SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, spice, leakage_only);
+  /*
   for (i = 0; i < spice.num_spice_model; i++) {
     if (SPICE_MODEL_FF == spice.spice_models[i].type) {
       fprint_measure_vdds_logical_block_spice_model(fp, &(spice.spice_models[i]), SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, leakage_only);
     }
   }
+  */
 
   return;
 }

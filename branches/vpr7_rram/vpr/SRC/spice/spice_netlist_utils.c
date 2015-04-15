@@ -80,6 +80,12 @@ void fprint_splited_vdds_spice_model(FILE* fp,
       for (i = 0; i < spice.spice_models[imodel].cnt; i++) {
         fprintf(fp, "Vgvdd_%s[%d] gvdd_%s[%d] 0 vsp\n", 
                 spice.spice_models[imodel].prefix, i, spice.spice_models[imodel].prefix, i);
+        /* For some gvdd maybe floating, I add a huge resistance to make their leakage power trival 
+         * which does no change to the delay result.
+         * The resistance value is co-related to the vsp, which produces a trival leakage current (1e-15).
+         */
+        fprintf(fp, "Rgvdd_%s[%d]_huge gvdd_%s[%d] 0 'vsp/10e-15'\n", 
+                spice.spice_models[imodel].prefix, i, spice.spice_models[imodel].prefix, i);
       }
     }
   }
@@ -314,6 +320,9 @@ void fprint_measure_vdds_spice_model(FILE* fp,
         /* Spot the total dynamic power of this spice model */
         fprintf(fp, ".measure tran total_dynamic_power_%s \n", spice.spice_models[imodel].prefix);
         fprintf(fp, "+ param = 'dynamic_power_%s[0to%d]'\n", 
+                spice.spice_models[imodel].prefix, spice.spice_models[imodel].cnt-1);
+        fprintf(fp, ".measure tran total_energy_per_cycle_%s \n", spice.spice_models[imodel].prefix);
+        fprintf(fp, "+ param = 'dynamic_power_%s[0to%d]*clock_period'\n", 
                 spice.spice_models[imodel].prefix, spice.spice_models[imodel].cnt-1);
         break;
       default: 

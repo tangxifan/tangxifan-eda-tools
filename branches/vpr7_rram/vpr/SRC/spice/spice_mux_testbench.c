@@ -1506,9 +1506,14 @@ void fprint_spice_mux_testbench_cb_interc(FILE* fp,
   /* Check */
   assert((!(0 > cb_x))&&(!(cb_x > (nx + 1)))); 
   assert((!(0 > cb_y))&&(!(cb_y > (ny + 1)))); 
+
+  if (NULL == src_rr_node) {
+    return;
+  }
+
   /* Skip non-mapped CB MUX */
   if (OPEN == src_rr_node->net_num) {
-    return;
+    //return;
   }
 
   if (1 == src_rr_node->fan_in) {
@@ -1522,6 +1527,7 @@ void fprint_spice_mux_testbench_cb_interc(FILE* fp,
   return;
 }
 
+/* Assume each connection box has a regional power-on/off switch */
 static 
 int fprint_spice_mux_testbench_one_grid_cb_muxes(FILE* fp, 
                                                  t_rr_type chan_type,
@@ -1659,12 +1665,19 @@ int fprint_spice_mux_testbench_one_grid_cb_muxes(FILE* fp,
   assert(2 == side_cnt);
 
   /* Print multiplexers */
-  if (0 < num_ipin_rr_node) {
-    used = 1;
-  }
+  /* Check if there is at least one rr_node with a net_name*/
+  used = 0;
   for (inode = 0; inode < num_ipin_rr_node; inode++) {
-    fprint_spice_mux_testbench_cb_interc(fp, chan_type, x, y, ipin_rr_nodes[inode], LL_rr_node_indices);
-  } 
+    if (OPEN != ipin_rr_nodes[inode]->net_num) {
+      used = 1;
+    }
+  }
+  
+  if (1 == used) {
+    for (inode = 0; inode < num_ipin_rr_node; inode++) {
+      fprint_spice_mux_testbench_cb_interc(fp, chan_type, x, y, ipin_rr_nodes[inode], LL_rr_node_indices);
+    } 
+  }
 
   /* Free */
   my_free(ipin_rr_nodes);
@@ -1833,9 +1846,9 @@ char* fprint_spice_mux_testbench_rr_node_load_version(FILE* fp,
 
 static 
 int fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
-                                           int switch_box_x, int switch_box_y,
-                                           int chan_side,
-                                           t_rr_node* src_rr_node) {
+                                          int switch_box_x, int switch_box_y,
+                                          int chan_side,
+                                          t_rr_node* src_rr_node) {
   int inode, switch_index, mux_size;
   t_spice_model* mux_spice_model = NULL;
   float* input_density = NULL;
@@ -1853,9 +1866,13 @@ int fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
   assert((!(0 > switch_box_x))&&(!(switch_box_x > (nx + 1)))); 
   assert((!(0 > switch_box_y))&&(!(switch_box_y > (ny + 1)))); 
 
+  if (NULL == src_rr_node) {
+    return 0;
+  }
+
   /* ignore idle sb mux */
   if (OPEN == src_rr_node->net_num) {
-    return used;
+    //return used;
   }
 
   find_drive_rr_nodes_switch_box(switch_box_x, switch_box_y, src_rr_node, chan_side, 0, 
@@ -1973,7 +1990,9 @@ int fprint_spice_mux_testbench_call_one_grid_sb_muxes(FILE* fp,
         inode = get_rr_node_index(ix, iy, CHANY, itrack, LL_rr_node_indices);
         chan_rr_nodes[0][itrack] = &(rr_node[inode]);
         if (INC_DIRECTION == chan_rr_nodes[side][itrack]->direction) {
-          used += fprint_spice_mux_testbench_sb_one_mux(fp, ix, iy, side, chan_rr_nodes[side][itrack]);
+          /* used += fprint_spice_mux_testbench_sb_one_mux(fp, ix, iy, side, chan_rr_nodes[side][itrack]); */
+        } else { 
+          chan_rr_nodes[side][itrack] = NULL;
         }
       }
       break;
@@ -1996,7 +2015,9 @@ int fprint_spice_mux_testbench_call_one_grid_sb_muxes(FILE* fp,
         inode = get_rr_node_index(ix, iy, CHANX, itrack, LL_rr_node_indices);
         chan_rr_nodes[1][itrack] = &(rr_node[inode]);
         if (INC_DIRECTION == chan_rr_nodes[side][itrack]->direction) {
-          used += fprint_spice_mux_testbench_sb_one_mux(fp, ix, iy, side, chan_rr_nodes[side][itrack]);
+          /* used += fprint_spice_mux_testbench_sb_one_mux(fp, ix, iy, side, chan_rr_nodes[side][itrack]); */
+        } else { 
+          chan_rr_nodes[side][itrack] = NULL;
         }
       }
       /* Print MUXes of RIGHT side */
@@ -2020,7 +2041,9 @@ int fprint_spice_mux_testbench_call_one_grid_sb_muxes(FILE* fp,
         inode = get_rr_node_index(ix, iy, CHANY, itrack, LL_rr_node_indices);
         chan_rr_nodes[2][itrack] = &(rr_node[inode]);
         if (DEC_DIRECTION == chan_rr_nodes[side][itrack]->direction) {
-          used += fprint_spice_mux_testbench_sb_one_mux(fp, ix, iy, side, chan_rr_nodes[side][itrack]);
+          /*used += fprint_spice_mux_testbench_sb_one_mux(fp, ix, iy, side, chan_rr_nodes[side][itrack]); */
+        } else { 
+          chan_rr_nodes[side][itrack] = NULL;
         }
       }
       /* Print MUXes of BOTTOM side */
@@ -2044,7 +2067,9 @@ int fprint_spice_mux_testbench_call_one_grid_sb_muxes(FILE* fp,
         inode = get_rr_node_index(ix, iy, CHANX, itrack, LL_rr_node_indices);
         chan_rr_nodes[3][itrack] = &(rr_node[inode]);
         if (DEC_DIRECTION == chan_rr_nodes[side][itrack]->direction) {
-          used += fprint_spice_mux_testbench_sb_one_mux(fp, ix, iy, side, chan_rr_nodes[side][itrack]);
+          /* used += fprint_spice_mux_testbench_sb_one_mux(fp, ix, iy, side, chan_rr_nodes[side][itrack]); */
+        } else { 
+          chan_rr_nodes[side][itrack] = NULL;
         }
       }
       /* Print MUXes of LEFT side */
@@ -2052,6 +2077,42 @@ int fprint_spice_mux_testbench_call_one_grid_sb_muxes(FILE* fp,
     default:
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid side index!\n", __FILE__, __LINE__);
       exit(1);
+    }
+  }
+
+  /* print all the rr_nodes in the switch boxes if there is at least one rr_node with a net_num */
+  used = 0;
+  for (side = 0; side < 4; side++) {
+    for (itrack = 0; itrack < chan_width[side]; itrack++) {
+      if ((NULL != chan_rr_nodes[side][itrack])&&(OPEN != chan_rr_nodes[side][itrack]->net_num)) {
+        used++; 
+      }
+    }
+  }
+
+  if (used > 0) {
+    for (side = 0; side < 4; side++) {
+      switch (side) {
+      case 0:
+        ix = x; 
+        iy = y + 1;
+        break;
+      case 1:
+        ix = x + 1; 
+        iy = y;
+        break;
+      case 2:
+      case 3:
+        ix = x; 
+        iy = y;
+        break;
+      default:
+        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid side index!\n", __FILE__, __LINE__);
+        exit(1);
+      }
+      for (itrack = 0; itrack < chan_width[side]; itrack++) {
+        fprint_spice_mux_testbench_sb_one_mux(fp, ix, iy, side, chan_rr_nodes[side][itrack]);
+      }
     }
   }
 

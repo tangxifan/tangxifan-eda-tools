@@ -50,7 +50,7 @@
       </spice_model>
       <spice_model type="mux" name="ble_mux_buffered" prefix="ble_mux_buf" is_default="1">
         <!--design_technology type="cmos"/-->
-        <design_technology type="rram" ron="1.97e3" roff="1e8" prog_transistor_size="2.4"/>
+        <design_technology type="rram" ron="1.97e3" roff="20e6" prog_transistor_size="2.4"/>
         <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="1" tapered="on" tap_buf_level="3" f_per_stage="4"/>
         <!--mux2to1 subckt_name="mux2to1"/-->
@@ -61,7 +61,7 @@
       </spice_model>
       <spice_model type="mux" name="localrouting_mux_buffered" prefix="localrouting_mux_buf">
         <!--design_technology type="cmos"/-->
-        <design_technology type="rram" ron="1.97e3" roff="1e8" prog_transistor_size="2.4"/>
+        <design_technology type="rram" ron="1.97e3" roff="20e6" prog_transistor_size="2.4"/>
         <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="1" tapered="off"/>
         <!--mux2to1 subckt_name="mux2to1"/-->
@@ -72,7 +72,7 @@
       </spice_model>
       <spice_model type="mux" name="cb_mux_buffered" prefix="cbmux_buf">
         <!--design_technology type="cmos"/-->
-        <design_technology type="rram" ron="1.97e3" roff="1e8" prog_transistor_size="2.4"/>
+        <design_technology type="rram" ron="1.97e3" roff="20e6" prog_transistor_size="2.4"/>
         <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="1" tapered="on" tap_buf_level="3" f_per_stage="4"/>
         <!--mux2to1 subckt_name="mux2to1"/-->
@@ -83,7 +83,7 @@
       </spice_model>
       <spice_model type="mux" name="sb_mux_buffered" prefix="sbmux_buf">
         <!--design_technology type="cmos"/-->
-        <design_technology type="rram" ron="1.97e3" roff="1e8" prog_transistor_size="2.4"/>
+        <design_technology type="rram" ron="1.97e3" roff="20e6" prog_transistor_size="2.4"/>
         <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="1" tapered="on" tap_buf_level="4" f_per_stage="4"/>
         <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.4"/>

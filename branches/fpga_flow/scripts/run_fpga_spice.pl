@@ -96,6 +96,8 @@ my @sctgy;
                 "lut_tb_dynamic_power_tags",
                 "dff_tb_leakage_power_tags",
                 "dff_tb_dynamic_power_tags",
+                "grid_tb_leakage_power_tags",
+                "grid_tb_dynamic_power_tags",
                );
 
 # ----------Subrountines------------#
@@ -679,9 +681,11 @@ sub check_one_fpga_spice_task_lis($ $ $) {
   }
 
   if ("on" eq $opt_ptr->{parse_grid_tb}) {
-    my ($gridtb_lis_path) = &gen_fpga_spice_measure_results_path($formatted_spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{grid_tb_postfix}->{val});
-    $gridtb_lis_path =~ s/\.mt0/.lis/;
-    &check_one_spice_lis_error($gridtb_lis_path);
+    for ($itb = 0; $itb < $conf_ptr->{task_conf}->{num_grid_tb}->{val}; $itb++) { 
+      my ($gridtb_lis_path) = &gen_fpga_tb_spice_measure_results_path($formatted_spice_dir,$spice_netlist_prefix,$conf_ptr->{dir_path}->{grid_tb_prefix}->{val}, $itb, $conf_ptr->{dir_path}->{grid_tb_postfix}->{val});
+      $gridtb_lis_path =~ s/\.mt0/.lis/;
+      &check_one_spice_lis_error($gridtb_lis_path);
+    }
   }
 
   return;
@@ -807,31 +811,31 @@ sub auto_check_tb_num($) {
 
   # count pb_mux_tb
   $conf_ptr->{task_conf}->{num_pb_mux_tb}->{val} = &count_num_tb_one_folder($formatted_spice_dir.$conf_ptr->{dir_path}->{pb_mux_tb_dir_name}->{val});
-  print "INFO: num_pb_mux_tb=$conf_ptr->{task_conf}->{num_pb_mux_tb}->{val}\n";
+  print "INFO: No. of CLB MUXes testbenches = $conf_ptr->{task_conf}->{num_pb_mux_tb}->{val}\n";
 
   # count sb_mux_tb
   $conf_ptr->{task_conf}->{num_sb_mux_tb}->{val} = &count_num_tb_one_folder($formatted_spice_dir.$conf_ptr->{dir_path}->{sb_mux_tb_dir_name}->{val});
-  print "INFO: num_sb_mux_tb=$conf_ptr->{task_conf}->{num_sb_mux_tb}->{val}\n";
+  print "INFO: No. of Switch Box MUXes testbenches = $conf_ptr->{task_conf}->{num_sb_mux_tb}->{val}\n";
 
   # count cb_mux_tb
   $conf_ptr->{task_conf}->{num_cb_mux_tb}->{val} = &count_num_tb_one_folder($formatted_spice_dir.$conf_ptr->{dir_path}->{cb_mux_tb_dir_name}->{val});
-  print "INFO: num_cb_mux_tb=$conf_ptr->{task_conf}->{num_cb_mux_tb}->{val}\n";
-
-  # count top_tb
-  $conf_ptr->{task_conf}->{num_top_tb}->{val} = &count_num_tb_one_folder($formatted_spice_dir.$conf_ptr->{dir_path}->{top_tb_dir_name}->{val});
-  print "INFO: num_top_tb=$conf_ptr->{task_conf}->{num_top_tb}->{val}\n";
+  print "INFO: No. of Connection Box MUXes testbenches = $conf_ptr->{task_conf}->{num_cb_mux_tb}->{val}\n";
 
   # count lut_tb
   $conf_ptr->{task_conf}->{num_lut_tb}->{val} = &count_num_tb_one_folder($formatted_spice_dir.$conf_ptr->{dir_path}->{lut_tb_dir_name}->{val});
-  print "INFO: num_lut_tb=$conf_ptr->{task_conf}->{num_lut_tb}->{val}\n";
+  print "INFO: No. of LUT testbenches = $conf_ptr->{task_conf}->{num_lut_tb}->{val}\n";
 
   # count dff_tb
   $conf_ptr->{task_conf}->{num_dff_tb}->{val} = &count_num_tb_one_folder($formatted_spice_dir.$conf_ptr->{dir_path}->{dff_tb_dir_name}->{val});
-  print "INFO: num_dff_tb=$conf_ptr->{task_conf}->{num_dff_tb}->{val}\n";
+  print "INFO: No. of FF testbenches = $conf_ptr->{task_conf}->{num_dff_tb}->{val}\n";
 
   # count grid_tb
-  $conf_ptr->{task_conf}->{num_grid_tb}->{val} = &count_num_tb_one_folder($formatted_spice_dir.$conf_ptr->{dir_path}->{grid_tb_dir_name});
-  print "INFO: num_grid_tb=$conf_ptr->{task_conf}->{num_grid_tb}->{val}\n";
+  $conf_ptr->{task_conf}->{num_grid_tb}->{val} = &count_num_tb_one_folder($formatted_spice_dir.$conf_ptr->{dir_path}->{grid_tb_dir_name}->{val});
+  print "INFO: No. of Grid testbenches = $conf_ptr->{task_conf}->{num_grid_tb}->{val}\n";
+
+  # count top_tb
+  $conf_ptr->{task_conf}->{num_top_tb}->{val} = &count_num_tb_one_folder($formatted_spice_dir.$conf_ptr->{dir_path}->{top_tb_dir_name}->{val});
+  print "INFO: No. of Top-level testbench = $conf_ptr->{task_conf}->{num_top_tb}->{val}\n";
 
   return;
 }
@@ -901,8 +905,12 @@ sub parse_one_fpga_spice_task_results($ $ $) {
   }
 
   if ("on" eq $opt_ptr->{parse_grid_tb}) {
-    my ($gridtb_mt_path) = &gen_fpga_spice_measure_results_path($spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{grid_tb_postfix}->{val});
-    # TODO:
+    for ($itb = 0; $itb < $conf_ptr->{task_conf}->{num_grid_tb}->{val}; $itb++) { 
+      my ($gridtb_mt_path) = &gen_fpga_tb_spice_measure_results_path($spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{grid_tb_prefix}->{val}, $itb, $conf_ptr->{dir_path}->{grid_tb_postfix}->{val});
+      my ($gridtb_lis_path) = ($gridtb_mt_path);
+      $gridtb_lis_path =~ s/\.mt0/.lis/;
+      &parse_one_fpga_spice_task_one_tb_results($benchmark, "grid_tb", $gridtb_lis_path, $gridtb_mt_path, $conf_ptr->{csv_tags}->{grid_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{grid_tb_dynamic_power_tags}->{val});
+    }
   }
 
   return;
@@ -924,7 +932,6 @@ sub run_one_fpga_spice_task($ $ $) {
   }
 
   my ($toptb_sp_path) = &gen_fpga_spice_netlists_path($formatted_spice_dir.$conf_ptr->{dir_path}->{top_tb_dir_name}->{val}, $spice_netlist_prefix, $conf_ptr->{dir_path}->{top_tb_postfix}->{val});
-  my ($gridtb_sp_path) = &gen_fpga_spice_netlists_path($formatted_spice_dir.$conf_ptr->{dir_path}->{grid_tb_dir_name}->{val}, $spice_netlist_prefix, $conf_ptr->{dir_path}->{grid_tb_postfix}->{val});
     
   if (("on" eq $opt_ptr->{parse_top_tb})&&(!(-e $toptb_sp_path))) {
     die "ERROR: File($toptb_sp_path) does not exist!";
@@ -979,8 +986,14 @@ sub run_one_fpga_spice_task($ $ $) {
     } 
   }
 
-  if (("on" eq $opt_ptr->{parse_grid_tb})&&(!(-e $gridtb_sp_path))) {
-    die "ERROR: File($gridtb_sp_path) does not exist!";
+  if ("on" eq $opt_ptr->{parse_grid_tb}) {
+    print "INFO: Checking GRID testbenches...\n";
+    for ($itb = 0; $itb < $conf_ptr->{task_conf}->{num_grid_tb}->{val}; $itb++) { 
+      my ($gridtb_sp_path) = &gen_fpga_tb_spice_netlist_path($formatted_spice_dir.$conf_ptr->{dir_path}->{grid_tb_dir_name}->{val}, $spice_netlist_prefix, $conf_ptr->{dir_path}->{grid_tb_prefix}->{val}, $itb, $conf_ptr->{dir_path}->{grid_tb_postfix}->{val});
+      if (!(-e $gridtb_sp_path)) {
+        die "ERROR: File($gridtb_sp_path) does not exist!";
+      }
+    }
   }
 
   if (!(-e $shell_script_path)) {
@@ -1204,12 +1217,11 @@ sub gen_csv_rpt($) {
     print $RPTFH "\n";
   }
 
-  # TODO: 
-  #if ("on" eq $opt_ptr->{parse_grid_tb}) {
-  #  print $RPTFH "***** grid_tb Results Table *****\n";
-  #  &gen_csv_rpt_one_tb($RPTFH, "grid_tb", $conf_ptr->{csv_tags}->{grid_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{grid_tb_dynamic_power_tags}->{val});
-  #  print $RPTFH "\n";
-  #}
+  if ("on" eq $opt_ptr->{parse_grid_tb}) {
+    print $RPTFH "***** grid_tb Results Table *****\n";
+    &gen_csv_rpt_one_tb($RPTFH, "grid_tb", $conf_ptr->{csv_tags}->{grid_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{grid_tb_dynamic_power_tags}->{val});
+    print $RPTFH "\n";
+  }
 
   #if ("on" eq $opt_ptr->{parse_routing_mux_tb}) {
   #  print $RPTFH "***** routing_mux_tb Results Table *****\n";

@@ -348,13 +348,13 @@ void fprint_spice_grid_testbench_measurements(FILE* fp,
     fprintf(fp, ".measure tran leakage_power_sram_local_routing find p(Vgvdd_sram_local_routing) at=0\n");
     fprintf(fp, ".measure tran leakage_power_sram_luts find p(Vgvdd_sram_luts) at=0\n");
     /* Global power of Local Interconnections*/
-    fprintf(fp, ".measure tran leakage_power_local_interc find p(Vgvdd_local_interc) at=0\n");
+    fprintf(fp, ".measure tran leakage_power_local_routing find p(Vgvdd_local_interc) at=0\n");
   } else {
     /* Leakage power of SRAMs */
     fprintf(fp, ".measure tran leakage_power_sram_local_routing avg p(Vgvdd_sram_local_routing) from=0 to='clock_period'\n");
     fprintf(fp, ".measure tran leakage_power_sram_luts avg p(Vgvdd_sram_luts) from=0 to='clock_period'\n");
     /* Global power of Local Interconnections*/
-    fprintf(fp, ".measure tran leakage_power_local_interc avg p(Vgvdd_local_interc) from=0 to='clock_period'\n");
+    fprintf(fp, ".measure tran leakage_power_local_routing avg p(Vgvdd_local_interc) from=0 to='clock_period'\n");
   }
   /* Leakge power of Hard logic */
   fprint_measure_vdds_spice_model(fp, SPICE_MODEL_HARDLOGIC, SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, spice, leakage_only);
@@ -370,9 +370,12 @@ void fprint_spice_grid_testbench_measurements(FILE* fp,
   /* Dynamic power */
   /* Dynamic power of SRAMs */
   fprintf(fp, ".measure tran dynamic_power_sram_local_routing avg p(Vgvdd_sram_local_routing) from='clock_period' to='%d*clock_period'\n", num_clock_cycle);
+  fprintf(fp, ".measure tran total_energy_per_cycle_sram_local_routing param='dynamic_power_sram_local_routing*clock_period'\n");
   fprintf(fp, ".measure tran dynamic_power_sram_luts avg p(Vgvdd_sram_luts) from='clock_period' to='%d*clock_period'\n", num_clock_cycle);
+  fprintf(fp, ".measure tran total_energy_per_cycle_sram_luts param='dynamic_power_sram_luts*clock_period'\n");
   /* Dynamic power of Local Interconnections */
   fprintf(fp, ".measure tran dynamic_power_local_interc avg p(Vgvdd_local_interc) from='clock_period' to='%d*clock_period'\n", num_clock_cycle);
+  fprintf(fp, ".measure tran total_energy_per_cycle_local_routing param='dynamic_power_local_interc*clock_period'\n");
   /* Dynamic power of Hard Logic */
   fprint_measure_vdds_spice_model(fp, SPICE_MODEL_HARDLOGIC, SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, spice, leakage_only);
   /* Dynamic power of LUTs */
