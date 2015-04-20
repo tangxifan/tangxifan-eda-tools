@@ -232,6 +232,11 @@ void init_check_arch_spice_models(t_arch* arch,
     }
   }
 
+  /* 3. Initial grid_index_low/high for each spice_model */
+  for (i = 0; i < arch->spice->num_spice_model; i++) {
+    alloc_spice_model_grid_index_low_high(&(arch->spice->spice_models[i]));
+  }
+
   return;
 }
 
@@ -970,7 +975,7 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   fprint_spice_headers(include_dir_path, vpr_crit_path_delay, num_clocks, *(Arch.spice));
 
   /* Generate sub circuits: Inverter, Buffer, Transmission Gate, LUT, DFF, SRAM, MUX*/
-  generate_spice_subckts(subckt_dir_path, Arch ,&vpr_setup.RoutingArch);
+  generate_spice_subckts(subckt_dir_path, &Arch ,&vpr_setup.RoutingArch);
 
   /* Print Netlists of the given FPGA*/
   if (vpr_setup.SpiceOpts.print_spice_top_testbench) {

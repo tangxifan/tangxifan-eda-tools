@@ -1461,3 +1461,91 @@ void auto_select_num_sim_clock_cycle(t_spice* spice) {
 
   return; 
 }
+
+/* Malloc grid_index_low and grid_index_high for a spice_model */
+void alloc_spice_model_grid_index_low_high(t_spice_model* cur_spice_model) {
+  int ix, iy;
+
+  /* grid_index_low */
+  /* x - direction*/
+  cur_spice_model->grid_index_low = (int**)my_malloc(sizeof(int*)*(nx + 2));
+  /* y - direction*/
+  for (ix = 0; ix < (nx + 2); ix++) { 
+    cur_spice_model->grid_index_low[ix] = (int*)my_malloc(sizeof(int)*(ny + 2));
+  }
+  /* Initialize */
+  for (ix = 0; ix < (nx + 2); ix++) { 
+    for (iy = 0; iy < (ny + 2); iy++) { 
+      cur_spice_model->grid_index_low[ix][iy] = 0;
+    }
+  }
+  /* grid_index_high */
+  /* x - direction*/
+  cur_spice_model->grid_index_high = (int**)my_malloc(sizeof(int*)*(nx + 2));
+  /* y - direction*/
+  for (ix = 0; ix < (nx + 2); ix++) { 
+    cur_spice_model->grid_index_high[ix] = (int*)my_malloc(sizeof(int)*(ny + 2));
+  }
+  /* Initialize */
+  for (ix = 0; ix < (nx + 2); ix++) { 
+    for (iy = 0; iy < (ny + 2); iy++) { 
+      cur_spice_model->grid_index_high[ix][iy] = 0;
+    }
+  }
+
+  return;
+}
+
+void update_one_spice_model_grid_index_low(int x, int y, 
+                                           t_spice_model* cur_spice_model) {
+  /* Check */
+  assert((!(0 > x))&&(!(x > (nx + 1))));
+  assert((!(0 > y))&&(!(y > (ny + 1))));
+  assert(NULL != cur_spice_model);
+  assert(NULL != cur_spice_model->grid_index_low);
+  assert(NULL != cur_spice_model->grid_index_low[x]); 
+
+  /* Assigne the low */ 
+  cur_spice_model->grid_index_low[x][y] = cur_spice_model->cnt;
+
+  return;
+}
+
+void update_spice_models_grid_index_low(int x, int y, 
+                                        int num_spice_models, 
+                                        t_spice_model* spice_model) {
+  int i;
+
+  for (i = 0; i < num_spice_models; i++) {
+    update_one_spice_model_grid_index_low(x, y, &(spice_model[i]));
+  }
+
+  return;
+}
+
+void update_one_spice_model_grid_index_high(int x, int y, 
+                                            t_spice_model* cur_spice_model) {
+  /* Check */
+  assert((!(0 > x))&&(!(x > (nx + 1))));
+  assert((!(0 > y))&&(!(y > (ny + 1))));
+  assert(NULL != cur_spice_model);
+  assert(NULL != cur_spice_model->grid_index_high);
+  assert(NULL != cur_spice_model->grid_index_high[x]); 
+
+  /* Assigne the low */ 
+  cur_spice_model->grid_index_high[x][y] = cur_spice_model->cnt;
+
+  return;
+}
+
+void update_spice_models_grid_index_high(int x, int y, 
+                                         int num_spice_models, 
+                                         t_spice_model* spice_model) {
+  int i;
+
+  for (i = 0; i < num_spice_models; i++) {
+    update_one_spice_model_grid_index_high(x, y, &(spice_model[i]));
+  }
+
+  return;
+}

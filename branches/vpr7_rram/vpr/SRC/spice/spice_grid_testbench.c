@@ -45,14 +45,9 @@ void init_spice_grid_testbench_globals() {
   tb_num_grid = 0;
 }
 
-static 
-void fprint_spice_grid_testbench_global_ports(FILE* fp, 
-                                              int num_clock, 
-                                              t_spice spice);
-
 /* Subroutines in this source file*/
 static 
-void fprint_spice_grid_testbench_global_ports(FILE* fp, 
+void fprint_spice_grid_testbench_global_ports(FILE* fp, int x, int y,
                                               int num_clock, 
                                               t_spice spice) {
   /* A valid file handler*/
@@ -70,9 +65,9 @@ void fprint_spice_grid_testbench_global_ports(FILE* fp,
   fprintf(fp, ".global gclock\n");
 
   /*Global Vdds for LUTs*/
-  fprint_global_vdds_spice_model(fp, SPICE_MODEL_LUT, spice);
+  fprint_grid_global_vdds_spice_model(fp, x, y, SPICE_MODEL_LUT, spice);
   /*Global Vdds for FFs*/
-  fprint_global_vdds_spice_model(fp, SPICE_MODEL_FF, spice);
+  fprint_grid_global_vdds_spice_model(fp, x, y, SPICE_MODEL_FF, spice);
 
   return;
 }
@@ -281,15 +276,15 @@ void fprint_spice_grid_testbench_stimulations(FILE* fp,
 
   /* Every Hardlogic use an independent Voltage source */
   fprintf(fp, "***** Global VDD for Hard Logics *****\n");
-  fprint_splited_vdds_spice_model(fp, SPICE_MODEL_HARDLOGIC, spice);
+  fprint_grid_splited_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_HARDLOGIC, spice);
 
   /* Every LUT use an independent Voltage source */
   fprintf(fp, "***** Global VDD for Look-Up Tables (LUTs) *****\n");
-  fprint_splited_vdds_spice_model(fp, SPICE_MODEL_LUT, spice);
+  fprint_grid_splited_vdds_spice_model(fp, grid_x, grid_y,SPICE_MODEL_LUT, spice);
 
   /* Every FF use an independent Voltage source */
   fprintf(fp, "***** Global VDD for Flip-flops (FFs) *****\n");
-  fprint_splited_vdds_spice_model(fp, SPICE_MODEL_FF, spice);
+  fprint_grid_splited_vdds_spice_model(fp, grid_x, grid_y,SPICE_MODEL_FF, spice);
 
   /* Every SRAM inputs should have a voltage source */
   fprintf(fp, "***** Global Inputs for SRAMs *****\n");
@@ -324,7 +319,7 @@ void fprint_spice_grid_testbench_stimulations(FILE* fp,
 }
 
 static 
-void fprint_spice_grid_testbench_measurements(FILE* fp, 
+void fprint_spice_grid_testbench_measurements(FILE* fp, int grid_x, int grid_y, 
                                               t_spice spice,
                                               boolean leakage_only) {
   /* First cycle reserved for measuring leakage */
@@ -357,11 +352,11 @@ void fprint_spice_grid_testbench_measurements(FILE* fp,
     fprintf(fp, ".measure tran leakage_power_local_routing avg p(Vgvdd_local_interc) from=0 to='clock_period'\n");
   }
   /* Leakge power of Hard logic */
-  fprint_measure_vdds_spice_model(fp, SPICE_MODEL_HARDLOGIC, SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, spice, leakage_only);
+  fprint_measure_grid_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_HARDLOGIC, SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, spice, leakage_only);
   /* Leakage power of LUTs*/
-  fprint_measure_vdds_spice_model(fp, SPICE_MODEL_LUT, SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, spice, leakage_only);
+  fprint_measure_grid_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_LUT, SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, spice, leakage_only);
   /* Leakage power of FFs*/
-  fprint_measure_vdds_spice_model(fp, SPICE_MODEL_FF, SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, spice, leakage_only);
+  fprint_measure_grid_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_FF, SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, spice, leakage_only);
 
   if (TRUE == leakage_only) {
     return;
@@ -377,11 +372,11 @@ void fprint_spice_grid_testbench_measurements(FILE* fp,
   fprintf(fp, ".measure tran dynamic_power_local_interc avg p(Vgvdd_local_interc) from='clock_period' to='%d*clock_period'\n", num_clock_cycle);
   fprintf(fp, ".measure tran total_energy_per_cycle_local_routing param='dynamic_power_local_interc*clock_period'\n");
   /* Dynamic power of Hard Logic */
-  fprint_measure_vdds_spice_model(fp, SPICE_MODEL_HARDLOGIC, SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, spice, leakage_only);
+  fprint_measure_grid_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_HARDLOGIC, SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, spice, leakage_only);
   /* Dynamic power of LUTs */
-  fprint_measure_vdds_spice_model(fp, SPICE_MODEL_LUT, SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, spice, leakage_only);
+  fprint_measure_grid_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_LUT, SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, spice, leakage_only);
   /* Dynamic power of FFs */
-  fprint_measure_vdds_spice_model(fp, SPICE_MODEL_FF, SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, spice, leakage_only);
+  fprint_measure_grid_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_FF, SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, spice, leakage_only);
 
   return;
 }
@@ -445,7 +440,7 @@ int fprint_spice_one_grid_testbench(char* formatted_spice_dir,
   fprint_spice_options(fp, arch.spice->spice_params);
 
   /* Global nodes: Vdd for SRAMs, Logic Blocks(Include IO), Switch Boxes, Connection Boxes */
-  fprint_spice_grid_testbench_global_ports(fp, num_clock, (*arch.spice));
+  fprint_spice_grid_testbench_global_ports(fp, grid_x, grid_y, num_clock, (*arch.spice));
  
   /* Quote defined Logic blocks subckts (Grids) */
   init_spice_grid_testbench_globals();
@@ -459,7 +454,7 @@ int fprint_spice_one_grid_testbench(char* formatted_spice_dir,
   fprint_spice_grid_testbench_stimulations(fp, num_clock, (*arch.spice), grid_x, grid_y,  LL_rr_node_indices);
 
   /* Add measurements */  
-  fprint_spice_grid_testbench_measurements(fp, (*arch.spice), leakage_only);
+  fprint_spice_grid_testbench_measurements(fp, grid_x, grid_y, (*arch.spice), leakage_only);
 
   /* SPICE ends*/
   fprintf(fp, ".end\n");

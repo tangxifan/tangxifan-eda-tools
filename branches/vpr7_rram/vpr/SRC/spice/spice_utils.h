@@ -151,3 +151,19 @@ void map_clb_pins_to_pb_graph_pins();
 int recommend_num_sim_clock_cycle();
 
 void auto_select_num_sim_clock_cycle(t_spice* spice);
+
+void alloc_spice_model_grid_index_low_high(t_spice_model* cur_spice_model);
+
+void update_one_spice_model_grid_index_low(int x, int y, 
+                                           t_spice_model* cur_spice_model);
+
+void update_spice_models_grid_index_low(int x, int y, 
+                                        int num_spice_models, 
+                                        t_spice_model* spice_model);
+
+void update_one_spice_model_grid_index_high(int x, int y, 
+                                           t_spice_model* cur_spice_model);
+
+void update_spice_models_grid_index_high(int x, int y, 
+                                        int num_spice_models, 
+                                        t_spice_model* spice_model);

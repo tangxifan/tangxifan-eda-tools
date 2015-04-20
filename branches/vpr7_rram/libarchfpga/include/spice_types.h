@@ -137,6 +137,9 @@ struct s_spice_model {
   /* Counter for print spice netlist*/
   int cnt;
   int tb_cnt;
+  /* Grid index counter */
+  int** grid_index_low;
+  int** grid_index_high;
 };
 
 enum e_spice_accuracy_type {

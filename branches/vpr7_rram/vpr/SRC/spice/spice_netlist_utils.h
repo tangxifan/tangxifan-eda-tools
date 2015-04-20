@@ -14,9 +14,17 @@ void fprint_splited_vdds_spice_model(FILE* fp,
                                      enum e_spice_model_type spice_model_type,
                                      t_spice spice);
 
+void fprint_grid_splited_vdds_spice_model(FILE* fp, int grid_x, int grid_y,
+                                          enum e_spice_model_type spice_model_type,
+                                          t_spice spice);
+
 void fprint_global_vdds_spice_model(FILE* fp, 
                                     enum e_spice_model_type spice_model_type,
                                     t_spice spice);
+
+void fprint_grid_global_vdds_spice_model(FILE* fp, int x, int y, 
+                                         enum e_spice_model_type spice_model_type,
+                                         t_spice spice);
 
 void fprint_global_pad_ports_spice_model(FILE* fp, 
                                          t_spice spice);
@@ -31,6 +39,13 @@ void fprint_measure_vdds_spice_model(FILE* fp,
                                      int num_cycle,
                                      t_spice spice,
                                      boolean leakage_only);
+
+void fprint_measure_grid_vdds_spice_model(FILE* fp, int grid_x, int grid_y,
+                                          enum e_spice_model_type spice_model_type,
+                                          enum e_measure_type meas_type,
+                                          int num_cycle,
+                                          t_spice spice,
+                                          boolean leakage_only);
 
 void fprint_call_defined_grids(FILE* fp);
 

@@ -127,4 +127,4 @@ void fprint_spice_idle_block(FILE* fp,
                              int z,
                              t_type_ptr type_descriptor);
 
-void generate_spice_logic_blocks(char* subckt_dir);
+void generate_spice_logic_blocks(char* subckt_dir, t_arch* arch);

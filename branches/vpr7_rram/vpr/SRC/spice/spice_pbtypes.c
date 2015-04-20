@@ -2156,7 +2156,8 @@ void fprint_io_grid_block_subckt_pins(FILE* fp,
 /* Print the SPICE netlist for a grid blocks */
 void fprint_grid_blocks(FILE* fp,
                         int ix,
-                        int iy) {
+                        int iy,
+                        t_arch* arch) {
   int subckt_name_str_len = 0;
   char* subckt_name = NULL;
   t_block* mapped_block = NULL;
@@ -2174,10 +2175,15 @@ void fprint_grid_blocks(FILE* fp,
   assert((!(0 > ix))&&(!(ix > (nx + 1)))); 
   assert((!(0 > iy))&&(!(iy > (ny + 1)))); 
 
+  /* Update the grid_index_low for each spice_model */
+  update_spice_models_grid_index_low(ix, iy, arch->spice->num_spice_model, arch->spice->spice_models);
+
   /* generate_grid_subckt, type_descriptor of each grid defines the capacity,
    * for example, each grid may contains more than one top-level pb_types, such as I/O
    */
   if (NULL == grid[ix][iy].type) {
+    /* Update the grid_index_high for each spice_model */
+    update_spice_models_grid_index_high(ix, iy, arch->spice->num_spice_model, arch->spice->spice_models);
     return; 
   }
   capacity= grid[ix][iy].type->capacity;
@@ -2245,6 +2251,9 @@ void fprint_grid_blocks(FILE* fp,
 
   assert(cur_block_index == grid[ix][iy].usage);
 
+  /* Update the grid_index_high for each spice_model */
+  update_spice_models_grid_index_high(ix, iy, arch->spice->num_spice_model, arch->spice->spice_models);
+
   /* Free */
   my_free(subckt_name);
 
@@ -2257,7 +2266,8 @@ void fprint_grid_blocks(FILE* fp,
  * will be printed. May have an additional option that only
  * output the used logic blocks 
  */
-void generate_spice_logic_blocks(char* subckt_dir) {
+void generate_spice_logic_blocks(char* subckt_dir,
+                                 t_arch* arch) {
   /* Create file names */
   char* sp_name = my_strcat(subckt_dir, logic_block_spice_file_name);
   FILE* fp = NULL;
@@ -2289,7 +2299,7 @@ void generate_spice_logic_blocks(char* subckt_dir) {
       assert(IO_TYPE != grid[ix][iy].type);
       /* Ensure a valid usage */
       assert((0 == grid[ix][iy].usage)||(0 < grid[ix][iy].usage));
-      fprint_grid_blocks(fp, ix, iy); 
+      fprint_grid_blocks(fp, ix, iy, arch); 
     }
   }
 
@@ -2299,28 +2309,28 @@ void generate_spice_logic_blocks(char* subckt_dir) {
   for (iy = 1; iy < (ny + 1); iy++) {
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
-    fprint_grid_blocks(fp, ix, iy); 
+    fprint_grid_blocks(fp, ix, iy, arch); 
   }
   /* Right side : x = nx + 1, y = 1 .. ny*/
   ix = nx + 1;
   for (iy = 1; iy < (ny + 1); iy++) {
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
-    fprint_grid_blocks(fp, ix, iy); 
+    fprint_grid_blocks(fp, ix, iy, arch); 
   }
   /* Bottom  side : x = 1 .. nx + 1, y = 0 */
   iy = 0;
   for (ix = 1; ix < (nx + 1); ix++) {
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
-    fprint_grid_blocks(fp, ix, iy); 
+    fprint_grid_blocks(fp, ix, iy, arch); 
   }
   /* Top side : x = 1 .. nx + 1, y = nx + 1  */
   iy = ny + 1;
   for (ix = 1; ix < (nx + 1); ix++) {
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
-    fprint_grid_blocks(fp, ix, iy); 
+    fprint_grid_blocks(fp, ix, iy, arch); 
   }
 
 

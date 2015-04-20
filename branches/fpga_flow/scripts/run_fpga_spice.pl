@@ -584,8 +584,11 @@ sub remove_fpga_spice_results($) {
   my ($result_dir_path) = ($formatted_spice_dir.$formatted_result_dir);
 
   #rmtree($result_dir_path,1,1);
-  `rm -rf $result_dir_path/`;
-  print "INFO: Simulation Results($result_dir_path) are removed...\n";
+  #`rm -rf $result_dir_path/`;
+  #print "INFO: Simulation Results($result_dir_path) are removed...\n";
+
+  `rm -rf $spice_dir/`;
+  print "INFO: Spice Directory($spice_dir) is removed...\n";
   
   return; 
 }
@@ -1002,7 +1005,7 @@ sub run_one_fpga_spice_task($ $ $) {
 
   # Call the shell script 
   print "INFO: Running shell script ($shell_script_path)...\n";
-  `csh -c 'source $shell_script_path'`
+  `csh -cx 'source $shell_script_path'`
     or die "ERROR: fail in executing $shell_script_path!\n";
 
   # return to current dir

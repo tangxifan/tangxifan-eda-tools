@@ -93,11 +93,10 @@ void fprint_splited_vdds_spice_model(FILE* fp,
   return;
 }
 
-void fprint_grid_splited_vdds_spice_model(FILE* fp,
+void fprint_grid_splited_vdds_spice_model(FILE* fp, int grid_x, int grid_y,
                                           enum e_spice_model_type spice_model_type,
-                                          int grid_x, int grid_y,
                                           t_spice spice) {
-  int imodel;
+  int imodel, i;
 
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
@@ -106,7 +105,23 @@ void fprint_grid_splited_vdds_spice_model(FILE* fp,
 
   for (imodel = 0; imodel < spice.num_spice_model; imodel++) {  
     if (spice_model_type == spice.spice_models[imodel].type) {
-      /*TODO: How to identify in one grid, which spice models have been used??? */
+      /* Bypass zero-usage spice_model in this grid*/
+      if (spice.spice_models[imodel].grid_index_low[grid_x][grid_y]
+          == spice.spice_models[imodel].grid_index_high[grid_x][grid_y]) {
+        continue;
+      }
+      for (i = spice.spice_models[imodel].grid_index_low[grid_x][grid_y]; 
+           i < spice.spice_models[imodel].grid_index_high[grid_x][grid_y]; 
+           i++) {
+        fprintf(fp, "Vgvdd_%s[%d] gvdd_%s[%d] 0 vsp\n", 
+                spice.spice_models[imodel].prefix, i, spice.spice_models[imodel].prefix, i);
+        /* For some gvdd maybe floating, I add a huge resistance to make their leakage power trival 
+         * which does no change to the delay result.
+         * The resistance value is co-related to the vsp, which produces a trival leakage current (1e-15).
+         */
+        fprintf(fp, "Rgvdd_%s[%d]_huge gvdd_%s[%d] 0 'vsp/10e-15'\n", 
+                spice.spice_models[imodel].prefix, i, spice.spice_models[imodel].prefix, i);
+      }
     }
   }
  
@@ -129,6 +144,40 @@ void fprint_global_vdds_spice_model(FILE* fp,
   for (imodel = 0; imodel < spice.num_spice_model; imodel++) {  
     if (spice_model_type == spice.spice_models[imodel].type) {
       for (i = 0; i < spice.spice_models[imodel].cnt; i++) {
+        fprintf(fp, "+ gvdd_%s[%d]\n", 
+                spice.spice_models[imodel].prefix, i);
+      }
+    }
+  }
+  
+  fprintf(fp, "\n");
+
+  return;
+}
+
+void fprint_grid_global_vdds_spice_model(FILE* fp, int x, int y, 
+                                         enum e_spice_model_type spice_model_type,
+                                         t_spice spice) {
+  int imodel, i;
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+
+  fprintf(fp, "***** Global VDD ports of %s *****\n", generate_string_spice_model_type(spice_model_type));
+  fprintf(fp, ".global \n");
+
+  for (imodel = 0; imodel < spice.num_spice_model; imodel++) {  
+    if (spice_model_type == spice.spice_models[imodel].type) {
+      /* Bypass zero-usage spice_model in this grid*/
+      if (spice.spice_models[imodel].grid_index_low[x][y]
+          == spice.spice_models[imodel].grid_index_high[x][y]) {
+        continue;
+      }
+      for (i = spice.spice_models[imodel].grid_index_low[x][y]; 
+           i < spice.spice_models[imodel].grid_index_high[x][y]; 
+           i++) {
         fprintf(fp, "+ gvdd_%s[%d]\n", 
                 spice.spice_models[imodel].prefix, i);
       }
@@ -324,6 +373,119 @@ void fprint_measure_vdds_spice_model(FILE* fp,
         fprintf(fp, ".measure tran total_energy_per_cycle_%s \n", spice.spice_models[imodel].prefix);
         fprintf(fp, "+ param = 'dynamic_power_%s[0to%d]*clock_period'\n", 
                 spice.spice_models[imodel].prefix, spice.spice_models[imodel].cnt-1);
+        break;
+      default: 
+        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid meas_type!\n", __FILE__, __LINE__);
+        exit(1);
+      }
+    }
+  }
+  
+  
+  return;
+}
+
+void fprint_measure_grid_vdds_spice_model(FILE* fp, int grid_x, int grid_y,
+                                          enum e_spice_model_type spice_model_type,
+                                          enum e_measure_type meas_type,
+                                          int num_cycle,
+                                          t_spice spice,
+                                          boolean leakage_only) {
+  int imodel, i;
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+
+  for (imodel = 0; imodel < spice.num_spice_model; imodel++) {  
+    if (spice_model_type == spice.spice_models[imodel].type) {
+      /* Bypass zero-usage spice_model in this grid*/
+      if (spice.spice_models[imodel].grid_index_low[grid_x][grid_y]
+          == spice.spice_models[imodel].grid_index_high[grid_x][grid_y]) {
+        continue;
+      }
+      for (i = spice.spice_models[imodel].grid_index_low[grid_x][grid_y]; 
+           i < spice.spice_models[imodel].grid_index_high[grid_x][grid_y]; 
+           i++) {
+        switch (meas_type) {
+        case SPICE_MEASURE_LEAKAGE_POWER:
+          if (TRUE == leakage_only) {
+            fprintf(fp, ".measure tran leakage_power_%s[%d] find p(Vgvdd_%s[%d]) at=0\n",
+                    spice.spice_models[imodel].prefix, i, spice.spice_models[imodel].prefix, i);
+          } else {
+            fprintf(fp, ".measure tran leakage_power_%s[%d] avg p(Vgvdd_%s[%d]) from=0 to='clock_period'\n",
+                    spice.spice_models[imodel].prefix, i, spice.spice_models[imodel].prefix, i);
+          }
+          break;
+        case SPICE_MEASURE_DYNAMIC_POWER:
+          fprintf(fp, ".measure tran dynamic_power_%s[%d] avg p(Vgvdd_%s[%d]) from='clock_period' to='%d*clock_period'\n",
+                  spice.spice_models[imodel].prefix, i, spice.spice_models[imodel].prefix, i, num_cycle);
+          break;
+        default: 
+          vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid meas_type!\n", __FILE__, __LINE__);
+          exit(1);
+        }
+      }
+    }
+  }
+
+  /* Measure the total power of this kind of spice model */
+  for (imodel = 0; imodel < spice.num_spice_model; imodel++) {  
+    if (spice_model_type == spice.spice_models[imodel].type) {
+      switch (meas_type) {
+      case SPICE_MEASURE_LEAKAGE_POWER:
+        /* Bypass zero-usage spice_model in this grid*/
+        if (spice.spice_models[imodel].grid_index_low[grid_x][grid_y]
+            == spice.spice_models[imodel].grid_index_high[grid_x][grid_y]) {
+          continue;
+        }
+        for (i = spice.spice_models[imodel].grid_index_low[grid_x][grid_y]; 
+             i < spice.spice_models[imodel].grid_index_high[grid_x][grid_y]; 
+             i++) {
+          fprintf(fp, ".measure tran leakage_power_%s[0to%d] \n", spice.spice_models[imodel].prefix, i);
+          if (0 == i) {
+            fprintf(fp, "+ param = 'leakage_power_%s[%d]'\n", spice.spice_models[imodel].prefix, i);
+          } else {
+            fprintf(fp, "+ param = 'leakage_power_%s[%d]+leakage_power_%s[0to%d]'\n", 
+                    spice.spice_models[imodel].prefix, i, spice.spice_models[imodel].prefix, i-1);
+          }
+        }
+        /* Spot the total leakage power of this spice model */
+        fprintf(fp, ".measure tran total_leakage_power_%s \n", spice.spice_models[imodel].prefix);
+        fprintf(fp, "+ param = 'leakage_power_%s[0to%d]'\n", 
+                spice.spice_models[imodel].prefix, 
+                spice.spice_models[imodel].grid_index_high[grid_x][grid_y] - 
+                spice.spice_models[imodel].grid_index_low[grid_x][grid_y] - 1);
+        break;
+      case SPICE_MEASURE_DYNAMIC_POWER:
+        /* Bypass zero-usage spice_model in this grid*/
+        if (spice.spice_models[imodel].grid_index_low[grid_x][grid_y]
+            == spice.spice_models[imodel].grid_index_high[grid_x][grid_y]) {
+          continue;
+        }
+        for (i = spice.spice_models[imodel].grid_index_low[grid_x][grid_y]; 
+             i < spice.spice_models[imodel].grid_index_high[grid_x][grid_y]; 
+             i++) {
+          fprintf(fp, ".measure tran dynamic_power_%s[0to%d] \n", spice.spice_models[imodel].prefix, i);
+          if (0 == i) {
+            fprintf(fp, "+ param = 'dynamic_power_%s[%d]'\n", spice.spice_models[imodel].prefix, i);
+          } else {
+            fprintf(fp, "+ param = 'dynamic_power_%s[%d]+dynamic_power_%s[0to%d]'\n", 
+                    spice.spice_models[imodel].prefix, i, spice.spice_models[imodel].prefix, i-1);
+          }
+        }
+        /* Spot the total dynamic power of this spice model */
+        fprintf(fp, ".measure tran total_dynamic_power_%s \n", spice.spice_models[imodel].prefix);
+        fprintf(fp, "+ param = 'dynamic_power_%s[0to%d]'\n", 
+                spice.spice_models[imodel].prefix,
+                spice.spice_models[imodel].grid_index_high[grid_x][grid_y] - 
+                spice.spice_models[imodel].grid_index_low[grid_x][grid_y] - 1);
+        fprintf(fp, ".measure tran total_energy_per_cycle_%s \n", spice.spice_models[imodel].prefix);
+        fprintf(fp, "+ param = 'dynamic_power_%s[0to%d]*clock_period'\n", 
+                spice.spice_models[imodel].prefix,
+                spice.spice_models[imodel].grid_index_high[grid_x][grid_y] - 
+                spice.spice_models[imodel].grid_index_low[grid_x][grid_y] - 1);
         break;
       default: 
         vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid meas_type!\n", __FILE__, __LINE__);

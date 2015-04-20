@@ -2,16 +2,16 @@ MOS capacitance
 * Technology
 *.lib '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/process/MM180_LVT18_V113.lib' TT
 *.include '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/process/tsmc40nm.sp'
-*.include './process/22nm_HP.pm'
-.include './process/45nm_LP.pm'
+.include './process/22nm_HP.pm'
+*.include './process/45nm_LP.pm'
 *.include './process/st_28nm.sp'
 .include '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/spice/nmos_pmos.sp'
 .temp 25
-.param beta = 1.4
+.param beta = 1.5
 .param alpha = 1
-.param nl = 45e-9
+.param nl = 22e-9
 .param pl = nl
-.param wn = '160e-9'
+.param wn = '55e-9'
 .param wp = 'beta*wn'
 .param clk_freq = 1e8
 
@@ -32,7 +32,7 @@ MOS capacitance
 .option POST
 .option captab
 
-.param vsp = 1.1
+.param vsp = 0.8
 
 * Test case 1 : NMOS OPEN CAP, VDD
 X1 i1 vdd t1 gnd nmos L=nl W=wn

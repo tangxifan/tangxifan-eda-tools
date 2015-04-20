@@ -40,7 +40,7 @@ void init_spice_lut_testbench_globals() {
 }
 
 static 
-void fprint_spice_lut_testbench_global_ports(FILE* fp, 
+void fprint_spice_lut_testbench_global_ports(FILE* fp, int grid_x, int grid_y,
                                              int num_clock, 
                                              t_spice spice) {
   /* int i; */
@@ -59,7 +59,7 @@ void fprint_spice_lut_testbench_global_ports(FILE* fp,
   fprintf(fp, ".global gclock\n");
 
   /*Global Vdds for LUTs*/
-  fprint_global_vdds_spice_model(fp, SPICE_MODEL_LUT, spice);
+  fprint_grid_global_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_LUT, spice);
   /*
   for (i = 0; i < spice.num_spice_model; i++) {
     if (SPICE_MODEL_LUT == spice.spice_models[i].type) {
@@ -369,7 +369,7 @@ void fprint_spice_lut_testbench_call_defined_luts(FILE* fp) {
   return;
 }
 
-void fprint_spice_lut_testbench_stimulations(FILE* fp, 
+void fprint_spice_lut_testbench_stimulations(FILE* fp, int grid_x, int grid_y,
                                              int num_clock, 
                                              t_spice spice, 
                                              t_ivec*** LL_rr_node_indices) {
@@ -395,7 +395,7 @@ void fprint_spice_lut_testbench_stimulations(FILE* fp,
 
   /* Every LUT use an independent Voltage source */
   fprintf(fp, "***** Global VDD for Look-Up Tables (LUTs) *****\n");
-  fprint_splited_vdds_spice_model(fp, SPICE_MODEL_LUT, spice);
+  fprint_grid_splited_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_LUT, spice);
   /*
   for (i = 0; i < spice.num_spice_model; i++) {
     if (SPICE_MODEL_LUT == spice.spice_models[i].type) {
@@ -431,7 +431,7 @@ void fprint_spice_lut_testbench_stimulations(FILE* fp,
   return;
 }
 
-void fprint_spice_lut_testbench_measurements(FILE* fp, 
+void fprint_spice_lut_testbench_measurements(FILE* fp, int grid_x, int grid_y, 
                                              t_spice spice, 
                                              boolean leakage_only) {
   /* int i; */
@@ -459,7 +459,7 @@ void fprint_spice_lut_testbench_measurements(FILE* fp,
     fprintf(fp, ".measure tran leakage_power_sram_luts avg p(Vgvdd_sram_luts) from=0 to='clock_period'\n");
   }
   /* Leakage power of LUTs*/
-  fprint_measure_vdds_spice_model(fp, SPICE_MODEL_LUT, SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, spice, leakage_only);
+  fprint_measure_grid_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_LUT, SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, spice, leakage_only);
   /*
   for (i = 0; i < spice.num_spice_model; i++) {
     if (SPICE_MODEL_LUT == spice.spice_models[i].type) {
@@ -477,7 +477,7 @@ void fprint_spice_lut_testbench_measurements(FILE* fp,
   fprintf(fp, ".measure tran dynamic_power_sram_luts avg p(Vgvdd_sram_luts) from='clock_period' to='%d*clock_period'\n", num_clock_cycle);
   fprintf(fp, ".measure tran energy_per_cycle_sram_luts param='dynamic_power_sram_luts*clock_period'\n");
   /* Dynamic power of LUTs */
-  fprint_measure_vdds_spice_model(fp, SPICE_MODEL_LUT, SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, spice, leakage_only);
+  fprint_measure_grid_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_LUT, SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, spice, leakage_only);
   /*
   for (i = 0; i < spice.num_spice_model; i++) {
     if (SPICE_MODEL_LUT == spice.spice_models[i].type) {
@@ -485,7 +485,6 @@ void fprint_spice_lut_testbench_measurements(FILE* fp,
     }
   }
   */
-
 
   return;
 }
@@ -550,7 +549,7 @@ int fprint_spice_one_lut_testbench(char* formatted_spice_dir,
   fprint_spice_options(fp, arch.spice->spice_params);
 
   /* Global nodes: Vdd for SRAMs, Logic Blocks(Include IO), Switch Boxes, Connection Boxes */
-  fprint_spice_lut_testbench_global_ports(fp, num_clock, (*arch.spice));
+  fprint_spice_lut_testbench_global_ports(fp, grid_x, grid_y, num_clock, (*arch.spice));
  
   /* Quote defined Logic blocks subckts (Grids) */
   init_spice_lut_testbench_globals();
@@ -562,10 +561,10 @@ int fprint_spice_one_lut_testbench(char* formatted_spice_dir,
    */
 
   /* Add stimulations */
-  fprint_spice_lut_testbench_stimulations(fp, num_clock, (*arch.spice), LL_rr_node_indices);
+  fprint_spice_lut_testbench_stimulations(fp, grid_x, grid_y,  num_clock, (*arch.spice), LL_rr_node_indices);
 
   /* Add measurements */  
-  fprint_spice_lut_testbench_measurements(fp, (*arch.spice), leakage_only);
+  fprint_spice_lut_testbench_measurements(fp, grid_x, grid_y, (*arch.spice), leakage_only);
 
   /* SPICE ends*/
   fprintf(fp, ".end\n");

@@ -588,41 +588,41 @@ void generate_spice_wires(char* subckt_dir,
  * 5. Flip-flops
  */
 void generate_spice_subckts(char* subckt_dir,
-                            t_arch arch,
+                            t_arch* arch,
                             t_det_routing_arch* routing_arch) {
   /* 1.Generate NMOS, PMOS and transmission gate */
   vpr_printf(TIO_MESSAGE_INFO,"Writing SPICE NMOS and PMOS...\n");
-  generate_spice_nmos_pmos(subckt_dir, arch.spice->tech_lib);
+  generate_spice_nmos_pmos(subckt_dir, arch->spice->tech_lib);
 
   /* 2. Generate Inverter, Buffer, and transmission gates*/
   vpr_printf(TIO_MESSAGE_INFO,"Writing SPICE Basic subckts...\n");
-  generate_spice_basics(subckt_dir, (*(arch.spice)));
+  generate_spice_basics(subckt_dir, *(arch->spice));
 
   /* 2.5 Generate RRAM Verilog-A model*/
   vpr_printf(TIO_MESSAGE_INFO, "Writing RRAM Behavior Verilog-A model...\n");
-  generate_spice_rram_veriloga(subckt_dir, (*(arch.spice)));
+  generate_spice_rram_veriloga(subckt_dir, (*(arch->spice)));
 
   /* 3. Generate Multiplexers */
   vpr_printf(TIO_MESSAGE_INFO,"Writing SPICE Multiplexers...\n");
   generate_spice_muxes(subckt_dir, routing_arch->num_switch, switch_inf, 
-                       arch.spice, routing_arch);
+                       arch->spice, routing_arch);
 
   /* 4. Generate Wires*/
   vpr_printf(TIO_MESSAGE_INFO,"Writing SPICE Wires...\n");
-  generate_spice_wires(subckt_dir, arch.num_segments, arch.Segments,
-                       arch.spice->num_spice_model, arch.spice->spice_models);
+  generate_spice_wires(subckt_dir, arch->num_segments, arch->Segments,
+                       arch->spice->num_spice_model, arch->spice->spice_models);
 
   /*5. Generate LUTs */
   vpr_printf(TIO_MESSAGE_INFO,"Writing SPICE LUTs...\n");
-  generate_spice_luts(subckt_dir, arch.spice->num_spice_model, arch.spice->spice_models);
+  generate_spice_luts(subckt_dir, arch->spice->num_spice_model, arch->spice->spice_models);
  
   /* 6. Generate Logic Blocks */
   vpr_printf(TIO_MESSAGE_INFO,"Writing Logic Blocks...\n");
-  generate_spice_logic_blocks(subckt_dir);
+  generate_spice_logic_blocks(subckt_dir, arch);
 
   /* 7. Generate Routing architecture*/
   vpr_printf(TIO_MESSAGE_INFO, "Writing Routing Resources....\n");
-  generate_spice_routing_resources(subckt_dir, arch, routing_arch, rr_node_indices);
+  generate_spice_routing_resources(subckt_dir, (*arch), routing_arch, rr_node_indices);
 
   return;
 }
