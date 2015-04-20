@@ -443,20 +443,26 @@ void fprint_measure_grid_vdds_spice_model(FILE* fp, int grid_x, int grid_y,
         for (i = spice.spice_models[imodel].grid_index_low[grid_x][grid_y]; 
              i < spice.spice_models[imodel].grid_index_high[grid_x][grid_y]; 
              i++) {
-          fprintf(fp, ".measure tran leakage_power_%s[0to%d] \n", spice.spice_models[imodel].prefix, i);
-          if (0 == i) {
+          fprintf(fp, ".measure tran leakage_power_%s[%dto%d] \n", 
+                  spice.spice_models[imodel].prefix, 
+                  spice.spice_models[imodel].grid_index_low[grid_x][grid_y], 
+                  i);
+          if (spice.spice_models[imodel].grid_index_low[grid_x][grid_y] == i) {
             fprintf(fp, "+ param = 'leakage_power_%s[%d]'\n", spice.spice_models[imodel].prefix, i);
           } else {
-            fprintf(fp, "+ param = 'leakage_power_%s[%d]+leakage_power_%s[0to%d]'\n", 
-                    spice.spice_models[imodel].prefix, i, spice.spice_models[imodel].prefix, i-1);
+            fprintf(fp, "+ param = 'leakage_power_%s[%d]+leakage_power_%s[%dto%d]'\n", 
+                    spice.spice_models[imodel].prefix, 
+                    i, spice.spice_models[imodel].prefix, 
+                    spice.spice_models[imodel].grid_index_low[grid_x][grid_y], 
+                    i-1);
           }
         }
         /* Spot the total leakage power of this spice model */
         fprintf(fp, ".measure tran total_leakage_power_%s \n", spice.spice_models[imodel].prefix);
-        fprintf(fp, "+ param = 'leakage_power_%s[0to%d]'\n", 
+        fprintf(fp, "+ param = 'leakage_power_%s[%dto%d]'\n", 
                 spice.spice_models[imodel].prefix, 
-                spice.spice_models[imodel].grid_index_high[grid_x][grid_y] - 
-                spice.spice_models[imodel].grid_index_low[grid_x][grid_y] - 1);
+                spice.spice_models[imodel].grid_index_low[grid_x][grid_y],
+                spice.spice_models[imodel].grid_index_high[grid_x][grid_y]-1); 
         break;
       case SPICE_MEASURE_DYNAMIC_POWER:
         /* Bypass zero-usage spice_model in this grid*/
@@ -467,25 +473,31 @@ void fprint_measure_grid_vdds_spice_model(FILE* fp, int grid_x, int grid_y,
         for (i = spice.spice_models[imodel].grid_index_low[grid_x][grid_y]; 
              i < spice.spice_models[imodel].grid_index_high[grid_x][grid_y]; 
              i++) {
-          fprintf(fp, ".measure tran dynamic_power_%s[0to%d] \n", spice.spice_models[imodel].prefix, i);
-          if (0 == i) {
+          fprintf(fp, ".measure tran dynamic_power_%s[%dto%d] \n", 
+                  spice.spice_models[imodel].prefix, 
+                  spice.spice_models[imodel].grid_index_low[grid_x][grid_y], 
+                  i);
+          if (spice.spice_models[imodel].grid_index_low[grid_x][grid_y] == i) {
             fprintf(fp, "+ param = 'dynamic_power_%s[%d]'\n", spice.spice_models[imodel].prefix, i);
           } else {
-            fprintf(fp, "+ param = 'dynamic_power_%s[%d]+dynamic_power_%s[0to%d]'\n", 
-                    spice.spice_models[imodel].prefix, i, spice.spice_models[imodel].prefix, i-1);
+            fprintf(fp, "+ param = 'dynamic_power_%s[%d]+dynamic_power_%s[%dto%d]'\n", 
+                    spice.spice_models[imodel].prefix, i, 
+                    spice.spice_models[imodel].prefix, 
+                    spice.spice_models[imodel].grid_index_low[grid_x][grid_y], 
+                    i-1);
           }
         }
         /* Spot the total dynamic power of this spice model */
         fprintf(fp, ".measure tran total_dynamic_power_%s \n", spice.spice_models[imodel].prefix);
-        fprintf(fp, "+ param = 'dynamic_power_%s[0to%d]'\n", 
+        fprintf(fp, "+ param = 'dynamic_power_%s[%dto%d]'\n", 
                 spice.spice_models[imodel].prefix,
-                spice.spice_models[imodel].grid_index_high[grid_x][grid_y] - 
-                spice.spice_models[imodel].grid_index_low[grid_x][grid_y] - 1);
+                spice.spice_models[imodel].grid_index_low[grid_x][grid_y],
+                spice.spice_models[imodel].grid_index_high[grid_x][grid_y]-1); 
         fprintf(fp, ".measure tran total_energy_per_cycle_%s \n", spice.spice_models[imodel].prefix);
-        fprintf(fp, "+ param = 'dynamic_power_%s[0to%d]*clock_period'\n", 
+        fprintf(fp, "+ param = 'dynamic_power_%s[%dto%d]*clock_period'\n", 
                 spice.spice_models[imodel].prefix,
-                spice.spice_models[imodel].grid_index_high[grid_x][grid_y] - 
-                spice.spice_models[imodel].grid_index_low[grid_x][grid_y] - 1);
+                spice.spice_models[imodel].grid_index_low[grid_x][grid_y],
+                spice.spice_models[imodel].grid_index_high[grid_x][grid_y]-1); 
         break;
       default: 
         vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid meas_type!\n", __FILE__, __LINE__);
