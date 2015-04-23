@@ -163,11 +163,11 @@
     <switch_block type="wilton" fs="3"/>
   </device>
   <cblocks>
-    <switch type="mux" name="cb_mux" R="0" Cin="532e-18" Cout="0" Tdel="9.4e-11" mux_trans_size="2.4" buf_size="50.4" spice_model_name="cb_mux_buffered">
+    <switch type="mux" name="cb_mux" R="0" Cin="532e-18" Cout="0" Tdel="9.4e-11" mux_trans_size="2.4" buf_size="50.4" spice_model_name="cb_mux_buffered" power_buf_size="16">
     </switch>
   </cblocks>
   <switchlist>
-    <switch type="mux" name="0" R="72.5" Cin="532e-18" Cout="3.69e-14" Tdel="6.88e-11" mux_trans_size="2.4" buf_size="204" spice_model_name="sb_mux_buffered"/>
+    <switch type="mux" name="0" R="72.5" Cin="532e-18" Cout="3.69e-14" Tdel="6.88e-11" mux_trans_size="2.4" buf_size="204" spice_model_name="sb_mux_buffered" power_buf_size="64"/>
   </switchlist>
   <segmentlist>
     <segment freq="1.0" length="4" type="unidir" Rmetal="103.84" Cmetal="13.80e-15" spice_model_name="chan_segment">
@@ -235,8 +235,12 @@
       <power method="ignore"/>			
     </pb_type>
     <pb_type name="clb">
-      <input name="I" num_pins="33" equivalent="true"/>
-      <output name="O" num_pins="20" equivalent="false"/>
+      <input name="I" num_pins="33" equivalent="true">
+        <power wire_capacitance="0" buffer_size="1"/>
+      <input/>
+      <output name="O" num_pins="20" equivalent="false">
+        <power wire_capacitance="0" buffer_size="64"/>
+      <output/>
       <clock name="clk" num_pins="1"/>
 
       <!-- Describe fracturable logic element.  
@@ -279,8 +283,13 @@
                   9.1e-11
                   9.1e-11
                 </delay_matrix>
-                <power method="absolute">
-                  <dynamic_power power_per_instance="1.36e-4"/>
+                <power method="pin_toggle">
+                  <port name="in[0]" energy_per_toggle="4.84e-15"/>
+                  <port name="in[1]" energy_per_toggle="4.84e-15"/>
+                  <port name="in[2]" energy_per_toggle="4.84e-15"/>
+                  <port name="in[3]" energy_per_toggle="4.84e-15"/>
+                  <port name="in[4]" energy_per_toggle="4.84e-15"/>
+                  <!--port name="in" energy_per_toggle="2.17e-5"/-->
                   <static_power power_per_instance="6.1e-8"/>
                 </power>
               </pb_type>
@@ -292,8 +301,8 @@
                 <clock name="clk" num_pins="1" port_class="clock"/>
                 <T_setup value="4.68e-11" port="ff.D" clock="clk"/>
                 <T_clock_to_Q max="2.7e-11" port="ff.Q" clock="clk"/>
-                <power method="absolute">
-                  <dynamic_power power_per_instance="2.3e-5"/>
+                <power method="pin_toggle">
+                  <port name="Q" energy_per_toggle="5.6e-15"/>
                   <static_power power_per_instance="2.95e-8"/>
                 </power>
               </pb_type>
@@ -356,8 +365,14 @@
                 1.4e-10
                 1.4e-10
               </delay_matrix>
-              <power method="absolute">
-                <dynamic_power power_per_instance="2.13e-4"/>
+              <power method="energy_per_toggle">
+                <port name="in[0]" energy_per_toggle="7.73e-15"/>
+                <port name="in[1]" energy_per_toggle="7.73e-15"/>
+                <port name="in[2]" energy_per_toggle="7.73e-15"/>
+                <port name="in[3]" energy_per_toggle="7.73e-15"/>
+                <port name="in[4]" energy_per_toggle="7.73e-15"/>
+                <port name="in[5]" energy_per_toggle="7.73e-15"/>
+                <!--port name="in" energy_per_toggle="2.815e-5"/-->
                 <static_power power_per_instance="7.85e-8"/>
               </power>
             </pb_type>
@@ -369,8 +384,8 @@
               <clock name="clk" num_pins="1" port_class="clock"/>
               <T_setup value="4.68e-11" port="ff.D" clock="clk"/>
               <T_clock_to_Q max="2.7e-11" port="ff.Q" clock="clk"/>
-              <power method="absolute">
-                <dynamic_power power_per_instance="2.3e-5"/>
+              <power method="pin_toggle">
+                <port name="Q" energy_per_toggle="5.6e-15"/>
                 <static_power power_per_instance="2.95e-8"/>
               </power>
             </pb_type>
@@ -431,9 +446,10 @@
     </pb_type>
   </complexblocklist>
   <power>
-    <local_interconnect C_wire="2.18e-10"/>
+    <local_interconnect C_wire="0"/>
+    <buffers logical_effort_factor="4"/>
   </power>
   <clocks>
-    <clock buffer_size="auto" C_wire="2.18e-10"/>
+    <clock buffer_size="0" C_wire="0"/>
   </clocks>
 </architecture>

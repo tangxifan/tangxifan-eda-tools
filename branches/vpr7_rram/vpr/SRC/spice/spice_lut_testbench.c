@@ -124,9 +124,11 @@ void fprint_spice_lut_testbench_one_pb_graph_node_lut(FILE* fp,
                                                        pb_spice_model, prefix);
 
   /* Bypass unmapped luts */
+  /*
   if (OPEN == logical_block_index) {
     return;
   }
+  */
 
   /* Allocate input_density and probability */
   stats_pb_graph_node_port_pin_numbers(cur_pb_graph_node,&num_inputs,&num_outputs, &num_clock_pins);

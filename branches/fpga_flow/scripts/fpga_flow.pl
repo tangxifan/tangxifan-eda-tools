@@ -131,6 +131,7 @@ sub print_usage()
   print "      -multi_task <int>: turn on the mutli-task mode\n";
   print "      -vpr_fpga_spice <task_file> : turn on SPICE netlists print-out in VPR, specify a task file\n";
   print "      -vpr_fpga_spice_print_gridtb : print Grid testbench in VPR FPGA SPICE\n";
+  print "      -vpr_fpga_spice_print_toptb : print full-chip testbench in VPR FPGA SPICE\n";
   print "      -vpr_fpga_spice_leakage_only : turn on leakage_only mode in VPR FPGA SPICE\n";
   print "      -multi_thread <int>: turn on the mutli-thread mode, specify the number of threads\n";
   print "      -parse_results_only : only parse the flow results and write CSV report.\n";
@@ -229,7 +230,8 @@ sub opts_read()
   if (-1 == $#ARGV)
   {
     print "Error : No input arguments!\n";
-    print "Try: -help for usage.\n";
+    print "Help desk:\n";
+    &print_usage();
     exit(1);
   }
   # Read in the options
@@ -280,6 +282,7 @@ sub opts_read()
   &read_opt_into_hash("parse_results_only","off","off");
   &read_opt_into_hash("vpr_fpga_spice","on","off");
   &read_opt_into_hash("vpr_fpga_spice_print_gridtb","off","off");
+  &read_opt_into_hash("vpr_fpga_spice_print_toptb","off","off");
   &read_opt_into_hash("vpr_fpga_spice_leakage_only","off","off");
 
   &print_opts(); 
@@ -888,6 +891,9 @@ sub run_std_vpr($ $ $ $ $ $ $ $ $)
     $vpr_spice_opts = "--fpga_spice";
     if ("on" eq $opt_ptr->{vpr_fpga_spice_print_gridtb}) {
       $vpr_spice_opts = $vpr_spice_opts." --print_spice_grid_testbench";
+    }
+    if ("on" eq $opt_ptr->{vpr_fpga_spice_print_toptb}) {
+      $vpr_spice_opts = $vpr_spice_opts." --print_spice_top_testbench";
     }
     if ("on" eq $opt_ptr->{vpr_fpga_spice_leakage_only}) {
       $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_leakage_only";

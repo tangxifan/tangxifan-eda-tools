@@ -101,6 +101,9 @@ void fprint_run_hspice_shell_script(t_spice spice,
     }
   }
 
+  fprintf(fp, "echo Simulation progress: %d Finish, %d to go, total %d\n",
+          progress_cnt, total_num_sim-progress_cnt, total_num_sim);
+
   fprintf(fp, "cd %s\n", spice_dir_path);
 
   /* close fp */

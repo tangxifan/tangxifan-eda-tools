@@ -1194,9 +1194,11 @@ void fprint_spice_mux_testbench_pb_interc(FILE* fp,
       pb_rr_nodes = cur_pb->rr_graph;
       node_index = cur_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
       /* Bypass unmapped interc */
+      /* 
       if (OPEN == pb_rr_nodes[node_index].net_num) {
         continue;
       }
+      */ 
       prev_node = pb_rr_nodes[node_index].prev_node;
       /* prev_edge is the index of edge of prev_node !!! */
       prev_edge = pb_rr_nodes[node_index].prev_edge;
@@ -1271,9 +1273,11 @@ void fprint_spice_mux_testbench_pb_interc(FILE* fp,
           prev_node = pb_rr_nodes[node_index].prev_node;
           prev_edge = pb_rr_nodes[node_index].prev_edge;
           /* Bypass unmapped interc */
+          /* 
           if (OPEN == pb_rr_nodes[node_index].net_num) {
             continue;
           } 
+          */
           /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
           if (OPEN == prev_node) {
             path_id = 0;
@@ -1300,9 +1304,11 @@ void fprint_spice_mux_testbench_pb_interc(FILE* fp,
           prev_node = pb_rr_nodes[node_index].prev_node;
           prev_edge = pb_rr_nodes[node_index].prev_edge;
           /* Bypass unmapped interc */
+          /* 
           if (OPEN == pb_rr_nodes[node_index].net_num) {
             continue;
           }
+          */
           /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
           if (OPEN == prev_node) {
             path_id = 0;

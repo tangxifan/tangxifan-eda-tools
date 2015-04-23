@@ -81,7 +81,7 @@ my @sctgy;
                 "num_lut_mux_tb",
                 "num_dff_mux_tb",
                 "num_grid_mux_tb",
-                "num_top_mux_tb",
+                "num_top_tb",
                 );
 # refer to the keywords of csv_tags
 @{$sctgy[2]} = ("top_tb_leakage_power_tags",
@@ -584,11 +584,11 @@ sub remove_fpga_spice_results($) {
   my ($result_dir_path) = ($formatted_spice_dir.$formatted_result_dir);
 
   #rmtree($result_dir_path,1,1);
-  #`rm -rf $result_dir_path/`;
-  #print "INFO: Simulation Results($result_dir_path) are removed...\n";
+  `rm -rf $result_dir_path/`;
+  print "INFO: Simulation Results($result_dir_path) are removed...\n";
 
-  `rm -rf $spice_dir/`;
-  print "INFO: Spice Directory($spice_dir) is removed...\n";
+  #`rm -rf $spice_dir/`;
+  #print "INFO: Spice Directory($spice_dir) is removed...\n";
   
   return; 
 }
@@ -766,7 +766,10 @@ sub parse_one_fpga_spice_task_one_tb_results($ $ $ $ $ $) {
       # Special: get peak memory used and total elapsed time
       if ($line =~ m/peak\s+memory\s+used\s+([\d.]+)\s+megabytes/i) {
         $temp = $1;
-        $rpt_ptr->{$benchmark}->{$tbname_tag}->{peak_mem_used} += $temp;
+        if ((!defined($rpt_ptr->{$benchmark}->{$tbname_tag}->{peak_mem_used}))
+           ||($rpt_ptr->{$benchmark}->{$tbname_tag}->{peak_mem_used} < $temp)) {
+          $rpt_ptr->{$benchmark}->{$tbname_tag}->{peak_mem_used} = $temp;
+        }
       }
       if ($line =~ m/total\s+elapsed\s+time\s+([\d.]+)\s+seconds/i) {
         $temp = $1;
@@ -1216,7 +1219,7 @@ sub gen_csv_rpt($) {
 
   if ("on" eq $opt_ptr->{parse_top_tb}) {
     print $RPTFH "***** top_tb Results Table *****\n";
-    &gen_csv_rpt_one_tb($RPTFH, "lut_tb", $conf_ptr->{csv_tags}->{top_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{top_tb_dynamic_power_tags}->{val});
+    &gen_csv_rpt_one_tb($RPTFH, "top_tb", $conf_ptr->{csv_tags}->{top_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{top_tb_dynamic_power_tags}->{val});
     print $RPTFH "\n";
   }
 

@@ -1187,6 +1187,7 @@ sub gen_lut_sp_measure($ $ $ $ $ $ $)
     &tab_print($spfh,".measure tran slew_lut trig v($conf_ptr->{lut_settings}->{OUT_port_name}->{val}) val=\'slew_lower_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'input_pwl\'\n",0);
     &tab_print($spfh,"+                      targ v($conf_ptr->{lut_settings}->{OUT_port_name}->{val}) val=\'slew_upper_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'input_pwl\'\n",0);
     &tab_print($spfh,".measure tran pdynamic avg p(vsupply) from=\'input_pwl\' to=\'input_pwl+input_slew+slew_lut\'\n",0);
+    &tab_print($spfh,".measure tran energy_per_toggle param=\'pdynamic*(input_slew+slew_lut)\'\n",0);
     &tab_print($spfh,".measure tran avg_vlut avg V($conf_ptr->{lut_settings}->{OUT_port_name}->{val}) from=\'input_slew+slew_lut\' to=\'$tran_time\'\n",0);
   }
   &tab_print($spfh,".end Sub-Vt LUT HSPICE Bench\n",0);
@@ -1344,6 +1345,7 @@ sub gen_mux_sp_measure($ $ $ $ $ $ $)
     &tab_print($spfh,".measure tran slew_mux trig v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_lower_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'input_pwl\'\n",0);
     &tab_print($spfh,"+                      targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_upper_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'input_pwl\'\n",0);
     &tab_print($spfh,".measure tran pdynamic avg p(vsupply) from=\'input_pwl\' to=\'input_pwl+input_slew+slew_mux\'\n",0);
+    &tab_print($spfh,".measure tran energy_per_toggle param=\'pdynamic*(input_slew+slew_mux)\'\n",0);
     &tab_print($spfh,".measure tran avg_vmux avg V($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) from=\'input_slew+slew_mux\' to=\'$tran_time\'\n",0);
   }
   &tab_print($spfh,".end Sub-Vt MUX HSPICE Bench\n",0);
@@ -1690,6 +1692,7 @@ sub gen_dff_measure($ $ $ $ $)
   &tab_print($spfh,".meas tran clk2q trig v($conf_ptr->{dff_settings}->{CLK_port_name}->{val}) val=\'input_threshold_pct_$type*vsp\' rise=2\n",0);
   &tab_print($spfh,"+                targ v($conf_ptr->{dff_settings}->{Q_port_name}->{val}) val=\'output_threshold_pct_$type*vsp\' $type=1 td=\'2*clk_pwl+clk_pwh+2*clk_slew\'\n",0);
   &tab_print($spfh,".meas tran power_vdd avg p(vsupply) from=\'2*clk_pwl+clk_pwh+2*clk_slew\' to=\'2*clk_pwl+clk_pwh+3*clk_slew+clk2q\'\n",0);
+  &tab_print($spfh,".meas tran energy_per_toggle param=\'power_vdd*(clk_slew+clk2q)\'\n",0);
   #&tab_print($spfh,".meas tran avg_vq avg V($conf_ptr->{circuit_definition}->{Q_port_name}->{val}) from=\'2*clk_pwl+clk_pwh+2*slew\' to=\'2*clk_pwl+clk_pwh+3*slew+$clk2q_max\'\n",0);
   &tab_print($spfh,".meas tran avg_vq avg V($conf_ptr->{dff_settings}->{Q_port_name}->{val}) from=\'$tran_stop-$tran_step\' to=$tran_stop\n",0);
 
@@ -1756,7 +1759,7 @@ sub run_lut_sim($ $ $ $ $ $ $ $)
   my ($lut_file) = ($lut_folder."lut$lut_size.sp");
   my ($lis_file) = ($lut_file);
   $lis_file =~ s/sp$/lis/;
-  my @sim_keywds = ("dly_lut","slew_lut","pleak","pdynamic","avg_vlut");
+  my @sim_keywds = ("dly_lut","slew_lut","pleak","pdynamic","avg_vlut","energy_per_toggle");
 
   $output_vector = &lut_output_vector($lut_size,$SRAM_bits,$input_vectors); 
   $delay_measure_input = &determine_lut_delay_measure_input($lut_size,$input_vectors); 
@@ -1794,6 +1797,7 @@ sub run_lut_sim($ $ $ $ $ $ $ $)
         }
       }
       $results->{pdynamic} = abs($results->{pdynamic});      
+      $results->{energy_per_toggle} = abs($results->{energy_per_toggle});      
       $results->{pleak} = abs($results->{pleak});      
       foreach my $tmp(@sim_keywds) {
         if (($results->{$tmp} eq "failed")||($results->{$tmp} < 0)) {
@@ -1820,7 +1824,7 @@ sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
   my ($mux_file) = ($mux_folder."mux$mux_size.sp");
   my ($lis_file) = ($mux_file);
   $lis_file =~ s/sp$/lis/;
-  my @sim_keywds = ("dly_mux","slew_mux","pleak","pdynamic","avg_vmux");
+  my @sim_keywds = ("dly_mux","slew_mux","pleak","pdynamic","avg_vmux","energy_per_toggle");
       
   #print "SRAM_bits: $SRAM_bits\n";
   ($delay_measure_input,$output_vector) = &mux_output_vector($mux_size,$SRAM_bits,$input_vectors); 
@@ -1863,6 +1867,7 @@ sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
       }
       $results->{pdynamic} = abs($results->{pdynamic});      
       $results->{pleak} = abs($results->{pleak});      
+      $results->{energy_per_toggle} = abs($results->{energy_per_toggle});      
       foreach my $tmp(@sim_keywds) {
         if (($results->{$tmp} eq "failed")||($results->{$tmp} < 0)) {
           return 0;
@@ -1888,7 +1893,7 @@ sub run_setup_sim($ $ $ $ $ $ $ $ $ $ $ $)
   my ($setup_file) = ($setup_folder."setup_time.sp");
   my ($lis_file) = ($setup_file);
   $lis_file =~ s/sp$/lis/;
-  my @sim_keywds = ("slew_q","clk2q","power_vdd","avg_vq");
+  my @sim_keywds = ("slew_q","clk2q","power_vdd","avg_vq","energy_per_toggle");
 
   print "Setup($type) Time : $clk2d\n";
   # Create a SPICE file
@@ -1907,6 +1912,7 @@ sub run_setup_sim($ $ $ $ $ $ $ $ $ $ $ $)
     }
     $results->{power_vdd} = abs($results->{power_vdd});
     $results->{avg_vq} = abs($results->{avg_vq});
+    $results->{energy_per_toggle} = abs($results->{energy_per_toggle});
     foreach my $tmp(@sim_keywds) {
       if (($results->{$tmp} eq "failed")||($results->{$tmp} < 0)) {
         return 0;
@@ -1931,7 +1937,7 @@ sub run_hold_sim($ $ $ $ $ $ $ $ $ $ $ $ $)
   my ($hold_file) = ($hold_folder."hold_time.sp");
   my ($lis_file) = ($hold_file);
   $lis_file =~ s/sp$/lis/;
-  my @sim_keywds = ("slew_q","clk2q","power_vdd","avg_vq");
+  my @sim_keywds = ("slew_q","clk2q","power_vdd","avg_vq", "energy_per_toggle");
 
   print "Hold($type) Time : $thold\n";
   # Create a SPICE file
@@ -1949,6 +1955,7 @@ sub run_hold_sim($ $ $ $ $ $ $ $ $ $ $ $ $)
       return 0;
     }
     $results->{power_vdd} = abs($results->{power_vdd});
+    $results->{energy_per_toggle} = abs($results->{energy_per_toggle});
     $results->{avg_vq} = abs($results->{avg_vq});
     foreach my $tmp(@sim_keywds) {
       if (($results->{$tmp} eq "failed")||($results->{$tmp} < 0)) {
@@ -1971,7 +1978,7 @@ sub binary_search_setup_time($ $ $ $ $ $ $ $ $ $)
   my ($sim_results_ref) = \%sim_results;
   my ($success_temp,$fail_temp) = ($last_success,$last_fail);
   my ($clk_ratio) = (1);
-  my ($clk2q,$slew_q,$power,$total_power,$power_num);
+  my ($clk2q,$slew_q,$power,$total_power,$power_num,$energy_per_toggle);
   my ($max_slew);
   my ($delay_tolerance) = ($conf_ptr->{dff_settings}->{delay_tolerance}->{val});
   my ($clk_pwl,$clk_pwh) = (abs($last_success),abs($clk_ratio*$last_success));
@@ -1996,6 +2003,7 @@ sub binary_search_setup_time($ $ $ $ $ $ $ $ $ $)
   $clk2q = $sim_results_ref->{clk2q};
   $slew_q = $sim_results_ref->{slew_q};
   $power = $sim_results_ref->{power_vdd};
+  $energy_per_toggle = $sim_results_ref->{energy_per_toggle};
   $total_power += $power;
   $power_num++;
 
@@ -2016,6 +2024,7 @@ sub binary_search_setup_time($ $ $ $ $ $ $ $ $ $)
       $clk2q = $sim_results_ref->{clk2q};
       $slew_q = $sim_results_ref->{slew_q};
       $power = $sim_results_ref->{power_vdd};
+      $energy_per_toggle = $sim_results_ref->{energy_per_toggle};
       $total_power += $power;
       $power_num++;
     }
@@ -2027,7 +2036,7 @@ sub binary_search_setup_time($ $ $ $ $ $ $ $ $ $)
   print "Setup_time($type) is $setup_time\n";
   print "Clk2Q std is $clk2q_std, Clk2q is $clk2q\n";
   print "Q slew std is $slew_q_std, Q slew is $slew_q\n";
-  print "Power : $power\n";
+  print "Power : $power, Energy per toggle: $energy_per_toggle\n";
 
   # Record in report hash
   print "Input Slew: $input_slew\n";
@@ -2037,6 +2046,7 @@ sub binary_search_setup_time($ $ $ $ $ $ $ $ $ $)
   $rpt_ptr->{$tag}->{$type}->{setup_time}->{slew_q} = $slew_q;
   $rpt_ptr->{$tag}->{$type}->{setup_time}->{slew_q_std} = $slew_q_std;
   $rpt_ptr->{$tag}->{$type}->{setup_time}->{power} = $power;
+  $rpt_ptr->{$tag}->{$type}->{setup_time}->{energy_per_toggle} = $energy_per_toggle;
   $rpt_ptr->{$tag}->{$type}->{setup_time}->{avg_power} = $total_power/$power_num;
 
 }
@@ -2049,7 +2059,7 @@ sub binary_search_hold_time($ $ $ $ $ $ $ $ $ $ $)
   my ($sim_results_ref) = \%sim_results;
   my ($success_temp,$fail_temp) = ($last_success,$last_fail);
   my ($clk_ratio) = (1);
-  my ($clk2q,$slew_q,$power,$total_power,$power_num);
+  my ($clk2q,$slew_q,$power,$total_power,$power_num,$energy_per_toggle);
   my ($delay_tolerance) = ($conf_ptr->{dff_settings}->{delay_tolerance}->{val});
   
   my ($max_slew);
@@ -2096,6 +2106,7 @@ sub binary_search_hold_time($ $ $ $ $ $ $ $ $ $ $)
       $clk2q = $sim_results_ref->{clk2q};
       $slew_q = $sim_results_ref->{slew_q};
       $power = $sim_results_ref->{power_vdd};
+      $energy_per_toggle = $sim_results_ref->{energy_per_toggle};
       $total_power += $power;
       $power_num++;
     }
@@ -2107,7 +2118,7 @@ sub binary_search_hold_time($ $ $ $ $ $ $ $ $ $ $)
   print "Hold_time($type) is $hold_time\n";
   print "Clk2Q std is $clk2q_std, Clk2q is $clk2q\n";
   print "Q slew std is $slew_q_std, Q slew is $slew_q\n";
-  print "Power : $power\n";
+  print "Power : $power, Energy per toggle: $energy_per_toggle\n";
 
   # Record in report hash
   $rpt_ptr->{$tag}->{$type}->{hold_time}->{hold_time} = $hold_time;
@@ -2116,6 +2127,7 @@ sub binary_search_hold_time($ $ $ $ $ $ $ $ $ $ $)
   $rpt_ptr->{$tag}->{$type}->{hold_time}->{slew_q} = $slew_q;
   $rpt_ptr->{$tag}->{$type}->{hold_time}->{slew_q_std} = $slew_q_std;
   $rpt_ptr->{$tag}->{$type}->{hold_time}->{power} = $power;
+  $rpt_ptr->{$tag}->{$type}->{hold_time}->{energy_per_toggle} = $energy_per_toggle;
   $rpt_ptr->{$tag}->{$type}->{hold_time}->{avg_power} = $total_power/$power_num;
 }
 
@@ -2228,6 +2240,7 @@ sub run_lut_once($ $ $ $ $ $ $ $)
   $rpt_ptr->{$tag}->{slew} = $sim_results_ref->{slew_lut};
   $rpt_ptr->{$tag}->{leakage_power} = $sim_results_ref->{pleak};
   $rpt_ptr->{$tag}->{dynamic_power} = $sim_results_ref->{pdynamic};
+  $rpt_ptr->{$tag}->{energy_per_toggle} = $sim_results_ref->{energy_per_toggle};
 
 }
 
@@ -2270,6 +2283,7 @@ sub run_mux_once($ $ $ $ $ $ $ $ $ $ $ $)
   $rpt_ptr->{$tag}->{slew} = $sim_results_ref->{slew_mux};
   $rpt_ptr->{$tag}->{leakage_power} = $sim_results_ref->{pleak};
   $rpt_ptr->{$tag}->{dynamic_power} = $sim_results_ref->{pdynamic};
+  $rpt_ptr->{$tag}->{energy_per_toggle} = $sim_results_ref->{energy_per_toggle};
 
 }
 
@@ -2437,6 +2451,7 @@ sub print_rpt_lut_data($ $)
   &tab_print($rptfh,"$rpt_ptr->{$tag}->{delay},",0);
   &tab_print($rptfh,"$rpt_ptr->{$tag}->{leakage_power},",0);
   &tab_print($rptfh,"$rpt_ptr->{$tag}->{dynamic_power},",0);
+  &tab_print($rptfh,"$rpt_ptr->{$tag}->{energy_per_toggle},",0);
   &tab_print($rptfh,"\n",0);
 
 }
@@ -2448,6 +2463,7 @@ sub print_rpt_mux_data($ $)
   &tab_print($rptfh,"$rpt_ptr->{$tag}->{delay},",0);
   &tab_print($rptfh,"$rpt_ptr->{$tag}->{leakage_power},",0);
   &tab_print($rptfh,"$rpt_ptr->{$tag}->{dynamic_power},",0);
+  &tab_print($rptfh,"$rpt_ptr->{$tag}->{energy_per_toggle},",0);
   &tab_print($rptfh,"$rpt_ptr->{$tag}->{elmore_delay},",0);
   &tab_print($rptfh,"\n",0);
 
@@ -2463,6 +2479,8 @@ sub print_rpt_dff_data($ $)
   &tab_print($rptfh,"$rpt_ptr->{$tag}->{fall}->{setup_time}->{clk2q_std},",0);
   &tab_print($rptfh,"$rpt_ptr->{$tag}->{rise}->{setup_time}->{avg_power},",0);
   &tab_print($rptfh,"$rpt_ptr->{$tag}->{fall}->{setup_time}->{avg_power},",0);
+  &tab_print($rptfh,"$rpt_ptr->{$tag}->{fall}->{setup_time}->{energy_per_toggle},",0);
+  &tab_print($rptfh,"$rpt_ptr->{$tag}->{fall}->{setup_time}->{energy_per_toggle},",0);
   &tab_print($rptfh,"\n",0);
 }
 
@@ -2498,6 +2516,7 @@ sub average_results($ $ $)
   $rpt_ptr->{$avg_tag}->{slew} = ($rpt_ptr->{$rise_tag}->{slew} + $rpt_ptr->{$fall_tag}->{slew})/2; 
   $rpt_ptr->{$avg_tag}->{leakage_power} = ($rpt_ptr->{$rise_tag}->{leakage_power} + $rpt_ptr->{$fall_tag}->{leakage_power})/2; 
   $rpt_ptr->{$avg_tag}->{dynamic_power} = ($rpt_ptr->{$rise_tag}->{dynamic_power} + $rpt_ptr->{$fall_tag}->{dynamic_power})/2; 
+  $rpt_ptr->{$avg_tag}->{energy_per_toggle} = ($rpt_ptr->{$rise_tag}->{energy_per_toggle} + $rpt_ptr->{$fall_tag}->{energy_per_toggle})/2; 
 
   print "Rise delay : $rpt_ptr->{$rise_tag}->{delay}\n";
   print "Fall delay : $rpt_ptr->{$fall_tag}->{delay}\n";
@@ -2566,7 +2585,7 @@ sub run_lut_elc($ $ $ $ $ $ $ $) {
   my ($rptfh,$clk_slew,$d_slew,$lut_size,$load_cap,$vsp_lowbound,$vsp_upbound,$vsp_sweepstep) = @_;
 
   &tab_print($rptfh,"* LUT size = $lut_size,Load_cap = $load_cap\n",0);
-  &tab_print($rptfh,"vsp,delay,leakage,dynamic_power,\n",0);
+  &tab_print($rptfh,"vsp,delay,leakage,dynamic_power,energy_per_toggle,\n",0);
 
   # Run simulations(ELC)
   for (my $ivsp = $vsp_lowbound; 
@@ -2611,7 +2630,7 @@ sub run_dff_elc($ $ $ $ $ $ $) {
   my ($rptfh,$clk_slew,$d_slew,$load_cap,$vsp_lowbound,$vsp_upbound,$vsp_sweepstep) = @_;
 
   &tab_print($rptfh,"* DFF ,Load_cap = $load_cap\n",0);
-  &tab_print($rptfh,"vsp,leakage,tsu(rise),tsu(fall),delay(rise),delay(fall),dynamic_power(rise),dynamic_power(fall)\n",0);
+  &tab_print($rptfh,"vsp,leakage,tsu(rise),tsu(fall),delay(rise),delay(fall),dynamic_power(rise),dynamic_power(fall),energy_per_toggle(rise),energy_per_toggle(fall)\n",0);
 
   for (my $ivsp = $vsp_lowbound; 
           $ivsp < $vsp_upbound; 
@@ -2632,9 +2651,9 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
   }
 
   if ("off" eq $rram_enhance) {
-    &tab_print($rptfh,"vsp,delay,leakage,dynamic_power\n",0);
+    &tab_print($rptfh,"vsp,delay,leakage,dynamic_power,energy_per_toggle\n",0);
   } elsif ("off" eq $wprog_sweep) {
-    &tab_print($rptfh,"Ron,Wprog,vsp,delay,leakage,dynamic_power\n",0);
+    &tab_print($rptfh,"Ron,Wprog,vsp,delay,leakage,dynamic_power,energy_per_toggle\n",0);
   }
 
   # Run simulations(ELC)

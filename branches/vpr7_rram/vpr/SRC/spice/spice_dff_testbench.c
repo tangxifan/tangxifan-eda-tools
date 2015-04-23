@@ -122,9 +122,11 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
   logical_block_index = find_grid_mapped_logical_block(x, y, 
                                                        pb_spice_model, prefix);
 
+  /*
   if (OPEN == logical_block_index) {
     return;
   }
+  */
 
   /* Allocate input_density and probability */
   stats_pb_graph_node_port_pin_numbers(cur_pb_graph_node,&num_inputs,&num_outputs, &num_clock_pins);

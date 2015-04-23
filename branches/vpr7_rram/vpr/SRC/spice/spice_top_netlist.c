@@ -392,6 +392,8 @@ void fprint_measure_vdds_cbs(FILE* fp,
     fprintf(fp, ".measure tran dynamic_power_cbs \n");
     fprintf(fp, "+ param='dynamic_power_cbx[1to%d][0to%d]+dynamic_power_cby[0to%d][1to%d]' \n",
             nx, ny, nx, ny);
+    fprintf(fp, ".measure tran energy_per_cycle_cbs \n ");
+    fprintf(fp, "+ param='dynamic_power_cbs*clock_period'\n");
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, 
@@ -480,6 +482,8 @@ void fprint_measure_vdds_sbs(FILE* fp,
     fprintf(fp, ".measure tran dynamic_power_sbs \n");
     fprintf(fp, "+ param='dynamic_power_sb[0to%d][0to%d]' \n",
             nx, ny);
+    fprintf(fp, ".measure tran energy_per_cycle_sbs \n ");
+    fprintf(fp, "+ param='dynamic_power_sbs*clock_period'\n");
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, 
@@ -550,13 +554,25 @@ void fprint_top_netlist_measurements(FILE* fp,
   /* Dynamic power */
   /* Dynamic power of SRAMs */
   fprintf(fp, ".measure tran dynamic_power_sram_local_routing avg p(Vgvdd_sram_local_routing) from='clock_period' to='%d*clock_period'\n", num_clock_cycle);
+  fprintf(fp, ".measure tran energy_per_cycle_sram_local_routing \n ");
+  fprintf(fp, "+ param='dynamic_power_sram_local_routing*clock_period'\n");
   fprintf(fp, ".measure tran dynamic_power_sram_luts avg p(Vgvdd_sram_luts) from='clock_period' to='%d*clock_period'\n", num_clock_cycle);
+  fprintf(fp, ".measure tran energy_per_cycle_sram_luts \n ");
+  fprintf(fp, "+ param='dynamic_power_sram_luts*clock_period'\n");
   fprintf(fp, ".measure tran dynamic_power_sram_cbs avg p(Vgvdd_sram_cbs) from='clock_period' to='%d*clock_period'\n", num_clock_cycle);
+  fprintf(fp, ".measure tran energy_per_cycle_sram_cbs \n ");
+  fprintf(fp, "+ param='dynamic_power_sram_cbs*clock_period'\n");
   fprintf(fp, ".measure tran dynamic_power_sram_sbs avg p(Vgvdd_sram_sbs) from='clock_period' to='%d*clock_period'\n", num_clock_cycle);
+  fprintf(fp, ".measure tran energy_per_cycle_sram_sbs \n ");
+  fprintf(fp, "+ param='dynamic_power_sram_sbs*clock_period'\n");
   /* Dynamic power of I/O pads */
   fprintf(fp, ".measure tran dynamic_power_io avg p(Vgvdd_io) from='clock_period' to='%d*clock_period'\n", num_clock_cycle);
+  fprintf(fp, ".measure tran energy_per_cycle_io \n ");
+  fprintf(fp, "+ param='dynamic_power_io*clock_period'\n");
   /* Dynamic power of Local Interconnections */
   fprintf(fp, ".measure tran dynamic_power_local_interc avg p(Vgvdd_local_interc) from='clock_period' to='%d*clock_period'\n", num_clock_cycle);
+  fprintf(fp, ".measure tran energy_per_cycle_local_routing \n ");
+  fprintf(fp, "+ param='dynamic_power_local_interc*clock_period'\n");
   /* Dynamic power of Hard Logic */
   fprint_measure_vdds_spice_model(fp, SPICE_MODEL_HARDLOGIC, SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, spice, leakage_only);
   /* Dynamic power of LUTs */
