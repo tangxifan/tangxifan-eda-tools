@@ -1038,7 +1038,7 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   }
 
   /* By pass dff testbench file if there is no clock */
-  if ((0 < num_clocks)&&(vpr_setup.SpiceOpts.print_spice_dff_testbench)) {
+  if (vpr_setup.SpiceOpts.print_spice_dff_testbench) {
     dff_testbench_dir_path = my_strcat(spice_dir_formatted, spice_dff_tb_dir_name); 
     create_dir_path(dff_testbench_dir_path);
     fprint_spice_dff_testbench(dff_testbench_dir_path, chomped_circuit_name, include_dir_path, subckt_dir_path,

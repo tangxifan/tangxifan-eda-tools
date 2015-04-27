@@ -1929,7 +1929,7 @@ static void ProcessDevice(INOUTP ezxml_t Node, OUTP struct s_arch *arch,
 	Cur = FindElement(Node, "sram", FALSE);
 	arch->sram_inf.area = GetFloatProperty(Cur, "area",
 			FALSE, 6);
-    arch->sram_inf.spice_model_name = my_strdup(FindProperty(Cur, "spice_model_name", TRUE));
+    arch->sram_inf.spice_model_name = my_strdup(FindProperty(Cur, "spice_model_name", arch->read_xml_spice));
     arch->sram_inf.spice_model = NULL;
     ezxml_set_attr(Cur, "spice_model_name", NULL);
 	FreeNode(Cur);

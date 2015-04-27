@@ -26,10 +26,10 @@
         </input>
       </stimulate>      
     </parameters>
-    <tech_lib lib_type="academia" transistor_type="TT" lib_path="/home/xitang/tangxifan-eda-tools/branches/fpga_flow/tech/45nm_HP.pm" nominal_vdd="1.0"/>
-    <transistors pn_ratio="1.4" model_ref="M">
-      <nmos model_name="nmos" chan_length="45e-9" min_width="160e-9"/>
-      <pmos model_name="pmos" chan_length="45e-9" min_width="160e-9"/>
+    <tech_lib lib_type="academia" transistor_type="TT" lib_path="/home/xitang/tangxifan-eda-tools/branches/fpga_flow/tech/22nm_HP.pm" nominal_vdd="0.8"/>
+    <transistors pn_ratio="1.5" model_ref="M">
+      <nmos model_name="nmos" chan_length="22e-9" min_width="66e-9"/>
+      <pmos model_name="pmos" chan_length="22e-9" min_width="66e-9"/>
     </transistors> 
     <module_spice_models>
       <spice_model type="chan_wire" name="chan_segment" prefix="track_seg" is_default="1">
@@ -54,7 +54,7 @@
         <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="1" tapered="on" tap_buf_level="3" f_per_stage="4"/>
         <!--mux2to1 subckt_name="mux2to1"/-->
-        <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.4"/>
+        <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.5"/>
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="1"/>
         <port type="sram" prefix="sram" size="1"/>
@@ -65,7 +65,7 @@
         <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="1" tapered="off"/>
         <!--mux2to1 subckt_name="mux2to1"/-->
-        <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.4"/>
+        <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.5"/>
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="1"/>
         <port type="sram" prefix="sram" size="1"/>
@@ -76,7 +76,7 @@
         <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="1" tapered="on" tap_buf_level="3" f_per_stage="4"/>
         <!--mux2to1 subckt_name="mux2to1"/-->
-        <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.4"/>
+        <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.5"/>
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="1"/>
         <port type="sram" prefix="sram" size="1"/>
@@ -86,7 +86,7 @@
         <!--design_technology type="rram" ron="1e3" roff="1e6" prog_transistor_size="3"/-->
         <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="1" tapered="on" tap_buf_level="4" f_per_stage="4"/>
-        <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.4"/>
+        <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.5"/>
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="1"/>
         <port type="sram" prefix="sram" size="1"/>
@@ -95,9 +95,9 @@
       <spice_model type="ff" name="static_dff" prefix="dff" netlist="/home/xitang/tangxifan-eda-tools/branches/fpga_flow/SpiceSubckts/ff.sp">
          <design_technology type="cmos"/>
          <!--design_technology type="rram" ron="1e3" roff="1e6" prog_transistor_size="1"/-->
-         <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
-         <output_buffer exist="on" type="inverter" size="1" tapered="off"/>
-         <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.4"/>
+         <input_buffer exist="on" type="inverter" size="4" tapered="off"/>
+         <output_buffer exist="on" type="inverter" size="4" tapered="off"/>
+         <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.5"/>
          <port type="input" prefix="D" size="1"/>
          <port type="input" prefix="Set" size="1"/>
          <port type="input" prefix="Reset" size="1"/>
@@ -107,9 +107,9 @@
       <spice_model type="lut" name="lut5" prefix="lut5">
         <design_technology type="cmos"/>
         <!--design_technology type="rram" ron="1e3" prog_transistor_size="1"/-->
-        <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
-        <output_buffer exist="on" type="inverter" size="1" tapered="off"/>
-        <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.4"/>
+        <input_buffer exist="on" type="inverter" size="4" tapered="off"/>
+        <output_buffer exist="on" type="inverter" size="4" tapered="off"/>
+        <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.5"/>
         <port type="input" prefix="in" size="5"/>
         <port type="output" prefix="out" size="1"/>
         <port type="sram" prefix="sram" size="32"/>
@@ -117,18 +117,18 @@
       <spice_model type="lut" name="lut6" prefix="lut6">
         <design_technology type="cmos"/>
         <!--design_technology type="rram" ron="1e3" prog_transistor_size="1"/-->
-        <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
-        <output_buffer exist="on" type="inverter" size="1" tapered="off"/>
-        <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.4"/>
+        <input_buffer exist="on" type="inverter" size="4" tapered="off"/>
+        <output_buffer exist="on" type="inverter" size="4" tapered="off"/>
+        <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.5"/>
         <port type="input" prefix="in" size="6"/>
         <port type="output" prefix="out" size="1"/>
         <port type="sram" prefix="sram" size="64"/>
       </spice_model>
       <spice_model type="sram" name="sram6T" prefix="sram" netlist="/home/xitang/tangxifan-eda-tools/branches/fpga_flow/SpiceSubckts/sram.sp">
         <design_technology type="cmos"/>
-        <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
-        <output_buffer exist="on" type="inverter" size="1" tapered="off"/>
-        <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.4"/>
+        <input_buffer exist="on" type="inverter" size="4" tapered="off"/>
+        <output_buffer exist="on" type="inverter" size="4" tapered="off"/>
+        <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.5"/>
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="2"/>
       </spice_model>
@@ -136,7 +136,7 @@
         <design_technology type="cmos"/>
         <input_buffer exist="on" type="inverter" size="4" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="4" tapered="off"/>
-        <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.4"/>
+        <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.5"/>
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="1"/>
       </spice_model>
@@ -144,15 +144,15 @@
         <design_technology type="cmos"/>
         <input_buffer exist="on" type="inverter" size="4" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="4" tapered="off"/>
-        <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.4"/>
+        <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.5"/>
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="1"/>
       </spice_model>
     </module_spice_models>
   </spice_settings>
   <device>
-    <sizing R_minW_nmos="8926" R_minW_pmos="16067" ipin_mux_trans_size="2.4"/>
-    <timing C_ipin_cblock="532e-18" T_ipin_cblock="9.4e-11"/>
+    <sizing R_minW_nmos="8926" R_minW_pmos="16067" ipin_mux_trans_size="2.5"/>
+    <timing C_ipin_cblock="215e-18" T_ipin_cblock="1.25e-10"/>
     <area grid_logic_tile_area="30800.00"/>
     <sram area="8" spice_model_name="sram6T"/>
     <chan_width_distr>
@@ -163,14 +163,14 @@
     <switch_block type="wilton" fs="3"/>
   </device>
   <cblocks>
-    <switch type="mux" name="cb_mux" R="0" Cin="532e-18" Cout="0" Tdel="9.4e-11" mux_trans_size="2.4" buf_size="50.4" spice_model_name="cb_mux_buffered" power_buf_size="16">
+    <switch type="mux" name="cb_mux" R="0" Cin="215e-18" Cout="0" Tdel="1.25e-10" mux_trans_size="2.5" buf_size="92.5" spice_model_name="cb_mux_buffered" power_buf_size="16">
     </switch>
   </cblocks>
   <switchlist>
-    <switch type="mux" name="0" R="72.5" Cin="532e-18" Cout="3.69e-14" Tdel="6.88e-11" mux_trans_size="2.4" buf_size="204" spice_model_name="sb_mux_buffered" power_buf_size="64"/>
+    <switch type="mux" name="0" R="149" Cin="215e-18" Cout="9.52e-15" Tdel="8.71e-11" mux_trans_size="2.5" buf_size="212.5" spice_model_name="sb_mux_buffered" power_buf_size="64"/>
   </switchlist>
   <segmentlist>
-    <segment freq="1.0" length="4" type="unidir" Rmetal="103.84" Cmetal="13.80e-15" spice_model_name="chan_segment">
+    <segment freq="1.0" length="4" type="unidir" Rmetal="50.6" Cmetal="6.72e-15" spice_model_name="chan_segment">
       <mux name="0"/>
       <sb type="pattern">
         1 1 1 1 1
@@ -235,7 +235,7 @@
       <power method="ignore"/>			
     </pb_type>
     <pb_type name="clb">
-      <power method="specify-size"/>
+      <power method = "specify-size"/>
       <input name="I" num_pins="33" equivalent="true">
         <power wire_capacitance="0" buffer_size="1"/>
       </input>
@@ -249,7 +249,7 @@
              The outputs of the fracturable logic element can be optionally registered
         -->
       <pb_type name="fle" num_pb="10" idle_mode_name="n2_lut5">
-        <input name="in" num_pins="6"> 
+        <input name="in" num_pins="6">
           <power wire_capacitance="0" buffer_size="1"/>
         </input>
         <output name="out" num_pins="2">
@@ -282,15 +282,15 @@
                       398e-12
                       -->
                 <delay_matrix type="max" in_port="lut5.in" out_port="lut5.out">
-                  9.1e-11
-                  9.1e-11
-                  9.1e-11
-                  9.1e-11
-                  9.1e-11
+                  1.15e-10
+                  1.15e-10
+                  1.15e-10
+                  1.15e-10
+                  1.15e-10
                 </delay_matrix>
                 <power method="pin-toggle">
-                  <port name="in" energy_per_toggle="2.42e-14"/>
-                  <static_power power_per_instance="6.1e-8"/>
+                  <port name="in" energy_per_toggle="8.9e-15"/>
+                  <static_power power_per_instance="1.8e-7"/>
                 </power>
               </pb_type>
 
@@ -299,11 +299,11 @@
                 <input name="D" num_pins="1" port_class="D"/>
                 <output name="Q" num_pins="1" port_class="Q"/>
                 <clock name="clk" num_pins="1" port_class="clock"/>
-                <T_setup value="4.68e-11" port="ff.D" clock="clk"/>
-                <T_clock_to_Q max="2.7e-11" port="ff.Q" clock="clk"/>
+                <T_setup value="6.26e-10" port="ff.D" clock="clk"/>
+                <T_clock_to_Q max="2.5e-11" port="ff.Q" clock="clk"/>
                 <power method="pin-toggle">
-                  <port name="Q" energy_per_toggle="5.6e-15"/>
-                  <static_power power_per_instance="2.95e-8"/>
+                  <port name="Q" energy_per_toggle="6.1e-16"/>
+                  <static_power power_per_instance="7.8e-8"/>
                 </power>
               </pb_type>
 
@@ -316,8 +316,8 @@
                 <direct name="direct3" input="ble5.clk" output="ff[0:0].clk"/>                    
                 <mux name="mux1" input="ff[0:0].Q lut5.out[0:0]" output="ble5.out[0:0]" spice_model_name="ble_mux_buffered">
                   <!-- LUT to output is faster than FF to output on a Stratix IV -->
-                  <delay_constant max="4.65e-11" in_port="lut5.out[0:0]" out_port="ble5.out[0:0]" />
-                  <delay_constant max="4.65e-11" in_port="ff[0:0].Q" out_port="ble5.out[0:0]" />
+                  <delay_constant max="6.45e-11" in_port="lut5.out[0:0]" out_port="ble5.out[0:0]" />
+                  <delay_constant max="6.45e-11" in_port="ff[0:0].Q" out_port="ble5.out[0:0]" />
                 </mux>
               </interconnect>
             </pb_type>
@@ -358,16 +358,16 @@
                   397e-12
                   -->
               <delay_matrix type="max" in_port="lut6.in" out_port="lut6.out">
-                1.4e-10
-                1.4e-10
-                1.4e-10
-                1.4e-10
-                1.4e-10
-                1.4e-10
+                1.65e-10
+                1.65e-10
+                1.65e-10
+                1.65e-10
+                1.65e-10
+                1.65e-10
               </delay_matrix>
               <power method="pin-toggle">
-                <port name="in" energy_per_toggle="4.64e-14"/>
-                <static_power power_per_instance="7.85e-8"/>
+                <port name="in" energy_per_toggle="1.23e-14"/>
+                <static_power power_per_instance="2.1e-7"/>
               </power>
             </pb_type>
 
@@ -376,11 +376,11 @@
               <input name="D" num_pins="1" port_class="D"/>
               <output name="Q" num_pins="1" port_class="Q"/>
               <clock name="clk" num_pins="1" port_class="clock"/>
-              <T_setup value="4.68e-11" port="ff.D" clock="clk"/>
-              <T_clock_to_Q max="2.7e-11" port="ff.Q" clock="clk"/>
+              <T_setup value="6.26e-10" port="ff.D" clock="clk"/>
+              <T_clock_to_Q max="2.5e-11" port="ff.Q" clock="clk"/>
               <power method="pin-toggle">
-                <port name="Q" energy_per_toggle="5.6e-15"/>
-                <static_power power_per_instance="2.95e-8"/>
+                <port name="Q" energy_per_toggle="6.1e-16"/>
+                <static_power power_per_instance="7.8e-8"/>
               </power>
             </pb_type>
 
@@ -393,8 +393,8 @@
               <direct name="direct3" input="ble6.clk" output="ff.clk"/>                    
               <mux name="mux1" input="ff.Q lut6.out" output="ble6.out" spice_model_name="ble_mux_buffered">
                 <!-- LUT to output is faster than FF to output on a Stratix IV -->
-                <delay_constant max="4.65e-11" in_port="lut6.out" out_port="ble6.out" />
-                <delay_constant max="4.65e-11" in_port="ff.Q" out_port="ble6.out" />
+                <delay_constant max="6.45e-11" in_port="lut6.out" out_port="ble6.out" />
+                <delay_constant max="6.45e-11" in_port="ff.Q" out_port="ble6.out" />
               </mux>
             </interconnect>
           </pb_type>
@@ -417,8 +417,8 @@
 		     25 ps to do so, we subtract 25 ps from the 100 ps delay of a feedback
 		     to get the part that should be marked on the crossbar.	 -->
         <complete name="crossbar" input="clb.I fle[9:0].out" output="fle[9:0].in" spice_model_name="localrouting_mux_buffered">
-          <delay_constant max="1.05e-10" in_port="clb.I" out_port="fle[9:0].in" />
-          <delay_constant max="1.05e-10" in_port="fle[9:0].out" out_port="fle[9:0].in" />
+          <delay_constant max="1.6e-10" in_port="clb.I" out_port="fle[9:0].in" />
+          <delay_constant max="1.6e-10" in_port="fle[9:0].out" out_port="fle[9:0].in" />
         </complete>
         <complete name="clks" input="clb.clk" output="fle[9:0].clk">
         </complete>

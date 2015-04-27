@@ -2181,7 +2181,7 @@ void fprint_grid_blocks(FILE* fp,
   /* generate_grid_subckt, type_descriptor of each grid defines the capacity,
    * for example, each grid may contains more than one top-level pb_types, such as I/O
    */
-  if (NULL == grid[ix][iy].type) {
+  if ((NULL == grid[ix][iy].type)||(0 != grid[ix][iy].offset)) {
     /* Update the grid_index_high for each spice_model */
     update_spice_models_grid_index_high(ix, iy, arch->spice->num_spice_model, arch->spice->spice_models);
     return; 

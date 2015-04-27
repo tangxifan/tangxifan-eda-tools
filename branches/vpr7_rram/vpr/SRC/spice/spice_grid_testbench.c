@@ -100,7 +100,7 @@ void fprint_spice_grid_testbench_call_one_defined_grid(FILE* fp, int ix, int iy)
     exit(1);
   }
 
-  if ((NULL == grid[ix][iy].type)||(0 == grid[ix][iy].usage)) {
+  if ((NULL == grid[ix][iy].type)||(0 != grid[ix][iy].offset)||(0 == grid[ix][iy].usage)) {
     return;
   }
 

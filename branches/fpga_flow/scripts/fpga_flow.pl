@@ -760,12 +760,11 @@ sub extract_min_chan_width_vpr_stats($ $ $ $ $ $)
     }
     $line =~ s/\s//g;
     if ($line =~ m/$tmp\s*([0-9E\-+.]+)/i) {
-      if (1 == $parse_results) {
-        $rpt_h{$tag}->{$bm}->{$opt_ptr->{N_val}}->{$type}->{$chan_width_tag} = $1;
-        $rpt_h{$tag}->{$bm}->{$opt_ptr->{N_val}}->{$type}->{$chan_width_tag} =~ s/\.$//;
-      }
       $min_chan_width = $1; 
       $min_chan_width =~ s/\.$//;
+      if (1 == $parse_results) {
+        $rpt_h{$tag}->{$bm}->{$opt_ptr->{N_val}}->{$type}->{$chan_width_tag} = $min_chan_width;
+      }
     }
   }
   close(VSTATS);
@@ -1131,7 +1130,9 @@ sub run_standard_flow($ $ $ $ $)
       $min_chan_width += 1;
     }
     # Remove previous route results
-    `rm $vpr_route`;
+    if (-e $vpr_route) {
+      `rm $vpr_route`;
+    }
     # Keep increase min_chan_width until route success 
     # Extract data from VPR stats
     #&run_std_vpr($abc_blif_out,$benchmark,$vpr_arch,$vpr_net,$vpr_place,$vpr_route,$min_chan_width,$vpr_log,$act_file);
@@ -1154,7 +1155,9 @@ sub run_standard_flow($ $ $ $ $)
   } elsif ("on" eq $opt_ptr->{fix_route_chan_width}) {
     my ($fix_chan_width) = ($benchmarks_ptr->{$benchmark_file}->{fix_route_chan_width});
     # Remove previous route results
-    `rm $vpr_route`;
+    if (-e $vpr_route) {
+      `rm $vpr_route`;
+    }
     # Keep increase min_chan_width until route success 
     &run_std_vpr($abc_blif_out,$benchmark,$vpr_arch,$vpr_net,$vpr_place,$vpr_route,$fix_chan_width,$vpr_log,$act_file);
     while (1) {
@@ -1240,6 +1243,7 @@ sub parse_standard_flow_results($ $ $ $)
     &extract_vpr_stats($tag,$benchmark,$vpr_log."min_chan_width",$opt_ptr->{K_val});
     &extract_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val});
   } elsif ("on" eq $opt_ptr->{fix_route_chan_width}) {
+    &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val},"off",1);
     &extract_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val});
     if (-e $vpr_reroute_log) {
       &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val},"off",1);
@@ -1349,7 +1353,9 @@ sub run_mpack2_flow($ $ $ $)
   } elsif ("on" eq $opt_ptr->{fix_route_chan_width}) {
     my ($fix_chan_width) = ($benchmarks_ptr->{$benchmark_file}->{fix_route_chan_width});
     # Remove previous route results
-    `rm $vpr_route`;
+    if (-e $vpr_route) {
+      `rm $vpr_route`;
+    }
     # Keep increase min_chan_width until route success 
     # Extract data from VPR stats
     &run_mpack2_vpr($mpack2_blif_out,$mpack2_vpr_arch,$mpack2_vpr_net,$vpr_place,$vpr_route,$fix_chan_width,$vpr_log);
