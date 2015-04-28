@@ -49,6 +49,12 @@ enum e_spice_model_design_tech {
   SPICE_MODEL_DESIGN_RRAM
 };
 
+enum e_spice_model_structure {
+  SPICE_MODEL_STRUCTURE_TREE, 
+  SPICE_MODEL_STRUCTURE_ONELEVEL, 
+  SPICE_MODEL_STRUCTURE_TWOLEVEL 
+};
+
 enum e_spice_model_buffer_type {
   SPICE_MODEL_BUF_INV, 
   SPICE_MODEL_BUF_BUF
@@ -118,7 +124,8 @@ struct s_spice_model {
   t_spice_model_netlist* include_netlist;
   int is_default;
 
-  e_spice_model_design_tech design_tech;
+  enum e_spice_model_design_tech design_tech;
+  enum e_spice_model_structure structure;
   /* Vaild for RRAM technology only, and this is a mux*/
   float ron;
   float roff;

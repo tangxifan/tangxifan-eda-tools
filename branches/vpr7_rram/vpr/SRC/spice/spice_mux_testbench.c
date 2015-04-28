@@ -438,6 +438,7 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
                                         float* input_probability,
                                         int path_id) {
   int inode, mux_level, ilevel, cur_num_sram;
+  int num_mux_sram_bits = 0;
   int* mux_sram_bits = NULL; 
   t_llist* found_mux_node = NULL;
   t_spice_mux_model* cur_mux = NULL;
@@ -474,19 +475,35 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
           mux_spice_model->prefix, mux_size, testbench_mux_cnt);
 
   /* SRAMs */
-  /* 1. Get the mux level*/
-  mux_level = determine_mux_level(mux_size);
   /* Print SRAM configurations, 
    * we should have a global SRAM vdd, AND it should be connected to a real sram subckt !!!
    */
   /* Configuration bits for MUX*/
   assert((-1 != path_id)&&(path_id < mux_size));
-  mux_sram_bits = decode_mux_sram_bits(mux_size, mux_level, path_id); 
+
+  /* 1. Get the mux level*/
+  switch (mux_spice_model->structure) {
+  case SPICE_MODEL_STRUCTURE_TREE:
+    mux_level = determine_tree_mux_level(mux_size);
+    num_mux_sram_bits = mux_level;
+    mux_sram_bits = decode_tree_mux_sram_bits(mux_size, mux_level, path_id); 
+    break;
+  case SPICE_MODEL_STRUCTURE_ONELEVEL:
+    mux_level = 1;
+    num_mux_sram_bits = mux_size;
+    mux_sram_bits = decode_onelevel_mux_sram_bits(mux_size, mux_level, path_id); 
+    break;
+  case SPICE_MODEL_STRUCTURE_TWOLEVEL:
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
+               __FILE__, __LINE__, mux_spice_model->name);
+    exit(1);
+  } 
 
   /* Print SRAMs that configure this MUX */
   /* TODO: What about RRAM-based MUX? */
   cur_num_sram = testbench_sram_cnt;
-  for (ilevel = 0; ilevel < mux_level; ilevel++) {
+  for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
     /* Pull Up/Down the SRAM outputs*/
     /* TODO: I change the sram_bits gen function, so it is different.
      * I need to adapt those in spice_pbtypes.c as well !!!
@@ -521,7 +538,7 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
   fprintf(fp, "***** SRAM bits for MUX[%d], level=%d, select_path_id=%d. *****\n", 
           testbench_mux_cnt, mux_level, path_id);
   fprintf(fp, "*****");
-  for (ilevel = 0; ilevel < mux_level; ilevel++) {
+  for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
     fprintf(fp, "%d", mux_sram_bits[ilevel]);
   }
   fprintf(fp, "*****\n");
@@ -538,7 +555,7 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
   */
 
   /* Call SRAM subckts*/
-  for (ilevel = 0; ilevel < mux_level; ilevel++) {
+  for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
     fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, testbench_sram_cnt);
     /* fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, testbench_sram_cnt); */
     fprintf(fp, "%s->in ", sram_spice_model->prefix);

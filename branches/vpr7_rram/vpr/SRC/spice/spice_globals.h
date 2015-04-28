@@ -1,6 +1,7 @@
 /* global parameters for SPICE support*/
 extern char* nmos_subckt_name;
 extern char* pmos_subckt_name;
+extern char* cpt_subckt_name;
 extern char* rram_veriloga_file_name;
 extern char* mux_basis_posfix;
 extern char* nmos_pmos_spice_file_name;

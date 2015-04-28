@@ -800,6 +800,7 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
   char* src_pin_prefix = NULL;
   char* des_pin_prefix = NULL;
 
+  int num_sram_bits = 0;
   int* sram_bits = NULL;
   int num_sram = 0;
   int cur_sram = 0;
@@ -959,19 +960,35 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
     /* Outputs */
     fprintf(fp, "%s->%s[%d] ", 
             des_pin_prefix, des_pb_graph_pin->port->name, des_pb_graph_pin->pin_number);
-    /* SRAMs */
-    /* 1. Get the mux level*/
-    mux_level = determine_mux_level(fan_in);
-    /* Get the SRAM configurations*/
+
     assert(select_edge < fan_in);
-    /* Decode the selected_edge_index */
-    sram_bits = decode_mux_sram_bits(fan_in, mux_level, select_edge);
-    /* Print SRAM configurations, 
-     * we should have a global SRAM vdd, AND it should be connected to a real sram subckt !!!
-     */
+    /* SRAMs */
+    switch (cur_interc->spice_model->structure) {
+    case SPICE_MODEL_STRUCTURE_TREE:
+      /* 1. Get the mux level*/
+      mux_level = determine_tree_mux_level(fan_in);
+      /* Get the SRAM configurations*/
+      /* Decode the selected_edge_index */
+      num_sram_bits = mux_level;
+      sram_bits = decode_tree_mux_sram_bits(fan_in, mux_level, select_edge);
+      /* Print SRAM configurations, 
+       * we should have a global SRAM vdd, AND it should be connected to a real sram subckt !!!
+       */
+      break;
+    case SPICE_MODEL_STRUCTURE_ONELEVEL:
+      mux_level = 1;
+      num_sram_bits = fan_in;
+      sram_bits = decode_onelevel_mux_sram_bits(fan_in, mux_level, select_edge);
+      break;
+    case SPICE_MODEL_STRUCTURE_TWOLEVEL:
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
+                 __FILE__, __LINE__, cur_interc->spice_model->name);
+      exit(1);
+    } 
     num_sram = sram_spice_model->cnt;
     /* Create wires to sram outputs*/
-    for (ilevel = 0; ilevel < mux_level; ilevel++) {
+    for (ilevel = 0; ilevel < num_sram_bits; ilevel++) {
       switch (sram_bits[ilevel]) {
       /* the pull UP/down vdd/gnd should be connected to the local interc gvdd*/
       /* TODO: we want to see the dynamic power of each multiplexer, we may split these global vdd*/
@@ -988,7 +1005,7 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
         exit(1);
       }
       num_sram++;
-    } 
+    }
     /* Local vdd and gnd, TODO: we should have an independent VDD for all local interconnections*/
     fprintf(fp, "gvdd_local_interc sgnd ");
     /* End with spice_model name */
@@ -997,13 +1014,13 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
     fprintf(fp, "***** SRAM bits for MUX[%d], level=%d, select_path_id=%d. *****\n", 
             cur_interc->spice_model->cnt, mux_level, select_edge);
     fprintf(fp, "*****");
-    for (ilevel = 0; ilevel < mux_level; ilevel++) {
+    for (ilevel = 0; ilevel < num_sram_bits; ilevel++) {
       fprintf(fp, "%d", sram_bits[ilevel]);
     }
     fprintf(fp, "*****\n");
     /* Print all the srams*/
     cur_sram = sram_spice_model->cnt; 
-    for (ilevel = 0; ilevel < mux_level; ilevel++) {
+    for (ilevel = 0; ilevel < num_sram_bits; ilevel++) {
       fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, cur_sram); /* SRAM subckts*/
       /* fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, cur_sram);*/ /* Input*/
       fprintf(fp, "%s->in ", sram_spice_model->prefix); /* Input*/

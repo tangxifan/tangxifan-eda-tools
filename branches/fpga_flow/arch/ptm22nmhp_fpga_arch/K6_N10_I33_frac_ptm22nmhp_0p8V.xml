@@ -442,6 +442,7 @@
   <power>
     <local_interconnect C_wire="0"/>
     <buffers logical_effort_factor="4"/>
+    <mux_transistor_size mux_transistor_size="2.5"/>
   </power>
   <clocks>
     <clock buffer_size="0" C_wire="0"/>

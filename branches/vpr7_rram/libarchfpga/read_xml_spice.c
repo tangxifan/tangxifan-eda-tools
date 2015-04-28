@@ -505,6 +505,21 @@ static void ProcessSpiceModel(ezxml_t Parent,
       exit(1);
     }
 	ezxml_set_attr(Node, "type", NULL);
+    /* Read in the structure if defined */
+    if (SPICE_MODEL_MUX == spice_model->type) {
+      if (0 == strcmp(FindProperty(Node,"structure",TRUE),"tree")) {
+        spice_model->structure = SPICE_MODEL_STRUCTURE_TREE;
+      } else if (0 == strcmp(FindProperty(Node,"structure",TRUE),"one-level")) {
+        spice_model->structure = SPICE_MODEL_STRUCTURE_ONELEVEL;
+      } else {
+        /* Default: tree */
+        spice_model->structure = SPICE_MODEL_STRUCTURE_TREE;
+      }
+    } else {
+      /* Default: tree */
+      spice_model->structure = SPICE_MODEL_STRUCTURE_TREE;
+    }
+	ezxml_set_attr(Node, "structure", NULL);
     FreeNode(Node);
   } else {
     vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] design_technology is expected in spice_model(%s).\n",

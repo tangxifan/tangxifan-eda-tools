@@ -863,6 +863,7 @@ void fprint_switch_box_mux(FILE* fp,
   int src_chan_x, src_chan_y;
   char* src_chan_port_name = NULL;
   int mux_level, path_id, cur_num_sram, ilevel;
+  int num_mux_sram_bits = 0;
   int* mux_sram_bits = NULL;
 
   /* Check the file handler*/ 
@@ -969,7 +970,6 @@ void fprint_switch_box_mux(FILE* fp,
 
   /* Configuration bits for this MUX*/
   path_id = -1;
-  mux_level = determine_mux_level(mux_size);
   for (inode = 0; inode < mux_size; inode++) {
     if (drive_rr_nodes[inode] == &(rr_node[cur_rr_node->prev_node])) {
       path_id = inode;
@@ -980,12 +980,29 @@ void fprint_switch_box_mux(FILE* fp,
   if (!((-1 != path_id)&&(path_id < mux_size))) {
   assert((-1 != path_id)&&(path_id < mux_size));
   }
-  mux_sram_bits = decode_mux_sram_bits(mux_size, mux_level, path_id); 
+
+  switch (spice_model->structure) {
+  case SPICE_MODEL_STRUCTURE_TREE:
+    mux_level = determine_tree_mux_level(mux_size);
+    num_mux_sram_bits = mux_level;
+    mux_sram_bits = decode_tree_mux_sram_bits(mux_size, mux_level, path_id); 
+    break;
+  case SPICE_MODEL_STRUCTURE_ONELEVEL:
+    mux_level = 1;
+    num_mux_sram_bits = mux_size;
+    mux_sram_bits = decode_onelevel_mux_sram_bits(mux_size, mux_level, path_id); 
+    break;
+  case SPICE_MODEL_STRUCTURE_TWOLEVEL:
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
+               __FILE__, __LINE__, spice_model->name);
+    exit(1);
+  } 
 
   /* Print SRAMs that configure this MUX */
   /* TODO: What about RRAM-based MUX? */
   cur_num_sram = sram_spice_model->cnt;
-  for (ilevel = 0; ilevel < mux_level; ilevel++) {
+  for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
     /* Configure the SRAMs*/
     switch (mux_sram_bits[ilevel]) {
     case 0:
@@ -1011,13 +1028,13 @@ void fprint_switch_box_mux(FILE* fp,
   fprintf(fp, "***** SRAM bits for MUX[%d], level=%d, select_path_id=%d. *****\n", 
           spice_model->cnt, mux_level, path_id);
   fprintf(fp, "*****");
-  for (ilevel = 0; ilevel < mux_level; ilevel++) {
+  for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
     fprintf(fp, "%d", mux_sram_bits[ilevel]);
   }
   fprintf(fp, "*****\n");
 
   /* Call SRAM subckts*/
-  for (ilevel = 0; ilevel < mux_level; ilevel++) {
+  for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
     fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, sram_spice_model->cnt);
     /*fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, sram_spice_model->cnt);*/
     fprintf(fp, "%s->in ", sram_spice_model->prefix); /* Input*/
@@ -1482,6 +1499,7 @@ void fprint_connection_box_mux(FILE* fp,
   t_rr_node** drive_rr_nodes = NULL;
   int inode, mux_level, path_id, switch_index;
   t_spice_model* mux_spice_model = NULL;
+  int num_mux_sram_bits = 0;
   int* mux_sram_bits = NULL;
   t_rr_type drive_rr_node_type = NUM_RR_TYPES;
   int xlow, ylow, offset, side;
@@ -1502,7 +1520,6 @@ void fprint_connection_box_mux(FILE* fp,
 
   /* Configuration bits for MUX*/
   path_id = -1;
-  mux_level = determine_mux_level(mux_size);
   for (inode = 0; inode < mux_size; inode++) {
     if (drive_rr_nodes[inode] == &(rr_node[src_rr_node->prev_node])) {
       path_id = inode;
@@ -1510,7 +1527,6 @@ void fprint_connection_box_mux(FILE* fp,
     }
   }
   assert((-1 != path_id)&&(path_id < mux_size));
-  mux_sram_bits = decode_mux_sram_bits(mux_size, mux_level, path_id); 
 
   switch_index = src_rr_node->drive_switches[path_id];
 
@@ -1585,11 +1601,29 @@ void fprint_connection_box_mux(FILE* fp,
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of src_rr_node!\n", __FILE__, __LINE__);
     exit(1);
   }
+
+  switch (mux_spice_model->structure) {
+  case SPICE_MODEL_STRUCTURE_TREE:
+    mux_level = determine_tree_mux_level(mux_size);
+    num_mux_sram_bits = mux_level;
+    mux_sram_bits = decode_tree_mux_sram_bits(mux_size, mux_level, path_id); 
+    break;
+  case SPICE_MODEL_STRUCTURE_ONELEVEL:
+    mux_level = 1;
+    num_mux_sram_bits = mux_size;
+    mux_sram_bits = decode_onelevel_mux_sram_bits(mux_size, mux_level, path_id); 
+    break;
+  case SPICE_MODEL_STRUCTURE_TWOLEVEL:
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
+               __FILE__, __LINE__, mux_spice_model->name);
+    exit(1);
+  } 
  
   /* Print SRAMs that configure this MUX */
   /* TODO: What about RRAM-based MUX? */
   cur_num_sram = sram_spice_model->cnt;
-  for (ilevel = 0; ilevel < mux_level; ilevel++) {
+  for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
     /* Configure the SRAMs*/
     /* Pull Up/Down the SRAM outputs*/
     switch (mux_sram_bits[ilevel]) {
@@ -1618,13 +1652,13 @@ void fprint_connection_box_mux(FILE* fp,
   fprintf(fp, "***** SRAM bits for MUX[%d], level=%d, select_path_id=%d. *****\n", 
           mux_spice_model->cnt, mux_level, path_id);
   fprintf(fp, "*****");
-  for (ilevel = 0; ilevel < mux_level; ilevel++) {
+  for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
     fprintf(fp, "%d", mux_sram_bits[ilevel]);
   }
   fprintf(fp, "*****\n");
 
   /* Call SRAM subckts*/
-  for (ilevel = 0; ilevel < mux_level; ilevel++) {
+  for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
     fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, sram_spice_model->cnt);
     /*fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, sram_spice_model->cnt);*/
     fprintf(fp, "%s->in ", sram_spice_model->prefix); /* Input*/

@@ -74,7 +74,7 @@ void init_spice_mux_arch(t_spice_mux_arch* spice_mux_arch,
 
   /* Basic info*/
   spice_mux_arch->num_input = mux_size;
-  spice_mux_arch->num_level = determine_mux_level(spice_mux_arch->num_input);
+  spice_mux_arch->num_level = determine_tree_mux_level(spice_mux_arch->num_input);
   /* Determine the level and index of per MUX inputs*/
   spice_mux_arch->num_input_last_level = mux_last_level_input_num(spice_mux_arch->num_level, mux_size);
   /* Alloc*/
@@ -213,14 +213,14 @@ void fprint_spice_mux_basis_cmos_subckt(FILE* fp,
   /* Identify the pass-gate logic*/
   switch (spice_model.pass_gate_logic->type) {
   case SPICE_MODEL_PASS_GATE_TRANSMISSION:
-    pgl_name = "cpt";
+    pgl_name = cpt_subckt_name;
     fprintf(fp,"X%s_0 in0 out sel sel_inv svdd sgnd %s nmos_size=%g pmos_size=%g\n",
             pgl_name, pgl_name, spice_model.pass_gate_logic->nmos_size, spice_model.pass_gate_logic->pmos_size);
     fprintf(fp,"X%s_1 in1 out sel_inv sel svdd sgnd %s nmos_size=%g pmos_size=%g\n",
             pgl_name, pgl_name, spice_model.pass_gate_logic->nmos_size, spice_model.pass_gate_logic->pmos_size);
     break;
   case SPICE_MODEL_PASS_GATE_TRANSISTOR:
-    pgl_name = "nmos";
+    pgl_name = nmos_subckt_name;
     fprintf(fp,"X%s_0 in0 sel out sgnd %s W=\'%g*wn\'\n",
             pgl_name, pgl_name, spice_model.pass_gate_logic->nmos_size);
     fprintf(fp,"X%s_1 in1 sel_inv out sgnd %s W=\'%g*wn\'\n",
@@ -310,22 +310,13 @@ void fprint_spice_mux_basis_subckt(FILE* fp,
   return;
 }
 
-void fprint_spice_mux_model_cmos_subckt(FILE* fp,
-                                        int mux_size,
-                                        t_spice_model spice_model,
-                                        t_spice_mux_arch spice_mux_arch) {
+void fprint_spice_cmos_mux_tree_structure(FILE* fp, char* mux_basis_subckt_name,
+                                          t_spice_model spice_model,
+                                          t_spice_mux_arch spice_mux_arch,
+                                          int num_sram_port, t_spice_model_port** sram_port) {
   int i, j, level, nextlevel;
   int nextj, out_idx;
   int mux_basis_cnt = 0;
-  int num_input_port = 0;
-  int num_output_port = 0;
-  int num_sram_port = 0;
-  t_spice_model_port** input_port = NULL;
-  t_spice_model_port** output_port = NULL;
-  t_spice_model_port** sram_port = NULL;
-
-  /* Find the basis subckt*/
-  char* mux_basis_subckt_name = my_strcat(spice_model.name, mux_basis_posfix);
 
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {
@@ -333,48 +324,6 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
     exit(1);
   } 
 
-  /* Ensure we have a CMOS MUX,
-   * ATTENTION: support LUT as well
-   */
-  assert((SPICE_MODEL_MUX == spice_model.type)||(SPICE_MODEL_LUT == spice_model.type)); 
-  assert(SPICE_MODEL_DESIGN_CMOS == spice_model.design_tech);
-
-  /* Find the input port, output port, and sram port*/
-  input_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port);
-  output_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port);
-  sram_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port);
-
-  /* Asserts*/
-  assert(1 == num_input_port);
-  assert(1 == num_output_port);
-  assert(1 == num_sram_port);
-  assert(1 == output_port[0]->size);
-
-  /* Print the definition of subckt*/
-  if (SPICE_MODEL_LUT == spice_model.type) {
-    /* Special for LUT MUX*/
-    fprintf(fp, "***** CMOS MUX info: spice_model_name= %s_MUX, size=%d *****\n", spice_model.name, mux_size);
-    fprintf(fp, ".subckt %s_mux_size%d ", spice_model.name, mux_size);
-  } else {
-    fprintf(fp, "***** CMOS MUX info: spice_model_name=%s, size=%d *****\n", spice_model.name, mux_size);
-    fprintf(fp, ".subckt %s_size%d ", spice_model.name, mux_size);
-  }
-  /* Print input ports*/
-  for (i = 0; i < mux_size; i++) {
-    fprintf(fp, "%s%d ", input_port[0]->prefix, i);
-  } 
-  /* Print output ports*/
-  fprintf(fp, "%s ", output_port[0]->prefix);
-  /* Print sram ports*/
-  for (i = 0; i < spice_mux_arch.num_level; i++) {
-    fprintf(fp, "%s%d ", sram_port[0]->prefix, spice_mux_arch.num_level-i-1);
-    fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, spice_mux_arch.num_level-i-1);
-  } 
-  /* Print local vdd and gnd*/
-  fprintf(fp, "svdd sgnd");
-  fprintf(fp, "\n");
-  
-  /* Print internal architecture*/ 
   mux_basis_cnt = 0;
   for (i = 0; i < spice_mux_arch.num_level; i++) {
     level = spice_mux_arch.num_level - i;
@@ -395,128 +344,19 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
       j = nextj;
       mux_basis_cnt++;
     } 
-  } 
+  }   
   /* Assert */
   assert(0 == nextlevel);
   assert(0 == out_idx);
-
-  /* To connect the input ports*/
-  for (i = 0; i < mux_size; i++) {
-    if (1 == spice_model.input_buffer->exist) {
-      switch (spice_model.input_buffer->type) {
-      case SPICE_MODEL_BUF_INV:
-        /* Each inv: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
-        fprintf(fp, "Xinv%d ", i); /* Given name*/
-        fprintf(fp, "%s%d ", input_port[0]->prefix, i); /* input port */ 
-        fprintf(fp, "mux2_l%d_in%d ", spice_mux_arch.input_level[i], spice_mux_arch.input_offset[i]); /* output port*/
-        fprintf(fp, "svdd sgnd inv size=\'%g\'", spice_model.input_buffer->size); /* subckt name */
-        fprintf(fp, "\n");
-        break;
-      case SPICE_MODEL_BUF_BUF:
-        /* TODO: what about tapered buffer, can we support? */
-        /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
-        fprintf(fp, "Xbuf%d ", i); /* Given name*/
-        fprintf(fp, "%s%d ", input_port[0]->prefix, i); /* input port */ 
-        fprintf(fp, "mux2_l%d_in%d ", spice_mux_arch.input_level[i], spice_mux_arch.input_offset[i]); /* output port*/
-        fprintf(fp, "svdd sgnd buf size=\'%g\'", spice_model.input_buffer->size); /* subckt name */
-        fprintf(fp, "\n");
-        break;
-      default:
-        vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type for spice_model_buffer.\n",
-                   __FILE__, __LINE__);
-        exit(1);   
-      }
-    } else {
-      /* There is no buffer, I create a zero resisitance between*/
-      /* Resistance R<given_name> <input> <output> 0*/
-      fprintf(fp, "Rin%d %s%d mux2_l%d_in%d 0\n", 
-              i, input_port[0]->prefix, i, spice_mux_arch.input_level[i], 
-              spice_mux_arch.input_offset[i]);
-    }
-  }
-
-  /* Output buffer*/
-  if (1 == spice_model.output_buffer->exist) {
-    switch (spice_model.output_buffer->type) {
-    case SPICE_MODEL_BUF_INV:
-      if (TRUE == spice_model.output_buffer->tapered_buf) {
-        break;
-      }
-      /* Each inv: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
-      fprintf(fp, "Xinv_out "); /* Given name*/
-      fprintf(fp, "mux2_l%d_in%d ", nextlevel, out_idx); /* input port */ 
-      fprintf(fp, "%s ", output_port[0]->prefix); /* Output port*/
-      fprintf(fp, "svdd sgnd inv size=\'%g\'", spice_model.output_buffer->size); /* subckt name */
-      fprintf(fp, "\n");
-      break;
-    case SPICE_MODEL_BUF_BUF:
-      if (TRUE == spice_model.output_buffer->tapered_buf) {
-        break;
-      }
-      /* TODO: what about tapered buffer, can we support? */
-      /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
-      fprintf(fp, "Xbuf_out "); /* Given name*/
-      fprintf(fp, "mux2_l%d_in%d ", nextlevel, out_idx); /* input port */ 
-      fprintf(fp, "%s ", output_port[0]->prefix); /* Output port*/
-      fprintf(fp, "svdd sgnd buf size=\'%g\'", spice_model.output_buffer->size); /* subckt name */
-      fprintf(fp, "\n");
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type for spice_model_buffer.\n",
-                 __FILE__, __LINE__);
-      exit(1);   
-    }
-    /* Tapered buffer support */
-    if (TRUE == spice_model.output_buffer->tapered_buf) {
-      /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
-      fprintf(fp, "Xbuf_out "); /* Given name*/
-      fprintf(fp, "mux2_l%d_in%d ", nextlevel, out_idx); /* input port */ 
-      fprintf(fp, "%s ", output_port[0]->prefix); /* Output port*/
-      fprintf(fp, "svdd sgnd tapbuf_level%d_f%d", 
-              spice_model.output_buffer->tap_buf_level, spice_model.output_buffer->f_per_stage); /* subckt name */
-      fprintf(fp, "\n");
-    }
-  } else {
-    /* There is no buffer, I create a zero resisitance between*/
-    /* Resistance R<given_name> <input> <output> 0*/
-    fprintf(fp, "Rout mux2_l0_in0 %s 0\n",output_port[0]->prefix);
-  }
- 
-  fprintf(fp, ".eom\n");
-  fprintf(fp, "***** END CMOS MUX info: spice_model_name=%s, size=%d *****\n", spice_model.name, mux_size);
-  fprintf(fp, "\n");
-
-  /* Free */
-  my_free(mux_basis_subckt_name);
-  my_free(input_port);
-  my_free(output_port);
-  my_free(sram_port);
+  assert(mux_basis_cnt == spice_mux_arch.num_input - 1);
 
   return;
 }
 
-/* Print the RRAM MUX SPICE model.
- * The internal structures of CMOS and RRAM MUXes are similar. 
- * This one can be merged to CMOS function.
- * However I use another function, because in future the internal structure may change.
- * We will suffer less software problems.
- */
-void fprint_spice_mux_model_rram_subckt(FILE* fp,
-                                        int mux_size,
-                                        t_spice_model spice_model,
-                                        t_spice_mux_arch spice_mux_arch) {
-  int i, j, level, nextlevel;
-  int nextj, nextnextj, out_idx;
-  int mux_basis_cnt = 0;
-  int num_input_port = 0;
-  int num_output_port = 0;
-  int num_sram_port = 0;
-  t_spice_model_port** input_port = NULL;
-  t_spice_model_port** output_port = NULL;
-  t_spice_model_port** sram_port = NULL;
-
-  /* Find the basis subckt*/
-  char* mux_basis_subckt_name = my_strcat(spice_model.name, mux_basis_posfix);
+void fprint_spice_cmos_mux_onelevel_structure(FILE* fp, t_spice_model spice_model,
+                                              t_spice_mux_arch spice_mux_arch,
+                                              int num_sram_port, t_spice_model_port** sram_port) {
+  int i;
 
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {
@@ -524,47 +364,52 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
     exit(1);
   } 
 
-  /* Ensure we have a RRAM MUX*/
-  assert((SPICE_MODEL_MUX == spice_model.type)||(SPICE_MODEL_LUT == spice_model.type)); 
-  assert(SPICE_MODEL_DESIGN_RRAM == spice_model.design_tech);
+  assert(SPICE_MODEL_DESIGN_CMOS == spice_model.design_tech);
 
-  /* Find the input port, output port, and sram port*/
-  input_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port);
-  output_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port);
-  sram_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port);
-
-  /* Asserts*/
-  assert(1 == num_input_port);
-  assert(1 == num_output_port);
-  assert(1 == num_sram_port);
-  assert(1 == output_port[0]->size);
-
-  /* Print the definition of subckt*/
-  if (SPICE_MODEL_LUT == spice_model.type) {
-    /* Special for LUT MUX*/
-    fprintf(fp, "***** RRAM MUX info: spice_model_name= %s_MUX, size=%d *****\n", spice_model.name, mux_size);
-    fprintf(fp, ".subckt %s_mux_size%d ", spice_model.name, mux_size);
-  } else {
-    fprintf(fp, "***** RRAM MUX info: spice_model_name= %s, size=%d *****\n", spice_model.name, mux_size);
-    fprintf(fp, ".subckt %s_size%d ", spice_model.name, mux_size);
+  switch (spice_model.pass_gate_logic->type) {
+  case SPICE_MODEL_PASS_GATE_TRANSMISSION:
+    for (i = 0; i < spice_mux_arch.num_input; i++) {
+      fprintf(fp, "Xmux_basis_no%d ", i); /* given_name */
+      fprintf(fp, "mux2_l%d_in%d ", 1, i); /* input0  */
+      fprintf(fp, "mux2_l%d_in%d ", 0, 0); /* output */
+      fprintf(fp, "%s%d %s_inv%d ", sram_port[0]->prefix, i, sram_port[0]->prefix, i); /* sram sram_inv */
+      fprintf(fp, "svdd sgnd %s nmos_size=%g pmos_size=%g\n", 
+              cpt_subckt_name, spice_model.pass_gate_logic->nmos_size, spice_model.pass_gate_logic->pmos_size);
+    }
+    break;
+  case SPICE_MODEL_PASS_GATE_TRANSISTOR:
+    for (i = 0; i < spice_mux_arch.num_input; i++) {
+      fprintf(fp, "Xmux_basis_no%d ", i); /* given_name */
+      fprintf(fp, "mux2_l%d_in%d ", 1, i); /* input0 */
+      fprintf(fp, "%s%d ", sram_port[0]->prefix, i); /* sram sram_inv */
+      fprintf(fp, "mux2_l%d_in%d ", 0, 0); /* output */
+      fprintf(fp, "sgnd %s W=\'%g*wn\'\n", 
+              nmos_subckt_name, spice_model.pass_gate_logic->nmos_size);
+    }
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(Fil: %s,[LINE%d])Invalid pass gate logic for spice model(name:%s)!\n", 
+               __FILE__, __LINE__, spice_model.name);
+    exit(1);
   }
-  /* Print input ports*/
-  for (i = 0; i < mux_size; i++) {
-    fprintf(fp, "%s%d ", input_port[0]->prefix, i);
+
+  return;
+}
+
+void fprint_spice_rram_mux_tree_structure(FILE* fp, char* mux_basis_subckt_name,
+                                          t_spice_model spice_model,
+                                          t_spice_mux_arch spice_mux_arch,
+                                          int num_sram_port, t_spice_model_port** sram_port) {
+  int i, j, level, nextlevel;
+  int nextj, nextnextj, out_idx;
+  int mux_basis_cnt = 0;
+
+  /* Make sure we have a valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
+    exit(1);
   } 
-  /* Print output ports*/
-  fprintf(fp, "%s ", output_port[0]->prefix);
-  /* Print sram ports*/
-  for (i = 0; i < spice_mux_arch.num_level; i++) {
-    fprintf(fp, "%s%d ", sram_port[0]->prefix, spice_mux_arch.num_level-i-1);
-    fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, spice_mux_arch.num_level-i-1);
-  } 
-  /* Print local vdd and gnd*/
-  fprintf(fp, "svdd sgnd ron=\'%g\' roff=\'%g\' wprog=\'%g*wn\'", 
-          spice_model.ron, spice_model.roff, spice_model.prog_trans_size);
-  fprintf(fp, "\n");
-  
-  /* Print internal architecture*/ 
+
   mux_basis_cnt = 0;
   for (i = 0; i < spice_mux_arch.num_level; i++) {
     level = spice_mux_arch.num_level - i;
@@ -606,9 +451,154 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
   /* Assert */
   assert(0 == nextlevel);
   assert(0 == out_idx);
+  assert(mux_basis_cnt == spice_mux_arch.num_input - 1);
   /* Add programming transistor for the output port*/
   fprintf(fp, "Xprog_out mux2_l%d_in%d sgnd sgnd sgnd %s L=nl W=\'wprog\'\n",
           nextlevel, out_idx, nmos_subckt_name);
+
+  return;
+}
+
+void fprint_spice_rram_mux_onelevel_structure(FILE* fp, t_spice_model spice_model,
+                                              t_spice_mux_arch spice_mux_arch,
+                                              int num_sram_port, t_spice_model_port** sram_port) {
+  int i;
+
+  /* Make sure we have a valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  assert(SPICE_MODEL_DESIGN_RRAM == spice_model.design_tech);
+  assert(SPICE_MODEL_PASS_GATE_TRANSMISSION == spice_model.pass_gate_logic->type);
+
+  for (i = 0; i < spice_mux_arch.num_input; i++) {
+    /* Print a RRAM */
+    fprintf(fp,"Xrram%d mux2_l%d_in%d mux2_l%d_in%d ", 
+            i, 1, i, 0, 0);
+    fprintf(fp, "%s%d %s_inv%d ", sram_port[0]->prefix, i, sram_port[0]->prefix, i); /* sram sram_inv */ 
+    fprintf(fp, "rram_behavior switch_thres=vsp ron=ron roff=roff\n");
+    /* Print a pair of programming transistor: 1 PMOS and 1 NMOS */
+    /* PMOS */
+    fprintf(fp, "Xpmos_prog_pair%d ", i); /* given_name */
+    fprintf(fp, "mux2_l%d_in%d ", 1, i); /* input0  */
+    fprintf(fp, "svdd sgnd svdd %s W=\'%g*wp\' \n", 
+            pmos_subckt_name, spice_model.pass_gate_logic->pmos_size);
+    /* NMOS */
+    fprintf(fp, "Xnmos_prog_pair%d ", i); /* given_name */
+    fprintf(fp, "mux2_l%d_in%d ", 1, i); /* input0  */
+    fprintf(fp, "sgnd sgnd sgnd %s W=\'%g*wn\' \n", 
+            nmos_subckt_name, spice_model.pass_gate_logic->nmos_size);
+  }
+
+  /* Add the shared programmming pair at the output */
+  /* PMOS */
+  fprintf(fp, "Xpmos_prog_pair_out "); /* given_name */
+  fprintf(fp, "mux2_l%d_in%d ", 0, 0); /* input0  */
+  fprintf(fp, "svdd sgnd svdd %s W=\'%g*wp\' \n", 
+          pmos_subckt_name, spice_model.pass_gate_logic->pmos_size);
+  /* NMOS */
+  fprintf(fp, "Xnmos_prog_pair_out "); /* given_name */
+  fprintf(fp, "mux2_l%d_in%d ", 0, 0); /* input0  */
+  fprintf(fp, "sgnd sgnd sgnd %s W=\'%g*wn\' \n", 
+          nmos_subckt_name, spice_model.pass_gate_logic->nmos_size);
+
+  return;
+}
+
+void fprint_spice_mux_model_cmos_subckt(FILE* fp,
+                                        int mux_size,
+                                        t_spice_model spice_model,
+                                        t_spice_mux_arch spice_mux_arch) {
+  int i;
+  int num_input_port = 0;
+  int num_output_port = 0;
+  int num_sram_port = 0;
+  t_spice_model_port** input_port = NULL;
+  t_spice_model_port** output_port = NULL;
+  t_spice_model_port** sram_port = NULL;
+
+  /* Find the basis subckt*/
+  char* mux_basis_subckt_name = my_strcat(spice_model.name, mux_basis_posfix);
+
+  /* Make sure we have a valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  /* Ensure we have a CMOS MUX,
+   * ATTENTION: support LUT as well
+   */
+  assert((SPICE_MODEL_MUX == spice_model.type)||(SPICE_MODEL_LUT == spice_model.type)); 
+  assert(SPICE_MODEL_DESIGN_CMOS == spice_model.design_tech);
+
+  /* Find the input port, output port, and sram port*/
+  input_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port);
+  output_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port);
+  sram_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port);
+
+  /* Asserts*/
+  assert(1 == num_input_port);
+  assert(1 == num_output_port);
+  assert(1 == num_sram_port);
+  assert(1 == output_port[0]->size);
+
+  /* Print the definition of subckt*/
+  if (SPICE_MODEL_LUT == spice_model.type) {
+    /* Special for LUT MUX*/
+    fprintf(fp, "***** CMOS MUX info: spice_model_name= %s_MUX, size=%d *****\n", spice_model.name, mux_size);
+    fprintf(fp, ".subckt %s_mux_size%d ", spice_model.name, mux_size);
+  } else {
+    fprintf(fp, "***** CMOS MUX info: spice_model_name=%s, size=%d, structure: %s *****\n", 
+            spice_model.name, mux_size, gen_str_spice_model_structure(spice_model.structure));
+    fprintf(fp, ".subckt %s_size%d ", spice_model.name, mux_size);
+  }
+  /* Print input ports*/
+  for (i = 0; i < mux_size; i++) {
+    fprintf(fp, "%s%d ", input_port[0]->prefix, i);
+  } 
+  /* Print output ports*/
+  fprintf(fp, "%s ", output_port[0]->prefix);
+  switch (spice_model.structure) {
+  case SPICE_MODEL_STRUCTURE_TREE:
+    /* Print sram ports*/
+    for (i = 0; i < spice_mux_arch.num_level; i++) {
+      fprintf(fp, "%s%d ", sram_port[0]->prefix, spice_mux_arch.num_level-i-1);
+      fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, spice_mux_arch.num_level-i-1);
+    } 
+    break;
+  case SPICE_MODEL_STRUCTURE_ONELEVEL:
+    /* Print sram ports*/
+    for (i = 0; i < mux_size; i++) {
+      fprintf(fp, "%s%d ", sram_port[0]->prefix, mux_size - i - 1);
+      fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, mux_size - i - 1);
+    } 
+    break;
+  case SPICE_MODEL_STRUCTURE_TWOLEVEL:
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
+               __FILE__, __LINE__, spice_model.name);
+    exit(1);
+  }
+  /* Print local vdd and gnd*/
+  fprintf(fp, "svdd sgnd");
+  fprintf(fp, "\n");
+  
+  /* Print internal architecture*/ 
+  switch (spice_model.structure) {
+  case SPICE_MODEL_STRUCTURE_TREE:
+    fprint_spice_cmos_mux_tree_structure(fp, mux_basis_subckt_name, spice_model, spice_mux_arch, num_sram_port, sram_port);
+    break;
+  case SPICE_MODEL_STRUCTURE_ONELEVEL:
+    fprint_spice_cmos_mux_onelevel_structure(fp, spice_model, spice_mux_arch, num_sram_port, sram_port);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
+               __FILE__, __LINE__, spice_model.name);
+    exit(1);
+  }
 
   /* To connect the input ports*/
   for (i = 0; i < mux_size; i++) {
@@ -654,7 +644,7 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
       }
       /* Each inv: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
       fprintf(fp, "Xinv_out "); /* Given name*/
-      fprintf(fp, "mux2_l%d_in%d ", nextlevel, out_idx); /* input port */ 
+      fprintf(fp, "mux2_l%d_in%d ", 0, 0); /* input port */ 
       fprintf(fp, "%s ", output_port[0]->prefix); /* Output port*/
       fprintf(fp, "svdd sgnd inv size=\'%g\'", spice_model.output_buffer->size); /* subckt name */
       fprintf(fp, "\n");
@@ -663,10 +653,9 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
       if (TRUE == spice_model.output_buffer->tapered_buf) {
         break;
       }
-      /* TODO: what about tapered buffer, can we support? */
       /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
       fprintf(fp, "Xbuf_out "); /* Given name*/
-      fprintf(fp, "mux2_l%d_in%d ", nextlevel, out_idx); /* input port */ 
+      fprintf(fp, "mux2_l%d_in%d ", 0, 0); /* input port */ 
       fprintf(fp, "%s ", output_port[0]->prefix); /* Output port*/
       fprintf(fp, "svdd sgnd buf size=\'%g\'", spice_model.output_buffer->size); /* subckt name */
       fprintf(fp, "\n");
@@ -680,7 +669,199 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
     if (TRUE == spice_model.output_buffer->tapered_buf) {
       /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
       fprintf(fp, "Xbuf_out "); /* Given name*/
-      fprintf(fp, "mux2_l%d_in%d ", nextlevel, out_idx); /* input port */ 
+      fprintf(fp, "mux2_l%d_in%d ", 0, 0); /* input port */ 
+      fprintf(fp, "%s ", output_port[0]->prefix); /* Output port*/
+      fprintf(fp, "svdd sgnd tapbuf_level%d_f%d", 
+              spice_model.output_buffer->tap_buf_level, spice_model.output_buffer->f_per_stage); /* subckt name */
+      fprintf(fp, "\n");
+    }
+  } else {
+    /* There is no buffer, I create a zero resisitance between*/
+    /* Resistance R<given_name> <input> <output> 0*/
+    fprintf(fp, "Rout mux2_l0_in0 %s 0\n",output_port[0]->prefix);
+  }
+ 
+  fprintf(fp, ".eom\n");
+  fprintf(fp, "***** END CMOS MUX info: spice_model_name=%s, size=%d *****\n", spice_model.name, mux_size);
+  fprintf(fp, "\n");
+
+  /* Free */
+  my_free(mux_basis_subckt_name);
+  my_free(input_port);
+  my_free(output_port);
+  my_free(sram_port);
+
+  return;
+}
+
+/* Print the RRAM MUX SPICE model.
+ * The internal structures of CMOS and RRAM MUXes are similar. 
+ * This one can be merged to CMOS function.
+ * However I use another function, because in future the internal structure may change.
+ * We will suffer less software problems.
+ */
+void fprint_spice_mux_model_rram_subckt(FILE* fp,
+                                        int mux_size,
+                                        t_spice_model spice_model,
+                                        t_spice_mux_arch spice_mux_arch) {
+  int i;
+  int num_input_port = 0;
+  int num_output_port = 0;
+  int num_sram_port = 0;
+  t_spice_model_port** input_port = NULL;
+  t_spice_model_port** output_port = NULL;
+  t_spice_model_port** sram_port = NULL;
+
+  /* Find the basis subckt*/
+  char* mux_basis_subckt_name = my_strcat(spice_model.name, mux_basis_posfix);
+
+  /* Make sure we have a valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  /* Ensure we have a RRAM MUX*/
+  assert((SPICE_MODEL_MUX == spice_model.type)||(SPICE_MODEL_LUT == spice_model.type)); 
+  assert(SPICE_MODEL_DESIGN_RRAM == spice_model.design_tech);
+
+  /* Find the input port, output port, and sram port*/
+  input_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port);
+  output_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port);
+  sram_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port);
+
+  /* Asserts*/
+  assert(1 == num_input_port);
+  assert(1 == num_output_port);
+  assert(1 == num_sram_port);
+  assert(1 == output_port[0]->size);
+
+  /* Print the definition of subckt*/
+  if (SPICE_MODEL_LUT == spice_model.type) {
+    /* Special for LUT MUX*/
+    fprintf(fp, "***** RRAM MUX info: spice_model_name= %s_MUX, size=%d *****\n", spice_model.name, mux_size);
+    fprintf(fp, ".subckt %s_mux_size%d ", spice_model.name, mux_size);
+  } else {
+    fprintf(fp, "***** RRAM MUX info: spice_model_name=%s, size=%d, structure: %s *****\n", 
+            spice_model.name, mux_size, gen_str_spice_model_structure(spice_model.structure));
+    fprintf(fp, ".subckt %s_size%d ", spice_model.name, mux_size);
+  }
+  /* Print input ports*/
+  for (i = 0; i < mux_size; i++) {
+    fprintf(fp, "%s%d ", input_port[0]->prefix, i);
+  } 
+  /* Print output ports*/
+  fprintf(fp, "%s ", output_port[0]->prefix);
+  switch (spice_model.structure) {
+  case SPICE_MODEL_STRUCTURE_TREE:
+    /* Print sram ports*/
+    for (i = 0; i < spice_mux_arch.num_level; i++) {
+      fprintf(fp, "%s%d ", sram_port[0]->prefix, spice_mux_arch.num_level-i-1);
+      fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, spice_mux_arch.num_level-i-1);
+    } 
+    break;
+  case SPICE_MODEL_STRUCTURE_ONELEVEL:
+    /* Print sram ports*/
+    for (i = 0; i < mux_size; i++) {
+      fprintf(fp, "%s%d ", sram_port[0]->prefix, mux_size - i - 1);
+      fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, mux_size - i - 1);
+    } 
+    break;
+  case SPICE_MODEL_STRUCTURE_TWOLEVEL:
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
+               __FILE__, __LINE__, spice_model.name);
+    exit(1);
+  }
+  /* Print local vdd and gnd*/
+  fprintf(fp, "svdd sgnd ron=\'%g\' roff=\'%g\' wprog=\'%g*wn\'", 
+          spice_model.ron, spice_model.roff, spice_model.prog_trans_size);
+  fprintf(fp, "\n");
+  
+  /* Print internal architecture*/ 
+  switch (spice_model.structure) {
+  case SPICE_MODEL_STRUCTURE_TREE:
+    fprint_spice_rram_mux_tree_structure(fp, mux_basis_subckt_name, spice_model, spice_mux_arch, num_sram_port, sram_port);
+    break;
+  case SPICE_MODEL_STRUCTURE_ONELEVEL:
+    fprint_spice_rram_mux_onelevel_structure(fp, spice_model, spice_mux_arch, num_sram_port, sram_port);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
+               __FILE__, __LINE__, spice_model.name);
+    exit(1);
+  }
+
+  /* To connect the input ports*/
+  for (i = 0; i < mux_size; i++) {
+    if (1 == spice_model.input_buffer->exist) {
+      switch (spice_model.input_buffer->type) {
+      case SPICE_MODEL_BUF_INV:
+        /* Each inv: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
+        fprintf(fp, "Xinv%d ", i); /* Given name*/
+        fprintf(fp, "%s%d ", input_port[0]->prefix, i); /* input port */ 
+        fprintf(fp, "mux2_l%d_in%d ", spice_mux_arch.input_level[i], spice_mux_arch.input_offset[i]); /* output port*/
+        fprintf(fp, "svdd sgnd inv size=\'%g\'", spice_model.input_buffer->size); /* subckt name */
+        fprintf(fp, "\n");
+        break;
+      case SPICE_MODEL_BUF_BUF:
+        /* TODO: what about tapered buffer, can we support? */
+        /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
+        fprintf(fp, "Xbuf%d ", i); /* Given name*/
+        fprintf(fp, "%s%d ", input_port[0]->prefix, i); /* input port */ 
+        fprintf(fp, "mux2_l%d_in%d ", spice_mux_arch.input_level[i], spice_mux_arch.input_offset[i]); /* output port*/
+        fprintf(fp, "svdd sgnd buf size=\'%g\'", spice_model.input_buffer->size); /* subckt name */
+        fprintf(fp, "\n");
+        break;
+      default:
+        vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type for spice_model_buffer.\n",
+                   __FILE__, __LINE__);
+        exit(1);   
+      }
+    } else {
+      /* There is no buffer, I create a zero resisitance between*/
+      /* Resistance R<given_name> <input> <output> 0*/
+      fprintf(fp, "Rin%d %s%d mux2_l%d_in%d 0\n", 
+              i, input_port[0]->prefix, i, spice_mux_arch.input_level[i], 
+              spice_mux_arch.input_offset[i]);
+    }
+  }
+
+  /* Output buffer*/
+  if (1 == spice_model.output_buffer->exist) {
+    switch (spice_model.output_buffer->type) {
+    case SPICE_MODEL_BUF_INV:
+      if (TRUE == spice_model.output_buffer->tapered_buf) {
+        break;
+      }
+      /* Each inv: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
+      fprintf(fp, "Xinv_out "); /* Given name*/
+      fprintf(fp, "mux2_l%d_in%d ", 0, 0); /* input port */ 
+      fprintf(fp, "%s ", output_port[0]->prefix); /* Output port*/
+      fprintf(fp, "svdd sgnd inv size=\'%g\'", spice_model.output_buffer->size); /* subckt name */
+      fprintf(fp, "\n");
+      break;
+    case SPICE_MODEL_BUF_BUF:
+      if (TRUE == spice_model.output_buffer->tapered_buf) {
+        break;
+      }
+      /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
+      fprintf(fp, "Xbuf_out "); /* Given name*/
+      fprintf(fp, "mux2_l%d_in%d ", 0, 0); /* input port */ 
+      fprintf(fp, "%s ", output_port[0]->prefix); /* Output port*/
+      fprintf(fp, "svdd sgnd buf size=\'%g\'", spice_model.output_buffer->size); /* subckt name */
+      fprintf(fp, "\n");
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type for spice_model_buffer.\n",
+                 __FILE__, __LINE__);
+      exit(1);   
+    }
+    /* Tapered buffer support */
+    if (TRUE == spice_model.output_buffer->tapered_buf) {
+      /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
+      fprintf(fp, "Xbuf_out "); /* Given name*/
+      fprintf(fp, "mux2_l%d_in%d ", 0 , 0); /* input port */ 
       fprintf(fp, "%s ", output_port[0]->prefix); /* Output port*/
       fprintf(fp, "svdd sgnd tapbuf_level%d_f%d", 
               spice_model.output_buffer->tap_buf_level, spice_model.output_buffer->f_per_stage); /* subckt name */

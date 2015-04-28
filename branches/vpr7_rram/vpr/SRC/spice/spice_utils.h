@@ -56,7 +56,8 @@ t_port** find_pb_type_ports_match_spice_model_port_type(t_pb_type* pb_type,
 
 t_block* search_mapped_block(int x, int y, int z);
 
-int determine_mux_level(int mux_size);
+
+int determine_tree_mux_level(int mux_size);
 
 int mux_last_level_input_num(int num_level,
                              int mux_size);
@@ -64,9 +65,13 @@ int mux_last_level_input_num(int num_level,
 int determine_lut_path_id(int lut_size,
                           int* lut_inputs);
 
-int* decode_mux_sram_bits(int fan_in,
-                          int mux_level,
-                          int path_id);
+int* decode_onelevel_mux_sram_bits(int fan_in,
+                                   int mux_level,
+                                   int path_id);
+
+int* decode_tree_mux_sram_bits(int fan_in,
+                               int mux_level,
+                               int path_id);
 
 char** my_strtok(char* str, 
                  char* delims, 
@@ -167,3 +172,5 @@ void update_one_spice_model_grid_index_high(int x, int y,
 void update_spice_models_grid_index_high(int x, int y, 
                                         int num_spice_models, 
                                         t_spice_model* spice_model);
+
+char* gen_str_spice_model_structure(enum e_spice_model_structure spice_model_structure);

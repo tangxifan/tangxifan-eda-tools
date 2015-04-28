@@ -648,7 +648,7 @@ int* my_decimal2binary(int decimal,
 
 /* Determine the level of multiplexer
  */
-int determine_mux_level(int mux_size) {
+int determine_tree_mux_level(int mux_size) {
   int level = 0;
  
   /* Do log2(mux_size), have a basic number*/ 
@@ -703,6 +703,23 @@ int determine_lut_path_id(int lut_size,
   return path_id;
 }
 
+int* decode_onelevel_mux_sram_bits(int fan_in,
+                                   int mux_level,
+                                   int path_id) {
+  int* ret = (int*)my_malloc(sizeof(int)*fan_in);
+  int i;
+  
+  for (i = 0; i < fan_in; i++) {
+    if (i == path_id) {
+      ret[i] = 1;
+    } else {
+      ret[i] = 0;
+    }
+  }
+ 
+  return ret; 
+}
+
 /* Decode the configuration to sram_bits
  * A path_id is in the range of [0..fan_in-1]
  *          sram
@@ -713,9 +730,9 @@ int determine_lut_path_id(int lut_size,
  * To generate the sram bits, we can determine the in each level of MUX,
  * the path id is on the upper path(sram = 1) or the lower path (sram = 0), by path_id > 2**mux_level
  */
-int* decode_mux_sram_bits(int fan_in,
-                          int mux_level,
-                          int path_id) {
+int* decode_tree_mux_sram_bits(int fan_in,
+                               int mux_level,
+                               int path_id) {
   int* ret = (int*)my_malloc(sizeof(int)*mux_level);
   int i = 0;
   int path_differ = 0;
@@ -1548,4 +1565,19 @@ void update_spice_models_grid_index_high(int x, int y,
   }
 
   return;
+}
+
+char* gen_str_spice_model_structure(enum e_spice_model_structure spice_model_structure) {
+  switch (spice_model_structure) {
+  case SPICE_MODEL_STRUCTURE_TREE:
+    return "tree-like"; 
+  case SPICE_MODEL_STRUCTURE_ONELEVEL:
+    return "one-level"; 
+  case SPICE_MODEL_STRUCTURE_TWOLEVEL:
+    return "two-level"; 
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid spice model structure!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
 }

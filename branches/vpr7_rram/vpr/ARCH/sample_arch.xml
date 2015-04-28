@@ -140,10 +140,10 @@
   <spice_settings>
     <parameters>
       <options sim_temp="25" post="on" captab="off" fast="on"/>
-      <measure sim_num_clock_cycle="1" accuracy="50" accuracy_type="frac">
+      <measure sim_num_clock_cycle="1" accuracy="1e-13" accuracy_type="abs">
         <slew>
-          <rise upper_thres_pct="0.9" lower_thres_pct="0.1"/>
-          <fall upper_thres_pct="0.1" lower_thres_pct="0.9"/>
+          <rise upper_thres_pct="0.95" lower_thres_pct="0.05"/>
+          <fall upper_thres_pct="0.05" lower_thres_pct="0.95"/>
         </slew>
         <delay>
           <rise input_thres_pct="0.5" output_thres_pct="0.5"/>
@@ -152,19 +152,19 @@
       </measure>
       <stimulate>
         <clock sim_slack="0.2">
-          <rise slew_pct="0.1"/>
-          <fall slew_pct="0.1"/>
+          <rise slew_time="20e-12" slew_type="abs"/>
+          <fall slew_time="20e-12" slew_type="abs"/>
         </clock>
         <input>
-          <rise slew_pct="0.1"/>
-          <fall slew_pct="0.1"/>
+          <rise slew_time="100e-12" slew_type="abs"/>
+          <fall slew_time="100e-12" slew_type="abs"/>
         </input>
       </stimulate>      
     </parameters>
     <tech_lib lib_type="industry" transistor_type="TT" lib_path="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/Process/MM180_LVT18_V113.lib" nominal_vdd="1.8"/>
-    <transistors pn_ratio="2.7">
-      <nmos model_name="N_LV_18_MM" chan_length="240e-9" min_width="240e-9"/>
-      <pmos model_name="P_LV_18_MM" chan_length="240e-9" min_width="240e-9"/>
+    <transistors pn_ratio="2.7" model_ref="M">
+      <nmos model_name="N_LV_18_MM" chan_length="500e-9" min_width="500e-9"/>
+      <pmos model_name="P_LV_18_MM" chan_length="500e-9" min_width="500e-9"/>
     </transistors> 
     <module_spice_models>
       <spice_model type="chan_wire" name="chan_segment" prefix="track_seg" is_default="1">
@@ -184,7 +184,7 @@
         <wire_param model_type="pie" res_val="0" cap_val="0" level="1"/> <!-- model_type could be T, res_val cap_val should be defined -->
       </spice_model>
       <spice_model type="mux" name="mux_buffered" prefix="mux_buf" is_default="1">
-        <design_technology type="cmos"/>
+        <design_technology type="cmos" structure="one-level"/>
         <!--design_technology type="rram" ron="3e3" roff="1e6" prog_transistor_size="1"/-->
         <input_buffer exist="on" type="inverter" size="4" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="4" tapered="off"/>
@@ -195,7 +195,7 @@
         <port type="sram" prefix="sram" size="1"/>
       </spice_model>
       <spice_model type="mux" name="mux_unbuffered" prefix="mux_unbuf">
-        <design_technology type="cmos"/>
+        <design_technology type="cmos" structure="tree"/>
         <!--design_technology type="rram" ron="1e3" roff="1e6" prog_transistor_size="3"/-->
         <input_buffer exist="off" type="inverter" size="4" tapered="off"/>
         <output_buffer exist="off" type="inverter" size="4" tapered="off"/>
@@ -1400,12 +1400,12 @@
 
   </complexblocklist>
   <power>
-    <local_interconnect C_wire="2.5e-10"/>
+    <local_interconnect C_wire="0"/>
     <mux_transistor_size mux_transistor_size="3"/>
     <FF_size FF_size="4"/>
     <LUT_transistor_size LUT_transistor_size="4"/> 
   </power>
   <clocks>
-    <clock buffer_size="auto" C_wire="2.5e-10"/>
+    <clock buffer_size="auto" C_wire="0"/>
   </clocks>
 </architecture>

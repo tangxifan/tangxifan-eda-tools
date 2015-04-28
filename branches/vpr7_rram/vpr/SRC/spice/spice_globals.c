@@ -10,6 +10,7 @@
 
 char* nmos_subckt_name = "vpr_nmos";
 char* pmos_subckt_name = "vpr_pmos";
+char* cpt_subckt_name = "cpt";
 char* mux_basis_posfix = "_basis";
 char* nmos_pmos_spice_file_name = "nmos_pmos.sp";
 char* basics_spice_file_name = "inv_buf_trans_gate.sp";
