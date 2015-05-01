@@ -511,6 +511,8 @@ static void ProcessSpiceModel(ezxml_t Parent,
         spice_model->structure = SPICE_MODEL_STRUCTURE_TREE;
       } else if (0 == strcmp(FindProperty(Node,"structure",TRUE),"one-level")) {
         spice_model->structure = SPICE_MODEL_STRUCTURE_ONELEVEL;
+      } else if (0 == strcmp(FindProperty(Node,"structure",TRUE),"multi-level")) {
+        spice_model->structure = SPICE_MODEL_STRUCTURE_MULTILEVEL;
       } else {
         /* Default: tree */
         spice_model->structure = SPICE_MODEL_STRUCTURE_TREE;
@@ -520,6 +522,16 @@ static void ProcessSpiceModel(ezxml_t Parent,
       spice_model->structure = SPICE_MODEL_STRUCTURE_TREE;
     }
 	ezxml_set_attr(Node, "structure", NULL);
+    if (SPICE_MODEL_STRUCTURE_MULTILEVEL == spice_model->structure) {
+      spice_model->mux_num_level = GetIntProperty(Node,"num_level",TRUE,1);
+      /* For num_level == 1, auto convert to one-level structure */
+      if (1 == spice_model->mux_num_level) {
+        spice_model->structure = SPICE_MODEL_STRUCTURE_ONELEVEL;
+        vpr_printf(TIO_MESSAGE_INFO,"[LINE%d] Automatically convert structure of spice model(%s) to one-level.\n",
+                   Node->line, spice_model->name);
+      }
+    }
+	ezxml_set_attr(Node, "num_level", NULL);
     FreeNode(Node);
   } else {
     vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] design_technology is expected in spice_model(%s).\n",

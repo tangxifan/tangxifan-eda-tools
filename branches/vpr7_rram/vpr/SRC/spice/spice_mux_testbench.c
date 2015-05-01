@@ -493,7 +493,11 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
     num_mux_sram_bits = mux_size;
     mux_sram_bits = decode_onelevel_mux_sram_bits(mux_size, mux_level, path_id); 
     break;
-  case SPICE_MODEL_STRUCTURE_TWOLEVEL:
+  case SPICE_MODEL_STRUCTURE_MULTILEVEL:
+    mux_level = mux_spice_model->mux_num_level;
+    num_mux_sram_bits = determine_num_input_basis_multilevel_mux(mux_size, mux_level) * mux_level;
+    mux_sram_bits = decode_multilevel_mux_sram_bits(mux_size, mux_level, path_id); 
+    break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
                __FILE__, __LINE__, mux_spice_model->name);

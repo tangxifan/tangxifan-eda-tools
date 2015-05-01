@@ -661,11 +661,43 @@ int determine_tree_mux_level(int mux_size) {
   return level;
 }
 
-/*Determine the number inputs required at the last level*/
-int mux_last_level_input_num(int num_level,
-                             int mux_size) {
-  int ret = 0;
+int determine_num_input_basis_multilevel_mux(int mux_size,
+                                             int mux_level) {
+  int num_input_per_unit = 2;
   
+  if (1 == mux_level) {
+    return mux_size;
+  }  
+
+  if (2 == mux_level) {
+    num_input_per_unit = (int)sqrt(mux_size);
+    if (num_input_per_unit*num_input_per_unit < mux_size) {
+      num_input_per_unit++;
+    }
+    return num_input_per_unit;
+  }
+
+  assert(2 < mux_level);
+
+
+  while(pow((double)num_input_per_unit, (double)mux_level) < mux_size) {
+    num_input_per_unit++;
+  }
+
+  if (num_input_per_unit < 2) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Number of inputs of each basis should be at least 2!\n",
+               __FILE__, __LINE__);
+    exit(1); 
+  }
+  
+  return num_input_per_unit;
+}
+
+/*Determine the number inputs required at the last level*/
+int tree_mux_last_level_input_num(int num_level,
+                                  int mux_size) {
+  int ret = 0;
+
   ret = (int)(pow(2., (double)num_level)) - mux_size;
 
   if (0 < ret) {
@@ -674,6 +706,33 @@ int mux_last_level_input_num(int num_level,
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])num_level(%d) is wrong with mux_size(%d)!\n",
               __FILE__, __LINE__, num_level, mux_size);
     exit(1);
+  } else {
+    ret = mux_size;
+  }
+
+  return ret;
+}
+
+int multilevel_mux_last_level_input_num(int num_level, int num_input_per_unit,
+                                        int mux_size) {
+  int ret = 0;
+  int num_basis_last_level = (int)(mux_size/num_input_per_unit);
+  int differ = 0;
+  int num_input_special_basis = 0;
+  
+  ret = mux_size - num_basis_last_level * num_input_per_unit; 
+  assert((0 == ret)||(0 < ret));
+
+  if (0 < ret) {
+    /* Check if we need a special basis at last level,
+     * differ : the number of input of the last-2 level will be used 
+     */
+    differ = (num_basis_last_level + ret) -  pow((double)(num_input_per_unit), (double)(num_level-1));
+    /* should be smaller than the num_input_per_unit */
+    assert((!(0 > differ))&&(differ < num_input_per_unit));
+    /* We need a speical basis */
+    num_input_special_basis = differ + 1;
+    ret = num_input_special_basis + num_basis_last_level * num_input_per_unit;
   } else {
     ret = mux_size;
   }
@@ -710,14 +769,76 @@ int* decode_onelevel_mux_sram_bits(int fan_in,
   int i;
   
   for (i = 0; i < fan_in; i++) {
-    if (i == path_id) {
-      ret[i] = 1;
-    } else {
-      ret[i] = 0;
-    }
+    ret[i] = 0;
   }
+  ret[fan_in-1-path_id] = 1;
  
   return ret; 
+}
+
+int* decode_multilevel_mux_sram_bits(int fan_in,
+                                     int mux_level,
+                                     int path_id) {
+  int* ret = NULL;
+  int i, j, path_differ, temp;
+  int num_last_level_input, active_mux_level, active_path_id, num_input_basis;
+  
+  /* Check */
+  assert((0 == path_id)||(0 < path_id));
+  assert(path_id < fan_in);
+   
+  /* TODO: determine the number of input of basis */
+  switch (mux_level) {
+  case 1:
+    /* Special: 1-level should be have special care !!! */
+    return decode_onelevel_mux_sram_bits(fan_in, mux_level, path_id);
+  default:
+    assert(1 < mux_level); 
+    num_input_basis = determine_num_input_basis_multilevel_mux(fan_in, mux_level);
+    break;
+  }
+
+  ret = (int*)my_malloc(sizeof(int)*(num_input_basis * mux_level));
+
+  /* Determine last level input */
+  num_last_level_input = multilevel_mux_last_level_input_num(mux_level, num_input_basis, fan_in);
+
+  /* Initialize */
+  for (i = 0; i < (num_input_basis*mux_level); i++) {
+    ret[i] = 0;
+  }
+  
+  /* When last level input number is less than the 2**mux_level,
+   * There are some input at the level: (mux_level-1)
+   */
+  active_mux_level = mux_level; 
+  active_path_id = path_id; 
+  if (num_last_level_input < fan_in) {
+    if (path_id > num_last_level_input) {
+      active_mux_level = mux_level - 1; 
+      active_path_id = (int)pow((double)num_input_basis,(double)(active_mux_level)) - (fan_in - path_id); 
+    }
+  } else {
+    assert(num_last_level_input == fan_in);
+  }
+
+  temp = active_path_id;
+  for (i = mux_level - 1; i > (mux_level - active_mux_level - 1); i--) {
+    for (j = 0; j < num_input_basis; j++) {
+      path_differ = (j + 1) * (int)pow((double)num_input_basis,(double)(i+active_mux_level-mux_level));
+      if (temp < path_differ) { 
+        ret[i*num_input_basis + j] = 1; 
+        /* Reduce the min. start index of this basis */
+        temp -= j * (int)pow((double)num_input_basis,(double)(i+active_mux_level-mux_level));
+        break; /* Touch the boundry, stop and move onto the next level */
+      }
+    }
+  }
+
+  /* Check */
+  assert(0 == temp);
+  
+  return ret;
 }
 
 /* Decode the configuration to sram_bits
@@ -746,7 +867,7 @@ int* decode_tree_mux_sram_bits(int fan_in,
   assert(path_id < fan_in);
 
   /* Determine last level input */
-  num_last_level_input = mux_last_level_input_num(mux_level, fan_in);
+  num_last_level_input = tree_mux_last_level_input_num(mux_level, fan_in);
 
   /* Initialize */
   for (i = 0; i < mux_level; i++) {
@@ -758,13 +879,13 @@ int* decode_tree_mux_sram_bits(int fan_in,
    */
   active_mux_level = mux_level; 
   active_path_id = path_id; 
-  if (num_last_level_input < (int)pow(2.,(double)(mux_level))) {
+  if (num_last_level_input < fan_in) {
     if (path_id > num_last_level_input) {
       active_mux_level = mux_level - 1; 
       active_path_id = (int)pow(2.,(double)(active_mux_level)) - (fan_in - path_id); 
     }
   } else {
-    assert(num_last_level_input == (int)pow(2.,(double)(mux_level)));
+    assert(num_last_level_input == fan_in);
   }
 
   temp = active_path_id;
@@ -1573,8 +1694,8 @@ char* gen_str_spice_model_structure(enum e_spice_model_structure spice_model_str
     return "tree-like"; 
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
     return "one-level"; 
-  case SPICE_MODEL_STRUCTURE_TWOLEVEL:
-    return "two-level"; 
+  case SPICE_MODEL_STRUCTURE_MULTILEVEL:
+    return "multi-level"; 
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid spice model structure!\n",
                __FILE__, __LINE__);

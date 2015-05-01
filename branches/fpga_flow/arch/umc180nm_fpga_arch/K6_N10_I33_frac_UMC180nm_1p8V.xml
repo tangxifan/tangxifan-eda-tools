@@ -49,7 +49,7 @@
         <wire_param model_type="pie" res_val="0" cap_val="0" level="1"/> <!-- model_type could be T, res_val cap_val should be defined -->
       </spice_model>
       <spice_model type="mux" name="ble_mux_buffered" prefix="ble_mux_buf" is_default="1">
-        <design_technology type="cmos"/>
+        <design_technology type="cmos" structure="tree"/>
         <!--design_technology type="rram" ron="3e3" roff="1e6" prog_transistor_size="1"/-->
         <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="1" tapered="on" tap_buf_level="3" f_per_stage="4"/>
@@ -60,7 +60,7 @@
         <port type="sram" prefix="sram" size="1"/>
       </spice_model>
       <spice_model type="mux" name="localrouting_mux_buffered" prefix="localrouting_mux_buf">
-        <design_technology type="cmos"/>
+        <design_technology type="cmos" structure="tree"/>
         <!--design_technology type="rram" ron="3e3" roff="1e6" prog_transistor_size="1"/-->
         <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="1" tapered="off"/>
@@ -71,7 +71,7 @@
         <port type="sram" prefix="sram" size="1"/>
       </spice_model>
       <spice_model type="mux" name="cb_mux_buffered" prefix="cbmux_buf">
-        <design_technology type="cmos"/>
+        <design_technology type="cmos" structure="tree"/>
         <!--design_technology type="rram" ron="3e3" roff="1e6" prog_transistor_size="1"/-->
         <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="1" tapered="on" tap_buf_level="3" f_per_stage="4"/>
@@ -82,7 +82,7 @@
         <port type="sram" prefix="sram" size="1"/>
       </spice_model>
       <spice_model type="mux" name="sb_mux_buffered" prefix="sbmux_buf">
-        <design_technology type="cmos"/>
+        <design_technology type="cmos" structure="tree"/>
         <!--design_technology type="rram" ron="1e3" roff="1e6" prog_transistor_size="3"/-->
         <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="1" tapered="on" tap_buf_level="3" f_per_stage="4"/>
@@ -163,11 +163,11 @@
     <switch_block type="wilton" fs="3"/>
   </device>
   <cblocks>
-    <switch type="mux" name="cb_mux" R="0" Cin="3.76e-15" Cout="0" Tdel="5.25e-10" mux_trans_size="3.7" buf_size="136.9" spice_model_name="cb_mux_buffered" power_buf_size="16">
+    <switch type="mux" name="cb_mux" R="0" Cin="3.76e-15" Cout="0" Tdel="5.25e-10" mux_trans_size="3.7" buf_size="77.7" spice_model_name="cb_mux_buffered" power_buf_size="21">
     </switch>
   </cblocks>
   <switchlist>
-    <switch type="mux" name="0" R="364" Cin="3.76e-15" Cout="1.95e-13" Tdel="2.64e-10" mux_trans_size="3.7" buf_size="77.7" spice_model_name="sb_mux_buffered" power_buf_size="16"/>
+    <switch type="mux" name="0" R="364" Cin="3.76e-15" Cout="1.95e-13" Tdel="2.64e-10" mux_trans_size="3.7" buf_size="77.7" spice_model_name="sb_mux_buffered" power_buf_size="21"/>
   </switchlist>
   <segmentlist>
     <segment freq="1.0" length="4" type="unidir" Rmetal="13.73" Cmetal="2.06e-14" spice_model_name="chan_segment">
@@ -240,7 +240,7 @@
         <power wire_capacitance="0" buffer_size="1"/>
       </input>
       <output name="O" num_pins="20" equivalent="false">
-        <power wire_capacitance="0" buffer_size="64"/>
+        <power wire_capacitance="0" buffer_size="85"/>
       </output>
       <clock name="clk" num_pins="1"/>
 
@@ -251,7 +251,7 @@
       <pb_type name="fle" num_pb="10" idle_mode_name="n2_lut5">
         <power method="specify-size"/>
         <input name="in" num_pins="6">
-          <power wire_capacitance="0" buffer_size="1"/>
+          <power wire_capacitance="0" buffer_size="2"/>
         </input>
         <output name="out" num_pins="2">
           <power wire_capacitance="0" buffer_size="1"/>

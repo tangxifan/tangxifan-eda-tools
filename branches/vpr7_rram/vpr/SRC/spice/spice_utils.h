@@ -59,8 +59,14 @@ t_block* search_mapped_block(int x, int y, int z);
 
 int determine_tree_mux_level(int mux_size);
 
-int mux_last_level_input_num(int num_level,
-                             int mux_size);
+int determine_num_input_basis_multilevel_mux(int mux_size,
+                                             int mux_level);
+
+int tree_mux_last_level_input_num(int num_level,
+                                  int mux_size);
+
+int multilevel_mux_last_level_input_num(int num_level, int num_input_per_unit,
+                                        int mux_size);
 
 int determine_lut_path_id(int lut_size,
                           int* lut_inputs);
@@ -68,6 +74,10 @@ int determine_lut_path_id(int lut_size,
 int* decode_onelevel_mux_sram_bits(int fan_in,
                                    int mux_level,
                                    int path_id);
+
+int* decode_multilevel_mux_sram_bits(int fan_in,
+                                     int mux_level,
+                                     int path_id);
 
 int* decode_tree_mux_sram_bits(int fan_in,
                                int mux_level,

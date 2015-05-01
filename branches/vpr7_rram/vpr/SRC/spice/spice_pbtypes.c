@@ -980,7 +980,11 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
       num_sram_bits = fan_in;
       sram_bits = decode_onelevel_mux_sram_bits(fan_in, mux_level, select_edge);
       break;
-    case SPICE_MODEL_STRUCTURE_TWOLEVEL:
+    case SPICE_MODEL_STRUCTURE_MULTILEVEL:
+      mux_level = cur_interc->spice_model->mux_num_level;
+      num_sram_bits = determine_num_input_basis_multilevel_mux(fan_in, mux_level) *mux_level;
+      sram_bits = decode_multilevel_mux_sram_bits(fan_in, mux_level, select_edge);
+      break;
     default:
       vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
                  __FILE__, __LINE__, cur_interc->spice_model->name);

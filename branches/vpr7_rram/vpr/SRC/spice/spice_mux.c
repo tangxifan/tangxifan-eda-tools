@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include <time.h>
 #include <assert.h>
 #include <sys/stat.h>
@@ -31,17 +32,16 @@
 void init_spice_mux_arch(t_spice_mux_arch* spice_mux_arch,
                          int mux_size);
 
-void fprint_spice_mux_basis_cmos_subckt(FILE* fp,
+void fprint_spice_mux_model_basis_cmos_subckt(FILE* fp,
                                         char* subckt_name,
                                         t_spice_model spice_model);
 
-void fprint_spice_mux_basis_rram_subckt(FILE* fp,
+void fprint_spice_mux_model_basis_rram_subckt(FILE* fp,
                                         char* subckt_name,
                                         t_spice_model spice_model);
 
-void fprint_spice_mux_basis_subckt(FILE* fp, 
-                                   int num_spice_model, 
-                                   t_spice_model* spice_models);
+void fprint_spice_mux_model_basis_subckt(FILE* fp, 
+                                         t_spice_mux_model* spice_mux_model);
 
 void fprint_spice_mux_model_cmos_subckt(FILE* fp,
                                         int mux_size,
@@ -61,7 +61,10 @@ t_llist* stats_spice_muxes(int num_switch,
                            t_spice* spice,
                            t_det_routing_arch* routing_arch);
 
-void init_spice_mux_arch(t_spice_mux_arch* spice_mux_arch,
+
+/***** Subroutines *****/
+void init_spice_mux_arch(t_spice_model* spice_model,
+                         t_spice_mux_arch* spice_mux_arch,
                          int mux_size) {
   int cur;
   int i;
@@ -74,13 +77,37 @@ void init_spice_mux_arch(t_spice_mux_arch* spice_mux_arch,
 
   /* Basic info*/
   spice_mux_arch->num_input = mux_size;
-  spice_mux_arch->num_level = determine_tree_mux_level(spice_mux_arch->num_input);
-  /* Determine the level and index of per MUX inputs*/
-  spice_mux_arch->num_input_last_level = mux_last_level_input_num(spice_mux_arch->num_level, mux_size);
+  /* For different structure */
+  switch (spice_model->structure) {
+  case SPICE_MODEL_STRUCTURE_TREE:
+    spice_mux_arch->num_level = determine_tree_mux_level(spice_mux_arch->num_input);
+    spice_mux_arch->num_input_basis = 2;
+    /* Determine the level and index of per MUX inputs*/
+    spice_mux_arch->num_input_last_level = tree_mux_last_level_input_num(spice_mux_arch->num_level, mux_size);
+    break;
+  case SPICE_MODEL_STRUCTURE_ONELEVEL:
+    spice_mux_arch->num_level = 1;
+    spice_mux_arch->num_input_basis = mux_size;
+    /* Determine the level and index of per MUX inputs*/
+    spice_mux_arch->num_input_last_level = mux_size;
+    break;
+  case SPICE_MODEL_STRUCTURE_MULTILEVEL:
+    spice_mux_arch->num_level = spice_model->mux_num_level;
+    spice_mux_arch->num_input_basis = determine_num_input_basis_multilevel_mux(mux_size, spice_mux_arch->num_level);
+    /* Determine the level and index of per MUX inputs*/
+    spice_mux_arch->num_input_last_level = multilevel_mux_last_level_input_num(spice_mux_arch->num_level, spice_mux_arch->num_input_basis, mux_size);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
+               __FILE__, __LINE__, spice_model->name);
+    exit(1);
+  }
+
   /* Alloc*/
   spice_mux_arch->num_input_per_level = (int*) my_malloc(sizeof(int)*spice_mux_arch->num_level);
   spice_mux_arch->input_level = (int*)my_malloc(sizeof(int)*spice_mux_arch->num_input);
   spice_mux_arch->input_offset = (int*)my_malloc(sizeof(int)*spice_mux_arch->num_input);
+
   /* Assign inputs info for the last level first */
   for (i = 0; i < spice_mux_arch->num_input_last_level; i++) {
     spice_mux_arch->input_level[i] = spice_mux_arch->num_level;
@@ -88,7 +115,7 @@ void init_spice_mux_arch(t_spice_mux_arch* spice_mux_arch,
   }
   /* For the last second level*/
   if (spice_mux_arch->num_input > spice_mux_arch->num_input_last_level) {
-    cur = spice_mux_arch->num_input_last_level/2;
+    cur = spice_mux_arch->num_input_last_level/spice_mux_arch->num_input_basis;
     /* Start from the input ports that are not occupied by the last level
      * last level has (cur) outputs
      */
@@ -97,13 +124,13 @@ void init_spice_mux_arch(t_spice_mux_arch* spice_mux_arch,
       spice_mux_arch->input_offset[i] = cur; 
       cur++;
     }
-    assert((cur < (int)pow(2., (double)(spice_mux_arch->num_level-1)))
-           ||(cur == (int)pow(2., (double)(spice_mux_arch->num_level-1))));
+    assert((cur < (int)pow((double)spice_mux_arch->num_input_basis, (double)(spice_mux_arch->num_level-1)))
+           ||(cur == (int)pow((double)spice_mux_arch->num_input_basis, (double)(spice_mux_arch->num_level-1))));
   }
   /* Fill the num_input_per_level*/
   for (i = 0; i < spice_mux_arch->num_level; i++) {
     cur = i+1;
-    spice_mux_arch->num_input_per_level[i] = (int)pow(2., (double)cur);
+    spice_mux_arch->num_input_per_level[i] = (int)pow((double)spice_mux_arch->num_input_basis, (double)cur);
     if ((cur == spice_mux_arch->num_level)
        &&(spice_mux_arch->num_input_last_level < spice_mux_arch->num_input_per_level[i])) {
       spice_mux_arch->num_input_per_level[i] = spice_mux_arch->num_input_last_level;
@@ -192,10 +219,12 @@ void free_muxes_llist(t_llist* muxes_head) {
   return;
 }
 
-void fprint_spice_mux_basis_cmos_subckt(FILE* fp,
-                                        char* subckt_name,
-                                        t_spice_model spice_model) {
+void fprint_spice_mux_model_basis_cmos_subckt(FILE* fp, char* subckt_name,
+                                              int num_input_per_level,
+                                              t_spice_model spice_model) {
   char* pgl_name = NULL;
+  int i;
+
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
@@ -209,25 +238,35 @@ void fprint_spice_mux_basis_cmos_subckt(FILE* fp,
   assert(NULL != spice_model.pass_gate_logic);
 
   /* Print the subckt */
-  fprintf(fp,".subckt %s in0 in1 out sel sel_inv svdd sgnd\n",subckt_name);
+  fprintf(fp, ".subckt %s ", subckt_name);
+  for (i = 0; i < num_input_per_level; i++) {
+    fprintf(fp, "in%d ", i);
+  }
+  fprintf(fp, "out ");
+  for (i = 0; i < num_input_per_level; i++) {
+    fprintf(fp, "sel%d sel_inv%d ", i, i); 
+  }
+  fprintf(fp, "svdd sgnd\n");
   /* Identify the pass-gate logic*/
   switch (spice_model.pass_gate_logic->type) {
   case SPICE_MODEL_PASS_GATE_TRANSMISSION:
     pgl_name = cpt_subckt_name;
-    fprintf(fp,"X%s_0 in0 out sel sel_inv svdd sgnd %s nmos_size=%g pmos_size=%g\n",
-            pgl_name, pgl_name, spice_model.pass_gate_logic->nmos_size, spice_model.pass_gate_logic->pmos_size);
-    fprintf(fp,"X%s_1 in1 out sel_inv sel svdd sgnd %s nmos_size=%g pmos_size=%g\n",
-            pgl_name, pgl_name, spice_model.pass_gate_logic->nmos_size, spice_model.pass_gate_logic->pmos_size);
+    for (i = 0; i < num_input_per_level; i++) {
+      fprintf(fp,"X%s_%d in%d out sel%d sel_inv%d svdd sgnd %s nmos_size=%g pmos_size=%g\n",
+              pgl_name, i, i, i, i, pgl_name, 
+              spice_model.pass_gate_logic->nmos_size, spice_model.pass_gate_logic->pmos_size);
+    }
     break;
   case SPICE_MODEL_PASS_GATE_TRANSISTOR:
     pgl_name = nmos_subckt_name;
-    fprintf(fp,"X%s_0 in0 sel out sgnd %s W=\'%g*wn\'\n",
-            pgl_name, pgl_name, spice_model.pass_gate_logic->nmos_size);
-    fprintf(fp,"X%s_1 in1 sel_inv out sgnd %s W=\'%g*wn\'\n",
-            pgl_name, pgl_name, spice_model.pass_gate_logic->nmos_size);
+    for (i = 0; i < num_input_per_level; i++) {
+      fprintf(fp,"X%s_%d in%d sel%d out sgnd %s W=\'%g*wn\'\n",
+              pgl_name, i, i, i, 
+              pgl_name, spice_model.pass_gate_logic->nmos_size);
+    }
     break; 
   default:
-    vpr_printf(TIO_MESSAGE_ERROR,"(Fil: %s,[LINE%d])Invalid pass gate logic for spice model(name:%s)!\n", 
+    vpr_printf(TIO_MESSAGE_ERROR,"(File: %s,[LINE%d])Invalid pass gate logic for spice model(name:%s)!\n", 
                __FILE__, __LINE__, spice_model.name);
     exit(1);
   }
@@ -238,10 +277,10 @@ void fprint_spice_mux_basis_cmos_subckt(FILE* fp,
   return;
 }
 
-void fprint_spice_mux_basis_rram_subckt(FILE* fp,
-                                        char* subckt_name,
-                                        t_spice_model spice_model) {
-
+void fprint_spice_mux_model_basis_rram_subckt(FILE* fp, char* subckt_name,
+                                              int num_input_per_level,
+                                              t_spice_model spice_model) {
+  int i;
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
@@ -253,15 +292,57 @@ void fprint_spice_mux_basis_rram_subckt(FILE* fp,
   assert((SPICE_MODEL_MUX == spice_model.type)||(SPICE_MODEL_LUT == spice_model.type)); 
   assert(SPICE_MODEL_DESIGN_RRAM == spice_model.design_tech);
 
-  /* Print the subckt */
-  fprintf(fp,".subckt %s in0 in1 out sel sel_inv svdd sgnd ron=\'%g\' roff=\'%g\' wprog=\'%g*wn\'\n",
-          subckt_name, spice_model.ron, spice_model.roff, spice_model.prog_trans_size);
-  /* Print resistors */
-  fprintf(fp,"Xrram_0 in0 out sel sel_inv rram_behavior switch_thres=vsp ron=ron roff=roff\n");
-  fprintf(fp,"Xrram_1 in1 out sel_inv sel rram_behavior switch_thres=vsp ron=ron roff=roff\n");
-  /* Print programming transistor*/
-  fprintf(fp,"Xprog_0 in0 sgnd in1 sgnd %s L=\'nl\' W=\'wprog\'\n", 
-          nmos_subckt_name);
+  switch(spice_model.structure) {
+  case SPICE_MODEL_STRUCTURE_TREE:
+    /* TODO: This structure is going to be abolished! 
+     * I will update this part of code to new 2T1R structure
+     */
+    /* Print the subckt */
+    fprintf(fp,".subckt %s in0 in1 out sel sel_inv svdd sgnd ron=\'%g\' roff=\'%g\' wprog=\'%g*wn\'\n",
+            subckt_name, spice_model.ron, spice_model.roff, spice_model.prog_trans_size);
+    /* Print resistors */
+    fprintf(fp,"Xrram_0 in0 out sel sel_inv rram_behavior switch_thres=vsp ron=ron roff=roff\n");
+    fprintf(fp,"Xrram_1 in1 out sel_inv sel rram_behavior switch_thres=vsp ron=ron roff=roff\n");
+    /* Print programming transistor*/
+    fprintf(fp,"Xprog_0 in0 sgnd in1 sgnd %s L=\'nl\' W=\'wprog\'\n", 
+            nmos_subckt_name);
+    break;
+  case SPICE_MODEL_STRUCTURE_ONELEVEL:
+  case SPICE_MODEL_STRUCTURE_MULTILEVEL:
+    fprintf(fp, ".subckt %s ", subckt_name);
+    for (i = 0; i < num_input_per_level; i++) {
+      fprintf(fp, "in%d ", i);
+    }
+    fprintf(fp, "out ");
+    for (i = 0; i < num_input_per_level; i++) {
+      fprintf(fp, "sel%d sel_inv%d ", i, i);
+    }
+    fprintf(fp, "svdd sgnd ron=\'%g\' roff=\'%g\' \n",
+            spice_model.ron, spice_model.roff);
+    /* Print the new 2T1R structure */ 
+    for (i = 0; i < num_input_per_level; i++) {
+      /* RRAMs */
+      fprintf(fp, "Xrram_%d in%d out sel%d sel_inv%d rram_behavior switch_thres=vsp ron=ron roff=roff\n",
+              i, i, i, i);
+      /* Programming transistor pairs */
+      fprintf(fp, "Xnmos_prog_pair%d in%d sgnd sgnd sgnd %s W=\'%g*wn\' \n",
+              i, i, nmos_subckt_name, spice_model.pass_gate_logic->nmos_size);
+      fprintf(fp, "Xpmos_prog_pair%d in%d svdd sgnd svdd %s W=\'%g*wp\' \n",
+              i, i, pmos_subckt_name, spice_model.pass_gate_logic->pmos_size);
+    }
+    /* Programming transistor pairs shared at the output */
+    /*
+    fprintf(fp, "Xnmos_prog_pair_out out sgnd sgnd sgnd %s W=\'%g*wn\' \n",
+            nmos_subckt_name, spice_model.pass_gate_logic->nmos_size);
+    fprintf(fp, "Xpmos_prog_pair_out out svdd sgnd svdd %s W=\'%g*wp\' \n",
+            pmos_subckt_name, spice_model.pass_gate_logic->pmos_size);
+    */
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
+               __FILE__, __LINE__, spice_model.name);
+    exit(1);
+  }
 
   fprintf(fp,".eom\n");
   fprintf(fp,"\n");
@@ -270,11 +351,10 @@ void fprint_spice_mux_basis_rram_subckt(FILE* fp,
 }
  
 /* Print the SPICE model of a 2:1 MUX which is the basis */
-void fprint_spice_mux_basis_subckt(FILE* fp, 
-                                   int num_spice_model, 
-                                   t_spice_model* spice_models) {
-  int imodel;
+void fprint_spice_mux_model_basis_subckt(FILE* fp, 
+                                         t_spice_mux_model* spice_mux_model) {
   char* mux_basis_subckt_name = NULL;
+  int num_input_basis_subckt = 0;
 
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {
@@ -285,27 +365,46 @@ void fprint_spice_mux_basis_subckt(FILE* fp,
   /* Try to find a mux in cmos technology, 
    * if we have, then build CMOS 2:1 MUX, and given cmos_mux2to1_subckt_name
    */
-  for (imodel = 0; imodel < num_spice_model; imodel++) {
-    /* Exception: LUT require an auto-generation of netlist can run as well*/ 
-    if ((SPICE_MODEL_MUX == spice_models[imodel].type)
-       ||(SPICE_MODEL_LUT == spice_models[imodel].type)) {
-      switch (spice_models[imodel].design_tech) {
-      case SPICE_MODEL_DESIGN_CMOS:
-        /* Give the subckt name*/
-        mux_basis_subckt_name = my_strcat(spice_models[imodel].name, mux_basis_posfix);
-        fprint_spice_mux_basis_cmos_subckt(fp, mux_basis_subckt_name, spice_models[imodel]);
-        break;
-      case SPICE_MODEL_DESIGN_RRAM:
-        mux_basis_subckt_name = my_strcat(spice_models[imodel].name, mux_basis_posfix);
-        fprint_spice_mux_basis_rram_subckt(fp, mux_basis_subckt_name, spice_models[imodel]);
-        break;
-      default:
-        vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of MUX(name: %s)\n",
-                   __FILE__, __LINE__, spice_models[imodel].name); 
-        exit(1);
-      }
+  /* Exception: LUT require an auto-generation of netlist can run as well*/ 
+  assert((SPICE_MODEL_MUX == spice_mux_model->spice_model->type)
+       ||(SPICE_MODEL_LUT == spice_mux_model->spice_model->type));
+
+  /* Generate the spice_mux_arch */
+  spice_mux_model->spice_mux_arch = (t_spice_mux_arch*)my_malloc(sizeof(t_spice_mux_arch));
+  init_spice_mux_arch(spice_mux_model->spice_model, spice_mux_model->spice_mux_arch, spice_mux_model->size);
+
+  /* Prepare the basis subckt name */
+  mux_basis_subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_mux_model->spice_model->name) + 5 
+                                           + strlen(my_itoa(spice_mux_model->size)) + strlen(mux_basis_posfix) + 1)); 
+  sprintf(mux_basis_subckt_name, "%s_size%d%s",
+          spice_mux_model->spice_model->name, spice_mux_model->size, mux_basis_posfix);
+  /* deteremine the number of inputs of basis subckt */ 
+  num_input_basis_subckt = spice_mux_model->spice_mux_arch->num_input_basis;
+  /* Print the basis subckt*/
+  switch (spice_mux_model->spice_model->design_tech) {
+  case SPICE_MODEL_DESIGN_CMOS:
+    /* Give the subckt name*/
+    fprint_spice_mux_model_basis_cmos_subckt(fp, mux_basis_subckt_name, 
+                                             num_input_basis_subckt, *(spice_mux_model->spice_model));
+    break;
+  case SPICE_MODEL_DESIGN_RRAM:
+    /* RRAM LUT are not yet supported ! */
+    if (SPICE_MODEL_LUT == spice_mux_model->spice_model->type) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])RRAM LUT is not supported!\n",
+                 __FILE__, __LINE__);
+      exit(1);
     }
+    fprint_spice_mux_model_basis_rram_subckt(fp, mux_basis_subckt_name, 
+                                             num_input_basis_subckt, *(spice_mux_model->spice_model));
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of MUX(name: %s)\n",
+               __FILE__, __LINE__, spice_mux_model->spice_model->name); 
+    exit(1);
   }
+
+  /* Free */
+  my_free(mux_basis_subckt_name);
 
   return;
 }
@@ -349,6 +448,92 @@ void fprint_spice_cmos_mux_tree_structure(FILE* fp, char* mux_basis_subckt_name,
   assert(0 == nextlevel);
   assert(0 == out_idx);
   assert(mux_basis_cnt == spice_mux_arch.num_input - 1);
+
+  return;
+}
+
+void fprint_spice_cmos_mux_multilevel_structure(FILE* fp, char* mux_basis_subckt_name,
+                                                t_spice_model spice_model,
+                                                t_spice_mux_arch spice_mux_arch,
+                                                int num_sram_port, t_spice_model_port** sram_port) {
+  int i, j, k, level, nextlevel, sram_idx;
+  int out_idx;
+  int mux_basis_cnt = 0;
+  int special_basis_cnt = 0;
+  int cur_num_input_basis = 0;
+
+  /* Make sure we have a valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  mux_basis_cnt = 0;
+  assert((2 == spice_mux_arch.num_input_basis)||(2 < spice_mux_arch.num_input_basis));
+  for (i = 0; i < spice_mux_arch.num_level; i++) {
+    level = spice_mux_arch.num_level - i;
+    nextlevel = spice_mux_arch.num_level - i - 1; 
+    sram_idx = nextlevel * spice_mux_arch.num_input_basis;
+    /* Check */
+    assert(nextlevel > -1);
+    /* Print basis muxQto1 for each level*/
+    for (j = 0; j < spice_mux_arch.num_input_per_level[nextlevel]; j = j+cur_num_input_basis) {
+      /* output index */
+      out_idx = j/spice_mux_arch.num_input_basis; 
+      /* Determine the number of input of this basis */
+      cur_num_input_basis = spice_mux_arch.num_input_basis;
+      if ((j + cur_num_input_basis) > spice_mux_arch.num_input_per_level[nextlevel]) {
+        cur_num_input_basis = spice_mux_arch.num_input_per_level[nextlevel] - j;
+        /* Print the special basis */
+        switch (spice_model.pass_gate_logic->type) {
+        case SPICE_MODEL_PASS_GATE_TRANSMISSION:
+          for (k = 0; k < cur_num_input_basis; k++) {
+            fprintf(fp, "Xspecial_basis_no%d ", k);
+            fprintf(fp, "mux2_l%d_in%d  ", level, j + k);
+            fprintf(fp, "mux2_l%d_in%d ", nextlevel, out_idx); /* output */
+            fprintf(fp, "%s%d %s_inv%d ", sram_port[0]->prefix, sram_idx+k, sram_port[0]->prefix, sram_idx+k); /* sram sram_inv */
+            fprintf(fp, "svdd sgnd %s nmos_size=%g pmos_size=%g\n",
+                    cpt_subckt_name, spice_model.pass_gate_logic->nmos_size, spice_model.pass_gate_logic->pmos_size);
+          }
+          break;
+        case SPICE_MODEL_PASS_GATE_TRANSISTOR:
+          for (k = 0; k < cur_num_input_basis; k++) {
+            fprintf(fp, "Xspecial_basis_no%d ", k);
+            fprintf(fp, "mux2_l%d_in%d  ", level, j + k);
+            fprintf(fp, "mux2_l%d_in%d ", nextlevel, out_idx); /* output */
+            fprintf(fp, "%s%d ", sram_port[0]->prefix, sram_idx+k); /* sram sram_inv */
+            fprintf(fp, "sgnd %s W=\'%g*wn\' \n",
+                    nmos_subckt_name, spice_model.pass_gate_logic->nmos_size);
+          }
+          break;
+        default:
+          vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid pass_gate_logic type for spice model (%s)!\n",
+                     __FILE__, __LINE__, spice_model.name);
+          exit(1);
+        }
+        special_basis_cnt++;
+        continue;
+      }
+      /* Each basis muxQto1: <given_name> <input0> <input1> <output> <sram> <sram_inv> svdd sgnd <subckt_name> */
+      fprintf(fp, "Xmux_basis_no%d ", mux_basis_cnt); /* given_name */
+      for (k = 0; k < cur_num_input_basis; k++) {
+        fprintf(fp, "mux2_l%d_in%d ", level, j + k); /* input0 input1 */
+      }
+      fprintf(fp, "mux2_l%d_in%d ", nextlevel, out_idx); /* output */
+      /* Print number of sram bits for this basis */
+      for (k = sram_idx; k < (sram_idx + cur_num_input_basis); k++) {
+        fprintf(fp, "%s%d %s_inv%d ", sram_port[0]->prefix, k, sram_port[0]->prefix, k); /* sram sram_inv */
+      }
+      fprintf(fp, "svdd sgnd %s\n", mux_basis_subckt_name); /* subckt_name */
+      /* Update the counter */
+      mux_basis_cnt++;
+    } 
+  }   
+  /* Assert */
+  assert(0 == nextlevel);
+  assert(0 == out_idx);
+  assert(1 == special_basis_cnt);
+  assert((mux_basis_cnt + special_basis_cnt) == (int)((spice_mux_arch.num_input - 1)/(spice_mux_arch.num_input_basis - 1)) + 1);
 
   return;
 }
@@ -459,6 +644,89 @@ void fprint_spice_rram_mux_tree_structure(FILE* fp, char* mux_basis_subckt_name,
   return;
 }
 
+void fprint_spice_rram_mux_multilevel_structure(FILE* fp, char* mux_basis_subckt_name,
+                                                t_spice_model spice_model,
+                                                t_spice_mux_arch spice_mux_arch,
+                                                int num_sram_port, t_spice_model_port** sram_port) {
+  int i, j, k, level, nextlevel, sram_idx;
+  int out_idx;
+  int mux_basis_cnt = 0;
+  int special_basis_cnt = 0;
+  int cur_num_input_basis = 0;
+
+  /* Make sure we have a valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  mux_basis_cnt = 0;
+  assert((2 == spice_mux_arch.num_input_basis)||(2 < spice_mux_arch.num_input_basis));
+  for (i = 0; i < spice_mux_arch.num_level; i++) {
+    level = spice_mux_arch.num_level - i;
+    nextlevel = spice_mux_arch.num_level - i - 1; 
+    sram_idx = nextlevel * spice_mux_arch.num_input_basis;
+    /* Check */
+    assert(nextlevel > -1);
+    /* Print basis muxQto1 for each level*/
+    for (j = 0; j < spice_mux_arch.num_input_per_level[nextlevel]; j = j+cur_num_input_basis) {
+      /* output index */
+      out_idx = j/spice_mux_arch.num_input_basis; 
+      /* Determine the number of input of this basis */
+      cur_num_input_basis = spice_mux_arch.num_input_basis;
+      if ((j + cur_num_input_basis) > spice_mux_arch.num_input_per_level[nextlevel]) {
+        cur_num_input_basis = spice_mux_arch.num_input_per_level[nextlevel] - j;
+        /* Print the special basis */
+        for (k = 0; k < cur_num_input_basis; k++) {
+          /* Print a RRAM */
+          fprintf(fp,"Xspeical_basis_rram%d mux2_l%d_in%d mux2_l%d_in%d ", 
+                  k, level, j+k, nextlevel, out_idx);
+          fprintf(fp, "%s%d %s_inv%d ", sram_port[0]->prefix, sram_idx+k, sram_port[0]->prefix, sram_idx+k); /* sram sram_inv */ 
+          fprintf(fp, "rram_behavior switch_thres=vsp ron=ron roff=roff\n");
+          /* Print a pair of programming transistor: 1 PMOS and 1 NMOS */
+          /* PMOS */
+          fprintf(fp, "Xspecial_basis_pmos_prog_pair%d ", k); /* given_name */
+          fprintf(fp, "mux2_l%d_in%d ", level, j+k); /* input0  */
+          fprintf(fp, "svdd sgnd svdd %s W=\'%g*wp\' \n", 
+                  pmos_subckt_name, spice_model.pass_gate_logic->pmos_size);
+          /* NMOS */
+          fprintf(fp, "Xspecial_basis_nmos_prog_pair%d ", k); /* given_name */
+          fprintf(fp, "mux2_l%d_in%d ", level, j+k); /* input0  */
+          fprintf(fp, "sgnd sgnd sgnd %s W=\'%g*wn\' \n", 
+                  nmos_subckt_name, spice_model.pass_gate_logic->nmos_size);
+        }
+        special_basis_cnt++;
+        continue;
+      }
+      /* Each basis muxQto1: <given_name> <input0> <input1> <output> <sram> <sram_inv> svdd sgnd <subckt_name> */
+      fprintf(fp, "Xmux_basis_no%d ", mux_basis_cnt); /* given_name */
+      for (k = 0; k < cur_num_input_basis; k++) {
+        fprintf(fp, "mux2_l%d_in%d ", level, j + k); /* input0 input1 */
+      }
+      fprintf(fp, "mux2_l%d_in%d ", nextlevel, out_idx); /* output */
+      /* Print number of sram bits for this basis */
+      for (k = sram_idx; k < (sram_idx + cur_num_input_basis); k++) {
+        fprintf(fp, "%s%d %s_inv%d ", sram_port[0]->prefix, k, sram_port[0]->prefix, k); /* sram sram_inv */
+      }
+      fprintf(fp, "svdd sgnd %s\n", mux_basis_subckt_name); /* subckt_name */
+      /* Update the counter */
+      mux_basis_cnt++;
+    } 
+  }   
+  /* programming pair at the output port */
+  fprintf(fp, "Xnmos_prog_pair_out mux2_l%d_in%d sgnd sgnd sgnd %s W=\'%g*wn\' \n",
+          nextlevel, out_idx, nmos_subckt_name, spice_model.pass_gate_logic->nmos_size);
+  fprintf(fp, "Xpmos_prog_pair_out mux2_l%d_in%d svdd sgnd svdd %s W=\'%g*wp\' \n",
+          nextlevel, out_idx, pmos_subckt_name, spice_model.pass_gate_logic->pmos_size);
+  /* Assert */
+  assert(0 == nextlevel);
+  assert(0 == out_idx);
+  assert(1 == special_basis_cnt);
+  assert((mux_basis_cnt + special_basis_cnt) == (int)((spice_mux_arch.num_input - 1)/(spice_mux_arch.num_input_basis - 1)));
+
+  return;
+}
+
 void fprint_spice_rram_mux_onelevel_structure(FILE* fp, t_spice_model spice_model,
                                               t_spice_mux_arch spice_mux_arch,
                                               int num_sram_port, t_spice_model_port** sram_port) {
@@ -520,7 +788,11 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
   t_spice_model_port** sram_port = NULL;
 
   /* Find the basis subckt*/
-  char* mux_basis_subckt_name = my_strcat(spice_model.name, mux_basis_posfix);
+  char* mux_basis_subckt_name = NULL;
+  mux_basis_subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_model.name) + 5 
+                                           + strlen(my_itoa(mux_size)) + strlen(mux_basis_posfix) + 1)); 
+  sprintf(mux_basis_subckt_name, "%s_size%d%s",
+          spice_model.name, mux_size, mux_basis_posfix);
 
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {
@@ -563,6 +835,7 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
   fprintf(fp, "%s ", output_port[0]->prefix);
   switch (spice_model.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
+  case SPICE_MODEL_STRUCTURE_MULTILEVEL:
     /* Print sram ports*/
     for (i = 0; i < spice_mux_arch.num_level; i++) {
       fprintf(fp, "%s%d ", sram_port[0]->prefix, spice_mux_arch.num_level-i-1);
@@ -576,7 +849,6 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
       fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, mux_size - i - 1);
     } 
     break;
-  case SPICE_MODEL_STRUCTURE_TWOLEVEL:
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
                __FILE__, __LINE__, spice_model.name);
@@ -593,6 +865,9 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
     break;
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
     fprint_spice_cmos_mux_onelevel_structure(fp, spice_model, spice_mux_arch, num_sram_port, sram_port);
+    break;
+  case SPICE_MODEL_STRUCTURE_MULTILEVEL:
+    fprint_spice_cmos_mux_multilevel_structure(fp, mux_basis_subckt_name, spice_model, spice_mux_arch, num_sram_port, sram_port);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
@@ -713,7 +988,11 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
   t_spice_model_port** sram_port = NULL;
 
   /* Find the basis subckt*/
-  char* mux_basis_subckt_name = my_strcat(spice_model.name, mux_basis_posfix);
+  char* mux_basis_subckt_name = NULL;
+  mux_basis_subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_model.name) + 5 
+                                           + strlen(my_itoa(mux_size)) + strlen(mux_basis_posfix) + 1)); 
+  sprintf(mux_basis_subckt_name, "%s_size%d%s",
+          spice_model.name, mux_size, mux_basis_posfix);
 
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {
@@ -767,7 +1046,7 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
       fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, mux_size - i - 1);
     } 
     break;
-  case SPICE_MODEL_STRUCTURE_TWOLEVEL:
+  case SPICE_MODEL_STRUCTURE_MULTILEVEL:
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
                __FILE__, __LINE__, spice_model.name);
@@ -785,6 +1064,9 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
     break;
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
     fprint_spice_rram_mux_onelevel_structure(fp, spice_model, spice_mux_arch, num_sram_port, sram_port);
+    break;
+  case SPICE_MODEL_STRUCTURE_MULTILEVEL:
+    fprint_spice_rram_mux_multilevel_structure(fp, mux_basis_subckt_name, spice_model, spice_mux_arch, num_sram_port, sram_port);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
@@ -911,10 +1193,6 @@ void fprint_spice_mux_model_subckt(FILE* fp,
                __FILE__, __LINE__, spice_mux_model->size); 
     exit(1);
   }
-
-  /* Generate the spice_mux_arch */
-  spice_mux_model->spice_mux_arch = (t_spice_mux_arch*)my_malloc(sizeof(t_spice_mux_arch));
-  init_spice_mux_arch(spice_mux_model->spice_mux_arch, spice_mux_model->size);
 
   /* Check the design technology*/
   switch (spice_mux_model->spice_model->design_tech) {
@@ -1060,6 +1338,13 @@ void generate_spice_muxes(char* subckt_dir,
   int min_mux_size = -1;
   FILE* fp = NULL;
   char* sp_name = my_strcat(subckt_dir,muxes_spice_file_name);
+  int num_input_ports = 0;
+  t_spice_model_port** input_ports = NULL;
+  int num_sram_ports = 0;
+  t_spice_model_port** sram_ports = NULL;
+
+  int num_input_basis = 0;
+  t_spice_mux_model* cur_spice_mux_model = NULL;
 
   /* Alloc the muxes*/
   muxes_head = stats_spice_muxes(num_switch, switches, spice, routing_arch);
@@ -1073,21 +1358,48 @@ void generate_spice_muxes(char* subckt_dir,
   /* Generate the descriptions*/
   fprint_spice_head(fp,"MUXes used in FPGA");
 
-  /* Let's have a 2:1 MUX as basis*/
-  fprint_spice_mux_basis_subckt(fp, spice->num_spice_model, spice->spice_models);
-
   /* Print mux netlist one by one*/
   temp = muxes_head;
   while(temp) {
     assert(NULL != temp->dptr);
-    fprint_spice_mux_model_subckt(fp, (t_spice_mux_model*)temp->dptr);
+    cur_spice_mux_model = (t_spice_mux_model*)(temp->dptr);
+    /* Bypass the spice models who has a user-defined subckt */
+    if (NULL != cur_spice_mux_model->spice_model->model_netlist) {
+      input_ports = find_spice_model_ports(cur_spice_mux_model->spice_model, SPICE_MODEL_PORT_INPUT, &num_input_ports);
+      sram_ports = find_spice_model_ports(cur_spice_mux_model->spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_ports);
+      assert(0 == num_input_ports);
+      assert(0 == num_sram_ports);
+      /* Check the Input port size */
+      if (cur_spice_mux_model->size != input_ports[0]->size) {
+        vpr_printf(TIO_MESSAGE_ERROR, 
+                   "(File:%s,[LINE%d])User-defined MUX SPICE MODEL(%s) size(%d) unmatch with the architecture needs(%d)!\n",
+                   __FILE__, __LINE__, cur_spice_mux_model->spice_model->name, input_ports[0]->size,cur_spice_mux_model->size);
+        exit(1);
+      }
+      /* Check the SRAM port size */
+      num_input_basis = determine_num_input_basis_multilevel_mux(cur_spice_mux_model->size, 
+                                                                 cur_spice_mux_model->spice_model->mux_num_level);
+      if ((num_input_basis * cur_spice_mux_model->spice_model->mux_num_level) != sram_ports[0]->size) {
+        vpr_printf(TIO_MESSAGE_ERROR, 
+                   "(File:%s,[LINE%d])User-defined MUX SPICE MODEL(%s) SRAM size(%d) unmatch with the num of level(%d)!\n",
+                   __FILE__, __LINE__, cur_spice_mux_model->spice_model->name, sram_ports[0]->size, cur_spice_mux_model->spice_model->mux_num_level*num_input_basis);
+        exit(1);
+      }
+      /* Move on to the next*/
+      temp = temp->next;
+      continue;
+    }
+    /* Let's have a N:1 MUX as basis*/
+    fprint_spice_mux_model_basis_subckt(fp, cur_spice_mux_model);
+    /* Print the mux subckt */
+    fprint_spice_mux_model_subckt(fp, cur_spice_mux_model);
     /* Update the statistics*/
     mux_cnt++;
-    if ((-1 == max_mux_size)||(max_mux_size < ((t_spice_mux_model*)(temp->dptr))->size)) {
-      max_mux_size = ((t_spice_mux_model*)(temp->dptr))->size;
+    if ((-1 == max_mux_size)||(max_mux_size < cur_spice_mux_model->size)) {
+      max_mux_size = cur_spice_mux_model->size;
     }
-    if ((-1 == min_mux_size)||(min_mux_size > ((t_spice_mux_model*)(temp->dptr))->size)) {
-      min_mux_size = ((t_spice_mux_model*)(temp->dptr))->size;
+    if ((-1 == min_mux_size)||(min_mux_size > cur_spice_mux_model->size)) {
+      min_mux_size = cur_spice_mux_model->size;
     }
     /* Move on to the next*/
     temp = temp->next;

@@ -52,7 +52,7 @@ enum e_spice_model_design_tech {
 enum e_spice_model_structure {
   SPICE_MODEL_STRUCTURE_TREE, 
   SPICE_MODEL_STRUCTURE_ONELEVEL, 
-  SPICE_MODEL_STRUCTURE_TWOLEVEL 
+  SPICE_MODEL_STRUCTURE_MULTILEVEL 
 };
 
 enum e_spice_model_buffer_type {
@@ -126,6 +126,7 @@ struct s_spice_model {
 
   enum e_spice_model_design_tech design_tech;
   enum e_spice_model_structure structure;
+  int mux_num_level;
   /* Vaild for RRAM technology only, and this is a mux*/
   float ron;
   float roff;
@@ -225,6 +226,7 @@ typedef struct s_spice_mux_arch t_spice_mux_arch;
 struct s_spice_mux_arch {
   int num_input;
   int num_level;
+  int num_input_basis;
   int num_input_last_level;
   int* num_input_per_level; /* [0...num_level] */
   int* input_level;  /* [0...num_input] */
