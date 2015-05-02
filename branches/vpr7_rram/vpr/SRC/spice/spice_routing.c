@@ -76,25 +76,31 @@ void fprint_routing_chan_subckt(FILE* fp,
   }
 
   /* Chan subckt definition */
-  fprintf(fp, ".subckt %s[%d][%d] ", chan_prefix, x, y);
+  fprintf(fp, ".subckt %s[%d][%d] \n", chan_prefix, x, y);
   /* Inputs and outputs,
    * Rules for CHANX:
    * print left-hand ports(in) first, then right-hand ports(out)
    * Rules for CHANX:
    * print bottom ports(in) first, then top ports(out)
    */
+  fprintf(fp, "+ ");
   for (itrack = 0; itrack < chan_width; itrack++) {
     fprintf(fp, "in%d ", itrack);
   }
+  fprintf(fp, "\n");
+  fprintf(fp, "+ ");
   for (itrack = 0; itrack < chan_width; itrack++) {
     fprintf(fp, "out%d ", itrack);
   }
+  fprintf(fp, "\n");
+  fprintf(fp, "+ ");
   /* Middle point output for connection box inputs */
   for (itrack = 0; itrack < chan_width; itrack++) {
     fprintf(fp, "mid_out%d ", itrack);
   }
+  fprintf(fp, "\n");
   /* End with svdd and sgnd */
-  fprintf(fp, "svdd sgnd\n");
+  fprintf(fp, "+ svdd sgnd\n");
 
   /* Print segments models*/
   for (itrack = 0; itrack < chan_width; itrack++) {
@@ -1246,49 +1252,71 @@ void fprint_routing_switch_box_subckt(FILE* fp,
   /* Print the definition of subckt*/
   fprintf(fp, "***** Switch Box[%d][%d] Sub-Circuit *****\n", x, y);
   fprintf(fp, ".subckt sb[%d][%d] ", x, y);
+  fprintf(fp, "\n");
+  fprintf(fp, "+ ");
   /* 1. Channel Y [x][y+1] inputs */
   for (itrack = 0; itrack < chan_width[0]; itrack++) {
     fprintf(fp, "chany[%d][%d]_in[%d] ", x, y + 1, itrack);
   }
+  fprintf(fp, "\n");
+  fprintf(fp, "+ ");
   /* 2. Channel X [x+1][y] inputs */
   for (itrack = 0; itrack < chan_width[1]; itrack++) {
     fprintf(fp, "chanx[%d][%d]_in[%d] ", x + 1, y, itrack);
   }
+  fprintf(fp, "\n");
+  fprintf(fp, "+ ");
   /* 3. Channel Y [x][y] outputs */
   for (itrack = 0; itrack < chan_width[2]; itrack++) {
     fprintf(fp, "chany[%d][%d]_out[%d] ", x, y, itrack);
   }
+  fprintf(fp, "\n");
+  fprintf(fp, "+ ");
   /* 4. Channel X [x][y] outputs */
   for (itrack = 0; itrack < chan_width[3]; itrack++) {
     fprintf(fp, "chanx[%d][%d]_out[%d] ", x, y, itrack);
   }
+  fprintf(fp, "\n");
+  fprintf(fp, "+ ");
 
   /* Considering the border */
   if (ny != y) {
     /* 5. Grid[x][y+1] Right side outputs pins */
     fprint_grid_side_pins(fp, OPIN, x, y+1, 1);
+    fprintf(fp, "\n");
+    fprintf(fp, "+ ");
   }
   if (0 != x) {
     /* 6. Grid[x][y+1] Bottom side outputs pins */
     fprint_grid_side_pins(fp, OPIN, x, y+1, 2);
+    fprintf(fp, "\n");
+    fprintf(fp, "+ ");
   }
 
   if (ny != y) {
     /* 7. Grid[x+1][y+1] Left side output pins */
     fprint_grid_side_pins(fp, OPIN, x+1, y+1, 3);
+    fprintf(fp, "\n");
+    fprintf(fp, "+ ");
   }
   if (nx != x) {
     /* 8. Grid[x+1][y+1] Bottom side output pins */
     fprint_grid_side_pins(fp, OPIN, x+1, y+1, 2);
+    fprintf(fp, "\n");
+    fprintf(fp, "+ ");
   }
 
   if (nx != x) {
     /* 9. Grid[x+1][y] Top side output pins */
     fprint_grid_side_pins(fp, OPIN, x+1, y, 0);
+    fprintf(fp, "\n");
+    fprintf(fp, "+ ");
   }
   if (0 != y) {
     /* 10. Grid[x+1][y] Left side output pins */
     fprint_grid_side_pins(fp, OPIN, x+1, y, 3);
+    fprintf(fp, "\n");
+    fprintf(fp, "+ ");
   }
 
   if (0 != y) {
@@ -1298,6 +1326,8 @@ void fprint_routing_switch_box_subckt(FILE* fp,
   if (0 != x) {
     /* 12. Grid[x][y] Top side output pins */
     fprint_grid_side_pins(fp, OPIN, x, y, 0);
+    fprintf(fp, "\n");
+    fprintf(fp, "+ ");
   }
 
   /* Local Vdd and Gnd */
@@ -1776,6 +1806,8 @@ void fprint_routing_connection_box_subckt(FILE* fp,
     exit(1);
   }
  
+  fprintf(fp, "\n");
+  fprintf(fp, "+ ");
   /* Print the ports of channels*/
   /*connect to the mid point of a track*/
   for (itrack = 0; itrack < chan_width; itrack++) {
@@ -1790,6 +1822,8 @@ void fprint_routing_connection_box_subckt(FILE* fp,
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
       exit(1);
     }
+    fprintf(fp, "\n");
+    fprintf(fp, "+ ");
   }
   /* Print the ports of grids*/
   side_cnt = 0;
@@ -1908,6 +1942,8 @@ void fprint_routing_connection_box_subckt(FILE* fp,
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid side index!\n", __FILE__, __LINE__);
       exit(1);
     }
+    fprintf(fp, "\n");
+    fprintf(fp, "+ ");
   }
   /* Check */
   assert(2 == side_cnt);

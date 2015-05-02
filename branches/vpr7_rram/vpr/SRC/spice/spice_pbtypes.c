@@ -1850,10 +1850,10 @@ void fprint_grid_pins(FILE* fp,
           if (1 == type_descriptor->pinloc[iheight][side][ipin]) {
             /* This pin appear at this side! */
             if (1 == top_level) {
-              fprintf(fp, "grid[%d][%d]_pin[%d][%d][%d] ", x, y,
+              fprintf(fp, "+ grid[%d][%d]_pin[%d][%d][%d] \n", x, y,
                       iheight, side, ipin);
             } else {
-              fprintf(fp, "%s_height[%d]_pin[%d] ", 
+              fprintf(fp, "+ %s_height[%d]_pin[%d] \n", 
                       convert_side_index_to_string(side), iheight, ipin);
             }
             side_pin_index++;
@@ -1909,10 +1909,10 @@ void fprint_io_grid_pins(FILE* fp,
         if (1 == type_descriptor->pinloc[iheight][side][ipin]) {
           /* This pin appear at this side! */
           if (1 == top_level) {
-            fprintf(fp, "grid[%d][%d]_pin[%d][%d][%d] ", x, y,
+            fprintf(fp, "+ grid[%d][%d]_pin[%d][%d][%d] \n", x, y,
                     iheight, side, ipin);
           } else {
-            fprintf(fp, "%s_height[%d]_pin[%d] ", 
+            fprintf(fp, "+ %s_height[%d]_pin[%d] \n", 
                     convert_side_index_to_string(side), iheight, ipin);
           }
           side_pin_index++;
@@ -2006,7 +2006,7 @@ void fprint_grid_block_subckt_pins(FILE* fp,
       for (side = 0; side < 4; side++) {
         if (1 == type_descriptor->pinloc[pin_height][side][grid_pin_index]) {
           /* This pin appear at this side! */
-          fprintf(fp, "%s_height[%d]_pin[%d] ", 
+          fprintf(fp, "+ %s_height[%d]_pin[%d] \n", 
                   convert_side_index_to_string(side), pin_height, grid_pin_index);
           side_pin_index++;
         }
@@ -2027,7 +2027,7 @@ void fprint_grid_block_subckt_pins(FILE* fp,
       for (side = 0; side < 4; side++) {
         if (1 == type_descriptor->pinloc[pin_height][side][grid_pin_index]) {
           /* This pin appear at this side! */
-          fprintf(fp, "%s_height[%d]_pin[%d] ", 
+          fprintf(fp, "+ %s_height[%d]_pin[%d] \n", 
                   convert_side_index_to_string(side), pin_height, grid_pin_index);
           side_pin_index++;
         }
@@ -2048,7 +2048,7 @@ void fprint_grid_block_subckt_pins(FILE* fp,
       for (side = 0; side < 4; side++) {
         if (1 == type_descriptor->pinloc[pin_height][side][grid_pin_index]) {
           /* This pin appear at this side! */
-          fprintf(fp, "%s_height[%d]_pin[%d] ", 
+          fprintf(fp, "+ %s_height[%d]_pin[%d] \n", 
                   convert_side_index_to_string(side), pin_height, grid_pin_index);
           side_pin_index++;
         }
@@ -2125,7 +2125,7 @@ void fprint_io_grid_block_subckt_pins(FILE* fp,
       pin_height = type_descriptor->pin_height[grid_pin_index];
       if (1 == type_descriptor->pinloc[pin_height][side][grid_pin_index]) {
         /* This pin appear at this side! */
-        fprintf(fp, "%s_height[%d]_pin[%d] ", 
+        fprintf(fp, "+ %s_height[%d]_pin[%d] \n", 
                 convert_side_index_to_string(side), pin_height, grid_pin_index);
         side_pin_index++;
       }
@@ -2144,7 +2144,7 @@ void fprint_io_grid_block_subckt_pins(FILE* fp,
       pin_height = type_descriptor->pin_height[grid_pin_index];
       if (1 == type_descriptor->pinloc[pin_height][side][grid_pin_index]) {
         /* This pin appear at this side! */
-        fprintf(fp, "%s_height[%d]_pin[%d] ", 
+        fprintf(fp, "+ %s_height[%d]_pin[%d] \n", 
                 convert_side_index_to_string(side), pin_height, grid_pin_index);
         side_pin_index++;
       }
@@ -2163,7 +2163,7 @@ void fprint_io_grid_block_subckt_pins(FILE* fp,
       pin_height = type_descriptor->pin_height[grid_pin_index];
       if (1 == type_descriptor->pinloc[pin_height][side][grid_pin_index]) {
         /* This pin appear at this side! */
-        fprintf(fp, "%s_height[%d]_pin[%d] ", 
+        fprintf(fp, "+ %s_height[%d]_pin[%d] \n", 
                 convert_side_index_to_string(side), pin_height, grid_pin_index);
         side_pin_index++;
       }
@@ -2220,7 +2220,7 @@ void fprint_grid_blocks(FILE* fp,
   fprintf(fp, "***** Grid[%d][%d], Capactity: %d *****\n", ix, iy, capacity);
   fprintf(fp, "***** Top Protocol *****\n");
   /* Definition */
-  fprintf(fp, ".subckt grid[%d][%d] ", ix, iy);
+  fprintf(fp, ".subckt grid[%d][%d] \n", ix, iy);
   /* Pins */
   /* Special Care for I/O grid */
   if (IO_TYPE == grid[ix][iy].type) {
@@ -2229,11 +2229,11 @@ void fprint_grid_blocks(FILE* fp,
     fprint_grid_pins(fp, ix, iy, 0);
   }
   /* Local Vdd and GND */
-  fprintf(fp, "svdd sgnd\n");
+  fprintf(fp, "+ svdd sgnd\n");
 
   /* Quote all the sub blocks*/
   for (iz = 0; iz < capacity; iz++) {
-    fprintf(fp, "Xgrid[%d][%d][%d] ", ix, iy, iz);
+    fprintf(fp, "Xgrid[%d][%d][%d] \n", ix, iy, iz);
     /* Print all the pins */
     /* Special Care for I/O grid */
     if (IO_TYPE == grid[ix][iy].type) {
@@ -2244,7 +2244,7 @@ void fprint_grid_blocks(FILE* fp,
     /* Check in all the blocks(clustered logic block), there is a match x,y,z*/
     mapped_block = search_mapped_block(ix, iy, iz); 
     /* Local Vdd and Gnd, subckt name*/
-    fprintf(fp, "svdd sgnd %s\n", get_grid_block_subckt_name(ix, iy, iz, subckt_name, mapped_block));
+    fprintf(fp, "+ svdd sgnd %s\n", get_grid_block_subckt_name(ix, iy, iz, subckt_name, mapped_block));
   }
 
   fprintf(fp, ".eom\n");

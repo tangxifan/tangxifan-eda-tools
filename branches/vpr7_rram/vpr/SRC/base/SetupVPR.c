@@ -941,11 +941,11 @@ static void SetupSpiceOpts(t_options Options,
   /* Initialze */  
   spice_opts->do_spice = FALSE;
   spice_opts->print_spice_top_testbench = FALSE;
-  spice_opts->print_spice_pb_mux_testbench = TRUE;
-  spice_opts->print_spice_cb_mux_testbench = TRUE;
-  spice_opts->print_spice_sb_mux_testbench = TRUE;
-  spice_opts->print_spice_lut_testbench = TRUE;
-  spice_opts->print_spice_dff_testbench = TRUE;
+  spice_opts->print_spice_pb_mux_testbench = FALSE;
+  spice_opts->print_spice_cb_mux_testbench = FALSE;
+  spice_opts->print_spice_sb_mux_testbench = FALSE;
+  spice_opts->print_spice_lut_testbench = FALSE;
+  spice_opts->print_spice_dff_testbench = FALSE;
   spice_opts->print_spice_grid_testbench = FALSE;
   spice_opts->fpga_spice_leakage_only = FALSE;
 
@@ -981,6 +981,22 @@ static void SetupSpiceOpts(t_options Options,
       spice_opts->fpga_spice_leakage_only = TRUE;
     }
   }
+  /* Set default options */
+  if ((TRUE == spice_opts->do_spice)
+    &&(FALSE == spice_opts->print_spice_top_testbench)
+    &&(FALSE == spice_opts->print_spice_grid_testbench)
+    &&(FALSE == spice_opts->print_spice_pb_mux_testbench)
+    &&(FALSE == spice_opts->print_spice_cb_mux_testbench)
+    &&(FALSE == spice_opts->print_spice_sb_mux_testbench)
+    &&(FALSE == spice_opts->print_spice_lut_testbench)
+    &&(FALSE == spice_opts->print_spice_dff_testbench)) {
+    spice_opts->print_spice_pb_mux_testbench = TRUE;
+    spice_opts->print_spice_cb_mux_testbench = TRUE;
+    spice_opts->print_spice_sb_mux_testbench = TRUE;
+    spice_opts->print_spice_lut_testbench = TRUE;
+    spice_opts->print_spice_dff_testbench = TRUE;
+  }
+
   /* If spice option is selected*/
   arch->read_xml_spice = spice_opts->do_spice;
   arch->spice = (t_spice*)my_malloc(sizeof(t_spice));

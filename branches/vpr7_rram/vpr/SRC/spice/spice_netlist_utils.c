@@ -525,7 +525,9 @@ void fprint_call_defined_grids(FILE* fp) {
     for (iy = 1; iy < (ny + 1); iy++) {
       assert(IO_TYPE != grid[ix][iy].type);
       fprintf(fp, "Xgrid[%d][%d] ", ix, iy);
+      fprintf(fp, "\n");
       fprint_grid_pins(fp, ix, iy, 1);
+      fprintf(fp, "+ ");
       fprintf(fp, "gvdd 0 grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
     }
   } 
@@ -536,7 +538,9 @@ void fprint_call_defined_grids(FILE* fp) {
   for (iy = 1; iy < (ny + 1); iy++) {
     assert(IO_TYPE == grid[ix][iy].type);
     fprintf(fp, "Xgrid[%d][%d] ", ix, iy);
+    fprintf(fp, "\n");
     fprint_io_grid_pins(fp, ix, iy, 1);
+    fprintf(fp, "+ ");
     /* Connect to a speical vdd port for statistics power */
     fprintf(fp, "gvdd_io 0 grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
   }
@@ -546,7 +550,9 @@ void fprint_call_defined_grids(FILE* fp) {
   for (iy = 1; iy < (ny + 1); iy++) {
     assert(IO_TYPE == grid[ix][iy].type);
     fprintf(fp, "Xgrid[%d][%d] ", ix, iy);
+    fprintf(fp, "\n");
     fprint_io_grid_pins(fp, ix, iy, 1);
+    fprintf(fp, "+ ");
     /* Connect to a speical vdd port for statistics power */
     fprintf(fp, "gvdd_io 0 grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
   }
@@ -556,7 +562,9 @@ void fprint_call_defined_grids(FILE* fp) {
   for (ix = 1; ix < (nx + 1); ix++) {
     assert(IO_TYPE == grid[ix][iy].type);
     fprintf(fp, "Xgrid[%d][%d] ", ix, iy);
+    fprintf(fp, "\n");
     fprint_io_grid_pins(fp, ix, iy, 1);
+    fprintf(fp, "+ ");
     /* Connect to a speical vdd port for statistics power */
     fprintf(fp, "gvdd_io 0 grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
   } 
@@ -566,7 +574,9 @@ void fprint_call_defined_grids(FILE* fp) {
   for (ix = 1; ix < (nx + 1); ix++) {
     assert(IO_TYPE == grid[ix][iy].type);
     fprintf(fp, "Xgrid[%d][%d] ", ix, iy);
+    fprintf(fp, "\n");
     fprint_io_grid_pins(fp, ix, iy, 1);
+    fprintf(fp, "+ ");
     /* Connect to a speical vdd port for statistics power */
     fprintf(fp, "gvdd_io 0 grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
   } 
@@ -598,17 +608,24 @@ void fprint_call_defined_chan(FILE* fp,
     assert((!(0 > y))&&(y < (ny + 1))); 
     /* Call the define sub-circuit */
     fprintf(fp, "Xchanx[%d][%d] ", x, y);
+    fprintf(fp, "\n");
     for (itrack = 0; itrack < chan_width; itrack++) {
+      fprintf(fp, "+ ");
       fprintf(fp, "chanx[%d][%d]_in[%d] ", x, y, itrack);
+      fprintf(fp, "\n");
     }
     for (itrack = 0; itrack < chan_width; itrack++) {
+      fprintf(fp, "+ ");
       fprintf(fp, "chanx[%d][%d]_out[%d] ", x, y, itrack);
+      fprintf(fp, "\n");
     }
     /* output at middle point */
     for (itrack = 0; itrack < chan_width; itrack++) {
+      fprintf(fp, "+ ");
       fprintf(fp, "chanx[%d][%d]_midout[%d] ", x, y, itrack);
+      fprintf(fp, "\n");
     }
-    fprintf(fp, "gvdd 0 chanx[%d][%d]\n", x, y);
+    fprintf(fp, "+ gvdd 0 chanx[%d][%d]\n", x, y);
     break;
   case CHANY:
     /* check x*/
@@ -617,17 +634,24 @@ void fprint_call_defined_chan(FILE* fp,
     assert((0 < y)&&(y < (ny + 1))); 
     /* Call the define sub-circuit */
     fprintf(fp, "Xchany[%d][%d] ", x, y);
+    fprintf(fp, "\n");
     for (itrack = 0; itrack < chan_width; itrack++) {
+      fprintf(fp, "+ ");
       fprintf(fp, "chany[%d][%d]_in[%d] ", x, y, itrack);
+      fprintf(fp, "\n");
     }
     for (itrack = 0; itrack < chan_width; itrack++) {
+      fprintf(fp, "+ ");
       fprintf(fp, "chany[%d][%d]_out[%d] ", x, y, itrack);
+      fprintf(fp, "\n");
     }
     /* output at middle point */
     for (itrack = 0; itrack < chan_width; itrack++) {
+      fprintf(fp, "+ ");
       fprintf(fp, "chany[%d][%d]_midout[%d] ", x, y, itrack);
+      fprintf(fp, "\n");
     }
-    fprintf(fp, "gvdd 0 chany[%d][%d]\n", x, y);
+    fprintf(fp, "+ gvdd 0 chany[%d][%d]\n", x, y);
     break;
   default: 
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid Channel Type!\n", __FILE__, __LINE__);
@@ -706,9 +730,11 @@ void fprint_call_defined_connection_box(FILE* fp,
     exit(1);
   }
  
+  fprintf(fp, "\n");
   /* Print the ports of channels*/
   /* connect to the mid point of a track*/
   for (itrack = 0; itrack < chan_width; itrack++) {
+    fprintf(fp, "+ ");
     switch(chan_type) { 
     case CHANX:
       fprintf(fp, "chanx[%d][%d]_midout[%d] ", x, y, itrack);
@@ -720,11 +746,13 @@ void fprint_call_defined_connection_box(FILE* fp,
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
       exit(1);
     }
+    fprintf(fp, "\n");
   }
   /* Print the ports of grids*/
   side_cnt = 0;
   num_ipin_rr_node = 0;  
   for (side = 0; side < 4; side++) {
+    fprintf(fp, "+ ");
     switch (side) {
     case 0: /* TOP */
       switch(chan_type) { 
@@ -838,11 +866,13 @@ void fprint_call_defined_connection_box(FILE* fp,
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid side index!\n", __FILE__, __LINE__);
       exit(1);
     }
+    fprintf(fp, "\n");
   }
   /* Check */
   assert(2 == side_cnt);
 
 
+  fprintf(fp, "+ ");
   /* Identify the type of connection box */
   switch(chan_type) {
   case CHANX:
@@ -960,61 +990,87 @@ void fprint_call_defined_switch_box(FILE* fp,
   } 
                                   
   fprintf(fp, "Xsb[%d][%d] ", x, y);
+  fprintf(fp, "\n");
   /* 1. Channel Y [x][y+1] inputs */
   for (itrack = 0; itrack < chan_width[0]; itrack++) {
+    fprintf(fp, "+ ");
     fprintf(fp, "chany[%d][%d]_in[%d] ", x, y + 1, itrack);
+    fprintf(fp, "\n");
   }
   /* 2. Channel X [x+1][y] inputs */
   for (itrack = 0; itrack < chan_width[1]; itrack++) {
+    fprintf(fp, "+ ");
     fprintf(fp, "chanx[%d][%d]_in[%d] ", x + 1, y, itrack);
+    fprintf(fp, "\n");
   }
   /* 3. Channel Y [x][y] outputs */
   for (itrack = 0; itrack < chan_width[2]; itrack++) {
+    fprintf(fp, "+ ");
     fprintf(fp, "chany[%d][%d]_out[%d] ", x, y, itrack);
+    fprintf(fp, "\n");
   }
   /* 4. Channel X [x][y] outputs */
   for (itrack = 0; itrack < chan_width[3]; itrack++) {
+    fprintf(fp, "+ ");
     fprintf(fp, "chanx[%d][%d]_out[%d] ", x, y, itrack);
+    fprintf(fp, "\n");
   }
 
   /* Considering the border */
   if (ny != y) {
     /* 5. Grid[x][y+1] Right side outputs pins */
+    fprintf(fp, "+ ");
     fprint_grid_side_pins(fp, OPIN, x, y+1, 1);
+    fprintf(fp, "\n");
   }
   if (0 != x) {
     /* 6. Grid[x][y+1] Bottom side outputs pins */
+    fprintf(fp, "+ ");
     fprint_grid_side_pins(fp, OPIN, x, y+1, 2);
+    fprintf(fp, "\n");
   }
 
   if (ny != y) {
     /* 7. Grid[x+1][y+1] Left side output pins */
+    fprintf(fp, "+ ");
     fprint_grid_side_pins(fp, OPIN, x+1, y+1, 3);
+    fprintf(fp, "\n");
   }
   if (nx != x) {
     /* 8. Grid[x+1][y+1] Bottom side output pins */
+    fprintf(fp, "+ ");
     fprint_grid_side_pins(fp, OPIN, x+1, y+1, 2);
+    fprintf(fp, "\n");
   }
 
   if (nx != x) {
     /* 9. Grid[x+1][y] Top side output pins */
+    fprintf(fp, "+ ");
     fprint_grid_side_pins(fp, OPIN, x+1, y, 0);
+    fprintf(fp, "\n");
   }
   if (0 != y) {
     /* 10. Grid[x+1][y] Left side output pins */
+    fprintf(fp, "+ ");
     fprint_grid_side_pins(fp, OPIN, x+1, y, 3);
+    fprintf(fp, "\n");
   }
 
   if (0 != y) {
     /* 11. Grid[x][y] Right side output pins */
+    fprintf(fp, "+ ");
     fprint_grid_side_pins(fp, OPIN, x, y, 1);
+    fprintf(fp, "\n");
   } 
   if (0 != x) {
     /* 12. Grid[x][y] Top side output pins */
+    fprintf(fp, "+ ");
     fprint_grid_side_pins(fp, OPIN, x, y, 0);
+    fprintf(fp, "\n");
   }
 
   /* Connect to separate vdd port for each switch box??? */
+  fprintf(fp, "+ ");
   fprintf(fp, "gvdd_sb[%d][%d] 0 sb[%d][%d]\n", x, y, x, y);
 
   /* Free */

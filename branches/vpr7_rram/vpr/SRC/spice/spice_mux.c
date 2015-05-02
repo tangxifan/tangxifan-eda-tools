@@ -266,18 +266,50 @@ void fprint_spice_mux_model_basis_cmos_subckt(FILE* fp, char* subckt_name,
   switch (spice_model.pass_gate_logic->type) {
   case SPICE_MODEL_PASS_GATE_TRANSMISSION:
     pgl_name = cpt_subckt_name;
-    for (i = 0; i < num_input_per_level; i++) {
-      fprintf(fp,"X%s_%d in%d out sel%d sel_inv%d svdd sgnd %s nmos_size=%g pmos_size=%g\n",
-              pgl_name, i, i, i, i, pgl_name, 
+    switch (spice_model.structure) {
+    case SPICE_MODEL_STRUCTURE_TREE:
+      fprintf(fp,"X%s_0 in0 out sel0 sel_inv0 svdd sgnd %s nmos_size=%g pmos_size=%g\n",
+              pgl_name, pgl_name, 
               spice_model.pass_gate_logic->nmos_size, spice_model.pass_gate_logic->pmos_size);
+      fprintf(fp,"X%s_1 in1 out sel_inv0 sel0 svdd sgnd %s nmos_size=%g pmos_size=%g\n",
+              pgl_name, pgl_name, 
+              spice_model.pass_gate_logic->nmos_size, spice_model.pass_gate_logic->pmos_size);
+      break;
+    case SPICE_MODEL_STRUCTURE_ONELEVEL:
+    case SPICE_MODEL_STRUCTURE_MULTILEVEL:
+      for (i = 0; i < num_input_per_level; i++) {
+        fprintf(fp,"X%s_%d in%d out sel%d sel_inv%d svdd sgnd %s nmos_size=%g pmos_size=%g\n",
+                pgl_name, i, i, i, i, pgl_name, 
+                spice_model.pass_gate_logic->nmos_size, spice_model.pass_gate_logic->pmos_size);
+      }
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
+                 __FILE__, __LINE__, spice_model.name);
+      exit(1);
     }
     break;
   case SPICE_MODEL_PASS_GATE_TRANSISTOR:
     pgl_name = nmos_subckt_name;
-    for (i = 0; i < num_input_per_level; i++) {
-      fprintf(fp,"X%s_%d in%d sel%d out sgnd %s W=\'%g*wn\'\n",
-              pgl_name, i, i, i, 
-              pgl_name, spice_model.pass_gate_logic->nmos_size);
+    switch (spice_model.structure) {
+    case SPICE_MODEL_STRUCTURE_TREE:
+      fprintf(fp,"X%s_0 in0 sel0 out sgnd %s W=\'%g*wn\'\n",
+                  pgl_name, pgl_name, spice_model.pass_gate_logic->nmos_size);
+      fprintf(fp,"X%s_1 in1 sel_inv0 out sgnd %s W=\'%g*wn\'\n",
+                  pgl_name, pgl_name, spice_model.pass_gate_logic->nmos_size);
+      break;
+    case SPICE_MODEL_STRUCTURE_ONELEVEL:
+    case SPICE_MODEL_STRUCTURE_MULTILEVEL:
+      for (i = 0; i < num_input_per_level; i++) {
+        fprintf(fp,"X%s_%d in%d sel%d out sgnd %s W=\'%g*wn\'\n",
+                  pgl_name, i, i, i, 
+                  pgl_name, spice_model.pass_gate_logic->nmos_size);
+      }
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
+                 __FILE__, __LINE__, spice_model.name);
+      exit(1);
     }
     break; 
   default:
@@ -798,7 +830,7 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
                                         int mux_size,
                                         t_spice_model spice_model,
                                         t_spice_mux_arch spice_mux_arch) {
-  int i;
+  int i, j;
   int num_input_port = 0;
   int num_output_port = 0;
   int num_sram_port = 0;
@@ -869,9 +901,11 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
     /* Print sram ports*/
-    for (i = 0; (i < spice_mux_arch.num_level*spice_mux_arch.num_input_basis); i++) {
-      fprintf(fp, "%s%d ", sram_port[0]->prefix, spice_mux_arch.num_level-i-1);
-      fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, spice_mux_arch.num_level-i-1);
+    for (i = 0; i < spice_mux_arch.num_level; i++) {
+      for (j = 0; j < spice_mux_arch.num_input_basis; j++) {
+        fprintf(fp, "%s%d ", sram_port[0]->prefix, j + spice_mux_arch.num_input_basis*(spice_mux_arch.num_level-i-1));
+        fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, j + spice_mux_arch.num_input_basis*(spice_mux_arch.num_level-i-1));
+      }
     } 
     break;
   default:
@@ -1004,7 +1038,7 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
                                         int mux_size,
                                         t_spice_model spice_model,
                                         t_spice_mux_arch spice_mux_arch) {
-  int i;
+  int i, j;
   int num_input_port = 0;
   int num_output_port = 0;
   int num_sram_port = 0;
@@ -1073,9 +1107,11 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
     /* Print sram ports*/
-    for (i = 0; (i < spice_mux_arch.num_level*spice_mux_arch.num_input_basis); i++) {
-      fprintf(fp, "%s%d ", sram_port[0]->prefix, spice_mux_arch.num_level-i-1);
-      fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, spice_mux_arch.num_level-i-1);
+    for (i = 0; i < spice_mux_arch.num_level; i++) {
+      for (j = 0; j < spice_mux_arch.num_input_basis; j++) {
+        fprintf(fp, "%s%d ", sram_port[0]->prefix, j + spice_mux_arch.num_input_basis*(spice_mux_arch.num_level-i-1));
+        fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, j + spice_mux_arch.num_input_basis*(spice_mux_arch.num_level-i-1));
+      }
     } 
     break;
   default:
