@@ -132,6 +132,7 @@ struct s_spice_model {
   float roff;
   float prog_trans_size;
   /* END*/
+  t_spice_model_buffer* lut_input_buffer;
   t_spice_model_buffer* input_buffer;
   t_spice_model_buffer* output_buffer;
   t_spice_model_pass_gate_logic* pass_gate_logic;

@@ -43,7 +43,7 @@ static void ProcessSpiceTransistorType(ezxml_t Parent,
                                        enum e_spice_trans_type trans_type);
 
 static void ProcessSpiceTechLibTransistors(ezxml_t Parent,
-                                    t_spice_tech_lib* spice_tech_lib);
+                                           t_spice_tech_lib* spice_tech_lib);
 
 /************ Subroutines***********/
 static void ProcessSpiceMeasParams(ezxml_t Parent,
@@ -443,6 +443,8 @@ static void ProcessSpiceModel(ezxml_t Parent,
   spice_model->input_buffer = (t_spice_model_buffer*)my_malloc(sizeof(t_spice_model_buffer));
   spice_model->output_buffer = (t_spice_model_buffer*)my_malloc(sizeof(t_spice_model_buffer));
   spice_model->pass_gate_logic = (t_spice_model_pass_gate_logic*)my_malloc(sizeof(t_spice_model_pass_gate_logic));
+  /* Malloc the lut_input_buffer */
+  spice_model->lut_input_buffer = (t_spice_model_buffer*)my_malloc(sizeof(t_spice_model_buffer));
   /* Basic Information*/
   if (0 == strcmp(FindProperty(Parent,"type",TRUE),"mux")) {
     spice_model->type = SPICE_MODEL_MUX;
@@ -538,6 +540,16 @@ static void ProcessSpiceModel(ezxml_t Parent,
               Node->line,spice_model->name);
     exit(1);
   }
+  /* LUT input_buffers */
+  Node = ezxml_child(Parent, "lut_input_buffer");
+  if (Node) {
+    ProcessSpiceModelBuffer(Node,spice_model->lut_input_buffer);
+    FreeNode(Node);
+  } else if (SPICE_MODEL_LUT == spice_model->type) {
+    vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] lut_input_buffer is expected in spice_model(%s).\n",
+               Parent->line, spice_model->name);
+    exit(1);
+  } 
   /* Input Buffers*/
   Node = ezxml_child(Parent, "input_buffer");
   if (Node) {
@@ -545,7 +557,7 @@ static void ProcessSpiceModel(ezxml_t Parent,
     FreeNode(Node);
   } else {
     vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] input_buffer is expected in spice_model(%s).\n",
-               Node->line,spice_model->name);
+               Parent->line,spice_model->name);
     exit(1);
   } 
   /* Output Buffers*/
@@ -555,7 +567,7 @@ static void ProcessSpiceModel(ezxml_t Parent,
     FreeNode(Node);
   } else {
     vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] output_buffer is expected in spice_model(%s).\n",
-               Node->line,spice_model->name);
+               Parent->line,spice_model->name);
     exit(1);
   }
   /* Pass_gate_logic*/
@@ -833,7 +845,7 @@ void ProcessSpiceSettings(ezxml_t Parent,
     /* Assign each found spice model*/
     for (imodel = 0; imodel < spice->num_spice_model; imodel++) {
       Cur = FindFirstElement(Node, "spice_model", TRUE);
-      ProcessSpiceModel(Cur,&(spice->spice_models[imodel]));
+      ProcessSpiceModel(Cur, &(spice->spice_models[imodel]));
       FreeNode(Cur); 
     }
     assert(imodel == spice->num_spice_model);

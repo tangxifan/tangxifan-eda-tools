@@ -237,7 +237,7 @@
     <pb_type name="clb">
       <power method = "specify-size"/>
       <input name="I" num_pins="33" equivalent="true">
-        <power wire_capacitance="0" buffer_size="1"/>
+        <power wire_capacitance="0" buffer_size="60"/>
       </input>
       <output name="O" num_pins="20" equivalent="false">
         <power wire_capacitance="0" buffer_size="85"/>

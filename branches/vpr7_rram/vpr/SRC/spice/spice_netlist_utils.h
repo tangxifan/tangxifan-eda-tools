@@ -119,3 +119,4 @@ void fprint_measure_vdds_logical_block_spice_model(FILE* fp,
                                                    int num_clock_cycle,
                                                    boolean leakage_only);
 
+

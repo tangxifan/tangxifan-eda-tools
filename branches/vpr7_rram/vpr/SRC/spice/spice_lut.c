@@ -287,15 +287,17 @@ void fprint_spice_lut_subckt(FILE* fp,
   /* Input buffers */
   for (i = 0; i < input_ports[0]->size; i++) {
     /* For postive input of LUT MUX*/
-    fprintf(fp, "Xinv0_in%d %s%d midinv_in%d svdd sgnd inv size=\'%d\'",
-            i, input_ports[0]->prefix, i, i, 1);
+    fprintf(fp, "Xinv0_in%d %s%d midinv_in%d svdd sgnd inv size=\'%g\'",
+            i, input_ports[0]->prefix, i, i, spice_model.lut_input_buffer->size);
     fprintf(fp, "\n");
-    fprintf(fp, "Xinv0mid_in%d midinv_in%d lut_mux_in%d svdd sgnd inv size=\'%d\'",
-            i, i, i, 2);
+    fprintf(fp, "Xinv0mid_in%d midinv_in%d lut_mux_in%d svdd sgnd inv size=\'%g\'",
+            i, i, i, 
+            spice_model.lut_input_buffer->size*spice_model.lut_input_buffer->f_per_stage);
     fprintf(fp, "\n");
     /* For negative input of LUT MUX*/
-    fprintf(fp, "Xinv1_in%d %s%d lut_mux_in%d_inv svdd sgnd inv size=\'%d\'",
-            i, input_ports[0]->prefix, i, i, 2);
+    fprintf(fp, "Xinv1_in%d %s%d lut_mux_in%d_inv svdd sgnd inv size=\'%g\'",
+            i, input_ports[0]->prefix, i, i, 
+            spice_model.lut_input_buffer->size*spice_model.lut_input_buffer->f_per_stage);
     fprintf(fp, "\n");
   }
 

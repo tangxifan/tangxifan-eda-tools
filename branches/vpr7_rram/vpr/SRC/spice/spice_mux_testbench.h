@@ -12,3 +12,13 @@ void fprint_spice_mux_testbench(char* formatted_spice_dir,
                                 t_arch arch,
                                 enum e_spice_mux_tb_type mux_tb_type,
                                 boolean leakage_only);
+
+/* useful subroutines */
+void fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(FILE* fp, 
+                                                           int grid_x, int grid_y,
+                                                           t_pb_graph_pin* src_pb_graph_pin, 
+                                                           t_pb* src_pb, 
+                                                           char* outport_name,
+                                                           boolean consider_parent_node,
+                                                           t_ivec*** LL_rr_node_indices);
+

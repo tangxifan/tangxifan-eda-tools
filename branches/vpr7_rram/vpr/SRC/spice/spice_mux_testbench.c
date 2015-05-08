@@ -59,14 +59,6 @@ float find_spice_mux_testbench_pb_pin_mux_load_inv_size(t_spice_model* fan_out_s
 float find_spice_mux_testbench_rr_mux_load_inv_size(t_rr_node* load_rr_node,
                                                     int switch_index);
 
-void fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(FILE* fp, 
-                                                           int grid_x, int grid_y,
-                                                           t_pb_graph_pin* src_pb_graph_pin, 
-                                                           t_pb* src_pb, 
-                                                           char* outport_name,
-                                                           t_ivec*** LL_rr_node_indices);
-
-
 static 
 void fprint_spice_mux_testbench_one_mux(FILE* fp,
                                         char* meas_tag,
@@ -180,6 +172,17 @@ float find_spice_mux_testbench_pb_pin_mux_load_inv_size(t_spice_model* fan_out_s
   assert(NULL != fan_out_spice_model);
   assert(NULL != fan_out_spice_model->input_buffer);
 
+  /* Special: this is a LUT, we should consider more inv size */
+  if (SPICE_MODEL_LUT == fan_out_spice_model->type) {
+    assert(1 == fan_out_spice_model->lut_input_buffer->exist);
+    assert(SPICE_MODEL_BUF_INV == fan_out_spice_model->lut_input_buffer->type);
+    assert(TRUE == fan_out_spice_model->lut_input_buffer->tapered_buf);
+    assert(2 == fan_out_spice_model->lut_input_buffer->tap_buf_level);
+    load_inv_size = fan_out_spice_model->lut_input_buffer->size 
+                  + fan_out_spice_model->lut_input_buffer->f_per_stage;
+    return load_inv_size;
+  }
+
   /* depend on the input_buffer type */
   if (1 == fan_out_spice_model->input_buffer->exist) {
     switch(fan_out_spice_model->input_buffer->type) {
@@ -245,6 +248,7 @@ void fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(FILE* fp,
                                                            t_pb_graph_pin* src_pb_graph_pin, 
                                                            t_pb* src_pb, 
                                                            char* outport_name,
+                                                           boolean consider_parent_node,
                                                            t_ivec*** LL_rr_node_indices) {
   int iedge, mode_index, ipb, jpb;
   t_interconnect* cur_interc = NULL;
@@ -261,12 +265,14 @@ void fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(FILE* fp,
 
   assert(NULL != src_pb_graph_pin);
   
-  if (NULL != src_pb_graph_pin->parent_node->pb_type->spice_model) {
-    load_inv_size = find_spice_mux_testbench_pb_pin_mux_load_inv_size(src_pb_graph_pin->parent_node->pb_type->spice_model);
-    fprintf(fp, "Xload_inv[%d] %s %s_out[0] gvdd_load 0 inv size=%g\n",
-             testbench_load_cnt, outport_name, outport_name, load_inv_size);
-    testbench_load_cnt++;
-    return;
+  if (TRUE == consider_parent_node) {
+    if (NULL != src_pb_graph_pin->parent_node->pb_type->spice_model) {
+      load_inv_size = find_spice_mux_testbench_pb_pin_mux_load_inv_size(src_pb_graph_pin->parent_node->pb_type->spice_model);
+      fprintf(fp, "Xload_inv[%d] %s %s_out[0] gvdd_load 0 inv size=%g\n",
+               testbench_load_cnt, outport_name, outport_name, load_inv_size);
+      testbench_load_cnt++;
+      return;
+    }
   }
 
   /* Get the mode_index */
@@ -337,7 +343,7 @@ void fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(FILE* fp,
           }
         }
         fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(fp, grid_x, grid_y, src_pb_graph_pin->output_edges[iedge]->output_pins[0],
-                                                              des_pb, outport_name, LL_rr_node_indices);
+                                                              des_pb, outport_name, TRUE, LL_rr_node_indices);
         
       }
     }
@@ -749,7 +755,7 @@ void fprint_spice_mux_testbench_pb_graph_node_pin_mux(FILE* fp,
                                   + 7 ));
   sprintf(outport_name, "%s_size%d[%d]->out",
                         cur_interc->spice_model->prefix, fan_in, testbench_mux_cnt);
-  fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(fp, grid_x, grid_y, des_pb_graph_pin, NULL, outport_name, LL_rr_node_indices); 
+  fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(fp, grid_x, grid_y, des_pb_graph_pin, NULL, outport_name, TRUE, LL_rr_node_indices); 
 
   fprint_spice_mux_testbench_pb_mux_meas(fp, meas_tag);
   /* Update the counter */
@@ -844,7 +850,7 @@ void fprint_spice_mux_testbench_pb_pin_mux(FILE* fp,
   sprintf(outport_name, "%s_size%d[%d]->out",
                         cur_interc->spice_model->prefix, fan_in, testbench_mux_cnt);
   fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(fp, grid_x, grid_y,
-                                                        des_pb_graph_pin, des_pb, outport_name, LL_rr_node_indices);
+                                                        des_pb_graph_pin, des_pb, outport_name, TRUE, LL_rr_node_indices);
 
 
   fprint_spice_mux_testbench_pb_mux_meas(fp, meas_tag);
@@ -1419,7 +1425,7 @@ void fprint_spice_mux_testbench_one_cb_mux_loads(FILE* fp,
   cb_out_pb = src_rr_node->pb;
 
   /* Recursively find all the inv load inside pb_graph_node */
-  fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(fp, src_rr_node->xlow, src_rr_node->ylow, cb_out_pb_graph_pin, cb_out_pb, outport_name, LL_rr_node_indices);
+  fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(fp, src_rr_node->xlow, src_rr_node->ylow, cb_out_pb_graph_pin, cb_out_pb, outport_name, TRUE, LL_rr_node_indices);
   
   return;
 }

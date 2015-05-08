@@ -714,10 +714,8 @@ ProcessSpiceModelPassGateLogic	../../libarchfpga/read_xml_spice.c	/^static void 
 ProcessSpiceModelPort	../../libarchfpga/read_xml_spice.c	/^static void ProcessSpiceModelPort(ezxml_t Node,$/;"	f	file:
 ProcessSpiceModelWireParam	../../libarchfpga/read_xml_spice.c	/^static void ProcessSpiceModelWireParam(ezxml_t Parent,$/;"	f	file:
 ProcessSpiceParams	../../libarchfpga/read_xml_spice.c	/^static void ProcessSpiceParams(ezxml_t Parent,$/;"	f	file:
-ProcessSpiceSettings	../../libarchfpga/read_xml_spice.c	/^void ProcessSpiceSettings(ezxml_t Parent,$/;"	f
 ProcessSpiceStimulateParams	../../libarchfpga/read_xml_spice.c	/^static void ProcessSpiceStimulateParams(ezxml_t Parent,$/;"	f	file:
 ProcessSpiceStimulateParamsRiseFall	../../libarchfpga/read_xml_spice.c	/^static void ProcessSpiceStimulateParamsRiseFall(ezxml_t Parent,$/;"	f	file:
-ProcessSpiceTechLibTransistors	../../libarchfpga/read_xml_spice.c	/^static void ProcessSpiceTechLibTransistors(ezxml_t Parent,$/;"	f	file:
 ProcessSpiceTransistorType	../../libarchfpga/read_xml_spice.c	/^static void ProcessSpiceTransistorType(ezxml_t Parent,$/;"	f	file:
 ProcessSwitchSegmentPatterns	../../libarchfpga/read_xml_arch_file.c	/^static void ProcessSwitchSegmentPatterns(INOUTP ezxml_t Parent,$/;"	f	file:
 ProcessSwitches	../../libarchfpga/read_xml_arch_file.c	/^static void ProcessSwitches(INOUTP ezxml_t Parent,$/;"	f	file:
@@ -1333,7 +1331,6 @@ check_route	route/check_route.c	/^void check_route(enum e_route_type route_type,
 check_rr_graph	route/check_rr_graph.c	/^void check_rr_graph(INP t_graph_type graph_type, INP t_type_ptr types,$/;"	f
 check_sink	route/check_route.c	/^static void check_sink(int inode, int inet, boolean * pin_done) {$/;"	f	file:
 check_source	route/check_route.c	/^static void check_source(int inode, int inet) {$/;"	f	file:
-check_spice_models	../../libarchfpga/read_xml_spice.c	/^static void check_spice_models(int num_spice_model,$/;"	f	file:
 check_src_blk_pin	clb_pin_remap/clb_pin_remap_util.c	/^int check_src_blk_pin(int n_blks, t_block* blk,$/;"	f
 check_subblock_internal_nets	base/check_netlist.c	/^static int check_subblock_internal_nets(int iblk, int isub) {$/;"	f	file:
 check_subblocks	base/check_netlist.c	/^static int check_subblocks(int iblk) {$/;"	f	file:
@@ -1515,7 +1512,7 @@ destroy_button	base/graphics.c	/^destroy_button (const char *button_text) $/;"	f
 destroy_button	base/graphics.c	/^void destroy_button (const char *button_text) { }$/;"	f
 determine_io_grid_side	spice/spice_utils.c	/^int determine_io_grid_side(int x,$/;"	f
 determine_lut_path_id	spice/spice_utils.c	/^int determine_lut_path_id(int lut_size,$/;"	f
-determine_num_input_per_unit_multilevel_mux	spice/spice_utils.c	/^int determine_num_input_per_unit_multilevel_mux(int mux_size,$/;"	f
+determine_num_input_basis_multilevel_mux	spice/spice_utils.c	/^int determine_num_input_basis_multilevel_mux(int mux_size,$/;"	f
 determine_src_chan_coordinate_switch_box	spice/spice_routing.c	/^void determine_src_chan_coordinate_switch_box(t_rr_node* src_rr_node,$/;"	f
 determine_tree_mux_level	spice/spice_utils.c	/^int determine_tree_mux_level(int mux_size) {$/;"	f
 dir	../../libarchfpga/include/logic_types.h	/^	enum PORTS dir; \/* port direction *\/$/;"	m	struct:s_model_ports	typeref:enum:s_model_ports::PORTS
@@ -1923,6 +1920,7 @@ fprint_routing_connection_box_subckt	spice/spice_routing.c	/^void fprint_routing
 fprint_routing_switch_box_subckt	spice/spice_routing.c	/^void fprint_routing_switch_box_subckt(FILE* fp, $/;"	f
 fprint_run_hspice_shell_script	spice/spice_run_scripts.c	/^void fprint_run_hspice_shell_script(t_spice spice,$/;"	f
 fprint_spice_block	spice/spice_pbtypes.c	/^void fprint_spice_block(FILE* fp,$/;"	f
+fprint_spice_cmos_mux_multilevel_structure	spice/spice_mux.c	/^void fprint_spice_cmos_mux_multilevel_structure(FILE* fp, char* mux_basis_subckt_name,$/;"	f
 fprint_spice_cmos_mux_onelevel_structure	spice/spice_mux.c	/^void fprint_spice_cmos_mux_onelevel_structure(FILE* fp, t_spice_model spice_model,$/;"	f
 fprint_spice_cmos_mux_tree_structure	spice/spice_mux.c	/^void fprint_spice_cmos_mux_tree_structure(FILE* fp, char* mux_basis_subckt_name,$/;"	f
 fprint_spice_dangling_des_pb_graph_pin_interc	spice/spice_pbtypes.c	/^void fprint_spice_dangling_des_pb_graph_pin_interc(FILE* fp,$/;"	f
@@ -2002,6 +2000,7 @@ fprint_spice_options	spice/spice_netlist_utils.c	/^void fprint_spice_options(FIL
 fprint_spice_pb_graph_interc	spice/spice_pbtypes.c	/^void fprint_spice_pb_graph_interc(FILE* fp, $/;"	f
 fprint_spice_pb_graph_node_rec	spice/spice_pbtypes.c	/^void fprint_spice_pb_graph_node_rec(FILE* fp, $/;"	f
 fprint_spice_pb_graph_primitive_node	spice/spice_pbtypes.c	/^void fprint_spice_pb_graph_primitive_node(FILE* fp,$/;"	f
+fprint_spice_rram_mux_multilevel_structure	spice/spice_mux.c	/^void fprint_spice_rram_mux_multilevel_structure(FILE* fp, char* mux_basis_subckt_name,$/;"	f
 fprint_spice_rram_mux_onelevel_structure	spice/spice_mux.c	/^void fprint_spice_rram_mux_onelevel_structure(FILE* fp, t_spice_model spice_model,$/;"	f
 fprint_spice_rram_mux_tree_structure	spice/spice_mux.c	/^void fprint_spice_rram_mux_tree_structure(FILE* fp, char* mux_basis_subckt_name,$/;"	f
 fprint_spice_stimulate_header	spice/spice_heads.c	/^void fprint_spice_stimulate_header(char* stimulate_file_name,$/;"	f	file:
@@ -2358,7 +2357,7 @@ init_route_tree_to_source	route/route_tree_timing.c	/^init_route_tree_to_source(
 init_spice_dff_testbench_globals	spice/spice_dff_testbench.c	/^static void init_spice_dff_testbench_globals() {$/;"	f	file:
 init_spice_grid_testbench_globals	spice/spice_grid_testbench.c	/^void init_spice_grid_testbench_globals() {$/;"	f	file:
 init_spice_lut_testbench_globals	spice/spice_lut_testbench.c	/^void init_spice_lut_testbench_globals() {$/;"	f	file:
-init_spice_mux_arch	spice/spice_mux.c	/^void init_spice_mux_arch(t_spice_mux_arch* spice_mux_arch,$/;"	f
+init_spice_mux_arch	spice/spice_mux.c	/^void init_spice_mux_arch(t_spice_model* spice_model,$/;"	f
 init_spice_mux_testbench_globals	spice/spice_mux_testbench.c	/^static void init_spice_mux_testbench_globals(t_spice spice) {$/;"	f	file:
 init_spice_net_info	spice/spice_utils.c	/^void init_spice_net_info(t_spice_net_info* spice_net_info) {$/;"	f
 init_t	base/vpr_types.h	/^	float init_t;$/;"	m	struct:s_annealing_sched
@@ -2591,6 +2590,7 @@ lookup_dump	place/timing_place_lookup.c	/^static FILE *lookup_dump; \/* If debug
 loop_greedy	timing/slre.c	/^static void loop_greedy(const struct slre *r, int pc, const char *s, int len,$/;"	f	file:
 loop_non_greedy	timing/slre.c	/^static void loop_non_greedy(const struct slre *r, int pc, const char *s,$/;"	f	file:
 lowercase	timing/slre.c	/^static int lowercase(const char *s) {$/;"	f	file:
+lut_input_buffer	../../libarchfpga/include/spice_types.h	/^  t_spice_model_buffer* lut_input_buffer;$/;"	m	struct:s_spice_model
 lut_pin_remap	base/vpr_types.h	/^	int *lut_pin_remap; \/* [0..num_lut_inputs-1] applies only to LUT primitives, stores how LUT inputs were swapped during CAD flow, $/;"	m	struct:s_pb
 lut_size	base/ReadOptions.h	/^	int lut_size;$/;"	m	struct:s_options
 luts_spice_file_name	spice/spice_globals.c	/^char* luts_spice_file_name = "luts.sp";$/;"	v
@@ -2841,6 +2841,7 @@ num_grid_loc_def	../../libarchfpga/include/physical_types.h	/^	int num_grid_loc_
 num_heap_allocated	route/route_common.c	/^static int num_heap_allocated = 0;$/;"	v	file:
 num_include_netlist	../../libarchfpga/include/spice_types.h	/^  int num_include_netlist;$/;"	m	struct:s_spice
 num_input	../../libarchfpga/include/spice_types.h	/^  int num_input;$/;"	m	struct:s_spice_mux_arch
+num_input_basis	../../libarchfpga/include/spice_types.h	/^  int num_input_basis;$/;"	m	struct:s_spice_mux_arch
 num_input_edges	../../libarchfpga/include/physical_types.h	/^	int num_input_edges;$/;"	m	struct:s_pb_graph_pin
 num_input_last_level	../../libarchfpga/include/spice_types.h	/^  int num_input_last_level;$/;"	m	struct:s_spice_mux_arch
 num_input_per_level	../../libarchfpga/include/spice_types.h	/^  int* num_input_per_level; \/* [0...num_level] *\/$/;"	m	struct:s_spice_mux_arch

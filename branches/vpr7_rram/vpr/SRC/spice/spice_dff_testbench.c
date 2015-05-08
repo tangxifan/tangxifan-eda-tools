@@ -29,6 +29,7 @@
 #include "spice_pbtypes.h"
 #include "spice_subckt.h"
 #include "spice_netlist_utils.h"
+#include "spice_mux_testbench.h"
 
 /* local global variables */
 static int tb_num_dffs = 0;
@@ -101,15 +102,17 @@ void fprint_spice_dff_testbench_one_dff(FILE* fp,
 void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp, 
                                                       t_pb_graph_node* cur_pb_graph_node, 
                                                       char* prefix,
-                                                      int x, int y) {
+                                                      int x, int y,
+                                                      t_ivec*** LL_rr_node_indices) {
   int logical_block_index = OPEN;
   t_spice_model* pb_spice_model = NULL;
   t_pb_type* cur_pb_type = NULL;
   float* input_density = NULL;
   float* input_probability = NULL;
-  int iport, ipin, iedge, cur_pin;
+  int iport, ipin, cur_pin;
   int num_inputs, num_outputs, num_clock_pins, vpack_net_index;
   int* input_init_value = NULL;
+  char* outport_name = NULL;
 
   assert(NULL != cur_pb_graph_node);
   assert(NULL != prefix);
@@ -181,11 +184,18 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
   }
   fprint_spice_dff_testbench_one_dff(fp, prefix, num_inputs, num_outputs,
                                      input_init_value, input_density, input_probability);
-  /* Add loads: 1 inverters */
-  /* TODO: be more smart to idenity the loads */
-  for (iedge = 0; iedge < cur_pb_graph_node->output_pins[0][0].num_output_edges; iedge++) {
-  fprintf(fp, "Xinv[%d]_dff[%d]->out dff[%d]->out dff[%d]->out_load[%d] gvdd_load 0 inv\n",
-          iedge, tb_num_dffs, tb_num_dffs, tb_num_dffs, iedge);
+  /* Add loads: Recursively */
+  outport_name = (char*)my_malloc(sizeof(char)*( 4 + strlen(my_itoa(tb_num_dffs)) 
+                                  + 6 + 1 ));
+  sprintf(outport_name, "dff[%d]->out",
+                         tb_num_dffs);
+  if (OPEN != logical_block_index) {
+    fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(fp, x, y, &(cur_pb_graph_node->output_pins[0][0]), 
+                                                          logical_block[logical_block_index].pb, outport_name, 
+                                                          FALSE, LL_rr_node_indices); 
+  } else {
+    fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(fp, x, y, &(cur_pb_graph_node->output_pins[0][0]), 
+                                                          NULL, outport_name, FALSE, LL_rr_node_indices); 
   }
 
   /* Mark temporary used */
@@ -205,7 +215,8 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
 void fprint_spice_dff_testbench_rec_pb_graph_node_dffs(FILE* fp,
                                                        t_pb_graph_node* cur_pb_graph_node, 
                                                        char* prefix,
-                                                       int x, int y) {
+                                                       int x, int y,
+                                                       t_ivec*** LL_rr_node_indices) {
   char* formatted_prefix = format_spice_node_prefix(prefix); 
   int ipb, jpb, mode_index; 
   t_pb_type* cur_pb_type = NULL;
@@ -227,7 +238,7 @@ void fprint_spice_dff_testbench_rec_pb_graph_node_dffs(FILE* fp,
     sprintf(rec_prefix, "%s%s[%d]",
             formatted_prefix, cur_pb_type->name, cur_pb_graph_node->placement_index);
     /* Print a dff tb: call spice_model, stimulates */
-    fprint_spice_dff_testbench_one_pb_graph_node_dff(fp, cur_pb_graph_node, rec_prefix, x, y);
+    fprint_spice_dff_testbench_one_pb_graph_node_dff(fp, cur_pb_graph_node, rec_prefix, x, y, LL_rr_node_indices);
     my_free(rec_prefix);
     return;
   }
@@ -245,7 +256,8 @@ void fprint_spice_dff_testbench_rec_pb_graph_node_dffs(FILE* fp,
               formatted_prefix, cur_pb_type->name, cur_pb_graph_node->placement_index,
               cur_pb_type->modes[mode_index].name);
       /* Go recursively */
-      fprint_spice_dff_testbench_rec_pb_graph_node_dffs(fp, &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]), rec_prefix, x, y);
+      fprint_spice_dff_testbench_rec_pb_graph_node_dffs(fp, &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]),
+                                                        rec_prefix, x, y, LL_rr_node_indices);
       my_free(rec_prefix);
     }
   }
@@ -255,7 +267,8 @@ void fprint_spice_dff_testbench_rec_pb_graph_node_dffs(FILE* fp,
 
 void fprint_spice_dff_testbench_rec_pb_dffs(FILE* fp, 
                                             t_pb* cur_pb, char* prefix, 
-                                            int x, int y) {
+                                            int x, int y,
+                                            t_ivec*** LL_rr_node_indices) {
   char* formatted_prefix = format_spice_node_prefix(prefix); 
   int ipb, jpb;
   int mode_index;
@@ -283,7 +296,7 @@ void fprint_spice_dff_testbench_rec_pb_dffs(FILE* fp,
     sprintf(rec_prefix, "%s%s[%d]",
             formatted_prefix, cur_pb->pb_graph_node->pb_type->name, cur_pb->pb_graph_node->placement_index);
     /* Print a lut tb: call spice_model, stimulates */
-    fprint_spice_dff_testbench_one_pb_graph_node_dff(fp, cur_pb->pb_graph_node, rec_prefix, x, y);
+    fprint_spice_dff_testbench_one_pb_graph_node_dff(fp, cur_pb->pb_graph_node, rec_prefix, x, y, LL_rr_node_indices);
     my_free(rec_prefix);
     return;
   }
@@ -306,11 +319,12 @@ void fprint_spice_dff_testbench_rec_pb_dffs(FILE* fp,
               cur_pb->pb_graph_node->pb_type->modes[mode_index].name);
       /* Refer to pack/output_clustering.c [LINE 392] */
       if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
-        fprint_spice_dff_testbench_rec_pb_dffs(fp, &(cur_pb->child_pbs[ipb][jpb]), rec_prefix, x, y);
+        fprint_spice_dff_testbench_rec_pb_dffs(fp, &(cur_pb->child_pbs[ipb][jpb]), rec_prefix, x, y, LL_rr_node_indices);
       } else {
         /* Print idle graph_node muxes */
         /* Bypass unused blocks */
-        fprint_spice_dff_testbench_rec_pb_graph_node_dffs(fp, cur_pb->child_pbs[ipb][jpb].pb_graph_node, rec_prefix, x, y);
+        fprint_spice_dff_testbench_rec_pb_graph_node_dffs(fp, cur_pb->child_pbs[ipb][jpb].pb_graph_node, 
+                                                          rec_prefix, x, y, LL_rr_node_indices);
       }
     }
   }
@@ -319,7 +333,8 @@ void fprint_spice_dff_testbench_rec_pb_dffs(FILE* fp,
 }
 
 void fprint_spice_dff_testbench_call_one_grid_defined_dffs(FILE* fp,
-                                                           int ix, int iy) {
+                                                           int ix, int iy,
+                                                           t_ivec*** LL_rr_node_indices) {
   int iblk;
   char* prefix = NULL;
  
@@ -342,7 +357,7 @@ void fprint_spice_dff_testbench_call_one_grid_defined_dffs(FILE* fp,
             block[grid[ix][iy].blocks[iblk]].y);
     /* Only for mapped block */
     assert(NULL != block[grid[ix][iy].blocks[iblk]].pb);
-    fprint_spice_dff_testbench_rec_pb_dffs(fp, block[grid[ix][iy].blocks[iblk]].pb, prefix, ix, iy);
+    fprint_spice_dff_testbench_rec_pb_dffs(fp, block[grid[ix][iy].blocks[iblk]].pb, prefix, ix, iy, LL_rr_node_indices);
     my_free(prefix);
   }
   /* Bypass unused blocks */
@@ -360,12 +375,12 @@ void fprint_spice_dff_testbench_call_one_grid_defined_dffs(FILE* fp,
   return;
 }
 
-void fprint_spice_dff_testbench_call_defined_dffs(FILE* fp) {
+void fprint_spice_dff_testbench_call_defined_dffs(FILE* fp, t_ivec*** LL_rr_node_indices) {
   int ix, iy;
  
   for (ix = 1; ix < (nx + 1); ix++) {
     for (iy = 1; iy < (ny + 1); iy++) {
-      fprint_spice_dff_testbench_call_one_grid_defined_dffs(fp, ix, iy);
+      fprint_spice_dff_testbench_call_one_grid_defined_dffs(fp, ix, iy, LL_rr_node_indices);
     }
   }
 
@@ -547,7 +562,7 @@ int fprint_spice_one_dff_testbench(char* formatted_spice_dir,
   /* Quote defined Logic blocks subckts (Grids) */
   init_spice_dff_testbench_globals();
   init_logical_block_spice_model_type_temp_used(arch.spice->num_spice_model, arch.spice->spice_models, SPICE_MODEL_FF);
-  fprint_spice_dff_testbench_call_one_grid_defined_dffs(fp, grid_x, grid_y);
+  fprint_spice_dff_testbench_call_one_grid_defined_dffs(fp, grid_x, grid_y, LL_rr_node_indices);
 
   /* Back-anotate activity information to each routing resource node 
    * (We should have activity of each Grid port) 
