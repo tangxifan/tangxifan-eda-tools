@@ -2664,19 +2664,19 @@ void XmlReadArch(INP const char *ArchFile, INP boolean timing_enabled,
 	ProcessDevice(Next, arch, timing_enabled);
 	FreeNode(Next);
 
-    /* Xifan TANG: HSPICE Support*/
-    Next = FindElement(Cur,"spice_settings", arch->read_xml_spice); // Not mandatory options but we will check it later
-    if (Next) {
-      ProcessSpiceSettings(Next,arch->spice);
-      FreeNode(Next);
-    }
-    /* end */
-
     /* Xifan TANG: Connection Block Support*/
     Next = FindElement(Cur,"cblocks",arch->read_xml_spice); 
     if (Next) {
 	  ProcessSwitches(Next, &(arch->cb_switches), &(arch->num_cb_switch),
                       timing_enabled);
+      FreeNode(Next);
+    }
+    /* end */
+
+    /* Xifan TANG: HSPICE Support*/
+    Next = FindElement(Cur,"spice_settings", arch->read_xml_spice); // Not mandatory options but we will check it later
+    if (Next) {
+      ProcessSpiceSettings(Next,arch->spice);
       FreeNode(Next);
     }
     /* end */
@@ -3250,11 +3250,33 @@ static void ProcessSwitches(INOUTP ezxml_t Parent,
 		(*Switches)[i].mux_trans_size = GetFloatProperty(Node, "mux_trans_size",
 				FALSE, 1);
 
-        // Xifan TANG: Spice Model Support
+        /* Xifan TANG: Spice Model Support */
         (*Switches)[i].spice_model_name = my_strdup(FindProperty(Node, "spice_model_name", FALSE));
         (*Switches)[i].spice_model = NULL;
 	    ezxml_set_attr(Node, "spice_model_name", NULL);
-     
+        /* Xifan TANG : Read in MUX structure*/ 
+        /* Default, we use tree */
+        (*Switches)[i].structure = SPICE_MODEL_STRUCTURE_TREE;
+        if (0 == strcmp("one-level", FindProperty(Node, "structure", FALSE))) {
+          (*Switches)[i].structure = SPICE_MODEL_STRUCTURE_ONELEVEL;
+        } else if (0 == strcmp("multi-level", FindProperty(Node, "structure", FALSE))) {
+          (*Switches)[i].structure = SPICE_MODEL_STRUCTURE_MULTILEVEL;
+        } else if (0 == strcmp("tree", FindProperty(Node, "structure", FALSE))) {
+          (*Switches)[i].structure = SPICE_MODEL_STRUCTURE_TREE;
+        } else {
+          vpr_printf(TIO_MESSAGE_INFO, "Auto-assign structure type of Switch(name=%s) to default(=tree).\n", 
+                     (*Switches)[i]);
+        }
+	    ezxml_set_attr(Node, "structure", NULL);
+        if (SPICE_MODEL_STRUCTURE_MULTILEVEL == (*Switches)[i].structure) {
+          (*Switches)[i].switch_num_level = GetIntProperty(Node, "num_level", TRUE, 1);
+          if (1 == (*Switches)[i].switch_num_level) {
+            (*Switches)[i].structure = SPICE_MODEL_STRUCTURE_ONELEVEL;
+            vpr_printf(TIO_MESSAGE_INFO, "[LINE%d] Automatically convert switch structure from multi-level to one-level!\nReasone: Switch structure is defined to be multi-level but num of level is set to 1.\n");
+          }
+        }
+	    ezxml_set_attr(Node, "num_level", NULL);
+        /* END */
 
 		buf_size = FindProperty(Node, "power_buf_size", FALSE);
 		if (buf_size == NULL) {

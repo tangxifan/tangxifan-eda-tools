@@ -796,6 +796,9 @@ typedef struct s_switch_inf {
     /* Xifan TANG: spice support*/
     char* spice_model_name;
     t_spice_model* spice_model;
+    /* Xifan TANG: switch structure */
+    enum e_spice_model_structure structure;
+    int switch_num_level;
 } t_switch_inf;
 /*Xifan TANG: switch segment pattern type*/
 enum e_swseg_pattern_type {

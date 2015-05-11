@@ -1702,3 +1702,14 @@ char* gen_str_spice_model_structure(enum e_spice_model_structure spice_model_str
     exit(1);
   }
 }
+
+/* Check if the spice model structure is the same with the switch_inf structure */
+boolean check_spice_model_structure_match_switch_inf(t_switch_inf target_switch_inf) {
+  assert(NULL != target_switch_inf.spice_model);
+  if (target_switch_inf.structure != target_switch_inf.spice_model->structure) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Structure in spice_model(%s) is different from switch_inf[%s]!\n",
+               __FILE__, __LINE__, target_switch_inf.spice_model->name, target_switch_inf.name);
+    return FALSE;
+  }
+  return TRUE;
+}

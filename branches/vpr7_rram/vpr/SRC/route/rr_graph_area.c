@@ -7,6 +7,10 @@
 #include "rr_graph_util.h"
 #include "rr_graph_area.h"
 
+/* Some useful subroutines in Spice utils*/
+int determine_tree_mux_level(int mux_size);
+int determine_num_input_basis_multilevel_mux(int mux_size, int mux_level);
+
 /************************ Subroutines local to this module *******************/
 
 static void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
@@ -15,7 +19,7 @@ static void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
 static void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 		float R_minW_nmos, float R_minW_pmos, float sram_area);
 
-static float get_cblock_trans(int *num_inputs_to_cblock,
+static float get_cblock_trans(int *num_inputs_to_cblock, int* switches_to_cblock,
 		int max_inputs_to_cblock, float trans_cblock_to_lblock_buf,
 		float trans_sram_bit);
 
@@ -31,7 +35,7 @@ static float *alloc_and_load_sharable_switch_trans(int num_switch,
 /*end */
 
 static float trans_per_mux(int num_inputs, float trans_sram_bit,
-		float pass_trans_area);
+		float pass_trans_area, t_switch_inf target_switch);
 
 static float trans_per_R(float Rtrans, float R_minW_trans);
 
@@ -85,6 +89,9 @@ void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
 	 * optimistic (but I still think it's pretty reasonable).                    */
 
 	int *num_inputs_to_cblock; /* [0..num_rr_nodes-1], but all entries not    */
+    /* Xifan TANG: cb switches*/
+	int *switches_to_cblock; /* [0..num_rr_nodes-1], but all entries not    */
+    /* END */
 
 	/* corresponding to IPINs will be 0.           */
 
@@ -130,6 +137,13 @@ void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
 			R_minW_pmos);
 
 	num_inputs_to_cblock = (int *) my_calloc(num_rr_nodes, sizeof(int));
+
+    /* Xifan TANG: cb switches*/
+	switches_to_cblock = (int *) my_calloc(num_rr_nodes, sizeof(int));
+    for (i = 0; i < num_rr_nodes; i++) {
+      switches_to_cblock[i] = OPEN;
+    }
+    /* END */
 
 	maxlen = std::max(nx, ny) + 1;
 	cblock_counted = (boolean *) my_calloc(maxlen, sizeof(boolean));
@@ -187,6 +201,13 @@ void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
 							num_inputs_to_cblock[to_node]);
 
 					iseg = seg_index_of_cblock(from_rr_type, to_node);
+                    /* Xifan TANG: cb switches*/
+                    if (OPEN == switches_to_cblock[to_node]) {
+                      switches_to_cblock[to_node] = rr_node[from_node].switches[iedge];
+                    } else {
+                      assert(switches_to_cblock[to_node] == rr_node[from_node].switches[iedge]);
+                    }
+                    /* END */
 
 					if (cblock_counted[iseg] == FALSE) {
 						cblock_counted[iseg] = TRUE;
@@ -263,10 +284,14 @@ void count_bidir_routing_transistors(int num_switch, float R_minW_nmos,
 
 	/* Now add in the input connection block transistors. */
 
-	input_cblock_trans = get_cblock_trans(num_inputs_to_cblock,
+	input_cblock_trans = get_cblock_trans(num_inputs_to_cblock, /*Xifan TANG:*/switches_to_cblock,
 			max_inputs_to_cblock, trans_cblock_to_lblock_buf, trans_sram_bit);
 
 	free(num_inputs_to_cblock);
+
+    /* Xifan TANG: cb switches */
+    free(switches_to_cblock);
+    /* END */
 
 	ntrans_sharing += input_cblock_trans;
 	ntrans_no_sharing += input_cblock_trans;
@@ -284,6 +309,9 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 		float R_minW_nmos, float R_minW_pmos, float sram_area) {
 	boolean * cblock_counted; /* [0..max(nx,ny)] -- 0th element unused. */
 	int *num_inputs_to_cblock; /* [0..num_rr_nodes-1], but all entries not    */
+    /* Xifan TANG: cb switches*/
+	int *switches_to_cblock; /* [0..num_rr_nodes-1], but all entries not    */
+    /* END */
 
 	/* corresponding to IPINs will be 0.           */
 
@@ -323,6 +351,14 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 			R_minW_pmos);
 
 	num_inputs_to_cblock = (int *) my_calloc(num_rr_nodes, sizeof(int));
+
+    /* Xifan TANG: cb switches*/
+	switches_to_cblock = (int *) my_calloc(num_rr_nodes, sizeof(int));
+    for (i = 0; i < num_rr_nodes; i++) {
+      switches_to_cblock[i] = OPEN;
+    }
+    /* END */
+
 	maxlen = std::max(nx, ny) + 1;
 	cblock_counted = (boolean *) my_calloc(maxlen, sizeof(boolean));
 
@@ -360,7 +396,7 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 			/* Each multiplexer contains all the fan-in to that routing node */
 			/* Add up area of multiplexer */
 			ntrans += trans_per_mux(rr_node[from_node].fan_in, trans_sram_bit,
-					switch_inf[switch_type].mux_trans_size);
+					switch_inf[switch_type].mux_trans_size, switch_inf[switch_type]);
 
 			/* Add up area of buffer */
             /* Xifan TANG: Switch Segment Pattern Support*/
@@ -387,6 +423,14 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 					max_inputs_to_cblock = std::max(max_inputs_to_cblock,
 							num_inputs_to_cblock[to_node]);
 					iseg = seg_index_of_cblock(from_rr_type, to_node);
+
+                    /* Xifan TANG: cb switches*/
+                    if (OPEN == switches_to_cblock[to_node]) {
+                      switches_to_cblock[to_node] = switch_type;
+                    } else {
+                      assert(switches_to_cblock[to_node] == switch_type);
+                    }
+                    /* END */
 
 					if (cblock_counted[iseg] == FALSE) {
 						cblock_counted[iseg] = TRUE;
@@ -429,11 +473,15 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 
 	/* Now add in the input connection block transistors. */
 
-	input_cblock_trans = get_cblock_trans(num_inputs_to_cblock,
+	input_cblock_trans = get_cblock_trans(num_inputs_to_cblock, /*Xifan TANG*/switches_to_cblock,
 			max_inputs_to_cblock, trans_cblock_to_lblock_buf, trans_sram_bit);
 
 	free(cblock_counted);
 	free(num_inputs_to_cblock);
+
+    /* Xifan TANG: cb switches */
+    free(switches_to_cblock);
+    /* END */
 
 	ntrans += input_cblock_trans;
 
@@ -442,7 +490,7 @@ void count_unidir_routing_transistors(t_segment_inf * segment_inf,
 	vpr_printf(TIO_MESSAGE_INFO, "\tTotal routing area: %#g, per logic tile: %#g\n", ntrans, ntrans / (float) (nx * ny));
 }
 
-static float get_cblock_trans(int *num_inputs_to_cblock,
+static float get_cblock_trans(int *num_inputs_to_cblock, int* switches_to_cblock,
 		int max_inputs_to_cblock, float trans_cblock_to_lblock_buf,
 		float trans_sram_bit) {
 
@@ -463,16 +511,25 @@ static float get_cblock_trans(int *num_inputs_to_cblock,
 	/* With one or more inputs, add the mux and output buffer.  I add the output *
 	 * buffer even when the number of inputs = 1 (i.e. no mux) because I assume  *
 	 * I need the drivability just for metal capacitance.                        */
-
+    /*
 	for (i = 1; i <= max_inputs_to_cblock; i++)
 		trans_per_cblock[i] = trans_per_mux(i, trans_sram_bit,
 				ipin_mux_trans_size) + trans_cblock_to_lblock_buf;
+    */
 
 	trans_count = 0.;
 
 	for (i = 0; i < num_rr_nodes; i++) {
 		num_inputs = num_inputs_to_cblock[i];
-		trans_count += trans_per_cblock[num_inputs];
+        /* Xifan TANG: consider cblock structure in area estimation */ 
+        assert((0 < num_inputs)||(0 == num_inputs));
+        if (0 < num_inputs) { 
+          assert(OPEN != switches_to_cblock[i]);
+		  trans_count += trans_per_mux(num_inputs, trans_sram_bit,
+		  		         ipin_mux_trans_size, switch_inf[switches_to_cblock[i]]) + trans_cblock_to_lblock_buf;
+        }
+        /* END */
+        /* trans_count += trans_per_cblock[num_inputs]; */
 	}
 
 	free(trans_per_cblock);
@@ -575,7 +632,7 @@ float trans_per_buf(float Rbuf, float R_minW_nmos, float R_minW_pmos) {
 }
 
 static float trans_per_mux(int num_inputs, float trans_sram_bit,
-		float pass_trans_area) {
+		float pass_trans_area, t_switch_inf target_switch) {
 
 	/* Returns the number of transistors needed to build a pass transistor mux. *
 	 * DOES NOT include input buffers or any output buffer.                     *
@@ -584,31 +641,68 @@ static float trans_per_mux(int num_inputs, float trans_sram_bit,
 	 * levels.                                                                  */
 	float ntrans, sram_trans, pass_trans;
 	int num_second_stage_trans;
+    int mux_basis = 0;
 
+    /* Xifan TANG: Original VPR area function is below, I replace them by considering more physical design parameters */
+    /*
 	if (num_inputs <= 1) {
 		return (0);
 	} else if (num_inputs == 2) {
 		pass_trans = 2 * pass_trans_area;
 		sram_trans = 1 * trans_sram_bit;
 	} else if (num_inputs <= 4) {
+    */
 		/* One-hot encoding */
+    /*
 		pass_trans = num_inputs * pass_trans_area;
 		sram_trans = num_inputs * trans_sram_bit;
 	} else {
+    */
 		/* This is a large multiplexer so design it using a two-level multiplexer   *
 		 * + 0.00001 is to make sure exact square roots two don't get rounded down  *
 		 * to one lower level.                                                      */
+    /*
 		num_second_stage_trans = (int)floor((float)sqrt((float)num_inputs) + 0.00001);
 		pass_trans = (num_inputs + num_second_stage_trans) * pass_trans_area;
 		sram_trans = (ceil(
 				(float) num_inputs / num_second_stage_trans - 0.00001)
 				+ num_second_stage_trans) * trans_sram_bit;
 		if (num_second_stage_trans == 2) {
+    */
 			/* Can use one-bit instead of a two-bit one-hot encoding for the second stage */
 			/* Eliminates one sram bit counted earlier */
+    /*
 			sram_trans -= 1 * trans_sram_bit;
 		}
 	}
+    */
+    /* Xifan TANG: new function starts */
+    if (num_inputs <= 1) {
+      return 0;
+    }
+    /* Consider different structure */
+    switch (target_switch.structure) {
+    case SPICE_MODEL_STRUCTURE_TREE:
+      sram_trans = trans_sram_bit * determine_tree_mux_level(num_inputs);
+      pass_trans = (num_inputs - 1)* 2 * pass_trans_area;
+      break;
+    case SPICE_MODEL_STRUCTURE_ONELEVEL:
+      sram_trans = trans_sram_bit * num_inputs;
+      pass_trans = (num_inputs * pass_trans_area);
+      break;
+    case SPICE_MODEL_STRUCTURE_MULTILEVEL:
+      assert(1 < target_switch.switch_num_level);
+      sram_trans = trans_sram_bit * target_switch.switch_num_level;
+      mux_basis = determine_num_input_basis_multilevel_mux(num_inputs, target_switch.switch_num_level);
+	  num_second_stage_trans = (int)pow((double)mux_basis, (double)(target_switch.switch_num_level - 1));
+      pass_trans = ((num_second_stage_trans - 1) * mux_basis/(mux_basis-1)) * pass_trans_area
+                 + num_inputs * pass_trans_area;
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid structure for switch(name=%s)!\n",
+                 __FILE__, __LINE__, target_switch.name);
+      exit(1);
+    } 
 
 	ntrans = pass_trans + sram_trans;
 	return (ntrans);

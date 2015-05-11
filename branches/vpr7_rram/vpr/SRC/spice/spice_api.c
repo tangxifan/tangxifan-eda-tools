@@ -145,6 +145,10 @@ void init_check_arch_spice_models(t_arch* arch,
       vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d])Invalid SPICE model name(%s) of Switch(%s) is undefined in SPICE models!\n",__FILE__ ,__LINE__, arch->cb_switches[i].spice_model_name, arch->cb_switches[i].name);
       exit(1);
     }
+    /* Check the spice model structure is matched with the structure in switch_inf */
+    if (FALSE == check_spice_model_structure_match_switch_inf(arch->cb_switches[i])) {
+      exit(1);
+    }
   } 
  
   /* Step B: Check switch list: Switch Box*/
@@ -160,6 +164,10 @@ void init_check_arch_spice_models(t_arch* arch,
                                     arch->spice->spice_models); 
     if (NULL == arch->Switches[i].spice_model) {
       vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d])Invalid SPICE model name(%s) of Switch(%s) is undefined in SPICE models!\n",__FILE__ ,__LINE__, arch->Switches[i].spice_model_name, arch->Switches[i].name);
+      exit(1);
+    }
+    /* Check the spice model structure is matched with the structure in switch_inf */
+    if (FALSE == check_spice_model_structure_match_switch_inf(arch->cb_switches[i])) {
       exit(1);
     }
   } 

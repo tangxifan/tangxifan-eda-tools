@@ -184,3 +184,5 @@ void update_spice_models_grid_index_high(int x, int y,
                                         t_spice_model* spice_model);
 
 char* gen_str_spice_model_structure(enum e_spice_model_structure spice_model_structure);
+
+boolean check_spice_model_structure_match_switch_inf(t_switch_inf target_switch_inf);
