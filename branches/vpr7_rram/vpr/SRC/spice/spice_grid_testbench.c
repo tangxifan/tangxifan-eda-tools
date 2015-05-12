@@ -100,19 +100,20 @@ void fprint_spice_grid_testbench_call_one_defined_grid(FILE* fp, int ix, int iy)
     exit(1);
   }
 
-  if ((NULL == grid[ix][iy].type)||(0 != grid[ix][iy].offset)||(0 == grid[ix][iy].usage)) {
+  /* if ((NULL == grid[ix][iy].type)||(0 != grid[ix][iy].offset)||(0 == grid[ix][iy].usage)) { */
+  if ((NULL == grid[ix][iy].type)||(0 != grid[ix][iy].offset)) {
     return;
   }
 
   if (IO_TYPE == grid[ix][iy].type) {
-    fprintf(fp, "Xgrid[%d][%d] ", ix, iy);
+    fprintf(fp, "Xgrid[%d][%d] \n", ix, iy);
     fprint_io_grid_pins(fp, ix, iy, 1);
-    fprintf(fp, "gvdd 0 grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
+    fprintf(fp, "+ gvdd 0 grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
     tb_num_grid++;
   } else {
-    fprintf(fp, "Xgrid[%d][%d] ", ix, iy);
+    fprintf(fp, "Xgrid[%d][%d] \n", ix, iy);
     fprint_grid_pins(fp, ix, iy, 1);
-    fprintf(fp, "gvdd 0 grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
+    fprintf(fp, "+ gvdd 0 grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
     tb_num_grid++;
   }
 

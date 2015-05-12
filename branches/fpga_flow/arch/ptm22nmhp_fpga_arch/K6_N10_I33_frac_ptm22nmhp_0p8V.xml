@@ -107,6 +107,7 @@
       <spice_model type="lut" name="lut5" prefix="lut5">
         <design_technology type="cmos"/>
         <!--design_technology type="rram" ron="1e3" prog_transistor_size="1"/-->
+        <lut_input_buffer exist="on" type="inverter" size="1" tapered="on" tap_buf_level="2" f_per_stage="2"/>
         <input_buffer exist="on" type="inverter" size="4" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="4" tapered="off"/>
         <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.5"/>
@@ -117,6 +118,7 @@
       <spice_model type="lut" name="lut6" prefix="lut6">
         <design_technology type="cmos"/>
         <!--design_technology type="rram" ron="1e3" prog_transistor_size="1"/-->
+        <lut_input_buffer exist="on" type="inverter" size="1" tapered="on" tap_buf_level="2" f_per_stage="2"/>
         <input_buffer exist="on" type="inverter" size="4" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="4" tapered="off"/>
         <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.5"/>
@@ -134,16 +136,16 @@
       </spice_model>
       <spice_model type="inpad" name="inpad" prefix="inpad" netlist="/home/xitang/tangxifan-eda-tools/branches/fpga_flow/SpiceSubckts/io.sp">
         <design_technology type="cmos"/>
-        <input_buffer exist="on" type="inverter" size="4" tapered="off"/>
-        <output_buffer exist="on" type="inverter" size="4" tapered="off"/>
+        <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
+        <output_buffer exist="on" type="inverter" size="1" tapered="off"/>
         <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.5"/>
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="1"/>
       </spice_model>
       <spice_model type="outpad" name="outpad" prefix="outpad" netlist="/home/xitang/tangxifan-eda-tools/branches/fpga_flow/SpiceSubckts/io.sp">
         <design_technology type="cmos"/>
-        <input_buffer exist="on" type="inverter" size="4" tapered="off"/>
-        <output_buffer exist="on" type="inverter" size="4" tapered="off"/>
+        <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
+        <output_buffer exist="on" type="inverter" size="1" tapered="off"/>
         <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.5"/>
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="1"/>

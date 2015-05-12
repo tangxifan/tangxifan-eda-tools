@@ -245,11 +245,23 @@ void fprint_top_netlist_stimulations(FILE* fp,
       }
     } 
     assert((0 == found_mapped_inpad)||(1 == found_mapped_inpad));
-    /* if we cannot find any mapped inpad from tech.-mapped netlist, give a gnd */
+    /* if we cannot find any mapped inpad from tech.-mapped netlist, give a default */
     if (0 == found_mapped_inpad) {
-      fprintf(fp, "Vgfpga_input[%d]_%s[%d] gfpga_input[%d]_%s[%d] 0 0\n",
+      fprintf(fp, "Vgfpga_input[%d]_%s[%d] gfpga_input[%d]_%s[%d] 0 ",
               inpad_idx, inpad_spice_model->prefix, inpad_idx,
               inpad_idx, inpad_spice_model->prefix, inpad_idx);
+      switch (default_signal_init_value) {
+      case 0:
+        fprintf(fp, "0\n");
+        break;
+      case 1:
+        fprintf(fp, "vsp\n");
+        break;
+      default:
+        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid default_signal_init_value (=%d)!\n",
+                   __FILE__, __LINE__, default_signal_init_value);
+        exit(1);
+      }
     }
   }
 

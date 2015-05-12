@@ -361,16 +361,14 @@ void fprint_spice_dff_testbench_call_one_grid_defined_dffs(FILE* fp,
     my_free(prefix);
   }
   /* Bypass unused blocks */
-  /*
   for (iblk = grid[ix][iy].usage; iblk < grid[ix][iy].type->capacity; iblk++) {
     prefix = (char*)my_malloc(sizeof(char)* (5 + strlen(my_itoa(ix)) 
                               + 2 + strlen(my_itoa(iy)) + 3 ));
     sprintf(prefix, "grid[%d][%d]_", ix, iy);
     assert(NULL != grid[ix][iy].type->pb_graph_head);
-    fprint_spice_dff_testbench_rec_pb_graph_node_dffs(fp, grid[ix][iy].type->pb_graph_head, prefix, ix, iy); 
+    fprint_spice_dff_testbench_rec_pb_graph_node_dffs(fp, grid[ix][iy].type->pb_graph_head, prefix, ix, iy, LL_rr_node_indices); 
     my_free(prefix);
   }
-  */
 
   return;
 }

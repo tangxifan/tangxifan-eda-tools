@@ -3174,6 +3174,7 @@ static void ProcessSwitches(INOUTP ezxml_t Parent,
 	const char *type_name;
 	const char *switch_name;
 	const char *buf_size;
+	const char *structure_type;
    
 	boolean has_buf_size;
 	ezxml_t Node;
@@ -3256,16 +3257,17 @@ static void ProcessSwitches(INOUTP ezxml_t Parent,
 	    ezxml_set_attr(Node, "spice_model_name", NULL);
         /* Xifan TANG : Read in MUX structure*/ 
         /* Default, we use tree */
-        (*Switches)[i].structure = SPICE_MODEL_STRUCTURE_TREE;
-        if (0 == strcmp("one-level", FindProperty(Node, "structure", FALSE))) {
-          (*Switches)[i].structure = SPICE_MODEL_STRUCTURE_ONELEVEL;
-        } else if (0 == strcmp("multi-level", FindProperty(Node, "structure", FALSE))) {
-          (*Switches)[i].structure = SPICE_MODEL_STRUCTURE_MULTILEVEL;
-        } else if (0 == strcmp("tree", FindProperty(Node, "structure", FALSE))) {
+        structure_type = FindProperty(Node, "structure", FALSE);
+        if (NULL == structure_type) {
           (*Switches)[i].structure = SPICE_MODEL_STRUCTURE_TREE;
-        } else {
           vpr_printf(TIO_MESSAGE_INFO, "Auto-assign structure type of Switch(name=%s) to default(=tree).\n", 
-                     (*Switches)[i]);
+                     (*Switches)[i].name);
+        } else if (0 == strcmp("one-level", structure_type)) {
+          (*Switches)[i].structure = SPICE_MODEL_STRUCTURE_ONELEVEL;
+        } else if (0 == strcmp("multi-level", structure_type)) {
+          (*Switches)[i].structure = SPICE_MODEL_STRUCTURE_MULTILEVEL;
+        } else if (0 == strcmp("tree", structure_type)) {
+          (*Switches)[i].structure = SPICE_MODEL_STRUCTURE_TREE;
         }
 	    ezxml_set_attr(Node, "structure", NULL);
         if (SPICE_MODEL_STRUCTURE_MULTILEVEL == (*Switches)[i].structure) {

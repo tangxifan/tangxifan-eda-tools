@@ -1706,11 +1706,11 @@ int fprint_spice_mux_testbench_one_grid_cb_muxes(FILE* fp,
     }
   }
   
-  if (1 == used) {
+  //if (1 == used) {
     for (inode = 0; inode < num_ipin_rr_node; inode++) {
       fprint_spice_mux_testbench_cb_interc(fp, chan_type, x, y, ipin_rr_nodes[inode], LL_rr_node_indices);
     } 
-  }
+  //}
 
   /* Free */
   my_free(ipin_rr_nodes);
@@ -2123,7 +2123,7 @@ int fprint_spice_mux_testbench_call_one_grid_sb_muxes(FILE* fp,
     }
   }
 
-  if (used > 0) {
+  //if (used > 0) {
     for (side = 0; side < 4; side++) {
       switch (side) {
       case 0:
@@ -2147,7 +2147,7 @@ int fprint_spice_mux_testbench_call_one_grid_sb_muxes(FILE* fp,
         fprint_spice_mux_testbench_sb_one_mux(fp, ix, iy, side, chan_rr_nodes[side][itrack]);
       }
     }
-  }
+  //}
 
   /* Free */
   my_free(chan_width);
@@ -2224,11 +2224,9 @@ int fprint_spice_mux_testbench_call_one_grid_pb_muxes(FILE* fp, int ix, int iy,
     used = 1;
   }  
   /* By pass Unused blocks */
-  /*
   for (iblk = grid[ix][iy].usage; iblk < grid[ix][iy].type->capacity; iblk++) {
     fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec(fp, grid[ix][iy].type->pb_graph_head, ix, iy, LL_rr_node_indices);
   } 
-  */
 
   return used;
 }
