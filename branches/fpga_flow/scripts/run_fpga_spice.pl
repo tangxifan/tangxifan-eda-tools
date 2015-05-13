@@ -1217,15 +1217,15 @@ sub gen_csv_rpt($) {
     print $RPTFH "\n";
   }
 
-  if ("on" eq $opt_ptr->{parse_top_tb}) {
-    print $RPTFH "***** top_tb Results Table *****\n";
-    &gen_csv_rpt_one_tb($RPTFH, "top_tb", $conf_ptr->{csv_tags}->{top_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{top_tb_dynamic_power_tags}->{val});
-    print $RPTFH "\n";
-  }
-
   if ("on" eq $opt_ptr->{parse_grid_tb}) {
     print $RPTFH "***** grid_tb Results Table *****\n";
     &gen_csv_rpt_one_tb($RPTFH, "grid_tb", $conf_ptr->{csv_tags}->{grid_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{grid_tb_dynamic_power_tags}->{val});
+    print $RPTFH "\n";
+  }
+
+  if ("on" eq $opt_ptr->{parse_top_tb}) {
+    print $RPTFH "***** top_tb Results Table *****\n";
+    &gen_csv_rpt_one_tb($RPTFH, "top_tb", $conf_ptr->{csv_tags}->{top_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{top_tb_dynamic_power_tags}->{val});
     print $RPTFH "\n";
   }
 

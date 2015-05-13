@@ -158,8 +158,8 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
         } else {
           assert(OPEN == vpack_net_index);
           input_density[cur_pin] = 0.;
-          input_probability[cur_pin] = 0.;
-          input_init_value[cur_pin] = 0;
+          input_probability[cur_pin] = (float)default_signal_init_value;
+          input_init_value[cur_pin] = default_signal_init_value;
         }
         cur_pin++;
       }
@@ -169,8 +169,8 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
     /* We cannot find a mapped logic block, use default activity info*/
     for (cur_pin = 0; cur_pin < num_inputs; cur_pin++) {
       input_density[cur_pin] = 0.;
-      input_probability[cur_pin] = 0.;
-      input_init_value[cur_pin] = 0;
+      input_probability[cur_pin] = (float)default_signal_init_value;
+      input_init_value[cur_pin] = default_signal_init_value;
     } 
   }
  

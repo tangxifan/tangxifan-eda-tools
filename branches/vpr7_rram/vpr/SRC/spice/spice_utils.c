@@ -1014,10 +1014,12 @@ void init_spice_net_info(t_spice_net_info* spice_net_info) {
     exit(1);
   }
 
-  spice_net_info->probability = 0.;
   spice_net_info->density = 0.;
   spice_net_info->freq = 0.;
+
+  assert((1 == default_signal_init_value)||(0 == default_signal_init_value));
   spice_net_info->init_val = default_signal_init_value;
+  spice_net_info->probability = (float)default_signal_init_value;
 
   spice_net_info->pwl = 0.;
   spice_net_info->pwh = 0.;

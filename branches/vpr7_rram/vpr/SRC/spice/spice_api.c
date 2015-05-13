@@ -306,7 +306,7 @@ void backannotate_rr_nodes_net_info() {
 
 static 
 void backannotate_clb_nets_init_val() {
-  int inet, iblk;
+  int inet, iblk, isink;
 
   /* Analysis init values !!! */
   for (inet = 0; inet < num_logical_nets; inet++) {
@@ -316,7 +316,8 @@ void backannotate_clb_nets_init_val() {
     switch (logical_block[iblk].type) {
     case VPACK_INPAD:
     case VPACK_LATCH:
-      vpack_net[inet].spice_net_info->init_val = logical_block[iblk].init_val;
+      logical_block[iblk].init_val = vpack_net[inet].spice_net_info->init_val;
+      assert((0 == logical_block[iblk].init_val)||(1 == logical_block[iblk].init_val));
       break;
     case VPACK_OUTPAD:
     case VPACK_COMB:
@@ -336,7 +337,7 @@ void backannotate_clb_nets_init_val() {
     switch (logical_block[iblk].type) {
     case VPACK_COMB:
       vpack_net[inet].spice_net_info->init_val = get_lut_output_init_val(&(logical_block[iblk]));
-      logical_block[iblk].init_val =  vpack_net[inet].spice_net_info->init_val;
+      logical_block[iblk].init_val = vpack_net[inet].spice_net_info->init_val;
       break;
     case VPACK_INPAD:
     case VPACK_LATCH:
@@ -353,20 +354,22 @@ void backannotate_clb_nets_init_val() {
   for (inet = 0; inet < num_logical_nets; inet++) {
     assert(NULL != vpack_net[inet].spice_net_info);
     /* if the source is a inpad or dff, we update the initial value */ 
-    iblk = vpack_net[inet].node_block[0];
-    switch (logical_block[iblk].type) {
-    case VPACK_OUTPAD:
-      vpack_net[inet].spice_net_info->init_val = logical_block[iblk].init_val;
-      break;
-    case VPACK_COMB:
-    case VPACK_INPAD:
-    case VPACK_LATCH:
-    case VPACK_EMPTY:
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid logical block type!\n",
-                 __FILE__, __LINE__);
-      exit(1);
+    for (isink = 0; isink < vpack_net[inet].num_sinks; isink++) {
+      iblk = vpack_net[inet].node_block[isink];
+      switch (logical_block[iblk].type) {
+      case VPACK_OUTPAD:
+        logical_block[iblk].init_val = vpack_net[inet].spice_net_info->init_val;
+        break;
+      case VPACK_COMB:
+      case VPACK_INPAD:
+      case VPACK_LATCH:
+      case VPACK_EMPTY:
+        break;
+      default:
+        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid logical block type!\n",
+                   __FILE__, __LINE__);
+        exit(1);
+      }
     }
   }
 

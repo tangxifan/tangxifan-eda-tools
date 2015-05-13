@@ -729,9 +729,9 @@ void fprint_spice_mux_testbench_pb_graph_node_pin_mux(FILE* fp,
     }
     check_pb_graph_edge(*(des_pb_graph_pin->input_edges[iedge]));
     /* Find activity information */
-    input_init_value[cur_input] = 0; 
+    input_init_value[cur_input] = default_signal_init_value; 
     input_density[cur_input] = 0.; 
-    input_probability[cur_input] = 0.; 
+    input_probability[cur_input] = (float)default_signal_init_value; 
     cur_input++;
   }
   /* Check fan-in number is correct */
@@ -2213,7 +2213,7 @@ int fprint_spice_mux_testbench_call_one_grid_pb_muxes(FILE* fp, int ix, int iy,
     exit(1);
   } 
   /* Print all the grid */
-  if ((NULL == grid[ix][iy].type)||(0 == grid[ix][iy].usage)) {
+  if ((NULL == grid[ix][iy].type)||(0 != grid[ix][iy].offset)) {
     return used;
   }
   /* Used blocks */

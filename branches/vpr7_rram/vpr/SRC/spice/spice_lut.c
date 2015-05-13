@@ -176,6 +176,10 @@ void configure_lut_sram_bits_per_line_rec(int** sram_bits,
       (*sram_bits)[sram_id] = 1; /* on set*/
     } else if (0 == strcmp(" 0", truth_table_line + lut_size)) {
       (*sram_bits)[sram_id] = 0; /* off set */
+    } else {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid truth_table_line ending(=%s)!\n",
+                 __FILE__, __LINE__, truth_table_line + lut_size);
+      exit(1);
     }
   }
   
@@ -197,8 +201,20 @@ int* generate_lut_sram_bits(int truth_table_len,
 
   /* if No truth_table, do default*/
   if (0 == truth_table_len) {
-    off_set = default_signal_init_value;
-    on_set = 1 - default_signal_init_value;
+    switch (default_signal_init_value) {
+    case 0:
+      off_set = 0;
+      on_set = 1;
+      break;
+    case 1:
+      off_set = 1;
+      on_set = 0;
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid default_signal_init_value(=%d)!\n",
+                 __FILE__, __LINE__, default_signal_init_value);
+      exit(1);
+    }
   }
 
   /* Read in truth table lines, decode one by one */
