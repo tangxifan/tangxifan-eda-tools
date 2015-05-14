@@ -671,7 +671,6 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   /* Print MUX testbench if needed */
   if (vpr_setup.SpiceOpts.print_spice_pb_mux_testbench) {
     pb_mux_testbench_dir_path = my_strcat(spice_dir_formatted, spice_pb_mux_tb_dir_name);
-    printf("%s\n",spice_dir_formatted);
     create_dir_path(pb_mux_testbench_dir_path);
     fprint_spice_mux_testbench(pb_mux_testbench_dir_path, chomped_circuit_name, 
                                include_dir_path, subckt_dir_path,

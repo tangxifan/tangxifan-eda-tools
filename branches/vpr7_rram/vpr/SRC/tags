@@ -1180,11 +1180,11 @@ auto_compute_inter_cluster_net_delay	base/vpr_types.h	/^	boolean auto_compute_in
 auto_select_num_sim_clock_cycle	spice/spice_utils.c	/^void auto_select_num_sim_clock_cycle(t_spice* spice) {$/;"	f
 autosize_buffer	../../libarchfpga/include/physical_types.h	/^	boolean autosize_buffer; \/* autosize clock buffers *\/$/;"	m	struct:s_clock_network
 back_annotate_one_pb_rr_node_map_info_rec	spice/spice_backannotate_utils.c	/^void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb) {$/;"	f	file:
-back_annotate_one_pb_rr_nodes_net_info_rec	spice/spice_backannotate_utils.c	/^void back_annotate_one_pb_rr_nodes_net_info_rec(t_pb* cur_pb) {$/;"	f	file:
 back_annotate_pb_rr_node_map_info	spice/spice_backannotate_utils.c	/^void back_annotate_pb_rr_node_map_info() {$/;"	f	file:
 back_annotate_rr_node_map_info	spice/spice_backannotate_utils.c	/^void back_annotate_rr_node_map_info() {$/;"	f	file:
 backannotate_clb_nets_act_info	spice/spice_backannotate_utils.c	/^void backannotate_clb_nets_act_info() {$/;"	f	file:
 backannotate_clb_nets_init_val	spice/spice_backannotate_utils.c	/^void backannotate_clb_nets_init_val() {$/;"	f	file:
+backannotate_one_pb_rr_nodes_net_info_rec	spice/spice_backannotate_utils.c	/^void backannotate_one_pb_rr_nodes_net_info_rec(t_pb* cur_pb) {$/;"	f	file:
 backannotate_pb_rr_nodes_net_info	spice/spice_backannotate_utils.c	/^void backannotate_pb_rr_nodes_net_info() {$/;"	f	file:
 backannotate_rr_nodes_net_info	spice/spice_backannotate_utils.c	/^void backannotate_rr_nodes_net_info() {$/;"	f	file:
 background_cindex	base/graphics.c	/^   int background_cindex;$/;"	m	struct:__anon5	file:
@@ -2045,7 +2045,7 @@ free_cb	util/vpr_utils.c	/^void free_cb(t_pb *pb) {$/;"	f
 free_chunk_memory	../../libarchfpga/util.c	/^void free_chunk_memory(t_chunk *chunk_info) {$/;"	f
 free_chunk_memory_trace	route/route_common.c	/^void free_chunk_memory_trace(void) {$/;"	f
 free_circuit	base/vpr_api.c	/^void free_circuit() {$/;"	f
-free_clb_nets_spice_net_info	spice/spice_backannotate_utils.c	/^void free_clb_nets_spice_net_info() {$/;"	f	file:
+free_clb_nets_spice_net_info	spice/spice_backannotate_utils.c	/^void free_clb_nets_spice_net_info() {$/;"	f
 free_clock_constraint	timing/read_sdc.c	/^static void free_clock_constraint(t_clock *& clock_array, int num_clocks) {$/;"	f	file:
 free_cluster_legality_checker	pack/cluster_legality.c	/^void free_cluster_legality_checker(void) {$/;"	f
 free_cluster_placement_stats	pack/cluster_placement.c	/^void free_cluster_placement_stats($/;"	f

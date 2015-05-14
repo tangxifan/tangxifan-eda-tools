@@ -324,6 +324,12 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb) {
     return;
   }
 
+  /* Reach a leaf, return */
+  if ((0 == cur_pb->pb_graph_node->pb_type->num_modes)
+     ||(NULL == cur_pb->child_pbs)) {
+    return;
+  }
+
   select_mode_index = cur_pb->mode; 
   
   /* For all the input/output/clock pins of this pb,
@@ -349,11 +355,6 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb) {
     }
   }
 
-  /* Reach a leaf, return */
-  if ((0 == cur_pb->pb_graph_node->pb_type->num_modes)
-     ||(NULL == cur_pb->child_pbs)) {
-    return;
-  }
   /* We check input_pins of child_pb_graph_node and its the input_edges
    * Built the interconnections between inputs of cur_pb_graph_node and inputs of child_pb_graph_node
    *   cur_pb_graph_node.input_pins -----------------> child_pb_graph_node.input_pins
@@ -461,6 +462,12 @@ void backannotate_one_pb_rr_nodes_net_info_rec(t_pb* cur_pb) {
     return;
   }
 
+  /* Reach a leaf, return */
+  if ((0 == cur_pb->pb_graph_node->pb_type->num_modes)
+     ||(NULL == cur_pb->child_pbs)) {
+    return;
+  }
+
   select_mode_index = cur_pb->mode; 
   /* For all the input/output/clock pins of this pb,
    * check the net_num and assign default prev_node, prev_edge 
@@ -485,11 +492,6 @@ void backannotate_one_pb_rr_nodes_net_info_rec(t_pb* cur_pb) {
     }
   }
 
-  /* Reach a leaf, return */
-  if ((0 == cur_pb->pb_graph_node->pb_type->num_modes)
-     ||(NULL == cur_pb->child_pbs)) {
-    return;
-  }
   /* We check input_pins of child_pb_graph_node and its the input_edges
    * Built the interconnections between inputs of cur_pb_graph_node and inputs of child_pb_graph_node
    *   cur_pb_graph_node.input_pins -----------------> child_pb_graph_node.input_pins
@@ -677,7 +679,7 @@ void update_one_grid_pack_prev_node_edge(int x, int y) {
       if (DRIVER == type->class_inf[class_id].type) {
         /* Find the pb net_num and update OPIN net_num */
         pin_global_rr_node_id = get_rr_node_index(x, y, OPIN, ipin, rr_node_indices);
-        if (OPEN == local_rr_graph[ipin].net_num) {
+        if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
           continue; /* bypass non-mapped OPIN */
         } 
         /* back annotate pb ! */
@@ -729,6 +731,18 @@ void update_one_grid_pack_prev_node_edge(int x, int y) {
         continue; /* OPEN PIN */
       }
     }
+    /* Second run to backannoate parasitic OPIN net_num*/
+    for (ipin = 0; ipin < type->num_pins; ipin++) {
+      class_id = type->pin_class[ipin];
+      if (DRIVER == type->class_inf[class_id].type) {
+        /* Find the pb net_num and update OPIN net_num */
+        pin_global_rr_node_id = get_rr_node_index(x, y, OPIN, ipin, rr_node_indices);
+        if (OPEN == local_rr_graph[ipin].net_num) {
+          continue; /* bypass non-mapped OPIN */
+        } 
+        rr_node[pin_global_rr_node_id].net_num = vpack_to_clb_net_mapping[local_rr_graph[ipin].net_num];
+      }
+    }
   }
  
   return;
@@ -751,6 +765,72 @@ void update_grid_pbs_post_route_rr_graph() {
   return;
 }
 
+void update_one_grid_pb_pins_parasitic_nets(int x, int y) {
+  int iblk, blk_id, ipin; 
+  int pin_global_rr_node_id,class_id;
+  t_type_ptr type = NULL;
+  t_pb* pb = NULL;
+  t_rr_node* local_rr_graph = NULL;
+
+  /* Assert */
+  assert((!(x < 0))&&(x < (nx + 1)));  
+  assert((!(y < 0))&&(y < (ny + 1)));  
+
+  type = grid[x][y].type;
+  /* Bypass IO_TYPE*/
+  if ((EMPTY_TYPE == type)||(IO_TYPE == type)) {
+    return;
+  }   
+  for (iblk = 0; iblk < grid[x][y].usage; iblk++) {
+    blk_id = grid[x][y].blocks[iblk];
+    assert(block[blk_id].x == x);
+    assert(block[blk_id].y == y);
+    pb = block[blk_id].pb;
+    assert(NULL != pb);
+    local_rr_graph = pb->rr_graph; 
+    for (ipin = 0; ipin < type->num_pins; ipin++) {
+      class_id = type->pin_class[ipin];
+      if (DRIVER == type->class_inf[class_id].type) {
+        /* Find the pb net_num and update OPIN net_num */
+        pin_global_rr_node_id = get_rr_node_index(x, y, OPIN, ipin, rr_node_indices);
+        if (OPEN == local_rr_graph[ipin].net_num) {
+          continue; /* bypass non-mapped OPIN */
+        } 
+        rr_node[pin_global_rr_node_id].net_num = vpack_to_clb_net_mapping[local_rr_graph[ipin].net_num];
+      } else if (RECEIVER == type->class_inf[class_id].type) {
+        /* Find the global rr_node net_num and update pb net_num */
+        pin_global_rr_node_id = get_rr_node_index(x, y, IPIN, ipin, rr_node_indices);
+        /* Get the index of Vpack net from global rr_node net_num (clb_net index)*/
+        if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
+          continue; /* bypass non-mapped IPIN */
+        }
+        local_rr_graph[ipin].net_num = clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num];
+      } else {
+        continue; /* OPEN PIN */
+      }
+    }
+  }
+ 
+  return;
+}
+
+void update_grid_pb_pins_parasitic_nets() {
+  int ix, iy;
+  t_type_ptr type = NULL;
+
+  for (ix = 0; ix < (nx + 1); ix++) {
+    for (iy = 0; iy < (ny + 1); iy++) {
+      type = grid[ix][iy].type;
+      if (NULL != type) {
+        /* Backup the packing prev_node and prev_edge */
+        update_one_grid_pb_pins_parasitic_nets(ix, iy);
+      }
+    }
+  }
+
+  return;
+}
+
 void spice_backannotate_vpr_post_route_info() {
 
   vpr_printf(TIO_MESSAGE_INFO, "Start backannotating post route information for SPICE modeling...\n");
@@ -765,15 +845,19 @@ void spice_backannotate_vpr_post_route_info() {
   vpr_printf(TIO_MESSAGE_INFO,"Back annotating mapping information to local routing resource nodes...\n");
   back_annotate_pb_rr_node_map_info();
 
-  /* Backannotate activity information, initialize the waveform information */
-  vpr_printf(TIO_MESSAGE_INFO, "Backannoating local routing net (1st time: for output pins)...\n");
-  backannotate_pb_rr_nodes_net_info();
-  vpr_printf(TIO_MESSAGE_INFO, "Backannoating global routing net...\n");
-  backannotate_rr_nodes_net_info();
-
   /* Update local_rr_graphs to match post-route results*/
   vpr_printf(TIO_MESSAGE_INFO, "Update CLB local routing graph to match post-route results...\n");
   update_grid_pbs_post_route_rr_graph();
+
+  /* Backannotate activity information, initialize the waveform information */
+  vpr_printf(TIO_MESSAGE_INFO, "Backannoating local routing net (1st time: for output pins)...\n");
+  backannotate_pb_rr_nodes_net_info();
+  vpr_printf(TIO_MESSAGE_INFO, "Update CLB pins nets (1st time: for output pins)...\n");
+  update_grid_pb_pins_parasitic_nets();
+  vpr_printf(TIO_MESSAGE_INFO, "Backannoating global routing net...\n");
+  backannotate_rr_nodes_net_info();
+  vpr_printf(TIO_MESSAGE_INFO, "Update CLB pins nets (2nd time: for input pins)...\n");
+  update_grid_pb_pins_parasitic_nets();
   vpr_printf(TIO_MESSAGE_INFO, "Backannoating local routing net (2nd time: for input pins)...\n");
   backannotate_pb_rr_nodes_net_info();
 
