@@ -729,9 +729,9 @@ void fprint_spice_mux_testbench_pb_graph_node_pin_mux(FILE* fp,
     }
     check_pb_graph_edge(*(des_pb_graph_pin->input_edges[iedge]));
     /* Find activity information */
-    input_init_value[cur_input] = default_signal_init_value; 
-    input_density[cur_input] = 0.; 
-    input_probability[cur_input] = (float)default_signal_init_value; 
+    input_density[cur_input] = pb_pin_density(NULL, des_pb_graph_pin->input_edges[iedge]->input_pins[0]); 
+    input_probability[cur_input] = pb_pin_probability(NULL, des_pb_graph_pin->input_edges[iedge]->input_pins[0]); 
+    input_init_value[cur_input] = pb_pin_init_value(NULL, des_pb_graph_pin->input_edges[iedge]->input_pins[0]); 
     cur_input++;
   }
   /* Check fan-in number is correct */
@@ -2224,6 +2224,8 @@ int fprint_spice_mux_testbench_call_one_grid_pb_muxes(FILE* fp, int ix, int iy,
   }  
   /* By pass Unused blocks */
   for (iblk = grid[ix][iy].usage; iblk < grid[ix][iy].type->capacity; iblk++) {
+    /* Mark the temporary net_num for the type pins*/
+    mark_grid_type_pb_graph_node_pins_temp_net_num(ix, iy);
     fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec(fp, grid[ix][iy].type->pb_graph_head, ix, iy, LL_rr_node_indices);
   } 
 

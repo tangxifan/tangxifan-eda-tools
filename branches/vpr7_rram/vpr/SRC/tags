@@ -1498,7 +1498,7 @@ decode_onelevel_mux_sram_bits	spice/spice_utils.c	/^int* decode_onelevel_mux_sra
 decode_tree_mux_sram_bits	spice/spice_utils.c	/^int* decode_tree_mux_sram_bits(int fan_in,$/;"	f
 default_message	base/draw.c	/^static char default_message[BUFSIZE]; \/* Default screen message on screen *\/$/;"	v	file:
 default_output_name	base/globals.c	/^char *default_output_name = NULL;$/;"	v
-default_signal_init_value	spice/spice_globals.c	/^int default_signal_init_value = 1;$/;"	v
+default_signal_init_value	spice/spice_globals.c	/^int default_signal_init_value = 0;$/;"	v
 default_spice_dir_path	spice/spice_api.c	/^static char* default_spice_dir_path = "spice_netlists\/";$/;"	v	file:
 define_idle_mode	../../libarchfpga/include/physical_types.h	/^    int define_idle_mode;   $/;"	m	struct:s_mode
 delay	base/vpr_types.h	/^	float delay; \/* Delay through the I\/O in this constraint *\/$/;"	m	struct:s_io
@@ -2620,6 +2620,7 @@ mark_direct_of_ports	util/vpr_utils.c	/^static void mark_direct_of_ports (int id
 mark_ends	route/route_common.c	/^void mark_ends(int inet) {$/;"	f
 mark_ends_cluster	pack/cluster_legality.c	/^static void mark_ends_cluster(int inet) {$/;"	f	file:
 mark_node_expansion_by_bin	route/route_timing.c	/^static int mark_node_expansion_by_bin(int inet, int target_node,$/;"	f	file:
+mark_type_pb_graph_node_pins_temp_net_num	spice/spice_utils.c	/^void mark_type_pb_graph_node_pins_temp_net_num(t_type_ptr blk_type) {$/;"	f
 marked_blocks	base/vpr_types.h	/^	int *marked_nets, *marked_blocks;$/;"	m	struct:s_pb_stats
 marked_nets	base/vpr_types.h	/^	int *marked_nets, *marked_blocks;$/;"	m	struct:s_pb_stats
 match	timing/slre.c	/^static const char *match(const struct slre *r, int pc, const char *s, int len,$/;"	f	file:
@@ -3974,6 +3975,7 @@ tech_lib	../../libarchfpga/include/spice_types.h	/^  t_spice_tech_lib tech_lib;$
 tech_size	power/power.h	/^	float tech_size; \/* Tech size in nm, for example 90e-9 for 90nm *\/$/;"	m	struct:s_power_tech
 tedge_ch	timing/path_delay.c	/^static t_chunk tedge_ch = {NULL, 0, NULL};$/;"	v	file:
 temp_net_cost	place/place.c	/^static float *net_cost = NULL, *temp_net_cost = NULL; \/* [0..num_nets-1] *\/$/;"	v	file:
+temp_net_num	../../libarchfpga/include/physical_types.h	/^    int temp_net_num;$/;"	m	struct:s_pb_graph_pin
 temp_num_pins	base/read_blif.c	/^static int *num_driver, *temp_num_pins;$/;"	v	file:
 temp_point_to_point_delay_cost	place/place.c	/^static float **temp_point_to_point_delay_cost = NULL;$/;"	v	file:
 temp_point_to_point_timing_cost	place/place.c	/^static float **temp_point_to_point_timing_cost = NULL;$/;"	v	file:
@@ -4128,12 +4130,14 @@ updateRect	base/graphics.c	/^static RECT adjustRect, updateRect;$/;"	v	file:
 update_bb	place/place.c	/^static void update_bb(int inet, struct s_bb *bb_coord_new,$/;"	f	file:
 update_cluster_stats	pack/cluster.c	/^static void update_cluster_stats( INP t_pack_molecule *molecule,$/;"	f	file:
 update_connection_gain_values	pack/cluster.c	/^static void update_connection_gain_values(int inet, int clustered_block,$/;"	f	file:
+update_grid_pb_pins_parasitic_nets	spice/spice_backannotate_utils.c	/^void update_grid_pb_pins_parasitic_nets() {$/;"	f
 update_grid_pbs_post_route_rr_graph	spice/spice_backannotate_utils.c	/^void update_grid_pbs_post_route_rr_graph() {$/;"	f
 update_message	base/graphics.c	/^update_message (const char *msg) $/;"	f
 update_message	base/graphics.c	/^void update_message (const char *msg) { }$/;"	f
 update_net_delays_from_route_tree	route/route_tree_timing.c	/^void update_net_delays_from_route_tree(float *net_delay,$/;"	f
 update_normalized_costs	timing/path_delay.c	/^static void update_normalized_costs(float criticality_denom, long max_critical_input_paths,$/;"	f	file:
 update_one_grid_pack_prev_node_edge	spice/spice_backannotate_utils.c	/^void update_one_grid_pack_prev_node_edge(int x, int y) {$/;"	f
+update_one_grid_pb_pins_parasitic_nets	spice/spice_backannotate_utils.c	/^void update_one_grid_pb_pins_parasitic_nets(int x, int y) {$/;"	f
 update_one_spice_model_grid_index_high	spice/spice_utils.c	/^void update_one_spice_model_grid_index_high(int x, int y, $/;"	f
 update_one_spice_model_grid_index_low	spice/spice_utils.c	/^void update_one_spice_model_grid_index_low(int x, int y, $/;"	f
 update_primitive_cost_or_status	pack/cluster_placement.c	/^static void update_primitive_cost_or_status(INP t_pb_graph_node *pb_graph_node,$/;"	f	file:

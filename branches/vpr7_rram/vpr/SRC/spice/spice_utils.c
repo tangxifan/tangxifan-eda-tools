@@ -1190,6 +1190,11 @@ float pb_pin_density(t_rr_node* pb_rr_graph,
   int net_num;
 
   if (NULL == pb_rr_graph) {
+    /* Try the temp_net_num in pb_graph_pin */
+    net_num = pin->temp_net_num;
+    if (OPEN != net_num) {
+      density = vpack_net[net_num].spice_net_info->density;
+    }
     return density;
   }
   net_num = pb_rr_graph[pin->pin_count_in_cluster].net_num;
@@ -1207,6 +1212,11 @@ float pb_pin_probability(t_rr_node* pb_rr_graph,
   int net_num;
 
   if (NULL == pb_rr_graph) {
+    /* Try the temp_net_num in pb_graph_pin */
+    net_num = pin->temp_net_num;
+    if (OPEN != net_num) {
+      probability = vpack_net[net_num].spice_net_info->probability;
+    }
     return probability;
   }
   net_num = pb_rr_graph[pin->pin_count_in_cluster].net_num;
@@ -1227,6 +1237,11 @@ int pb_pin_init_value(t_rr_node* pb_rr_graph,
     /* TODO: we know initialize to vdd could reduce the leakage power od multiplexers!
      *       But I can this as an option !
      */
+    /* Try the temp_net_num in pb_graph_pin */
+    net_num = pin->temp_net_num;
+    if (OPEN != net_num) {
+      init_val = vpack_net[net_num].spice_net_info->init_val;
+    }
     return init_val;
   }
   net_num = pb_rr_graph[pin->pin_count_in_cluster].net_num;
@@ -1620,4 +1635,145 @@ boolean check_spice_model_structure_match_switch_inf(t_switch_inf target_switch_
     return FALSE;
   }
   return TRUE;
+}
+
+int find_pb_type_idle_mode_index(t_pb_type cur_pb_type) {
+  int idle_mode_index = 0;
+  int imode = 0;
+  int num_idle_mode = 0;
+
+  /* if we touch the leaf node */
+  if (NULL != cur_pb_type.blif_model) {
+    return 0;
+  }
+
+  if (0 == cur_pb_type.num_modes) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Intend to find the idle mode while cur_pb_type has 0 modes!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+ 
+  /* Normal Condition: */ 
+  for (imode = 0; imode < cur_pb_type.num_modes; imode++) {
+    if (1 == cur_pb_type.modes[imode].define_idle_mode) {
+      idle_mode_index = imode;
+      num_idle_mode++;
+    }
+  } 
+  assert(1 == num_idle_mode); 
+
+  return idle_mode_index;
+}
+
+
+void mark_grid_type_pb_graph_node_pins_temp_net_num(int x, int y) {
+  int iport, ipin, type_pin_index, class_id, pin_global_rr_node_id; 
+  t_type_ptr type = NULL;
+  t_pb_graph_node* top_pb_graph_node = NULL;
+  int mode_index, ipb, jpb;
+
+  /* Assert */
+  assert((!(x < 0))&&(x < (nx + 1)));  
+  assert((!(y < 0))&&(y < (ny + 1)));  
+
+  type = grid[x][y].type;
+
+  if (EMPTY_TYPE == type) {
+    return; /* Bypass empty grid */
+  }
+
+  top_pb_graph_node = type->pb_graph_head;
+  /* Input ports */
+  for (iport = 0; iport < top_pb_graph_node->num_input_ports; iport++) {
+    for (ipin = 0; ipin < top_pb_graph_node->num_input_pins[iport]; ipin++) {
+      type_pin_index = top_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
+      class_id = type->pin_class[type_pin_index];
+      assert(RECEIVER == type->class_inf[class_id].type);
+      /* Find the pb net_num and update OPIN net_num */
+      pin_global_rr_node_id = get_rr_node_index(x, y, IPIN, type_pin_index, rr_node_indices);
+      top_pb_graph_node->input_pins[iport][ipin].temp_net_num = rr_node[pin_global_rr_node_id].net_num;
+    } 
+  }
+  /* Output ports */
+  for (iport = 0; iport < top_pb_graph_node->num_output_ports; iport++) {
+    for (ipin = 0; ipin < top_pb_graph_node->num_output_pins[iport]; ipin++) {
+      type_pin_index = top_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
+      class_id = type->pin_class[type_pin_index];
+      assert(DRIVER == type->class_inf[class_id].type);
+      /* Find the pb net_num and update OPIN net_num */
+      pin_global_rr_node_id = get_rr_node_index(x, y, OPIN, type_pin_index, rr_node_indices);
+      top_pb_graph_node->output_pins[iport][ipin].temp_net_num = rr_node[pin_global_rr_node_id].net_num;
+    } 
+  }
+  /* clock ports */
+  for (iport = 0; iport < top_pb_graph_node->num_clock_ports; iport++) {
+    for (ipin = 0; ipin < top_pb_graph_node->num_clock_pins[iport]; ipin++) {
+      type_pin_index = top_pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster;
+      class_id = type->pin_class[type_pin_index];
+      assert(RECEIVER == type->class_inf[class_id].type);
+      /* Find the pb net_num and update OPIN net_num */
+      pin_global_rr_node_id = get_rr_node_index(x, y, IPIN, type_pin_index, rr_node_indices);
+      top_pb_graph_node->clock_pins[iport][ipin].temp_net_num = rr_node[pin_global_rr_node_id].net_num;
+    } 
+  }
+
+  /* Go recursively ... */
+  mode_index = find_pb_type_idle_mode_index(*(top_pb_graph_node->pb_type));
+  for (ipb = 0; ipb < top_pb_graph_node->pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+    for (jpb = 0; jpb < top_pb_graph_node->pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+      /* Mark pb_graph_node temp_net_num */
+      rec_mark_pb_graph_node_temp_net_num(&(top_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]));
+    }
+  }
+
+  return; 
+}
+
+/* Mark temp_net_num in current pb_graph_node from the parent pb_graph_node */
+void rec_mark_pb_graph_node_temp_net_num(t_pb_graph_node* cur_pb_graph_node) {
+  int iport, ipin, iedge;
+  int mode_index, ipb, jpb;
+
+  assert(NULL != cur_pb_graph_node);
+
+  if (NULL != cur_pb_graph_node->pb_type->spice_model) {
+    return;
+  }
+
+  /* Input ports */
+  for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
+      /* TODO: I assume by default the index of selected edge is 0 */
+      cur_pb_graph_node->input_pins[iport][ipin].temp_net_num = cur_pb_graph_node->input_pins[iport][ipin].input_edges[0]->input_pins[0]->temp_net_num;
+    }
+  }
+  /* Clock ports */
+  for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
+      /* TODO: I assume by default the index of selected edge is 0 */
+      cur_pb_graph_node->clock_pins[iport][ipin].temp_net_num = cur_pb_graph_node->clock_pins[iport][ipin].input_edges[0]->input_pins[0]->temp_net_num;
+    }
+  }
+  /* Output ports */
+  for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
+      /* TODO: I assume by default the index of selected edge is 0 */
+      for (iedge = 0; iedge < cur_pb_graph_node->output_pins[iport][ipin].num_output_edges; iedge++) {
+        if (&(cur_pb_graph_node->output_pins[iport][ipin]) == cur_pb_graph_node->output_pins[iport][ipin].output_edges[iedge]->output_pins[0]->input_edges[0]->input_pins[0]) {
+          cur_pb_graph_node->output_pins[iport][ipin].temp_net_num = cur_pb_graph_node->output_pins[iport][ipin].output_edges[0]->output_pins[0]->temp_net_num;
+        }
+      }
+    }
+  }
+
+  /* Go recursively ... */
+  mode_index = find_pb_type_idle_mode_index(*(cur_pb_graph_node->pb_type));
+  for (ipb = 0; ipb < cur_pb_graph_node->pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+    for (jpb = 0; jpb < cur_pb_graph_node->pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+      /* Mark pb_graph_node temp_net_num */
+      rec_mark_pb_graph_node_temp_net_num(&(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]));
+    }
+  }
+
+  return;
 }

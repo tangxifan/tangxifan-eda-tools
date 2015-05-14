@@ -186,3 +186,9 @@ void update_spice_models_grid_index_high(int x, int y,
 char* gen_str_spice_model_structure(enum e_spice_model_structure spice_model_structure);
 
 boolean check_spice_model_structure_match_switch_inf(t_switch_inf target_switch_inf);
+
+int find_pb_type_idle_mode_index(t_pb_type cur_pb_type);
+
+void mark_grid_type_pb_graph_node_pins_temp_net_num(int x, int y);
+
+void rec_mark_pb_graph_node_temp_net_num(t_pb_graph_node* cur_pb_graph_node);

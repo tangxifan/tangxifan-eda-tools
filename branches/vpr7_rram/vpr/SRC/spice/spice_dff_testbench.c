@@ -113,6 +113,7 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
   int num_inputs, num_outputs, num_clock_pins, vpack_net_index;
   int* input_init_value = NULL;
   char* outport_name = NULL;
+  t_rr_node* local_rr_graph = NULL;
 
   assert(NULL != cur_pb_graph_node);
   assert(NULL != prefix);
@@ -141,37 +142,23 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
   input_probability = (float*)my_malloc(sizeof(float)*num_inputs); 
   input_init_value = (int*)my_malloc(sizeof(int)*num_inputs); 
 
-  /* if we find a mapped logic block */
-  if (OPEN != logical_block_index) {
-    /* Get activity information */
-    assert(1 == cur_pb_graph_node->num_input_ports);
-    cur_pin = 0;
-    for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
-      for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
-        vpack_net_index = logical_block[logical_block_index].input_nets[iport][ipin];
-        /* Check this LUT pin has been used */
-        if (cur_pin < logical_block[logical_block_index].used_input_pins) {
-          assert(OPEN != vpack_net_index);
-          input_density[cur_pin] = vpack_net[vpack_net_index].spice_net_info->density;
-          input_probability[cur_pin] = vpack_net[vpack_net_index].spice_net_info->probability;
-          input_init_value[cur_pin] = vpack_net[vpack_net_index].spice_net_info->init_val;
-        } else {
-          assert(OPEN == vpack_net_index);
-          input_density[cur_pin] = 0.;
-          input_probability[cur_pin] = (float)default_signal_init_value;
-          input_init_value[cur_pin] = default_signal_init_value;
-        }
-        cur_pin++;
+  /* Get activity information */
+  assert(1 == cur_pb_graph_node->num_input_ports);
+  cur_pin = 0;
+  for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
+      /* if we find a mapped logic block */
+      if (OPEN != logical_block_index) {
+        local_rr_graph = logical_block[logical_block_index].pb->parent_pb->rr_graph;
+      } else {
+        local_rr_graph = NULL;
       }
-    }
-    assert(cur_pin == num_inputs);
-  } else {
-    /* We cannot find a mapped logic block, use default activity info*/
-    for (cur_pin = 0; cur_pin < num_inputs; cur_pin++) {
-      input_density[cur_pin] = 0.;
-      input_probability[cur_pin] = (float)default_signal_init_value;
-      input_init_value[cur_pin] = default_signal_init_value;
+      input_density[cur_pin] = pb_pin_density(local_rr_graph, &(cur_pb_graph_node->input_pins[iport][ipin]));
+      input_probability[cur_pin] = pb_pin_probability(local_rr_graph, &(cur_pb_graph_node->input_pins[iport][ipin]));
+      input_init_value[cur_pin] =  pb_pin_init_value(local_rr_graph, &(cur_pb_graph_node->input_pins[iport][ipin]));
+      cur_pin++;
     } 
+    assert(cur_pin == num_inputs);
   }
  
   /* Call the subckt and give stimulates, measurements */
@@ -366,6 +353,8 @@ void fprint_spice_dff_testbench_call_one_grid_defined_dffs(FILE* fp,
                               + 2 + strlen(my_itoa(iy)) + 3 ));
     sprintf(prefix, "grid[%d][%d]_", ix, iy);
     assert(NULL != grid[ix][iy].type->pb_graph_head);
+    /* Mark the temporary net_num for the type pins*/
+    mark_grid_type_pb_graph_node_pins_temp_net_num(ix, iy);
     fprint_spice_dff_testbench_rec_pb_graph_node_dffs(fp, grid[ix][iy].type->pb_graph_head, prefix, ix, iy, LL_rr_node_indices); 
     my_free(prefix);
   }

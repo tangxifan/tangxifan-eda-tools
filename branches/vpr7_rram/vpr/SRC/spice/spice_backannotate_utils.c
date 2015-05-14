@@ -97,6 +97,7 @@ void backannotate_rr_nodes_net_info() {
 static 
 void backannotate_clb_nets_init_val() {
   int inet, iblk, isink;
+  int iter_cnt, iter_end;
 
   /* Analysis init values !!! */
   for (inet = 0; inet < num_logical_nets; inet++) {
@@ -105,7 +106,12 @@ void backannotate_clb_nets_init_val() {
     iblk = vpack_net[inet].node_block[0];
     switch (logical_block[iblk].type) {
     case VPACK_INPAD:
+      logical_block[iblk].init_val = vpack_net[inet].spice_net_info->init_val;
+      assert((0 == logical_block[iblk].init_val)||(1 == logical_block[iblk].init_val));
+      break;
     case VPACK_LATCH:
+      vpack_net[inet].spice_net_info->init_val = 0;
+      /*TODO:may be more flexible, for ff, set or reset may be used in first cock cycle */
       logical_block[iblk].init_val = vpack_net[inet].spice_net_info->init_val;
       assert((0 == logical_block[iblk].init_val)||(1 == logical_block[iblk].init_val));
       break;
@@ -119,27 +125,39 @@ void backannotate_clb_nets_init_val() {
       exit(1);
     }
   }
-  /* Update LUT init_val */
-  for (inet = 0; inet < num_logical_nets; inet++) {
-    assert(NULL != vpack_net[inet].spice_net_info);
-    /* if the source is a inpad or dff, we update the initial value */ 
-    iblk = vpack_net[inet].node_block[0];
-    switch (logical_block[iblk].type) {
-    case VPACK_COMB:
-      vpack_net[inet].spice_net_info->init_val = get_lut_output_init_val(&(logical_block[iblk]));
-      logical_block[iblk].init_val = vpack_net[inet].spice_net_info->init_val;
-      break;
-    case VPACK_INPAD:
-    case VPACK_LATCH:
-    case VPACK_OUTPAD:
-    case VPACK_EMPTY:
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid logical block type!\n",
+  /* Iteratively Update LUT init_val */
+  iter_cnt = 0;
+  while(1) {
+    iter_end = 1;
+    for (inet = 0; inet < num_logical_nets; inet++) {
+      assert(NULL != vpack_net[inet].spice_net_info);
+      /* if the source is a inpad or dff, we update the initial value */ 
+      iblk = vpack_net[inet].node_block[0];
+      switch (logical_block[iblk].type) {
+      case VPACK_COMB:
+        vpack_net[inet].spice_net_info->init_val = get_lut_output_init_val(&(logical_block[iblk]));
+        if (logical_block[iblk].init_val != vpack_net[inet].spice_net_info->init_val) {
+          iter_end = 0;
+        }
+        logical_block[iblk].init_val = vpack_net[inet].spice_net_info->init_val;
+        break;
+      case VPACK_INPAD:
+      case VPACK_LATCH:
+      case VPACK_OUTPAD:
+      case VPACK_EMPTY:
+        break;
+      default:
+        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid logical block type!\n",
                  __FILE__, __LINE__);
-      exit(1);
+        exit(1);
+      }
+    }
+    iter_cnt++;
+    if (1 == iter_end) {
+      break;
     }
   }
+  vpr_printf(TIO_MESSAGE_INFO,"Determine LUTs initial outputs ends in %d iterations.\n", iter_cnt);
   /* Update OUTPAD init_val */
   for (inet = 0; inet < num_logical_nets; inet++) {
     assert(NULL != vpack_net[inet].spice_net_info);

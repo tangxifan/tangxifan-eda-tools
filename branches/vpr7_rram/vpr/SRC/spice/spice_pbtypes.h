@@ -1,6 +1,4 @@
 
-int find_pb_type_idle_mode_index(t_pb_type cur_pb_type);
-
 void match_pb_types_spice_model_rec(t_pb_type* cur_pb_type,
                                     int num_spice_model,
                                     t_spice_model* spice_models);

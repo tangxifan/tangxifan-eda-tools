@@ -30,34 +30,6 @@
 
 /***** Subroutines *****/
 
-int find_pb_type_idle_mode_index(t_pb_type cur_pb_type) {
-  int idle_mode_index = 0;
-  int imode = 0;
-  int num_idle_mode = 0;
-
-  /* if we touch the leaf node */
-  if (NULL != cur_pb_type.blif_model) {
-    return 0;
-  }
-
-  if (0 == cur_pb_type.num_modes) {
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Intend to find the idle mode while cur_pb_type has 0 modes!\n",
-               __FILE__, __LINE__);
-    exit(1);
-  }
- 
-  /* Normal Condition: */ 
-  for (imode = 0; imode < cur_pb_type.num_modes; imode++) {
-    if (1 == cur_pb_type.modes[imode].define_idle_mode) {
-      idle_mode_index = imode;
-      num_idle_mode++;
-    }
-  } 
-  assert(1 == num_idle_mode); 
-
-  return idle_mode_index;
-}
-
 /* Find spice_model_name definition in pb_types
  * Try to match the name with defined spice_models
  */

@@ -401,6 +401,8 @@ struct s_pb_graph_pin {
 
 	struct s_pb_graph_node *parent_node;
 	int pin_count_in_cluster;
+    /* Xifan TANG: FPGA-SPICE */
+    int temp_net_num;
 
 	int scratch_pad; /* temporary data structure useful to store traversal info */
 
