@@ -26,6 +26,7 @@
 #include "linkedlist.h"
 #include "spice_globals.h"
 #include "spice_utils.h"
+#include "spice_backannotate_utils.h"
 #include "spice_subckt.h"
 #include "spice_pbtypes.h"
 #include "spice_heads.h"
@@ -53,15 +54,6 @@ static char* spice_lut_tb_dir_name = "lut_tb/";
 static char* spice_dff_tb_dir_name = "dff_tb/";
   
 /***** Subroutines Declarations *****/
-static 
-void back_annotate_rr_node_map_info();
-
-static 
-void backannotate_clb_nets_act_info();
-
-static 
-void free_clb_nets_spice_net_info();
-
 void init_list_include_netlists(t_spice* spice); 
 
 static 
@@ -75,14 +67,6 @@ void rec_add_pb_type_keywords_to_list(t_pb_type* cur_pb_type,
                                       char* prefix);
 
 void check_keywords_conflict(t_arch Arch);
-
-void rec_backannotate_rr_node_net_num(int LL_num_rr_nodes,
-                                      t_rr_node* LL_rr_node,
-                                      int src_node_index);
-
-static 
-void build_prev_node_list_rr_nodes(int LL_num_rr_nodes,
-                                   t_rr_node* LL_rr_nodes);
 
 /***** Subroutines *****/
 /* Initialize and check spice models in architecture
@@ -243,190 +227,6 @@ void init_check_arch_spice_models(t_arch* arch,
   /* 3. Initial grid_index_low/high for each spice_model */
   for (i = 0; i < arch->spice->num_spice_model; i++) {
     alloc_spice_model_grid_index_low_high(&(arch->spice->spice_models[i]));
-  }
-
-  return;
-}
-
-/***** Recursively Backannotate parasitic_net_num for a rr_node*****/
-void rec_backannotate_rr_node_net_num(int LL_num_rr_nodes,
-                                      t_rr_node* LL_rr_node,
-                                      int src_node_index) {
-  int iedge, to_node;
-  
-  /* Traversal until 
-   * 1. we meet a sink
-   * 2. None of the edges propagates this net_num 
-   */
-  for (iedge = 0; iedge < LL_rr_node[src_node_index].num_edges; iedge++) {
-    to_node = LL_rr_node[src_node_index].edges[iedge];
-    if (src_node_index == LL_rr_node[to_node].prev_node) {
-      assert(iedge == LL_rr_node[to_node].prev_edge);
-      /* assert(LL_rr_node[src_node_index].net_num == LL_rr_node[to_node].net_num); */
-      /* Propagate the net_num */
-      LL_rr_node[to_node].net_num = LL_rr_node[src_node_index].net_num; 
-      /* Go recursively */ 
-      rec_backannotate_rr_node_net_num(LL_num_rr_nodes, LL_rr_node, to_node);
-    }
-  }
-  
-  return;
-} 
-
-/***** Backannotate activity information to nets *****/
-static 
-void backannotate_rr_nodes_net_info() {
-  int inode, inet;
-  t_trace* head = NULL;
-
-  /* Initialize the net_num */
-  for (inode = 0; inode < num_rr_nodes; inode++) {
-    rr_node[inode].net_num = OPEN;
-  }
-  
-  /* Mark mapped rr_nodes with net_num*/
-  for (inet = 0; inet < num_nets; inet++) {
-    /* Skip Global nets and dangling nets */
-    if ((TRUE == clb_net[inet].is_global)||(FALSE == clb_net[inet].num_sinks)) {
-      continue;
-    }
-    /* Find the trace_head */
-    head = trace_head[inet];
-    /* Loop util we reach the tail */
-    while (head) {
-      rr_node[head->index].net_num = inet; 
-      /* Map parastic rr_nodes net_num */
-      rec_backannotate_rr_node_net_num(num_rr_nodes, rr_node, head->index); 
-      head = head->next;
-    }
-  }
- 
-  return;
-}
-
-static 
-void backannotate_clb_nets_init_val() {
-  int inet, iblk, isink;
-
-  /* Analysis init values !!! */
-  for (inet = 0; inet < num_logical_nets; inet++) {
-    assert (NULL != vpack_net[inet].spice_net_info);
-    /* if the source is a inpad or dff, we update the initial value */ 
-    iblk = vpack_net[inet].node_block[0];
-    switch (logical_block[iblk].type) {
-    case VPACK_INPAD:
-    case VPACK_LATCH:
-      logical_block[iblk].init_val = vpack_net[inet].spice_net_info->init_val;
-      assert((0 == logical_block[iblk].init_val)||(1 == logical_block[iblk].init_val));
-      break;
-    case VPACK_OUTPAD:
-    case VPACK_COMB:
-    case VPACK_EMPTY:
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid logical block type!\n",
-                 __FILE__, __LINE__);
-      exit(1);
-    }
-  }
-  /* Update LUT init_val */
-  for (inet = 0; inet < num_logical_nets; inet++) {
-    assert(NULL != vpack_net[inet].spice_net_info);
-    /* if the source is a inpad or dff, we update the initial value */ 
-    iblk = vpack_net[inet].node_block[0];
-    switch (logical_block[iblk].type) {
-    case VPACK_COMB:
-      vpack_net[inet].spice_net_info->init_val = get_lut_output_init_val(&(logical_block[iblk]));
-      logical_block[iblk].init_val = vpack_net[inet].spice_net_info->init_val;
-      break;
-    case VPACK_INPAD:
-    case VPACK_LATCH:
-    case VPACK_OUTPAD:
-    case VPACK_EMPTY:
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid logical block type!\n",
-                 __FILE__, __LINE__);
-      exit(1);
-    }
-  }
-  /* Update OUTPAD init_val */
-  for (inet = 0; inet < num_logical_nets; inet++) {
-    assert(NULL != vpack_net[inet].spice_net_info);
-    /* if the source is a inpad or dff, we update the initial value */ 
-    for (isink = 0; isink < vpack_net[inet].num_sinks; isink++) {
-      iblk = vpack_net[inet].node_block[isink];
-      switch (logical_block[iblk].type) {
-      case VPACK_OUTPAD:
-        logical_block[iblk].init_val = vpack_net[inet].spice_net_info->init_val;
-        break;
-      case VPACK_COMB:
-      case VPACK_INPAD:
-      case VPACK_LATCH:
-      case VPACK_EMPTY:
-        break;
-      default:
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid logical block type!\n",
-                   __FILE__, __LINE__);
-        exit(1);
-      }
-    }
-  }
-
-  /* Initial values for clb nets !!! */
-  for (inet = 0; inet < num_nets; inet++) {
-    assert (NULL != clb_net[inet].spice_net_info);
-    /* if the source is a inpad or dff, we update the initial value */ 
-    clb_net[inet].spice_net_info->init_val = vpack_net[clb_to_vpack_net_mapping[inet]].spice_net_info->init_val;
-  }
-
-  return;
-}
-
-static 
-void backannotate_clb_nets_act_info() {
-  int inet;
-
-  /* Free all spice_net_info and reallocate */
-  for (inet = 0; inet < num_logical_nets; inet++) {
-    if (NULL == vpack_net[inet].spice_net_info) {
-      /* Allocate */
-      vpack_net[inet].spice_net_info = (t_spice_net_info*)my_malloc(sizeof(t_spice_net_info));
-    } 
-    /* Initialize to zero */
-    init_spice_net_info(vpack_net[inet].spice_net_info);
-    /* Load activity info */
-    vpack_net[inet].spice_net_info->probability = vpack_net[inet].net_power->probability;
-    vpack_net[inet].spice_net_info->density = vpack_net[inet].net_power->density;
-  }
-  
-  /* Free all spice_net_info and reallocate */
-  for (inet = 0; inet < num_nets; inet++) {
-    if (NULL == clb_net[inet].spice_net_info) {
-      /* Allocate */
-      clb_net[inet].spice_net_info = (t_spice_net_info*)my_malloc(sizeof(t_spice_net_info));
-    } 
-    /* Initialize to zero */
-    init_spice_net_info(clb_net[inet].spice_net_info);
-    /* Load activity info */
-    clb_net[inet].spice_net_info->probability = vpack_net[clb_to_vpack_net_mapping[inet]].net_power->probability;
-    clb_net[inet].spice_net_info->density = vpack_net[clb_to_vpack_net_mapping[inet]].net_power->density;
-  }
-
-  return;
-}
-
-static 
-void free_clb_nets_spice_net_info() {
-  int inet;
-  
-  /* Free all spice_net_info and reallocate */
-  for (inet = 0; inet < num_nets; inet++) {
-    my_free(clb_net[inet].spice_net_info);
-  }
-
-  for (inet = 0; inet < num_logical_nets; inet++) {
-    my_free(vpack_net[inet].spice_net_info);
   }
 
   return;
@@ -734,135 +534,6 @@ void check_keywords_conflict(t_arch Arch) {
 }
 
 static 
-void build_prev_node_list_rr_nodes(int LL_num_rr_nodes,
-                                   t_rr_node* LL_rr_node) {
-  int inode, iedge, to_node, cur;
-  int* cur_index = (int*)my_malloc(sizeof(int)*LL_num_rr_nodes);
-  
-  /* This function is not timing-efficient, I comment it */
-  /*
-  for (inode = 0; inode < LL_num_rr_nodes; inode++) {
-    find_prev_rr_nodes_with_src(&(LL_rr_nodes[inode]), 
-                                &(LL_rr_nodes[inode].num_drive_rr_nodes),
-                                &(LL_rr_nodes[inode].drive_rr_nodes),
-                                &(LL_rr_nodes[inode].drive_switches));
-  }
-  */
-  for (inode = 0; inode < LL_num_rr_nodes; inode++) {
-    /* Malloc */
-    LL_rr_node[inode].num_drive_rr_nodes = LL_rr_node[inode].fan_in;
-    LL_rr_node[inode].drive_rr_nodes = (t_rr_node**)my_malloc(sizeof(t_rr_node*)*LL_rr_node[inode].num_drive_rr_nodes);
-    LL_rr_node[inode].drive_switches = (int*)my_malloc(sizeof(int)*LL_rr_node[inode].num_drive_rr_nodes);
-  }
-  /* Initialize */
-  for (inode = 0; inode < LL_num_rr_nodes; inode++) {
-    cur_index[inode] = 0;
-    for (iedge = 0; iedge < LL_rr_node[inode].num_drive_rr_nodes; iedge++) {
-      LL_rr_node[inode].drive_rr_nodes[iedge] = NULL;
-      LL_rr_node[inode].drive_switches[iedge] = -1;
-    }
-  }
-  /* Fill */
-  for (inode = 0; inode < LL_num_rr_nodes; inode++) {
-    for (iedge = 0; iedge < LL_rr_node[inode].num_edges; iedge++) {
-      to_node = LL_rr_node[inode].edges[iedge]; 
-      cur = cur_index[to_node];
-      LL_rr_node[to_node].drive_rr_nodes[cur] = &(LL_rr_node[inode]);
-      LL_rr_node[to_node].drive_switches[cur] = LL_rr_node[inode].switches[iedge];
-      /* Update cur_index[to_node]*/
-      cur_index[to_node]++;
-    }
-  }
-  /* Check */
-  for (inode = 0; inode < LL_num_rr_nodes; inode++) {
-    assert(cur_index[inode] == LL_rr_node[inode].num_drive_rr_nodes);
-  }
-
-  return;
-}
-
-static 
-void back_annotate_rr_node_map_info() {
-  int inode, jnode, inet, xlow, ylow;
-  int next_node, iedge;
-  t_trace* tptr;
-  t_rr_type rr_type;
-
-  /* 1st step: Set all the configurations to default.
-   * rr_nodes select edge[0]
-   */
-  for (inode = 0; inode < num_rr_nodes; inode++) {
-    rr_node[inode].prev_node = OPEN;
-    /* set 0 if we want print all unused mux!!!*/
-    rr_node[inode].prev_edge = OPEN;
-  }
-  for (inode = 0; inode < num_rr_nodes; inode++) {
-    if (0 == rr_node[inode].num_edges) {
-      continue;
-    }
-    assert(0 < rr_node[inode].num_edges);
-    for (iedge = 0; iedge < rr_node[inode].num_edges; iedge++) {
-      jnode = rr_node[inode].edges[iedge];
-      if (&(rr_node[inode]) == rr_node[jnode].drive_rr_nodes[0]) {
-        rr_node[jnode].prev_node = inode;
-        rr_node[jnode].prev_edge = iedge;
-      }
-    }
-  }
-
-  /* 2nd step: With the help of trace, we back-annotate */
-  for (inet = 0; inet < num_nets; inet++) {
-    if (FALSE == clb_net[inet].is_global) {
-      if (FALSE == clb_net[inet].num_sinks) {
-        /* Net absorbed by CLB */
-      } else {
-        tptr = trace_head[inet];
-        while (tptr != NULL) {
-          inode = tptr->index;
-          rr_type = rr_node[inode].type;
-          xlow = rr_node[inode].xlow;
-          ylow = rr_node[inode].ylow;
-          switch (rr_type) {
-          case SINK: 
-          case IPIN: 
-            /* Nothing should be done. This supposed to the end of a trace*/
-            break;
-          case CHANX: 
-          case CHANY: 
-          case OPIN: 
-          case SOURCE: 
-            /* SINK(IO/Pad) is the end of a routing path. Should configure its prev_edge and prev_node*/
-            /* We care the next rr_node, this one is driving, which we have to configure 
-             */
-            assert(NULL != tptr->next);
-            next_node = tptr->next->index;
-            assert((!(0 > next_node))&&(next_node < num_rr_nodes));
-            /* Prev_node */
-            rr_node[next_node].prev_node = inode;
-            /* Prev_edge */
-            for (iedge = 0; iedge < rr_node[inode].num_edges; iedge++) {
-              if (next_node == rr_node[inode].edges[iedge]) {
-                rr_node[next_node].prev_edge = iedge;
-                break;
-              }
-            }
-            break;
-          default:
-            vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid traceback element type.\n");
-            exit(1);
-          }
-          tptr = tptr->next;
-        }
-      }
-    //} else {
-      /* Global net never routed*/
-    }
-  }
-
-  return;
-}
-
-static 
 void free_spice_tb_llist() {
   t_llist* temp = tb_head;
 
@@ -962,22 +633,8 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
     vpr_clock_freq = 1. / vpr_crit_path_delay; 
   }
 
-  /* Build previous node lists for each rr_node */
-  vpr_printf(TIO_MESSAGE_INFO, "Building previous node list for all Routing Resource Nodes...\n");
-  build_prev_node_list_rr_nodes(num_rr_nodes, rr_node);
-  vpr_printf(TIO_MESSAGE_INFO,"Back annotating mapping information to routing resource nodes...\n");
-  back_annotate_rr_node_map_info();
-
-  /* Backannotate activity information, initialize the waveform information */
-  vpr_printf(TIO_MESSAGE_INFO, "Backannoating Net Activities...\n");
-  backannotate_rr_nodes_net_info();
-  backannotate_clb_nets_act_info();
-  backannotate_clb_nets_init_val();
-  /* Give spice_name_tag for each pb*/
-  gen_spice_name_tags_all_pbs();
-  /* Update local_rr_graphs to match post-route results*/
-  vpr_printf(TIO_MESSAGE_INFO, "Update CLB local routing graph to match post-route results...\n");
-  update_grid_pbs_post_route_rr_graph();
+  /* backannotation */  
+  spice_backannotate_vpr_post_route_info();
 
   /* Auto check the density and recommend sim_num_clock_cylce */
   auto_select_num_sim_clock_cycle(Arch.spice);

@@ -1260,8 +1260,7 @@ void fprint_spice_mux_testbench_pb_interc(FILE* fp,
       child_pb = &(cur_pb->child_pbs[ipb][jpb]);
       /* Check if child_pb is empty */
       if (NULL == child_pb->name) { 
-        /* fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec(fp, child_pb->pb_graph_node, jpb); */
-        continue; /* by pass*/
+        //continue; /* by pass*/
         /* For each child_pb_graph_node input pins*/
         for (iport = 0; iport < child_pb_graph_node->num_input_ports; iport++) {
           for (ipin = 0; ipin < child_pb_graph_node->num_input_pins[iport]; ipin++) {
@@ -1288,7 +1287,7 @@ void fprint_spice_mux_testbench_pb_interc(FILE* fp,
                                                                 grid_x, grid_y, LL_rr_node_indices);
           }  
         }
-        break;
+        continue;
       }
       /* Get pb_rr_graph of current pb*/
       pb_rr_nodes = child_pb->rr_graph;
