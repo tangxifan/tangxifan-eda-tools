@@ -356,6 +356,8 @@ void fprint_spice_dff_testbench_call_one_grid_defined_dffs(FILE* fp,
             block[grid[ix][iy].blocks[iblk]].y);
     /* Only for mapped block */
     assert(NULL != block[grid[ix][iy].blocks[iblk]].pb);
+    /* Mark the temporary net_num for the type pins*/
+    mark_grid_type_pb_graph_node_pins_temp_net_num(ix, iy);
     fprint_spice_dff_testbench_rec_pb_dffs(fp, block[grid[ix][iy].blocks[iblk]].pb, prefix, ix, iy, LL_rr_node_indices);
     my_free(prefix);
   }

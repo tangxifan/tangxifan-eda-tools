@@ -42,6 +42,7 @@ void rec_backannotate_rr_node_net_num(int LL_num_rr_nodes,
    */
   for (iedge = 0; iedge < LL_rr_node[src_node_index].num_edges; iedge++) {
     to_node = LL_rr_node[src_node_index].edges[iedge];
+    assert(OPEN != LL_rr_node[to_node].prev_node);
     if (src_node_index == LL_rr_node[to_node].prev_node) {
       assert(iedge == LL_rr_node[to_node].prev_edge);
       /* assert(LL_rr_node[src_node_index].net_num == LL_rr_node[to_node].net_num); */
@@ -85,6 +86,7 @@ void backannotate_rr_nodes_net_info() {
       if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
         continue;
       }
+      assert(rr_node[pin_global_rr_node_id].net_num == vpack_to_clb_net_mapping[pb_rr_graph[ipin].net_num]);
       /* Forward to all the downstream rr_nodes */
       rec_backannotate_rr_node_net_num(num_rr_nodes, rr_node, pin_global_rr_node_id); 
       break;
@@ -243,7 +245,7 @@ static
 void build_prev_node_list_rr_nodes(int LL_num_rr_nodes,
                                    t_rr_node* LL_rr_node) {
   int inode, iedge, to_node, cur;
-  int jnode, switch_box_x, switch_box_y, chan_side, switch_index;
+  /* int jnode, switch_box_x, switch_box_y, chan_side, switch_index; */
   int* cur_index = (int*)my_malloc(sizeof(int)*LL_num_rr_nodes);
   
   /* This function is not timing-efficient, I comment it */
@@ -717,12 +719,14 @@ void back_annotate_rr_node_map_info() {
             /* Prev_node */
             rr_node[next_node].prev_node = inode;
             /* Prev_edge */
+            rr_node[next_node].prev_edge = OPEN;
             for (iedge = 0; iedge < rr_node[inode].num_edges; iedge++) {
               if (next_node == rr_node[inode].edges[iedge]) {
                 rr_node[next_node].prev_edge = iedge;
                 break;
               }
             }
+            assert(OPEN != rr_node[next_node].prev_edge);
             break;
           default:
             vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid traceback element type.\n");
@@ -762,8 +766,8 @@ void update_one_grid_pack_prev_node_edge(int x, int y) {
   t_rr_node* local_rr_graph = NULL;
 
   /* Assert */
-  assert((!(x < 0))&&(x < (nx + 1)));  
-  assert((!(y < 0))&&(y < (ny + 1)));  
+  assert((!(x < 0))&&(x < (nx + 2)));  
+  assert((!(y < 0))&&(y < (ny + 2)));  
 
   type = grid[x][y].type;
   /* Bypass IO_TYPE*/
@@ -784,11 +788,19 @@ void update_one_grid_pack_prev_node_edge(int x, int y) {
         /* Find the pb net_num and update OPIN net_num */
         pin_global_rr_node_id = get_rr_node_index(x, y, OPIN, ipin, rr_node_indices);
         if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
+          local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
+          local_rr_graph[ipin].net_num = OPEN;
           continue; /* bypass non-mapped OPIN */
         } 
         /* back annotate pb ! */
         rr_node[pin_global_rr_node_id].pb = pb;
         vpack_net_id = clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num];
+        /* Special for IO_TYPE */
+        if (IO_TYPE == type) {
+          assert(local_rr_graph[ipin].net_num == clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num]);
+          local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
+          continue;
+        }
         assert(ipin == local_rr_graph[ipin].pb_graph_pin->pin_count_in_cluster);
         /* Update net_num */
         local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
@@ -810,11 +822,19 @@ void update_one_grid_pack_prev_node_edge(int x, int y) {
         pin_global_rr_node_id = get_rr_node_index(x, y, IPIN, ipin, rr_node_indices);
         /* Get the index of Vpack net from global rr_node net_num (clb_net index)*/
         if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
+          local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
+          local_rr_graph[ipin].net_num = OPEN;
           continue; /* bypass non-mapped IPIN */
         }
         /* back annotate pb ! */
         rr_node[pin_global_rr_node_id].pb = pb;
         vpack_net_id = clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num];
+        /* Special for IO_TYPE */
+        if (IO_TYPE == type) {
+          assert(local_rr_graph[ipin].net_num == clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num]);
+          local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
+          continue;
+        }
         assert(ipin == local_rr_graph[ipin].pb_graph_pin->pin_count_in_cluster);
         /* Update net_num */
         local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
@@ -856,8 +876,8 @@ void update_grid_pbs_post_route_rr_graph() {
   int ix, iy;
   t_type_ptr type = NULL;
 
-  for (ix = 0; ix < (nx + 1); ix++) {
-    for (iy = 0; iy < (ny + 1); iy++) {
+  for (ix = 1; ix < (nx + 1); ix++) {
+    for (iy = 1; iy < (ny + 1); iy++) {
       type = grid[ix][iy].type;
       if (NULL != type) {
         /* Backup the packing prev_node and prev_edge */
@@ -877,8 +897,8 @@ void update_one_grid_pb_pins_parasitic_nets(int x, int y) {
   t_rr_node* local_rr_graph = NULL;
 
   /* Assert */
-  assert((!(x < 0))&&(x < (nx + 1)));  
-  assert((!(y < 0))&&(y < (ny + 1)));  
+  assert((!(x < 0))&&(x < (nx + 2)));  
+  assert((!(y < 0))&&(y < (ny + 2)));  
 
   type = grid[x][y].type;
   /* Bypass IO_TYPE*/
@@ -898,16 +918,20 @@ void update_one_grid_pb_pins_parasitic_nets(int x, int y) {
         /* Find the pb net_num and update OPIN net_num */
         pin_global_rr_node_id = get_rr_node_index(x, y, OPIN, ipin, rr_node_indices);
         if (OPEN == local_rr_graph[ipin].net_num) {
+          rr_node[pin_global_rr_node_id].net_num = OPEN; 
           continue; /* bypass non-mapped OPIN */
         } 
+        assert(ipin == local_rr_graph[ipin].pb_graph_pin->pin_count_in_cluster);
         rr_node[pin_global_rr_node_id].net_num = vpack_to_clb_net_mapping[local_rr_graph[ipin].net_num];
       } else if (RECEIVER == type->class_inf[class_id].type) {
         /* Find the global rr_node net_num and update pb net_num */
         pin_global_rr_node_id = get_rr_node_index(x, y, IPIN, ipin, rr_node_indices);
         /* Get the index of Vpack net from global rr_node net_num (clb_net index)*/
         if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
+          local_rr_graph[ipin].net_num = OPEN;
           continue; /* bypass non-mapped IPIN */
         }
+        assert(ipin == local_rr_graph[ipin].pb_graph_pin->pin_count_in_cluster);
         local_rr_graph[ipin].net_num = clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num];
       } else {
         continue; /* OPEN PIN */
@@ -922,8 +946,8 @@ void update_grid_pb_pins_parasitic_nets() {
   int ix, iy;
   t_type_ptr type = NULL;
 
-  for (ix = 0; ix < (nx + 1); ix++) {
-    for (iy = 0; iy < (ny + 1); iy++) {
+  for (ix = 1; ix < (nx + 1); ix++) {
+    for (iy = 1; iy < (ny + 1); iy++) {
       type = grid[ix][iy].type;
       if (NULL != type) {
         /* Backup the packing prev_node and prev_edge */

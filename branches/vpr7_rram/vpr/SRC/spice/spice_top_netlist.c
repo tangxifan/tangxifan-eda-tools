@@ -637,6 +637,7 @@ void fprint_spice_top_netlist(char* circuit_name,
   fprint_spice_include_key_subckts(fp, subckt_dir_path);
 
   /* Include user-defined sub-circuit netlist */
+  init_include_user_defined_netlists(spice);
   fprint_include_user_defined_netlists(fp, spice);
   
   /* Special subckts for Top-level SPICE netlist */

@@ -1424,9 +1424,17 @@ void fprint_spice_mux_testbench_one_cb_mux_loads(FILE* fp,
   /* Get the pb ! Get the mode_index */
   cb_out_pb = src_rr_node->pb;
 
+  if (IO_TYPE == cb_out_grid_type) {
+    fprintf(fp, "******* IO_TYPE loads *******\n");
+  } else {
+    fprintf(fp, "******* Normal TYPE loads *******\n");
+  }
+
   /* Recursively find all the inv load inside pb_graph_node */
-  fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(fp, src_rr_node->xlow, src_rr_node->ylow, cb_out_pb_graph_pin, cb_out_pb, outport_name, FALSE, LL_rr_node_indices);
+  fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(fp, src_rr_node->xlow, src_rr_node->ylow, cb_out_pb_graph_pin, cb_out_pb, outport_name, TRUE, LL_rr_node_indices);
   
+
+  fprintf(fp, "******* END loads *******\n");
   return;
 }
 
@@ -1457,6 +1465,8 @@ void fprint_spice_mux_testbench_cb_one_mux(FILE* fp,
   /* Check */
   assert((!(0 > cb_x))&&(!(cb_x > (nx + 1)))); 
   assert((!(0 > cb_y))&&(!(cb_y > (ny + 1)))); 
+
+  assert(IPIN == src_rr_node->type);
 
   /* Find drive_rr_nodes*/
   mux_size = src_rr_node->num_drive_rr_nodes;
@@ -1549,10 +1559,12 @@ void fprint_spice_mux_testbench_cb_interc(FILE* fp,
     //return;
   }
 
+  assert((0 < src_rr_node->fan_in)||(0 == src_rr_node->fan_in));
   if (1 == src_rr_node->fan_in) {
     /* By-pass a direct connection*/
     return;
-  } else if (!(2 > src_rr_node->fan_in)) {
+  } else if ((2 < src_rr_node->fan_in)||(2 == src_rr_node->fan_in)) {
+    
     /* Print a MUX */
     fprint_spice_mux_testbench_cb_one_mux(fp, chan_type, cb_x, cb_y, src_rr_node, LL_rr_node_indices);
   } 
@@ -2229,6 +2241,8 @@ int fprint_spice_mux_testbench_call_one_grid_pb_muxes(FILE* fp, int ix, int iy,
   for (iblk = 0; iblk < grid[ix][iy].usage; iblk++) {
     /* Only for mapped block */
     assert(NULL != block[grid[ix][iy].blocks[iblk]].pb);
+    /* Mark the temporary net_num for the type pins*/
+    mark_grid_type_pb_graph_node_pins_temp_net_num(ix, iy);
     fprint_spice_mux_testbench_pb_muxes_rec(fp, block[grid[ix][iy].blocks[iblk]].pb, ix, iy, LL_rr_node_indices); 
     used = 1;
   }  
