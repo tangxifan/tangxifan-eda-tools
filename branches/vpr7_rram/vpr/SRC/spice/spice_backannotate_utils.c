@@ -243,6 +243,7 @@ static
 void build_prev_node_list_rr_nodes(int LL_num_rr_nodes,
                                    t_rr_node* LL_rr_node) {
   int inode, iedge, to_node, cur;
+  int jnode, switch_box_x, switch_box_y, chan_side, switch_index;
   int* cur_index = (int*)my_malloc(sizeof(int)*LL_num_rr_nodes);
   
   /* This function is not timing-efficient, I comment it */
@@ -276,6 +277,7 @@ void build_prev_node_list_rr_nodes(int LL_num_rr_nodes,
       LL_rr_node[to_node].drive_rr_nodes[cur] = &(LL_rr_node[inode]);
       LL_rr_node[to_node].drive_switches[cur] = LL_rr_node[inode].switches[iedge];
       /* Update cur_index[to_node]*/
+      assert(NULL != LL_rr_node[to_node].drive_rr_nodes[cur]);
       cur_index[to_node]++;
     }
   }
@@ -283,6 +285,90 @@ void build_prev_node_list_rr_nodes(int LL_num_rr_nodes,
   for (inode = 0; inode < LL_num_rr_nodes; inode++) {
     assert(cur_index[inode] == LL_rr_node[inode].num_drive_rr_nodes);
   }
+
+  /* TODO: fill the sb_drive_rr_nodes */
+  //for (inode = 0; inode < LL_num_rr_nodes; inode++) {
+  //  /* Initial */
+  //  LL_rr_node[inode].sb_num_drive_rr_nodes = 0;
+  //  LL_rr_node[inode].sb_drive_rr_nodes = NULL;
+  //  LL_rr_node[inode].sb_drive_switches = NULL;
+  //  /* Find SB source rr nodes:  channels*/
+  //  switch (LL_rr_node[inode].type) {
+  //  case CHANX:
+  //    assert(LL_rr_node[inode].ylow == LL_rr_node[inode].yhigh);
+  //    switch (LL_rr_node[inode].direction) {
+  //    case INC_DIRECTION:
+  //      switch_box_x = LL_rr_node[inode].xlow-1;
+  //      switch_box_y = LL_rr_node[inode].ylow;
+  //      chan_side = RIGHT;
+  //      break;
+  //    case DEC_DIRECTION:
+  //      switch_box_x = LL_rr_node[inode].xhigh;
+  //      switch_box_y = LL_rr_node[inode].yhigh;
+  //      chan_side = LEFT;
+  //      break;
+  //    case BI_DIRECTION:
+  //      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Bidirectional routing wires are not supported!\n",
+  //                 __FILE__, __LINE__);
+  //      exit(1);
+  //    default:
+  //      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid rr_node direction!\n",
+  //                 __FILE__, __LINE__);
+  //      exit(1);
+  //    }
+  //    find_drive_rr_nodes_switch_box(switch_box_x, switch_box_y, &(LL_rr_node[inode]), chan_side, 0, 
+  //                                   &(LL_rr_node[inode].sb_num_drive_rr_nodes), 
+  //                                   &(LL_rr_node[inode].sb_drive_rr_nodes), &switch_index);
+  //    /* fill the sb_drive_switches */
+  //    LL_rr_node[inode].sb_drive_switches = (int*)my_malloc(sizeof(int)*LL_rr_node[inode].sb_num_drive_rr_nodes);
+  //    for (jnode = 0; jnode < LL_rr_node[inode].sb_num_drive_rr_nodes; jnode++) {
+  //      LL_rr_node[inode].sb_drive_switches[jnode] = switch_index;
+  //    }
+  //    break;
+  //  case CHANY:
+  //    /* TODO: fill the sb_drive_rr_nodes */
+  //    assert(LL_rr_node[inode].xlow == LL_rr_node[inode].xhigh);
+  //    switch (LL_rr_node[inode].direction) {
+  //    case INC_DIRECTION:
+  //      switch_box_x = LL_rr_node[inode].xlow;
+  //      switch_box_y = LL_rr_node[inode].ylow-1;
+  //      chan_side = TOP;
+  //      break;
+  //    case DEC_DIRECTION:
+  //      switch_box_x = LL_rr_node[inode].xhigh;
+  //      switch_box_y = LL_rr_node[inode].yhigh;
+  //      chan_side = BOTTOM;
+  //      break;
+  //    case BI_DIRECTION:
+  //      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Bidirectional routing wires are not supported!\n",
+  //                 __FILE__, __LINE__);
+  //      exit(1);
+  //    default:
+  //      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid rr_node direction!\n",
+  //                 __FILE__, __LINE__);
+  //      exit(1);
+  //    }
+  //    find_drive_rr_nodes_switch_box(switch_box_x, switch_box_y, &(LL_rr_node[inode]), chan_side, 0, 
+  //                                   &(LL_rr_node[inode].sb_num_drive_rr_nodes), 
+  //                                   &(LL_rr_node[inode].sb_drive_rr_nodes), &switch_index);
+  //    /* fill the sb_drive_switches */
+  //    LL_rr_node[inode].sb_drive_switches = (int*)my_malloc(sizeof(int)*LL_rr_node[inode].sb_num_drive_rr_nodes);
+  //    for (jnode = 0; jnode < LL_rr_node[inode].sb_num_drive_rr_nodes; jnode++) {
+  //      LL_rr_node[inode].sb_drive_switches[jnode] = switch_index;
+  //    }
+  //    break;
+  //  case SOURCE:
+  //  case OPIN:
+  //  case SINK:
+  //  case IPIN:
+  //  case NUM_RR_TYPES:
+  //    break;
+  //  default:
+  //    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid rr_node type!\n",
+  //               __FILE__, __LINE__);
+  //    exit(1);
+  //  }
+  //}
 
   return;
 }

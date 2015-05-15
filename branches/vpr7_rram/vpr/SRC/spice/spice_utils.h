@@ -109,6 +109,9 @@ int find_path_id_prev_rr_node(int num_drive_rr_nodes,
                               t_rr_node** drive_rr_nodes,
                               t_rr_node* src_rr_node);
 
+int pb_pin_net_num(t_rr_node* pb_rr_graph, 
+                   t_pb_graph_pin* pin);
+
 float pb_pin_density(t_rr_node* pb_rr_graph, 
                      t_pb_graph_pin* pin);
 
@@ -192,3 +195,26 @@ int find_pb_type_idle_mode_index(t_pb_type cur_pb_type);
 void mark_grid_type_pb_graph_node_pins_temp_net_num(int x, int y);
 
 void rec_mark_pb_graph_node_temp_net_num(t_pb_graph_node* cur_pb_graph_node);
+
+int check_consistency_logical_block_net_num(t_logical_block* lgk_blk, 
+                                            int num_inputs, int* input_net_num);
+
+int rr_node_drive_switch_box(t_rr_node* src_rr_node,
+                             t_rr_node* des_rr_node,
+                             int switch_box_x,
+                             int switch_box_y,
+                             int chan_side);
+
+void find_drive_rr_nodes_switch_box(int switch_box_x,
+                                    int switch_box_y,
+                                    t_rr_node* src_rr_node,
+                                    int chan_side,
+                                    int return_num_only,
+                                    int* num_drive_rr_nodes,
+                                    t_rr_node*** drive_rr_nodes,
+                                    int* switch_index);
+
+int is_sb_interc_between_segments(int switch_box_x, 
+                                  int switch_box_y, 
+                                  t_rr_node* src_rr_node, 
+                                  int chan_side);

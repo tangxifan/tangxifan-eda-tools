@@ -1419,12 +1419,13 @@ void fprint_spice_mux_testbench_one_cb_mux_loads(FILE* fp,
   assert(NULL != cb_out_grid_type);
 
   cb_out_pb_graph_pin = src_rr_node->pb_graph_pin;
+  assert(NULL != cb_out_pb_graph_pin);
    
   /* Get the pb ! Get the mode_index */
   cb_out_pb = src_rr_node->pb;
 
   /* Recursively find all the inv load inside pb_graph_node */
-  fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(fp, src_rr_node->xlow, src_rr_node->ylow, cb_out_pb_graph_pin, cb_out_pb, outport_name, TRUE, LL_rr_node_indices);
+  fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(fp, src_rr_node->xlow, src_rr_node->ylow, cb_out_pb_graph_pin, cb_out_pb, outport_name, FALSE, LL_rr_node_indices);
   
   return;
 }
@@ -1906,9 +1907,19 @@ int fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
   if (OPEN == src_rr_node->net_num) {
     //return used;
   }
-
+  /*
   find_drive_rr_nodes_switch_box(switch_box_x, switch_box_y, src_rr_node, chan_side, 0, 
                                  &num_drive_rr_nodes, &drive_rr_nodes, &switch_index);
+  */
+  /* Determine if the interc lies inside a channel wire, that is interc between segments */
+  if (1 == is_sb_interc_between_segments(switch_box_x, switch_box_y, src_rr_node, chan_side)) {
+    num_drive_rr_nodes = 0;
+    drive_rr_nodes = NULL;
+  } else {
+    num_drive_rr_nodes = src_rr_node->num_drive_rr_nodes;
+    drive_rr_nodes = src_rr_node->drive_rr_nodes;
+    switch_index = src_rr_node->drive_switches[0];
+  }
 
   /* Print MUX only when fan-in >= 2 */
   if (2 > num_drive_rr_nodes) {
@@ -1973,7 +1984,6 @@ int fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
   testbench_mux_cnt++;
 
   /* Free */
-  my_free(drive_rr_nodes);
   my_free(input_init_value);
   my_free(input_density);
   my_free(input_probability);

@@ -1184,6 +1184,20 @@ int find_path_id_prev_rr_node(int num_drive_rr_nodes,
   return path_id;
 }
 
+int pb_pin_net_num(t_rr_node* pb_rr_graph, 
+                   t_pb_graph_pin* pin) {
+  int net_num;
+
+  if (NULL == pb_rr_graph) {
+    /* Try the temp_net_num in pb_graph_pin */
+    net_num = pin->temp_net_num;
+  } else {
+    net_num = pb_rr_graph[pin->pin_count_in_cluster].net_num;
+  }
+
+  return net_num;
+}
+
 float pb_pin_density(t_rr_node* pb_rr_graph, 
                      t_pb_graph_pin* pin) {
   float density = 0.;
@@ -1686,6 +1700,7 @@ void mark_grid_type_pb_graph_node_pins_temp_net_num(int x, int y) {
   /* Input ports */
   for (iport = 0; iport < top_pb_graph_node->num_input_ports; iport++) {
     for (ipin = 0; ipin < top_pb_graph_node->num_input_pins[iport]; ipin++) {
+      top_pb_graph_node->input_pins[iport][ipin].temp_net_num = OPEN;
       type_pin_index = top_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
       class_id = type->pin_class[type_pin_index];
       assert(RECEIVER == type->class_inf[class_id].type);
@@ -1697,6 +1712,7 @@ void mark_grid_type_pb_graph_node_pins_temp_net_num(int x, int y) {
   /* Output ports */
   for (iport = 0; iport < top_pb_graph_node->num_output_ports; iport++) {
     for (ipin = 0; ipin < top_pb_graph_node->num_output_pins[iport]; ipin++) {
+      top_pb_graph_node->output_pins[iport][ipin].temp_net_num = OPEN;
       type_pin_index = top_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
       class_id = type->pin_class[type_pin_index];
       assert(DRIVER == type->class_inf[class_id].type);
@@ -1708,6 +1724,7 @@ void mark_grid_type_pb_graph_node_pins_temp_net_num(int x, int y) {
   /* clock ports */
   for (iport = 0; iport < top_pb_graph_node->num_clock_ports; iport++) {
     for (ipin = 0; ipin < top_pb_graph_node->num_clock_pins[iport]; ipin++) {
+      top_pb_graph_node->clock_pins[iport][ipin].temp_net_num = OPEN;
       type_pin_index = top_pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster;
       class_id = type->pin_class[type_pin_index];
       assert(RECEIVER == type->class_inf[class_id].type);
@@ -1743,6 +1760,7 @@ void rec_mark_pb_graph_node_temp_net_num(t_pb_graph_node* cur_pb_graph_node) {
   /* Input ports */
   for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
     for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
+      cur_pb_graph_node->input_pins[iport][ipin].temp_net_num = OPEN;
       /* TODO: I assume by default the index of selected edge is 0 */
       cur_pb_graph_node->input_pins[iport][ipin].temp_net_num = cur_pb_graph_node->input_pins[iport][ipin].input_edges[0]->input_pins[0]->temp_net_num;
     }
@@ -1750,6 +1768,7 @@ void rec_mark_pb_graph_node_temp_net_num(t_pb_graph_node* cur_pb_graph_node) {
   /* Clock ports */
   for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
     for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
+      cur_pb_graph_node->clock_pins[iport][ipin].temp_net_num = OPEN;
       /* TODO: I assume by default the index of selected edge is 0 */
       cur_pb_graph_node->clock_pins[iport][ipin].temp_net_num = cur_pb_graph_node->clock_pins[iport][ipin].input_edges[0]->input_pins[0]->temp_net_num;
     }
@@ -1758,6 +1777,7 @@ void rec_mark_pb_graph_node_temp_net_num(t_pb_graph_node* cur_pb_graph_node) {
   for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
     for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
       /* TODO: I assume by default the index of selected edge is 0 */
+      cur_pb_graph_node->output_pins[iport][ipin].temp_net_num = OPEN;
       for (iedge = 0; iedge < cur_pb_graph_node->output_pins[iport][ipin].num_output_edges; iedge++) {
         if (&(cur_pb_graph_node->output_pins[iport][ipin]) == cur_pb_graph_node->output_pins[iport][ipin].output_edges[iedge]->output_pins[0]->input_edges[0]->input_pins[0]) {
           cur_pb_graph_node->output_pins[iport][ipin].temp_net_num = cur_pb_graph_node->output_pins[iport][ipin].output_edges[0]->output_pins[0]->temp_net_num;
@@ -1776,4 +1796,342 @@ void rec_mark_pb_graph_node_temp_net_num(t_pb_graph_node* cur_pb_graph_node) {
   }
 
   return;
+}
+
+int check_consistency_logical_block_net_num(t_logical_block* lgk_blk, 
+                                            int num_inputs, int* input_net_num) {
+  int i, iport, ipin, net_eq;
+  int consistency = 1;
+  int* input_net_num_mapped = (int*)my_calloc(num_inputs, sizeof(int));
+  
+  for (iport = 0; iport < lgk_blk->pb->pb_graph_node->num_input_ports; iport++) {
+    for (ipin = 0; ipin < lgk_blk->pb->pb_graph_node->num_input_pins[iport]; ipin++) {
+      if (OPEN == lgk_blk->input_nets[iport][ipin]) {
+        continue; /* bypass unused pins */
+      }
+      /* Initial net_eq */
+      net_eq = 0;
+      /* Check if this net can be found in the input net_num */
+      for (i = 0; i < num_inputs; i++) {
+        if (1 == input_net_num_mapped[i]) {
+          continue;
+        }
+        if (input_net_num[i] == lgk_blk->input_nets[iport][ipin]) {
+          net_eq = 1;
+          input_net_num_mapped[i] = 1;
+          break;
+        }
+      }
+      if (0 == net_eq) {
+        consistency = 0;
+        break;
+      }
+    }
+    if (0 == consistency) {
+      break;
+    }
+  }
+
+  /* Free */
+  my_free(input_net_num_mapped);
+   
+  return consistency; 
+}
+
+/* Determine if this rr_node is driving this switch box (x,y)
+ * For more than length-1 wire, the fan-in of a des_rr_node in a switch box
+ * contain all the drivers in the switch boxes that it passes through.
+ * This function is to identify if the src_rr_node is the driver in this switch box
+ */
+int rr_node_drive_switch_box(t_rr_node* src_rr_node,
+                             t_rr_node* des_rr_node,
+                             int switch_box_x,
+                             int switch_box_y,
+                             int chan_side) {
+  
+  /* Make sure a valid src_rr_node and des_rr_node */
+  if (NULL == src_rr_node) {
+  assert(NULL != src_rr_node);
+  }
+  assert(NULL != des_rr_node);
+  /* The src_rr_node should be either CHANX or CHANY */
+  assert((CHANX == des_rr_node->type)||(CHANY == des_rr_node->type));
+  /* Valid switch_box coordinator */
+  assert((!(0 > switch_box_x))&&(!(switch_box_x > (nx + 1)))); 
+  assert((!(0 > switch_box_y))&&(!(switch_box_y > (ny + 1)))); 
+  /* Valid des_rr_node coordinator */
+  assert((!(switch_box_x < (des_rr_node->xlow-1)))&&(!(switch_box_x > (des_rr_node->xhigh+1))));
+  assert((!(switch_box_y < (des_rr_node->ylow-1)))&&(!(switch_box_y > (des_rr_node->yhigh+1))));
+
+  /* Check the src_rr_node coordinator */
+  switch (chan_side) {
+  case TOP:
+    /* Following cases:
+     *               |
+     *             / | \
+     */
+    /* The destination rr_node only have one condition!!! */
+    assert((INC_DIRECTION == des_rr_node->direction)&&(CHANY == des_rr_node->type));
+    /* depend on the type of src_rr_node */
+    switch (src_rr_node->type) {
+    case OPIN:
+      if (((switch_box_y + 1) == src_rr_node->ylow)
+         &&((switch_box_x == src_rr_node->xlow)||((switch_box_x + 1) == src_rr_node->xlow))) {
+        return 1;
+      }
+      break;
+    case CHANX:
+      assert(src_rr_node->ylow == src_rr_node->yhigh);
+      if ((switch_box_y == src_rr_node->ylow)
+         &&(!(switch_box_x < (src_rr_node->xlow-1)))&&(!(switch_box_x > (src_rr_node->xhigh+1)))) {
+        return 1;
+      }
+      break;
+    case CHANY:
+      assert(src_rr_node->xlow == src_rr_node->xhigh);
+      if ((switch_box_x == src_rr_node->xlow)
+         &&(!(switch_box_y < src_rr_node->ylow))&&(!(switch_box_y > src_rr_node->yhigh))) {
+        return 1;
+      }
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid src_rr_node type!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+    break;
+  case RIGHT:
+    /* Following cases:
+     *          \               
+     *       ---  ----  
+     *          /
+     */
+    /* The destination rr_node only have one condition!!! */
+    assert((INC_DIRECTION == des_rr_node->direction)&&(CHANX == des_rr_node->type));
+    /* depend on the type of src_rr_node */
+    switch (src_rr_node->type) {
+    case OPIN:
+      if (((switch_box_x + 1) == src_rr_node->xlow)
+         &&((switch_box_y == src_rr_node->ylow)||((switch_box_y + 1) == src_rr_node->ylow))) {
+        return 1;
+      }
+      break;
+    case CHANX:
+      assert(src_rr_node->ylow == src_rr_node->yhigh);
+      if ((switch_box_y == src_rr_node->ylow)
+         &&(!(switch_box_x < src_rr_node->xlow))&&(!(switch_box_x > src_rr_node->xhigh))) {
+        return 1;
+      }
+      break;
+    case CHANY:
+      assert(src_rr_node->xlow == src_rr_node->xhigh);
+      if ((switch_box_x == src_rr_node->xlow)
+         &&(!(switch_box_y < (src_rr_node->ylow-1)))&&(!(switch_box_y > (src_rr_node->yhigh+1)))) {
+        return 1;
+      }
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid src_rr_node type!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+    break;
+  case BOTTOM:
+    /* Following cases:
+     *          |               
+     *        \   /  
+     *          |
+     */
+    /* The destination rr_node only have one condition!!! */
+    assert((DEC_DIRECTION == des_rr_node->direction)&&(CHANY == des_rr_node->type));
+    /* depend on the type of src_rr_node */
+    switch (src_rr_node->type) {
+    case OPIN:
+      if ((switch_box_y == src_rr_node->ylow)
+         &&((switch_box_x == src_rr_node->xlow)||((switch_box_x + 1) == src_rr_node->xlow))) {
+        return 1;
+      }
+      break;
+    case CHANX:
+      assert(src_rr_node->ylow == src_rr_node->yhigh);
+      if ((switch_box_y == src_rr_node->ylow)
+         &&(!(switch_box_x < (src_rr_node->xlow-1)))&&(!(switch_box_x > (src_rr_node->xhigh+1)))) {
+        return 1;
+      }
+      break;
+    case CHANY:
+      assert(src_rr_node->xlow == src_rr_node->xhigh);
+      if ((switch_box_x == src_rr_node->xlow)
+         &&(!((switch_box_y+1) < src_rr_node->ylow))&&(!((switch_box_y+1) > src_rr_node->yhigh))) {
+        return 1;
+      }
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid src_rr_node type!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+    break;
+  case LEFT: 
+    /* Following cases:
+     *           /               
+     *       ---  ----  
+     *           \
+     */
+    /* The destination rr_node only have one condition!!! */
+    assert((DEC_DIRECTION == des_rr_node->direction)&&(CHANX == des_rr_node->type));
+    /* depend on the type of src_rr_node */
+    switch (src_rr_node->type) {
+    case OPIN:
+      if ((switch_box_x == src_rr_node->xlow)
+         &&((switch_box_y == src_rr_node->ylow)||((switch_box_y + 1) == src_rr_node->ylow))) {
+        return 1;
+      }
+      break;
+    case CHANX:
+      assert(src_rr_node->ylow == src_rr_node->yhigh);
+      if ((switch_box_y == src_rr_node->ylow)
+         &&(!((switch_box_x+1) < src_rr_node->xlow))&&(!((switch_box_x+1) > src_rr_node->xhigh))) {
+        return 1;
+      }
+      break;
+    case CHANY:
+      assert(src_rr_node->xlow == src_rr_node->xhigh);
+      if ((switch_box_x == src_rr_node->xlow)
+         &&(!(switch_box_y < (src_rr_node->ylow-1)))&&(!(switch_box_y > (src_rr_node->yhigh+1)))) {
+        return 1;
+      }
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid src_rr_node type!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+    break;
+  default: 
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s, [LINE%d])Invalid side!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+  
+  return 0;
+}
+
+void find_drive_rr_nodes_switch_box(int switch_box_x,
+                                    int switch_box_y,
+                                    t_rr_node* src_rr_node,
+                                    int chan_side,
+                                    int return_num_only,
+                                    int* num_drive_rr_nodes,
+                                    t_rr_node*** drive_rr_nodes,
+                                    int* switch_index) {
+  int cur_index = 0;
+  //int inode, iedge, next_node;
+  int inode;  
+
+  /* I decide to kill the codes that search all the edges, the running time is huge... */
+  /* Determine the num_drive_rr_nodes */
+  (*num_drive_rr_nodes) = 0;
+  (*switch_index) = -1;
+
+  for (inode = 0; inode < src_rr_node->num_drive_rr_nodes; inode++) {
+    if (1 == rr_node_drive_switch_box(src_rr_node->drive_rr_nodes[inode], src_rr_node, 
+                                      switch_box_x, switch_box_y, chan_side)) { 
+      /* Get the spice_model */
+      if (-1 == (*switch_index)) {
+        (*switch_index) = src_rr_node->drive_switches[inode];
+      } else { /* Make sure the switches are the same*/
+        assert((*switch_index) == src_rr_node->drive_switches[inode]); 
+      }
+      (*num_drive_rr_nodes)++;
+    }
+  }
+  
+  //for (inode = 0; inode < num_rr_nodes; inode++) {
+  //  for (iedge = 0; iedge < rr_node[inode].num_edges; iedge++) {
+  //    next_node = rr_node[inode].edges[iedge];
+  //    /* Make sure the coordinator is matched to this switch box*/
+  //    if ((src_rr_node == &(rr_node[next_node]))
+  //       &&(1 == rr_node_drive_switch_box(&(rr_node[inode]), src_rr_node, switch_box_x, switch_box_y, chan_side))) { 
+  //      /* Get the spice_model */
+  //      if (-1 == (*switch_index)) {
+  //        (*switch_index) = rr_node[inode].switches[iedge];
+  //      } else { /* Make sure the switches are the same*/
+  //        assert((*switch_index) == rr_node[inode].switches[iedge]); 
+  //      }
+  //      (*num_drive_rr_nodes)++;
+  //    }
+  //  }
+  //}
+
+  /* Check and malloc*/
+  assert((!(0 > (*num_drive_rr_nodes)))&&(!((*num_drive_rr_nodes) > src_rr_node->fan_in)));
+  if (1 == return_num_only) {
+    return;
+  }
+  (*drive_rr_nodes) = NULL;
+  if (0 == (*num_drive_rr_nodes)) {
+    return;
+  }
+  (*drive_rr_nodes) = (t_rr_node**)my_malloc(sizeof(t_rr_node*)*(*num_drive_rr_nodes));
+
+  /* Find all the rr_nodes that drive current_rr_node*/
+  cur_index = 0;
+  (*switch_index) = -1;
+
+  for (inode = 0; inode < src_rr_node->num_drive_rr_nodes; inode++) {
+    if (1 == rr_node_drive_switch_box(src_rr_node->drive_rr_nodes[inode], src_rr_node, 
+                                      switch_box_x, switch_box_y, chan_side)) { 
+      /* Update drive_rr_nodes list */
+      (*drive_rr_nodes)[cur_index] = src_rr_node->drive_rr_nodes[inode];
+      /* Get the spice_model */
+      if (-1 == (*switch_index)) {
+        (*switch_index) = src_rr_node->drive_switches[inode];
+      } else { /* Make sure the switches are the same*/
+        assert((*switch_index) == src_rr_node->drive_switches[inode]); 
+      }
+      cur_index++;
+    }
+  }
+  //for (inode = 0; inode < num_rr_nodes; inode++) {
+  //  for (iedge = 0; iedge < rr_node[inode].num_edges; iedge++) {
+  //    next_node = rr_node[inode].edges[iedge];
+  //    /* Make sure the coordinator is matched to this switch box*/
+  //    if ((src_rr_node == &(rr_node[next_node]))
+  //       &&(1 == rr_node_drive_switch_box(&(rr_node[inode]), src_rr_node, switch_box_x, switch_box_y, chan_side))) { 
+  //      /* Update drive_rr_nodes list */
+  //      (*drive_rr_nodes)[cur_index] = &(rr_node[inode]);
+  //      /* Get the spice_model */
+  //      if (-1 == (*switch_index)) {
+  //        (*switch_index) = rr_node[inode].switches[iedge];
+  //      } else { /* Make sure the switches are the same*/
+  //        assert((*switch_index) == rr_node[inode].switches[iedge]); 
+  //      }
+  //      cur_index++;
+  //    }
+  //  }
+  //}
+  /* Verification */
+  assert(cur_index == (*num_drive_rr_nodes));
+
+  return;
+}
+
+int is_sb_interc_between_segments(int switch_box_x, 
+                                  int switch_box_y, 
+                                  t_rr_node* src_rr_node, 
+                                  int chan_side) {
+  int inode;
+  int cur_sb_num_drive_rr_nodes = 0;
+
+  for (inode = 0; inode < src_rr_node->num_drive_rr_nodes; inode++) {
+    if (1 == rr_node_drive_switch_box(src_rr_node->drive_rr_nodes[inode], src_rr_node, 
+                                      switch_box_x, switch_box_y, chan_side)) { 
+      cur_sb_num_drive_rr_nodes++;
+    }
+  }
+  if (0 == cur_sb_num_drive_rr_nodes) {
+    return 1;
+  } else {
+    return 0;
+  }
 }

@@ -109,9 +109,10 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
   t_pb_type* cur_pb_type = NULL;
   float* input_density = NULL;
   float* input_probability = NULL;
+  int* input_init_value = NULL;
+  int* input_net_num = NULL;
   int iport, ipin, cur_pin;
   int num_inputs, num_outputs, num_clock_pins, vpack_net_index;
-  int* input_init_value = NULL;
   char* outport_name = NULL;
   t_rr_node* local_rr_graph = NULL;
 
@@ -141,6 +142,7 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
   input_density = (float*)my_malloc(sizeof(float)*num_inputs); 
   input_probability = (float*)my_malloc(sizeof(float)*num_inputs); 
   input_init_value = (int*)my_malloc(sizeof(int)*num_inputs); 
+  input_net_num = (int*)my_malloc(sizeof(int)*num_inputs); 
 
   /* Get activity information */
   assert(1 == cur_pb_graph_node->num_input_ports);
@@ -153,12 +155,21 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
       } else {
         local_rr_graph = NULL;
       }
+      input_net_num[cur_pin] = pb_pin_net_num(local_rr_graph, &(cur_pb_graph_node->input_pins[iport][ipin]));
       input_density[cur_pin] = pb_pin_density(local_rr_graph, &(cur_pb_graph_node->input_pins[iport][ipin]));
       input_probability[cur_pin] = pb_pin_probability(local_rr_graph, &(cur_pb_graph_node->input_pins[iport][ipin]));
       input_init_value[cur_pin] =  pb_pin_init_value(local_rr_graph, &(cur_pb_graph_node->input_pins[iport][ipin]));
       cur_pin++;
     } 
     assert(cur_pin == num_inputs);
+  }
+  /* Check lut pin net num consistency */
+  if (OPEN != logical_block_index) {
+    if (0 == check_consistency_logical_block_net_num(&(logical_block[logical_block_index]), num_inputs, input_net_num)) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])FF(name:%s) consistency check fail!\n",
+                 __FILE__, __LINE__, logical_block[logical_block_index].name);
+      exit(1);
+    }
   }
  
   /* Call the subckt and give stimulates, measurements */
@@ -192,6 +203,7 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
   tb_num_dffs++;
 
   /* Free */
+  my_free(input_net_num);
   my_free(input_init_value);
   my_free(input_density);
   my_free(input_probability);

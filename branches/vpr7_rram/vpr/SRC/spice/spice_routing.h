@@ -49,15 +49,6 @@ void fprint_switch_box_short_interc(FILE* fp,
                                     int actual_fan_in,
                                     t_rr_node* drive_rr_node);
 
-void find_drive_rr_nodes_switch_box(int switch_box_x,
-                                    int switch_box_y,
-                                    t_rr_node* src_rr_node,
-                                    int chan_side,
-                                    int return_num_only,
-                                    int* num_drive_rr_nodes,
-                                    t_rr_node*** drive_rr_nodes,
-                                    int* switch_index);
-
 void fprint_switch_box_mux(FILE* fp, 
                            int switch_box_x, 
                            int switch_box_y, 
@@ -74,12 +65,6 @@ void fprint_routing_switch_box_subckt(FILE* fp,
                                       int x, 
                                       int y, 
                                       t_ivec*** LL_rr_node_indices);
-
-int rr_node_drive_switch_box(t_rr_node* src_rr_node,
-                             t_rr_node* des_rr_node,
-                             int switch_box_x,
-                             int switch_box_y,
-                             int chan_side);
 
 void fprint_connection_box_short_interc(FILE* fp,
                                         t_rr_type chan_type,
