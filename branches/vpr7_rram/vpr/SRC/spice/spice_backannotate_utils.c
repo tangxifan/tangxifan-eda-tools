@@ -101,7 +101,6 @@ void backannotate_rr_nodes_net_info() {
       //assert(rr_node[pin_global_rr_node_id].net_num == vpack_to_clb_net_mapping[pb_rr_graph[ipin].net_num]);
       /* Forward to all the downstream rr_nodes */
       rec_backannotate_rr_node_net_num(num_rr_nodes, rr_node, pin_global_rr_node_id); 
-      break;
     }
   }
  
