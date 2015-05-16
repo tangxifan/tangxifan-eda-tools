@@ -792,9 +792,9 @@ static void power_usage_routing(t_power_usage * power_usage,
 	/* Populate net indices into rr graph */
 	for (net_idx = 0; net_idx < num_nets; net_idx++) {
         /* Xifan TANG: Skip the global nets and dangling nets*/
-        if ((FALSE == clb_net[net_idx].is_global)||(FALSE == clb_net[net_idx].num_sinks)) {
-          continue;
-        }
+        //if ((FALSE == clb_net[net_idx].is_global)||(FALSE == clb_net[net_idx].num_sinks)) {
+        //   continue;
+        //}
 		struct s_trace * trace;
 
 		for (trace = trace_head[net_idx]; trace != NULL; trace = trace->next) {

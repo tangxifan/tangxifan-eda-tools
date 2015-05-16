@@ -1290,7 +1290,7 @@ float get_rr_node_net_probability(t_rr_node node) {
 
 int get_rr_node_net_init_value(t_rr_node node) {
   /* If we found this net is OPEN, we assume it zero-probability */
-  if (OPEN == node.net_num) { 
+  if (OPEN == node.vpack_net_num) { 
     /* TODO: we know initialize to vdd could reduce the leakage power od multiplexers!
      *       But I can this as an option !
      */

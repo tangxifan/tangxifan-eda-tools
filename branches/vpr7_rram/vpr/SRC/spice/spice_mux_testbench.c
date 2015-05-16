@@ -49,6 +49,10 @@ static int num_segments = 0;
 static t_segment_inf* segments = NULL;
 static int sim_num_clock_cycle = 0.;
 
+static float total_pb_mux_input_density = 0.;
+static float total_cb_mux_input_density = 0.;
+static float total_sb_mux_input_density = 0.;
+
 /***** Local Subroutines Declaration *****/
 static 
 void fprint_spice_mux_testbench_global_ports(FILE* fp,
@@ -704,6 +708,8 @@ void fprint_spice_mux_testbench_pb_graph_node_pin_mux(FILE* fp,
   int* sram_bits = NULL; 
   char* meas_tag = NULL;
   char* outport_name = NULL;
+  
+  float average_pb_mux_input_density = 0.;
 
   /* A valid file handler*/
   if (NULL == fp) {
@@ -732,8 +738,11 @@ void fprint_spice_mux_testbench_pb_graph_node_pin_mux(FILE* fp,
     input_density[cur_input] = pb_pin_density(NULL, des_pb_graph_pin->input_edges[iedge]->input_pins[0]); 
     input_probability[cur_input] = pb_pin_probability(NULL, des_pb_graph_pin->input_edges[iedge]->input_pins[0]); 
     input_init_value[cur_input] = pb_pin_init_value(NULL, des_pb_graph_pin->input_edges[iedge]->input_pins[0]); 
+    average_pb_mux_input_density += input_density[cur_input];
     cur_input++;
   }
+  average_pb_mux_input_density = average_pb_mux_input_density/fan_in;
+  total_pb_mux_input_density += average_pb_mux_input_density;
   /* Check fan-in number is correct */
   assert(fan_in == cur_input);
 
@@ -798,6 +807,7 @@ void fprint_spice_mux_testbench_pb_pin_mux(FILE* fp,
   int* sram_bits = NULL; 
   char* meas_tag = NULL;
   char* outport_name = NULL;
+  float average_pb_mux_input_density = 0.;
 
   /* A valid file handler*/
   if (NULL == fp) {
@@ -826,8 +836,11 @@ void fprint_spice_mux_testbench_pb_pin_mux(FILE* fp,
     input_density[cur_input] = pb_pin_density(pb_rr_graph, des_pb_graph_pin->input_edges[iedge]->input_pins[0]); 
     input_probability[cur_input] = pb_pin_probability(pb_rr_graph, des_pb_graph_pin->input_edges[iedge]->input_pins[0]); 
     input_init_value[cur_input] = pb_pin_init_value(pb_rr_graph, des_pb_graph_pin->input_edges[iedge]->input_pins[0]); 
+    average_pb_mux_input_density += input_density[cur_input];
     cur_input++;
   }
+  average_pb_mux_input_density = average_pb_mux_input_density/fan_in;
+  total_pb_mux_input_density += average_pb_mux_input_density;
   /* Check fan-in number is correct */
   assert(fan_in == cur_input);
 
@@ -1455,6 +1468,7 @@ void fprint_spice_mux_testbench_cb_one_mux(FILE* fp,
   int* input_init_value = NULL;
   char* meas_tag = NULL;
   char* outport_name = NULL;
+  float average_cb_mux_input_density = 0.;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -1502,7 +1516,10 @@ void fprint_spice_mux_testbench_cb_one_mux(FILE* fp,
     input_density[inode] = get_rr_node_net_density(*(drive_rr_nodes[inode]));
     input_probability[inode] = get_rr_node_net_probability(*(drive_rr_nodes[inode]));
     input_init_value[inode] = get_rr_node_net_init_value(*(drive_rr_nodes[inode]));
+    average_cb_mux_input_density += input_density[inode];
   }
+  average_cb_mux_input_density = average_cb_mux_input_density/mux_size;
+  total_cb_mux_input_density += average_cb_mux_input_density;
 
   /* Build meas_tag: cb_mux[cb_x][cb_y]_rrnode[node]*/
   meas_tag = (char*)my_malloc(sizeof(char)*(7 + strlen(my_itoa(cb_x)) + 2
@@ -1550,9 +1567,7 @@ void fprint_spice_mux_testbench_cb_interc(FILE* fp,
   assert((!(0 > cb_x))&&(!(cb_x > (nx + 1)))); 
   assert((!(0 > cb_y))&&(!(cb_y > (ny + 1)))); 
 
-  if (NULL == src_rr_node) {
-    return;
-  }
+  assert(NULL != src_rr_node);
 
   /* Skip non-mapped CB MUX */
   if (OPEN == src_rr_node->net_num) {
@@ -1564,7 +1579,6 @@ void fprint_spice_mux_testbench_cb_interc(FILE* fp,
     /* By-pass a direct connection*/
     return;
   } else if ((2 < src_rr_node->fan_in)||(2 == src_rr_node->fan_in)) {
-    
     /* Print a MUX */
     fprint_spice_mux_testbench_cb_one_mux(fp, chan_type, cb_x, cb_y, src_rr_node, LL_rr_node_indices);
   } 
@@ -1908,6 +1922,8 @@ int fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
   char* rr_node_outport_name = NULL;
   int used = 0;
 
+  float average_sb_mux_input_density = 0.;
+
   /* Check */
   assert((!(0 > switch_box_x))&&(!(switch_box_x > (nx + 1)))); 
   assert((!(0 > switch_box_y))&&(!(switch_box_y > (ny + 1)))); 
@@ -1962,7 +1978,10 @@ int fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
     input_density[inode] = get_rr_node_net_density(*(drive_rr_nodes[inode]));
     input_probability[inode] = get_rr_node_net_probability(*(drive_rr_nodes[inode]));
     input_init_value[inode] = get_rr_node_net_init_value(*(drive_rr_nodes[inode]));
+    average_sb_mux_input_density += input_density[inode];
   }
+  average_sb_mux_input_density = average_sb_mux_input_density/mux_size;
+  total_sb_mux_input_density += average_sb_mux_input_density;
 
   /* Find path_id */
   path_id = -1;
@@ -2458,14 +2477,20 @@ int fprint_spice_one_mux_testbench(char* formatted_spice_dir,
 
   switch (mux_tb_type) {
   case SPICE_PB_MUX_TB:
+    total_pb_mux_input_density = 0.;
     used = fprint_spice_mux_testbench_call_one_grid_pb_muxes(fp, grid_x, grid_y, LL_rr_node_indices);
+    total_pb_mux_input_density = total_pb_mux_input_density/testbench_pb_mux_cnt;
+    vpr_printf(TIO_MESSAGE_INFO,"Average density of PB MUX inputs is %.2g.\n", total_pb_mux_input_density);
     break;
   case SPICE_CB_MUX_TB:
     /* one cbx, one cby*/
     switch (cb_type) {
     case CHANX:
     case CHANY:
+      total_cb_mux_input_density = 0.;
       used = fprint_spice_mux_testbench_one_grid_cb_muxes(fp, cb_type, grid_x, grid_y, LL_rr_node_indices);
+      total_cb_mux_input_density = total_cb_mux_input_density/testbench_cb_mux_cnt;
+      vpr_printf(TIO_MESSAGE_INFO,"Average density of CB MUX inputs is %.2g.\n", total_cb_mux_input_density);
       break;
     default:
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d]) Invalid connection_box_type!\n", __FILE__, __LINE__);
@@ -2473,7 +2498,10 @@ int fprint_spice_one_mux_testbench(char* formatted_spice_dir,
     }
     break;
   case SPICE_SB_MUX_TB:
+    total_sb_mux_input_density = 0.;
     used = fprint_spice_mux_testbench_call_one_grid_sb_muxes(fp, grid_x, grid_y, LL_rr_node_indices);
+    total_sb_mux_input_density = total_sb_mux_input_density/testbench_sb_mux_cnt;
+    vpr_printf(TIO_MESSAGE_INFO,"Average density of SB MUX inputs is %.2g.\n", total_sb_mux_input_density);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d]) Invalid mux_tb_type!\n", __FILE__, __LINE__);

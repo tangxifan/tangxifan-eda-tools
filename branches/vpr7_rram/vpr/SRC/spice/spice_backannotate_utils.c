@@ -61,15 +61,9 @@ void rec_backannotate_rr_node_net_num(int LL_num_rr_nodes,
 /* Mark mapped rr_nodes with net_num*/
 static 
 void backannotate_rr_nodes_net_info() {
-  int inode, iblk, ipin, class_id, pin_global_rr_node_id;
+  int iblk, ipin, class_id, pin_global_rr_node_id;
   t_rr_node* pb_rr_graph = NULL;
-
-  /* Initialize the net_num */
-  for (inode = 0; inode < num_rr_nodes; inode++) {
-    rr_node[inode].net_num = OPEN;
-    rr_node[inode].vpack_net_num = OPEN;
-  }
-  
+ 
   /* Start from all the pb OPINs, and forward to all the rr_nodes */
   for (iblk = 0; iblk < num_blocks; iblk++) {
     assert(NULL != block[iblk].pb);
@@ -87,17 +81,24 @@ void backannotate_rr_nodes_net_info() {
       /* Give IO_TYPE vpack_net_num */
       if (IO_TYPE == block[iblk].type) {
         if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
+          rr_node[pin_global_rr_node_id].net_num = OPEN;
           rr_node[pin_global_rr_node_id].vpack_net_num = OPEN;
         } else {
-          rr_node[pin_global_rr_node_id].vpack_net_num = clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num];
+          rr_node[pin_global_rr_node_id].vpack_net_num = pb_rr_graph[ipin].net_num;
+          //pb_rr_graph[ipin].net_num_in_pack = pb_rr_graph[ipin].net_num;
+          //pb_rr_graph[ipin].net_num = rr_node[pin_global_rr_node_id].vpack_net_num;
+          pb_rr_graph[ipin].vpack_net_num = rr_node[pin_global_rr_node_id].vpack_net_num;
         }
+      } else {
+        assert(rr_node[pin_global_rr_node_id].vpack_net_num == pb_rr_graph[ipin].vpack_net_num);
       }
       /* Bypass unmapped pins */
       if (OPEN == rr_node[pin_global_rr_node_id].vpack_net_num) {
         continue;
       }
-      assert(rr_node[pin_global_rr_node_id].net_num == vpack_to_clb_net_mapping[pb_rr_graph[ipin].net_num]);
-      assert(rr_node[pin_global_rr_node_id].vpack_net_num = pb_rr_graph[ipin].vpack_net_num);
+      printf("Updating all traces with vpack_net_num(name:%s)...\n", 
+             vpack_net[rr_node[pin_global_rr_node_id].vpack_net_num].name); 
+      //assert(rr_node[pin_global_rr_node_id].net_num == vpack_to_clb_net_mapping[pb_rr_graph[ipin].net_num]);
       /* Forward to all the downstream rr_nodes */
       rec_backannotate_rr_node_net_num(num_rr_nodes, rr_node, pin_global_rr_node_id); 
       break;
@@ -475,6 +476,8 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb) {
       /* If we find an OPEN net, try to find the parasitic net_num*/
       if (OPEN == pb_rr_nodes[node_index].net_num) {
         set_one_pb_rr_node_default_prev_node_edge(pb_rr_nodes, &(cur_pb->pb_graph_node->output_pins[iport][ipin])); 
+      } else {
+        pb_rr_nodes[node_index].vpack_net_num = pb_rr_nodes[node_index].net_num;
       }
     }
   }
@@ -498,6 +501,8 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb) {
           /* If we find an OPEN net, try to find the parasitic net_num*/
           if (OPEN == pb_rr_nodes[node_index].net_num) {
             set_one_pb_rr_node_default_prev_node_edge(pb_rr_nodes, &(child_pb_graph_node->input_pins[iport][ipin])); 
+           } else {
+             pb_rr_nodes[node_index].vpack_net_num = pb_rr_nodes[node_index].net_num;
           }
         }
       }
@@ -510,6 +515,8 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb) {
           /* If we find an OPEN net, try to find the parasitic net_num*/
           if (OPEN == pb_rr_nodes[node_index].net_num) {
             set_one_pb_rr_node_default_prev_node_edge(pb_rr_nodes, &(child_pb_graph_node->clock_pins[iport][ipin])); 
+          } else {
+            pb_rr_nodes[node_index].vpack_net_num = pb_rr_nodes[node_index].net_num;
           }
         }
       }
@@ -570,7 +577,7 @@ void set_one_pb_rr_node_net_num(t_rr_node* pb_rr_graph,
   check_pb_graph_edge(*(pb_rr_graph[prev_node].pb_graph_pin->output_edges[prev_edge]));
   assert(node_index == pb_rr_graph[prev_node].pb_graph_pin->output_edges[prev_edge]->output_pins[0]->pin_count_in_cluster);
   pb_rr_graph[node_index].net_num = pb_rr_graph[prev_node].net_num;
-  pb_rr_graph[node_index].vpack_net_num = pb_rr_graph[prev_node].vpack_net_num;
+  pb_rr_graph[node_index].vpack_net_num = pb_rr_graph[prev_node].net_num;
 
   return;
 }
@@ -584,9 +591,7 @@ void backannotate_one_pb_rr_nodes_net_info_rec(t_pb* cur_pb) {
   t_pb_graph_node* child_pb_graph_node = NULL;
  
   /* Return when we meet a null pb */ 
-  if (NULL == cur_pb) {
-    return;
-  }
+  assert (NULL != cur_pb);
 
   /* Reach a leaf, return */
   if ((0 == cur_pb->pb_graph_node->pb_type->num_modes)
@@ -620,7 +625,7 @@ void backannotate_one_pb_rr_nodes_net_info_rec(t_pb* cur_pb) {
           if (OPEN == pb_rr_nodes[node_index].net_num) {
             set_one_pb_rr_node_net_num(pb_rr_nodes, &(child_pb_graph_node->input_pins[iport][ipin])); 
           } else {
-            pb_rr_nodes[node_index].vpack_net_num = pb_rr_nodes[node_index].net_num;
+            assert(pb_rr_nodes[node_index].net_num == pb_rr_nodes[node_index].vpack_net_num);
           }
         }
       }
@@ -634,7 +639,7 @@ void backannotate_one_pb_rr_nodes_net_info_rec(t_pb* cur_pb) {
           if (OPEN == pb_rr_nodes[node_index].net_num) {
             set_one_pb_rr_node_net_num(pb_rr_nodes, &(child_pb_graph_node->clock_pins[iport][ipin])); 
           } else {
-            pb_rr_nodes[node_index].vpack_net_num = pb_rr_nodes[node_index].net_num;
+            assert(pb_rr_nodes[node_index].net_num == pb_rr_nodes[node_index].vpack_net_num);
           }
         }
       }
@@ -668,7 +673,7 @@ void backannotate_one_pb_rr_nodes_net_info_rec(t_pb* cur_pb) {
       if (OPEN == pb_rr_nodes[node_index].net_num) {
         set_one_pb_rr_node_net_num(pb_rr_nodes, &(cur_pb->pb_graph_node->output_pins[iport][ipin])); 
       } else {
-        pb_rr_nodes[node_index].vpack_net_num = pb_rr_nodes[node_index].net_num;
+        assert(pb_rr_nodes[node_index].net_num == pb_rr_nodes[node_index].vpack_net_num);
       }
     }
   }
@@ -703,6 +708,9 @@ void back_annotate_rr_node_map_info() {
     rr_node[inode].prev_node = OPEN;
     /* set 0 if we want print all unused mux!!!*/
     rr_node[inode].prev_edge = OPEN;
+    /* Initial all the net_num*/
+    rr_node[inode].net_num = OPEN;
+    rr_node[inode].vpack_net_num = OPEN;
   }
   for (inode = 0; inode < num_rr_nodes; inode++) {
     if (0 == rr_node[inode].num_edges) {
@@ -720,52 +728,54 @@ void back_annotate_rr_node_map_info() {
 
   /* 2nd step: With the help of trace, we back-annotate */
   for (inet = 0; inet < num_nets; inet++) {
-    if (FALSE == clb_net[inet].is_global) {
-      if (FALSE == clb_net[inet].num_sinks) {
-        /* Net absorbed by CLB */
-      } else {
-        tptr = trace_head[inet];
-        while (tptr != NULL) {
-          inode = tptr->index;
-          rr_type = rr_node[inode].type;
-          xlow = rr_node[inode].xlow;
-          ylow = rr_node[inode].ylow;
-          switch (rr_type) {
-          case SINK: 
-          case IPIN: 
-            /* Nothing should be done. This supposed to the end of a trace*/
+    if (TRUE == clb_net[inet].is_global) {
+      continue;
+    }
+    tptr = trace_head[inet];
+    while (tptr != NULL) {
+      inode = tptr->index;
+      rr_type = rr_node[inode].type;
+      xlow = rr_node[inode].xlow;
+      ylow = rr_node[inode].ylow;
+      /* Net num */
+      rr_node[inode].net_num = inet;
+      rr_node[inode].vpack_net_num = clb_to_vpack_net_mapping[inet];
+      printf("Mark rr_node net_num for vpack_net(name=%s)..\n",
+              vpack_net[rr_node[inode].vpack_net_num].name);
+      assert(OPEN != rr_node[inode].net_num);
+      assert(OPEN != rr_node[inode].vpack_net_num);
+      switch (rr_type) {
+      case SINK: 
+        /* Nothing should be done. This supposed to the end of a trace*/
+        break;
+      case IPIN: 
+      case CHANX: 
+      case CHANY: 
+      case OPIN: 
+      case SOURCE: 
+        /* SINK(IO/Pad) is the end of a routing path. Should configure its prev_edge and prev_node*/
+        /* We care the next rr_node, this one is driving, which we have to configure 
+         */
+        assert(NULL != tptr->next);
+        next_node = tptr->next->index;
+        assert((!(0 > next_node))&&(next_node < num_rr_nodes));
+        /* Prev_node */
+        rr_node[next_node].prev_node = inode;
+        /* Prev_edge */
+        rr_node[next_node].prev_edge = OPEN;
+        for (iedge = 0; iedge < rr_node[inode].num_edges; iedge++) {
+          if (next_node == rr_node[inode].edges[iedge]) {
+            rr_node[next_node].prev_edge = iedge;
             break;
-          case CHANX: 
-          case CHANY: 
-          case OPIN: 
-          case SOURCE: 
-            /* SINK(IO/Pad) is the end of a routing path. Should configure its prev_edge and prev_node*/
-            /* We care the next rr_node, this one is driving, which we have to configure 
-             */
-            assert(NULL != tptr->next);
-            next_node = tptr->next->index;
-            assert((!(0 > next_node))&&(next_node < num_rr_nodes));
-            /* Prev_node */
-            rr_node[next_node].prev_node = inode;
-            /* Prev_edge */
-            rr_node[next_node].prev_edge = OPEN;
-            for (iedge = 0; iedge < rr_node[inode].num_edges; iedge++) {
-              if (next_node == rr_node[inode].edges[iedge]) {
-                rr_node[next_node].prev_edge = iedge;
-                break;
-              }
-            }
-            assert(OPEN != rr_node[next_node].prev_edge);
-            break;
-          default:
-            vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid traceback element type.\n");
-            exit(1);
           }
-          tptr = tptr->next;
         }
+        assert(OPEN != rr_node[next_node].prev_edge);
+        break;
+      default:
+        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid traceback element type.\n");
+        exit(1);
       }
-    //} else {
-      /* Global net never routed*/
+      tptr = tptr->next;
     }
   }
 
@@ -788,7 +798,7 @@ void backup_one_pb_rr_node_pack_prev_node_edge(t_rr_node* pb_rr_node) {
  * The following functions are to update the local routing results to match them with routing results
  */
 void update_one_grid_pack_prev_node_edge(int x, int y) {
-  int iblk, blk_id, ipin, iedge, inode;
+  int iblk, blk_id, ipin, iedge, jedge, inode;
   int pin_global_rr_node_id, vpack_net_id, class_id;
   t_type_ptr type = NULL;
   t_pb* pb = NULL;
@@ -819,14 +829,19 @@ void update_one_grid_pack_prev_node_edge(int x, int y) {
         if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
           local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
           local_rr_graph[ipin].net_num = OPEN;
+          local_rr_graph[ipin].vpack_net_num = OPEN;
+          //local_rr_graph[ipin].prev_node = 0;
+          //local_rr_graph[ipin].prev_edge = 0;
           continue; /* bypass non-mapped OPIN */
         } 
         /* back annotate pb ! */
         rr_node[pin_global_rr_node_id].pb = pb;
         vpack_net_id = clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num];
+        printf("Update post-route pb_rr_graph output: vpack_net_name = %s\n", 
+                vpack_net[vpack_net_id].name);
         /* Special for IO_TYPE */
         if (IO_TYPE == type) {
-          assert(local_rr_graph[ipin].net_num == clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num]);
+          assert(local_rr_graph[ipin].net_num == rr_node[pin_global_rr_node_id].vpack_net_num);
           local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
           continue;
         }
@@ -844,7 +859,13 @@ void update_one_grid_pack_prev_node_edge(int x, int y) {
             /* Backup prev_node, prev_edge */ 
             backup_one_pb_rr_node_pack_prev_node_edge(&(local_rr_graph[ipin]));
             local_rr_graph[ipin].prev_node = inode;
-            local_rr_graph[ipin].prev_edge = iedge;
+            for (jedge = 0; jedge < local_rr_graph[inode].pb_graph_pin->num_output_edges; jedge++) {
+              if (local_rr_graph[ipin].pb_graph_pin == local_rr_graph[inode].pb_graph_pin->output_edges[jedge]->output_pins[0]) {
+                local_rr_graph[ipin].prev_edge = jedge;
+                break;
+              }
+            }
+            break;
           }
         }
       } else if (RECEIVER == type->class_inf[class_id].type) {
@@ -854,14 +875,19 @@ void update_one_grid_pack_prev_node_edge(int x, int y) {
         if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
           local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
           local_rr_graph[ipin].net_num = OPEN;
+          local_rr_graph[ipin].vpack_net_num = OPEN;
+          //local_rr_graph[ipin].prev_node = 0;
+          //local_rr_graph[ipin].prev_edge = 0;
           continue; /* bypass non-mapped IPIN */
         }
         /* back annotate pb ! */
         rr_node[pin_global_rr_node_id].pb = pb;
         vpack_net_id = clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num];
+        printf("Update post-route pb_rr_graph input: vpack_net_name = %s\n", 
+                vpack_net[vpack_net_id].name);
         /* Special for IO_TYPE */
         if (IO_TYPE == type) {
-          assert(local_rr_graph[ipin].net_num == clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num]);
+          assert(local_rr_graph[ipin].net_num == rr_node[pin_global_rr_node_id].vpack_net_num);
           local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
           continue;
         }
@@ -954,25 +980,27 @@ void update_one_grid_pb_pins_parasitic_nets(int x, int y) {
       if (DRIVER == type->class_inf[class_id].type) {
         /* Find the pb net_num and update OPIN net_num */
         pin_global_rr_node_id = get_rr_node_index(x, y, OPIN, ipin, rr_node_indices);
+        assert(local_rr_graph[ipin].vpack_net_num == local_rr_graph[ipin].net_num);
         if (OPEN == local_rr_graph[ipin].net_num) {
+          assert(OPEN == local_rr_graph[ipin].vpack_net_num);
           rr_node[pin_global_rr_node_id].net_num = OPEN; 
           rr_node[pin_global_rr_node_id].vpack_net_num = OPEN; 
           continue; /* bypass non-mapped OPIN */
         } 
-          assert(ipin == local_rr_graph[ipin].pb_graph_pin->pin_count_in_cluster);
-        rr_node[pin_global_rr_node_id].net_num = vpack_to_clb_net_mapping[local_rr_graph[ipin].net_num]; 
-        rr_node[pin_global_rr_node_id].vpack_net_num = local_rr_graph[ipin].net_num;
+        assert(ipin == local_rr_graph[ipin].pb_graph_pin->pin_count_in_cluster);
+        //rr_node[pin_global_rr_node_id].net_num = vpack_to_clb_net_mapping[local_rr_graph[ipin].net_num]; 
+        rr_node[pin_global_rr_node_id].vpack_net_num = local_rr_graph[ipin].vpack_net_num;
       } else if (RECEIVER == type->class_inf[class_id].type) {
         /* Find the global rr_node net_num and update pb net_num */
         pin_global_rr_node_id = get_rr_node_index(x, y, IPIN, ipin, rr_node_indices);
         /* Get the index of Vpack net from global rr_node net_num (clb_net index)*/
-        if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
+        if (OPEN == rr_node[pin_global_rr_node_id].vpack_net_num) {
           local_rr_graph[ipin].net_num = OPEN;
           local_rr_graph[ipin].vpack_net_num = OPEN;
           continue; /* bypass non-mapped IPIN */
         }
-          assert(ipin == local_rr_graph[ipin].pb_graph_pin->pin_count_in_cluster);
-        local_rr_graph[ipin].net_num = clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num];
+        assert(ipin == local_rr_graph[ipin].pb_graph_pin->pin_count_in_cluster);
+        local_rr_graph[ipin].net_num = rr_node[pin_global_rr_node_id].vpack_net_num;
         local_rr_graph[ipin].vpack_net_num = rr_node[pin_global_rr_node_id].vpack_net_num;
       } else {
         continue; /* OPEN PIN */
@@ -1009,14 +1037,14 @@ void spice_backannotate_vpr_post_route_info() {
   /* Build previous node lists for each rr_node */
   vpr_printf(TIO_MESSAGE_INFO, "Building previous node list for all Routing Resource Nodes...\n");
   build_prev_node_list_rr_nodes(num_rr_nodes, rr_node);
+  /* This function should go very first because it gives all the net_num */
+  vpr_printf(TIO_MESSAGE_INFO,"Back annotating mapping information to global routing resource nodes...\n");
+  back_annotate_rr_node_map_info();
   /* Update local_rr_graphs to match post-route results*/
   vpr_printf(TIO_MESSAGE_INFO, "Update CLB local routing graph to match post-route results...\n");
   update_grid_pbs_post_route_rr_graph();
-  vpr_printf(TIO_MESSAGE_INFO,"Back annotating mapping information to global routing resource nodes...\n");
-  back_annotate_rr_node_map_info();
   vpr_printf(TIO_MESSAGE_INFO,"Back annotating mapping information to local routing resource nodes...\n");
   back_annotate_pb_rr_node_map_info();
-
 
   /* Backannotate activity information, initialize the waveform information */
   vpr_printf(TIO_MESSAGE_INFO, "Backannoating local routing net (1st time: for output pins)...\n");

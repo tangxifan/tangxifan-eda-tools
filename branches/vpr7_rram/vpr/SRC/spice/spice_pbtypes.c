@@ -157,8 +157,11 @@ int find_path_id_between_pb_rr_nodes(t_rr_node* local_rr_graph,
 
   prev_edge = local_rr_graph[des_node].prev_edge;
   check_pb_graph_edge(*(local_rr_graph[src_node].pb_graph_pin->output_edges[prev_edge]));
+  if (local_rr_graph[src_node].pb_graph_pin->output_edges[prev_edge]->output_pins[0]
+      != local_rr_graph[des_node].pb_graph_pin) {
   assert(local_rr_graph[src_node].pb_graph_pin->output_edges[prev_edge]->output_pins[0]
          == local_rr_graph[des_node].pb_graph_pin);
+  }
  
   cur_interc = local_rr_graph[src_node].pb_graph_pin->output_edges[prev_edge]->interconnect;
   /* Search des_node input edges */ 
