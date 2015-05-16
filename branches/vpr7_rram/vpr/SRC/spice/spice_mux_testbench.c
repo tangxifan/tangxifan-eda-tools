@@ -2166,6 +2166,7 @@ int fprint_spice_mux_testbench_call_one_grid_sb_muxes(FILE* fp,
 
   //if (used > 0) {
     for (side = 0; side < 4; side++) {
+      /*
       switch (side) {
       case 0:
         ix = x; 
@@ -2184,6 +2185,7 @@ int fprint_spice_mux_testbench_call_one_grid_sb_muxes(FILE* fp,
         vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid side index!\n", __FILE__, __LINE__);
         exit(1);
       }
+      */
       for (itrack = 0; itrack < chan_width[side]; itrack++) {
         fprint_spice_mux_testbench_sb_one_mux(fp, ix, iy, side, chan_rr_nodes[side][itrack]);
       }
