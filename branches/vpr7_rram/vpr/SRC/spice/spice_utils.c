@@ -1269,22 +1269,22 @@ int pb_pin_init_value(t_rr_node* pb_rr_graph,
 
 float get_rr_node_net_density(t_rr_node node) {
   /* If we found this net is OPEN, we assume it zero-density */
-  if (OPEN == node.net_num) { 
+  if (OPEN == node.vpack_net_num) { 
     return 0.;
   } else {
-    return clb_net[node.net_num].spice_net_info->density;
+    return vpack_net[node.vpack_net_num].spice_net_info->density;
   }
 }
 
 float get_rr_node_net_probability(t_rr_node node) {
   /* If we found this net is OPEN, we assume it zero-probability */
-  if (OPEN == node.net_num) { 
+  if (OPEN == node.vpack_net_num) { 
     /* TODO: we know initialize to vdd could reduce the leakage power od multiplexers!
      *       But I can this as an option !
      */
     return (float)(default_signal_init_value); 
   } else {
-    return clb_net[node.net_num].spice_net_info->probability;
+    return vpack_net[node.vpack_net_num].spice_net_info->probability;
   }
 }
 
@@ -1296,7 +1296,7 @@ int get_rr_node_net_init_value(t_rr_node node) {
      */
     return (float)(default_signal_init_value); 
   } else {
-    return clb_net[node.net_num].spice_net_info->init_val;
+    return vpack_net[node.vpack_net_num].spice_net_info->init_val;
   }
 }
 

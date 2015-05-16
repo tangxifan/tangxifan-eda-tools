@@ -964,6 +964,7 @@ struct s_rr_node {
 	int prev_node;
 	int prev_edge;
 	int net_num;
+	int vpack_net_num;
     /* Note that prev_node changes after routing!!! 
      * because logic equivalent pins may swap with each other!!! */
     /* Xifan TANG: I backup the results in packing here, 

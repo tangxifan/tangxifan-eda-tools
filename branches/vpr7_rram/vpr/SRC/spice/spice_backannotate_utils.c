@@ -48,6 +48,7 @@ void rec_backannotate_rr_node_net_num(int LL_num_rr_nodes,
       /* assert(LL_rr_node[src_node_index].net_num == LL_rr_node[to_node].net_num); */
       /* Propagate the net_num */
       LL_rr_node[to_node].net_num = LL_rr_node[src_node_index].net_num; 
+      LL_rr_node[to_node].vpack_net_num = LL_rr_node[src_node_index].vpack_net_num; 
       /* Go recursively */ 
       rec_backannotate_rr_node_net_num(LL_num_rr_nodes, LL_rr_node, to_node);
     }
@@ -66,6 +67,7 @@ void backannotate_rr_nodes_net_info() {
   /* Initialize the net_num */
   for (inode = 0; inode < num_rr_nodes; inode++) {
     rr_node[inode].net_num = OPEN;
+    rr_node[inode].vpack_net_num = OPEN;
   }
   
   /* Start from all the pb OPINs, and forward to all the rr_nodes */
@@ -82,11 +84,20 @@ void backannotate_rr_nodes_net_info() {
       }
       /* get the global rr_node */ 
       pin_global_rr_node_id = get_rr_node_index(block[iblk].x, block[iblk].y, OPIN, ipin, rr_node_indices);
+      /* Give IO_TYPE vpack_net_num */
+      if (IO_TYPE == block[iblk].type) {
+        if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
+          rr_node[pin_global_rr_node_id].vpack_net_num = OPEN;
+        } else {
+          rr_node[pin_global_rr_node_id].vpack_net_num = clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num];
+        }
+      }
       /* Bypass unmapped pins */
-      if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
+      if (OPEN == rr_node[pin_global_rr_node_id].vpack_net_num) {
         continue;
       }
       assert(rr_node[pin_global_rr_node_id].net_num == vpack_to_clb_net_mapping[pb_rr_graph[ipin].net_num]);
+      assert(rr_node[pin_global_rr_node_id].vpack_net_num = pb_rr_graph[ipin].vpack_net_num);
       /* Forward to all the downstream rr_nodes */
       rec_backannotate_rr_node_net_num(num_rr_nodes, rr_node, pin_global_rr_node_id); 
       break;
@@ -208,6 +219,12 @@ void backannotate_clb_nets_act_info() {
     /* Load activity info */
     vpack_net[inet].spice_net_info->probability = vpack_net[inet].net_power->probability;
     vpack_net[inet].spice_net_info->density = vpack_net[inet].net_power->density;
+    /* SPECIAL for SPICE simulator: init_value is opposite to probability 
+     * when density is not zero.
+     */
+    if (0. != vpack_net[inet].spice_net_info->density) {
+      vpack_net[inet].spice_net_info->init_val = 1 - vpack_net[inet].spice_net_info->probability; 
+    }
   }
   
   /* Free all spice_net_info and reallocate */
@@ -219,8 +236,9 @@ void backannotate_clb_nets_act_info() {
     /* Initialize to zero */
     init_spice_net_info(clb_net[inet].spice_net_info);
     /* Load activity info */
-    clb_net[inet].spice_net_info->probability = vpack_net[clb_to_vpack_net_mapping[inet]].net_power->probability;
-    clb_net[inet].spice_net_info->density = vpack_net[clb_to_vpack_net_mapping[inet]].net_power->density;
+    clb_net[inet].spice_net_info->probability = vpack_net[clb_to_vpack_net_mapping[inet]].spice_net_info->probability;
+    clb_net[inet].spice_net_info->density = vpack_net[clb_to_vpack_net_mapping[inet]].spice_net_info->density;
+    clb_net[inet].spice_net_info->init_val = vpack_net[clb_to_vpack_net_mapping[inet]].spice_net_info->init_val;
   }
 
   return;
@@ -539,6 +557,7 @@ void set_one_pb_rr_node_net_num(t_rr_node* pb_rr_graph,
   /* if this pin has 0 driver, return OPEN */
   if (0 == des_pb_graph_pin->num_input_edges) {
     pb_rr_graph[node_index].net_num= OPEN;
+    pb_rr_graph[node_index].vpack_net_num= OPEN;
     return;
   }
 
@@ -551,6 +570,7 @@ void set_one_pb_rr_node_net_num(t_rr_node* pb_rr_graph,
   check_pb_graph_edge(*(pb_rr_graph[prev_node].pb_graph_pin->output_edges[prev_edge]));
   assert(node_index == pb_rr_graph[prev_node].pb_graph_pin->output_edges[prev_edge]->output_pins[0]->pin_count_in_cluster);
   pb_rr_graph[node_index].net_num = pb_rr_graph[prev_node].net_num;
+  pb_rr_graph[node_index].vpack_net_num = pb_rr_graph[prev_node].vpack_net_num;
 
   return;
 }
@@ -575,28 +595,10 @@ void backannotate_one_pb_rr_nodes_net_info_rec(t_pb* cur_pb) {
   }
 
   select_mode_index = cur_pb->mode; 
+
   /* For all the input/output/clock pins of this pb,
    * check the net_num and assign default prev_node, prev_edge 
    */
-
-  /* We check output_pins of cur_pb_graph_node and its the input_edges
-   * Built the interconnections between outputs of cur_pb_graph_node and outputs of child_pb_graph_node
-   *   child_pb_graph_node.output_pins -----------------> cur_pb_graph_node.outpins
-   *                                        /|\
-   *                                         |
-   *                         input_pins,   edges,       output_pins
-   */ 
-  for (iport = 0; iport < cur_pb->pb_graph_node->num_output_ports; iport++) {
-    for (ipin = 0; ipin < cur_pb->pb_graph_node->num_output_pins[iport]; ipin++) {
-      /* Get the selected edge of current pin*/
-      pb_rr_nodes = cur_pb->rr_graph;
-      node_index = cur_pb->pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
-      /* If we find an OPEN net, try to find the parasitic net_num*/
-      if (OPEN == pb_rr_nodes[node_index].net_num) {
-        set_one_pb_rr_node_net_num(pb_rr_nodes, &(cur_pb->pb_graph_node->output_pins[iport][ipin])); 
-      }
-    }
-  }
 
   /* We check input_pins of child_pb_graph_node and its the input_edges
    * Built the interconnections between inputs of cur_pb_graph_node and inputs of child_pb_graph_node
@@ -617,6 +619,8 @@ void backannotate_one_pb_rr_nodes_net_info_rec(t_pb* cur_pb) {
           /* If we find an OPEN net, try to find the parasitic net_num*/
           if (OPEN == pb_rr_nodes[node_index].net_num) {
             set_one_pb_rr_node_net_num(pb_rr_nodes, &(child_pb_graph_node->input_pins[iport][ipin])); 
+          } else {
+            pb_rr_nodes[node_index].vpack_net_num = pb_rr_nodes[node_index].net_num;
           }
         }
       }
@@ -629,13 +633,17 @@ void backannotate_one_pb_rr_nodes_net_info_rec(t_pb* cur_pb) {
           /* If we find an OPEN net, try to find the parasitic net_num*/
           if (OPEN == pb_rr_nodes[node_index].net_num) {
             set_one_pb_rr_node_net_num(pb_rr_nodes, &(child_pb_graph_node->clock_pins[iport][ipin])); 
+          } else {
+            pb_rr_nodes[node_index].vpack_net_num = pb_rr_nodes[node_index].net_num;
           }
         }
       }
     }
   }
-  
-  /* Go recursively */ 
+
+  /* Go recursively, prior to update the output pins.
+   * Because output pins are depend on the deepest pbs
+   */ 
   for (ipb = 0; ipb < cur_pb->pb_graph_node->pb_type->modes[select_mode_index].num_pb_type_children; ipb++) {
     for (jpb = 0; jpb < cur_pb->pb_graph_node->pb_type->modes[select_mode_index].pb_type_children[ipb].num_pb; jpb++) {
       if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
@@ -644,6 +652,27 @@ void backannotate_one_pb_rr_nodes_net_info_rec(t_pb* cur_pb) {
     }
   }
 
+  /* We check output_pins of cur_pb_graph_node and its the input_edges
+   * Built the interconnections between outputs of cur_pb_graph_node and outputs of child_pb_graph_node
+   *   child_pb_graph_node.output_pins -----------------> cur_pb_graph_node.outpins
+   *                                        /|\
+   *                                         |
+   *                         input_pins,   edges,       output_pins
+   */ 
+  for (iport = 0; iport < cur_pb->pb_graph_node->num_output_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb->pb_graph_node->num_output_pins[iport]; ipin++) {
+      /* Get the selected edge of current pin*/
+      pb_rr_nodes = cur_pb->rr_graph;
+      node_index = cur_pb->pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
+      /* If we find an OPEN net, try to find the parasitic net_num*/
+      if (OPEN == pb_rr_nodes[node_index].net_num) {
+        set_one_pb_rr_node_net_num(pb_rr_nodes, &(cur_pb->pb_graph_node->output_pins[iport][ipin])); 
+      } else {
+        pb_rr_nodes[node_index].vpack_net_num = pb_rr_nodes[node_index].net_num;
+      }
+    }
+  }
+  
   return;
 }
 
@@ -805,6 +834,7 @@ void update_one_grid_pack_prev_node_edge(int x, int y) {
         /* Update net_num */
         local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
         local_rr_graph[ipin].net_num = vpack_net_id;
+        local_rr_graph[ipin].vpack_net_num = vpack_net_id;
         /* TODO: this is not so efficient... */
         for (iedge = 0; iedge < local_rr_graph[ipin].pb_graph_pin->num_input_edges; iedge++) {
           check_pb_graph_edge(*(local_rr_graph[ipin].pb_graph_pin->input_edges[iedge]));
@@ -839,6 +869,7 @@ void update_one_grid_pack_prev_node_edge(int x, int y) {
         /* Update net_num */
         local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
         local_rr_graph[ipin].net_num = vpack_net_id;
+        local_rr_graph[ipin].vpack_net_num = vpack_net_id;
         /* TODO: this is not so efficient... */
         for (iedge = 0; iedge < local_rr_graph[ipin].pb_graph_pin->num_output_edges; iedge++) {
           check_pb_graph_edge(*(local_rr_graph[ipin].pb_graph_pin->output_edges[iedge]));
@@ -856,17 +887,18 @@ void update_one_grid_pack_prev_node_edge(int x, int y) {
       }
     }
     /* Second run to backannoate parasitic OPIN net_num*/
-    for (ipin = 0; ipin < type->num_pins; ipin++) {
-      class_id = type->pin_class[ipin];
-      if (DRIVER == type->class_inf[class_id].type) {
-        /* Find the pb net_num and update OPIN net_num */
-        pin_global_rr_node_id = get_rr_node_index(x, y, OPIN, ipin, rr_node_indices);
-        if (OPEN == local_rr_graph[ipin].net_num) {
-          continue; /* bypass non-mapped OPIN */
-        } 
-        rr_node[pin_global_rr_node_id].net_num = vpack_to_clb_net_mapping[local_rr_graph[ipin].net_num];
-      }
-    }
+    //for (ipin = 0; ipin < type->num_pins; ipin++) {
+    //  class_id = type->pin_class[ipin];
+    //  if (DRIVER == type->class_inf[class_id].type) {
+    //    /* Find the pb net_num and update OPIN net_num */
+    //    pin_global_rr_node_id = get_rr_node_index(x, y, OPIN, ipin, rr_node_indices);
+    //    if (OPEN == local_rr_graph[ipin].net_num) {
+    //      continue; /* bypass non-mapped OPIN */
+    //    } 
+    //    rr_node[pin_global_rr_node_id].net_num = vpack_to_clb_net_mapping[local_rr_graph[ipin].net_num];
+    //    rr_node[pin_global_rr_node_id].vpack_net_num = vpack_to_clb_net_mapping[local_rr_graph[ipin].net_num];
+    //  }
+    //}
   }
  
   return;
@@ -889,6 +921,11 @@ void update_grid_pbs_post_route_rr_graph() {
   return;
 }
 
+/* SPEICAL: to assign parasitic nets, I modify the net_num in global
+ * global routing nets to be vpack_net_num. The reason is some vpack nets 
+ * are absorbed into CLBs during packing, therefore they are invisible in 
+ * clb_nets. But indeed, they exist in global routing as parasitic nets.
+ */
 void update_one_grid_pb_pins_parasitic_nets(int x, int y) {
   int iblk, blk_id, ipin; 
   int pin_global_rr_node_id,class_id;
@@ -919,20 +956,24 @@ void update_one_grid_pb_pins_parasitic_nets(int x, int y) {
         pin_global_rr_node_id = get_rr_node_index(x, y, OPIN, ipin, rr_node_indices);
         if (OPEN == local_rr_graph[ipin].net_num) {
           rr_node[pin_global_rr_node_id].net_num = OPEN; 
+          rr_node[pin_global_rr_node_id].vpack_net_num = OPEN; 
           continue; /* bypass non-mapped OPIN */
         } 
-        assert(ipin == local_rr_graph[ipin].pb_graph_pin->pin_count_in_cluster);
-        rr_node[pin_global_rr_node_id].net_num = vpack_to_clb_net_mapping[local_rr_graph[ipin].net_num];
+          assert(ipin == local_rr_graph[ipin].pb_graph_pin->pin_count_in_cluster);
+        rr_node[pin_global_rr_node_id].net_num = vpack_to_clb_net_mapping[local_rr_graph[ipin].net_num]; 
+        rr_node[pin_global_rr_node_id].vpack_net_num = local_rr_graph[ipin].net_num;
       } else if (RECEIVER == type->class_inf[class_id].type) {
         /* Find the global rr_node net_num and update pb net_num */
         pin_global_rr_node_id = get_rr_node_index(x, y, IPIN, ipin, rr_node_indices);
         /* Get the index of Vpack net from global rr_node net_num (clb_net index)*/
         if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
           local_rr_graph[ipin].net_num = OPEN;
+          local_rr_graph[ipin].vpack_net_num = OPEN;
           continue; /* bypass non-mapped IPIN */
         }
-        assert(ipin == local_rr_graph[ipin].pb_graph_pin->pin_count_in_cluster);
+          assert(ipin == local_rr_graph[ipin].pb_graph_pin->pin_count_in_cluster);
         local_rr_graph[ipin].net_num = clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num];
+        local_rr_graph[ipin].vpack_net_num = rr_node[pin_global_rr_node_id].vpack_net_num;
       } else {
         continue; /* OPEN PIN */
       }
@@ -968,14 +1009,14 @@ void spice_backannotate_vpr_post_route_info() {
   /* Build previous node lists for each rr_node */
   vpr_printf(TIO_MESSAGE_INFO, "Building previous node list for all Routing Resource Nodes...\n");
   build_prev_node_list_rr_nodes(num_rr_nodes, rr_node);
+  /* Update local_rr_graphs to match post-route results*/
+  vpr_printf(TIO_MESSAGE_INFO, "Update CLB local routing graph to match post-route results...\n");
+  update_grid_pbs_post_route_rr_graph();
   vpr_printf(TIO_MESSAGE_INFO,"Back annotating mapping information to global routing resource nodes...\n");
   back_annotate_rr_node_map_info();
   vpr_printf(TIO_MESSAGE_INFO,"Back annotating mapping information to local routing resource nodes...\n");
   back_annotate_pb_rr_node_map_info();
 
-  /* Update local_rr_graphs to match post-route results*/
-  vpr_printf(TIO_MESSAGE_INFO, "Update CLB local routing graph to match post-route results...\n");
-  update_grid_pbs_post_route_rr_graph();
 
   /* Backannotate activity information, initialize the waveform information */
   vpr_printf(TIO_MESSAGE_INFO, "Backannoating local routing net (1st time: for output pins)...\n");

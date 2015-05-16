@@ -1715,6 +1715,7 @@ int fprint_spice_mux_testbench_one_grid_cb_muxes(FILE* fp,
   for (inode = 0; inode < num_ipin_rr_node; inode++) {
     if (OPEN != ipin_rr_nodes[inode]->net_num) {
       used = 1;
+      break;
     }
   }
   

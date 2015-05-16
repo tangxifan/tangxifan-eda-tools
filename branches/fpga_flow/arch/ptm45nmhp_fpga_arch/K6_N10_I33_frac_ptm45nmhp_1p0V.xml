@@ -183,7 +183,7 @@
     </segment>
   </segmentlist>
   <complexblocklist>
-    <pb_type name="io" capacity="8" idle_mode_name="inpad">
+    <pb_type name="io" capacity="8" idle_mode_name="outpad">
       <input name="outpad" num_pins="1"/>
       <output name="inpad" num_pins="1"/>
       <clock name="clock" num_pins="1"/>
