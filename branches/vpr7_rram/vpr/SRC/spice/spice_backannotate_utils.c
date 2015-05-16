@@ -83,11 +83,6 @@ void backannotate_rr_nodes_net_info() {
         if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
           rr_node[pin_global_rr_node_id].net_num = OPEN;
           rr_node[pin_global_rr_node_id].vpack_net_num = OPEN;
-        } else {
-          rr_node[pin_global_rr_node_id].vpack_net_num = pb_rr_graph[ipin].net_num;
-          //pb_rr_graph[ipin].net_num_in_pack = pb_rr_graph[ipin].net_num;
-          //pb_rr_graph[ipin].net_num = rr_node[pin_global_rr_node_id].vpack_net_num;
-          pb_rr_graph[ipin].vpack_net_num = rr_node[pin_global_rr_node_id].vpack_net_num;
         }
       } else {
         assert(rr_node[pin_global_rr_node_id].vpack_net_num == pb_rr_graph[ipin].vpack_net_num);
@@ -96,8 +91,8 @@ void backannotate_rr_nodes_net_info() {
       if (OPEN == rr_node[pin_global_rr_node_id].vpack_net_num) {
         continue;
       }
-      printf("Updating all traces with vpack_net_num(name:%s)...\n", 
-             vpack_net[rr_node[pin_global_rr_node_id].vpack_net_num].name); 
+      //printf("Updating all traces with vpack_net_num(name:%s)...\n", 
+      //       vpack_net[rr_node[pin_global_rr_node_id].vpack_net_num].name); 
       //assert(rr_node[pin_global_rr_node_id].net_num == vpack_to_clb_net_mapping[pb_rr_graph[ipin].net_num]);
       /* Forward to all the downstream rr_nodes */
       rec_backannotate_rr_node_net_num(num_rr_nodes, rr_node, pin_global_rr_node_id); 
@@ -541,6 +536,12 @@ void back_annotate_pb_rr_node_map_info() {
   
   /* Foreach grid */
   for (iblk = 0; iblk < num_blocks; iblk++) {
+    /* By pass IO */
+    /*
+    if (IO_TYPE == block[iblk].type) {
+      continue;
+    }
+    */
     back_annotate_one_pb_rr_node_map_info_rec(block[iblk].pb);
   }  
 
@@ -686,6 +687,12 @@ void backannotate_pb_rr_nodes_net_info() {
   
   /* Foreach grid */
   for (iblk = 0; iblk < num_blocks; iblk++) {
+    /* By pass IO */
+    /*
+    if (IO_TYPE == block[iblk].type) {
+      continue;
+    }
+    */
     backannotate_one_pb_rr_nodes_net_info_rec(block[iblk].pb);
   }  
 
@@ -727,9 +734,9 @@ void back_annotate_rr_node_map_info() {
 
   /* 2nd step: With the help of trace, we back-annotate */
   for (inet = 0; inet < num_nets; inet++) {
-    if (TRUE == clb_net[inet].is_global) {
-      continue;
-    }
+    //if (TRUE == clb_net[inet].is_global) {
+    //  continue;
+    //}
     tptr = trace_head[inet];
     while (tptr != NULL) {
       inode = tptr->index;
@@ -739,8 +746,8 @@ void back_annotate_rr_node_map_info() {
       /* Net num */
       rr_node[inode].net_num = inet;
       rr_node[inode].vpack_net_num = clb_to_vpack_net_mapping[inet];
-      printf("Mark rr_node net_num for vpack_net(name=%s)..\n",
-              vpack_net[rr_node[inode].vpack_net_num].name);
+      //printf("Mark rr_node net_num for vpack_net(name=%s)..\n",
+      //        vpack_net[rr_node[inode].vpack_net_num].name);
       assert(OPEN != rr_node[inode].net_num);
       assert(OPEN != rr_node[inode].vpack_net_num);
       switch (rr_type) {
@@ -810,12 +817,15 @@ void update_one_grid_pack_prev_node_edge(int x, int y) {
   type = grid[x][y].type;
   /* Bypass IO_TYPE*/
   if ((EMPTY_TYPE == type)||(IO_TYPE == type)) {
+  //if ((EMPTY_TYPE == type)) {
     return;
   }   
   for (iblk = 0; iblk < grid[x][y].usage; iblk++) {
     blk_id = grid[x][y].blocks[iblk];
-    assert(block[blk_id].x == x);
-    assert(block[blk_id].y == y);
+    if ((IO_TYPE != type)) {
+      assert(block[blk_id].x == x);
+      assert(block[blk_id].y == y);
+    }
     pb = block[blk_id].pb;
     assert(NULL != pb);
     local_rr_graph = pb->rr_graph; 
@@ -836,8 +846,8 @@ void update_one_grid_pack_prev_node_edge(int x, int y) {
         /* back annotate pb ! */
         rr_node[pin_global_rr_node_id].pb = pb;
         vpack_net_id = clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num];
-        printf("Update post-route pb_rr_graph output: vpack_net_name = %s\n", 
-                vpack_net[vpack_net_id].name);
+        //printf("Update post-route pb_rr_graph output: vpack_net_name = %s\n", 
+        //        vpack_net[vpack_net_id].name);
         /* Special for IO_TYPE */
         if (IO_TYPE == type) {
           assert(local_rr_graph[ipin].net_num == rr_node[pin_global_rr_node_id].vpack_net_num);
@@ -882,8 +892,8 @@ void update_one_grid_pack_prev_node_edge(int x, int y) {
         /* back annotate pb ! */
         rr_node[pin_global_rr_node_id].pb = pb;
         vpack_net_id = clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num];
-        printf("Update post-route pb_rr_graph input: vpack_net_name = %s\n", 
-                vpack_net[vpack_net_id].name);
+        //printf("Update post-route pb_rr_graph input: vpack_net_name = %s\n", 
+        //        vpack_net[vpack_net_id].name);
         /* Special for IO_TYPE */
         if (IO_TYPE == type) {
           assert(local_rr_graph[ipin].net_num == rr_node[pin_global_rr_node_id].vpack_net_num);
@@ -933,8 +943,8 @@ void update_grid_pbs_post_route_rr_graph() {
   int ix, iy;
   t_type_ptr type = NULL;
 
-  for (ix = 1; ix < (nx + 1); ix++) {
-    for (iy = 1; iy < (ny + 1); iy++) {
+  for (ix = 0; ix < (nx + 2); ix++) {
+    for (iy = 0; iy < (ny + 2); iy++) {
       type = grid[ix][iy].type;
       if (NULL != type) {
         /* Backup the packing prev_node and prev_edge */
