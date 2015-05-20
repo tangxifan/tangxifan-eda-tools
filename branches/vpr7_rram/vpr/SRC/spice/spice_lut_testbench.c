@@ -229,18 +229,21 @@ void fprint_spice_lut_testbench_one_pb_graph_node_lut(FILE* fp,
     assert(0 == avg_density_cnt);
     average_density = 0.;
   }
+  if (0. == average_density) {
+    num_sim_clock_cycles = 2;
+  } else {
+    assert(0. < average_density);
+    num_sim_clock_cycles = (int)(1/average_density) + 1;
+  }
   if (TRUE == auto_select_max_sim_num_clock_cycles) {
-    if (0. == average_density) {
-      num_sim_clock_cycles = 2;
+    /* for idle blocks, 2 clock cycle is well enough... */
+    if (2 < num_sim_clock_cycles) {
+      num_sim_clock_cycles = upbound_sim_num_clock_cycles;
     } else {
-      assert(0. < average_density);
-      num_sim_clock_cycles = (int)(1/average_density) + 1;
+      num_sim_clock_cycles = 2;
     }
     if (max_sim_num_clock_cycles < num_sim_clock_cycles) {
       max_sim_num_clock_cycles = num_sim_clock_cycles;
-    }
-    if (max_sim_num_clock_cycles > upbound_sim_num_clock_cycles) {
-      max_sim_num_clock_cycles = upbound_sim_num_clock_cycles;
     }
   } else {
     num_sim_clock_cycles = max_sim_num_clock_cycles;

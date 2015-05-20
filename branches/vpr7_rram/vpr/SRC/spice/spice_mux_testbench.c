@@ -633,11 +633,14 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
     num_sim_clock_cycles = 2;
   }
   if (TRUE == auto_select_max_sim_num_clock_cycles) {
+    /* for idle blocks, 2 clock cycle is well enough... */
+    if (2 < num_sim_clock_cycles) {
+      num_sim_clock_cycles = upbound_sim_num_clock_cycles;
+    } else {
+      num_sim_clock_cycles = 2;
+    }
     if (max_sim_num_clock_cycles < num_sim_clock_cycles) {
       max_sim_num_clock_cycles = num_sim_clock_cycles;
-    }
-    if (max_sim_num_clock_cycles > upbound_sim_num_clock_cycles) {
-      max_sim_num_clock_cycles = upbound_sim_num_clock_cycles;
     }
   } else {
     num_sim_clock_cycles = max_sim_num_clock_cycles;

@@ -275,8 +275,14 @@ int get_grid_testbench_one_grid_num_sim_clock_cycles(FILE* fp,
       assert(0. < average_density);
       num_sim_clock_cycles = (int)(1/average_density) + 1;
     }
-    if (num_sim_clock_cycles > upbound_sim_num_clock_cycles) {
+    /* for idle blocks, 2 clock cycle is well enough... */
+    if (2 < num_sim_clock_cycles) {
       num_sim_clock_cycles = upbound_sim_num_clock_cycles;
+    } else {
+      num_sim_clock_cycles = 2;
+    }
+    if (max_sim_num_clock_cycles < num_sim_clock_cycles) {
+      max_sim_num_clock_cycles = num_sim_clock_cycles;
     }
   } else {
     num_sim_clock_cycles = max_sim_num_clock_cycles;
