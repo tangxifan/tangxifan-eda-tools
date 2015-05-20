@@ -57,8 +57,10 @@ static void ProcessSpiceMeasParams(ezxml_t Parent,
   /* Number of simulation clock cycles */
   if (0 == strcmp("auto", FindProperty(Parent, "sim_num_clock_cycle", FALSE))) {
     meas_params->sim_num_clock_cycle = -1;
+    meas_params->auto_select_sim_num_clk_cycle = TRUE;
   } else {
     meas_params->sim_num_clock_cycle = GetIntProperty(Parent, "sim_num_clock_cycle", FALSE, -1);
+    meas_params->auto_select_sim_num_clk_cycle = FALSE;
   }
   ezxml_set_attr(Parent, "sim_num_clock_cycle", NULL);
   /* Accuracy type: either frac or abs, set frac by default*/

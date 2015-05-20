@@ -538,6 +538,7 @@ void free_spice_tb_llist() {
   t_llist* temp = tb_head;
 
   while (temp) {
+    my_free(((t_spicetb_info*)(temp->dptr))->tb_name);
     my_free(temp->dptr);
     temp->dptr = NULL;
     temp = temp->next;

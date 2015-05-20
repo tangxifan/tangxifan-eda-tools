@@ -157,11 +157,7 @@ int find_path_id_between_pb_rr_nodes(t_rr_node* local_rr_graph,
 
   prev_edge = local_rr_graph[des_node].prev_edge;
   check_pb_graph_edge(*(local_rr_graph[src_node].pb_graph_pin->output_edges[prev_edge]));
-  if (local_rr_graph[src_node].pb_graph_pin->output_edges[prev_edge]->output_pins[0]
-      != local_rr_graph[des_node].pb_graph_pin) {
-  assert(local_rr_graph[src_node].pb_graph_pin->output_edges[prev_edge]->output_pins[0]
-         == local_rr_graph[des_node].pb_graph_pin);
-  }
+  assert(local_rr_graph[src_node].pb_graph_pin->output_edges[prev_edge]->output_pins[0] == local_rr_graph[des_node].pb_graph_pin);
  
   cur_interc = local_rr_graph[src_node].pb_graph_pin->output_edges[prev_edge]->interconnect;
   /* Search des_node input edges */ 
@@ -2295,6 +2291,7 @@ void generate_spice_logic_blocks(char* subckt_dir,
   /* Print the core logic block one by one
    * Note ix=0 and ix = nx + 1 are IO pads. They surround the core logic blocks
    */
+  vpr_printf(TIO_MESSAGE_INFO,"Generating core grids...\n");
   for (ix = 1; ix < (nx + 1); ix++) {
     for (iy = 1; iy < (ny + 1); iy++) {
       /* Ensure this is not a io */
@@ -2305,6 +2302,7 @@ void generate_spice_logic_blocks(char* subckt_dir,
     }
   }
 
+  vpr_printf(TIO_MESSAGE_INFO,"Generating IO grids...\n");
   /* Print the IO pads */
   /* Left side: x = 0, y = 1 .. ny*/
   ix = 0;

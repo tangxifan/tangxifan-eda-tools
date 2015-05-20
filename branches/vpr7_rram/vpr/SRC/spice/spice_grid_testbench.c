@@ -38,11 +38,21 @@ static int num_noninv_load = 0;
 static int num_grid_load = 0;
 */
 static int tb_num_grid = 0;
+static int max_sim_num_clock_cycles = 2;
+static int upbound_sim_num_clock_cycles = 2;
+static int auto_select_max_sim_num_clock_cycles = TRUE;
 
 /* Local subroutines only accessible in this C-source file */
 static 
-void init_spice_grid_testbench_globals() {
+void init_spice_grid_testbench_globals(t_spice spice) {
   tb_num_grid = 0;
+  auto_select_max_sim_num_clock_cycles = spice.spice_params.meas_params.auto_select_sim_num_clk_cycle;
+  upbound_sim_num_clock_cycles = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
+  if (FALSE == auto_select_max_sim_num_clock_cycles) {
+    max_sim_num_clock_cycles = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
+  } else {
+    max_sim_num_clock_cycles = 2;
+  }
 }
 
 /* Subroutines in this source file*/
@@ -205,6 +215,77 @@ void fprint_grid_testbench_one_grid_pin_loads(FILE* fp, int x, int y,
   return;
 }
 
+int get_grid_testbench_one_grid_num_sim_clock_cycles(FILE* fp, 
+                                                     t_spice spice,
+                                                     t_ivec*** LL_rr_node_indices,
+                                                     int x, int y) {
+  int ipin, class_id, side, iheight;
+  t_type_ptr type = NULL;
+  int ipin_rr_node_index;
+  float ipin_density = 0.;
+  float average_density = 0.;
+  int avg_density_cnt = 0;
+  int num_sim_clock_cycles = 0;
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /* Check */
+  assert((!(0 > x))&&(!(x > (nx + 1)))); 
+  assert((!(0 > y))&&(!(y > (ny + 1)))); 
+  type = grid[x][y].type;
+  assert(NULL != type);
+   
+  average_density = 0.;
+  avg_density_cnt = 0;
+  /* For each input pin, we give a stimulate*/ 
+  for (side = 0; side < 4; side++) {
+    for (iheight = 0; iheight < type->height; iheight++) {
+      for (ipin = 0; ipin < type->num_pins; ipin++) {
+        if (1 == type->pinloc[iheight][side][ipin]) {
+          class_id = type->pin_class[ipin];
+          if (RECEIVER == type->class_inf[class_id].type) { 
+            /* Print a voltage source according to density and probability */
+            ipin_rr_node_index = get_rr_node_index(x, y, IPIN, ipin, LL_rr_node_indices);
+            /* Get density and probability */
+            ipin_density = get_rr_node_net_density(rr_node[ipin_rr_node_index]); 
+            if (0. < ipin_density) {
+              average_density += ipin_density;
+              avg_density_cnt++;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /* Calculate the num_sim_clock_cycle for this MUX, update global max_sim_clock_cycle in this testbench */
+  if (0 < avg_density_cnt) {
+    average_density = average_density/avg_density_cnt;
+  } else {
+    assert(0 == avg_density_cnt);
+    average_density = 0.;
+  }
+  if (TRUE == auto_select_max_sim_num_clock_cycles) {
+    if (0. == average_density) {
+      num_sim_clock_cycles = 2;
+    } else {
+      assert(0. < average_density);
+      num_sim_clock_cycles = (int)(1/average_density) + 1;
+    }
+    if (num_sim_clock_cycles > upbound_sim_num_clock_cycles) {
+      num_sim_clock_cycles = upbound_sim_num_clock_cycles;
+    }
+  } else {
+    num_sim_clock_cycles = max_sim_num_clock_cycles;
+  }
+
+  return num_sim_clock_cycles;
+}
+
+
 void fprint_grid_testbench_one_grid_stimulation(FILE* fp, 
                                                 t_spice spice,
                                                 t_ivec*** LL_rr_node_indices,
@@ -324,8 +405,8 @@ void fprint_spice_grid_testbench_measurements(FILE* fp, int grid_x, int grid_y,
                                               t_spice spice,
                                               boolean leakage_only) {
   /* First cycle reserved for measuring leakage */
-  int num_clock_cycle = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
-  
+  int num_clock_cycle = max_sim_num_clock_cycles;
+
   /* Check the file handler*/ 
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
@@ -333,7 +414,7 @@ void fprint_spice_grid_testbench_measurements(FILE* fp, int grid_x, int grid_y,
     exit(1);
   }
   
-  fprint_spice_netlist_transient_setting(fp, spice, leakage_only);
+  fprint_spice_netlist_transient_setting(fp, spice, num_clock_cycle, leakage_only);
 
   /* TODO: Measure the delay of each mapped net and logical block */
 
@@ -444,7 +525,7 @@ int fprint_spice_one_grid_testbench(char* formatted_spice_dir,
   fprint_spice_grid_testbench_global_ports(fp, grid_x, grid_y, num_clock, (*arch.spice));
  
   /* Quote defined Logic blocks subckts (Grids) */
-  init_spice_grid_testbench_globals();
+  init_spice_grid_testbench_globals(*(arch.spice));
   fprint_spice_grid_testbench_call_one_defined_grid(fp, grid_x, grid_y);
 
   /* Back-anotate activity information to each routing resource node 
@@ -452,6 +533,7 @@ int fprint_spice_one_grid_testbench(char* formatted_spice_dir,
    */
 
   /* Add stimulations */
+  max_sim_num_clock_cycles = get_grid_testbench_one_grid_num_sim_clock_cycles(fp, (*arch.spice), LL_rr_node_indices, grid_x, grid_y);
   fprint_spice_grid_testbench_stimulations(fp, num_clock, (*arch.spice), grid_x, grid_y,  LL_rr_node_indices);
 
   /* Add measurements */  
@@ -467,10 +549,14 @@ int fprint_spice_one_grid_testbench(char* formatted_spice_dir,
     vpr_printf(TIO_MESSAGE_INFO, "Writing Grid[%d][%d] Testbench for %s...\n", grid_x, grid_y, circuit_name);
     if (NULL == tb_head) {
       tb_head = create_llist(1);
-      tb_head->dptr = (void*)my_strdup(grid_testbench_file_path);
+      tb_head->dptr = my_malloc(sizeof(t_spicetb_info));
+      ((t_spicetb_info*)(tb_head->dptr))->tb_name = my_strdup(grid_testbench_file_path);
+      ((t_spicetb_info*)(tb_head->dptr))->num_sim_clock_cycles = max_sim_num_clock_cycles;
     } else {
       temp = insert_llist_node(tb_head);
-      temp->dptr = (void*)my_strdup(grid_testbench_file_path);
+      temp->dptr = my_malloc(sizeof(t_spicetb_info));
+      ((t_spicetb_info*)(temp->dptr))->tb_name = my_strdup(grid_testbench_file_path);
+      ((t_spicetb_info*)(temp->dptr))->num_sim_clock_cycles = max_sim_num_clock_cycles;
     }
     used = 1;
   } else {

@@ -54,7 +54,7 @@ void fprint_run_hspice_shell_script(t_spice spice,
   t_llist* temp = tb_head;
   int progress_cnt = 0;
   int total_num_sim = 0;
-  int num_sim_clock_cycle = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
+  int num_sim_clock_cycle = 0;
 
   create_dir_path(sim_results_dir_path);
 
@@ -84,7 +84,8 @@ void fprint_run_hspice_shell_script(t_spice spice,
   temp = tb_head;
   /* Run hspice lut testbench netlist */
   while(temp) {
-    testbench_file = (char*)(temp->dptr);
+    testbench_file = ((t_spicetb_info*)(temp->dptr))->tb_name;
+    num_sim_clock_cycle = ((t_spicetb_info*)(temp->dptr))->num_sim_clock_cycles;
     chomped_testbench_file = chomp_file_name_postfix(testbench_file);
     split_path_prog_name(chomped_testbench_file,'/',&chomped_testbench_path ,&chomped_testbench_name);
     fprintf(fp, "echo Number of clock cycles in simulation: %d\n", num_sim_clock_cycle);

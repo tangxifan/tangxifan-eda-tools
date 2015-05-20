@@ -47,7 +47,9 @@ static int testbench_sb_mux_cnt = 0;
 static t_llist* testbench_muxes_head = NULL; 
 static int num_segments = 0;
 static t_segment_inf* segments = NULL;
-static int sim_num_clock_cycle = 0.;
+static int upbound_sim_num_clock_cycles = 2;
+static int max_sim_num_clock_cycles = 2;
+static int auto_select_max_sim_num_clock_cycles = TRUE;
 
 static float total_pb_mux_input_density = 0.;
 static float total_cb_mux_input_density = 0.;
@@ -149,7 +151,13 @@ static void init_spice_mux_testbench_globals(t_spice spice) {
   testbench_pb_mux_cnt = 0;
   testbench_cb_mux_cnt = 0;
   testbench_sb_mux_cnt = 0;
-  sim_num_clock_cycle = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
+  auto_select_max_sim_num_clock_cycles = spice.spice_params.meas_params.auto_select_sim_num_clk_cycle;
+  upbound_sim_num_clock_cycles = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
+  if (FALSE == auto_select_max_sim_num_clock_cycles) {
+    max_sim_num_clock_cycles = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
+  } else {
+    max_sim_num_clock_cycles = 2;
+  }
 }
 
 static 
@@ -452,6 +460,9 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
   int* mux_sram_bits = NULL; 
   t_llist* found_mux_node = NULL;
   t_spice_mux_model* cur_mux = NULL;
+  int num_sim_clock_cycles = 0;
+  float average_density = 0.;
+  int avg_density_cnt = 0;
 
   /* A valid file handler*/
   if (NULL == fp) {
@@ -602,6 +613,36 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
           mux_spice_model->prefix, mux_size, testbench_mux_cnt,
           mux_spice_model->prefix, mux_size, testbench_mux_cnt);
 
+  /* Calculate average density of this MUX */
+  average_density = 0.;
+  avg_density_cnt = 0;
+  for (inode = 0; inode < mux_size; inode++) {
+    assert(!(0 > input_density[inode]));
+    if (0. < input_density[inode]) {
+      average_density += input_density[inode];
+      avg_density_cnt++;
+    }
+  }
+  /* Calculate the num_sim_clock_cycle for this MUX, update global max_sim_clock_cycle in this testbench */
+  if (0 < avg_density_cnt) {
+    average_density = average_density/avg_density_cnt;
+    num_sim_clock_cycles = (int)(1/average_density) + 1;
+  } else {
+    assert(0 == avg_density_cnt);
+    average_density = 0.;
+    num_sim_clock_cycles = 2;
+  }
+  if (TRUE == auto_select_max_sim_num_clock_cycles) {
+    if (max_sim_num_clock_cycles < num_sim_clock_cycles) {
+      max_sim_num_clock_cycles = num_sim_clock_cycles;
+    }
+    if (max_sim_num_clock_cycles > upbound_sim_num_clock_cycles) {
+      max_sim_num_clock_cycles = upbound_sim_num_clock_cycles;
+    }
+  } else {
+    num_sim_clock_cycles = max_sim_num_clock_cycles;
+  }
+
   /* Measurements */
   /* Measure the delay of MUX */
   fprintf(fp, "***** Measurements *****\n");
@@ -641,7 +682,7 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
   fprintf(fp, "***** Dynamic Power Measurement *****\n");
   fprintf(fp, ".meas tran %s_size%d[%d]_dynamic_power avg p(Vgvdd_%s_size%d[%d]) from='clock_period' to='%d*clock_period'\n",
            mux_spice_model->prefix, mux_size, testbench_mux_cnt,
-           mux_spice_model->prefix, mux_size, testbench_mux_cnt, sim_num_clock_cycle);
+           mux_spice_model->prefix, mux_size, testbench_mux_cnt, num_sim_clock_cycles);
   fprintf(fp, ".meas tran %s_size%d[%d]_energy_per_cycle param='%s_size%d[%d]_dynamic_power*clock_period'\n",
            mux_spice_model->prefix, mux_size, testbench_mux_cnt,
            mux_spice_model->prefix, mux_size, testbench_mux_cnt);
@@ -2335,7 +2376,8 @@ static
 void fprint_spice_mux_testbench_measurements(FILE* fp, 
                                              enum e_spice_mux_tb_type mux_tb_type,
                                              t_spice spice) {
-  int num_clock_cycle = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
+  int num_clock_cycle = max_sim_num_clock_cycles;
+    
   /*
   int i;
   t_llist* head = NULL;
@@ -2349,7 +2391,7 @@ void fprint_spice_mux_testbench_measurements(FILE* fp,
     exit(1);
   }
 
-  fprint_spice_netlist_transient_setting(fp, spice, FALSE);
+  fprint_spice_netlist_transient_setting(fp, spice, num_clock_cycle, FALSE);
   /* Measure the leakage and dynamic power of SRAMs*/
   fprintf(fp, ".meas tran total_leakage_srams avg p(Vgvdd_sram) from=0 to=\'clock_period\'\n");
   fprintf(fp, ".meas tran total_dynamic_srams avg p(Vgvdd_sram) from=\'clock_period\' to=\'%d*clock_period\'\n", num_clock_cycle);
@@ -2533,10 +2575,14 @@ int fprint_spice_one_mux_testbench(char* formatted_spice_dir,
                grid_x, grid_y, mux_tb_name, circuit_name);
     if (NULL == tb_head) {
       tb_head = create_llist(1);
-      tb_head->dptr = (void*)(my_strdup(mux_testbench_file_path));
+      tb_head->dptr = my_malloc(sizeof(t_spicetb_info));
+      ((t_spicetb_info*)(tb_head->dptr))->tb_name = my_strdup(mux_testbench_file_path);
+      ((t_spicetb_info*)(tb_head->dptr))->num_sim_clock_cycles = max_sim_num_clock_cycles;
     } else {
       temp = insert_llist_node(tb_head);
-      temp->dptr = (void*)(my_strdup(mux_testbench_file_path));
+      temp->dptr = my_malloc(sizeof(t_spicetb_info));
+      ((t_spicetb_info*)(temp->dptr))->tb_name = my_strdup(mux_testbench_file_path);
+      ((t_spicetb_info*)(temp->dptr))->num_sim_clock_cycles = max_sim_num_clock_cycles;
     }
     used = 1;
   } else {

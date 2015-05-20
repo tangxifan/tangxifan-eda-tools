@@ -33,11 +33,21 @@
 
 /* local global variables */
 static int tb_num_luts = 0;
+static int upbound_sim_num_clock_cycles = 2;
+static int max_sim_num_clock_cycles = 2;
+static int auto_select_max_sim_num_clock_cycles = TRUE;
 
 /* Subroutines in this source file*/
 static 
-void init_spice_lut_testbench_globals() {
+void init_spice_lut_testbench_globals(t_spice spice) {
   tb_num_luts = 0;
+  auto_select_max_sim_num_clock_cycles = spice.spice_params.meas_params.auto_select_sim_num_clk_cycle;
+  upbound_sim_num_clock_cycles = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
+  if (FALSE == auto_select_max_sim_num_clock_cycles) {
+    max_sim_num_clock_cycles = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
+  } else {
+    max_sim_num_clock_cycles = 2;
+  }
 }
 
 static 
@@ -113,9 +123,12 @@ void fprint_spice_lut_testbench_one_pb_graph_node_lut(FILE* fp,
   int* input_init_value = NULL;
   int* input_net_num = NULL;
   int iport, ipin, cur_pin;
-  int num_inputs, num_outputs, num_clock_pins, vpack_net_index;
+  int num_inputs, num_outputs, num_clock_pins;
   char* outport_name = NULL;
   t_rr_node* local_rr_graph = NULL;
+  float average_density = 0.;
+  int avg_density_cnt = 0;
+  int num_sim_clock_cycles = 0;
 
   assert(NULL != cur_pb_graph_node);
   assert(NULL != prefix);
@@ -197,6 +210,40 @@ void fprint_spice_lut_testbench_one_pb_graph_node_lut(FILE* fp,
   } else {
     fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(fp, x, y, &(cur_pb_graph_node->output_pins[0][0]), 
                                                           NULL, outport_name, FALSE, LL_rr_node_indices); 
+  }
+
+  /* Calculate average density of this MUX */
+  average_density = 0.;
+  avg_density_cnt = 0;
+  for (ipin = 0; ipin < num_inputs; ipin++) {
+    assert(!(0 > input_density[ipin]));
+    if (0. < input_density[ipin]) {
+      average_density += input_density[ipin];
+      avg_density_cnt++;
+    }
+  }
+  /* Calculate the num_sim_clock_cycle for this MUX, update global max_sim_clock_cycle in this testbench */
+  if (0 < avg_density_cnt) {
+    average_density = average_density/avg_density_cnt;
+  } else {
+    assert(0 == avg_density_cnt);
+    average_density = 0.;
+  }
+  if (TRUE == auto_select_max_sim_num_clock_cycles) {
+    if (0. == average_density) {
+      num_sim_clock_cycles = 2;
+    } else {
+      assert(0. < average_density);
+      num_sim_clock_cycles = (int)(1/average_density) + 1;
+    }
+    if (max_sim_num_clock_cycles < num_sim_clock_cycles) {
+      max_sim_num_clock_cycles = num_sim_clock_cycles;
+    }
+    if (max_sim_num_clock_cycles > upbound_sim_num_clock_cycles) {
+      max_sim_num_clock_cycles = upbound_sim_num_clock_cycles;
+    }
+  } else {
+    num_sim_clock_cycles = max_sim_num_clock_cycles;
   }
 
   /* Mark temporary used */
@@ -455,7 +502,7 @@ void fprint_spice_lut_testbench_measurements(FILE* fp, int grid_x, int grid_y,
                                              boolean leakage_only) {
   /* int i; */
   /* First cycle reserved for measuring leakage */
-  int num_clock_cycle = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
+  int num_clock_cycle = max_sim_num_clock_cycles;
   
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -464,7 +511,7 @@ void fprint_spice_lut_testbench_measurements(FILE* fp, int grid_x, int grid_y,
     exit(1);
   }
   
-  fprint_spice_netlist_transient_setting(fp, spice, leakage_only);
+  fprint_spice_netlist_transient_setting(fp, spice, num_clock_cycle, leakage_only);
 
   /* TODO: Measure the delay of each mapped net and logical block */
 
@@ -571,7 +618,7 @@ int fprint_spice_one_lut_testbench(char* formatted_spice_dir,
   fprint_spice_lut_testbench_global_ports(fp, grid_x, grid_y, num_clock, (*arch.spice));
  
   /* Quote defined Logic blocks subckts (Grids) */
-  init_spice_lut_testbench_globals();
+  init_spice_lut_testbench_globals(*(arch.spice));
   init_logical_block_spice_model_type_temp_used(arch.spice->num_spice_model, arch.spice->spice_models, SPICE_MODEL_LUT);
   fprint_spice_lut_testbench_call_one_grid_defined_luts(fp, grid_x, grid_y, LL_rr_node_indices);
 
@@ -596,10 +643,14 @@ int fprint_spice_one_lut_testbench(char* formatted_spice_dir,
                grid_x, grid_y, circuit_name);
     if (NULL == tb_head) {
       tb_head = create_llist(1);
-      tb_head->dptr = (void*)my_strdup(lut_testbench_file_path);
+      tb_head->dptr = my_malloc(sizeof(t_spicetb_info));
+      ((t_spicetb_info*)(tb_head->dptr))->tb_name = my_strdup(lut_testbench_file_path);
+      ((t_spicetb_info*)(tb_head->dptr))->num_sim_clock_cycles = max_sim_num_clock_cycles;
     } else {
       temp = insert_llist_node(tb_head);
-      temp->dptr = (void*)my_strdup(lut_testbench_file_path);
+      temp->dptr = my_malloc(sizeof(t_spicetb_info));
+      ((t_spicetb_info*)(temp->dptr))->tb_name = my_strdup(lut_testbench_file_path);
+      ((t_spicetb_info*)(temp->dptr))->num_sim_clock_cycles = max_sim_num_clock_cycles;
     }
     used = 1;
   } else {

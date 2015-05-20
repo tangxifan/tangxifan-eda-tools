@@ -1413,8 +1413,21 @@ void fprint_voltage_pulse_params(FILE* fp,
 
 void fprint_spice_netlist_transient_setting(FILE* fp, 
                                             t_spice spice, 
+                                            int num_sim_clock_cycles,
                                             boolean leakage_only) {
   int num_clock_cycle = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
+ 
+  /* Overwrite the sim if auto is turned on */
+  /*
+  if ((TRUE == spice.spice_params.meas_params.auto_select_sim_num_clk_cycle)
+    &&(num_sim_clock_cycles < num_clock_cycle)) {
+    num_clock_cycle = num_sim_clock_cycles;
+  }
+  */
+
+  if (TRUE == spice.spice_params.meas_params.auto_select_sim_num_clk_cycle) {
+    assert(!(num_sim_clock_cycles > num_clock_cycle));
+  }
 
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File Handler!",__FILE__, __LINE__); 

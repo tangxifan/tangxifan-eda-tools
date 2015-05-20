@@ -521,7 +521,7 @@ void fprint_top_netlist_measurements(FILE* fp,
     exit(1);
   }
   
-  fprint_spice_netlist_transient_setting(fp, spice, leakage_only);
+  fprint_spice_netlist_transient_setting(fp, spice, num_clock_cycle, leakage_only);
 
   /* TODO: Measure the delay of each mapped net and logical block */
 
@@ -692,10 +692,14 @@ void fprint_spice_top_netlist(char* circuit_name,
   //my_free(formatted_subckt_dir_path);
   if (NULL == tb_head) {
     tb_head = create_llist(1);
-    tb_head->dptr = (void*)my_strdup(top_netlist_name);
+    tb_head->dptr = my_malloc(sizeof(t_spicetb_info));
+    ((t_spicetb_info*)(tb_head->dptr))->tb_name = my_strdup(top_netlist_name);
+    ((t_spicetb_info*)(tb_head->dptr))->num_sim_clock_cycles = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
   } else {
     temp = insert_llist_node(tb_head);
-    temp->dptr = (void*)my_strdup(top_netlist_name);
+    temp->dptr = my_malloc(sizeof(t_spicetb_info));
+    ((t_spicetb_info*)(temp->dptr))->tb_name = my_strdup(top_netlist_name);
+    ((t_spicetb_info*)(temp->dptr))->num_sim_clock_cycles = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
   }
 
   return;

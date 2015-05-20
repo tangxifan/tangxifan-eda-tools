@@ -83,6 +83,12 @@ void backannotate_rr_nodes_net_info() {
         if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
           rr_node[pin_global_rr_node_id].net_num = OPEN;
           rr_node[pin_global_rr_node_id].vpack_net_num = OPEN;
+        } else if (OPEN == block[iblk].nets[ipin]){
+          rr_node[pin_global_rr_node_id].net_num = OPEN;
+          rr_node[pin_global_rr_node_id].vpack_net_num = OPEN;
+        } else {
+          rr_node[pin_global_rr_node_id].net_num = block[iblk].nets[ipin];
+          rr_node[pin_global_rr_node_id].vpack_net_num = clb_to_vpack_net_mapping[block[iblk].nets[ipin]];
         }
       } else {
         assert(rr_node[pin_global_rr_node_id].vpack_net_num == pb_rr_graph[ipin].vpack_net_num);
@@ -217,9 +223,11 @@ void backannotate_clb_nets_act_info() {
     /* SPECIAL for SPICE simulator: init_value is opposite to probability 
      * when density is not zero.
      */
+    /*
     if (0. != vpack_net[inet].spice_net_info->density) {
       vpack_net[inet].spice_net_info->init_val = 1 - vpack_net[inet].spice_net_info->probability; 
     }
+    */
   }
   
   /* Free all spice_net_info and reallocate */

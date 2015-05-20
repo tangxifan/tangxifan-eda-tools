@@ -1507,6 +1507,7 @@ int recommend_num_sim_clock_cycle() {
   float avg_density = 0.;
   int recmd_num_sim_clock_cycle = 0;
   int inet;
+  /* int inode, iedge, vpack_net_id; */
   int net_cnt = 0;
 
   /* get the average density of all the nets */
@@ -1518,6 +1519,21 @@ int recommend_num_sim_clock_cycle() {
     }
   }
   avg_density = avg_density/net_cnt;
+  /* Get the average density of all the nets in global routing?*/
+  /*  
+  for (inode = 0; inode < num_rr_nodes; inode++) {
+    for (iedge = 0; iedge < rr_node[inode].num_drive_rr_nodes; iedge++) {
+      vpack_net_id = rr_node[inode].drive_rr_nodes[iedge]->vpack_net_num;
+      if ((OPEN != vpack_net_id)
+      &&(FALSE == vpack_net[vpack_net_id].is_global)
+      &&(FALSE == vpack_net[vpack_net_id].is_const_gen)) {
+        avg_density += vpack_net[vpack_net_id].spice_net_info->density;
+        net_cnt++;
+      }
+    } 
+  }
+  avg_density = avg_density/net_cnt;
+  */
   recmd_num_sim_clock_cycle = (int)(1/avg_density); 
   vpr_printf(TIO_MESSAGE_INFO, "Average net density: %.2g\n", avg_density);
   vpr_printf(TIO_MESSAGE_INFO, "Recommend no. of clock cycles: %d\n", recmd_num_sim_clock_cycle);

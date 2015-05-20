@@ -157,6 +157,7 @@ enum e_spice_accuracy_type {
 
 typedef struct s_spice_meas_params t_spice_meas_params;
 struct s_spice_meas_params {
+  int auto_select_sim_num_clk_cycle;
   int sim_num_clock_cycle; /* Number of clock cycle in simulation */
   float accuracy;
   enum e_spice_accuracy_type accuracy_type;
@@ -263,6 +264,12 @@ struct s_spice_net_info {
   float pwh;
   float slew_rise;
   float slew_fall;
+};
+
+typedef struct s_spicetb_info t_spicetb_info;
+struct s_spicetb_info {
+  char* tb_name;
+  int num_sim_clock_cycles;
 };
 
 /* SPICE support end*/

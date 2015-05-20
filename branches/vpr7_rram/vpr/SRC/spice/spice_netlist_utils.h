@@ -87,6 +87,7 @@ void fprint_spice_include_param_headers(FILE* fp,
 
 void fprint_spice_netlist_transient_setting(FILE* fp, 
                                             t_spice spice, 
+                                            int num_sim_clock_cycles, 
                                             boolean leakage_only);
 
 void fprint_stimulate_dangling_one_grid_pin(FILE* fp,
