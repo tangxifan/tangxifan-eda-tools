@@ -1179,8 +1179,8 @@ attr	../../libarchfpga/include/ezxml.h	/^	char **attr; \/* tag attributes { name
 auto_compute_inter_cluster_net_delay	base/vpr_types.h	/^	boolean auto_compute_inter_cluster_net_delay;$/;"	m	struct:s_packer_opts
 auto_select_max_num_sim_clock_cycles	spice/spice_dff_testbench.c	/^static int auto_select_max_num_sim_clock_cycles = TRUE;$/;"	v	file:
 auto_select_max_sim_num_clock_cycles	spice/spice_grid_testbench.c	/^static int auto_select_max_sim_num_clock_cycles = TRUE;$/;"	v	file:
-auto_select_max_sim_num_clock_cycles	spice/spice_lut_testbench.c	/^static boolean auto_select_max_sim_num_clock_cycles = TRUE;$/;"	v	file:
-auto_select_max_sim_num_clock_cycles	spice/spice_mux_testbench.c	/^static boolean auto_select_max_sim_num_clock_cycles = TRUE;$/;"	v	file:
+auto_select_max_sim_num_clock_cycles	spice/spice_lut_testbench.c	/^static int auto_select_max_sim_num_clock_cycles = TRUE;$/;"	v	file:
+auto_select_max_sim_num_clock_cycles	spice/spice_mux_testbench.c	/^static int auto_select_max_sim_num_clock_cycles = TRUE;$/;"	v	file:
 auto_select_num_sim_clock_cycle	spice/spice_utils.c	/^void auto_select_num_sim_clock_cycle(t_spice* spice) {$/;"	f
 auto_select_sim_num_clk_cycle	../../libarchfpga/include/spice_types.h	/^  int auto_select_sim_num_clk_cycle;$/;"	m	struct:s_spice_meas_params
 autosize_buffer	../../libarchfpga/include/physical_types.h	/^	boolean autosize_buffer; \/* autosize clock buffers *\/$/;"	m	struct:s_clock_network
@@ -3043,6 +3043,7 @@ parent_pb_type	../../libarchfpga/include/physical_types.h	/^	struct s_pb_type *p
 parent_pin_class	../../libarchfpga/include/physical_types.h	/^	int *parent_pin_class; \/* [0..depth-1] the grouping of pins that this particular pin belongs to *\/$/;"	m	struct:s_pb_graph_pin
 parent_switch	route/route_tree_timing.h	/^	short parent_switch;$/;"	m	struct:s_rt_node
 parse_direct_pin_name	util/vpr_utils.c	/^void parse_direct_pin_name(char * src_string, int line, int * start_pin_index, $/;"	f
+partition	spice/quicksort.c	/^int partition(int len, int* sort_index, $/;"	f	file:
 pass_gate_logic	../../libarchfpga/include/spice_types.h	/^  t_spice_model_pass_gate_logic* pass_gate_logic;$/;"	m	struct:s_spice_model
 path	../../libarchfpga/include/spice_types.h	/^  char* path;$/;"	m	struct:s_spice_model_netlist
 path	../../libarchfpga/include/spice_types.h	/^  char* path;$/;"	m	struct:s_spice_tech_lib
@@ -3364,6 +3365,7 @@ ptr	timing/slre.c	/^  const char *ptr;  \/\/ Pointer to the substring$/;"	m	stru
 pwh	../../libarchfpga/include/spice_types.h	/^  float pwh;$/;"	m	struct:s_spice_net_info
 pwl	../../libarchfpga/include/spice_types.h	/^  float pwl;$/;"	m	struct:s_spice_net_info
 quantifier	timing/slre.c	/^static void quantifier(struct slre *r, int prev, int op) {$/;"	f	file:
+quicksort_float_index	spice/quicksort.c	/^void quicksort_float_index(int len, $/;"	f
 quit	base/graphics.c	/^quit (void (*drawscreen) (void)) $/;"	f	file:
 rc_node	timing/net_delay_types.h	/^	struct s_rc_node *rc_node;$/;"	m	struct:s_linked_rc_ptr	typeref:struct:s_linked_rc_ptr::s_rc_node
 re_expand	route/route_tree_timing.h	/^	short re_expand;$/;"	m	struct:s_rt_node
@@ -3817,6 +3819,7 @@ structure	../../libarchfpga/include/spice_types.h	/^  enum e_spice_model_structu
 subckt_dir	base/vpr_types.h	/^  char* subckt_dir;$/;"	m	struct:s_spice_opts
 sum_pin_class	pack/cluster_feasibility_filter.c	/^static void sum_pin_class(INOUTP t_pb_graph_node *pb_graph_node) {$/;"	f	file:
 swap_blk_same_class_2pins	clb_pin_remap/clb_pin_remap_util.c	/^void swap_blk_same_class_2pins(t_block* target_blk, int n_nets, t_net* nets,$/;"	f
+swap_int	spice/quicksort.c	/^void swap_int(int* int_a, int* int_b) {$/;"	f	file:
 swap_result	place/place.c	/^enum swap_result {$/;"	g	file:
 swapped_to_empty	place/place.c	/^	int swapped_to_empty;$/;"	m	struct:s_pl_moved_block	file:
 sweep_hanging_nets_and_inputs	base/ReadOptions.h	/^	boolean sweep_hanging_nets_and_inputs;$/;"	m	struct:s_options
@@ -4149,6 +4152,10 @@ unclustered_list_head	pack/cluster.c	/^static struct s_molecule_link *unclustere
 unclustered_list_head_size	pack/cluster.c	/^int unclustered_list_head_size;$/;"	v
 unmap_button	base/graphics.c	/^static void unmap_button (int bnum) $/;"	f	file:
 unmark_fanout_intermediate_nodes	pack/cluster_feasibility_filter.c	/^static void unmark_fanout_intermediate_nodes($/;"	f	file:
+upbound_num_sim_clock_cycles	spice/spice_dff_testbench.c	/^static int upbound_num_sim_clock_cycles = 2;$/;"	v	file:
+upbound_sim_num_clock_cycles	spice/spice_grid_testbench.c	/^static int upbound_sim_num_clock_cycles = 2;$/;"	v	file:
+upbound_sim_num_clock_cycles	spice/spice_lut_testbench.c	/^static int upbound_sim_num_clock_cycles = 2;$/;"	v	file:
+upbound_sim_num_clock_cycles	spice/spice_mux_testbench.c	/^static int upbound_sim_num_clock_cycles = 2;$/;"	v	file:
 updateRect	base/graphics.c	/^static RECT adjustRect, updateRect;$/;"	v	file:
 update_bb	place/place.c	/^static void update_bb(int inet, struct s_bb *bb_coord_new,$/;"	f	file:
 update_cluster_stats	pack/cluster.c	/^static void update_cluster_stats( INP t_pack_molecule *molecule,$/;"	f	file:

@@ -24,6 +24,7 @@
 #include "vpr_utils.h"
 
 /* Include SPICE support headers*/
+#include "quicksort.h"
 #include "linkedlist.h"
 #include "spice_globals.h"
 #include "spice_utils.h"
@@ -1505,38 +1506,52 @@ void stats_pb_graph_node_port_pin_numbers(t_pb_graph_node* cur_pb_graph_node,
 
 int recommend_num_sim_clock_cycle() {
   float avg_density = 0.;
+  float median_density = 0.;
   int recmd_num_sim_clock_cycle = 0;
-  int inet;
-  /* int inode, iedge, vpack_net_id; */
+  int inet, jnet;
   int net_cnt = 0;
+  float* density_value = NULL;
+  int* sort_index = NULL;
 
   /* get the average density of all the nets */
   for (inet = 0; inet < num_logical_nets; inet++) {
     assert(NULL != vpack_net[inet].spice_net_info);
-    if ((FALSE == vpack_net[inet].is_global)&&(FALSE == vpack_net[inet].is_const_gen)) {
-      avg_density += vpack_net[inet].spice_net_info->density;
+    if ((FALSE == vpack_net[inet].is_global)
+     &&(FALSE == vpack_net[inet].is_const_gen)
+     &&(0. != vpack_net[inet].spice_net_info->density)) {
+      avg_density += vpack_net[inet].spice_net_info->density; 
       net_cnt++;
     }
   }
-  avg_density = avg_density/net_cnt;
-  /* Get the average density of all the nets in global routing?*/
-  /*  
-  for (inode = 0; inode < num_rr_nodes; inode++) {
-    for (iedge = 0; iedge < rr_node[inode].num_drive_rr_nodes; iedge++) {
-      vpack_net_id = rr_node[inode].drive_rr_nodes[iedge]->vpack_net_num;
-      if ((OPEN != vpack_net_id)
-      &&(FALSE == vpack_net[vpack_net_id].is_global)
-      &&(FALSE == vpack_net[vpack_net_id].is_const_gen)) {
-        avg_density += vpack_net[vpack_net_id].spice_net_info->density;
-        net_cnt++;
-      }
-    } 
+  avg_density = avg_density/net_cnt; 
+  /* Fill the array to be sorted */
+  density_value = (float*)my_malloc(sizeof(float)*net_cnt);
+  sort_index = (int*)my_malloc(sizeof(int)*net_cnt);
+  jnet = 0;
+  for (inet = 0; inet < num_logical_nets; inet++) {
+    assert(NULL != vpack_net[inet].spice_net_info);
+    if ((FALSE == vpack_net[inet].is_global)
+     &&(FALSE == vpack_net[inet].is_const_gen)
+     &&(0. != vpack_net[inet].spice_net_info->density)) {
+      sort_index[jnet] = inet;
+      density_value[jnet] = vpack_net[inet].spice_net_info->density;
+      jnet++;
+    }
   }
-  avg_density = avg_density/net_cnt;
-  */
+  assert(jnet == net_cnt);
+  /* Sort the density */
+  quicksort_float_index(net_cnt, sort_index, density_value);
+  /* Get the median */
+  median_density = vpack_net[sort_index[(int)net_cnt/2]].spice_net_info->density;
+  
   recmd_num_sim_clock_cycle = (int)(1/avg_density); 
   vpr_printf(TIO_MESSAGE_INFO, "Average net density: %.2g\n", avg_density);
+  vpr_printf(TIO_MESSAGE_INFO, "Net density median: %.2g\n", median_density);
   vpr_printf(TIO_MESSAGE_INFO, "Recommend no. of clock cycles: %d\n", recmd_num_sim_clock_cycle);
+
+  /* Free */
+  my_free(sort_index);
+  my_free(density_value);
 
   return recmd_num_sim_clock_cycle; 
 }
