@@ -1512,6 +1512,7 @@ int recommend_num_sim_clock_cycle() {
   int net_cnt = 0;
   float* density_value = NULL;
   int* sort_index = NULL;
+  int* net_to_sort_index_mapping = NULL;
 
   /* get the average density of all the nets */
   for (inet = 0; inet < num_logical_nets; inet++) {
@@ -1527,13 +1528,15 @@ int recommend_num_sim_clock_cycle() {
   /* Fill the array to be sorted */
   density_value = (float*)my_malloc(sizeof(float)*net_cnt);
   sort_index = (int*)my_malloc(sizeof(int)*net_cnt);
+  net_to_sort_index_mapping = (int*)my_malloc(sizeof(int)*net_cnt);
   jnet = 0;
   for (inet = 0; inet < num_logical_nets; inet++) {
     assert(NULL != vpack_net[inet].spice_net_info);
     if ((FALSE == vpack_net[inet].is_global)
      &&(FALSE == vpack_net[inet].is_const_gen)
      &&(0. != vpack_net[inet].spice_net_info->density)) {
-      sort_index[jnet] = inet;
+      sort_index[jnet] = jnet;
+      net_to_sort_index_mapping[jnet] = inet;
       density_value[jnet] = vpack_net[inet].spice_net_info->density;
       jnet++;
     }
@@ -1541,6 +1544,11 @@ int recommend_num_sim_clock_cycle() {
   assert(jnet == net_cnt);
   /* Sort the density */
   quicksort_float_index(net_cnt, sort_index, density_value);
+  /* After sort */
+  printf("after sort:\n");
+  for (jnet = 0; jnet < net_cnt; jnet++) {
+    printf("%.2g\n", vpack_net[net_to_sort_index_mapping[sort_index[jnet]]].spice_net_info->density);
+  }
   /* Get the median */
   median_density = vpack_net[sort_index[(int)net_cnt/2]].spice_net_info->density;
   
@@ -1552,6 +1560,7 @@ int recommend_num_sim_clock_cycle() {
   /* Free */
   my_free(sort_index);
   my_free(density_value);
+  my_free(net_to_sort_index_mapping);
 
   return recmd_num_sim_clock_cycle; 
 }

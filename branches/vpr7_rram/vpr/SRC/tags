@@ -1551,6 +1551,7 @@ do_constant_net_delay_timing_analysis	timing/path_delay.c	/^void do_constant_net
 do_lut_rebalancing	timing/path_delay.c	/^static void do_lut_rebalancing() {$/;"	f	file:
 do_path_counting	timing/path_delay.c	/^static void do_path_counting(float criticality_denom) {$/;"	f	file:
 do_power	base/vpr_types.h	/^	boolean do_power; \/* Perform power estimation? *\/$/;"	m	struct:s_power_opts
+do_quicksort_float_index	spice/quicksort.c	/^void do_quicksort_float_index(int len, $/;"	f
 do_spice	base/vpr_types.h	/^  boolean do_spice;$/;"	m	struct:s_spice_opts
 do_timing_analysis	timing/path_delay.c	/^void do_timing_analysis(t_slack * slacks, boolean is_prepacked, boolean do_lut_input_balancing, boolean is_final_analysis) {$/;"	f
 do_timing_analysis_for_constraint	timing/path_delay.c	/^static float do_timing_analysis_for_constraint(int source_clock_domain, int sink_clock_domain, $/;"	f	file:
@@ -3043,7 +3044,8 @@ parent_pb_type	../../libarchfpga/include/physical_types.h	/^	struct s_pb_type *p
 parent_pin_class	../../libarchfpga/include/physical_types.h	/^	int *parent_pin_class; \/* [0..depth-1] the grouping of pins that this particular pin belongs to *\/$/;"	m	struct:s_pb_graph_pin
 parent_switch	route/route_tree_timing.h	/^	short parent_switch;$/;"	m	struct:s_rt_node
 parse_direct_pin_name	util/vpr_utils.c	/^void parse_direct_pin_name(char * src_string, int line, int * start_pin_index, $/;"	f
-partition	spice/quicksort.c	/^int partition(int len, int* sort_index, $/;"	f	file:
+partition	spice/quicksort.c	/^int partition(int len, float* sort_value, int pivot_index) {$/;"	f	file:
+partition_index	spice/quicksort.c	/^int partition_index(int len, int* sort_index, $/;"	f	file:
 pass_gate_logic	../../libarchfpga/include/spice_types.h	/^  t_spice_model_pass_gate_logic* pass_gate_logic;$/;"	m	struct:s_spice_model
 path	../../libarchfpga/include/spice_types.h	/^  char* path;$/;"	m	struct:s_spice_model_netlist
 path	../../libarchfpga/include/spice_types.h	/^  char* path;$/;"	m	struct:s_spice_tech_lib
@@ -3365,6 +3367,7 @@ ptr	timing/slre.c	/^  const char *ptr;  \/\/ Pointer to the substring$/;"	m	stru
 pwh	../../libarchfpga/include/spice_types.h	/^  float pwh;$/;"	m	struct:s_spice_net_info
 pwl	../../libarchfpga/include/spice_types.h	/^  float pwl;$/;"	m	struct:s_spice_net_info
 quantifier	timing/slre.c	/^static void quantifier(struct slre *r, int prev, int op) {$/;"	f	file:
+quicksort_float	spice/quicksort.c	/^void quicksort_float(int len, $/;"	f
 quicksort_float_index	spice/quicksort.c	/^void quicksort_float_index(int len, $/;"	f
 quit	base/graphics.c	/^quit (void (*drawscreen) (void)) $/;"	f	file:
 rc_node	timing/net_delay_types.h	/^	struct s_rc_node *rc_node;$/;"	m	struct:s_linked_rc_ptr	typeref:struct:s_linked_rc_ptr::s_rc_node
@@ -3819,6 +3822,7 @@ structure	../../libarchfpga/include/spice_types.h	/^  enum e_spice_model_structu
 subckt_dir	base/vpr_types.h	/^  char* subckt_dir;$/;"	m	struct:s_spice_opts
 sum_pin_class	pack/cluster_feasibility_filter.c	/^static void sum_pin_class(INOUTP t_pb_graph_node *pb_graph_node) {$/;"	f	file:
 swap_blk_same_class_2pins	clb_pin_remap/clb_pin_remap_util.c	/^void swap_blk_same_class_2pins(t_block* target_blk, int n_nets, t_net* nets,$/;"	f
+swap_float	spice/quicksort.c	/^void swap_float(float* int_a, float* int_b) {$/;"	f	file:
 swap_int	spice/quicksort.c	/^void swap_int(int* int_a, int* int_b) {$/;"	f	file:
 swap_result	place/place.c	/^enum swap_result {$/;"	g	file:
 swapped_to_empty	place/place.c	/^	int swapped_to_empty;$/;"	m	struct:s_pl_moved_block	file:
