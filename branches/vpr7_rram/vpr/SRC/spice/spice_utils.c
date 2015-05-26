@@ -1544,11 +1544,6 @@ int recommend_num_sim_clock_cycle() {
   assert(jnet == net_cnt);
   /* Sort the density */
   quicksort_float_index(net_cnt, sort_index, density_value);
-  /* After sort */
-  printf("after sort:\n");
-  for (jnet = 0; jnet < net_cnt; jnet++) {
-    printf("%.2g\n", vpack_net[net_to_sort_index_mapping[sort_index[jnet]]].spice_net_info->density);
-  }
   /* Get the median */
   median_density = vpack_net[sort_index[(int)net_cnt/2]].spice_net_info->density;
   
