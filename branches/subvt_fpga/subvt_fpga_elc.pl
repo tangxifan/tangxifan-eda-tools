@@ -226,6 +226,7 @@ sub print_usage()
   print "      Options for RRAM 2T1R Structure:\n";
   print "      -rram2t1r <RRAM_verilogA> : run RRAM 2T1R analysis.\n";
   print "      -vprog_sweep <max_vprog>: sweep the vprog for RRAM 2T1R\n";
+  print "      -rram2n1r: use two n-type transistors in rram2t1r\n";
   print "      Options for Multiplexers:\n";
   print "      -mux <mux2_spice> : run HSPICE simulations for Multiplexer. 2-input multiplexer spice netlist should be provided\n";
   print "      -mux_size <int> : number of inputs of multiplexer, mandatory when option mux is enabled.\n";
@@ -383,6 +384,7 @@ sub opts_read()
   if ("on" eq $opt_ptr->{rram2t1r}) {
     &read_opt_into_hash("vprog_sweep","on","off");  # Check -vprog_sweep
     &read_opt_into_hash("wprog_sweep","on","off");  # Check -wprog_sweep
+    &read_opt_into_hash("rram2n1r","off","off");  # Check -rram2n1r
   }
 
   &read_opt_into_hash("hspice64","off","off");  # Check -hspice32
@@ -768,8 +770,8 @@ sub process_unit($ $)
 sub check_lib_settings()
 {
   
-  $conf_ptr->{general_settings}->{spice_dir}->{val} =~ s/^(\.)*\///;
-  $conf_ptr->{general_settings}->{process_tech}->{val} =~ s/^(\.)*\///;
+  #$conf_ptr->{general_settings}->{spice_dir}->{val} =~ s/^\.\///;
+  #$conf_ptr->{general_settings}->{process_tech}->{val} =~ s/^\.\///;
 
   if ("on" eq $opt_ptr->{dff}) {
     $opt_ptr->{dff_val} =~ s/^(\.)*\///;
@@ -883,7 +885,8 @@ sub run_hspice($ $ $)
   if ("on" eq $verilogA_sim) {
     my ($process_dir,$process_file) = &split_prog_path("$conf_ptr->{general_settings}->{process_tech}->{val}");
     chdir $process_dir;
-    #`csh -cx 'source /softs/synopsys/hspice/2013.12/hspice/bin/cshrc.meta'`;
+    print "Enter directory($process_dir)...\n";
+    `csh -x 'source /softs/synopsys/hspice/2013.12/hspice/bin/cshrc.meta'`;
   }
   if (!(-e "$mypath"))
   {
@@ -908,6 +911,7 @@ sub run_hspice($ $ $)
   if ("on" eq $verilogA_sim) {
     `csh -cx '$hspice_path -i $fspice -o $flis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include'`;
     chdir $cwd;
+    print "Return directory($cwd)...\n";
   }
   elsif ("off" eq $verilogA_sim) {
     `csh -cx '$hspice_path -i $fspice -o $flis'`;
@@ -948,22 +952,24 @@ sub gen_common_sp_technology($)
   my ($spfh) = @_;
 
   &tab_print($spfh,"* Include Technology Library\n",0);
-  if ($conf_ptr->{general_settings}->{process_tech}->{val} =~ m/\.lib$/) {
+  if (($conf_ptr->{general_settings}->{process_tech}->{val} =~ m/\.lib$/)
+    ||($conf_ptr->{general_settings}->{process_tech}->{val} =~ m/\.l$/)) {
     &tab_print($spfh,".lib ",0);
   } else {
     &tab_print($spfh,".include ",0);
   }
 
-  &tab_print($spfh,"\'/$conf_ptr->{general_settings}->{process_tech}->{val}\'  ",0);
+  &tab_print($spfh,"\'/$conf_ptr->{general_settings}->{process_tech}->{val}\' ",0);
 
-  if ($conf_ptr->{general_settings}->{process_tech}->{val} =~ m/\.lib$/) {
+  if (($conf_ptr->{general_settings}->{process_tech}->{val} =~ m/\.lib$/)
+    ||($conf_ptr->{general_settings}->{process_tech}->{val} =~ m/\.l$/)) {
     &tab_print($spfh,"$conf_ptr->{general_settings}->{process_type}->{val} ",0);
   }
   &tab_print($spfh,"\n",0);
 
   &tab_print($spfh,"*Include  ELC NMOS and PMOS Package\n",0);
   &tab_print($spfh,".include \'$cwd/$conf_ptr->{general_settings}->{spice_dir}->{val}$elc_nmos_pmos_sp'\n",0);
-  &tab_print($spfh,"\n",0);
+  #&tab_print($spfh,"\n",0);
   
   &tab_print($spfh,"*Design Parameters\n",0);
   &tab_print($spfh,".param beta = $conf_ptr->{general_settings}->{pn_ratio}->{val}\n",0);
@@ -1739,7 +1745,7 @@ sub get_sim_results($ $ $)
       $results->{$tmp} = "failed";
     } elsif ("failed" ne $results->{$tmp}) {
       $results->{$tmp} = &process_unit($results->{$tmp},"empty");
-      $results->{$tmp} = sprintf("%.2g", $results->{$tmp});
+      $results->{$tmp} = sprintf("%.4g", $results->{$tmp});
     }
     print "Sim Results: $tmp = $results->{$tmp}\n";
   }
@@ -2873,8 +2879,11 @@ sub gen_rram2t1r_sp_common($ $ $ $ $ $ $ $) {
   &gen_common_sp_parameters($spfh,$prog_vdd);
 
   # Include RRAM verilogA model
-  &tab_print($spfh,".option RUNLVL=6\n",0);
-  &tab_print($spfh,".hdl \'$rram_verilogA_model\'\n",0);
+  if ($rram_verilogA_model =~ m/\.va$/) {
+    &tab_print($spfh,".hdl \'$rram_verilogA_model\'\n",0);
+  } else {
+    &tab_print($spfh,".include \'$rram_verilogA_model\'\n",0);
+  }
   &tab_print($spfh,".param vprog=$vprog\n",0);
   &tab_print($spfh,".param wprog=$wprog\n",0);
   &tab_print($spfh,".param tprog=$tprog\n",0);
@@ -2886,22 +2895,33 @@ sub gen_rram2t1r_sp_common($ $ $ $ $ $ $ $) {
   
   # Build Prog. Trans. Pair
   &tab_print($spfh,".subckt rram_prog_pair prog_node prog_roffb prog_ron prog_te prog_be wprog=1\n",0);  
-  &tab_print($spfh,"Xp1 prog_te prog_roffb prog_node prog_te elc_pmos L=\'pl\' W=\'wprog*beta*wp\'\n",0);
-  # Hack for 2 NMOS, just for comparison
-  #&tab_print($spfh,"Xn2 prog_te prog_roffb prog_node prog_be elc_nmos L=\'nl\' W=\'wprog*wn\'\n",0);
-  # END Hack
+  if ("on" eq $opt_ptr->{rram2n1r}) {
+    # Hack for 2 NMOS, just for comparison
+    #&tab_print($spfh,"Xn2 prog_te prog_roffb prog_node prog_be elc_nmos L=\'nl\' W=\'wprog*wn\'\n",0);
+    &tab_print($spfh,"Xn2 prog_te prog_roffb prog_node prog_node elc_nmos L=\'nl\' W=\'wprog*wn\'\n",0);
+    # END Hack
+   } else {
+    &tab_print($spfh,"Xp1 prog_te prog_roffb prog_node prog_te elc_pmos L=\'pl\' W=\'wprog*beta*wp\'\n",0);
+  }
   &tab_print($spfh,"Xn1 prog_be prog_ron prog_node prog_be elc_nmos L=\'nl\' W=\'wprog*wn\'\n",0);
   &tab_print($spfh,".eom rram_prog_pair\n",0);
   &tab_print($spfh,"\n",0);
 
-  # Build 2T1R structure
-  &tab_print($spfh,"Xprog_pair0 rram_te prog_ronb prog_roff vdd gnd rram_prog_pair wprog=\'wprog\'\n",0);
-  &tab_print($spfh,"Xprog_pair1 rram_be prog_roffb prog_ron vdd gnd rram_prog_pair wprog=\'wprog\'\n",0);
-  # Hack for 2 NMOS, just for comparison
-  #&tab_print($spfh,"Xprog_pair0 rram_te prog_ron prog_roff vdd gnd rram_prog_pair wprog=\'wprog\'\n",0);
-  #&tab_print($spfh,"Xprog_pair1 rram_be prog_roff prog_ron vdd gnd rram_prog_pair wprog=\'wprog\'\n",0);
-  # END Hack
-  &tab_print($spfh,"Xrram rram_te rram_be $rram_subckt_name $rram_init_params\n",0);
+  if ("on" eq $opt_ptr->{rram2n1r}) {
+    # Hack for 2 NMOS, just for comparison
+    &tab_print($spfh,"Xprog_pair0 rram_te prog_ron prog_roff vdd gnd rram_prog_pair wprog=\'wprog\'\n",0);
+    &tab_print($spfh,"Xprog_pair1 rram_be prog_roff prog_ron vdd gnd rram_prog_pair wprog=\'wprog\'\n",0);
+    # END Hack
+  } else {
+    # Build 2T1R structure
+    &tab_print($spfh,"Xprog_pair0 rram_te prog_ronb prog_roff vdd gnd rram_prog_pair wprog=\'wprog\'\n",0);
+    &tab_print($spfh,"Xprog_pair1 rram_be prog_roffb prog_ron vdd gnd rram_prog_pair wprog=\'wprog\'\n",0);
+  }
+  if ($rram_verilogA_model =~ m/\.va$/) {
+    &tab_print($spfh,"Xrram rram_te rram_be $rram_subckt_name $rram_init_params\n",0);
+  } else {
+    &tab_print($spfh,"Xrram rram_te rram_be $rram_subckt_name\n",0);
+  }
   &tab_print($spfh,"\n",0);
   
 }
@@ -3151,15 +3171,15 @@ sub gen_basic_sp() {
     &tab_print($spfh,"* Process Type : $conf_ptr->{general_settings}->{process_type}->{val}\n",0);
     &tab_print($spfh,"* NMOS \n",0);
     &tab_print($spfh,".subckt elc_nmos drain gate source bulk L=nl W=wn\n",0);
-    &tab_print($spfh,"M1 drain gate source bulk $conf_ptr->{general_settings}->{nmos_name}->{val} L=L W=W\n",0);
-    #&tab_print($spfh,"X1 drain gate source bulk $conf_ptr->{general_settings}->{nmos_name}->{val} L=L W=W\n",0);
+    #&tab_print($spfh,"M1 drain gate source bulk $conf_ptr->{general_settings}->{nmos_name}->{val} L=L W=W\n",0);
+    &tab_print($spfh,"X1 drain gate source bulk $conf_ptr->{general_settings}->{nmos_name}->{val} L=L W=W\n",0);
     &tab_print($spfh,".eom elc_nmos\n",0);
     &tab_print($spfh,"\n",0);
    
     &tab_print($spfh,"* PMOS\n",0);
     &tab_print($spfh,".subckt elc_pmos drain gate source bulk L=pl W=wp\n",0);
-    &tab_print($spfh,"M1 drain gate source bulk $conf_ptr->{general_settings}->{pmos_name}->{val} L=L W=W\n",0);
-    #&tab_print($spfh,"X1 drain gate source bulk $conf_ptr->{general_settings}->{pmos_name}->{val} L=L W=W\n",0);
+    #&tab_print($spfh,"M1 drain gate source bulk $conf_ptr->{general_settings}->{pmos_name}->{val} L=L W=W\n",0);
+    &tab_print($spfh,"X1 drain gate source bulk $conf_ptr->{general_settings}->{pmos_name}->{val} L=L W=W\n",0);
     &tab_print($spfh,".eom elc_pmos\n",0);
     &tab_print($spfh,"\n",0);
 
