@@ -227,6 +227,7 @@ sub print_usage()
   print "      -rram2t1r <RRAM_verilogA> : run RRAM 2T1R analysis.\n";
   print "      -vprog_sweep <max_vprog>: sweep the vprog for RRAM 2T1R\n";
   print "      -rram2n1r: use two n-type transistors in rram2t1r\n";
+  print "      -driver_inv_size: define the size of inverters that drive rram2t1r structure\n";
   print "      Options for Multiplexers:\n";
   print "      -mux <mux2_spice> : run HSPICE simulations for Multiplexer. 2-input multiplexer spice netlist should be provided\n";
   print "      -mux_size <int> : number of inputs of multiplexer, mandatory when option mux is enabled.\n";
@@ -272,49 +273,34 @@ sub spot_option($ $)
 # 1. Option Name
 # 2. Whether Option with value. if yes, choose "on"
 # 3. Whether Option is mandatory. If yes, choose "on"
-sub read_opt_into_hash($ $ $)
-{
+sub read_opt_into_hash($ $ $) {
   my ($opt_name,$opt_with_val,$mandatory) = @_;
   # Check the -$opt_name
   my ($opt_fact) = ("-".$opt_name);
   my ($cur_arg) = (0);
   my ($argfd) = (&spot_option($cur_arg,"$opt_fact"));
-  if ($opt_with_val eq "on")
-  {
-    if (-1 != $argfd)
-    {
-      if ($ARGV[$argfd+1] =~ m/^-/)
-      {
+  if ($opt_with_val eq "on") {
+    if (-1 != $argfd) {
+      if ($ARGV[$argfd+1] =~ m/^-/) {
         print "The next argument cannot start with '-'!\n"; 
         print "it implies an option!\n";
-      }
-      else
-      {
+      } else {
         $opt_ptr->{"$opt_name\_val"} = $ARGV[$argfd+1];
         $opt_ptr->{"$opt_name"} = "on";
       }     
-    }
-    else
-    {
+    } else {
       $opt_ptr->{"$opt_name"} = "off";
-      if ($mandatory eq "on")
-      {
+      if ($mandatory eq "on") {
         print "Mandatory option: $opt_fact is missing!\n";
         &print_usage();
       }
     }
-  }
-  else
-  {
-    if (-1 != $argfd)
-    {
+  } else {
+    if (-1 != $argfd) {
       $opt_ptr->{"$opt_name"} = "on";
-    }
-    else
-    {
+    } else {
       $opt_ptr->{"$opt_name"} = "off";
-      if ($mandatory eq "on")
-      {
+      if ($mandatory eq "on") {
         print "Mandatory option: $opt_fact is missing!\n";
         &print_usage();
       }
@@ -324,11 +310,9 @@ sub read_opt_into_hash($ $ $)
 }
 
 # Read options
-sub opts_read()
-{
+sub opts_read() {
   # if no arguments detected, print the usage.
-  if (-1 == $#ARGV)
-  {
+  if (-1 == $#ARGV) {
     print "Error : No input arguments!\n";
     print "Help desk:\n";
     &print_usage();
@@ -350,8 +334,7 @@ sub opts_read()
   $argfd = &spot_option($cur_arg,"-debug");
   if (-1 != $argfd) {
     $opt_ptr->{"debug"} = "on";
-  }
-  else {
+  } else {
     $opt_ptr->{"debug"} = "off";
   }
 
@@ -385,6 +368,9 @@ sub opts_read()
     &read_opt_into_hash("vprog_sweep","on","off");  # Check -vprog_sweep
     &read_opt_into_hash("wprog_sweep","on","off");  # Check -wprog_sweep
     &read_opt_into_hash("rram2n1r","off","off");  # Check -rram2n1r
+    if ("on" eq $opt_ptr->{rram2n1r}) {
+      &read_opt_into_hash("driver_inv_size","on","on");  # Check -driver_inv_size
+    }
   }
 
   &read_opt_into_hash("hspice64","off","off");  # Check -hspice32
@@ -2877,6 +2863,7 @@ sub gen_rram2t1r_sp_common($ $ $ $ $ $ $ $) {
   &gen_common_sp_technology($spfh); 
 
   &gen_common_sp_parameters($spfh,$prog_vdd);
+  &tab_print($spfh,".OPTION RUNLVL=4\n",0);
 
   # Include RRAM verilogA model
   if ($rram_verilogA_model =~ m/\.va$/) {
@@ -2894,34 +2881,41 @@ sub gen_rram2t1r_sp_common($ $ $ $ $ $ $ $) {
   &tab_print($spfh,".param vthp=$conf_ptr->{general_settings}->{vthp}->{val}\n",0);
   
   # Build Prog. Trans. Pair
-  &tab_print($spfh,".subckt rram_prog_pair prog_node prog_roffb prog_ron prog_te prog_be wprog=1\n",0);  
-  if ("on" eq $opt_ptr->{rram2n1r}) {
-    # Hack for 2 NMOS, just for comparison
-    #&tab_print($spfh,"Xn2 prog_te prog_roffb prog_node prog_be elc_nmos L=\'nl\' W=\'wprog*wn\'\n",0);
-    &tab_print($spfh,"Xn2 prog_te prog_roffb prog_node prog_node elc_nmos L=\'nl\' W=\'wprog*wn\'\n",0);
-    # END Hack
-   } else {
-    &tab_print($spfh,"Xp1 prog_te prog_roffb prog_node prog_te elc_pmos L=\'pl\' W=\'wprog*beta*wp\'\n",0);
-  }
-  &tab_print($spfh,"Xn1 prog_be prog_ron prog_node prog_be elc_nmos L=\'nl\' W=\'wprog*wn\'\n",0);
+  &tab_print($spfh,".subckt rram_prog_pair prog_node prog_roffb prog_ron svdd sgnd wprog=1\n",0);  
+  &tab_print($spfh,"Xp1 prog_node prog_roffb svdd svdd elc_pmos L=\'pl\' W=\'wprog*beta*wp\'\n",0);
+  &tab_print($spfh,"Xn1 prog_node prog_ron sgnd sgnd elc_nmos L=\'nl\' W=\'wprog*wn\'\n",0);
   &tab_print($spfh,".eom rram_prog_pair\n",0);
+  &tab_print($spfh,"\n",0);
+  # Define subckt for inverters 
+  &tab_print($spfh,".subckt inv in out svdd sgnd size=1\n",0);  
+  &tab_print($spfh,"Xp1 out in svdd svdd elc_pmos L=\'pl\' W=\'size*wn*beta\'\n",0);
+  &tab_print($spfh,"Xn1 out in sgnd sgnd elc_nmos L=\'nl\' W=\'size*wn\'\n",0);
+  &tab_print($spfh,".eom inv\n",0);
   &tab_print($spfh,"\n",0);
 
   if ("on" eq $opt_ptr->{rram2n1r}) {
     # Hack for 2 NMOS, just for comparison
-    &tab_print($spfh,"Xprog_pair0 rram_te prog_ron prog_roff vdd gnd rram_prog_pair wprog=\'wprog\'\n",0);
-    &tab_print($spfh,"Xprog_pair1 rram_be prog_roff prog_ron vdd gnd rram_prog_pair wprog=\'wprog\'\n",0);
+    &tab_print($spfh,"***** 2T1R Structure *****\n",0);
+    &tab_print($spfh,"Xn1 rram_te prog_ron prog_te prog_te elc_nmos L=\'nl\' W=\'wprog*wn\'\n",0);
+    #&tab_print($spfh,"Xp1 rram_te prog_ronb vdd0 vdd0 elc_pmos L=\'pl\' W=\'wprog*wn*beta\'\n",0);
+    &tab_print($spfh,"Xn2 rram_be prog_ron prog_be prog_be elc_nmos L=\'nl\' W=\'wprog*wn\'\n",0);
+    #&tab_print($spfh,"Xp2 rram_be prog_ronb 0 0 elc_nmos L=\'pl\' W=\'wprog*wn*beta\'\n",0);
+    &tab_print($spfh,"Xinv1 0 prog_te vdd0 0 inv size=\'$opt_ptr->{driver_inv_size_val}\'\n",0);
+    &tab_print($spfh,"Xinv2 vdd0 prog_be vdd0 0 inv size=\'$opt_ptr->{driver_inv_size_val}\'\n",0);
     # END Hack
   } else {
-    # Build 2T1R structure
-    &tab_print($spfh,"Xprog_pair0 rram_te prog_ronb prog_roff vdd gnd rram_prog_pair wprog=\'wprog\'\n",0);
-    &tab_print($spfh,"Xprog_pair1 rram_be prog_roffb prog_ron vdd gnd rram_prog_pair wprog=\'wprog\'\n",0);
+    # Build 4T1R structure
+    &tab_print($spfh,"***** 4T1R Structure *****\n",0);
+    &tab_print($spfh,"Xprog_pair0 rram_te prog_ronb prog_roff vdd0 0 rram_prog_pair wprog=\'wprog\'\n",0);
+    &tab_print($spfh,"Xprog_pair1 rram_be prog_roffb prog_ron vdd1 0 rram_prog_pair wprog=\'wprog\'\n",0);
   }
   if ($rram_verilogA_model =~ m/\.va$/) {
     &tab_print($spfh,"Xrram rram_te rram_be $rram_subckt_name $rram_init_params\n",0);
   } else {
     &tab_print($spfh,"Xrram rram_te rram_be $rram_subckt_name\n",0);
   }
+  &tab_print($spfh,".nodeset V(rram_te)=vprog\n",0);
+  &tab_print($spfh,".nodeset V(rram_be)=0\n",0);
   &tab_print($spfh,"\n",0);
   
 }
@@ -2930,9 +2924,10 @@ sub gen_rram2t1r_sp_stimulates($ $) {
   my ($spfh,$tran_step) = @_;
 
   &tab_print($spfh,"** Stimulates\n",0);
-  &tab_print($spfh,"Vsupply vdd 0 vprog\n",0);
-  &tab_print($spfh,"Vprog_ron prog_ron 0 pulse(0 \'prog_trans_vdd\' \'t_init\' \'tprog_slew\' \'tprog_slew\' \'tprog\' \'2*tprog+2tprog_slew\')\n",0);
-  &tab_print($spfh,"Vprog_ronb prog_ronb 0 pulse(\'vprog\' \'vprog-prog_trans_vdd\' \'t_init\' \'tprog_slew\' \'tprog_slew\' \'tprog\' \'2*tprog+2tprog_slew\')\n",0);
+  &tab_print($spfh,"Vsupply0 vdd0 0 vprog\n",0);
+  &tab_print($spfh,"Vsupply1 vdd1 0 vprog\n",0);
+  &tab_print($spfh,"Vprog_ron prog_ron 0 pulse(0 \'vprog\' \'t_init\' \'tprog_slew\' \'tprog_slew\' \'tprog\' \'2*tprog+2tprog_slew\')\n",0);
+  &tab_print($spfh,"Vprog_ronb prog_ronb 0 pulse(\'vprog\' 0 \'t_init\' \'tprog_slew\' \'tprog_slew\' \'tprog\' \'2*tprog+2tprog_slew\')\n",0);
   # To match same Vgs as NMOS, but we can do this by using body effect
   #&tab_print($spfh,"Vprog_ronb prog_ronb 0 pulse(\'vprog\' \'vprog-prog_trans_vdd+(vthn-vthp)\' \'t_init\' \'tprog_slew\' \'tprog_slew\' \'tprog\' \'2*tprog+2tprog_slew\')\n",0);
   &tab_print($spfh,"Vprog_roff prog_roff 0 0\n",0);
@@ -2952,7 +2947,7 @@ sub gen_rram2t1r_sp_measures($) {
 
   &tab_print($spfh,"** Measurements\n",0);
   # Measure the Iprog
-  &tab_print($spfh,".measure tran iprog find I(vsupply) at=\'t_init+tprog_slew+tprog\'\n",0);
+  &tab_print($spfh,".measure tran iprog find I(vsupply0) at=\'t_init+tprog_slew+tprog\'\n",0);
   
   # Measure the VTE
   &tab_print($spfh,".measure tran vte find v(rram_te) at=\'t_init+tprog_slew+tprog\'\n",0);
@@ -2972,6 +2967,11 @@ sub gen_rram2t1r_sp_measures($) {
   &tab_print($spfh,"** Min. voltage of vbe \n",0); # check device P2 and N2
   &tab_print($spfh,".measure tran vbe_min min V(rram_be) from=\'t_init+tprog_slew\'\n",0);
 
+  if ("on" eq $opt_ptr->{rram2n1r}) {
+    &tab_print($spfh,".measure tran vprog_te find v(prog_te) at=\'t_init+tprog_slew+tprog\'\n",0);
+    &tab_print($spfh,".measure tran vprog_be find v(prog_be) at=\'t_init+tprog_slew+tprog\'\n",0);
+  }
+
   &tab_print($spfh,".end\n",0);
   &tab_print($spfh,"\n",0);
 }
@@ -2987,6 +2987,10 @@ sub run_rram2t1r_sim($ $ $ $ $ $ $ $ $) {
   my ($lis_file) = ($sp_file);
   $lis_file =~ s/sp$/lis/;
   my @sim_keywds = ("vte","vbe","iprog","ron","iprog_per_wprog","vte_max","vbe_min");
+
+  if ("on" eq $opt_ptr->{rram2n1r}) {
+    push(@sim_keywds,("vprog_te","vprog_be"));
+  }
       
   my $spfh = FileHandle->new;
   if ($spfh->open("> $sp_file")) {
@@ -3032,6 +3036,13 @@ sub run_rram2t1r_once($ $ $ $ $ $ $ $ $ $) {
   $rpt_ptr->{$tag}->{Vte_max} = sprintf("%.4g",$sim_results_ref->{vte_max});
   $rpt_ptr->{$tag}->{Vbe_min} = sprintf("%.4g",$sim_results_ref->{vbe_min});
   $rpt_ptr->{$tag}->{Breakdown} = "Fail"; 
+  
+  # For 2T1R structure, need to measure Vds3 & Vds4
+  if ("on" eq $opt_ptr->{rram2n1r}) {
+    $rpt_ptr->{$tag}->{Vds3} = sprintf("%.4g",$vprog - $sim_results_ref->{vprog_te});
+    $rpt_ptr->{$tag}->{Vds4} = sprintf("%.4g",$sim_results_ref->{vprog_be});
+  }
+
   if ((!($rpt_ptr->{$tag}->{Vte} > $vdd_break))
      &&(!(($vprog - $rpt_ptr->{$tag}->{Vbe}) > $vdd_break))
      &&(!($rpt_ptr->{$tag}->{Vds1} > $vdd_break))
@@ -3055,6 +3066,11 @@ sub print_rram2t1r_rpt($ $) {
   &tab_print($rptfh,$rpt_ptr->{$tag}->{Iprog_per_Wprog}/1e-6.",",0);
   &tab_print($rptfh,$rpt_ptr->{$tag}->{Ron}/1e3.",",0);
   &tab_print($rptfh,$rpt_ptr->{$tag}->{Breakdown}.",",0); # Print if any device breaks down
+
+  if ("on" eq $opt_ptr->{rram2n1r}) {
+    &tab_print($rptfh,"$rpt_ptr->{$tag}->{Vds3},",0);
+    &tab_print($rptfh,"$rpt_ptr->{$tag}->{Vds4},",0);
+  }
 
   &tab_print($rptfh,"\n",0);
 }
@@ -3088,11 +3104,18 @@ sub run_rram2t1r_elc($ $ $ $ $ $ $ $ $ $ $ $ $ $ $) {
 
   # Print a head for CSV report
   &tab_print($rptfh,"* RRAM2T1R: RRAM_model = $rram_subckt_name, Tprog=$t_prog, Prog.Trans.Vdd=$prog_vdd\n",0);
-
+  if ("on" eq $opt_ptr->{rram2n1r}) {
+    &tab_print($rptfh, "* RRAM2T1R: driver_inverter_size= $opt_ptr->{driver_inv_size_val}\n",0);
+  }
   # Sweep the Vprog
   for (my $ivprog = $vprog_lowbound; $ivprog < $vprog_upbound; $ivprog = $ivprog + $sweep_vprog_step) {
     &tab_print($rptfh,"* Vprog =$ivprog\n",0);
-    &tab_print($rptfh,"* Wprog(*min_size),Vds1(V),Vds2(V),Vte(V),Vbe(V),Vrram(V),Iprog(uA),Iprog/Wprog(uA),Ron(kOhm),Device Breakdown Check\n",0);
+    &tab_print($rptfh,"* Wprog(*min_size),Vds1(V),Vds2(V),Vte(V),Vbe(V),Vrram(V),Iprog(uA),Iprog/Wprog(uA),Ron(kOhm),Device Breakdown Check,",0);
+    # Additional measurements in 2T1R
+    if ("on" eq $opt_ptr->{rram2n1r}) {
+      &tab_print($rptfh, "Vds3(V),Vds4(V),",0);
+    }
+    &tab_print($rptfh, "\n",0);
     # Sweep Wprog
     for (my $iwprog = $wprog_lowbound; $iwprog < $wprog_upbound; $iwprog = $iwprog + $sweep_wprog_step) {
       $tag = "rram2t1r_vprog$ivprog\_wprog$iwprog";

@@ -3,11 +3,11 @@
 
 * CMOS TSMC 40nm 0.9V
 .subckt nmos drain gate source bulk L=nl W=wn
-X1 drain gate source bulk nch_25od33_mac l=L w=W
+X1 drain gate source bulk nch_25_mac l=L w=W
 .eom nmos
 
 .subckt pmos drain gate source bulk L=pl W=wp
-X1 drain gate source bulk pch_25od33_mac l=L w=W 
+X1 drain gate source bulk pch_25_mac l=L w=W 
 .eom pmos
 
 * CMOS UMC 0.18um 3.3V

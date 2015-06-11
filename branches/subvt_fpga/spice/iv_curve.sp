@@ -18,10 +18,10 @@
 .lib '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/process/tsmc40nm/crn45gs_2d5_v1d1_usage.l' TTMacro_MOS_MOSCAP
 .include '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/spice/nmos_pmos.sp'
 .temp 25
-.param beta = 2.15
+.param beta = 2.2
 .param alpha = 3
-.param nl = 495e-9
-.param pl = 396e-9
+.param nl = 243e-9
+.param pl = 243e-9
 .param wn = '288e-9'
 .param wp = 'beta*288e-9'
 
@@ -31,7 +31,7 @@
 *Beginning of circuit and device definitions
 ***************************************************
 *Supplies and voltage params:
-.param Supply=3.3	
+.param Supply=3	
 .param Vg='Supply'
 .param Vd='Supply'
 .param Wprog='wn'
