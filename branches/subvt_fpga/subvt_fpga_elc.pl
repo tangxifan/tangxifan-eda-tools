@@ -227,6 +227,7 @@ sub print_usage()
   print "      -rram2t1r <RRAM_verilogA> : run RRAM 2T1R analysis.\n";
   print "      -vprog_sweep <max_vprog>: sweep the vprog for RRAM 2T1R\n";
   print "      -rram2n1r: use two n-type transistors in rram2t1r\n";
+  print "      -transmission_gate: use transmission gates in rram2n1r\n";
   print "      -driver_inv_size: define the size of inverters that drive rram2t1r structure\n";
   print "      Options for Multiplexers:\n";
   print "      -mux <mux2_spice> : run HSPICE simulations for Multiplexer. 2-input multiplexer spice netlist should be provided\n";
@@ -369,6 +370,7 @@ sub opts_read() {
     &read_opt_into_hash("wprog_sweep","on","off");  # Check -wprog_sweep
     &read_opt_into_hash("rram2n1r","off","off");  # Check -rram2n1r
     if ("on" eq $opt_ptr->{rram2n1r}) {
+      &read_opt_into_hash("transmission_gate","off","off");  # Check -driver_inv_size
       &read_opt_into_hash("driver_inv_size","on","on");  # Check -driver_inv_size
     }
   }
@@ -2897,9 +2899,12 @@ sub gen_rram2t1r_sp_common($ $ $ $ $ $ $ $) {
     # Hack for 2 NMOS, just for comparison
     &tab_print($spfh,"***** 2T1R Structure *****\n",0);
     &tab_print($spfh,"Xn1 rram_te prog_ron prog_te prog_te elc_nmos L=\'nl\' W=\'wprog*wn\'\n",0);
-    #&tab_print($spfh,"Xp1 rram_te prog_ronb vdd0 vdd0 elc_pmos L=\'pl\' W=\'wprog*wn*beta\'\n",0);
     &tab_print($spfh,"Xn2 rram_be prog_ron prog_be prog_be elc_nmos L=\'nl\' W=\'wprog*wn\'\n",0);
-    #&tab_print($spfh,"Xp2 rram_be prog_ronb 0 0 elc_nmos L=\'pl\' W=\'wprog*wn*beta\'\n",0);
+    if ("on" eq $opt_ptr->{transmission_gate}) {
+      &tab_print($spfh,"***** PMOS for transmission gate *****\n",0);
+      &tab_print($spfh,"Xp1 rram_te prog_ronb prog_te prog_te elc_pmos L=\'pl\' W=\'wprog*wn*beta\'\n",0);
+      &tab_print($spfh,"Xp2 rram_be prog_ronb prog_be prog_be elc_nmos L=\'pl\' W=\'wprog*wn*beta\'\n",0);
+    }
     &tab_print($spfh,"Xinv1 0 prog_te vdd0 0 inv size=\'$opt_ptr->{driver_inv_size_val}\'\n",0);
     &tab_print($spfh,"Xinv2 vdd0 prog_be vdd0 0 inv size=\'$opt_ptr->{driver_inv_size_val}\'\n",0);
     # END Hack

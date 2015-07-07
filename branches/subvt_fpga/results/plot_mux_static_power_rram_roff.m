@@ -119,7 +119,7 @@ hold on
 xlabel('R_{HRS}(M{\Omega})','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
 ylabel('Normalized Average Power','FontSize',20, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'xlim',[0.5 length(avg_power_fpga(:,1))+0.5],'Fontsize',18, 'FontWeight','bold', 'FontName', 'Times');
-set(gca,'ylim',[40 120],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+set(gca,'ylim',[45 105],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 yticks = [get(gca,'ytick')]'; % There is a transpose operation here.
 percentsy = repmat('%', length(yticks),1);  %  equal to the size
 yticklabel = [num2str(yticks) percentsy]; % concatenates the tick labels
