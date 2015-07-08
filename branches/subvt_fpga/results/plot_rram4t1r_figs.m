@@ -548,27 +548,121 @@ grid on
 %% Fig. 14: RRAM4T1R vs. RRAM2T1R & 2N1R Area-Wprog
 % Fig. plot
 fig_handle3 = figure;
+% RRAM 2N1R vprog=2.5V
 x_ron = rram2n1r_vprog2p5V_inv20_format(:,8);
-plot(x_ron, cell2mat(rram2n1r_vprog2p5V_inv20(:,1))*2+20*3.7*(1/32+1/16896),'k-*','LineWidth', 2, 'MarkerSize',10);
+y_area = cell2mat(rram2n1r_vprog2p5V_inv20(:,1));
+wprog_min = 0;
+for i=1:1:length(y_area)
+  if abs(rram2n1r_vprog2p5V_inv20_format(i,7))*wprog_list(i) < 200
+    if (0 == wprog_min)||(wprog_min < wprog_list(i))
+      wprog_min = wprog_list(i);
+    end 
+  end 
+end
+for i=1:1:length(y_area)
+  if abs(rram2n1r_vprog2p5V_inv20_format(i,7))*wprog_list(i) < 200
+    y_area(i) = wprog_min*2 + 20*3.7*(1/32+1/32);
+  else 
+    y_area(i) = wprog_list(i)*2 + 20*3.7*(1/32+1/32);
+  end 
+end 
+plot(x_ron, y_area,'k-*','LineWidth', 2, 'MarkerSize',10);
 hold on
+% RRAM 2N1R vprog=3.0V
 x_ron = rram2n1r_vprog3p0V_inv20_format(:,8);
-plot(x_ron, cell2mat(rram2n1r_vprog3p0V_inv20(:,1))*2+20*3.7*(1/32+1/16896),'k-o','LineWidth', 2, 'MarkerSize',10);
+y_area = cell2mat(rram2n1r_vprog3p0V_inv20(:,1));
+wprog_min = 0;
+for i=1:1:length(y_area)
+  if abs(rram2n1r_vprog3p0V_inv20_format(i,7))*wprog_list(i) > 200
+    if (0 == wprog_min)||(wprog_min > wprog_list(i))
+      wprog_min = wprog_list(i);
+    end 
+  end 
+end
+for i=1:1:length(y_area)
+  if abs(rram2n1r_vprog3p0V_inv20_format(i,7))*wprog_list(i) < 200
+    y_area(i) = wprog_min*2 + 20*3.7*(1/32+1/32);
+  else 
+    y_area(i) = wprog_list(i)*2 + 20*3.7*(1/32+1/32);
+  end 
+end
+plot(x_ron, y_area,'k-o','LineWidth', 2, 'MarkerSize',10);
 hold on
+% RRAM 2T1R vprog=2.5V
 x_ron = rram2t1r_vprog2p5V_inv20_format(:,8);
-plot(x_ron, cell2mat(rram2t1r_vprog2p5V_inv20(:,1))*2*3.7+20*3.7*(1/32+1/16896),'b-*','LineWidth', 2, 'MarkerSize',10);
+y_area = cell2mat(rram2t1r_vprog2p5V_inv20(:,1));
+wprog_min = 0;
+for i=1:1:length(y_area)
+  if abs(rram2t1r_vprog2p5V_inv20_format(i,7))*wprog_list(i) > 200
+    if (0 == wprog_min)||(wprog_min > wprog_list(i))
+      wprog_min = wprog_list(i);
+    end 
+  end 
+end
+for i=1:1:length(y_area)
+  if abs(rram2t1r_vprog2p5V_inv20_format(i,7))*wprog_list(i) < 200
+    y_area(i) = wprog_min*2*3.7 + 20*3.7*(1/32+1/32);
+  else 
+    y_area(i) = wprog_list(i)*2*3.7 + 20*3.7*(1/32+1/32);
+  end 
+end
+plot(x_ron, y_area,'b-*','LineWidth', 2, 'MarkerSize',10);
 hold on
+% RRAM 2T1R vprog=3.0V
 x_ron = rram2t1r_vprog3p0V_inv20_format(:,8);
-plot(x_ron, cell2mat(rram2t1r_vprog3p0V_inv20(:,1))*2*3.7+20*3.7*(1/32+1/16896),'b-o','LineWidth', 2, 'MarkerSize',10);
+y_area = cell2mat(rram2t1r_vprog3p0V_inv20(:,1));
+wprog_min = 0;
+for i=1:1:length(y_area)
+  if abs(rram2t1r_vprog3p0V_inv20_format(i,7))*wprog_list(i) > 200
+    if (0 == wprog_min)||(wprog_min > wprog_list(i))
+      wprog_min = wprog_list(i);
+    end 
+  end 
+end
+for i=1:1:length(y_area)
+  if abs(rram2t1r_vprog3p0V_inv20_format(i,7))*wprog_list(i) < 200
+    y_area(i) = wprog_min*2*3.7 + 20*3.7*(1/32+1/32);
+  else 
+    y_area(i) = wprog_list(i)*2*3.7 + 20*3.7*(1/32+1/32);
+  end 
+end
+plot(x_ron, y_area,'b-o','LineWidth', 2, 'MarkerSize',10);
 hold on
+% RRAM 4T1R vprog=2.5V
 x_ron = rram4t1r_vprog2p5V_format(:,8);
-plot(x_ron, cell2mat(rram4t1r_vprog2p5V(:,1))*2*3.7,'r-*','LineWidth', 2, 'MarkerSize',10);
+y_area = cell2mat(rram4t1r_vprog2p5V(:,1));
+wprog_min = 0;
+for i=1:1:length(y_area)
+  if abs(rram4t1r_vprog2p5V_format(i,7))*wprog_list(i) > 200
+    if (0 == wprog_min)||(wprog_min > wprog_list(i))
+      wprog_min = wprog_list(i);
+    end 
+  end 
+end
+for i=1:1:length(y_area)
+  y_area(i) = wprog_list(i)*3.7 + wprog_min*3.7;
+end
+plot(x_ron, y_area,'r-*','LineWidth', 2, 'MarkerSize',10);
 hold on
+% RRAM 4T1R vprog=3.0V
 x_ron = rram4t1r_vprog3p0V_format(:,8);
-plot(x_ron, cell2mat(rram4t1r_vprog3p0V(:,1))*3.7,'r-o','LineWidth', 2, 'MarkerSize',10);
+y_area = cell2mat(rram4t1r_vprog3p0V(:,1));
+wprog_min = 0;
+for i=1:1:length(y_area)
+  if abs(rram4t1r_vprog3p0V_format(i,7))*wprog_list(i) > 200
+    if (0 == wprog_min)||(wprog_min > wprog_list(i))
+      wprog_min = wprog_list(i);
+    end 
+  end 
+end
+for i=1:1:length(y_area)
+  y_area(i) = wprog_list(i)*3.7 + wprog_min*3.7;
+end
+plot(x_ron, y_area,'r-o','LineWidth', 2, 'MarkerSize',10);
 hold on
 %title('R_{on} and W_{prog}, RRAM2T1R Structure','FontSize',18)
 xlabel('R_{on} ({k\Omega})','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
-ylabel('W_{prog}(No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('Area(No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 %set(gca,'XTick',xindex);
 %set(gca,'XTickLabel',wprog_list(xindex));
@@ -577,34 +671,3 @@ hleg = legend([{'2T1R V_{prog}=2.5V'},{'2T1R V_{prog}=3.0V'},{'TG-based 2T1R V_{
 set(fig_handle3, 'Position', [1 1 800 600]);
 grid on
 
-%% Fig. 15: RRAM4T1R vs. RRAM2T1R & 2N1R Area-Wprog
-% Fig. plot
-fig_handle3 = figure;
-x_ron = rram2n1r_vprog2p5V_inv20_format(:,8);
-plot(x_ron, cell2mat(rram2n1r_vprog2p5V_inv20(:,1))*2,'k-*','LineWidth', 2, 'MarkerSize',10);
-hold on
-x_ron = rram2n1r_vprog3p0V_inv20_format(:,8);
-plot(x_ron, cell2mat(rram2n1r_vprog3p0V_inv20(:,1))*2,'k-o','LineWidth', 2, 'MarkerSize',10);
-hold on
-x_ron = rram2t1r_vprog2p5V_inv20_format(:,8);
-plot(x_ron, cell2mat(rram2t1r_vprog2p5V_inv20(:,1))*2*3.7,'b-*','LineWidth', 2, 'MarkerSize',10);
-hold on
-x_ron = rram2t1r_vprog3p0V_inv20_format(:,8);
-plot(x_ron, cell2mat(rram2t1r_vprog3p0V_inv20(:,1))*2*3.7,'b-o','LineWidth', 2, 'MarkerSize',10);
-hold on
-x_ron = rram4t1r_vprog2p5V_format(:,8);
-plot(x_ron, cell2mat(rram4t1r_vprog2p5V(:,1))*2*3.7,'r-*','LineWidth', 2, 'MarkerSize',10);
-hold on
-x_ron = rram4t1r_vprog3p0V_format(:,8);
-plot(x_ron, cell2mat(rram4t1r_vprog3p0V(:,1))*2*3.7,'r-o','LineWidth', 2, 'MarkerSize',10);
-hold on
-%title('R_{on} and W_{prog}, RRAM2T1R Structure','FontSize',18)
-xlabel('R_{on} ({k\Omega})','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
-ylabel('W_{prog}(No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
-set(gca,'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
-%set(gca,'XTick',xindex);
-%set(gca,'XTickLabel',wprog_list(xindex));
-set(gca,'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
-hleg = legend([{'2T1R V_{prog}=2.5V'},{'2T1R V_{prog}=3.0V'},{'TG-based 2T1R V_{prog}=2.5V'},{'TG-based 2T1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'}]);
-set(fig_handle3, 'Position', [1 1 800 600]);
-grid on
