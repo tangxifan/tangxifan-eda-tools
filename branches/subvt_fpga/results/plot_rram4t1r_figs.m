@@ -281,7 +281,7 @@ set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 
 set(gca,'XTick',xindex);
 set(gca,'XTickLabel',wprog_list(xindex));
 %set(gca,'ylim',[35 140],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
-hleg = legend([{'2T1R V_{prog}=2.5V'},{'2T1R V_{prog}=3.0V'},{'TG-based 2T1R V_{prog}=3.0V'},{'TG-based 2T1R V_{prog}=3.0V'},{'4T1R V_{prog}=3.0V'},{'4T1R V_{prog}=3.0V'}]);
+hleg = legend([{'2T1R V_{prog}=2.5V'},{'2T1R V_{prog}=3.0V'},{'TG-based 2T1R V_{prog}=2.5V'},{'TG-based 2T1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'}]);
 set(fig_handle4, 'Position', [1 1 800 600]);
 grid on
 
@@ -561,9 +561,9 @@ for i=1:1:length(y_area)
 end
 for i=1:1:length(y_area)
   if abs(rram2n1r_vprog2p5V_inv20_format(i,7))*wprog_list(i) < 200
-    y_area(i) = wprog_min*2 + 20*3.7*(1/32+1/32);
+    y_area(i) = wprog_min*2 + 20*4*(1/32+1/32);
   else 
-    y_area(i) = wprog_list(i)*2 + 20*3.7*(1/32+1/32);
+    y_area(i) = wprog_list(i)*2 + 20*4*(1/32+1/32);
   end 
 end 
 plot(x_ron, y_area,'k-*','LineWidth', 2, 'MarkerSize',10);
@@ -581,9 +581,9 @@ for i=1:1:length(y_area)
 end
 for i=1:1:length(y_area)
   if abs(rram2n1r_vprog3p0V_inv20_format(i,7))*wprog_list(i) < 200
-    y_area(i) = wprog_min*2 + 20*3.7*(1/32+1/32);
+    y_area(i) = wprog_min*2 + 20*4*(1/32+1/32);
   else 
-    y_area(i) = wprog_list(i)*2 + 20*3.7*(1/32+1/32);
+    y_area(i) = wprog_list(i)*2 + 20*4*(1/32+1/32);
   end 
 end
 plot(x_ron, y_area,'k-o','LineWidth', 2, 'MarkerSize',10);
@@ -601,9 +601,9 @@ for i=1:1:length(y_area)
 end
 for i=1:1:length(y_area)
   if abs(rram2t1r_vprog2p5V_inv20_format(i,7))*wprog_list(i) < 200
-    y_area(i) = wprog_min*2*3.7 + 20*3.7*(1/32+1/32);
+    y_area(i) = wprog_min*2*4 + 20*4*(1/32+1/32);
   else 
-    y_area(i) = wprog_list(i)*2*3.7 + 20*3.7*(1/32+1/32);
+    y_area(i) = wprog_list(i)*2*4 + 20*4*(1/32+1/32);
   end 
 end
 plot(x_ron, y_area,'b-*','LineWidth', 2, 'MarkerSize',10);
@@ -621,9 +621,9 @@ for i=1:1:length(y_area)
 end
 for i=1:1:length(y_area)
   if abs(rram2t1r_vprog3p0V_inv20_format(i,7))*wprog_list(i) < 200
-    y_area(i) = wprog_min*2*3.7 + 20*3.7*(1/32+1/32);
+    y_area(i) = wprog_min*2*4 + 20*4*(1/32+1/32);
   else 
-    y_area(i) = wprog_list(i)*2*3.7 + 20*3.7*(1/32+1/32);
+    y_area(i) = wprog_list(i)*2*4 + 20*4*(1/32+1/32);
   end 
 end
 plot(x_ron, y_area,'b-o','LineWidth', 2, 'MarkerSize',10);
@@ -640,7 +640,7 @@ for i=1:1:length(y_area)
   end 
 end
 for i=1:1:length(y_area)
-  y_area(i) = wprog_list(i)*3.7 + wprog_min*3.7;
+  y_area(i) = wprog_list(i)*4 + wprog_min*4;
 end
 plot(x_ron, y_area,'r-*','LineWidth', 2, 'MarkerSize',10);
 hold on
