@@ -100,25 +100,25 @@ rram2t1r_vprog2p8V_inv20_format = cell2mat(rram2t1r_vprog2p8V_inv20(:,(2:9)));
 rram2t1r_vprog2p9V_inv20_format = cell2mat(rram2t1r_vprog2p9V_inv20(:,(2:9)));
 rram2t1r_vprog3p0V_inv20_format = cell2mat(rram2t1r_vprog3p0V_inv20(:,(2:9)));
 
-%% Fig. 1: RRAM4T1R Ron-Wprog (diff. Vprog)
+%% Fig. 1: RRAM4T1R Ids-Wprog (diff. Vprog)
 xindex = 1:10:length(wprog_list);
 % Fig. plot
 fig_handle1 = figure;
-plot(rram4t1r_vprog2p5V_format(:,8),'k-*','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram4t1r_vprog2p5V_format(:,6)),'k-*','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram4t1r_vprog2p6V_format(:,8),'k-o','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram4t1r_vprog2p6V_format(:,6)),'k-o','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram4t1r_vprog2p7V_format(:,8),'k-+','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram4t1r_vprog2p7V_format(:,6)),'k-+','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram4t1r_vprog2p8V_format(:,8),'k-.','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram4t1r_vprog2p8V_format(:,6)),'k-.','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram4t1r_vprog2p9V_format(:,8),'k-x','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram4t1r_vprog2p9V_format(:,6)),'k-x','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram4t1r_vprog3p0V_format(:,8),'k-s','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram4t1r_vprog3p0V_format(:,6)),'k-s','LineWidth', 2, 'MarkerSize',10);
 hold on
 %title('R_{on} and W_{prog}, RRAM4T1R Structure','FontSize',18)
 xlabel('W_{prog}(No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
-ylabel('R_{on} ({k\Omega})','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('I_{ds} ({\mu}A)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'XTick', xindex);
 set(gca,'XTickLabel', wprog_list(xindex));
@@ -127,25 +127,25 @@ hleg = legend(vprog_list);
 set(fig_handle1, 'Position', [1 1 800 600]);
 grid on
 
-%% Fig. 2: RRAM2N1R Ron-Wprog (diff. Vprog) Winv=20
+%% Fig. 2: RRAM2N1R Ids-Wprog (diff. Vprog) Winv=20
 xindex = 1:10:length(wprog_list);
 % Fig. plot
 fig_handle2 = figure;
-plot(rram2n1r_vprog2p5V_inv20_format(:,8),'k-*','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2n1r_vprog2p5V_inv20_format(:,6)),'k-*','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram2n1r_vprog2p6V_inv20_format(:,8),'k-o','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2n1r_vprog2p6V_inv20_format(:,6)),'k-o','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram2n1r_vprog2p7V_inv20_format(:,8),'k-+','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2n1r_vprog2p7V_inv20_format(:,6)),'k-+','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram2n1r_vprog2p8V_inv20_format(:,8),'k-.','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2n1r_vprog2p8V_inv20_format(:,6)),'k-.','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram2n1r_vprog2p9V_inv20_format(:,8),'k-x','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2n1r_vprog2p9V_inv20_format(:,6)),'k-x','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram2n1r_vprog3p0V_inv20_format(:,8),'k-s','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2n1r_vprog3p0V_inv20_format(:,6)),'k-s','LineWidth', 2, 'MarkerSize',10);
 hold on
 %title('R_{on} and W_{prog}, RRAM2T1R Structure','FontSize',18)
 xlabel('W_{prog}(No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
-ylabel('R_{on} ({k\Omega})','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('I_{ds} ({\mu}A)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'XTick',xindex);
 set(gca,'XTickLabel',wprog_list(xindex));
@@ -154,23 +154,23 @@ hleg = legend(vprog_list);
 set(fig_handle2, 'Position', [1 1 800 600]);
 grid on
 
-%% Fig. 3: RRAM2N1R Ron-Wprog (diff. Winv) Vprog=3.0
+%% Fig. 3: RRAM2N1R Ids-Wprog (diff. Winv) Vprog=3.0
 xindex = 1:10:length(wprog_list);
 % Fig. plot
 fig_handle2 = figure;
-plot(rram2n1r_vprog3p0V_inv1_format(:,8),'k-*','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2n1r_vprog3p0V_inv1_format(:,6)),'k-*','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram2n1r_vprog3p0V_inv5_format(:,8),'k-o','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2n1r_vprog3p0V_inv5_format(:,6)),'k-o','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram2n1r_vprog3p0V_inv10_format(:,8),'k-+','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2n1r_vprog3p0V_inv10_format(:,6)),'k-+','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram2n1r_vprog3p0V_inv15_format(:,8),'k-.','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2n1r_vprog3p0V_inv15_format(:,6)),'k-.','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram2n1r_vprog3p0V_inv20_format(:,8),'k-x','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2n1r_vprog3p0V_inv20_format(:,6)),'k-x','LineWidth', 2, 'MarkerSize',10);
 hold on
 %title('R_{on} and W_{prog}, RRAM2T1R Structure','FontSize',18)
 xlabel('W_{prog}(No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
-ylabel('R_{on} ({k\Omega})','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('I_{ds} ({\mu}A)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'XTick',xindex);
 set(gca,'XTickLabel',wprog_list(xindex));
@@ -179,25 +179,25 @@ hleg = legend(inv_list);
 set(fig_handle2, 'Position', [1 1 800 600]);
 grid on
 
-%% Fig. 4: RRAM2T1R Ron-Wprog (diff. Vprog) Winv=20
+%% Fig. 4: RRAM2T1R Ids-Wprog (diff. Vprog) Winv=20
 xindex = 1:10:length(wprog_list);
 % Fig. plot
 fig_handle2 = figure;
-plot(rram2t1r_vprog2p5V_inv20_format(:,8),'k-*','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2t1r_vprog2p5V_inv20_format(:,6)),'k-*','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram2t1r_vprog2p6V_inv20_format(:,8),'k-o','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2t1r_vprog2p6V_inv20_format(:,6)),'k-o','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram2t1r_vprog2p7V_inv20_format(:,8),'k-+','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2t1r_vprog2p7V_inv20_format(:,6)),'k-+','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram2t1r_vprog2p8V_inv20_format(:,8),'k-.','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2t1r_vprog2p8V_inv20_format(:,6)),'k-.','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram2t1r_vprog2p9V_inv20_format(:,8),'k-x','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2t1r_vprog2p9V_inv20_format(:,6)),'k-x','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram2t1r_vprog3p0V_inv20_format(:,8),'k-s','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2t1r_vprog3p0V_inv20_format(:,6)),'k-s','LineWidth', 2, 'MarkerSize',10);
 hold on
 %title('R_{on} and W_{prog}, RRAM2T1R Structure','FontSize',18)
 xlabel('W_{prog}(No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
-ylabel('R_{on} ({k\Omega})','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('I_{ds} ({\mu}A)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'XTick',xindex);
 set(gca,'XTickLabel',wprog_list(xindex));
@@ -206,23 +206,23 @@ hleg = legend(vprog_list);
 set(fig_handle2, 'Position', [1 1 800 600]);
 grid on
 
-%% Fig. 5: RRAM2T1R Ron-Wprog (diff. Winv) Vprog=3.0
+%% Fig. 5: RRAM2T1R Ids-Wprog (diff. Winv) Vprog=3.0
 xindex = 1:10:length(wprog_list);
 % Fig. plot
 fig_handle2 = figure;
-plot(rram2t1r_vprog3p0V_inv1_format(:,8),'k-*','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2t1r_vprog3p0V_inv1_format(:,6)),'k-*','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram2t1r_vprog3p0V_inv5_format(:,8),'k-o','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2t1r_vprog3p0V_inv5_format(:,6)),'k-o','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram2t1r_vprog3p0V_inv10_format(:,8),'k-+','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2t1r_vprog3p0V_inv10_format(:,6)),'k-+','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram2t1r_vprog3p0V_inv15_format(:,8),'k-.','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2t1r_vprog3p0V_inv15_format(:,6)),'k-.','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram2t1r_vprog3p0V_inv20_format(:,8),'k-x','LineWidth', 2, 'MarkerSize',10);
+plot(abs(rram2t1r_vprog3p0V_inv20_format(:,6)),'k-x','LineWidth', 2, 'MarkerSize',10);
 hold on
 %title('R_{on} and W_{prog}, RRAM2T1R Structure','FontSize',18)
 xlabel('W_{prog}(No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
-ylabel('R_{on} ({k\Omega})','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('I_{ds} ({\mu}A)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'XTick',xindex);
 set(gca,'XTickLabel',wprog_list(xindex));
@@ -249,12 +249,12 @@ plot(rram4t1r_vprog3p0V_format(:,8),'r-o','LineWidth', 2, 'MarkerSize',10);
 hold on
 %title('R_{on} and W_{prog}, RRAM2T1R Structure','FontSize',18)
 xlabel('W_{prog}(No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
-ylabel('R_{on} ({k\Omega})','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('R_{LRS} ({k\Omega})','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'XTick',xindex);
 set(gca,'XTickLabel',wprog_list(xindex));
 %set(gca,'ylim',[2 22],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
-hleg = legend([{'2T1R V_{prog}=2.5V'},{'2T1R V_{prog}=3.0V'},{'TG-based 2T1R V_{prog}=2.5V'},{'TG-based 2T1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'}]);
+hleg = legend([{'2T1R V_{prog}=2.5V'},{'2T1R V_{prog}=3.0V'},{'2TG1R V_{prog}=2.5V'},{'2TG1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'}]);
 set(fig_handle3, 'Position', [1 1 800 600]);
 grid on
 
@@ -276,12 +276,12 @@ plot(abs(rram4t1r_vprog3p0V_format(:,7)),'r-o','LineWidth', 2, 'MarkerSize',10);
 hold on
 %title('R_{on} and W_{prog}, RRAM2T1R Structure','FontSize',18)
 xlabel('W_{prog}(No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
-ylabel('I_{prog}/W_{prog} ({\mu}A per min. size trans.)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('I_{ds}/W_{prog} ({\mu}A per min. size trans.)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'XTick',xindex);
 set(gca,'XTickLabel',wprog_list(xindex));
 %set(gca,'ylim',[35 140],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
-hleg = legend([{'2T1R V_{prog}=2.5V'},{'2T1R V_{prog}=3.0V'},{'TG-based 2T1R V_{prog}=2.5V'},{'TG-based 2T1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'}]);
+hleg = legend([{'2T1R V_{prog}=2.5V'},{'2T1R V_{prog}=3.0V'},{'2TG1R V_{prog}=2.5V'},{'2TG1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'}]);
 set(fig_handle4, 'Position', [1 1 800 600]);
 grid on
 
@@ -316,7 +316,7 @@ plot(rram2n1r_vprog3p0V_inv20_format(:,2),'g-o','LineWidth', 2, 'MarkerSize',10)
 hold on
 %title('R_{on} and W_{prog}, RRAM2T1R Structure','FontSize',18)
 xlabel('W_{prog}(No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
-ylabel('V_{DS1}/V_{DS2} (V)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('V_{DS} (V)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'XTick',xindex);
 set(gca,'XTickLabel',wprog_list(xindex));
@@ -361,7 +361,7 @@ plot(rram2n1r_vprog3p0V_inv20_format(:,2),'g-o','LineWidth', 2, 'MarkerSize',10)
 hold on
 %title('R_{on} and W_{prog}, RRAM2T1R Structure','FontSize',18)
 xlabel('W_{prog}(No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
-ylabel('V_{DS1}/V_{DS2} (V)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('V_{DS} (V)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'XTick',xindex);
 set(gca,'XTickLabel',wprog_list(xindex));
@@ -401,12 +401,12 @@ plot(rram2t1r_vprog3p0V_inv20_format(:,2),'g-o','LineWidth', 2, 'MarkerSize',10)
 hold on
 %title('R_{on} and W_{prog}, RRAM2T1R Structure','FontSize',18)
 xlabel('W_{prog}(No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
-ylabel('V_{DS1}/V_{DS2} (V)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('V_{DS} (V)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'XTick',xindex);
 set(gca,'XTickLabel',wprog_list(xindex));
-set(gca,'ylim',[0.7 1.1],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
-hleg = legend([{'V_{DS1} of TG-based 2T1R W_{inv}=1'},{'V_{DS2} of TG-based 2T1R W_{inv}=1'},{'V_{DS1} of TG-based 2T1R W_{inv}=5'},{'V_{DS2} of TG-based 2T1R W_{inv}=5'},{'V_{DS1} of TG-based 2T1R W_{inv}=10'},{'V_{DS2} of TG-based 2T1R W_{inv}=10'},{'V_{DS1} of TG-based 2T1R W_{inv}=15'},{'V_{DS2} of TG-based 2T1R W_{inv}=15'},{'V_{DS1} of TG-based 2T1R W_{inv}=20'},{'V_{DS2} of TG-based 2T1R W_{inv}=20'}]);
+set(gca,'ylim',[0.7 1.05],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+hleg = legend([{'V_{DS1} of 2TG1R W_{inv}=1'},{'V_{DS2} of 2TG1R W_{inv}=1'},{'V_{DS1} of 2TG1R W_{inv}=5'},{'V_{DS2} of 2TG1R W_{inv}=5'},{'V_{DS1} of 2TG1R W_{inv}=10'},{'V_{DS2} of 2TG1R W_{inv}=10'},{'V_{DS1} of 2TG1R W_{inv}=15'},{'V_{DS2} of 2TG1R W_{inv}=15'},{'V_{DS1} of 2TG1R W_{inv}=20'},{'V_{DS2} of 2TG1R W_{inv}=20'}]);
 set(fig_handle4, 'Position', [1 1 1000 800]);
 grid on
 
@@ -441,17 +441,17 @@ plot(rram2t1r_vprog2p9V_inv20_format(:,2),'y-o','LineWidth', 2, 'MarkerSize',10)
 hold on
 % 2N1R Vprog=3.0V inv=20
 plot(rram2t1r_vprog3p0V_inv20_format(:,1),'g-*','LineWidth', 2, 'MarkerSize',10);
-hold on
 plot(rram2t1r_vprog3p0V_inv20_format(:,2),'g-o','LineWidth', 2, 'MarkerSize',10);
 hold on
 %title('R_{on} and W_{prog}, RRAM2T1R Structure','FontSize',18)
 xlabel('W_{prog}(No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
-ylabel('V_{DS1}/V_{DS2} (V)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('V_{DS} (V)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'XTick',xindex);
 set(gca,'XTickLabel',wprog_list(xindex));
 set(gca,'ylim',[0.4 1.1],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
-hleg = legend([{'V_{DS1} of TG-based 2T1R V_{prog}=2.5V'},{'V_{DS2} of TG-based 2T1R V_{prog}=2.5V'},{'V_{DS1} of TG-based 2T1R V_{prog}=2.6V'},{'V_{DS2} of TG-based 2T1R V_{prog}=2.6V'},{'V_{DS1} of TG-based 2T1R V_{prog}=2.7V'},{'V_{DS2} of TG-based 2T1R V_{prog}=2.7V'},{'V_{DS1} of TG-based 2T1R V_{prog}=2.8V'},{'V_{DS2} of TG-based 2T1R V_{prog}=2.8V'},{'V_{DS1} of TG-based 2T1R V_{prog}=2.9V'},{'V_{DS2} of TG-based 2T1R V_{prog}=2.9V'},{'V_{DS1} of TG-based 2T1R V_{prog}=3.0V'},{'V_{DS2} of TG-based 2T1R V_{prog}=3.0V'}]);
+hleg = legend([{'V_{DS1} of 2TG1R V_{prog}=2.5V'},{'V_{DS2} of 2TG1R V_{prog}=2.5V'},{'V_{DS1} of 2TG1R V_{prog}=2.6V'},{'V_{DS2} of 2TG1R V_{prog}=2.6V'},{'V_{DS1} of 2TG1R V_{prog}=2.7V'},{'V_{DS2} of 2TG1R V_{prog}=2.7V'},{'V_{DS1} of 2TG1R V_{prog}=2.8V'},{'V_{DS2} of 2TG1R V_{prog}=2.8V'},{'V_{DS1} of 2TG1R V_{prog}=2.9V'},{'V_{DS2} of 2TG1R V_{prog}=2.9V'},{'V_{DS1} of 2TG1R V_{prog}=3.0V'},{'V_{DS2} of 2TG1R V_{prog}=3.0V'}]);
+hold on
 set(fig_handle4, 'Position', [1 1 1000 800]);
 grid on
 
@@ -491,7 +491,7 @@ plot(rram4t1r_vprog3p0V_format(:,2),'g-o','LineWidth', 2, 'MarkerSize',10);
 hold on
 %title('R_{on} and W_{prog}, RRAM2T1R Structure','FontSize',18)
 xlabel('W_{prog}(No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
-ylabel('V_{DS1}/V_{DS2} (V)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('V_{DS} (V)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'XTick',xindex);
 set(gca,'XTickLabel',wprog_list(xindex));
@@ -536,12 +536,12 @@ plot(rram4t1r_vprog3p0V_format(:,2),'r--*','LineWidth', 2, 'MarkerSize',10);
 hold on
 %title('R_{on} and W_{prog}, RRAM2T1R Structure','FontSize',18)
 xlabel('W_{prog}(No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
-ylabel('V_{DS1}/V_{DS2} (V)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('V_{DS} (V)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'XTick',xindex);
 set(gca,'XTickLabel',wprog_list(xindex));
 %set(gca,'ylim',[2 22],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
-hleg = legend([{'V_{DS1} of 2T1R V_{prog}=2.5V'},{'V_{DS2} of 2T1R V_{prog}=2.5V'},{'V_{DS1} of 2T1R V_{prog}=3.0V'},{'V_{DS2} of 2T1R V_{prog}=3.0V'},{'V_{DS1} of TG-based 2T1R V_{prog}=2.5V'},{'V_{DS2} of TG-based 2T1R V_{prog}=2.5V'},{'V_{DS1} of TG-based 2T1R V_{prog}=3.0V'},{'V_{DS2} of TG-based 2T1R V_{prog}=3.0V'},{'V_{DS1} of 4T1R V_{prog}=2.5V'},{'V_{DS2} of 4T1R V_{prog}=2.5V'},{'V_{DS1} of 4T1R V_{prog}=3.0V'},{'V_{DS2} of 4T1R V_{prog}=3.0V'}]);
+hleg = legend([{'V_{DS1} of 2T1R V_{prog}=2.5V'},{'V_{DS2} of 2T1R V_{prog}=2.5V'},{'V_{DS1} of 2T1R V_{prog}=3.0V'},{'V_{DS2} of 2T1R V_{prog}=3.0V'},{'V_{DS1} of 2TG1R V_{prog}=2.5V'},{'V_{DS2} of 2TG1R V_{prog}=2.5V'},{'V_{DS1} of 2TG1R V_{prog}=3.0V'},{'V_{DS2} of 2TG1R V_{prog}=3.0V'},{'V_{DS1} of 4T1R V_{prog}=2.5V'},{'V_{DS2} of 4T1R V_{prog}=2.5V'},{'V_{DS1} of 4T1R V_{prog}=3.0V'},{'V_{DS2} of 4T1R V_{prog}=3.0V'}]);
 set(fig_handle3, 'Position', [1 1 800 600]);
 grid on
 
@@ -661,13 +661,39 @@ end
 plot(x_ron, y_area,'r-o','LineWidth', 2, 'MarkerSize',10);
 hold on
 %title('R_{on} and W_{prog}, RRAM2T1R Structure','FontSize',18)
-xlabel('R_{on} ({k\Omega})','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
-ylabel('Area(No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
+xlabel('R_{LRS} ({k\Omega})','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('Area (No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 %set(gca,'XTick',xindex);
 %set(gca,'XTickLabel',wprog_list(xindex));
 set(gca,'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
-hleg = legend([{'2T1R V_{prog}=2.5V'},{'2T1R V_{prog}=3.0V'},{'TG-based 2T1R V_{prog}=2.5V'},{'TG-based 2T1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'}]);
+hleg = legend([{'2T1R V_{prog}=2.5V'},{'2T1R V_{prog}=3.0V'},{'2TG1R V_{prog}=2.5V'},{'2TG1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'}]);
 set(fig_handle3, 'Position', [1 1 800 600]);
 grid on
 
+%% Fig. 15: RRAM4T1R vs. RRAM2T1R IprogWprog (diff. Vprog)
+xindex = 1:10:length(wprog_list);
+% Fig. plot
+fig_handle4 = figure;
+plot(abs(rram2n1r_vprog2p5V_inv20_format(:,6)),'k-*','LineWidth', 2, 'MarkerSize',10);
+hold on
+plot(abs(rram2n1r_vprog3p0V_inv20_format(:,6)),'k-o','LineWidth', 2, 'MarkerSize',10);
+hold on
+plot(abs(rram2t1r_vprog2p5V_inv20_format(:,6)),'b-*','LineWidth', 2, 'MarkerSize',10);
+hold on
+plot(abs(rram2t1r_vprog3p0V_inv20_format(:,6)),'b-o','LineWidth', 2, 'MarkerSize',10);
+hold on
+plot(abs(rram4t1r_vprog2p5V_format(:,6)),'r-*','LineWidth', 2, 'MarkerSize',10);
+hold on
+plot(abs(rram4t1r_vprog3p0V_format(:,6)),'r-o','LineWidth', 2, 'MarkerSize',10);
+hold on
+%title('R_{on} and W_{prog}, RRAM2T1R Structure','FontSize',18)
+xlabel('W_{prog}(No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('I_{ds} ({\mu}A)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+set(gca,'XTick',xindex);
+set(gca,'XTickLabel',wprog_list(xindex));
+%set(gca,'ylim',[35 140],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+hleg = legend([{'2T1R V_{prog}=2.5V'},{'2T1R V_{prog}=3.0V'},{'2TG1R V_{prog}=2.5V'},{'2TG1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'}]);
+set(fig_handle4, 'Position', [1 1 800 600]);
+grid on

@@ -15,10 +15,13 @@
 *.include './process/22nm_HP.pm'
 *.include './process/45nm_LP.pm'
 *.include './process/45nm_HP.pm'
+* TSMC 40nm 2.5V nch
 .lib '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/process/tsmc40nm/crn45gs_2d5_v1d1_usage.l' TTMacro_MOS_MOSCAP
+* TSMC 40nm 0.9V nch
+*.lib '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/process/tsmc40nm/toplevel_crn45gs_1d2_1d8_ud15_lk_v1d1_shrink0d9_embedded_usage.l' TOP_TT
 .include '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/spice/nmos_pmos.sp'
 .temp 25
-.param beta = 2.2
+.param beta = 2
 .param alpha = 3
 .param nl = 243e-9
 .param pl = 243e-9
@@ -31,7 +34,7 @@
 *Beginning of circuit and device definitions
 ***************************************************
 *Supplies and voltage params:
-.param Supply=3	
+.param Supply=3.0
 .param Vg='Supply'
 .param Vd='Supply'
 .param Wprog='wn'
