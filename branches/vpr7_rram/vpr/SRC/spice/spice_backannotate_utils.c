@@ -729,7 +729,7 @@ void back_annotate_rr_node_map_info() {
   for (inode = 0; inode < num_rr_nodes; inode++) {
     if (0 == rr_node[inode].num_edges) {
       continue;
-    }
+    }  
     assert(0 < rr_node[inode].num_edges);
     for (iedge = 0; iedge < rr_node[inode].num_edges; iedge++) {
       jnode = rr_node[inode].edges[iedge];
@@ -1045,7 +1045,7 @@ void update_grid_pb_pins_parasitic_nets() {
   return;
 }
 
-void spice_backannotate_vpr_post_route_info() {
+void spice_backannotate_vpr_post_route_info(boolean parasitic_net_estimation_off) {
 
   vpr_printf(TIO_MESSAGE_INFO, "Start backannotating post route information for SPICE modeling...\n");
   /* Give spice_name_tag for each pb*/
@@ -1066,12 +1066,16 @@ void spice_backannotate_vpr_post_route_info() {
   /* Backannotate activity information, initialize the waveform information */
   vpr_printf(TIO_MESSAGE_INFO, "Backannoating local routing net (1st time: for output pins)...\n");
   backannotate_pb_rr_nodes_net_info();
-  vpr_printf(TIO_MESSAGE_INFO, "Update CLB pins nets (1st time: for output pins)...\n");
-  update_grid_pb_pins_parasitic_nets();
-  vpr_printf(TIO_MESSAGE_INFO, "Backannoating global routing net...\n");
-  backannotate_rr_nodes_net_info();
-  vpr_printf(TIO_MESSAGE_INFO, "Update CLB pins nets (2nd time: for input pins)...\n");
-  update_grid_pb_pins_parasitic_nets();
+  if (FALSE == parasitic_net_estimation_off) {
+    vpr_printf(TIO_MESSAGE_INFO, "Update CLB pins parasitic nets (1st time: for output pins)...\n");
+    update_grid_pb_pins_parasitic_nets();
+    vpr_printf(TIO_MESSAGE_INFO, "Backannoating global routing net...\n");
+    backannotate_rr_nodes_net_info();
+    vpr_printf(TIO_MESSAGE_INFO, "Update CLB pins parasitic nets (2nd time: for input pins)...\n");
+    update_grid_pb_pins_parasitic_nets();
+  } else {
+    vpr_printf(TIO_MESSAGE_WARNING, "Parasitic Net Estimation is turned off...Accuracy loss may be expected!\n");
+  }
   vpr_printf(TIO_MESSAGE_INFO, "Backannoating local routing net (2nd time: for input pins)...\n");
   backannotate_pb_rr_nodes_net_info();
 

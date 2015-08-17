@@ -635,7 +635,7 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   }
 
   /* backannotation */  
-  spice_backannotate_vpr_post_route_info();
+  spice_backannotate_vpr_post_route_info(vpr_setup.SpiceOpts.fpga_spice_parasitic_net_estimation_off);
 
   /* Auto check the density and recommend sim_num_clock_cylce */
   auto_select_num_sim_clock_cycle(Arch.spice);

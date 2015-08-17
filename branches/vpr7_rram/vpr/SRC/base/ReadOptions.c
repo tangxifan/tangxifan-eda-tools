@@ -495,6 +495,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
       return Args;
     case OT_FPGA_SPICE_LEAKAGE_ONLY:
       return Args;
+    case OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION_OFF:
+      return Args;
     /* mrFPGA: Xifan TANG */
     case OT_SHOW_SRAM:
     case OT_SHOW_PASS_TRANS:

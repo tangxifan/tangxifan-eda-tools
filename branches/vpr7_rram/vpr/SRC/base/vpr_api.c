@@ -170,6 +170,7 @@ void vpr_print_usage(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "\t--print_spice_sb_mux_testbench\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--print_spice_grid_testbench\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_leakage_only\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_parasitic_net_estimation_off\n");
 }
 
 /* Initialize VPR 

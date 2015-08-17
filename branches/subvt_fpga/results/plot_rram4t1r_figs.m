@@ -320,7 +320,7 @@ ylabel('V_{DS} (V)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'XTick',xindex);
 set(gca,'XTickLabel',wprog_list(xindex));
-set(gca,'ylim',[0.3 1.2],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+%set(gca,'ylim',[0.3 1.2],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 hleg = legend([{'V_{DS1} of 2T1R W_{inv}=1'},{'V_{DS2} of 2T1R W_{inv}=1'},{'V_{DS1} of 2T1R W_{inv}=5'},{'V_{DS2} of 2T1R W_{inv}=5'},{'V_{DS1} of 2T1R W_{inv}=10'},{'V_{DS2} of 2T1R W_{inv}=10'},{'V_{DS1} of 2T1R W_{inv}=15'},{'V_{DS2} of 2T1R W_{inv}=15'},{'V_{DS1} of 2T1R W_{inv}=20'},{'V_{DS2} of 2T1R W_{inv}=20'}]);
 set(fig_handle4, 'Position', [1 1 1000 800]);
 grid on
@@ -365,7 +365,7 @@ ylabel('V_{DS} (V)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'XTick',xindex);
 set(gca,'XTickLabel',wprog_list(xindex));
-set(gca,'ylim',[0.1 1.1],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+%set(gca,'ylim',[0.1 1.1],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 hleg = legend([{'V_{DS1} of 2T1R V_{prog}=2.5V'},{'V_{DS2} of 2T1R V_{prog}=2.5V'},{'V_{DS1} of 2T1R V_{prog}=2.6V'},{'V_{DS2} of 2T1R V_{prog}=2.6V'},{'V_{DS1} of 2T1R V_{prog}=2.7V'},{'V_{DS2} of 2T1R V_{prog}=2.7V'},{'V_{DS1} of 2T1R V_{prog}=2.8V'},{'V_{DS2} of 2T1R V_{prog}=2.8V'},{'V_{DS1} of 2T1R V_{prog}=2.9V'},{'V_{DS2} of 2T1R V_{prog}=2.9V'},{'V_{DS1} of 2T1R V_{prog}=3.0V'},{'V_{DS2} of 2T1R V_{prog}=3.0V'}]);
 set(fig_handle4, 'Position', [1 1 1000 800]);
 grid on
@@ -405,7 +405,7 @@ ylabel('V_{DS} (V)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'XTick',xindex);
 set(gca,'XTickLabel',wprog_list(xindex));
-set(gca,'ylim',[0.7 1.05],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+%set(gca,'ylim',[0.7 1.05],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 hleg = legend([{'V_{DS1} of 2TG1R W_{inv}=1'},{'V_{DS2} of 2TG1R W_{inv}=1'},{'V_{DS1} of 2TG1R W_{inv}=5'},{'V_{DS2} of 2TG1R W_{inv}=5'},{'V_{DS1} of 2TG1R W_{inv}=10'},{'V_{DS2} of 2TG1R W_{inv}=10'},{'V_{DS1} of 2TG1R W_{inv}=15'},{'V_{DS2} of 2TG1R W_{inv}=15'},{'V_{DS1} of 2TG1R W_{inv}=20'},{'V_{DS2} of 2TG1R W_{inv}=20'}]);
 set(fig_handle4, 'Position', [1 1 1000 800]);
 grid on
@@ -449,7 +449,7 @@ ylabel('V_{DS} (V)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'XTick',xindex);
 set(gca,'XTickLabel',wprog_list(xindex));
-set(gca,'ylim',[0.4 1.1],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+%set(gca,'ylim',[0.4 1.1],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 hleg = legend([{'V_{DS1} of 2TG1R V_{prog}=2.5V'},{'V_{DS2} of 2TG1R V_{prog}=2.5V'},{'V_{DS1} of 2TG1R V_{prog}=2.6V'},{'V_{DS2} of 2TG1R V_{prog}=2.6V'},{'V_{DS1} of 2TG1R V_{prog}=2.7V'},{'V_{DS2} of 2TG1R V_{prog}=2.7V'},{'V_{DS1} of 2TG1R V_{prog}=2.8V'},{'V_{DS2} of 2TG1R V_{prog}=2.8V'},{'V_{DS1} of 2TG1R V_{prog}=2.9V'},{'V_{DS2} of 2TG1R V_{prog}=2.9V'},{'V_{DS1} of 2TG1R V_{prog}=3.0V'},{'V_{DS2} of 2TG1R V_{prog}=3.0V'}]);
 hold on
 set(fig_handle4, 'Position', [1 1 1000 800]);
@@ -495,7 +495,7 @@ ylabel('V_{DS} (V)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'XTick',xindex);
 set(gca,'XTickLabel',wprog_list(xindex));
-set(gca,'ylim',[0.4 0.9],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+%set(gca,'ylim',[0.4 0.9],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 hleg = legend([{'V_{DS1} of 4T1R V_{prog}=2.5V'},{'V_{DS2} of 4T1R V_{prog}=2.5V'},{'V_{DS1} of 4T1R V_{prog}=2.6V'},{'V_{DS2} of 4T1R V_{prog}=2.6V'},{'V_{DS1} of 4T1R V_{prog}=2.7V'},{'V_{DS2} of 4T1R V_{prog}=2.7V'},{'V_{DS1} of 4T1R V_{prog}=2.8V'},{'V_{DS2} of 4T1R V_{prog}=2.8V'},{'V_{DS1} of 4T1R V_{prog}=2.9V'},{'V_{DS2} of 4T1R V_{prog}=2.9V'},{'V_{DS1} of 4T1R V_{prog}=3.0V'},{'V_{DS2} of 4T1R V_{prog}=3.0V'}]);
 set(fig_handle4, 'Position', [1 1 1000 800]);
 grid on
@@ -561,9 +561,9 @@ for i=1:1:length(y_area)
 end
 for i=1:1:length(y_area)
   if abs(rram2n1r_vprog2p5V_inv20_format(i,7))*wprog_list(i) < 200
-    y_area(i) = wprog_min*2 + 20*4*(1/32+1/32);
+    y_area(i) = wprog_min*2 + 20*(1+3*1.2)*(1/32+1/32);
   else 
-    y_area(i) = wprog_list(i)*2 + 20*4*(1/32+1/32);
+    y_area(i) = wprog_list(i)*2 + 20*(1+3*1.2)*(1/32+1/32);
   end 
 end 
 plot(x_ron, y_area,'k-*','LineWidth', 2, 'MarkerSize',10);
@@ -581,9 +581,9 @@ for i=1:1:length(y_area)
 end
 for i=1:1:length(y_area)
   if abs(rram2n1r_vprog3p0V_inv20_format(i,7))*wprog_list(i) < 200
-    y_area(i) = wprog_min*2 + 20*4*(1/32+1/32);
+    y_area(i) = wprog_min*2 + 20*(1+3*1.2)*(1/32+1/32);
   else 
-    y_area(i) = wprog_list(i)*2 + 20*4*(1/32+1/32);
+    y_area(i) = wprog_list(i)*2 + 20*(1+3*1.2)*(1/32+1/32);
   end 
 end
 plot(x_ron, y_area,'k-o','LineWidth', 2, 'MarkerSize',10);
@@ -601,9 +601,9 @@ for i=1:1:length(y_area)
 end
 for i=1:1:length(y_area)
   if abs(rram2t1r_vprog2p5V_inv20_format(i,7))*wprog_list(i) < 200
-    y_area(i) = wprog_min*2*4 + 20*4*(1/32+1/32);
+    y_area(i) = wprog_min*2*(1+3*1.2) + 20*(1+3*1.2)*(1/32+1/32);
   else 
-    y_area(i) = wprog_list(i)*2*4 + 20*4*(1/32+1/32);
+    y_area(i) = wprog_list(i)*2*(1+3*1.2) + 20*(1+3*1.2)*(1/32+1/32);
   end 
 end
 plot(x_ron, y_area,'b-*','LineWidth', 2, 'MarkerSize',10);
@@ -621,9 +621,9 @@ for i=1:1:length(y_area)
 end
 for i=1:1:length(y_area)
   if abs(rram2t1r_vprog3p0V_inv20_format(i,7))*wprog_list(i) < 200
-    y_area(i) = wprog_min*2*4 + 20*4*(1/32+1/32);
+    y_area(i) = wprog_min*2*(1+3*1.2) + 20*(1+3*1.2)*(1/32+1/32);
   else 
-    y_area(i) = wprog_list(i)*2*4 + 20*4*(1/32+1/32);
+    y_area(i) = wprog_list(i)*2*(1+3*1.2) + 20*(1+3*1.2)*(1/32+1/32);
   end 
 end
 plot(x_ron, y_area,'b-o','LineWidth', 2, 'MarkerSize',10);
@@ -640,7 +640,7 @@ for i=1:1:length(y_area)
   end 
 end
 for i=1:1:length(y_area)
-  y_area(i) = wprog_list(i)*4 + wprog_min*4;
+  y_area(i) = wprog_list(i)*(1+3*1.2) + wprog_min*(1+3*1.2);
 end
 plot(x_ron, y_area,'r-*','LineWidth', 2, 'MarkerSize',10);
 hold on
@@ -656,7 +656,7 @@ for i=1:1:length(y_area)
   end 
 end
 for i=1:1:length(y_area)
-  y_area(i) = wprog_list(i)*3.7 + wprog_min*3.7;
+  y_area(i) = wprog_list(i)*(1+3*1.2) + wprog_min*(1+3*1.2);
 end
 plot(x_ron, y_area,'r-o','LineWidth', 2, 'MarkerSize',10);
 hold on

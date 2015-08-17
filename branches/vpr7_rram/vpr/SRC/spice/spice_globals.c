@@ -43,6 +43,8 @@ int num_used_lut_tb = 0;
 int num_used_dff_tb = 0;
 /* Default init_value */
 int default_signal_init_value = 0;
+/* Default do parasitic net estimation !!!*/
+int run_parasitic_net_estimation = 1;
 
 t_llist* tb_head = NULL;
 

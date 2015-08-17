@@ -135,6 +135,7 @@ sub print_usage()
   print "      -vpr_fpga_spice_print_gridtb : print Grid testbench in VPR FPGA SPICE\n";
   print "      -vpr_fpga_spice_print_toptb : print full-chip testbench in VPR FPGA SPICE\n";
   print "      -vpr_fpga_spice_leakage_only : turn on leakage_only mode in VPR FPGA SPICE\n";
+  print "      -vpr_fpga_spice_parasitic_net_estimation_off : turn off parasitic_net_estimation in VPR FPGA SPICE\n";
   print "      -multi_thread <int>: turn on the mutli-thread mode, specify the number of threads\n";
   print "      -parse_results_only : only parse the flow results and write CSV report.\n";
   print "      -min_hard_adder_size: min. size of hard adder in carry chain defined in Arch XML.(Default:1)\n";
@@ -288,6 +289,7 @@ sub opts_read()
   &read_opt_into_hash("vpr_fpga_spice_print_gridtb","off","off");
   &read_opt_into_hash("vpr_fpga_spice_print_toptb","off","off");
   &read_opt_into_hash("vpr_fpga_spice_leakage_only","off","off");
+  &read_opt_into_hash("vpr_fpga_spice_parasitic_net_estimation_off","off","off");
 
   &print_opts(); 
 
@@ -910,6 +912,9 @@ sub run_std_vpr($ $ $ $ $ $ $ $ $)
     if ("on" eq $opt_ptr->{vpr_fpga_spice_leakage_only}) {
       $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_leakage_only";
     }
+    if ("on" eq $opt_ptr->{vpr_fpga_spice_parasitic_net_estimation_off}) {
+      $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_parasitic_net_estimation_off";
+    }
   }
   
   my ($other_opt) = ("");
@@ -960,6 +965,9 @@ sub run_vpr_route($ $ $ $ $ $ $ $ $)
     }
     if ("on" eq $opt_ptr->{vpr_fpga_spice_leakage_only}) {
       $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_leakage_only";
+    }
+    if ("on" eq $opt_ptr->{vpr_fpga_spice_parasitic_net_estimation_off}) {
+      $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_parasitic_net_estimation_off";
     }
   }
   

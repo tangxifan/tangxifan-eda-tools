@@ -2635,6 +2635,7 @@ void fprint_spice_mux_testbench(char* formatted_spice_dir,
     } 
     /* Update the global counter */
     num_used_grid_tb = cnt;
+    vpr_printf(TIO_MESSAGE_INFO,"No. of generated PB_MUX testbench = %d\n", num_used_grid_tb);
     break;
   case SPICE_CB_MUX_TB:
     cnt = 0;
@@ -2676,6 +2677,7 @@ void fprint_spice_mux_testbench(char* formatted_spice_dir,
     } 
     /* Update the global counter */
     num_used_cb_tb = cnt;
+    vpr_printf(TIO_MESSAGE_INFO,"No. of generated CB_MUX testbench = %d\n", num_used_cb_tb);
     break;
   case SPICE_SB_MUX_TB:
     cnt = 0;
@@ -2699,6 +2701,7 @@ void fprint_spice_mux_testbench(char* formatted_spice_dir,
     } 
     /* Update the global counter */
     num_used_sb_tb = cnt;
+    vpr_printf(TIO_MESSAGE_INFO,"No. of generated SB_MUX testbench = %d\n", num_used_sb_tb);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d]) Invalid mux_tb_type!\n", __FILE__, __LINE__);

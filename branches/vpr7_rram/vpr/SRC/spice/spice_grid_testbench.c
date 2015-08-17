@@ -608,6 +608,7 @@ void fprint_spice_grid_testbench(char* formatted_spice_dir,
   } 
   /* Update the global counter */
   num_used_grid_tb = cnt;
+  vpr_printf(TIO_MESSAGE_INFO,"No. of generated grid testbench = %d\n", num_used_grid_tb);
 
   return;
 }

@@ -948,6 +948,7 @@ static void SetupSpiceOpts(t_options Options,
   spice_opts->print_spice_dff_testbench = FALSE;
   spice_opts->print_spice_grid_testbench = FALSE;
   spice_opts->fpga_spice_leakage_only = FALSE;
+  spice_opts->fpga_spice_parasitic_net_estimation_off = FALSE;
 
   /* Turn on the spice option if it is selected*/
   if (Options.Count[OT_FPGA_SPICE]) {
@@ -979,6 +980,9 @@ static void SetupSpiceOpts(t_options Options,
     }
     if (Options.Count[OT_FPGA_SPICE_LEAKAGE_ONLY]) {
       spice_opts->fpga_spice_leakage_only = TRUE;
+    }
+    if (Options.Count[OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION_OFF]) {
+      spice_opts->fpga_spice_parasitic_net_estimation_off = TRUE;
     }
   }
   /* Set default options */

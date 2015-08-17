@@ -2895,7 +2895,7 @@ sub gen_rram2t1r_sp_common($ $ $ $ $ $ $ $) {
   &tab_print($spfh,".eom inv\n",0);
   &tab_print($spfh,"\n",0);
 
-  if ("on" eq $opt_ptr->{rram2n1r}) {
+  if (("on" eq $opt_ptr->{rram2n1r})&&("off" eq $opt_ptr->{transmission_gate})) {
     # Hack for 2 NMOS, just for comparison
     &tab_print($spfh,"***** 2T1R Structure *****\n",0);
     &tab_print($spfh,"Xn1 rram_te prog_ron prog_te prog_te elc_nmos L=\'nl\' W=\'wprog*wn\'\n",0);
@@ -2903,13 +2903,13 @@ sub gen_rram2t1r_sp_common($ $ $ $ $ $ $ $) {
     &tab_print($spfh,"Xinv1 0 prog_te vdd0 0 inv size=\'$opt_ptr->{driver_inv_size_val}\'\n",0);
     &tab_print($spfh,"Xinv2 vdd0 prog_be vdd0 0 inv size=\'$opt_ptr->{driver_inv_size_val}\'\n",0);
     # END Hack
-  } elsif ("on" eq $opt_ptr->{transmission_gate}) {
+  } elsif (("on" eq $opt_ptr->{rram2n1r})&&("on" eq $opt_ptr->{transmission_gate})) {
     &tab_print($spfh,"***** NMOS for transmission gate *****\n",0);
     &tab_print($spfh,"Xn1 rram_te prog_ron prog_te 0 elc_nmos L=\'nl\' W=\'wprog*wn\'\n",0);
     &tab_print($spfh,"Xn2 rram_be prog_ron prog_be 0 elc_nmos L=\'nl\' W=\'wprog*wn\'\n",0);
     &tab_print($spfh,"***** PMOS for transmission gate *****\n",0);
     &tab_print($spfh,"Xp1 rram_te prog_ronb prog_te vdd0 elc_pmos L=\'pl\' W=\'wprog*wn*beta\'\n",0);
-    &tab_print($spfh,"Xp2 rram_be prog_ronb prog_be vdd0 elc_nmos L=\'pl\' W=\'wprog*wn*beta\'\n",0);
+    &tab_print($spfh,"Xp2 rram_be prog_ronb prog_be vdd0 elc_pmos L=\'pl\' W=\'wprog*wn*beta\'\n",0);
     &tab_print($spfh,"Xinv1 0 prog_te vdd0 0 inv size=\'$opt_ptr->{driver_inv_size_val}\'\n",0);
     &tab_print($spfh,"Xinv2 vdd0 prog_be vdd0 0 inv size=\'$opt_ptr->{driver_inv_size_val}\'\n",0);
     # END Hack

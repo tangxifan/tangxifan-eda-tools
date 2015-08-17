@@ -482,6 +482,7 @@ OT_FIRST_ITER_PRES_FAC	base/OptionTokens.h	/^	OT_FIRST_ITER_PRES_FAC,$/;"	e	enum
 OT_FIX_PINS	base/OptionTokens.h	/^	OT_FIX_PINS,$/;"	e	enum:e_OptionBaseToken
 OT_FPGA_SPICE	base/OptionTokens.h	/^    OT_FPGA_SPICE, \/* Xifan TANG: FPGA SPICE Model Support *\/$/;"	e	enum:e_OptionBaseToken
 OT_FPGA_SPICE_LEAKAGE_ONLY	base/OptionTokens.h	/^    OT_FPGA_SPICE_LEAKAGE_ONLY, \/* Xifan TANG: Print SPICE Testbench for MUXes *\/$/;"	e	enum:e_OptionBaseToken
+OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION_OFF	base/OptionTokens.h	/^    OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION_OFF, \/* Xifan TANG: Turn parasitic net estimation off*\/$/;"	e	enum:e_OptionBaseToken
 OT_FULL_STATS	base/OptionTokens.h	/^	OT_FULL_STATS,$/;"	e	enum:e_OptionBaseToken
 OT_GENERATE_POST_SYNTHESIS_NETLIST	base/OptionTokens.h	/^	OT_GENERATE_POST_SYNTHESIS_NETLIST,$/;"	e	enum:e_OptionBaseToken
 OT_GLOBAL	base/OptionTokens.h	/^	OT_GLOBAL,$/;"	e	enum:e_OptionArgToken
@@ -1892,6 +1893,7 @@ forward_weight	base/vpr_types.h	/^	float forward_weight, backward_weight; \/* We
 found_connectivity	base/verilog_writer.h	/^typedef struct found_connectivity{$/;"	s
 found_pins	base/verilog_writer.h	/^typedef struct found_pins{$/;"	s
 fpga_spice_leakage_only	base/vpr_types.h	/^  boolean fpga_spice_leakage_only;$/;"	m	struct:s_spice_opts
+fpga_spice_parasitic_net_estimation_off	base/vpr_types.h	/^  boolean fpga_spice_parasitic_net_estimation_off;$/;"	m	struct:s_spice_opts
 fprint_call_defined_chan	spice/spice_netlist_utils.c	/^void fprint_call_defined_chan(FILE* fp,$/;"	f
 fprint_call_defined_channels	spice/spice_netlist_utils.c	/^void fprint_call_defined_channels(FILE* fp) {$/;"	f
 fprint_call_defined_connection_box	spice/spice_netlist_utils.c	/^void fprint_call_defined_connection_box(FILE* fp,$/;"	f
@@ -3472,6 +3474,7 @@ rt_edge_free_list	route/route_tree_timing.c	/^static t_linked_rt_edge *rt_edge_f
 rt_node_free_list	route/route_tree_timing.c	/^static t_rt_node *rt_node_free_list = NULL;$/;"	v	file:
 rt_node_of_sink	place/timing_place_lookup.c	/^static t_rt_node **rt_node_of_sink;$/;"	v	file:
 run_hspice_shell_script_name	spice/spice_run_scripts.c	/^static char* run_hspice_shell_script_name = "run_hspice_sim.sh";$/;"	v	file:
+run_parasitic_net_estimation	spice/spice_globals.c	/^int run_parasitic_net_estimation = TRUE;$/;"	v
 s	../../libarchfpga/include/ezxml.h	/^	char *s; \/* start of work area *\/$/;"	m	struct:ezxml_root
 s_TokenPair	base/vpr_types.h	/^struct s_TokenPair {$/;"	s
 s_annealing_sched	base/vpr_types.h	/^struct s_annealing_sched {$/;"	s

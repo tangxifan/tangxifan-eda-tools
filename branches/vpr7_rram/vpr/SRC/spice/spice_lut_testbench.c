@@ -700,6 +700,7 @@ void fprint_spice_lut_testbench(char* formatted_spice_dir,
   } 
   /* Update the global counter */
   num_used_lut_tb = cnt;
+  vpr_printf(TIO_MESSAGE_INFO,"No. of generated LUT testbench = %d\n", num_used_lut_tb);
 
   return;
 }

@@ -46,6 +46,7 @@ extern int num_used_dff_tb;
 extern t_llist* tb_head;
 
 extern int default_signal_init_value;
+extern int run_parasitic_net_estimation;
  
 /* Enumeration */
 enum e_pin2pin_interc_type {
