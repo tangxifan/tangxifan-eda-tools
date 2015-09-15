@@ -592,6 +592,44 @@ sub mux_output_vector($ $ $)
     return ($select_path_index,$input_vects[$select_path_index]);
   }
 
+  if ("on" eq $opt_ptr->{two_level_mux}) {
+    my ($basis) = (($#sram_bits+1)/2);
+    my ($offset1, $offset2) = (0,0);
+    # For the 2nd level SRAMs 
+    my ($check) = 0;
+    for (my $i=($#sram_bits+1)/2; $i<($#sram_bits+1); $i++) {
+      if (("1" ne $sram_bits[$i])&&("0" ne $sram_bits[$i])) {
+        die "Error: (mux_output_vector) SRAM bits should be either 0 or 1!\n";
+      } elsif ("1" eq $sram_bits[$i]) {
+        $select_path_index = $basis*($i-$basis);
+        $offset2 = $i-$basis;
+        $check++;
+      }
+    }
+    if (1 != $check) {
+      die "Error: SRAMs of the 2nd level of a two-level MUX has 0 or more than 1 \'1\'!\n";
+    }
+    # For the 1st level SRAMs 
+    $check = 0;
+    for (my $i=0; $i<($#sram_bits+1)/2; $i++) {
+      if (("1" ne $sram_bits[$i])&&("0" ne $sram_bits[$i])) {
+        die "Error: (mux_output_vector) SRAM bits should be either 0 or 1!\n";
+      } elsif ("1" eq $sram_bits[$i]) {
+        $select_path_index += $i;
+        $offset1 = $i;
+        $check++;
+      }
+    }
+    if (1 != $check) {
+      die "Error: SRAMs of the 1st level of a two-level MUX has 0 or more than 1 \'1\'!\n";
+    }
+    # Check if the input to be measured is on the second level...
+    if (!($select_path_index < $mux_size)) {
+      $select_path_index = ($offset2-1)*$basis+$offset1;
+    }
+    return ($select_path_index,$input_vects[$select_path_index]);
+  }
+
   my ($num_input_last) = (&mux_last_level_input_num($#sram_bits+1,$mux_size));
 
   for (my $i=0; $i<($#sram_bits+1); $i++) {
@@ -1909,7 +1947,7 @@ sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
   $lis_file =~ s/sp$/lis/;
   my @sim_keywds = ("dly_mux","slew_mux","pleak","pdynamic","avg_vmux","energy_per_toggle");
       
-  #print "SRAM_bits: $SRAM_bits\n";
+  print "SRAM_bits: $SRAM_bits\n";
   ($delay_measure_input,$output_vector) = &mux_output_vector($mux_size,$SRAM_bits,$input_vectors); 
   ($delay_measure,$input_vector_type,$output_vector_type) = &determine_lut_delay_measure($delay_measure_input,$input_vectors,$output_vector); 
 
@@ -2786,7 +2824,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
 
         ($sram_bits,$input_vectors) = ("","");
         for (my $i=0; $i<$num_sram; $i++) {
-          if (0 == $i) {
+          if ((0 == $i)||($i == $num_sram/2)) {
             $sram_bits .= "1,";
           } else {
             $sram_bits .= "0,";
@@ -2874,7 +2912,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
     } else {
       ($sram_bits,$input_vectors) = ("","");
       for (my $i=0; $i<$num_sram; $i++) {
-        if (0 == $i) {
+        if ((0 == $i)||($i == $num_sram/2)) {
           $sram_bits .= "1,";
         } else {
           $sram_bits .= "0,";
