@@ -1926,14 +1926,15 @@ static void ProcessDevice(INOUTP ezxml_t Node, OUTP struct s_arch *arch,
 	FreeNode(Cur);
     
     // Xifan TANG: SRAM and SPICE Support 
-	Cur = FindElement(Node, "sram", FALSE);
-	arch->sram_inf.area = GetFloatProperty(Cur, "area",
-			FALSE, 6);
-    arch->sram_inf.spice_model_name = my_strdup(FindProperty(Cur, "spice_model_name", arch->read_xml_spice));
-    arch->sram_inf.spice_model = NULL;
-    ezxml_set_attr(Cur, "spice_model_name", NULL);
-	FreeNode(Cur);
-    // END
+	Cur = FindElement(Node, "sram", arch->read_xml_spice);
+	arch->sram_inf.area = GetFloatProperty(Cur, "area", FALSE, 6);
+    if (NULL != Cur) {
+      arch->sram_inf.spice_model_name = my_strdup(FindProperty(Cur, "spice_model_name", arch->read_xml_spice));
+      arch->sram_inf.spice_model = NULL;
+      ezxml_set_attr(Cur, "spice_model_name", NULL);
+	  FreeNode(Cur);
+      // END
+    }
 
 	Cur = FindElement(Node, "chan_width_distr", FALSE);
 	if (Cur != NULL) {

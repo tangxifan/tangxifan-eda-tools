@@ -13,7 +13,7 @@ use Cwd;
 # Use FileHandle to open&close file
 use FileHandle;
 # For ceil, floor function
-#use POSIX;
+use POSIX;
 
 # Date
 my $mydate = gmctime(); 
@@ -233,7 +233,8 @@ sub print_usage()
   print "      -mux <mux2_spice> : run HSPICE simulations for Multiplexer. 2-input multiplexer spice netlist should be provided\n";
   print "      -mux_size <int> : number of inputs of multiplexer, mandatory when option mux is enabled.\n";
   print "      -rram_enhance : turn on enhancements for RRAM (Valid for MUX only)\n";
-  print "      -one_level_mux: build one-level MUX(Applicable for both SRAM and RRAM)\n";
+  print "      -one_level_mux:<spice>: build one-level MUX(Applicable for both SRAM and RRAM), the SPICE netlist of SRAM/RRAM-based switch should be provided!\n";
+  print "      -two_level_mux <spice>: build two-level MUX(Applicable for both SRAM and RRAM), the SPICE netlist of SRAM/RRAM-based switch should be provided!\n";
   print "      -wprog_sweep <max_wprog>: sweep the wprog when turn on enhancements for RRAM (Valid for MUX only)\n";
   print "      -enum_mux_leakage: test all cases for multiplexer leakages\n";
   print "      -auto_out_tapered_buffer <level>: automatically add a tapered buffer at output port for high-fan-out nets.\n";
@@ -361,7 +362,8 @@ sub opts_read() {
     &read_opt_into_hash("rram_enhance","off","off");  # Check -rram_enhance
     &read_opt_into_hash("wprog_sweep","on","off");  # Check -wprog_sweep
     &read_opt_into_hash("enum_mux_leakage","on","off");  # Check -enum_mux_leakage
-    &read_opt_into_hash("one_level_mux","off","off");  # Check -one_level_mux
+    &read_opt_into_hash("one_level_mux","on","off");  # Check -one_level_mux
+    &read_opt_into_hash("two_level_mux","on","off");  # Check -one_level_mux
     &read_opt_into_hash("mux_unbuffered","off","off");  # Check -mux_unbuffered
   }
 
@@ -678,11 +680,22 @@ sub determine_mux_level($)
   }
   return $mux_level;
 }
+
+sub determine_2level_mux_basis($) {
+  my ($mux_size) = @_;
+  my ($basis) = sqrt($mux_size); 
+
+  $basis = ceil($basis);
+ 
+  return $basis;
+}
  
 sub determine_mux_num_sram($) {
   my ($mux_size) = @_;
   if ("on" eq $opt_ptr->{one_level_mux}) {
     return $mux_size;
+  } elsif ("on" eq $opt_ptr->{two_level_mux}) {
+    return 2*&determine_2level_mux_basis($mux_size);
   } else {
     return &determine_mux_level($mux_size);
   }
@@ -947,7 +960,7 @@ sub gen_common_sp_technology($)
     &tab_print($spfh,".include ",0);
   }
 
-  &tab_print($spfh,"\'/$conf_ptr->{general_settings}->{process_tech}->{val}\' ",0);
+  &tab_print($spfh,"\'$conf_ptr->{general_settings}->{process_tech}->{val}\' ",0);
 
   if (($conf_ptr->{general_settings}->{process_tech}->{val} =~ m/\.lib$/)
     ||($conf_ptr->{general_settings}->{process_tech}->{val} =~ m/\.l$/)) {
@@ -1226,10 +1239,27 @@ sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $)
   if ($opt_ptr->{mux_unbuffered}) {
     $buf_val = "unbuffered";
   }
+
+  my ($inv_load_num) = ($conf_ptr->{mux_settings}->{load_inv_num}->{val});
+  if ("on" eq $opt_ptr->{auto_out_tapered_buffer}) {
+    # Add a tapered buffer at output
+    my ($eq_inv_load_num) = (0);
+    my ($cap_eq_inv_num) = (&process_unit($conf_ptr->{mux_settings}->{load_cap}->{val},"capacitance")/(&process_unit($conf_ptr->{rram_settings}->{Cs_pmos}->{val},"capacitance")+&process_unit($conf_ptr->{rram_settings}->{Cs_nmos}->{val},"capacitance")));
+    if ($conf_ptr->{mux_settings}->{load_type}->{val} =~ m/cap/) {
+      $eq_inv_load_num += $cap_eq_inv_num;
+    }
+    #if ($conf_ptr->{mux_settings}->{load_type}->{val} =~ m/inv/) {
+      $eq_inv_load_num += $conf_ptr->{mux_settings}->{load_inv_num}->{val};
+    #}
+    &gen_auto_out_tapered_buffer($spfh, 4**$opt_ptr->{auto_out_tapered_buffer_val}, 4);
+    #&gen_auto_out_tapered_buffer($spfh, $eq_inv_load_num, 4);
+  }
  
   if ("on" eq $opt_ptr->{one_level_mux}) {
     # Generate the sub circuit of 1-level N-input MUX
     &gen_1level_mux_subckt($spfh,$mux_size,"mux2_size$mux_size",$opt_ptr->{one_level_mux_val},"buffered",$rram_enhance);
+  } elsif ("on" eq $opt_ptr->{two_level_mux}) {
+    &gen_2level_mux_subckt($spfh,$mux_size,"mux2_size$mux_size",$opt_ptr->{two_level_mux_val},"buffered",$rram_enhance);
   } else {
     # Generate the sub circuit of N-input MUX with a given 2-input MUX subckt
     &gen_multilevel_mux_subckt($spfh,$mux_size,"mux2_size$mux_size",$conf_ptr->{mux_settings}->{mux_subckt_name}->{val},"buffered",$rram_enhance);
@@ -1350,21 +1380,6 @@ sub gen_1level_mux_subckt($ $ $ $ $ $) {
   my ($spfh,$mux_size,$subckt_name,$mux1level_subckt,$buffered,$rram_enhance) = @_;
   my ($num_sram) = ($mux_size);
 
-  my ($inv_load_num) = ($conf_ptr->{mux_settings}->{load_inv_num}->{val});
-  if ("on" eq $opt_ptr->{auto_out_tapered_buffer}) {
-    # Add a tapered buffer at output
-    my ($eq_inv_load_num) = (0);
-    my ($cap_eq_inv_num) = (&process_unit($conf_ptr->{mux_settings}->{load_cap}->{val},"capacitance")/(&process_unit($conf_ptr->{rram_settings}->{Cs_pmos}->{val},"capacitance")+&process_unit($conf_ptr->{rram_settings}->{Cs_nmos}->{val},"capacitance")));
-    #if ($conf_ptr->{mux_settings}->{load_type}->{val} =~ m/cap/) {
-      $eq_inv_load_num += $cap_eq_inv_num;
-    #}
-    #if ($conf_ptr->{mux_settings}->{load_type}->{val} =~ m/inv/) {
-      $eq_inv_load_num += $conf_ptr->{mux_settings}->{load_inv_num}->{val};
-    #}
-    &gen_auto_out_tapered_buffer($spfh, 4**$opt_ptr->{auto_out_tapered_buffer_val}, 4);
-    #&gen_auto_out_tapered_buffer($spfh, $eq_inv_load_num, 4);
-  }
- 
   # Print definitions 
   &tab_print($spfh,".subckt $subckt_name ",0);
   for (my $i=0; $i<$num_sram; $i++) {
@@ -1411,12 +1426,101 @@ sub gen_1level_mux_subckt($ $ $ $ $ $) {
   if ("on" eq $opt_ptr->{auto_out_tapered_buffer}) {
     my ($tapbuf_size) = (4**$opt_ptr->{auto_out_tapered_buffer_val});
     # Call the subckt 
-    &tab_print($spfh, "Xtapbuf mux2_l0_in0 $conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd sgnd tapbuf_size$tapbuf_size\n", 0);
+    &tab_print($spfh, "Xtapbuf mux1level_out $conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd sgnd tapbuf_size$tapbuf_size\n", 0);
   } elsif ("buffered" eq $buffered) {
     &tab_print($spfh,"Xinv_out mux1level_out ",0); 
     &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd sgnd $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'inv_size_out\'\n",0);
   } else {
     &tab_print($spfh,"Vout mux1level_out ",0); 
+    &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} 0\n",0);
+  } 
+
+  # Print end of subckt
+  &tab_print($spfh,".eom $subckt_name\n",0);
+}
+
+sub gen_2level_mux_subckt($ $ $ $ $ $) {
+  my ($spfh,$mux_size,$subckt_name,$mux2level_subckt,$buffered,$rram_enhance) = @_;
+  my ($basis) = (&determine_2level_mux_basis($mux_size));
+  my ($num_sram) = (2*$basis);
+
+  print "Two-level MUX: number of a basis is auto-set to $basis.\n";
+  print "Two-level MUX: number of configurable bits is auto-set to $num_sram.\n";
+
+  # Print definitions 
+  &tab_print($spfh,".subckt $subckt_name ",0);
+  for (my $i=0; $i<$num_sram; $i++) {
+    &tab_print($spfh,"$conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$i ",0);
+    &tab_print($spfh,"$conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$i ",0);
+  }
+  for (my $i=0; $i<$mux_size; $i++) {
+    &tab_print($spfh,"$conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i ",0);
+  }
+  &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} ",0);
+  &tab_print($spfh,"svdd sgnd \n", 0);
+
+  # Print array of transistors/RRAMs
+  if ($rram_enhance) {
+    # First level 
+    for (my $i = 0; $i < $mux_size; $i++) {
+      my ($in2lvl) = int($i/$basis);
+      my ($offset) = $i % $basis;
+      # Call defined 1level Subckt - Program Pair 
+      #&tab_print($spfh, "Xmux2_l2_$i mux2_l2_in$i $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$offset $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$offset svdd sgnd $mux2level_subckt wprog=\'wprog\'\n",0);
+      #if (0 == $i) {
+      #  &tab_print($spfh,"Rmux2level_$i mux2_l2_in$i mux2_l1_in$in2lvl \'ron\'\n",0);
+      #} else { 
+      #  &tab_print($spfh,"Rmux2level_$i mux2_l2_in$i mux2_l1_in$in2lvl \'roff\'\n",0);
+      #}
+    }
+    # Add output program pair 
+    for (my $i = 0; $i < $basis; $i++) {
+      #&tab_print($spfh, "Xmux2_l2_progpairout mux2_l1_in$i $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$i $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$i svdd sgnd $mux2level_subckt wprog=\'wprog\'\n",0);
+    }
+    # Add intermedia inverter 
+    # Second level 
+    for (my $i = 0; $i < $basis; $i++) {
+      my ($offset) = ($basis + $i);
+    }
+    # Add output program pair 
+   ;
+    # Add intermedia inverter 
+  } else {
+    # CMOS 2-level MUX
+    # First level 
+    for (my $i = 0; $i < $mux_size; $i++) {
+      my ($in2lvl) = int($i/$basis);
+      my ($offset) = ($i % $basis);
+      # Call defined 2level Subckt 
+      &tab_print($spfh, "Xmux2_l1_in$i mux2_l1_in$i mux2_l0_in$in2lvl $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$offset $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$offset svdd sgnd $mux2level_subckt\n",0);
+    }
+    # Second level 
+    for (my $i = 0; $i < $basis; $i++) {
+      my ($offset) = ($basis + $i);
+      &tab_print($spfh, "Xmux2_l0_in$i mux2_l0_in$i mux2_l0_in0 $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$offset $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$offset svdd sgnd $mux2level_subckt\n",0);
+    }
+  }
+
+  # Add buffers
+  for (my $i=0; $i < $mux_size; $i++) {
+    if ("buffered" eq $buffered) {
+      &tab_print($spfh,"Xinv$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux2_l1_in$i ",0); 
+      &tab_print($spfh,"svdd sgnd $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'inv_size_in\'\n",0);
+      #&tab_print($spfh,"$conf_ptr->{general_settings}->{VDD_port_name}->{val} $conf_ptr->{general_settings}->{GND_port_name}->{val} $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'inv_size_in\'\n",0);
+    } else {
+      &tab_print($spfh,"R$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i muxlevel_in$i 0\n",0); 
+    }
+  }
+
+  if ("on" eq $opt_ptr->{auto_out_tapered_buffer}) {
+    my ($tapbuf_size) = (4**$opt_ptr->{auto_out_tapered_buffer_val});
+    # Call the subckt 
+    &tab_print($spfh, "Xtapbuf mux2_l0_in0 $conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd sgnd tapbuf_size$tapbuf_size\n", 0);
+  } elsif ("buffered" eq $buffered) {
+    &tab_print($spfh,"Xinv_out mux2_l0_in0 ",0); 
+    &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd sgnd $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'inv_size_out\'\n",0);
+  } else {
+    &tab_print($spfh,"Rout mux2_l0_in0 ",0); 
     &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} 0\n",0);
   } 
 
@@ -1438,21 +1542,6 @@ sub gen_multilevel_mux_subckt($ $ $ $ $ $)
   #if ($mux_size != ($#input_vects + 1)) {
   #  die "Error: MUX size is $mux_size, but given input vectors consist of ".$#input_vects+1."bits!\n";
   #}
-
-  my ($inv_load_num) = ($conf_ptr->{mux_settings}->{load_inv_num}->{val});
-  if ("on" eq $opt_ptr->{auto_out_tapered_buffer}) {
-    # Add a tapered buffer at output
-    my ($eq_inv_load_num) = (0);
-    my ($cap_eq_inv_num) = (&process_unit($conf_ptr->{mux_settings}->{load_cap}->{val},"capacitance")/(&process_unit($conf_ptr->{rram_settings}->{Cs_pmos}->{val},"capacitance")+&process_unit($conf_ptr->{rram_settings}->{Cs_nmos}->{val},"capacitance")));
-    if ($conf_ptr->{mux_settings}->{load_type}->{val} =~ m/cap/) {
-      $eq_inv_load_num += $cap_eq_inv_num;
-    }
-    #if ($conf_ptr->{mux_settings}->{load_type}->{val} =~ m/inv/) {
-      $eq_inv_load_num += $conf_ptr->{mux_settings}->{load_inv_num}->{val};
-    #}
-    &gen_auto_out_tapered_buffer($spfh, 4**$opt_ptr->{auto_out_tapered_buffer_val}, 4);
-    #&gen_auto_out_tapered_buffer($spfh, $eq_inv_load_num, 4);
-  }
  
   # Print definitions 
   &tab_print($spfh,".subckt $subckt_name ",0);
@@ -3204,15 +3293,15 @@ sub gen_basic_sp() {
     &tab_print($spfh,"* Process Type : $conf_ptr->{general_settings}->{process_type}->{val}\n",0);
     &tab_print($spfh,"* NMOS \n",0);
     &tab_print($spfh,".subckt elc_nmos drain gate source bulk L=nl W=wn\n",0);
-    #&tab_print($spfh,"M1 drain gate source bulk $conf_ptr->{general_settings}->{nmos_name}->{val} L=L W=W\n",0);
-    &tab_print($spfh,"X1 drain gate source bulk $conf_ptr->{general_settings}->{nmos_name}->{val} L=L W=W\n",0);
+    &tab_print($spfh,"M1 drain gate source bulk $conf_ptr->{general_settings}->{nmos_name}->{val} L=L W=W\n",0);
+    #&tab_print($spfh,"X1 drain gate source bulk $conf_ptr->{general_settings}->{nmos_name}->{val} L=L W=W\n",0);
     &tab_print($spfh,".eom elc_nmos\n",0);
     &tab_print($spfh,"\n",0);
    
     &tab_print($spfh,"* PMOS\n",0);
     &tab_print($spfh,".subckt elc_pmos drain gate source bulk L=pl W=wp\n",0);
-    #&tab_print($spfh,"M1 drain gate source bulk $conf_ptr->{general_settings}->{pmos_name}->{val} L=L W=W\n",0);
-    &tab_print($spfh,"X1 drain gate source bulk $conf_ptr->{general_settings}->{pmos_name}->{val} L=L W=W\n",0);
+    &tab_print($spfh,"M1 drain gate source bulk $conf_ptr->{general_settings}->{pmos_name}->{val} L=L W=W\n",0);
+    #&tab_print($spfh,"X1 drain gate source bulk $conf_ptr->{general_settings}->{pmos_name}->{val} L=L W=W\n",0);
     &tab_print($spfh,".eom elc_pmos\n",0);
     &tab_print($spfh,"\n",0);
 

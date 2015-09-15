@@ -126,6 +126,7 @@ sub print_usage()
   print "      -abc_scl : run ABC optimization for sequential circuits, mandatory when VTR flow is selected.\n";
   print "      -vpr_timing_pack_off : turn off the timing-driven pack for vpr.\n";
   print "      -vpr_place_clb_pin_remap: turn on place_clb_pin_remap in VPR.\n";
+  print "      -vpr_max_router_iteration <int> : specify the max router iteration in VPR.\n";
   print "      -min_route_chan_width <float> : turn on routing with <float>* min_route_chan_width.\n";
   print "      -fix_route_chan_width : turn on routing with a fixed route_chan_width, defined in benchmark configuration file.\n";
   print "      -multi_task <int>: turn on the mutli-task mode\n";
@@ -280,6 +281,7 @@ sub opts_read()
   &read_opt_into_hash("vpr_timing_pack_off","off","off");
   &read_opt_into_hash("min_route_chan_width","on","off");
   &read_opt_into_hash("fix_route_chan_width","off","off");
+  &read_opt_into_hash("vpr_max_router_iteration","on","off");
   &read_opt_into_hash("multi_task","on","off");
   &read_opt_into_hash("multi_thread","on","off");
   &read_opt_into_hash("parse_results_only","off","off");
@@ -919,7 +921,10 @@ sub run_std_vpr($ $ $ $ $ $ $ $ $)
   
   my ($other_opt) = ("");
   if ("on" eq $opt_ptr->{vpr_place_clb_pin_remap}) {
-    $other_opt = "--place_clb_pin_remap";
+    $other_opt = "--place_clb_pin_remap ";
+  }
+  if ("on" eq $opt_ptr->{vpr_max_router_iteration}) {
+    $other_opt .= "--max_router_iterations $opt_ptr->{vpr_max_router_iteration_val} ";
   }
 
   `csh -cx './$vpr_name $arch $blif --net_file $net --place_file $place --route_file $route --full_stats --nodisp $power_opts $packer_opts $chan_width_opt $vpr_spice_opts $other_opt > $log'`;
@@ -972,6 +977,9 @@ sub run_vpr_route($ $ $ $ $ $ $ $ $)
   }
   
   my ($other_opt) = ("");
+  if ("on" eq $opt_ptr->{vpr_max_router_iteration}) {
+    $other_opt .= "--max_router_iterations $opt_ptr->{vpr_max_router_iteration_val} ";
+  }
 
   `csh -cx './$vpr_name $arch $blif --route --blif_file $blif --net_file $net --place_file $place --route_file $route --full_stats --nodisp $power_opts $chan_width_opt $vpr_spice_opts $other_opt > $log'`;
 
@@ -1273,7 +1281,7 @@ sub parse_standard_flow_results($ $ $ $)
   if ("on" eq $opt_ptr->{min_route_chan_width}) {
     &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_log.".min_chan_width",$opt_ptr->{K_val},"on",1);
     &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val},"off",1);
-    &extract_vpr_stats($tag,$benchmark,$vpr_log."min_chan_width",$opt_ptr->{K_val});
+    &extract_vpr_stats($tag,$benchmark,$vpr_log.".min_chan_width",$opt_ptr->{K_val});
     &extract_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val});
   } elsif ("on" eq $opt_ptr->{fix_route_chan_width}) {
     &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val},"off",1);
