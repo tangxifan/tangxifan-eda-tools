@@ -16,17 +16,21 @@
 *.include './process/45nm_LP.pm'
 *.include './process/45nm_HP.pm'
 * TSMC 40nm 2.5V nch
-.lib '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/process/tsmc40nm/crn45gs_2d5_v1d1_usage.l' TTMacro_MOS_MOSCAP
+.lib '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/process/tsmc40nm/crn45gs_2d5_v1d1_shrink0d9_embedded_usage.l' TOP_TT
 * TSMC 40nm 0.9V nch
 *.lib '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/process/tsmc40nm/toplevel_crn45gs_1d2_1d8_ud15_lk_v1d1_shrink0d9_embedded_usage.l' TOP_TT
 .include '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/spice/nmos_pmos.sp'
 .temp 25
-.param beta = 2
+.param beta = 1
 .param alpha = 3
-.param nl = 243e-9
-.param pl = 243e-9
-.param wn = '288e-9'
-.param wp = 'beta*288e-9'
+*.param nl = 40e-9
+*.param pl = 40e-9
+*.param wn = '140e-9'
+*.param wp = 'beta*140e-9'
+.param nl = 270e-9
+.param pl = 270e-9
+.param wn = '320e-9'
+.param wp = 'beta*320e-9'
 
 .option POST 
 .option captab
@@ -60,8 +64,6 @@ Xnmos nDrain nGate nSource nSub nmos L=nl W=wn
 Xpmos pDrain pGate pSource pSub pmos L=pl W=wp
 * test nFETs, Ids vs. Vgs
 *.DC       Wprog   START='wn'    STOP='3*wn'   STEP='0.1*wn'
-*.DC      Vpgg   START=0     STOP='Supply'   STEP='0.01*Supply' 
-*+ SWEEP  Vpdd   START=0     STOP='Supply'   STEP='0.1*Supply'
 .DC      Vndd   START=0     STOP='Supply'   STEP='0.01*Supply' 
 + SWEEP  Vngg   START=0     STOP='Supply'   STEP='0.1*Supply'
 .DC      Vpdd   START=0     STOP='Supply'   STEP='0.01*Supply' 

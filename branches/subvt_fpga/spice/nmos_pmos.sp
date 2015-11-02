@@ -10,7 +10,7 @@
 *M1 drain gate source bulk pch l=L w=W 
 *.eom pmos
 
-* CMOS TSMC 40nm 2.5V
+* CMOS TSMC 40nm I/O transistor 2.5V
 .subckt nmos drain gate source bulk L=nl W=wn
 X1 drain gate source bulk nch_25_mac l=L w=W
 .eom nmos

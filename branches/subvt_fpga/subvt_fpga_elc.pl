@@ -31,11 +31,16 @@ my $conf_ptr = \%conf_h;
 my %rpt_h;
 my $rpt_ptr = \%rpt_h;
 
+# Reserved word list for checking...
+my @reserved_words;
+
 # Matrix informations
 my %mclusters;
 my ($mclusters_ptr) = (\%mclusters);
 
 my ($elc_nmos_pmos_sp) = ("elc_nmos_pmos.sp");
+my ($elc_nmos_subckt_name, $elc_pmos_subckt_name) = ("elc_nmos", "elc_pmos");
+my ($elc_prog_nmos_subckt_name, $elc_prog_pmos_subckt_name) = ("elc_prog_nmos", "elc_prog_pmos");
 
 # Configuration file keywords list
 # Category for conf file.
@@ -77,6 +82,7 @@ my @sctgy;
                 "clk_slew",
                 "input_slew",
                 "nmos_name",
+                "pmos_name",
                 "nl",
                 "pl",
                 "min_wn",
@@ -169,6 +175,17 @@ my @sctgy;
                 "Vdd_prog",
                 "Vdd_break",
                 "Tprog",
+                "prog_nmos_name",
+                "prog_pmos_name",
+                "prog_nl",
+                "prog_pl",
+                "prog_min_wn",
+                "prog_min_wp",
+                "prog_pn_ratio",
+                "rram_initial_on_gap",
+                "rram_initial_off_gap",
+                "prog_process_tech",
+                "prog_process_type",
                );
 
 # ----------Subrountines------------#
@@ -1006,16 +1023,45 @@ sub gen_common_sp_technology($)
   }
   &tab_print($spfh,"\n",0);
 
-  &tab_print($spfh,"*Include  ELC NMOS and PMOS Package\n",0);
-  &tab_print($spfh,".include \'$cwd/$conf_ptr->{general_settings}->{spice_dir}->{val}$elc_nmos_pmos_sp'\n",0);
-  #&tab_print($spfh,"\n",0);
-  
   &tab_print($spfh,"*Design Parameters\n",0);
   &tab_print($spfh,".param beta = $conf_ptr->{general_settings}->{pn_ratio}->{val}\n",0);
   &tab_print($spfh,".param nl = $conf_ptr->{general_settings}->{nl}->{val}\n",0);
   &tab_print($spfh,".param pl = $conf_ptr->{general_settings}->{pl}->{val}\n",0);
   &tab_print($spfh,".param wn = $conf_ptr->{general_settings}->{min_wn}->{val}\n",0);
   &tab_print($spfh,".param wp = $conf_ptr->{general_settings}->{min_wp}->{val}\n",0);
+
+  # FOR RRAM MUX:
+  #   1. Define parameters for programming transistors: nl,pl, nmos, pmos
+  #   2. Include the technology library for programming transistors 
+  if ("on" eq $opt_ptr->{rram_enhance}) {
+    &tab_print($spfh,"* Include Technology Library for RRAM Programming Transistors\n",0);
+    if (($conf_ptr->{rram_settings}->{prog_process_tech}->{val} =~ m/\.lib$/)
+      ||($conf_ptr->{rram_settings}->{prog_process_tech}->{val} =~ m/\.l$/)) {
+      &tab_print($spfh,".lib ",0);
+    } else {
+      &tab_print($spfh,".include ",0);
+    }
+
+    &tab_print($spfh,"\'$conf_ptr->{rram_settings}->{prog_process_tech}->{val}\' ",0);
+
+    if (($conf_ptr->{rram_settings}->{prog_process_tech}->{val} =~ m/\.lib$/)
+      ||($conf_ptr->{rram_settings}->{prog_process_tech}->{val} =~ m/\.l$/)) {
+      &tab_print($spfh,"$conf_ptr->{rram_settings}->{prog_process_type}->{val} ",0);
+    }
+    &tab_print($spfh,"\n",0);
+
+    &tab_print($spfh,"*Design Parameters for RRAM programming transistors\n",0);
+    &tab_print($spfh,".param prog_beta = $conf_ptr->{rram_settings}->{prog_pn_ratio}->{val}\n",0);
+    &tab_print($spfh,".param prog_nl = $conf_ptr->{rram_settings}->{prog_nl}->{val}\n",0);
+    &tab_print($spfh,".param prog_pl = $conf_ptr->{rram_settings}->{prog_pl}->{val}\n",0);
+    &tab_print($spfh,".param prog_wn = $conf_ptr->{rram_settings}->{prog_min_wn}->{val}\n",0);
+    &tab_print($spfh,".param prog_wp = $conf_ptr->{rram_settings}->{prog_min_wp}->{val}\n",0);
+  }
+
+  &tab_print($spfh,"*Include  ELC NMOS and PMOS Package\n",0);
+  &tab_print($spfh,".include \'$cwd/$conf_ptr->{general_settings}->{spice_dir}->{val}$elc_nmos_pmos_sp'\n",0);
+  #&tab_print($spfh,"\n",0);
+  
 }
 
 sub gen_common_sp_parameters($ $)
@@ -1417,6 +1463,16 @@ sub gen_mux_sp_measure($ $ $ $ $ $ $)
 sub gen_1level_mux_subckt($ $ $ $ $ $) {
   my ($spfh,$mux_size,$subckt_name,$mux1level_subckt,$buffered,$rram_enhance) = @_;
   my ($num_sram) = ($mux_size);
+  my ($rram_init_on_gap, $rram_init_off_gap);
+
+  if ($rram_enhance) {
+    # Find initial parameters for RRAMs that are initialized to ON/OFF states.
+    $rram_init_on_gap = $conf_ptr->{rram_settings}->{rram_initial_on_gap}->{val};
+    $rram_init_off_gap = $conf_ptr->{rram_settings}->{rram_initial_off_gap}->{val};
+    # Replace ':' with '=' 
+    $rram_init_on_gap =~ s/:/=/g;
+    $rram_init_off_gap =~ s/:/=/g;
+  }
 
   # Print definitions 
   &tab_print($spfh,".subckt $subckt_name ",0);
@@ -1433,16 +1489,21 @@ sub gen_1level_mux_subckt($ $ $ $ $ $) {
   # Print array of transistors/RRAMs
   if ($rram_enhance) {
     for (my $i = 0; $i < $mux_size; $i++) {
-      # Call defined 1level Subckt - Program Pair 
-      &tab_print($spfh, "Xmux1level_$i mux1level_in$i $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$i $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$i svdd sgnd $mux1level_subckt wprog=\'wprog\'\n",0);
+      #  Program Pair 
+      &tab_print($spfh, "Xprog_pmos$i mux1level_in$i bl[$i]_b svdd svdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+      &tab_print($spfh, "Xprog_nmos$i mux1level_in$i wl[$i] sgnd sgnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
+      # Initilization: RRAM0 (in0) is off, rest of RRAMs are on. Programming will switch RRAM0 to on and the rest to off.
       if (0 == $i) {
-        &tab_print($spfh,"Rmux1level_$i mux1level_in$i mux1level_out \'ron\'\n",0);
+        &tab_print($spfh, "Xrram$i mux1level_in$i mux1level_out $conf_ptr->{rram_settings}->{rram_subckt_name}->{val} $rram_init_off_gap");
+        #&tab_print($spfh,"Rmux1level_$i mux1level_in$i mux1level_out \'ron\'\n",0);
       } else { 
-        &tab_print($spfh,"Rmux1level_$i mux1level_in$i mux1level_out \'roff\'\n",0);
+        &tab_print($spfh, "Xrram$i mux1level_in$i mux1level_out $conf_ptr->{rram_settings}->{rram_subckt_name}->{val} $rram_init_on_gap");
+        #&tab_print($spfh,"Rmux1level_$i mux1level_in$i mux1level_out \'roff\'\n",0);
       }
     }
     # Add output program pair 
-    &tab_print($spfh, "Xmux1level_out mux1level_out $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$mux_size $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$mux_size svdd sgnd $mux1level_subckt wprog=\'wprog\'\n",0);
+    &tab_print($spfh, "Xprog_pmos$mux_size mux1level_out bl[$mux_size]_b svdd svdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+    &tab_print($spfh, "Xprog_nmos$mux_size mux1level_out wl[$mux_size] sgnd sgnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
   } else {
     for (my $i = 0; $i < $mux_size; $i++) {
       # Call defined 1level Subckt 
@@ -3330,18 +3391,33 @@ sub gen_basic_sp() {
     &tab_print($spfh,"* Process Tech : $conf_ptr->{general_settings}->{process_tech}->{val}\n",0);
     &tab_print($spfh,"* Process Type : $conf_ptr->{general_settings}->{process_type}->{val}\n",0);
     &tab_print($spfh,"* NMOS \n",0);
-    &tab_print($spfh,".subckt elc_nmos drain gate source bulk L=nl W=wn\n",0);
-    &tab_print($spfh,"M1 drain gate source bulk $conf_ptr->{general_settings}->{nmos_name}->{val} L=L W=W\n",0);
-    #&tab_print($spfh,"X1 drain gate source bulk $conf_ptr->{general_settings}->{nmos_name}->{val} L=L W=W\n",0);
-    &tab_print($spfh,".eom elc_nmos\n",0);
+    &tab_print($spfh,".subckt $elc_nmos_subckt_name drain gate source bulk L=nl W=wn\n",0);
+    &tab_print($spfh,"$conf_ptr->{general_settings}->{trans_model_ref}->{val}N1 drain gate source bulk $conf_ptr->{general_settings}->{nmos_name}->{val} L=L W=W\n",0);
+    &tab_print($spfh,".eom $elc_nmos_subckt_name\n",0);
     &tab_print($spfh,"\n",0);
    
     &tab_print($spfh,"* PMOS\n",0);
-    &tab_print($spfh,".subckt elc_pmos drain gate source bulk L=pl W=wp\n",0);
-    &tab_print($spfh,"M1 drain gate source bulk $conf_ptr->{general_settings}->{pmos_name}->{val} L=L W=W\n",0);
-    #&tab_print($spfh,"X1 drain gate source bulk $conf_ptr->{general_settings}->{pmos_name}->{val} L=L W=W\n",0);
-    &tab_print($spfh,".eom elc_pmos\n",0);
+    &tab_print($spfh,".subckt $elc_pmos_subckt_name drain gate source bulk L=pl W=wp\n",0);
+    &tab_print($spfh,"$conf_ptr->{general_settings}->{trans_model_ref}->{val}P1 drain gate source bulk $conf_ptr->{general_settings}->{pmos_name}->{val} L=L W=W\n",0);
+    &tab_print($spfh,".eom $elc_pmos_subckt_name\n",0);
     &tab_print($spfh,"\n",0);
+
+    if ("on" eq $opt_ptr->{rram_enhance}) {
+      &tab_print($spfh,"* NMOS and PMOS Package for ELC RRAM MUX \n",0);
+      &tab_print($spfh,"* Prog Process Tech : $conf_ptr->{rram_settings}->{prog_process_tech}->{val}\n",0);
+      &tab_print($spfh,"* Prog Process Type : $conf_ptr->{rram_settings}->{prog_process_type}->{val}\n",0);
+      &tab_print($spfh,"* NMOS \n",0);
+      &tab_print($spfh,".subckt $elc_prog_nmos_subckt_name drain gate source bulk L=prog_nl W=prog_wn\n",0);
+    &tab_print($spfh,"$conf_ptr->{rram_settings}->{prog_trans_model_ref}->{val}N1 drain gate source bulk $conf_ptr->{rram_settings}->{prog_nmos_name}->{val} L=L W=W\n",0);
+      &tab_print($spfh,".eom $elc_prog_nmos_subckt_name\n",0);
+      &tab_print($spfh,"\n",0);
+     
+      &tab_print($spfh,"* PMOS\n",0);
+      &tab_print($spfh,".subckt $elc_prog_pmos_subckt_name drain gate source bulk L=prog_pl W=prog_wp\n",0);
+    &tab_print($spfh,"$conf_ptr->{rram_settings}->{prog_trans_model_ref}->{val}P1 drain gate source bulk $conf_ptr->{rram_settings}->{prog_pmos_name}->{val} L=L W=W\n",0);
+      &tab_print($spfh,".eom $elc_prog_pmos_subckt_name\n",0);
+      &tab_print($spfh,"\n",0);
+    }
 
     close($spfh);
     print "INFO: Auto-generate ELC NMOS and PMOS package($sp_file).\n";
