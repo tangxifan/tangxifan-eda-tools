@@ -186,6 +186,8 @@ my @sctgy;
                 "rram_initial_off_gap",
                 "prog_process_tech",
                 "prog_process_type",
+                "prog_trans_model_ref",
+                "gap_keyword",
                );
 
 # ----------Subrountines------------#
@@ -1285,9 +1287,9 @@ sub gen_lut_sp_measure($ $ $ $ $ $ $)
 
 }
 
-sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $) 
+sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $) 
 {
-  my ($spfh,$usage,$cload,$input_pwl,$input_pwh,$input_slew,$vsp,$mux_size,$inv_size_in,$inv_size_out,$rram_enhance,$ron,$wprog, $roff) = @_;
+  my ($spfh,$usage,$cload,$input_pwl,$input_pwh,$input_slew,$vsp,$mux_size,$inv_size_in,$inv_size_out,$rram_enhance,$ron,$wprog, $roff,$gap_on, $gap_off) = @_;
 
   # Print Header
   &tab_print($spfh,"Sub-Vt MUX HSPICE Bench\n",0);
@@ -1310,9 +1312,14 @@ sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $)
   &tab_print($spfh,".param inv_size_out=$inv_size_out\n",0);
   
   if ($rram_enhance) {
-    &tab_print($spfh,".param ron=$ron\n",0);
-    &tab_print($spfh,".param roff=$roff\n",0);
+    &tab_print($spfh,".param N=$mux_size\n",0);
+    #&tab_print($spfh,".param ron=$ron\n",0);
+    #&tab_print($spfh,".param roff=$roff\n",0);
+    &tab_print($spfh,".param gap_on=$gap_on\n",0);
+    &tab_print($spfh,".param gap_off=$gap_off\n",0);
     &tab_print($spfh,".param wprog=$wprog\n",0);
+    &tab_print($spfh,".param tprog=$conf_ptr->{rram_settings}->{Tprog}->{val}\n",0);
+    &tab_print($spfh,".param vprog=$conf_ptr->{rram_settings}->{Vdd_break}->{val}\n",0);
   }
  
   &tab_print($spfh,"* Include Circuits Library\n",0);
@@ -1373,16 +1380,56 @@ sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $)
                       $conf_ptr->{mux_settings}->{load_inv_size}->{val},
                       $conf_ptr->{mux_settings}->{load_inv_num}->{val}); 
   }
+ 
+  &tab_print($spfh,"* Common Part Over.\n",0);
 
-  # Add Stimulates
-  &tab_print($spfh,"Vsupply $conf_ptr->{general_settings}->{VDD_port_name}->{val} $conf_ptr->{general_settings}->{GND_port_name}->{val} vsp\n",0);
+}
+
+sub gen_rram_mux_sp_stimulates($) {
+  my ($spfh,$SRAM_bits,$input_vectors) = @_;
+
+  # Add Stimulates: Standard VDD
+  &tab_print($spfh,"* Standard Vdd\n",0);
+  &tab_print($spfh,"* PUSLE(V1 V2 TDELAY TRISE TFALL PW PERIOD)\n",0);
+  &tab_print($spfh,"Vsupply $conf_ptr->{general_settings}->{VDD_port_name}->{val} $conf_ptr->{general_settings}->{GND_port_name}->{val} pulse(0 vsp \'(2*N+1)*tprog\' \'input_slew\' \'input_slew\' \'(2*N+1)*tprog\' \'(4*N+2)*tprog)\'\n",0);
 
   if ("0" ne $conf_ptr->{general_settings}->{GND_port_name}->{val}) {
     &tab_print($spfh,"Vgnd $conf_ptr->{general_settings}->{GND_port_name}->{val} 0 0\n",0);
   }
-  
-  &tab_print($spfh,"* Common Part Over.\n",0);
+  # Add Stimulates: Programming Vdd
+  &tab_print($spfh,"* Programming Vdd\n",0);
+  &tab_print($spfh,"Vprog_vdd prog_vdd 0 pulse(\'vprog/2+vsp/2\' 0 input_slew input_slew \'(2*N+1)*tprog\' \'(4*N+2)*tprog\')\n",0);
+  &tab_print($spfh,"Vprog_gnd prog_gnd 0 pulse(\'-vprog/2+vsp/2\' 0 input_slew input_slew \'(2*N+1)*tprog\' \'(4*N+2)*tprog\')\n",0);
+ 
+  # Add Stimulates: Controlling signals for programming RRAM.
+  &tab_print($spfh,"* Control signals for Programming Vdd\n",0);
+  &tab_print($spfh,"Vbl[0]_b bl[0]_b 0 ",0);
+  &tab_print($spfh,"pulse(\'+vprog/2+vsp/2\' \'-vprog/2+vsp/2\' tprog input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
+  # WL[0] should be always 0
+  &tab_print($spfh,"Vwl[0] wl[0] 0 ",0);
+  &tab_print($spfh,"pulse(\'-vprog/2+vsp/2\' \'-vprog/2+vsp/2\' tprog input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
+  for (my $i=1; $i < $opt_ptr->{mux_size_val}; $i++) {
+    # BL[i]_b 1 <= i < mux_size should be always 0
+    &tab_print($spfh,"Vbl[$i]_b bl[$i]_b 0 ",0);
+    &tab_print($spfh,"pulse(\'+vprog/2+vsp/2\' \'+vprog/2+vsp/2\' \'(1+2*$i)*tprog\' input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
+    &tab_print($spfh,"Vwl[$i] wl[$i] 0 ",0);
+    &tab_print($spfh,"pulse(\'-vprog/2+vsp/2\' \'+vprog/2+vsp/2\' \'(1+2*$i)*tprog\' input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
+  }
+  my ($mux_size) = ($opt_ptr->{mux_size_val});
+  &tab_print($spfh,"Vbl[$mux_size]_b bl[$mux_size]_b 0 ",0);
+  &tab_print($spfh,"pulse(\'+vprog/2+vsp/2\' \'-vprog/2+vsp/2\' \'3*tprog\' input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
+  # WL[mux_size] should be always 0 except the first cycle
+  &tab_print($spfh,"Vwl[$mux_size] wl[$mux_size] 0 ",0);
+  &tab_print($spfh,"pulse(\'-vprog/2+vsp/2\' \'+vprog/2+vsp/2\' tprog input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
 
+  # Add Stimulates, input_ports
+  &tab_print($spfh,"* MUX inputs signals\n",0);
+  for (my $i=0; $i<$opt_ptr->{mux_size_val}; $i++) {
+    &tab_print($spfh,"Vin$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i 0 ",0);
+    &tab_print($spfh,"pulse(0 vsp \'(2*N+2+$i)*tprog\' input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
+  }
+  &tab_print($spfh,"\n",0);
+  
 }
 
 sub gen_mux_sp_stimulates($)
@@ -1392,6 +1439,13 @@ sub gen_mux_sp_stimulates($)
   my @sram_bits = split /,/,$SRAM_bits;
   my @input_vects = split /,/,$input_vectors;
   my ($num_mux_sram) = (&determine_mux_num_sram($opt_ptr->{mux_size_val}));
+
+  # Add Stimulates
+  &tab_print($spfh,"Vsupply $conf_ptr->{general_settings}->{VDD_port_name}->{val} $conf_ptr->{general_settings}->{GND_port_name}->{val} vsp\n",0);
+
+  if ("0" ne $conf_ptr->{general_settings}->{GND_port_name}->{val}) {
+    &tab_print($spfh,"Vgnd $conf_ptr->{general_settings}->{GND_port_name}->{val} 0 0\n",0);
+  }
 
   # Add Stimulates, SRAM bits
   for (my $i=0; $i< $num_mux_sram; $i++) {
@@ -1436,6 +1490,43 @@ sub gen_mux_sp_stimulates($)
    
 }
 
+sub gen_rram_mux_sp_measure($ $ $ $ $ $ $) {
+  my ($spfh,$tran_step,$tran_time,$delay_measure,$delay_measure_input,$input_vector_type,$output_vector_type) = @_;
+
+  # .Tran
+  &tab_print($spfh,".tran $tran_step (4*N+2)*tprog\n",0);
+  &tab_print($spfh,"\n",0);
+
+  # Measure
+  &tab_print($spfh,".measure tran pleak avg p(vsupply) from=\'(2*N+1)*tprog\' to=\'(2*N+2)*tprog'\n",0);
+
+  if (1 == $delay_measure) {
+    &tab_print($spfh,"* Measure delay: rising edge \n",0);
+    $input_vector_type = "rise";
+    $output_vector_type = "rise";
+    &tab_print($spfh,".measure tran dly_mux_rise trig v($conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$delay_measure_input) val=\'input_threshold_pct_$input_vector_type*vsp\' $input_vector_type=1 td=\'(2*N+2)*tprog\'\n",0);
+    &tab_print($spfh,"+                     targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'output_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2*N+2)*tprog\'\n",0);
+    &tab_print($spfh,".measure tran slew_mux_rise trig v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_lower_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2*N+2)*tprog\'\n",0);
+    &tab_print($spfh,"+                      targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_upper_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2*N+2)*tprog\'\n",0);
+    &tab_print($spfh,".measure tran pdynamic_rise avg p(vsupply) from=\'(2*N+2)*tprog\' to=\'(2*N+2)*tprog+input_slew+slew_mux\'\n",0);
+    &tab_print($spfh,".measure tran energy_per_toggle_rise param=\'pdynamic*(input_slew+slew_mux)\'\n",0);
+    &tab_print($spfh,"* Measure delay: falling edge \n",0);
+    $input_vector_type = "fall";
+    $output_vector_type = "fall";
+    &tab_print($spfh,".measure tran dly_mux_fall trig v($conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$delay_measure_input) val=\'input_threshold_pct_$input_vector_type*vsp\' $input_vector_type=1 td=\'(2*N+2)*tprog\'\n",0);
+    &tab_print($spfh,"+                     targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'output_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2*N+2)*tprog\'\n",0);
+    &tab_print($spfh,".measure tran slew_mux_rise trig v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_lower_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2*N+2)*tprog\'\n",0);
+    &tab_print($spfh,"+                      targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_upper_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2*N+2)*tprog\'\n",0);
+    &tab_print($spfh,".measure tran pdynamic_fall avg p(vsupply) from=\'(2*N+3)*tprog\' to=\'(2*N+3)*tprog+input_slew+slew_mux\'\n",0);
+    &tab_print($spfh,".measure tran energy_per_toggle_fall param=\'pdynamic*(input_slew+slew_mux)\'\n",0);
+
+    &tab_print($spfh,".measure tran avg_vmux_high avg V($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) from=\'(2*N+2)*tprog+input_slew+slew_mux\' to=\'(2*N+3)*tprog\'\n",0);
+    &tab_print($spfh,".measure tran avg_vmux_low avg V($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) from=\'(2*N+3)*tprog+input_slew+slew_mux\' to=\'(4*N+2)*tprog\'\n",0);
+  }
+  &tab_print($spfh,".end Sub-Vt MUX HSPICE Bench\n",0);
+
+} 
+
 sub gen_mux_sp_measure($ $ $ $ $ $ $) 
 {
   my ($spfh,$tran_step,$tran_time,$delay_measure,$delay_measure_input,$input_vector_type,$output_vector_type) = @_;
@@ -1463,15 +1554,15 @@ sub gen_mux_sp_measure($ $ $ $ $ $ $)
 sub gen_1level_mux_subckt($ $ $ $ $ $) {
   my ($spfh,$mux_size,$subckt_name,$mux1level_subckt,$buffered,$rram_enhance) = @_;
   my ($num_sram) = ($mux_size);
-  my ($rram_init_on_gap, $rram_init_off_gap);
+  my ($ongap_kw, $ongap_val, $offgap_kw, $offgap_val);
 
-  if ($rram_enhance) {
+  if ("on" eq $rram_enhance) {
+    my ($rram_init_on_gap, $rram_init_off_gap);
     # Find initial parameters for RRAMs that are initialized to ON/OFF states.
     $rram_init_on_gap = $conf_ptr->{rram_settings}->{rram_initial_on_gap}->{val};
     $rram_init_off_gap = $conf_ptr->{rram_settings}->{rram_initial_off_gap}->{val};
-    # Replace ':' with '=' 
-    $rram_init_on_gap =~ s/:/=/g;
-    $rram_init_off_gap =~ s/:/=/g;
+    ($ongap_kw, $ongap_val) = split /:/,$rram_init_on_gap;
+    ($offgap_kw, $offgap_val) = split /:/,$rram_init_off_gap;
   }
 
   # Print definitions 
@@ -1487,17 +1578,17 @@ sub gen_1level_mux_subckt($ $ $ $ $ $) {
   &tab_print($spfh,"svdd sgnd \n", 0);
 
   # Print array of transistors/RRAMs
-  if ($rram_enhance) {
+  if ("on" eq $rram_enhance) {
     for (my $i = 0; $i < $mux_size; $i++) {
       #  Program Pair 
       &tab_print($spfh, "Xprog_pmos$i mux1level_in$i bl[$i]_b svdd svdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
       &tab_print($spfh, "Xprog_nmos$i mux1level_in$i wl[$i] sgnd sgnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
       # Initilization: RRAM0 (in0) is off, rest of RRAMs are on. Programming will switch RRAM0 to on and the rest to off.
       if (0 == $i) {
-        &tab_print($spfh, "Xrram$i mux1level_in$i mux1level_out $conf_ptr->{rram_settings}->{rram_subckt_name}->{val} $rram_init_off_gap");
+        &tab_print($spfh, "Xrram$i mux1level_in$i mux1level_out $conf_ptr->{rram_settings}->{rram_subckt_name}->{val} $offgap_kw=gap_off\n");
         #&tab_print($spfh,"Rmux1level_$i mux1level_in$i mux1level_out \'ron\'\n",0);
       } else { 
-        &tab_print($spfh, "Xrram$i mux1level_in$i mux1level_out $conf_ptr->{rram_settings}->{rram_subckt_name}->{val} $rram_init_on_gap");
+        &tab_print($spfh, "Xrram$i mux1level_in$i mux1level_out $conf_ptr->{rram_settings}->{rram_subckt_name}->{val} $ongap_kw=gap_on\n");
         #&tab_print($spfh,"Rmux1level_$i mux1level_in$i mux1level_out \'roff\'\n",0);
       }
     }
@@ -1996,7 +2087,7 @@ sub run_lut_sim($ $ $ $ $ $ $ $)
 
 sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
 {
-  my ($mux_size,$SRAM_bits,$input_vectors,$vsp,$input_slew,$input_pwl,$input_pwh,$cload,$tran_step,$tran_stop,$results,$inv_size_in,$inv_size_out,$rram_enhance,$ron,$wprog,$roff) = @_;
+  my ($mux_size,$SRAM_bits,$input_vectors,$vsp,$input_slew,$input_pwl,$input_pwh,$cload,$tran_step,$tran_stop,$results,$inv_size_in,$inv_size_out,$rram_enhance,$ron,$wprog,$roff,$on_gap, $off_gap) = @_;
 
   my ($delay_measure,$delay_measure_input,$output_vector,$input_vector_type,$output_vector_type);
 
@@ -2019,10 +2110,76 @@ sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
   # Create a SPICE file
   my $spfh = FileHandle->new;
   if ($spfh->open("> $mux_file")) {
-    &gen_mux_sp_common($spfh,"mux$mux_size\_delay_power",$cload,$input_pwl,$input_pwh,$input_slew,$vsp,$mux_size,$inv_size_in,$inv_size_out,$rram_enhance,$ron,$wprog,$roff);
-    &gen_mux_sp_stimulates($spfh,$SRAM_bits,$input_vectors); 
-    &gen_mux_sp_measure($spfh,$tran_step,$tran_stop,$delay_measure,$delay_measure_input,$input_vector_type,$output_vector_type);
+    &gen_mux_sp_common($spfh,"mux$mux_size\_delay_power",$cload,$input_pwl,$input_pwh,$input_slew,$vsp,$mux_size,$inv_size_in,$inv_size_out,$rram_enhance,$ron,$wprog,$roff, $on_gap, $off_gap);
+    # FOR RRAM MUX: we need special stimulates for programming phase!
+    if ("on" eq $rram_enhance) {
+      &gen_rram_mux_sp_stimulates($spfh,$SRAM_bits,$input_vectors); 
+      &gen_rram_mux_sp_measure($spfh,$tran_step,$tran_stop,$delay_measure,$delay_measure_input,$input_vector_type,$output_vector_type);
+    } else {
+    # FOR SRAM MUX: go normally.
+      &gen_mux_sp_stimulates($spfh,$SRAM_bits,$input_vectors); 
+      &gen_mux_sp_measure($spfh,$tran_step,$tran_stop,$delay_measure,$delay_measure_input,$input_vector_type,$output_vector_type);
+    }
     close($spfh);
+  } else {
+    die "Fail to create $mux_file!\n";
+  }
+    
+  # FOR RRAM MUX, We need two simulations:
+  #   1. In the 1st simulation, we find the gap to be programmed.
+  #   2. In the 2nd simulation, we use the found gap. Get delay results and do verification on waveforms.
+  if ("on" eq $rram_enhance) {
+    # Run 1st simulation
+    &run_hspice("$cwd/"."$conf_ptr->{general_settings}->{spice_dir}->{val}","mux$mux_size.sp",$conf_ptr->{general_settings}->{verilogA_hspice_sim}->{val});
+    # Get Gap
+    my @gap_keyword = ($conf_ptr->{rram_settings}->{gap_keyword}->{val});
+    &get_sim_results($lis_file,\@gap_keyword,$results);
+    $on_gap = $results->{$gap_keyword[0]};
+    # Update the source file with found gap.
+    if ($spfh->open("> $mux_file")) {
+      print "INFO: updating gaps in $mux_file...\n";
+      &gen_mux_sp_common($spfh,"mux$mux_size\_delay_power",$cload,$input_pwl,$input_pwh,$input_slew,$vsp,$mux_size,$inv_size_in,$inv_size_out,$rram_enhance,$ron,$wprog,$roff,$on_gap, $off_gap);
+      # FOR RRAM MUX: we need special stimulates for programming phase!
+      &gen_rram_mux_sp_stimulates($spfh,$SRAM_bits,$input_vectors); 
+      &gen_rram_mux_sp_measure($spfh,$tran_step,$tran_stop,$delay_measure,$delay_measure_input,$input_vector_type,$output_vector_type);
+      close($spfh);
+    } else {
+      die "Fail to create $mux_file!\n";
+    }
+    # Run 2nd simulation
+    &run_hspice("$cwd/"."$conf_ptr->{general_settings}->{spice_dir}->{val}","mux$mux_size.sp",$conf_ptr->{general_settings}->{verilogA_hspice_sim}->{val});
+    # Get results 
+    @sim_keywds = ("dly_mux_rise","dly_mux_fall", "slew_mux_rise", "slew_mux_fall", "pleak","pdynamic_rise","pdynamic_fall", "avg_vmux_high", "avg_vmux_low", "energy_per_toggle_rise", "energy_per_toggle_fall");
+    &get_sim_results($lis_file,\@sim_keywds,$results);
+    if (($results->{avg_vmux_high} eq "failed")||($results->{avg_vmux_low} eq "failed")) {
+      return 0;
+    } elsif (($results->{avg_vmux_high} < $vsp*0.95)||($results->{avg_vmux_low} > $vsp*0.05)) {
+      return 0;
+    }
+    if (($output_vector_type eq "r")||($output_vector_type eq "1")) {
+      $results->{dly_mux} = $results->{dly_mux_rise};      
+      $results->{slew_mux} = $results->{slew_mux_rise};      
+      $results->{pdynamic} = abs($results->{pdynamic_rise});      
+      $results->{energy_per_toggle} = abs($results->{energy_per_toggle_rise});      
+      $results->{avg_vmux} = $results->{avg_vmux_high};      
+    }
+    if (($output_vector_type eq "f")||($output_vector_type eq "0")) {
+      $results->{dly_mux} = $results->{dly_mux_fall};      
+      $results->{slew_mux} = $results->{slew_mux_fall};      
+      $results->{pdynamic} = abs($results->{pdynamic_fall});      
+      $results->{energy_per_toggle} = abs($results->{energy_per_toggle_fall});      
+      $results->{avg_vmux} = $results->{avg_vmux_high};      
+    }
+    $results->{pleak} = abs($results->{pleak});      
+    # Revert to old keywords
+    @sim_keywds = ("dly_mux","slew_mux","pleak","pdynamic","avg_vmux","energy_per_toggle");
+    foreach my $tmp(@sim_keywds) {
+      if (($results->{$tmp} eq "failed")||($results->{$tmp} < 0)) {
+        return 0;
+      }
+    }
+  } else {
+  # FOR SRAM MUX, we need only one simulation.
     &run_hspice("$cwd/"."$conf_ptr->{general_settings}->{spice_dir}->{val}","mux$mux_size.sp",$conf_ptr->{general_settings}->{verilogA_hspice_sim}->{val});
     &get_sim_results($lis_file,\@sim_keywds,$results);
 
@@ -2042,7 +2199,7 @@ sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
           return 0;
         }
       }
-      if (($output_vector_type eq "f")||($output_vector_type eq "0")) {
+       if (($output_vector_type eq "f")||($output_vector_type eq "0")) {
         if ($results->{avg_vmux} > $vsp*0.05) {
           return 0;
         }
@@ -2057,10 +2214,7 @@ sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
       }
       return 1; 
     }
-  } else {
-    die "Fail to create $mux_file!\n";
   }
-
 }
 
 
@@ -2446,9 +2600,9 @@ sub measure_mux_leakage($ $ $ $ $ $ $ $ $ $ $ $)
 }
 
 
-sub run_mux_once($ $ $ $ $ $ $ $ $ $ $ $)
+sub run_mux_once($ $ $ $ $ $ $ $ $ $ $ $ $ $)
 {
-  my ($tag,$vsp,$mux_size,$SRAM_bits,$input_vectors,$input_slew,$cload,$tran_step,$rram_enhance,$ron,$wprog,$roff) = @_;
+  my ($tag,$vsp,$mux_size,$SRAM_bits,$input_vectors,$input_slew,$cload,$tran_step,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap) = @_;
 
   my (%sim_results);
   my ($sim_results_ref) = \%sim_results;
@@ -2459,7 +2613,7 @@ sub run_mux_once($ $ $ $ $ $ $ $ $ $ $ $)
   $input_pwh = 10*$slew_clk*$input_slew;
   $tran_stop = $input_pwl+$input_slew+$input_pwh;
 
-  &run_mux_sim($mux_size,$SRAM_bits,$input_vectors,$vsp,$input_slew,$input_pwl,$input_pwh,$cload,$tran_step,$tran_stop,\%sim_results,$conf_ptr->{mux_settings}->{inv_size_in}->{val},$conf_ptr->{mux_settings}->{inv_size_out}->{val},$rram_enhance,$ron,$wprog,$roff);
+  &run_mux_sim($mux_size,$SRAM_bits,$input_vectors,$vsp,$input_slew,$input_pwl,$input_pwh,$cload,$tran_step,$tran_stop,\%sim_results,$conf_ptr->{mux_settings}->{inv_size_in}->{val},$conf_ptr->{mux_settings}->{inv_size_out}->{val},$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap);
 
   $rpt_ptr->{$tag}->{delay} = $sim_results_ref->{dly_mux};
   $rpt_ptr->{$tag}->{slew} = $sim_results_ref->{slew_mux};
@@ -2845,9 +2999,16 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
     my ($tag) = ("mux$mux_size\_vsp$ivsp");
     my ($sram_bits,$input_vectors) = ("","");
     my ($num_sram) = (&determine_mux_num_sram($mux_size));
-    my ($rram_enhance_on,$ron,$wprog,$ids,$vprog, $roff) = (0,0,0,0,0,0);
+    my ($rram_enhance_on,$ron,$wprog,$ids,$vprog,$roff) = (0,0,0,0,0,0);
     my ($esti_optimal_wprog,$optimal_wprog,$optimal_delay) = (0,0,-1);
     my ($rise_tag,$fall_tag,$avg_tag,$leakage_tag);
+
+    my ($on_gap,$off_gap) = ($conf_ptr->{rram_settings}->{rram_initial_on_gap}->{val},
+                             $conf_ptr->{rram_settings}->{rram_initial_off_gap}->{val});
+    my ($kw,$val) = split /:/,$on_gap;
+    $on_gap = $val;
+    ($kw, $val) = split /:/,$off_gap;
+    $off_gap = $val;
 
     if ("on" eq $rram_enhance) {
       $rram_enhance_on = 1;
@@ -2884,11 +3045,21 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
                                      &process_unit($conf_ptr->{rram_settings}->{roff}->{val},"empty"));
 
         ($sram_bits,$input_vectors) = ("","");
-        for (my $i=0; $i<$num_sram; $i++) {
-          if ((0 == $i)||($i == $num_sram/2)) {
-            $sram_bits .= "1,";
-          } else {
-            $sram_bits .= "0,";
+        if ("on" eq $opt_ptr->{one_level_mux}) {
+          for (my $i=0; $i<$num_sram; $i++) {
+            if (0 == $i) {
+              $sram_bits .= "1,";
+            } else {
+              $sram_bits .= "0,";
+            }
+          } 
+        } else {
+          for (my $i=0; $i<$num_sram; $i++) {
+            if ((0 == $i)||($i == $num_sram/2)) {
+              $sram_bits .= "1,";
+            } else {
+              $sram_bits .= "0,";
+            }
           }
         } 
         $sram_bits =~ s/,$//;
@@ -2904,7 +3075,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
 
         # Test rising delay
         $rise_tag = $tag."_rise_wprog$wprog\_vprog$vprog";
-        &run_mux_once($rise_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-15,$rram_enhance,$ron,$wprog,$roff);
+        &run_mux_once($rise_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-15,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap);
 
         # Test falling delay
         $fall_tag = $tag."_fall_wprog$wprog\_vprog$vprog";
@@ -2918,7 +3089,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
           } 
         }  
         $input_vectors =~ s/,$//;
-        &run_mux_once($fall_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-15,$rram_enhance,$ron,$wprog,$roff);
+        &run_mux_once($fall_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-15,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap);
   
         # Average rise and fall
         $avg_tag = $tag."_avg_wprog$wprog\_vprog$vprog";
@@ -2972,13 +3143,23 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
 
     } else {
       ($sram_bits,$input_vectors) = ("","");
-      for (my $i=0; $i<$num_sram; $i++) {
-        if ((0 == $i)||($i == $num_sram/2)) {
-          $sram_bits .= "1,";
-        } else {
-          $sram_bits .= "0,";
-        }
-      } 
+      if ("on" eq $opt_ptr->{one_level_mux}) {
+        for (my $i=0; $i<$num_sram; $i++) {
+          if (0 == $i) {
+            $sram_bits .= "1,";
+          } else {
+            $sram_bits .= "0,";
+          }
+        } 
+      } else {
+        for (my $i=0; $i<$num_sram; $i++) {
+          if ((0 == $i)||($i == $num_sram/2)) {
+            $sram_bits .= "1,";
+          } else {
+            $sram_bits .= "0,";
+          }
+        } 
+      }
       $sram_bits =~ s/,$//;
       for (my $i=0; $i<$mux_size; $i++) {
         # Test the worst case of leakage!
@@ -2992,7 +3173,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
 
       # Test rising delay
       $rise_tag = $tag."_rise_wprog$wprog\_vprog$vprog";
-      &run_mux_once($rise_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-15,$rram_enhance_on,$ron,$wprog,$roff);
+      &run_mux_once($rise_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-15,$rram_enhance_on,$ron,$wprog,$roff,$on_gap,$off_gap);
 
       # Test falling delay
       $fall_tag = $tag."_fall_wprog$wprog\_vprog$vprog";
@@ -3006,7 +3187,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
         } 
       }  
       $input_vectors =~ s/,$//;
-      &run_mux_once($fall_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-15,$rram_enhance_on,$ron,$wprog,$roff);
+      &run_mux_once($fall_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-15,$rram_enhance_on,$ron,$wprog,$roff,$on_gap,$off_gap);
   
       # Average rise and fall
       $avg_tag = $tag."_avg_wprog$wprog\_vprog$vprog";
