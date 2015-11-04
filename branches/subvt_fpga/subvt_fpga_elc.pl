@@ -170,6 +170,7 @@ my @sctgy;
                 "ron_lowbound",
                 "roff",
                 "fix_vprog",
+                "rram_verilogA_model_path",
                 "rram_subckt_name",
                 "rram_initial_params",
                 "Vdd_prog",
@@ -1036,19 +1037,25 @@ sub gen_common_sp_technology($)
   #   1. Define parameters for programming transistors: nl,pl, nmos, pmos
   #   2. Include the technology library for programming transistors 
   if ("on" eq $opt_ptr->{rram_enhance}) {
-    &tab_print($spfh,"* Include Technology Library for RRAM Programming Transistors\n",0);
-    if (($conf_ptr->{rram_settings}->{prog_process_tech}->{val} =~ m/\.lib$/)
-      ||($conf_ptr->{rram_settings}->{prog_process_tech}->{val} =~ m/\.l$/)) {
-      &tab_print($spfh,".lib ",0);
+    if (($conf_ptr->{rram_settings}->{prog_process_tech}->{val} eq $conf_ptr->{general_settings}->{process_tech}->{val})
+     &&($conf_ptr->{rram_settings}->{prog_process_type}->{val} eq $conf_ptr->{general_settings}->{process_type}->{val})) {
+      &tab_print($spfh,"* Technology Library for RRAM Programming Transistors is same with standard transistors.\n",0);
+      &tab_print($spfh,"* Additional tech. library is included.\n",0);
     } else {
-      &tab_print($spfh,".include ",0);
-    }
+      &tab_print($spfh,"* Include Technology Library for RRAM Programming Transistors\n",0);
+      if (($conf_ptr->{rram_settings}->{prog_process_tech}->{val} =~ m/\.lib$/)
+        ||($conf_ptr->{rram_settings}->{prog_process_tech}->{val} =~ m/\.l$/)) {
+        &tab_print($spfh,".lib ",0);
+      } else {
+        &tab_print($spfh,".include ",0);
+      }
 
-    &tab_print($spfh,"\'$conf_ptr->{rram_settings}->{prog_process_tech}->{val}\' ",0);
-
-    if (($conf_ptr->{rram_settings}->{prog_process_tech}->{val} =~ m/\.lib$/)
-      ||($conf_ptr->{rram_settings}->{prog_process_tech}->{val} =~ m/\.l$/)) {
-      &tab_print($spfh,"$conf_ptr->{rram_settings}->{prog_process_type}->{val} ",0);
+      &tab_print($spfh,"\'$conf_ptr->{rram_settings}->{prog_process_tech}->{val}\' ",0);
+ 
+      if (($conf_ptr->{rram_settings}->{prog_process_tech}->{val} =~ m/\.lib$/)
+        ||($conf_ptr->{rram_settings}->{prog_process_tech}->{val} =~ m/\.l$/)) {
+        &tab_print($spfh,"$conf_ptr->{rram_settings}->{prog_process_type}->{val} ",0);
+      }
     }
     &tab_print($spfh,"\n",0);
 
@@ -1160,7 +1167,6 @@ sub gen_sp_inv_loads($ $ $ $) {
   for (my $i = 0; $i < $inv_load_num; $i++) {
     &tab_print($spfh, "Xinv_load$i $load_port_name inv_load$i\_out $conf_ptr->{general_settings}->{LOAD_VDD_port_name}->{val} $conf_ptr->{general_settings}->{GND_port_name}->{val} inv size=$inv_load_size\n", 0);
   }
-  &tab_print($spfh, "Vload_supply $conf_ptr->{general_settings}->{LOAD_VDD_port_name}->{val} 0 vsp\n", 0);
 
   return;
 } 
@@ -1320,6 +1326,15 @@ sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
     &tab_print($spfh,".param wprog=$wprog\n",0);
     &tab_print($spfh,".param tprog=$conf_ptr->{rram_settings}->{Tprog}->{val}\n",0);
     &tab_print($spfh,".param vprog=$conf_ptr->{rram_settings}->{Vdd_break}->{val}\n",0);
+    &tab_print($spfh,"* Global port for programming vdd \n",0);
+    &tab_print($spfh,".global prog_vdd prog_gnd\n",0);
+    &tab_print($spfh,"* Include RRAM verilogA model \n",0);
+    # Include RRAM verilogA model
+    if ($conf_ptr->{rram_settings}->{rram_verilogA_model_path}->{val} =~ m/\.va$/) {
+      &tab_print($spfh,".hdl \'$conf_ptr->{rram_settings}->{rram_verilogA_model_path}->{val}\'\n",0);
+    } else {
+      &tab_print($spfh,".include \'$conf_ptr->{rram_settings}->{rram_verilogA_model_path}->{val}\'\n",0);
+    }
   }
  
   &tab_print($spfh,"* Include Circuits Library\n",0);
@@ -1391,42 +1406,72 @@ sub gen_rram_mux_sp_stimulates($) {
   # Add Stimulates: Standard VDD
   &tab_print($spfh,"* Standard Vdd\n",0);
   &tab_print($spfh,"* PUSLE(V1 V2 TDELAY TRISE TFALL PW PERIOD)\n",0);
-  &tab_print($spfh,"Vsupply $conf_ptr->{general_settings}->{VDD_port_name}->{val} $conf_ptr->{general_settings}->{GND_port_name}->{val} pulse(0 vsp \'(2*N+1)*tprog\' \'input_slew\' \'input_slew\' \'(2*N+1)*tprog\' \'(4*N+2)*tprog)\'\n",0);
+  &tab_print($spfh,"Vsupply $conf_ptr->{general_settings}->{VDD_port_name}->{val} 0 pulse(0 vsp \'(2*N+1)*tprog\' \'input_slew\' \'input_slew\' \'(2*N+1)*tprog\' \'(4*N+2)*tprog\')\n",0);
+  &tab_print($spfh, "Vload_supply $conf_ptr->{general_settings}->{LOAD_VDD_port_name}->{val} 0 pulse(0 vsp \'(2*N+1)*tprog\' \'input_slew\' \'input_slew\' \'(2*N+1)*tprog\' \'(4*N+2)*tprog\')\n",0);
 
   if ("0" ne $conf_ptr->{general_settings}->{GND_port_name}->{val}) {
     &tab_print($spfh,"Vgnd $conf_ptr->{general_settings}->{GND_port_name}->{val} 0 0\n",0);
   }
   # Add Stimulates: Programming Vdd
   &tab_print($spfh,"* Programming Vdd\n",0);
-  &tab_print($spfh,"Vprog_vdd prog_vdd 0 pulse(\'vprog/2+vsp/2\' 0 input_slew input_slew \'(2*N+1)*tprog\' \'(4*N+2)*tprog\')\n",0);
-  &tab_print($spfh,"Vprog_gnd prog_gnd 0 pulse(\'-vprog/2+vsp/2\' 0 input_slew input_slew \'(2*N+1)*tprog\' \'(4*N+2)*tprog\')\n",0);
+  &tab_print($spfh,"Vprog_vdd prog_vdd 0 pulse(\'vprog/2\' \'vsp\' \'(2*N+1)*tprog\' input_slew input_slew \'(2*N+1)*tprog\' \'(4*N+2)*tprog\')\n",0);
+  &tab_print($spfh,"Vprog_gnd prog_gnd 0 pulse(\'-vprog/2\' 0 \'(2*N+1)*tprog\' input_slew input_slew \'(2*N+1)*tprog\' \'(4*N+2)*tprog\')\n",0);
  
   # Add Stimulates: Controlling signals for programming RRAM.
   &tab_print($spfh,"* Control signals for Programming Vdd\n",0);
   &tab_print($spfh,"Vbl[0]_b bl[0]_b 0 ",0);
-  &tab_print($spfh,"pulse(\'+vprog/2+vsp/2\' \'-vprog/2+vsp/2\' tprog input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
+  &tab_print($spfh,"pwl(0 \'vprog/2\' \n",0); 
+  &tab_print($spfh,"+   \'tprog-input_slew\' \'vprog/2\' \n",0);
+  &tab_print($spfh,"+   \'tprog\' \'-vprog/2\' \n",0);
+  &tab_print($spfh,"+   \'2*tprog-input_slew\' \'-vprog/2\' \n",0);
+  &tab_print($spfh,"+   \'2*tprog\' \'+vprog/2\' \n",0);
+  &tab_print($spfh,"+   \'(2*N+2)*tprog-input_slew\' \'+vprog/2\' \n",0);
+  &tab_print($spfh,"+   \'(2*N+2)*tprog\' \'vsp\')\n",0);
+  #&tab_print($spfh,"pulse(\'+vprog/2+vsp/2\' \'-vprog/2+vsp/2\' tprog input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
   # WL[0] should be always 0
   &tab_print($spfh,"Vwl[0] wl[0] 0 ",0);
-  &tab_print($spfh,"pulse(\'-vprog/2+vsp/2\' \'-vprog/2+vsp/2\' tprog input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
+  &tab_print($spfh,"pulse(\'-vprog/2\' \'vsp\' \'(2*N+2)*tprog\' input_slew input_slew \'(2*N+2)*tprog\' \'(4*N+2)*tprog\')\n",0);
   for (my $i=1; $i < $opt_ptr->{mux_size_val}; $i++) {
     # BL[i]_b 1 <= i < mux_size should be always 0
     &tab_print($spfh,"Vbl[$i]_b bl[$i]_b 0 ",0);
-    &tab_print($spfh,"pulse(\'+vprog/2+vsp/2\' \'+vprog/2+vsp/2\' \'(1+2*$i)*tprog\' input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
+    &tab_print($spfh,"pulse(\'vprog/2\' \'vsp\' \'(2*N+2)*tprog\' input_slew input_slew \'(2*N+2)*tprog\' \'(4*N+2)*tprog\')\n",0);
+    #&tab_print($spfh,"pulse(\'+vprog/2+vsp/2\' vsp\' \'(1+2*$i)*tprog\' input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
     &tab_print($spfh,"Vwl[$i] wl[$i] 0 ",0);
-    &tab_print($spfh,"pulse(\'-vprog/2+vsp/2\' \'+vprog/2+vsp/2\' \'(1+2*$i)*tprog\' input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
+    &tab_print($spfh,"pwl(0 \'-vprog/2\' \n",0); 
+    &tab_print($spfh,"+   \'(1+2*$i)*tprog-input_slew\' \'-vprog/2\'\n",0);  
+    &tab_print($spfh,"+   \'(1+2*$i)*tprog\' \'vprog/2\'\n",0);  
+    &tab_print($spfh,"+   \'(2+2*$i)*tprog-input_slew\' \'vprog/2\'\n",0);   
+    &tab_print($spfh,"+   \'(2+2*$i)*tprog\' \'-vprog/2\'\n",0); 
+    &tab_print($spfh,"+   \'(2*N+2)*tprog-input_slew\' \'-vprog/2\'\n",0); 
+    &tab_print($spfh,"+   \'(2*N+2)*tprog\' 0)\n",0);
+    #&tab_print($spfh,"pulse(\'-vprog/2+vsp/2\' \'+vprog/2+vsp/2\' \'(1+2*$i)*tprog\' input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
   }
   my ($mux_size) = ($opt_ptr->{mux_size_val});
   &tab_print($spfh,"Vbl[$mux_size]_b bl[$mux_size]_b 0 ",0);
-  &tab_print($spfh,"pulse(\'+vprog/2+vsp/2\' \'-vprog/2+vsp/2\' \'3*tprog\' input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
+  &tab_print($spfh,"pwl(0 \'vprog/2\' \n",0);
+  for (my $i = 1; $i < $mux_size; $i++) {
+    &tab_print($spfh,"+   \'(1+2*$i)*tprog-input_slew\' \'vprog/2\'  \n",0);
+    &tab_print($spfh,"+   \'(1+2*$i)*tprog\' \'-vprog/2\' \n",0); 
+    &tab_print($spfh,"+   \'(2+2*$i)*tprog-input_slew\' \'-vprog/2\' \n",0);
+    &tab_print($spfh,"+   \'(2+2*$i)*tprog\' \'vprog/2\'  \n",0);
+  }
+  &tab_print($spfh,"+   \'(2*N+2)*tprog-input_slew\' \'vprog/2\'  \n",0);
+  &tab_print($spfh,"+   \'(2*N+2)*tprog\' \'vsp\'  \n",0);
   # WL[mux_size] should be always 0 except the first cycle
   &tab_print($spfh,"Vwl[$mux_size] wl[$mux_size] 0 ",0);
-  &tab_print($spfh,"pulse(\'-vprog/2+vsp/2\' \'+vprog/2+vsp/2\' tprog input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
+  &tab_print($spfh,"pwl(0 \'-vprog/2\' \n",0);
+  &tab_print($spfh,"+   \'tprog-input_slew\' \'-vprog/2\'  \n",0);
+  &tab_print($spfh,"+   \'tprog\' \'vprog/2\'  \n",0);
+  &tab_print($spfh,"+   \'2*tprog-input_slew\' \'vprog/2\'  \n",0);
+  &tab_print($spfh,"+   \'2*tprog\' \'-vprog/2\'  \n",0);
+  &tab_print($spfh,"+   \'(2*N+2)*tprog-input_slew\' \'-vprog/2\'  \n",0);
+  &tab_print($spfh,"+   \'(2*N+2)*tprog\' \'0\'  \n",0);
 
   # Add Stimulates, input_ports
   &tab_print($spfh,"* MUX inputs signals\n",0);
   for (my $i=0; $i<$opt_ptr->{mux_size_val}; $i++) {
     &tab_print($spfh,"Vin$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i 0 ",0);
-    &tab_print($spfh,"pulse(0 vsp \'(2*N+2+$i)*tprog\' input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
+    &tab_print($spfh,"pulse(0 vsp \'(2*N+2+$i*2)*tprog\' input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
   }
   &tab_print($spfh,"\n",0);
   
@@ -1442,6 +1487,7 @@ sub gen_mux_sp_stimulates($)
 
   # Add Stimulates
   &tab_print($spfh,"Vsupply $conf_ptr->{general_settings}->{VDD_port_name}->{val} $conf_ptr->{general_settings}->{GND_port_name}->{val} vsp\n",0);
+  &tab_print($spfh, "Vload_supply $conf_ptr->{general_settings}->{LOAD_VDD_port_name}->{val} 0 vsp\n", 0);
 
   if ("0" ne $conf_ptr->{general_settings}->{GND_port_name}->{val}) {
     &tab_print($spfh,"Vgnd $conf_ptr->{general_settings}->{GND_port_name}->{val} 0 0\n",0);
@@ -1494,7 +1540,7 @@ sub gen_rram_mux_sp_measure($ $ $ $ $ $ $) {
   my ($spfh,$tran_step,$tran_time,$delay_measure,$delay_measure_input,$input_vector_type,$output_vector_type) = @_;
 
   # .Tran
-  &tab_print($spfh,".tran $tran_step (4*N+2)*tprog\n",0);
+  &tab_print($spfh,".tran $tran_step \'(4*N+2)*tprog\'\n",0);
   &tab_print($spfh,"\n",0);
 
   # Measure
@@ -1508,20 +1554,20 @@ sub gen_rram_mux_sp_measure($ $ $ $ $ $ $) {
     &tab_print($spfh,"+                     targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'output_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2*N+2)*tprog\'\n",0);
     &tab_print($spfh,".measure tran slew_mux_rise trig v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_lower_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2*N+2)*tprog\'\n",0);
     &tab_print($spfh,"+                      targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_upper_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2*N+2)*tprog\'\n",0);
-    &tab_print($spfh,".measure tran pdynamic_rise avg p(vsupply) from=\'(2*N+2)*tprog\' to=\'(2*N+2)*tprog+input_slew+slew_mux\'\n",0);
-    &tab_print($spfh,".measure tran energy_per_toggle_rise param=\'pdynamic*(input_slew+slew_mux)\'\n",0);
+    &tab_print($spfh,".measure tran pdynamic_rise avg p(vsupply) from=\'(2*N+2)*tprog\' to=\'(2*N+2)*tprog+input_slew+slew_mux_rise\'\n",0);
+    &tab_print($spfh,".measure tran energy_per_toggle_rise param=\'pdynamic_rise*(input_slew+slew_mux_rise)\'\n",0);
     &tab_print($spfh,"* Measure delay: falling edge \n",0);
     $input_vector_type = "fall";
     $output_vector_type = "fall";
     &tab_print($spfh,".measure tran dly_mux_fall trig v($conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$delay_measure_input) val=\'input_threshold_pct_$input_vector_type*vsp\' $input_vector_type=1 td=\'(2*N+2)*tprog\'\n",0);
     &tab_print($spfh,"+                     targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'output_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2*N+2)*tprog\'\n",0);
-    &tab_print($spfh,".measure tran slew_mux_rise trig v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_lower_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2*N+2)*tprog\'\n",0);
+    &tab_print($spfh,".measure tran slew_mux_fall trig v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_lower_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2*N+2)*tprog\'\n",0);
     &tab_print($spfh,"+                      targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_upper_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2*N+2)*tprog\'\n",0);
-    &tab_print($spfh,".measure tran pdynamic_fall avg p(vsupply) from=\'(2*N+3)*tprog\' to=\'(2*N+3)*tprog+input_slew+slew_mux\'\n",0);
-    &tab_print($spfh,".measure tran energy_per_toggle_fall param=\'pdynamic*(input_slew+slew_mux)\'\n",0);
+    &tab_print($spfh,".measure tran pdynamic_fall avg p(vsupply) from=\'(2*N+3)*tprog\' to=\'(2*N+3)*tprog+input_slew+slew_mux_fall\'\n",0);
+    &tab_print($spfh,".measure tran energy_per_toggle_fall param=\'pdynamic_fall*(input_slew+slew_mux_fall)\'\n",0);
 
-    &tab_print($spfh,".measure tran avg_vmux_high avg V($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) from=\'(2*N+2)*tprog+input_slew+slew_mux\' to=\'(2*N+3)*tprog\'\n",0);
-    &tab_print($spfh,".measure tran avg_vmux_low avg V($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) from=\'(2*N+3)*tprog+input_slew+slew_mux\' to=\'(4*N+2)*tprog\'\n",0);
+    &tab_print($spfh,".measure tran avg_vmux_high avg V($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) from=\'(2*N+2)*tprog+input_slew+slew_mux_rise\' to=\'(2*N+3)*tprog\'\n",0);
+    &tab_print($spfh,".measure tran avg_vmux_low avg V($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) from=\'(2*N+3)*tprog+input_slew+slew_mux_fall\' to=\'(4*N+2)*tprog\'\n",0);
   }
   &tab_print($spfh,".end Sub-Vt MUX HSPICE Bench\n",0);
 
@@ -1581,8 +1627,8 @@ sub gen_1level_mux_subckt($ $ $ $ $ $) {
   if ("on" eq $rram_enhance) {
     for (my $i = 0; $i < $mux_size; $i++) {
       #  Program Pair 
-      &tab_print($spfh, "Xprog_pmos$i mux1level_in$i bl[$i]_b svdd svdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
-      &tab_print($spfh, "Xprog_nmos$i mux1level_in$i wl[$i] sgnd sgnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
+      &tab_print($spfh, "Xprog_pmos$i mux1level_in$i bl[$i]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+      &tab_print($spfh, "Xprog_nmos$i mux1level_in$i wl[$i] prog_gnd prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
       # Initilization: RRAM0 (in0) is off, rest of RRAMs are on. Programming will switch RRAM0 to on and the rest to off.
       if (0 == $i) {
         &tab_print($spfh, "Xrram$i mux1level_in$i mux1level_out $conf_ptr->{rram_settings}->{rram_subckt_name}->{val} $offgap_kw=gap_off\n");
@@ -1593,8 +1639,8 @@ sub gen_1level_mux_subckt($ $ $ $ $ $) {
       }
     }
     # Add output program pair 
-    &tab_print($spfh, "Xprog_pmos$mux_size mux1level_out bl[$mux_size]_b svdd svdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
-    &tab_print($spfh, "Xprog_nmos$mux_size mux1level_out wl[$mux_size] sgnd sgnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
+    &tab_print($spfh, "Xprog_pmos$mux_size mux1level_out bl[$mux_size]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+    &tab_print($spfh, "Xprog_nmos$mux_size mux1level_out wl[$mux_size] prog_gnd prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
   } else {
     for (my $i = 0; $i < $mux_size; $i++) {
       # Call defined 1level Subckt 
@@ -2726,7 +2772,7 @@ sub enum_measure_mux_leakage($ $ $ $ $ $ $ $ $ $ $)
       $temp = int($temp/2);
     }
     $input_vectors =~ s/,$//;
-    &measure_mux_leakage($leakage_tag,$vsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($conf_ptr->{mux_settings}->{load_cap}->{val},"capacitance"),1e-15,$rram_enhance,$ron,$wprog,$roff);
+    &measure_mux_leakage($leakage_tag,$vsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($conf_ptr->{mux_settings}->{load_cap}->{val},"capacitance"),1e-13,$rram_enhance,$ron,$wprog,$roff);
     $rpt_ptr->{$avg_tag}->{leakage_power} += $rpt_ptr->{$leakage_tag}->{leakage_power}; 
     $case_cnt++;
     print "Case Tested: $case_cnt.\n";
@@ -3028,7 +3074,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
     if (("on" eq $rram_enhance)&&("on" eq $wprog_sweep)) {
       &tab_print($rptfh,"* vsp = $ivsp, vprog = $vprog\n",0);
       &tab_print($rptfh,"ron,wprog,delay,leakage,dynamic_power,elmore_delay\n",0);
-      for (my $iwprog = 1;
+      for (my $iwprog = $conf_ptr->{rram_settings}->{Wprog}->{val};
            $iwprog < ($opt_ptr->{wprog_sweep_val} + $conf_ptr->{rram_settings}->{Wprog_step}->{val});
            $iwprog = $iwprog + $conf_ptr->{rram_settings}->{Wprog_step}->{val}) {
         $wprog = $iwprog;
@@ -3075,7 +3121,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
 
         # Test rising delay
         $rise_tag = $tag."_rise_wprog$wprog\_vprog$vprog";
-        &run_mux_once($rise_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-15,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap);
+        &run_mux_once($rise_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-13,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap);
 
         # Test falling delay
         $fall_tag = $tag."_fall_wprog$wprog\_vprog$vprog";
@@ -3089,7 +3135,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
           } 
         }  
         $input_vectors =~ s/,$//;
-        &run_mux_once($fall_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-15,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap);
+        &run_mux_once($fall_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-13,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap);
   
         # Average rise and fall
         $avg_tag = $tag."_avg_wprog$wprog\_vprog$vprog";
@@ -3173,7 +3219,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
 
       # Test rising delay
       $rise_tag = $tag."_rise_wprog$wprog\_vprog$vprog";
-      &run_mux_once($rise_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-15,$rram_enhance_on,$ron,$wprog,$roff,$on_gap,$off_gap);
+      &run_mux_once($rise_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-13,$rram_enhance_on,$ron,$wprog,$roff,$on_gap,$off_gap);
 
       # Test falling delay
       $fall_tag = $tag."_fall_wprog$wprog\_vprog$vprog";
@@ -3187,7 +3233,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
         } 
       }  
       $input_vectors =~ s/,$//;
-      &run_mux_once($fall_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-15,$rram_enhance_on,$ron,$wprog,$roff,$on_gap,$off_gap);
+      &run_mux_once($fall_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-13,$rram_enhance_on,$ron,$wprog,$roff,$on_gap,$off_gap);
   
       # Average rise and fall
       $avg_tag = $tag."_avg_wprog$wprog\_vprog$vprog";

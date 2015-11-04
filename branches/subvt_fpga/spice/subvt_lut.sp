@@ -1,6 +1,6 @@
 *.include './UMC180nm_tech.sp'
 *.include './PTM45nm_tech.sp'
-.include './spice/inv_buf.sp'
+.include '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/spice/inv_buf.sp'
 * LUT input buffers
 .subckt lut_in_buf in in_buf inbar_buf
 Xbuf0 in in_buf vdd gnd buf size=2
