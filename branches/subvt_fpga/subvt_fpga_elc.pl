@@ -1406,8 +1406,8 @@ sub gen_rram_mux_sp_stimulates($) {
   # Add Stimulates: Standard VDD
   &tab_print($spfh,"* Standard Vdd\n",0);
   &tab_print($spfh,"* PUSLE(V1 V2 TDELAY TRISE TFALL PW PERIOD)\n",0);
-  &tab_print($spfh,"Vsupply $conf_ptr->{general_settings}->{VDD_port_name}->{val} 0 pulse(0 vsp \'(2*N+1)*tprog\' \'input_slew\' \'input_slew\' \'(2*N+1)*tprog\' \'(4*N+2)*tprog\')\n",0);
-  &tab_print($spfh, "Vload_supply $conf_ptr->{general_settings}->{LOAD_VDD_port_name}->{val} 0 pulse(0 vsp \'(2*N+1)*tprog\' \'input_slew\' \'input_slew\' \'(2*N+1)*tprog\' \'(4*N+2)*tprog\')\n",0);
+  &tab_print($spfh,"Vsupply $conf_ptr->{general_settings}->{VDD_port_name}->{val} 0 pulse(vsp vsp \'(2*N+1)*tprog\' \'input_slew\' \'input_slew\' \'(2*N+1)*tprog\' \'(4*N+2)*tprog\')\n",0);
+  &tab_print($spfh, "Vload_supply $conf_ptr->{general_settings}->{LOAD_VDD_port_name}->{val} 0 pulse(vsp vsp \'(2*N+1)*tprog\' \'input_slew\' \'input_slew\' \'(2*N+1)*tprog\' \'(4*N+2)*tprog\')\n",0);
 
   if ("0" ne $conf_ptr->{general_settings}->{GND_port_name}->{val}) {
     &tab_print($spfh,"Vgnd $conf_ptr->{general_settings}->{GND_port_name}->{val} 0 0\n",0);
@@ -1425,16 +1425,16 @@ sub gen_rram_mux_sp_stimulates($) {
   &tab_print($spfh,"+   \'tprog\' \'-vprog/2\' \n",0);
   &tab_print($spfh,"+   \'2*tprog-input_slew\' \'-vprog/2\' \n",0);
   &tab_print($spfh,"+   \'2*tprog\' \'+vprog/2\' \n",0);
-  &tab_print($spfh,"+   \'(2*N+2)*tprog-input_slew\' \'+vprog/2\' \n",0);
-  &tab_print($spfh,"+   \'(2*N+2)*tprog\' \'vsp\')\n",0);
+  &tab_print($spfh,"+   \'(2*N+1)*tprog-input_slew\' \'+vprog/2\' \n",0);
+  &tab_print($spfh,"+   \'(2*N+1)*tprog\' \'vsp\')\n",0);
   #&tab_print($spfh,"pulse(\'+vprog/2+vsp/2\' \'-vprog/2+vsp/2\' tprog input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
   # WL[0] should be always 0
   &tab_print($spfh,"Vwl[0] wl[0] 0 ",0);
-  &tab_print($spfh,"pulse(\'-vprog/2\' \'vsp\' \'(2*N+2)*tprog\' input_slew input_slew \'(2*N+2)*tprog\' \'(4*N+2)*tprog\')\n",0);
+  &tab_print($spfh,"pulse(\'-vprog/2\' \'vsp\' \'(2*N+2)*tprog\' input_slew input_slew \'(2*N+1)*tprog\' \'(4*N+1)*tprog\')\n",0);
   for (my $i=1; $i < $opt_ptr->{mux_size_val}; $i++) {
     # BL[i]_b 1 <= i < mux_size should be always 0
     &tab_print($spfh,"Vbl[$i]_b bl[$i]_b 0 ",0);
-    &tab_print($spfh,"pulse(\'vprog/2\' \'vsp\' \'(2*N+2)*tprog\' input_slew input_slew \'(2*N+2)*tprog\' \'(4*N+2)*tprog\')\n",0);
+    &tab_print($spfh,"pulse(\'vprog/2\' \'vsp\' \'(2*N+2)*tprog\' input_slew input_slew \'(2*N+1)*tprog\' \'(4*N+2)*tprog\')\n",0);
     #&tab_print($spfh,"pulse(\'+vprog/2+vsp/2\' vsp\' \'(1+2*$i)*tprog\' input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
     &tab_print($spfh,"Vwl[$i] wl[$i] 0 ",0);
     &tab_print($spfh,"pwl(0 \'-vprog/2\' \n",0); 
@@ -1442,8 +1442,8 @@ sub gen_rram_mux_sp_stimulates($) {
     &tab_print($spfh,"+   \'(1+2*$i)*tprog\' \'vprog/2\'\n",0);  
     &tab_print($spfh,"+   \'(2+2*$i)*tprog-input_slew\' \'vprog/2\'\n",0);   
     &tab_print($spfh,"+   \'(2+2*$i)*tprog\' \'-vprog/2\'\n",0); 
-    &tab_print($spfh,"+   \'(2*N+2)*tprog-input_slew\' \'-vprog/2\'\n",0); 
-    &tab_print($spfh,"+   \'(2*N+2)*tprog\' 0)\n",0);
+    &tab_print($spfh,"+   \'(2*N+1)*tprog-input_slew\' \'-vprog/2\'\n",0); 
+    &tab_print($spfh,"+   \'(2*N+1)*tprog\' 0)\n",0);
     #&tab_print($spfh,"pulse(\'-vprog/2+vsp/2\' \'+vprog/2+vsp/2\' \'(1+2*$i)*tprog\' input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
   }
   my ($mux_size) = ($opt_ptr->{mux_size_val});
@@ -1455,8 +1455,8 @@ sub gen_rram_mux_sp_stimulates($) {
     &tab_print($spfh,"+   \'(2+2*$i)*tprog-input_slew\' \'-vprog/2\' \n",0);
     &tab_print($spfh,"+   \'(2+2*$i)*tprog\' \'vprog/2\'  \n",0);
   }
-  &tab_print($spfh,"+   \'(2*N+2)*tprog-input_slew\' \'vprog/2\'  \n",0);
-  &tab_print($spfh,"+   \'(2*N+2)*tprog\' \'vsp\'  \n",0);
+  &tab_print($spfh,"+   \'(2*N+1)*tprog-input_slew\' \'vprog/2\'  \n",0);
+  &tab_print($spfh,"+   \'(2*N+1)*tprog\' \'vsp\'  \n",0);
   # WL[mux_size] should be always 0 except the first cycle
   &tab_print($spfh,"Vwl[$mux_size] wl[$mux_size] 0 ",0);
   &tab_print($spfh,"pwl(0 \'-vprog/2\' \n",0);
@@ -1464,8 +1464,8 @@ sub gen_rram_mux_sp_stimulates($) {
   &tab_print($spfh,"+   \'tprog\' \'vprog/2\'  \n",0);
   &tab_print($spfh,"+   \'2*tprog-input_slew\' \'vprog/2\'  \n",0);
   &tab_print($spfh,"+   \'2*tprog\' \'-vprog/2\'  \n",0);
-  &tab_print($spfh,"+   \'(2*N+2)*tprog-input_slew\' \'-vprog/2\'  \n",0);
-  &tab_print($spfh,"+   \'(2*N+2)*tprog\' \'0\'  \n",0);
+  &tab_print($spfh,"+   \'(2*N+1)*tprog-input_slew\' \'-vprog/2\'  \n",0);
+  &tab_print($spfh,"+   \'(2*N+1)*tprog\' \'0\'  \n",0);
 
   # Add Stimulates, input_ports
   &tab_print($spfh,"* MUX inputs signals\n",0);
@@ -1609,6 +1609,11 @@ sub gen_1level_mux_subckt($ $ $ $ $ $) {
     $rram_init_off_gap = $conf_ptr->{rram_settings}->{rram_initial_off_gap}->{val};
     ($ongap_kw, $ongap_val) = split /:/,$rram_init_on_gap;
     ($offgap_kw, $offgap_val) = split /:/,$rram_init_off_gap;
+    &tab_print($spfh,".global ",0);
+    for (my $i = 0; $i < ($mux_size+1); $i++) {
+      &tab_print($spfh,"bl[$i]_b wl[$i] ",0);
+    }
+    &tab_print($spfh,"\n",0);
   }
 
   # Print definitions 
@@ -2202,14 +2207,15 @@ sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
     } elsif (($results->{avg_vmux_high} < $vsp*0.95)||($results->{avg_vmux_low} > $vsp*0.05)) {
       return 0;
     }
-    if (($output_vector_type eq "r")||($output_vector_type eq "1")) {
+    print "Output_vector_type: $output_vector_type\n";
+    if (($output_vector_type eq "rise")||($output_vector_type eq "1")) {
       $results->{dly_mux} = $results->{dly_mux_rise};      
       $results->{slew_mux} = $results->{slew_mux_rise};      
       $results->{pdynamic} = abs($results->{pdynamic_rise});      
       $results->{energy_per_toggle} = abs($results->{energy_per_toggle_rise});      
       $results->{avg_vmux} = $results->{avg_vmux_high};      
     }
-    if (($output_vector_type eq "f")||($output_vector_type eq "0")) {
+    if (($output_vector_type eq "fall")||($output_vector_type eq "0")) {
       $results->{dly_mux} = $results->{dly_mux_fall};      
       $results->{slew_mux} = $results->{slew_mux_fall};      
       $results->{pdynamic} = abs($results->{pdynamic_fall});      
@@ -2240,12 +2246,12 @@ sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
       }
       return 1; 
     } else {
-      if (($output_vector_type eq "r")||($output_vector_type eq "1")) {
+      if (($output_vector_type eq "rise")||($output_vector_type eq "1")) {
         if ($results->{avg_vmux} < $vsp*0.95) {
           return 0;
         }
       }
-       if (($output_vector_type eq "f")||($output_vector_type eq "0")) {
+       if (($output_vector_type eq "fall")||($output_vector_type eq "0")) {
         if ($results->{avg_vmux} > $vsp*0.05) {
           return 0;
         }
