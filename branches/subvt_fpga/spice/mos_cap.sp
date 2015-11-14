@@ -2,17 +2,18 @@ MOS capacitance
 * Technology
 *.lib '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/process/MM180_LVT18_V113.lib' TT
 *.include '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/process/tsmc40nm.sp'
-.include './process/22nm_HP.pm'
+*.include './process/22nm_HP.pm'
 *.include './process/45nm_LP.pm'
 *.include './process/st_28nm.sp'
+.lib '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/process/tsmc40nm/toplevel_crn45gs_2d5_v1d1_shrink0d9_embedded_usage.l' TOP_TT
 .include '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/spice/nmos_pmos.sp'
 .temp 25
-.param beta = 1.5
+.param beta = 1
 .param alpha = 1
-.param nl = 22e-9
-.param pl = nl
-.param wn = '55e-9'
-.param wp = 'beta*wn'
+.param nl = 270e-9
+.param pl = 270e-9
+.param wn = '320e-9'
+.param wp = 'beta*320e-9'
 .param clk_freq = 1e8
 
 * Parameters for Measuring Slew
@@ -32,7 +33,7 @@ MOS capacitance
 .option POST
 .option captab
 
-.param vsp = 0.8
+.param vsp = 3.0
 
 * Test case 1 : NMOS OPEN CAP, VDD
 X1 i1 vdd t1 gnd nmos L=nl W=wn
