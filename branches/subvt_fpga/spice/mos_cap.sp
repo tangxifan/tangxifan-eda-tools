@@ -8,12 +8,16 @@ MOS capacitance
 .lib '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/process/tsmc40nm/toplevel_crn45gs_2d5_v1d1_shrink0d9_embedded_usage.l' TOP_TT
 .include '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/spice/nmos_pmos.sp'
 .temp 25
-.param beta = 1
+.param beta = 2
 .param alpha = 1
-.param nl = 270e-9
-.param pl = 270e-9
-.param wn = '320e-9'
-.param wp = 'beta*320e-9'
+*.param nl = 270e-9
+*.param pl = 270e-9
+*.param wn = '320e-9'
+*.param wp = 'beta*320e-9'
+.param nl = 40e-9
+.param pl = 40e-9
+.param wn = '140e-9'
+.param wp = 'beta*140e-9'
 .param clk_freq = 1e8
 
 * Parameters for Measuring Slew
