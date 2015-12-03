@@ -37,7 +37,7 @@ MOS capacitance
 .option POST
 .option captab
 
-.param vsp = 3.0
+.param vsp = 0.9
 
 * Test case 1 : NMOS OPEN CAP, VDD
 X1 i1 vdd t1 gnd nmos L=nl W=wn

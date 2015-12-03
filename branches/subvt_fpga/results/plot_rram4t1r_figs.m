@@ -235,10 +235,10 @@ grid on
 xindex = 1:10:length(wprog_list);
 % Fig. plot
 fig_handle3 = figure;
-plot(rram2n1r_vprog2p5V_inv20_format(:,8),'k-*','LineWidth', 2, 'MarkerSize',10);
-hold on
-plot(rram2n1r_vprog3p0V_inv20_format(:,8),'k-o','LineWidth', 2, 'MarkerSize',10);
-hold on
+%plot(rram2n1r_vprog2p5V_inv20_format(:,8),'k-*','LineWidth', 2, 'MarkerSize',10);
+%hold on
+%plot(rram2n1r_vprog3p0V_inv20_format(:,8),'k-o','LineWidth', 2, 'MarkerSize',10);
+%hold on
 plot(rram2t1r_vprog2p5V_inv20_format(:,8),'b-*','LineWidth', 2, 'MarkerSize',10);
 hold on
 plot(rram2t1r_vprog3p0V_inv20_format(:,8),'b-o','LineWidth', 2, 'MarkerSize',10);
@@ -254,7 +254,7 @@ set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 
 set(gca,'XTick',xindex);
 set(gca,'XTickLabel',wprog_list(xindex));
 %set(gca,'ylim',[2 22],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
-hleg = legend([{'2T1R V_{prog}=2.5V'},{'2T1R V_{prog}=3.0V'},{'2TG1R V_{prog}=2.5V'},{'2TG1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'}]);
+hleg = legend([{'2TG1R V_{prog}=2.5V'},{'2TG1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'}]);
 set(fig_handle3, 'Position', [1 1 800 600]);
 grid on
 
@@ -568,6 +568,7 @@ set(gca,'xlim',[0.5 length(wprog_list)+0.5],'Fontsize',16, 'FontWeight','bold', 
 set(gca,'XTick',xindex);
 set(gca,'XTickLabel',wprog_list(xindex));
 %set(gca,'ylim',[35 140],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+%hleg = legend([{'2T1R V_{prog}=2.5V'},{'2T1R V_{prog}=3.0V'},{'2TG1R V_{prog}=2.5V'},{'2TG1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'}]);
 hleg = legend([{'2T1R V_{prog}=2.5V'},{'2T1R V_{prog}=3.0V'},{'2TG1R V_{prog}=2.5V'},{'2TG1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'}]);
 set(fig_handle4, 'Position', [1 1 800 600]);
 grid on
@@ -575,12 +576,19 @@ grid on
 % Calculate the area, delay and power
 Ireset = 1000 % [uA]
 Coff = 265e-18; % [F]
-Cload = 300e-18; % [F]
-Rinv = 0; % 7200; % [Ohm]
-Winv = 750e-18; % [F]
+Cload = 202e-18; % [F]
+Rinv = 8e3; % 7200; % [Ohm]
+Cinv = 300e-18; % [F]
 vsp = 0.9; % [V]
 beta = 3; % p/n ratio
 gamma = 1.2; % pmos area penalty
+M = 16; % Size of a one-level multiplexer, no. of prog. structures that share a output programming pair.
+std_beta = 2; % beta for standard p/n transistors
+sram_area = 6; % area of a SRAM cell
+Wnmos = 4; % size of a nmos transistor
+Rnmos = 8e3 % [Ohm] equivalent resistance of a nmos 
+Cnmos = 75e-18 % [F] source/drain capacitance of a nmos
+trans_area_inv = 0; %trans_area(1) + trans_area(std_beta*1)*gamma;
 % RRAM 2N1R vprog=2.5V
 ron_rram2n1r_vprog2p5V = rram2n1r_vprog2p5V_inv20_format(:,8);
 area_rram2n1r_vprog2p5V = cell2mat(rram2n1r_vprog2p5V_inv20(:,1));
@@ -598,13 +606,13 @@ end
 display(wprog_min);
 for i=1:1:length(area_rram2n1r_vprog2p5V)
   if wprog_list(i) < wprog_min
-    area_rram2n1r_vprog2p5V(i) = trans_area(wprog_min)*2 + 20*(1+beta*gamma)*(1/32+1/32);
-    delay_rram2n1r_vprog2p5V(i) = 0.693*(Rinv*(Winv+2*wprog_min*Coff+Cload) + (wprog_min*Coff+Cload)*rram2n1r_vprog2p5V_inv20_format(i,8)*1e3)/1e-12;
-    power_rram2n1r_vprog2p5V(i) = (Coff*2*wprog_min+Cload)*vsp*vsp;
+    area_rram2n1r_vprog2p5V(i) = trans_area_inv*(M+1)/2 + trans_area(wprog_min)*(M+1) + 20*(1+beta*gamma)*(1/32+1/32);
+    delay_rram2n1r_vprog2p5V(i) = 0.693*(Rinv*(Cinv+2*wprog_min*Coff+Cload) + (wprog_min*Coff+Cload)*rram2n1r_vprog2p5V_inv20_format(i,8)*1e3)/1e-12;
+    power_rram2n1r_vprog2p5V(i) = (M/2*Cinv + (M/2+1)*Coff*wprog_min+Cload)*vsp*vsp;
   else 
-    area_rram2n1r_vprog2p5V(i) = trans_area(wprog_list(i))*2 + 20*(1+beta*gamma)*(1/32+1/32);
-    delay_rram2n1r_vprog2p5V(i) = 0.693*(Rinv*(Winv+2*wprog_list(i)*Coff+Cload) + (wprog_list(i)*Coff+Cload)*rram2n1r_vprog2p5V_inv20_format(i,8)*1e3)/1e-12;
-    power_rram2n1r_vprog2p5V(i) = (Coff*2*wprog_list(i)+Cload)*vsp*vsp;
+    area_rram2n1r_vprog2p5V(i) = trans_area_inv*(M+1)/2 + trans_area(wprog_list(i))*(M+1) + 20*(1+beta*gamma)*(1/32+1/32);
+    delay_rram2n1r_vprog2p5V(i) = 0.693*(Rinv*(Cinv+2*wprog_list(i)*Coff+Cload) + (wprog_list(i)*Coff+Cload)*rram2n1r_vprog2p5V_inv20_format(i,8)*1e3)/1e-12;
+    power_rram2n1r_vprog2p5V(i) = (M/2*Cinv + (M/2+1)*Coff*wprog_list(i)+Cload)*vsp*vsp;
   end 
 end 
 % RRAM 2N1R vprog=3.0V
@@ -623,13 +631,13 @@ if (0 == wprog_min)
 end
 for i=1:1:length(area_rram2n1r_vprog3p0V)
   if wprog_list(i) < wprog_min
-    area_rram2n1r_vprog3p0V(i) = trans_area(wprog_min)*2 + 20*(1+beta*gamma)*(1/32+1/32);
-    delay_rram2n1r_vprog3p0V(i) = 0.693*(Rinv*(Winv+2*wprog_min*Coff+Cload) + (wprog_min*Coff+Cload)*rram2n1r_vprog3p0V_inv20_format(i,8)*1e3)/1e-12;
-    power_rram2n1r_vprog3p0V(i) = (Coff*2*wprog_min+Cload)*vsp*vsp;
+    area_rram2n1r_vprog3p0V(i) = trans_area_inv*(M+1)/2 + trans_area(wprog_min)*(M+1) + 20*(1+beta*gamma)*(1/32+1/32);
+    delay_rram2n1r_vprog3p0V(i) = 0.693*(Rinv*(Cinv+2*wprog_min*Coff+Cload) + (wprog_min*Coff+Cload)*rram2n1r_vprog3p0V_inv20_format(i,8)*1e3)/1e-12;
+    power_rram2n1r_vprog3p0V(i) = (M/2*Cinv + (M/2+1)*Coff*2*wprog_min+Cload)*vsp*vsp;
   else 
-    area_rram2n1r_vprog3p0V(i) = trans_area(wprog_list(i))*2 + 20*(1+beta*gamma)*(1/32+1/32);
-    delay_rram2n1r_vprog3p0V(i) = 0.693*(Rinv*(Winv+2*wprog_list(i)*Coff+Cload) + (wprog_list(i)*Coff+Cload)*rram2n1r_vprog3p0V_inv20_format(i,8)*1e3)/1e-12;
-    power_rram2n1r_vprog3p0V(i) = (Coff*2*wprog_list(i)+Cload)*vsp*vsp;
+    area_rram2n1r_vprog3p0V(i) = trans_area_inv*(M+1)/2 + trans_area(wprog_list(i))*(M+1) + 20*(1+beta*gamma)*(1/32+1/32);
+    delay_rram2n1r_vprog3p0V(i) = 0.693*(Rinv*(Cinv+2*wprog_list(i)*Coff+Cload) + (wprog_list(i)*Coff+Cload)*rram2n1r_vprog3p0V_inv20_format(i,8)*1e3)/1e-12;
+    power_rram2n1r_vprog3p0V(i) = (M/2*Cinv + (M/2+1)*Coff*wprog_list(i)+Cload)*vsp*vsp;
   end 
 end
 % RRAM 2T1R vprog=2.5V
@@ -648,13 +656,13 @@ if (0 == wprog_min)
 end
 for i=1:1:length(area_rram2t1r_vprog2p5V)
   if wprog_list(i) < wprog_min
-    area_rram2t1r_vprog2p5V(i) = (trans_area(wprog_min)+trans_area(wprog_min*beta)*gamma)*2 + 20*(1+beta*gamma)*(1/32+1/32);
-    delay_rram2t1r_vprog2p5V(i) = 0.693*(Rinv*(Winv+2*wprog_min*(beta+1)*Coff+Cload) + (wprog_min*(beta+1)*Coff+Cload)*rram2t1r_vprog2p5V_inv20_format(i,8)*1e3)/1e-12;
-    power_rram2t1r_vprog2p5V(i) = (Coff*2*wprog_min*(beta+1)+Cload)*vsp*vsp/1e-15;
+    area_rram2t1r_vprog2p5V(i) = trans_area_inv*(M+1)/2 + (trans_area(wprog_min)+trans_area(wprog_min*beta)*gamma)*(M+1) + 20*(1+beta*gamma)*(1/32+1/32);
+    delay_rram2t1r_vprog2p5V(i) = 0.693*(Rinv*(Cinv+2*wprog_min*(beta+1)*Coff+Cload) + (wprog_min*(beta+1)*Coff+Cload)*rram2t1r_vprog2p5V_inv20_format(i,8)*1e3)/1e-12;
+    power_rram2t1r_vprog2p5V(i) = (M/2*Cinv + (M/2+1)*Coff*wprog_min*(beta+1)+Cload)*vsp*vsp/1e-15;
   else 
-    area_rram2t1r_vprog2p5V(i) = (trans_area(wprog_list(i))+trans_area(wprog_list(i)*beta)*gamma)*2 + 20*(1+beta*gamma)*(1/32+1/32);
-    delay_rram2t1r_vprog2p5V(i) = 0.693*(Rinv*(Winv+2*wprog_list(i)*(beta+1)*Coff+Cload) + (wprog_list(i)*(beta+1)*Coff+Cload)*rram2t1r_vprog2p5V_inv20_format(i,8)*1e3)/1e-12;
-    power_rram2t1r_vprog2p5V(i) = (Coff*2*wprog_list(i)*(beta+1)+Cload)*vsp*vsp/1e-15;
+    area_rram2t1r_vprog2p5V(i) = trans_area_inv*(M+1)/2 + (trans_area(wprog_list(i))+trans_area(wprog_list(i)*beta)*gamma)*(M+1) + 20*(1+beta*gamma)*(1/32+1/32);
+    delay_rram2t1r_vprog2p5V(i) = 0.693*(Rinv*(Cinv+2*wprog_list(i)*(beta+1)*Coff+Cload) + (wprog_list(i)*(beta+1)*Coff+Cload)*rram2t1r_vprog2p5V_inv20_format(i,8)*1e3)/1e-12;
+    power_rram2t1r_vprog2p5V(i) = (M/2*Cinv + (M/2+1)*Coff*wprog_list(i)*(beta+1)+Cload)*vsp*vsp/1e-15;
   end 
 end
 % RRAM 2T1R vprog=3.0V
@@ -673,13 +681,13 @@ if (0 == wprog_min)
 end
 for i=1:1:length(area_rram2t1r_vprog3p0V)
   if wprog_list(i) < wprog_min
-    area_rram2t1r_vprog3p0V(i) = (trans_area(wprog_min)+trans_area(wprog_min*beta)*gamma)*2 + 20*(1+beta*gamma)*(1/32+1/32);
-    delay_rram2t1r_vprog3p0V(i) = 0.693*(Rinv*(Winv+2*wprog_min*(beta+1)*Coff+Cload) + (wprog_min*(beta+1)*Coff+Cload)*rram2t1r_vprog3p0V_inv20_format(i,8)*1e3)/1e-12;
-    power_rram2t1r_vprog3p0V(i) = (Coff*2*wprog_min*(beta+1)+Cload)*vsp*vsp/1e-15;
+    area_rram2t1r_vprog3p0V(i) = (trans_area_inv*(M+1)/2 + trans_area(wprog_min)+trans_area(wprog_min*beta)*gamma)*(M+1) + 20*(1+beta*gamma)*(1/32+1/32);
+    delay_rram2t1r_vprog3p0V(i) = 0.693*(Rinv*(Cinv+2*wprog_min*(beta+1)*Coff+Cload) + (wprog_min*(beta+1)*Coff+Cload)*rram2t1r_vprog3p0V_inv20_format(i,8)*1e3)/1e-12;
+    power_rram2t1r_vprog3p0V(i) = (M/2*Cinv + (M/2+1)*Coff*wprog_min*(beta+1)+Cload)*vsp*vsp/1e-15;
   else 
-    area_rram2t1r_vprog3p0V(i) = (trans_area(wprog_list(i))+trans_area(wprog_list(i)*beta*gamma))*2 + 20*(1+beta*gamma)*(1/32+1/32);
-    delay_rram2t1r_vprog3p0V(i) = 0.693*(Rinv*(Winv+2*wprog_list(i)*(beta+1)*Coff+Cload) + (wprog_list(i)*(beta+1)*Coff+Cload)*rram2t1r_vprog3p0V_inv20_format(i,8)*1e3)/1e-12;
-    power_rram2t1r_vprog3p0V(i) = (Coff*2*wprog_list(i)*(beta+1)+Cload)*vsp*vsp/1e-15;
+    area_rram2t1r_vprog3p0V(i) = trans_area_inv*(M+1)/2 + (trans_area(wprog_list(i))+trans_area(wprog_list(i)*beta*gamma))*(M+1) + 20*(1+beta*gamma)*(1/32+1/32);
+    delay_rram2t1r_vprog3p0V(i) = 0.693*(Cinv*(Cinv+2*wprog_list(i)*(beta+1)*Coff+Cload) + (wprog_list(i)*(beta+1)*Coff+Cload)*rram2t1r_vprog3p0V_inv20_format(i,8)*1e3)/1e-12;
+    power_rram2t1r_vprog3p0V(i) = (M/2*Cinv + (M/2+1)*Coff*wprog_list(i)*(beta+1)+Cload)*vsp*vsp/1e-15;
   end 
 end
 % RRAM 4T1R vprog=2.5V
@@ -697,9 +705,9 @@ if (0 == wprog_min)
   wprog_min = abs(wprog_min);
 end
 for i=1:1:length(area_rram4t1r_vprog2p5V)
-  area_rram4t1r_vprog2p5V(i) = trans_area(wprog_list(i)) + trans_area(wprog_list(i)*beta)*gamma + trans_area(wprog_min) + trans_area(beta*wprog_min)*gamma;
-  delay_rram4t1r_vprog2p5V(i) = 0.693*(Rinv*(Winv+(wprog_list(i)*(beta+1)+wprog_min*(beta+1))*Coff+Cload) + ((wprog_list(i)*(1)+wprog_min*(beta))*Coff+Cload)*rram4t1r_vprog2p5V_format(i,8)*1e3)/1e-12;
-  power_rram4t1r_vprog2p5V(i) = (Coff*(wprog_min*(beta+1)+wprog_list(i)*(beta+1))+Cload)*vsp*vsp/1e-15;
+  area_rram4t1r_vprog2p5V(i) = trans_area_inv*(M+1)/2 + trans_area(wprog_list(i)) + M*trans_area(wprog_list(i)*beta)*gamma + M*trans_area(wprog_min) + trans_area(beta*wprog_min)*gamma;
+  delay_rram4t1r_vprog2p5V(i) = 0.693*(Rinv*(Cinv+(wprog_list(i)*(beta+1)+wprog_min*(beta+1))*Coff+Cload) + ((wprog_list(i)*(1)+wprog_min*(beta))*Coff+Cload)*rram4t1r_vprog2p5V_format(i,8)*1e3)/1e-12;
+  power_rram4t1r_vprog2p5V(i) = (M/2*Cinv + Coff*(wprog_min*(beta+1*M/2)+wprog_list(i)*(M*beta/2+1))+Cload)*vsp*vsp/1e-15;
 end
 % RRAM 4T1R vprog=3.0V
 ron_rram4t1r_vprog3p0V = rram4t1r_vprog3p0V_format(:,8);
@@ -716,21 +724,28 @@ if (0 == wprog_min)
   wprog_min = abs(wprog_min);
 end
 for i=1:1:length(area_rram4t1r_vprog3p0V)
-  area_rram4t1r_vprog3p0V(i) = trans_area(wprog_list(i)) + trans_area(wprog_list(i)*beta)*gamma + trans_area(wprog_min) + trans_area(beta*wprog_min)*gamma;
-  delay_rram4t1r_vprog3p0V(i) = 0.693*(Rinv*(Winv+(wprog_list(i)*(beta+1)+wprog_min*(beta+1))*Coff+Cload) + ((wprog_list(i)*(1)+wprog_min*(beta))*Coff+Cload)*rram4t1r_vprog3p0V_format(i,8)*1e3)/1e-12;
-  power_rram4t1r_vprog3p0V(i) = (Coff*(wprog_min*(beta+1)+wprog_list(i)*(beta+1))+Cload)*vsp*vsp/1e-15;
+  area_rram4t1r_vprog3p0V(i) = trans_area_inv*(M+1)/2 + trans_area(wprog_list(i)) + M*trans_area(wprog_list(i)*beta)*gamma + M*trans_area(wprog_min) + trans_area(beta*wprog_min)*gamma;
+  delay_rram4t1r_vprog3p0V(i) = 0.693*(Rinv*(Cinv+(wprog_list(i)*(beta+1)+wprog_min*(beta+1))*Coff+Cload) + ((wprog_list(i)*(1)+wprog_min*(beta))*Coff+Cload)*rram4t1r_vprog3p0V_format(i,8)*1e3)/1e-12;
+  power_rram4t1r_vprog3p0V(i) = (M/2*Cinv + Coff*(wprog_min*(beta+1*M/2)+wprog_list(i)*(M*beta/2+1))+Cload)*vsp*vsp/1e-15;
   %y_area(i) = 2*wprog_list(i)*(1+3*1.2);
+end
+% SRAM circuit
+area_sram_circuit= cell2mat(rram4t1r_vprog3p0V(:,1));
+for i=1:1:length(area_sram_circuit)
+  area_sram_circuit(i) = trans_area_inv*(M+1)/2 + ((M+ceil(sqrt(M)))*(trans_area(Wnmos) + trans_area(std_beta*Wnmos)*gamma) + 2*ceil(sqrt(M))*sram_area)/2;
+  delay_sram_circuit(i) = 0.693*(Rinv*(Cinv+Cnmos*Wnmos*(std_beta+1)*(2*ceil(sqrt(M))+2)+Cload) + Rnmos/(2)*(3*ceil(sqrt(M))+3)*Cnmos*(std_beta + 1)+2*Rnmos/2/Wnmos*Cload)/1e-12;
+  power_sram_circuit(i) = (M*Cinv/2 + 2*Wnmos*Cnmos*(std_beta + 1)*(M+ceil(sqrt(M)))/2+Cload)*vsp*vsp/1e-15;
 end
 
 %% Fig. 15: RRAM4T1R vs. RRAM2T1R & 2N1R Area-Wprog
 % Fig. plot
 fig_handle3 = figure;
 % RRAM 2N1R Vprog=2.5V
-plot(ron_rram2n1r_vprog2p5V, area_rram2n1r_vprog2p5V,'k-*','LineWidth', 2, 'MarkerSize',10);
-hold on
+%plot(ron_rram2n1r_vprog2p5V, area_rram2n1r_vprog2p5V,'k-*','LineWidth', 2, 'MarkerSize',10);
+%hold on
 % RRAM 2N1R Vprog=3.0V
-plot(ron_rram2n1r_vprog3p0V, area_rram2n1r_vprog3p0V,'k-o','LineWidth', 2, 'MarkerSize',10);
-hold on
+%plot(ron_rram2n1r_vprog3p0V, area_rram2n1r_vprog3p0V,'k-o','LineWidth', 2, 'MarkerSize',10);
+%hold on
 % RRAM 2T1R Vprog=2.5V
 plot(ron_rram2t1r_vprog2p5V, area_rram2t1r_vprog2p5V,'b-*','LineWidth', 2, 'MarkerSize',10);
 hold on
@@ -750,7 +765,8 @@ set(gca,'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 %set(gca,'XTick',xindex);
 %set(gca,'XTickLabel',wprog_list(xindex));
 set(gca,'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
-hleg = legend([{'2T1R V_{prog}=2.5V'},{'2T1R V_{prog}=3.0V'},{'2TG1R V_{prog}=2.5V'},{'2TG1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'}]);
+%hleg = legend([{'2T1R V_{prog}=2.5V'},{'2T1R V_{prog}=3.0V'},{'2TG1R V_{prog}=2.5V'},{'2TG1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'}]);
+hleg = legend([{'2TG1R V_{prog}=2.5V'},{'2TG1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'}]);
 set(fig_handle3, 'Position', [1 1 800 600]);
 grid on
 
@@ -787,7 +803,7 @@ hleg = legend([{'2TG1R V_{prog}=2.5V'},{'2TG1R V_{prog}=3.0V'},{'4T1R V_{prog}=2
 set(fig_handle3, 'Position', [1 1 800 600]);
 grid on
 
-%% Fig. 17: RRAM4T1R vs. RRAM2T1R & 2N1R Area-Delay
+%% Fig. 17: RRAM4T1R vs. RRAM2T1R & 2N1R Power - Ron
 % Fig. plot
 fig_handle3 = figure;
 % RRAM 2N1R Vprog=2.5V
@@ -821,5 +837,85 @@ set(gca,'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 %hleg = legend([{'2T1R V_{prog}=2.5V'},{'2T1R V_{prog}=3.0V'},{'2TG1R V_{prog}=2.5V'},{'2TG1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'}]);
 hleg = legend([{'2TG1R V_{prog}=2.5V'},{'2TG1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'}]);
+set(fig_handle3, 'Position', [1 1 800 600]);
+grid on
+
+%% Fig. 18: RRAM4T1R vs. RRAM2T1R & 2N1R Area-Delay Product - Ron 
+% Fig. plot
+fig_handle3 = figure;
+% RRAM 2N1R Vprog=2.5V
+%plot(ron_rram2n1r_vprog2p5V, power_rram2n1r_vprog2p5V,'k-*','LineWidth', 2, 'MarkerSize',10);
+%hold on
+% RRAM 2N1R Vprog=3.0V
+%plot(ron_rram2n1r_vprog3p0V, power_rram2n1r_vprog3p0V,'k-o','LineWidth', 2, 'MarkerSize',10);
+%hold on
+% RRAM 2T1R Vprog=2.5V
+plot(ron_rram2t1r_vprog2p5V, area_rram2t1r_vprog2p5V.*delay_rram2t1r_vprog2p5V','b-*','LineWidth', 2, 'MarkerSize',10);
+hold on
+% RRAM 2T1R Vprog=3.0V
+plot(ron_rram2t1r_vprog3p0V, area_rram2t1r_vprog3p0V.*delay_rram2t1r_vprog3p0V','b-o','LineWidth', 2, 'MarkerSize',10);
+hold on
+% RRAM 4T1R Vprog=2.5V
+plot(ron_rram4t1r_vprog2p5V, area_rram4t1r_vprog2p5V.*delay_rram4t1r_vprog2p5V','r-*','LineWidth', 2, 'MarkerSize',10);
+hold on
+% RRAM 4T1R Vprog=3.0V
+plot(ron_rram4t1r_vprog3p0V, area_rram4t1r_vprog3p0V.*delay_rram4t1r_vprog3p0V','r-o','LineWidth', 2, 'MarkerSize',10);
+hold on
+% SRAM circuit 
+plot(ron_rram4t1r_vprog3p0V, area_sram_circuit.*delay_sram_circuit','g-o','LineWidth', 2, 'MarkerSize',10);
+hold on
+%title('R_{on} and W_{prog}, RRAM2T1R Structure','FontSize',18)
+%xlabel('Delay (ps)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+%xlabel('W_{prog}(No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
+xlabel('R_{LRS} ({k\Omega})','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+%ylabel('Delay-Area Product (ps * No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('Area-Delay Product (# of min width trans. * ps)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
+set(gca,'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+%set(gca,'XTick',xindex);
+%set(gca,'XTickLabel',wprog_list(xindex));
+%set(gca,'ylim',[0 1500],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+set(gca,'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+%hleg = legend([{'2T1R V_{prog}=2.5V'},{'2T1R V_{prog}=3.0V'},{'2TG1R V_{prog}=2.5V'},{'2TG1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'}]);
+hleg = legend([{'2TG1R V_{prog}=2.5V'},{'2TG1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'},{'SRAM Circuit'}]);
+set(fig_handle3, 'Position', [1 1 800 600]);
+grid on
+
+%% Fig. 19: RRAM4T1R vs. RRAM2T1R & 2N1R Power-Delay Product - Ron 
+% Fig. plot
+fig_handle3 = figure;
+% RRAM 2N1R Vprog=2.5V
+%plot(ron_rram2n1r_vprog2p5V, power_rram2n1r_vprog2p5V,'k-*','LineWidth', 2, 'MarkerSize',10);
+%hold on
+% RRAM 2N1R Vprog=3.0V
+%plot(ron_rram2n1r_vprog3p0V, power_rram2n1r_vprog3p0V,'k-o','LineWidth', 2, 'MarkerSize',10);
+%hold on
+% RRAM 2T1R Vprog=2.5V
+plot(ron_rram2t1r_vprog2p5V, delay_rram2t1r_vprog2p5V'.*power_rram2t1r_vprog2p5V','b-*','LineWidth', 2, 'MarkerSize',10);
+hold on
+% RRAM 2T1R Vprog=3.0V
+plot(ron_rram2t1r_vprog3p0V, delay_rram2t1r_vprog3p0V'.*power_rram2t1r_vprog3p0V','b-o','LineWidth', 2, 'MarkerSize',10);
+hold on
+% RRAM 4T1R Vprog=2.5V
+plot(ron_rram4t1r_vprog2p5V, delay_rram4t1r_vprog2p5V'.*power_rram4t1r_vprog2p5V','r-*','LineWidth', 2, 'MarkerSize',10);
+hold on
+% RRAM 4T1R Vprog=3.0V
+plot(ron_rram4t1r_vprog3p0V, delay_rram4t1r_vprog3p0V'.*power_rram4t1r_vprog3p0V','r-o','LineWidth', 2, 'MarkerSize',10);
+hold on
+% SRAM Circuit
+plot(ron_rram4t1r_vprog3p0V, delay_sram_circuit'.*power_sram_circuit','g-o','LineWidth', 2, 'MarkerSize',10);
+hold on
+%title('R_{on} and W_{prog}, RRAM2T1R Structure','FontSize',18)
+%xlabel('Delay (ps)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+%xlabel('W_{prog}(No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
+xlabel('R_{LRS} ({k\Omega})','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+%ylabel('Delay-Area Product (ps * No. of min. trans.)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('Power-Delay Product (ps * fJ)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
+set(gca,'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+%set(gca,'XTick',xindex);
+%set(gca,'XTickLabel',wprog_list(xindex));
+%set(gca,'ylim',[0 1500],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+set(gca,'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+%hleg = legend([{'2T1R V_{prog}=2.5V'},{'2T1R V_{prog}=3.0V'},{'2TG1R V_{prog}=2.5V'},{'2TG1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'}]);
+hleg = legend([{'2TG1R V_{prog}=2.5V'},{'2TG1R V_{prog}=3.0V'},{'4T1R V_{prog}=2.5V'},{'4T1R V_{prog}=3.0V'},{'SRAM Circuit'}]);
 set(fig_handle3, 'Position', [1 1 800 600]);
 grid on
