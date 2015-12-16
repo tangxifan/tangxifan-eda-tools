@@ -7,7 +7,7 @@ enum e_spice_tech_lib_type {
 
 /* Transistor-level basic informations*/
 enum e_spice_trans_type {
-  SPICE_TRANS_NMOS, SPICE_TRANS_PMOS
+  SPICE_TRANS_NMOS, SPICE_TRANS_PMOS, SPICE_TRANS_IO_NMOS, SPICE_TRANS_IO_PMOS
 };
 
 typedef struct s_spice_transistor_type t_spice_transistor_type;
@@ -25,6 +25,7 @@ struct s_spice_tech_lib {
   char* transistor_type;
   char* path;
   float nominal_vdd;
+  float io_vdd;
   float pn_ratio;
   char* model_ref;
   int num_transistor_type;
@@ -130,7 +131,10 @@ struct s_spice_model {
   /* Vaild for RRAM technology only, and this is a mux*/
   float ron;
   float roff;
-  float prog_trans_size;
+  float wprog_set_nmos;
+  float wprog_set_pmos;
+  float wprog_reset_nmos;
+  float wprog_reset_pmos;
   /* END*/
   t_spice_model_buffer* lut_input_buffer;
   t_spice_model_buffer* input_buffer;

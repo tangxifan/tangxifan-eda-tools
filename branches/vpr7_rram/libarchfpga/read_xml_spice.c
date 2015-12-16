@@ -501,8 +501,14 @@ static void ProcessSpiceModel(ezxml_t Parent,
 	  ezxml_set_attr(Node, "ron", NULL);
       spice_model->roff = GetFloatProperty(Node,"roff",TRUE,0);
 	  ezxml_set_attr(Node, "roff", NULL);
-      spice_model->prog_trans_size = GetFloatProperty(Node,"prog_transistor_size",TRUE,0);
-	  ezxml_set_attr(Node, "prog_transistor_size", NULL);
+      spice_model->wprog_set_nmos = GetFloatProperty(Node,"wprog_set_nmos",TRUE,0);
+	  ezxml_set_attr(Node, "wprog_set_nmos", NULL);
+      spice_model->wprog_set_pmos = GetFloatProperty(Node,"wprog_set_pmos",TRUE,0);
+	  ezxml_set_attr(Node, "wprog_set_nmos", NULL);
+      spice_model->wprog_reset_nmos = GetFloatProperty(Node,"wprog_reset_nmos",TRUE,0);
+	  ezxml_set_attr(Node, "wprog_reset_nmos", NULL);
+      spice_model->wprog_reset_pmos = GetFloatProperty(Node,"wprog_reset_pmos",TRUE,0);
+	  ezxml_set_attr(Node, "wprog_reset_pmos", NULL);
     } else {
       vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] Invalid value for design_technology in spice model(%s). Should be [cmos|rram].\n",
                  Node->line,spice_model->name);
@@ -518,8 +524,13 @@ static void ProcessSpiceModel(ezxml_t Parent,
       } else if (0 == strcmp(FindProperty(Node,"structure",TRUE),"multi-level")) {
         spice_model->structure = SPICE_MODEL_STRUCTURE_MULTILEVEL;
       } else {
-        /* Default: tree */
-        spice_model->structure = SPICE_MODEL_STRUCTURE_TREE;
+         /* Set default to RRAM MUX */
+         if (SPICE_MODEL_DESIGN_RRAM == spice_model->design_tech) {
+           spice_model->structure = SPICE_MODEL_STRUCTURE_ONELEVEL;
+         } else {
+         /* Set default to SRAM MUX */
+           spice_model->structure = SPICE_MODEL_STRUCTURE_TREE;
+        }
       }
     } else {
       /* Default: tree */
@@ -612,6 +623,45 @@ static void ProcessSpiceModel(ezxml_t Parent,
   return;
 }
 
+/* Check Codes: We should check if we need to define the I/O transistors */
+static void check_tech_lib(t_spice_tech_lib tech_lib, 
+                           int num_spice_model,
+                           t_spice_model* spice_models) {
+  int i;
+  int rram_mux_found = 0; 
+  int io_nmos_found = 0;
+  int io_pmos_found = 0;
+
+  for (i = 0; i < num_spice_model; i++) {
+    if ((SPICE_MODEL_MUX == spice_models[i].type)
+       &&(SPICE_MODEL_DESIGN_RRAM == spice_models[i].design_tech)) {
+      rram_mux_found = 1;
+      break;
+    }
+  }
+  /* RRAM MUX is not defined, no need to check the tech library*/
+  if (0 == rram_mux_found) {
+    return;
+  }
+
+  /* RRAM MUX is defined, check the tech library by searching for io_nmos and io_pmos */
+  for (i = 0; i < tech_lib.num_transistor_type; i++) {
+    if (SPICE_TRANS_IO_NMOS == tech_lib.transistor_types[i].type) {
+      io_nmos_found = 1;
+    }     
+    if (SPICE_TRANS_IO_PMOS == tech_lib.transistor_types[i].type) {
+      io_pmos_found = 1;
+    }     
+  }
+  if ((0 == io_nmos_found)||(0 == io_pmos_found)) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) I/O transistors are not defined for RRAM MUX!\nCheck your tech_lib!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  return;
+}
+
 /* Check Codes: We should check the spice models */
 static void check_spice_models(int num_spice_model,
                                t_spice_model* spice_models) {
@@ -625,7 +675,7 @@ static void check_spice_models(int num_spice_model,
   int has_sram_port = 0;
 
   for (i = 0; i < num_spice_model; i++) {
-    /* TODO Check whether spice models share the same name or prefix*/
+    /* Check whether spice models share the same name or prefix*/
     for (j = 0; j < num_spice_model; j++) {
       if (i == j) {
         continue;
@@ -659,7 +709,7 @@ static void check_spice_models(int num_spice_model,
         exit(1);
       }
     }
-    /* TODO Check mux has been defined and has input and output ports*/
+    /* Check mux has been defined and has input and output ports*/
     if (SPICE_MODEL_MUX == spice_models[i].type) {
       has_mux = 1;
       has_in_port = 0;
@@ -679,6 +729,29 @@ static void check_spice_models(int num_spice_model,
         vpr_printf(TIO_MESSAGE_ERROR,"MUX Spice model(%s) does not have input|output|sram port\n",spice_models[i].name);
         exit(1);
       }
+      /* Check the I/O transistors are defined when RRAM MUX is selected */
+      if (SPICE_MODEL_DESIGN_RRAM == spice_models[i].design_tech) {
+        if (!(0. < spice_models[i].wprog_set_nmos)) {
+          vpr_printf(TIO_MESSAGE_ERROR, "wprog_set_nmos(%g) should be >0 for a RRAM MUX SPICE model (%s)!\n",
+                     spice_models[i].wprog_set_nmos, spice_models[i].name);
+          exit(1);
+        }
+        if (!(0. < spice_models[i].wprog_set_pmos)) {
+          vpr_printf(TIO_MESSAGE_ERROR, "wprog_set_pmos(%g) should be >0 for a RRAM MUX SPICE model (%s)!\n",
+                     spice_models[i].wprog_set_pmos, spice_models[i].name);
+          exit(1);
+        }
+        if (!(0. < spice_models[i].wprog_reset_nmos)) {
+          vpr_printf(TIO_MESSAGE_ERROR, "wprog_reset_nmos(%g) should be >0 for a RRAM MUX SPICE model (%s)!\n",
+                     spice_models[i].wprog_reset_nmos, spice_models[i].name);
+          exit(1);
+        }
+        if (!(0. < spice_models[i].wprog_reset_pmos)) {
+          vpr_printf(TIO_MESSAGE_ERROR, "wprog_reset_pmos(%g) should be >0 for a RRAM MUX SPICE model (%s)!\n",
+                     spice_models[i].wprog_reset_pmos, spice_models[i].name);
+          exit(1);
+        }
+      } 
     }
     /* Check sram has been defined and has input and output ports*/
     if (SPICE_MODEL_SRAM == spice_models[i].type) {
@@ -776,9 +849,13 @@ static void ProcessSpiceTechLibTransistors(ezxml_t Parent,
 
     spice_tech_lib->path = my_strdup(FindProperty(Node, "lib_path", TRUE));
 	ezxml_set_attr(Node, "lib_path", NULL);
-
+    /* Norminal VDD for standard transistors*/
     spice_tech_lib->nominal_vdd = GetFloatProperty(Node, "nominal_vdd", TRUE, 0.);
     ezxml_set_attr(Node, "nominal_vdd", NULL);
+
+    /* Norminal VDD for IO transistors*/
+    spice_tech_lib->io_vdd = GetFloatProperty(Node, "io_vdd", FALSE, 0.);
+    ezxml_set_attr(Node, "io_vdd", NULL);
 
     /* Current Node search ends*/
     FreeNode(Node);
@@ -800,19 +877,41 @@ static void ProcessSpiceTechLibTransistors(ezxml_t Parent,
     assert(1 == spice_tech_lib->num_transistor_type);
     spice_tech_lib->num_transistor_type += CountChildren(Node, "pmos", 1);
     assert(2 == spice_tech_lib->num_transistor_type);
+    spice_tech_lib->num_transistor_type += CountChildren(Node, "io_nmos", 0);
+    spice_tech_lib->num_transistor_type += CountChildren(Node, "io_pmos", 0);
+    assert((2 == spice_tech_lib->num_transistor_type)||(4 == spice_tech_lib->num_transistor_type));
     /*Alloc*/
     spice_tech_lib->transistor_types = (t_spice_transistor_type*)my_malloc(spice_tech_lib->num_transistor_type*sizeof(t_spice_transistor_type));
-    /* Fill nmos and pmos*/
+    /* Fill Standard NMOS */
     itrans = 0;
     Cur = FindFirstElement(Node, "nmos", TRUE);
     ProcessSpiceTransistorType(Cur,&(spice_tech_lib->transistor_types[itrans]),SPICE_TRANS_NMOS);
     FreeNode(Cur);
     itrans++;
+    /* Fill Standard PMOS */
     Cur = FindFirstElement(Node, "pmos", TRUE);
     ProcessSpiceTransistorType(Cur,&(spice_tech_lib->transistor_types[itrans]),SPICE_TRANS_PMOS);
     FreeNode(Cur);
     itrans++;
+    /* Standard NMOS and PMOS are mandatory */
     assert(2 == itrans);
+    /* Fill IO NMOS */
+    Cur = FindFirstElement(Node, "io_nmos", FALSE);
+    if (NULL != Cur) {
+      ProcessSpiceTransistorType(Cur,&(spice_tech_lib->transistor_types[itrans]),SPICE_TRANS_IO_NMOS);
+      FreeNode(Cur);
+      itrans++;
+      vpr_printf(TIO_MESSAGE_INFO, "Read I/O NMOS into tech. lib. successfully.\n");
+    }
+    /* Fill IO PMOS */
+    Cur = FindFirstElement(Node, "io_pmos", FALSE);
+    if (NULL != Cur) {
+      ProcessSpiceTransistorType(Cur,&(spice_tech_lib->transistor_types[itrans]),SPICE_TRANS_IO_PMOS);
+      FreeNode(Cur);
+      itrans++;
+      vpr_printf(TIO_MESSAGE_INFO, "Read I/O PMOS into tech. lib. successfully.\n");
+    }
+    assert((2 == itrans)||(4 == itrans));
     /* Finish parsing this node*/
     FreeNode(Node);
   }
@@ -855,6 +954,7 @@ void ProcessSpiceSettings(ezxml_t Parent,
   }
  
   /* Check codes*/
+  check_tech_lib(spice->tech_lib, spice->num_spice_model, spice->spice_models);
   check_spice_models(spice->num_spice_model,spice->spice_models);
 
   return;

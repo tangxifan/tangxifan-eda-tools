@@ -165,6 +165,8 @@
     <transistors pn_ratio="2.7" model_ref="M">
       <nmos model_name="N_LV_18_MM" chan_length="500e-9" min_width="500e-9"/>
       <pmos model_name="P_LV_18_MM" chan_length="500e-9" min_width="500e-9"/>
+      <io_nmos model_name="N_LV_18_MM" chan_length="500e-9" min_width="500e-9"/>
+      <io_pmos model_name="P_LV_18_MM" chan_length="500e-9" min_width="500e-9"/>
     </transistors> 
     <module_spice_models>
       <spice_model type="chan_wire" name="chan_segment" prefix="track_seg" is_default="1">
@@ -184,8 +186,8 @@
         <wire_param model_type="pie" res_val="0" cap_val="0" level="1"/> <!-- model_type could be T, res_val cap_val should be defined -->
       </spice_model>
       <spice_model type="mux" name="mux_buffered" prefix="mux_buf" is_default="1">
-        <design_technology type="cmos" structure="one-level"/>
-        <!--design_technology type="rram" ron="3e3" roff="1e6" prog_transistor_size="1"/-->
+        <!--design_technology type="cmos" structure="one-level"/-->
+        <design_technology type="rram" ron="3e3" roff="1e6" wprog_set_nmos="1" wprog_reset_nmos="1" wprog_set_pmos="1" wprog_reset_pmos="1" structure="one-level"/>
         <input_buffer exist="on" type="inverter" size="4" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="4" tapered="off"/>
         <!--mux2to1 subckt_name="mux2to1"/-->
@@ -196,7 +198,7 @@
       </spice_model>
       <spice_model type="mux" name="mux_unbuffered" prefix="mux_unbuf">
         <design_technology type="cmos" structure="tree"/>
-        <!--design_technology type="rram" ron="1e3" roff="1e6" prog_transistor_size="3"/-->
+        <!--design_technology type="rram" ron="3e3" roff="1e6" wprog_set_nmos="1" wprog_reset_nmos="1" wprog_set_pmos="1" wprog_reset_pmos="1"/-->
         <input_buffer exist="off" type="inverter" size="4" tapered="off"/>
         <output_buffer exist="off" type="inverter" size="4" tapered="off"/>
         <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1"/>
@@ -207,7 +209,6 @@
       <!--DFF subckt ports should be defined as <D> <Q> <CLK> <RESET> <SET>  -->
       <spice_model type="ff" name="static_dff" prefix="dff" netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/ff.sp">
          <design_technology type="cmos"/>
-         <!--design_technology type="rram" ron="1e3" roff="1e6" prog_transistor_size="1"/-->
          <input_buffer exist="on" type="inverter" size="4" tapered="off"/>
          <output_buffer exist="on" type="inverter" size="4" tapered="off"/>
          <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1"/>
@@ -219,7 +220,6 @@
       </spice_model>
       <spice_model type="lut" name="lut5" prefix="lut5">
         <design_technology type="cmos"/>
-        <!--design_technology type="rram" ron="1e3" prog_transistor_size="1"/-->
         <input_buffer exist="on" type="inverter" size="4" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="4" tapered="off"/>
         <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1"/>
@@ -229,7 +229,6 @@
       </spice_model>
       <spice_model type="lut" name="lut6" prefix="lut6">
         <design_technology type="cmos"/>
-        <!--design_technology type="rram" ron="1e3" prog_transistor_size="1"/-->
         <input_buffer exist="on" type="inverter" size="4" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="4" tapered="off"/>
         <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1"/>

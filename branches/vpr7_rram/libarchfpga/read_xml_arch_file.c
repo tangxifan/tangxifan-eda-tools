@@ -3261,7 +3261,7 @@ static void ProcessSwitches(INOUTP ezxml_t Parent,
         structure_type = FindProperty(Node, "structure", FALSE);
         if (NULL == structure_type) {
           (*Switches)[i].structure = SPICE_MODEL_STRUCTURE_TREE;
-          vpr_printf(TIO_MESSAGE_INFO, "Auto-assign structure type of Switch(name=%s) to default(=tree).\n", 
+          vpr_printf(TIO_MESSAGE_INFO, "FPGA-SPICE: Auto-assign structure type of Switch(name=%s) to default(=tree).\n", 
                      (*Switches)[i].name);
         } else if (0 == strcmp("one-level", structure_type)) {
           (*Switches)[i].structure = SPICE_MODEL_STRUCTURE_ONELEVEL;

@@ -110,7 +110,7 @@ void fprint_run_hspice_shell_script(t_spice spice,
   /* close fp */
   fclose(fp);
 
-  vpr_printf(TIO_MESSAGE_INFO,"Shell Script for running HSPICE (%s) has been created successfully!", shell_script_path); 
+  vpr_printf(TIO_MESSAGE_INFO,"Shell Script for running HSPICE (%s) has been created successfully!\n", shell_script_path); 
 
   /* Free */  
   my_free(spice_dir_formatted);

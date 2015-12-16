@@ -42,8 +42,12 @@ int generate_spice_nmos_pmos(char* subckt_dir,
                              t_spice_tech_lib tech_lib) {
   FILE* fp = NULL;
   char* sp_name = my_strcat(subckt_dir,nmos_pmos_spice_file_name);
+  /* Standard transistors */
   t_spice_transistor_type* nmos_trans = NULL;
   t_spice_transistor_type* pmos_trans = NULL;
+  /* I/O transistors */
+  t_spice_transistor_type* io_nmos_trans = NULL;
+  t_spice_transistor_type* io_pmos_trans = NULL;
 
   /* Spot NMOS*/
   nmos_trans = find_mosfet_tech_lib(tech_lib,SPICE_TRANS_NMOS);
@@ -61,23 +65,50 @@ int generate_spice_nmos_pmos(char* subckt_dir,
 
   fp = fopen(sp_name, "w");
   if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in create top SPICE netlist %s",__FILE__, __LINE__, nmos_pmos_spice_file_name); 
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in SPICE netlist for NMOS and PMOS subckt: %s \n",
+               __FILE__, __LINE__, nmos_pmos_spice_file_name); 
     exit(1);
   } 
-  fprint_spice_head(fp,"NMOS and PMOS");
+  fprint_spice_head(fp,"Standard and I/O NMOS and PMOS");
 
   /* print sub circuit for PMOS*/
-  fprintf(fp,"* NMOS\n");
+  fprintf(fp,"* Standard NMOS\n");
   fprintf(fp,".subckt %s drain gate source bulk L=nl W=wn\n", nmos_subckt_name);
   fprintf(fp,"%s1 drain gate source bulk %s L=L W=W\n", tech_lib.model_ref, nmos_trans->model_name);
   fprintf(fp,".eom %s\n", nmos_subckt_name);
 
   fprintf(fp,"\n");
   /* Print sub circuit for PMOS*/
-  fprintf(fp,"* PMOS\n");
+  fprintf(fp,"* Standard PMOS\n");
   fprintf(fp,".subckt %s drain gate source bulk L=pl W=wp\n", pmos_subckt_name);
   fprintf(fp,"%s1 drain gate source bulk %s L=L W=W\n", tech_lib.model_ref, pmos_trans->model_name);
   fprintf(fp,".eom %s\n", pmos_subckt_name);
+
+  /* Spot I/O NMOS*/
+  io_nmos_trans = find_mosfet_tech_lib(tech_lib,SPICE_TRANS_IO_NMOS);
+
+  if (NULL == io_nmos_trans) {
+    vpr_printf(TIO_MESSAGE_WARNING,"I/O NMOS transistor is not defined in architecture XML!\n");
+  } else {
+    /* print sub circuit for NMOS*/
+    fprintf(fp,"* I/O NMOS\n");
+    fprintf(fp,".subckt %s drain gate source bulk L=io_nl W=io_wn\n", io_nmos_subckt_name);
+    fprintf(fp,"%s1 drain gate source bulk %s L=L W=W\n", tech_lib.model_ref, io_nmos_trans->model_name);
+    fprintf(fp,".eom %s\n", io_nmos_subckt_name);
+  }
+
+  /* Spot I/O PMOS*/
+  io_pmos_trans = find_mosfet_tech_lib(tech_lib,SPICE_TRANS_IO_PMOS);
+
+  if (NULL == io_pmos_trans) {
+    vpr_printf(TIO_MESSAGE_WARNING,"I/O PMOS transistor is not defined in architecture XML!\n");
+  } else {
+    /* print sub circuit for PMOS*/
+    fprintf(fp,"* I/O PMOS\n");
+    fprintf(fp,".subckt %s drain gate source bulk L=io_pl W=io_wp\n", io_pmos_subckt_name);
+    fprintf(fp,"%s1 drain gate source bulk %s L=L W=W\n", tech_lib.model_ref, io_pmos_trans->model_name);
+    fprintf(fp,".eom %s\n", io_pmos_subckt_name);
+  }
 
   fclose(fp);
 

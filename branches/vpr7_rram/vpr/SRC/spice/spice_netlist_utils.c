@@ -1220,11 +1220,17 @@ void fprint_grid_float_port_stimulation(FILE* fp) {
 /* Print Technology Library and Design Parameters*/
 void fprint_tech_lib(FILE* fp,
                      t_spice_tech_lib tech_lib) {
-  t_spice_transistor_type* nmos_trans;
-  t_spice_transistor_type* pmos_trans;
+  /* Standard transistors*/
+  t_spice_transistor_type* nmos_trans = NULL;
+  t_spice_transistor_type* pmos_trans = NULL;
+
+  /* I/O transistors*/
+  t_spice_transistor_type* io_nmos_trans = NULL;
+  t_spice_transistor_type* io_pmos_trans = NULL;
 
   if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d]) FileHandle is NULL!\n",__FILE__,__LINE__); 
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d]) FileHandle is NULL!\n",
+               __FILE__,__LINE__); 
     exit(1);
   } 
   /* Include Technology Library*/
@@ -1240,7 +1246,7 @@ void fprint_tech_lib(FILE* fp,
   fprintf(fp, "****** Transistor Parameters ******\n");
   fprintf(fp,".param beta=%g\n",tech_lib.pn_ratio);
   /* Make sure we have only 2 transistor*/
-  assert(2 == tech_lib.num_transistor_type);
+  assert((2 == tech_lib.num_transistor_type)||(4 == tech_lib.num_transistor_type));
   /* Find NMOS*/
   nmos_trans = find_mosfet_tech_lib(tech_lib,SPICE_TRANS_NMOS);
   if (NULL == nmos_trans) {
@@ -1260,8 +1266,29 @@ void fprint_tech_lib(FILE* fp,
     fprintf(fp,".param wp=%g\n",pmos_trans->min_width);
   }
 
+  /* Print I/O NMOS and PMOS */
+  if (4 == tech_lib.num_transistor_type) {
+    io_nmos_trans = find_mosfet_tech_lib(tech_lib,SPICE_TRANS_IO_NMOS);
+    if (NULL == io_nmos_trans) {
+      vpr_printf(TIO_MESSAGE_WARNING,"I/O NMOS transistor is not defined in architecture XML!\n");
+    } else {
+      fprintf(fp,".param io_nl=%g\n", io_nmos_trans->chan_length);
+      fprintf(fp,".param io_wn=%g\n", io_nmos_trans->min_width);
+    }
+
+    io_pmos_trans = find_mosfet_tech_lib(tech_lib,SPICE_TRANS_IO_PMOS);
+    if (NULL == io_pmos_trans) {
+      vpr_printf(TIO_MESSAGE_WARNING,"I/O PMOS transistor is not defined in architecture XML!\n");
+    } else {
+      fprintf(fp,".param io_pl=%g\n", io_pmos_trans->chan_length);
+      fprintf(fp,".param io_wp=%g\n", io_pmos_trans->min_width);
+    }
+  }
+
   /* Print nominal Vdd */
   fprintf(fp, ".param vsp=%g\n", tech_lib.nominal_vdd);
+  /* Print I/O VDD */
+  fprintf(fp, ".param io_vsp=%g\n", tech_lib.io_vdd);
   
   return;
 }

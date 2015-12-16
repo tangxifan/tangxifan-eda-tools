@@ -341,24 +341,6 @@ void fprint_spice_mux_model_basis_rram_subckt(FILE* fp, char* subckt_name,
 
   switch(spice_model.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
-    /* TODO: This structure is going to be abolished! 
-     * I will update this part of code to new 2T1R structure
-     */
-    /* Print the subckt */
-    fprintf(fp, ".subckt %s ", subckt_name);
-    fprintf(fp, "in0 in1 ");
-    fprintf(fp, "out ");
-    fprintf(fp, "sel sel_inv ");
-    fprintf(fp, "svdd sgnd ron=\'%g\' roff=\'%g\' wprog=\'%g*wn\'\n",
-            spice_model.ron, spice_model.roff, spice_model.prog_trans_size);
-    /* Print resistors */
-    fprintf(fp,"Xrram_0 in0 out sel sel_inv rram_behavior switch_thres=vsp ron=ron roff=roff\n");
-    fprintf(fp,"Xrram_1 in1 out sel_inv sel rram_behavior switch_thres=vsp ron=ron roff=roff\n");
-    /* Print programming transistor*/
-    fprintf(fp,"Xprog_0 in0 sgnd in1 sgnd %s L=\'nl\' W=\'wprog\'\n", 
-            nmos_subckt_name);
-    break;
-  case SPICE_MODEL_STRUCTURE_ONELEVEL:
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
     fprintf(fp, ".subckt %s ", subckt_name);
     for (i = 0; i < num_input_per_level; i++) {
@@ -368,35 +350,37 @@ void fprint_spice_mux_model_basis_rram_subckt(FILE* fp, char* subckt_name,
     for (i = 0; i < num_input_per_level; i++) {
       fprintf(fp, "sel%d sel_inv%d ", i, i);
     }
-    fprintf(fp, "svdd sgnd ron=\'%g\' roff=\'%g\' \n",
-            spice_model.ron, spice_model.roff);
+    fprintf(fp, "svdd sgnd ron=\'%g\' roff=\'%g\' wprog_set_nmos=\'%g*io_wn\' wprog_reset_nmos=\'%g*io_wn\' wprog_set_pmos=\'%g*io_wp\' wprog_reset_pmos=\'%g*io_wp\' \n",
+            spice_model.ron, spice_model.roff, 
+            spice_model.wprog_set_nmos, spice_model.wprog_reset_nmos,
+            spice_model.wprog_set_pmos, spice_model.wprog_reset_pmos);
     /* Print the new 2T1R structure */ 
     for (i = 0; i < num_input_per_level; i++) {
       /* RRAMs */
       fprintf(fp, "Xrram_%d in%d out sel%d sel_inv%d rram_behavior switch_thres=vsp ron=ron roff=roff\n",
               i, i, i, i);
       /* Programming transistor pairs */
-      fprintf(fp, "Xnmos_prog_pair%d in%d sgnd sgnd sgnd %s W=\'%g*wn\' \n",
-              i, i, nmos_subckt_name, spice_model.pass_gate_logic->nmos_size);
-      fprintf(fp, "Xpmos_prog_pair%d in%d svdd sgnd svdd %s W=\'%g*wp\' \n",
-              i, i, pmos_subckt_name, spice_model.pass_gate_logic->pmos_size);
+      fprintf(fp, "Xnmos_prog_pair%d in%d sgnd sgnd sgnd %s W=\'%g*io_wn\' \n",
+              i, i, io_nmos_subckt_name, spice_model.wprog_reset_nmos);
+      fprintf(fp, "Xpmos_prog_pair%d in%d svdd sgnd svdd %s W=\'%g*io_wp\' \n",
+              i, i, io_pmos_subckt_name, spice_model.wprog_set_pmos);
     }
     /* Programming transistor pairs shared at the output */
-    /*
-    fprintf(fp, "Xnmos_prog_pair_out out sgnd sgnd sgnd %s W=\'%g*wn\' \n",
-            nmos_subckt_name, spice_model.pass_gate_logic->nmos_size);
-    fprintf(fp, "Xpmos_prog_pair_out out svdd sgnd svdd %s W=\'%g*wp\' \n",
-            pmos_subckt_name, spice_model.pass_gate_logic->pmos_size);
-    */
+    fprintf(fp, "Xnmos_prog_pair_out out sgnd sgnd sgnd %s W=\'%g*io_wn\' \n",
+            io_nmos_subckt_name, spice_model.wprog_set_nmos);
+    fprintf(fp, "Xpmos_prog_pair_out out svdd sgnd svdd %s W=\'%g*io_wp\' \n",
+            io_pmos_subckt_name, spice_model.wprog_reset_pmos);
+    fprintf(fp,".eom\n");
+    fprintf(fp,"\n");
+    break;
+  case SPICE_MODEL_STRUCTURE_ONELEVEL:
+    /* No need for one-level multiplexer*/
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
                __FILE__, __LINE__, spice_model.name);
     exit(1);
   }
-
-  fprintf(fp,".eom\n");
-  fprintf(fp,"\n");
 
   return;
 }
@@ -632,6 +616,9 @@ void fprint_spice_cmos_mux_onelevel_structure(FILE* fp, t_spice_model spice_mode
   return;
 }
 
+/** This is an old tree-like RRAM MUX, which is not manufacturable 
+ *  TODO: Update it
+ */
 void fprint_spice_rram_mux_tree_structure(FILE* fp, char* mux_basis_subckt_name,
                                           t_spice_model spice_model,
                                           t_spice_mux_arch spice_mux_arch,
@@ -695,6 +682,10 @@ void fprint_spice_rram_mux_tree_structure(FILE* fp, char* mux_basis_subckt_name,
   return;
 }
 
+/** This is supposed to be a multi-level 4T1R RRAM MUX  
+ *  TODO: I have not finished it !!!!
+ *  TODO: Determine the size of inverters between stages!!!
+ */
 void fprint_spice_rram_mux_multilevel_structure(FILE* fp, char* mux_basis_subckt_name,
                                                 t_spice_model spice_model,
                                                 t_spice_mux_arch spice_mux_arch,
@@ -713,6 +704,12 @@ void fprint_spice_rram_mux_multilevel_structure(FILE* fp, char* mux_basis_subckt
 
   mux_basis_cnt = 0;
   assert((2 == spice_mux_arch.num_input_basis)||(2 < spice_mux_arch.num_input_basis));
+
+  assert(0. < spice_model.wprog_set_pmos);
+  assert(0. < spice_model.wprog_reset_pmos);
+  assert(0. < spice_model.wprog_set_nmos);
+  assert(0. < spice_model.wprog_reset_nmos);
+
   for (i = 0; i < spice_mux_arch.num_level; i++) {
     level = spice_mux_arch.num_level - i;
     nextlevel = spice_mux_arch.num_level - i - 1; 
@@ -730,7 +727,7 @@ void fprint_spice_rram_mux_multilevel_structure(FILE* fp, char* mux_basis_subckt
         /* Print the special basis */
         for (k = 0; k < cur_num_input_basis; k++) {
           /* Print a RRAM */
-          fprintf(fp,"Xspeical_basis_rram%d mux2_l%d_in%d mux2_l%d_in%d ", 
+          fprintf(fp,"Xspeical_basis_rram%d mux2_l%d_in%d mux2_l%d_in%d_b ", 
                   k, level, j+k, nextlevel, out_idx);
           fprintf(fp, "%s%d %s_inv%d ", sram_port[0]->prefix, sram_idx+k, sram_port[0]->prefix, sram_idx+k); /* sram sram_inv */ 
           fprintf(fp, "rram_behavior switch_thres=vsp ron=ron roff=roff\n");
@@ -738,14 +735,27 @@ void fprint_spice_rram_mux_multilevel_structure(FILE* fp, char* mux_basis_subckt
           /* PMOS */
           fprintf(fp, "Xspecial_basis_pmos_prog_pair%d ", k); /* given_name */
           fprintf(fp, "mux2_l%d_in%d ", level, j+k); /* input0  */
-          fprintf(fp, "svdd sgnd svdd %s W=\'%g*wp\' \n", 
-                  pmos_subckt_name, spice_model.pass_gate_logic->pmos_size);
+          fprintf(fp, "svdd sgnd svdd %s W=\'%g*io_wp\' \n", 
+                  io_pmos_subckt_name, spice_model.wprog_set_pmos);
           /* NMOS */
           fprintf(fp, "Xspecial_basis_nmos_prog_pair%d ", k); /* given_name */
           fprintf(fp, "mux2_l%d_in%d ", level, j+k); /* input0  */
-          fprintf(fp, "sgnd sgnd sgnd %s W=\'%g*wn\' \n", 
-                  nmos_subckt_name, spice_model.pass_gate_logic->nmos_size);
+          fprintf(fp, "sgnd sgnd sgnd %s W=\'%g*io_wn\' \n", 
+                  io_nmos_subckt_name, spice_model.wprog_reset_nmos);
         }
+        /* A pair of programming transistor at the output */
+        /* PMOS */
+        fprintf(fp, "Xspecial_basis_pmos_prog_pair%d ", k); /* given_name */
+        fprintf(fp, "mux2_l%d_in%d_b ", nextlevel, out_idx); /* output  */
+        fprintf(fp, "svdd sgnd svdd %s W=\'%g*io_wp\' \n", 
+                io_pmos_subckt_name, spice_model.wprog_reset_pmos);
+         /* NMOS */
+        fprintf(fp, "Xspecial_basis_nmos_prog_pair%d ", k); /* given_name */
+        fprintf(fp, "mux2_l%d_in%d_b ", nextlevel, out_idx); /* output  */
+        fprintf(fp, "sgnd sgnd sgnd %s W=\'%g*io_wn\' \n", 
+                io_nmos_subckt_name, spice_model.wprog_set_nmos);
+        /* Hang a inverter */
+
         special_basis_cnt++;
         continue;
       }
@@ -778,6 +788,9 @@ void fprint_spice_rram_mux_multilevel_structure(FILE* fp, char* mux_basis_subckt
   return;
 }
 
+/** Generate the structure of 4T1R-based RRAM MUX structure
+ * 4T1R-based RRAM MUX is optimal in area, delay and power only when it is built with one-level structure
+ */
 void fprint_spice_rram_mux_onelevel_structure(FILE* fp, t_spice_model spice_model,
                                               t_spice_mux_arch spice_mux_arch,
                                               int num_sram_port, t_spice_model_port** sram_port) {
@@ -790,7 +803,11 @@ void fprint_spice_rram_mux_onelevel_structure(FILE* fp, t_spice_model spice_mode
   } 
 
   assert(SPICE_MODEL_DESIGN_RRAM == spice_model.design_tech);
-  assert(SPICE_MODEL_PASS_GATE_TRANSMISSION == spice_model.pass_gate_logic->type);
+  /* assert(SPICE_MODEL_PASS_GATE_TRANSMISSION == spice_model.pass_gate_logic->type); */
+  assert(0. < spice_model.wprog_set_pmos);
+  assert(0. < spice_model.wprog_reset_pmos);
+  assert(0. < spice_model.wprog_set_nmos);
+  assert(0. < spice_model.wprog_reset_nmos);
 
   for (i = 0; i < spice_mux_arch.num_input; i++) {
     /* Print a RRAM */
@@ -802,26 +819,26 @@ void fprint_spice_rram_mux_onelevel_structure(FILE* fp, t_spice_model spice_mode
     /* PMOS */
     fprintf(fp, "Xpmos_prog_pair%d ", i); /* given_name */
     fprintf(fp, "mux2_l%d_in%d ", 1, i); /* input0  */
-    fprintf(fp, "svdd sgnd svdd %s W=\'%g*wp\' \n", 
-            pmos_subckt_name, spice_model.pass_gate_logic->pmos_size);
+    fprintf(fp, "svdd sgnd svdd %s W=\'%g*io_wp\' \n", 
+            io_pmos_subckt_name, spice_model.wprog_set_pmos);
     /* NMOS */
     fprintf(fp, "Xnmos_prog_pair%d ", i); /* given_name */
     fprintf(fp, "mux2_l%d_in%d ", 1, i); /* input0  */
-    fprintf(fp, "sgnd sgnd sgnd %s W=\'%g*wn\' \n", 
-            nmos_subckt_name, spice_model.pass_gate_logic->nmos_size);
+    fprintf(fp, "sgnd sgnd sgnd %s W=\'%g*io_wn\' \n", 
+            io_nmos_subckt_name, spice_model.wprog_reset_nmos);
   }
 
   /* Add the shared programmming pair at the output */
   /* PMOS */
   fprintf(fp, "Xpmos_prog_pair_out "); /* given_name */
   fprintf(fp, "mux2_l%d_in%d ", 0, 0); /* input0  */
-  fprintf(fp, "svdd sgnd svdd %s W=\'%g*wp\' \n", 
-          pmos_subckt_name, spice_model.pass_gate_logic->pmos_size);
+  fprintf(fp, "svdd sgnd svdd %s W=\'%g*io_wp\' \n", 
+          io_pmos_subckt_name, spice_model.wprog_reset_pmos);
   /* NMOS */
   fprintf(fp, "Xnmos_prog_pair_out "); /* given_name */
   fprintf(fp, "mux2_l%d_in%d ", 0, 0); /* input0  */
-  fprintf(fp, "sgnd sgnd sgnd %s W=\'%g*wn\' \n", 
-          nmos_subckt_name, spice_model.pass_gate_logic->nmos_size);
+  fprintf(fp, "sgnd sgnd sgnd %s W=\'%g*io_wn\' \n", 
+          io_nmos_subckt_name, spice_model.wprog_set_nmos);
 
   return;
 }
@@ -1076,9 +1093,15 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
 
   /* Print the definition of subckt*/
   if (SPICE_MODEL_LUT == spice_model.type) {
+    /* RRAM LUT is not supported now... */
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])RRAM LUT is not supported!\n",
+               __FILE__, __LINE__);
+    exit(1);
     /* Special for LUT MUX*/
+    /*
     fprintf(fp, "***** RRAM MUX info: spice_model_name= %s_MUX, size=%d *****\n", spice_model.name, mux_size);
     fprintf(fp, ".subckt %s_mux_size%d ", spice_model.name, mux_size);
+    */
   } else {
     fprintf(fp, "***** RRAM MUX info: spice_model_name=%s, size=%d, structure: %s *****\n", 
             spice_model.name, mux_size, gen_str_spice_model_structure(spice_model.structure));
@@ -1120,20 +1143,33 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
     exit(1);
   }
   /* Print local vdd and gnd*/
-  fprintf(fp, "svdd sgnd ron=\'%g\' roff=\'%g\' wprog=\'%g*wn\'", 
-          spice_model.ron, spice_model.roff, spice_model.prog_trans_size);
+  fprintf(fp, "svdd sgnd ron=\'%g\' roff=\'%g\' wprog_set_nmos=\'%g*io_wn\' wprog_set_pmos=\'%g*io_wp\' wprog_reset_nmos=\'%g*io_wn\' wprog_reset_pmos=\'%g*io_wp\'", 
+          spice_model.ron, spice_model.roff, 
+          spice_model.wprog_set_nmos, spice_model.wprog_set_pmos, 
+          spice_model.wprog_reset_nmos, spice_model.wprog_reset_pmos);
   fprintf(fp, "\n");
   
   /* Print internal architecture*/ 
+  /* RRAM MUX is optimal in terms of area, delay and power for one-level structure.
+   * Hence, we do not support the multi-level or tree-like RRAM MUX.
+   */
   switch (spice_model.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
+    /*
     fprint_spice_rram_mux_tree_structure(fp, mux_basis_subckt_name, spice_model, spice_mux_arch, num_sram_port, sram_port);
+    break;
+    */
+  case SPICE_MODEL_STRUCTURE_MULTILEVEL:
+    /*
+    fprint_spice_rram_mux_multilevel_structure(fp, mux_basis_subckt_name, spice_model, spice_mux_arch, num_sram_port, sram_port);
+    break;
+    */
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d]) Multi-level or tree-like RRAM MUX is not supported.\n",
+               __FILE__, __LINE__);
+    exit(1);
     break;
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
     fprint_spice_rram_mux_onelevel_structure(fp, spice_model, spice_mux_arch, num_sram_port, sram_port);
-    break;
-  case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-    fprint_spice_rram_mux_multilevel_structure(fp, mux_basis_subckt_name, spice_model, spice_mux_arch, num_sram_port, sram_port);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
