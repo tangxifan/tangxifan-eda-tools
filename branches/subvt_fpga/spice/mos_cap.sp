@@ -18,7 +18,7 @@ MOS capacitance
 .param pl = 40e-9
 .param wn = '140e-9'
 .param wp = 'beta*140e-9'
-.param clk_freq = 1e8
+*.param clk_freq = 1e8
 
 * Parameters for Measuring Slew
 .param slew_upper_threshold_pct_rise=0.9
@@ -56,19 +56,23 @@ X6_n gnd i6 t6 gnd nmos L=nl W=wn
 * Test case 7 : Inverter, rising edge
 X7_p vdd i7 t7 vdd pmos L=pl W=wp
 X7_n gnd i7 t7 gnd nmos L=nl W=wn
-C7   t7 gnd 1p
+*C7   t7 gnd 1p
 * Test case 8 : Inverter, falling edge
 X8_p vdd i8 t8 vdd pmos L=pl W=wp
 X8_n gnd i8 t8 gnd nmos L=nl W=wn
-C8   t8 gnd 1p
+*C8   t8 gnd 1p
 * Test case 9 : NMOS OFF CAP, VDD,GND
 X9 i9 gnd t9 gnd nmos L=nl W=wn
 * Test case 10 : NMOS OFF CAP, VDD,VDD
 X10 i10 gnd t10 gnd nmos L=nl W=wn
-* Test case 11 : PMOS OFF CAP, GND,GND
-X11 i11 gnd t11 gnd pmos L=nl W=wn
-* Test case 12 : PMOS OFF CAP, GND
-*X12 i12 vdd t12 vdd pmos L=pl W=wp
+* Test case 11 : NMOS OFF CAP, GND,GND
+X11 i11 gnd t11 gnd nmos L=nl W=wn
+* Test case 12 : PMOS OFF CAP, VDD,GND
+X12 i12 vdd t12 gnd pmos L=pl W=wp
+* Test case 13 : PMOS OFF CAP, VDD, VDD
+X13 i13 vdd t13 vdd pmos L=pl W=wp
+* Test case 14 : PMOS OFF CAP, GND, GND
+X14 i14 vdd t14 vdd pmos L=pl W=wp
 
 * Voltage & Current Source
 Vsupply vdd gnd vsp
@@ -86,6 +90,12 @@ Vi10 i10 gnd vsp
 Vt10 t10 gnd vsp
 Vi11 i11 gnd 0
 Vt11 t11 gnd 0
+Vi12 i12 gnd vsp
+Vt12 t12 gnd 0
+Vi13 i13 gnd vsp
+Vt13 t13 gnd vsp
+Vi14 i14 gnd 0
+Vt14 t14 gnd 0
 * Transistion
 .tran 1e-15 2.21e-08
 .measure tran leak_power find p(Vsupply) at=1e-08
