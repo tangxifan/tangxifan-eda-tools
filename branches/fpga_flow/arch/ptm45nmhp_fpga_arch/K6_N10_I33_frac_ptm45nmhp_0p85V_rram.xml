@@ -4,8 +4,8 @@
   <layout auto="1.0"/>
   <spice_settings>
     <parameters>
-      <options sim_temp="25" post="off" captab="off" fast="off"/>
-      <measure sim_num_clock_cycle="2" accuracy="1e-13" accuracy_type="abs">
+      <options sim_temp="25" post="off" captab="off" fast="on"/>
+      <measure sim_num_clock_cycle="auto" accuracy="1e-13" accuracy_type="abs">
         <slew>
           <rise upper_thres_pct="0.95" lower_thres_pct="0.05"/>
           <fall upper_thres_pct="0.05" lower_thres_pct="0.95"/>
@@ -30,6 +30,8 @@
     <transistors pn_ratio="1.4" model_ref="M">
       <nmos model_name="nmos" chan_length="45e-9" min_width="160e-9"/>
       <pmos model_name="pmos" chan_length="45e-9" min_width="160e-9"/>
+      <io_nmos model_name="nmos" chan_length="270e-9" min_width="320e-9"/>
+      <io_pmos model_name="pmos" chan_length="270e-9" min_width="320e-9"/>
     </transistors> 
     <module_spice_models>
       <spice_model type="chan_wire" name="chan_segment" prefix="track_seg" is_default="1">
@@ -50,7 +52,7 @@
       </spice_model>
       <spice_model type="mux" name="ble_mux_buffered" prefix="ble_mux_buf" is_default="1">
         <!--design_technology type="cmos"/-->
-        <design_technology type="rram" ron="1.97e3" roff="20e6" prog_transistor_size="2.4"/>
+        <design_technology type="rram" ron="1.97e3" roff="20e6" wprog_set_nmos="3.5" wprog_set_pmos="11.5" wprog_reset_nmos="5" wprog_reset_pmos="15" structure="one-level"/>
         <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="1" tapered="on" tap_buf_level="3" f_per_stage="4"/>
         <!--mux2to1 subckt_name="mux2to1"/-->
@@ -61,7 +63,7 @@
       </spice_model>
       <spice_model type="mux" name="localrouting_mux_buffered" prefix="localrouting_mux_buf">
         <!--design_technology type="cmos"/-->
-        <design_technology type="rram" ron="1.97e3" roff="20e6" prog_transistor_size="2.4"/>
+        <design_technology type="rram" ron="1.97e3" roff="20e6" wprog_set_nmos="3.5" wprog_set_pmos="11.5" wprog_reset_nmos="5" wprog_reset_pmos="15" structure="one-level"/>
         <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="1" tapered="off"/>
         <!--mux2to1 subckt_name="mux2to1"/-->
@@ -72,7 +74,7 @@
       </spice_model>
       <spice_model type="mux" name="cb_mux_buffered" prefix="cbmux_buf">
         <!--design_technology type="cmos"/-->
-        <design_technology type="rram" ron="1.97e3" roff="20e6" prog_transistor_size="2.4"/>
+        <design_technology type="rram" ron="1.97e3" roff="20e6" wprog_set_nmos="3.5" wprog_set_pmos="11.5" wprog_reset_nmos="5" wprog_reset_pmos="15" structure="one-level"/>
         <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="1" tapered="on" tap_buf_level="3" f_per_stage="4"/>
         <!--mux2to1 subckt_name="mux2to1"/-->
@@ -83,7 +85,7 @@
       </spice_model>
       <spice_model type="mux" name="sb_mux_buffered" prefix="sbmux_buf">
         <!--design_technology type="cmos"/-->
-        <design_technology type="rram" ron="1.97e3" roff="20e6" prog_transistor_size="2.4"/>
+        <design_technology type="rram" ron="1.97e3" roff="20e6" wprog_set_nmos="3.5" wprog_set_pmos="11.5" wprog_reset_nmos="5" wprog_reset_pmos="15" structure="one-level"/>
         <input_buffer exist="on" type="inverter" size="1" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="1" tapered="on" tap_buf_level="4" f_per_stage="4"/>
         <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1.4"/>
@@ -163,11 +165,11 @@
     <switch_block type="wilton" fs="3"/>
   </device>
   <cblocks>
-    <switch type="mux" name="cb_mux" R="0" Cin="532e-18" Cout="0" Tdel="7.9e-11" mux_trans_size="2.4" buf_size="50.4" spice_model_name="cb_mux_buffered">
+    <switch type="mux" name="cb_mux" R="0" Cin="532e-18" Cout="0" Tdel="7.9e-11" mux_trans_size="2.4" buf_size="50.4" spice_model_name="cb_mux_buffered" structure="one-level">
     </switch>
   </cblocks>
   <switchlist>
-    <switch type="mux" name="0" R="81.5" Cin="532e-18" Cout="3.69e-14" Tdel="7.85e-11" mux_trans_size="2.4" buf_size="204" spice_model_name="sb_mux_buffered"/>
+    <switch type="mux" name="0" R="81.5" Cin="532e-18" Cout="3.69e-14" Tdel="7.85e-11" mux_trans_size="2.4" buf_size="204" spice_model_name="sb_mux_buffered" structure="one-level"/>
   </switchlist>
   <segmentlist>
     <segment freq="1.0" length="4" type="unidir" Rmetal="103.84" Cmetal="13.80e-15" spice_model_name="chan_segment">

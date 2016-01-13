@@ -132,8 +132,10 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
 
 	if (base_cost_type == DEMAND_ONLY || base_cost_type == DELAY_NORMALIZED) {
 		rr_indexed_data[SOURCE_COST_INDEX].base_cost = delay_normalization_fac;
+		/* rr_indexed_data[SOURCE_COST_INDEX].base_cost = 0; Xifan TANG: TODO: Update routing cost to 1*/
 		rr_indexed_data[SINK_COST_INDEX].base_cost = 0.;
 		rr_indexed_data[OPIN_COST_INDEX].base_cost = delay_normalization_fac;
+	    /*rr_indexed_data[OPIN_COST_INDEX].base_cost = 0.95;  Xifan TANG: TODO: Update routing cost to 1*/
 
 #ifndef SPEC
 		rr_indexed_data[IPIN_COST_INDEX].base_cost = 0.95

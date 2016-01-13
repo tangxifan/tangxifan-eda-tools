@@ -62,6 +62,7 @@ my @sctgy;
                 "process_tech",
                 "process_type",
                 "verilogA_hspice_sim",
+                "trans_model_ref",
                 "time_unit",
                 "voltage_unit",
                 "leakage_power_unit",
@@ -1318,6 +1319,11 @@ sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
   &tab_print($spfh,".param inv_size_out=$inv_size_out\n",0);
   
   if ($rram_enhance) {
+    # Print info
+    print "RRAM info:\n";
+    print "  vprog=$conf_ptr->{rram_settings}->{Vdd_break}->{val}\n";
+    print "  wprog=$wprog\n";
+
     &tab_print($spfh,".param N=$mux_size\n",0);
     #&tab_print($spfh,".param ron=$ron\n",0);
     #&tab_print($spfh,".param roff=$roff\n",0);
@@ -1327,7 +1333,7 @@ sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
     &tab_print($spfh,".param tprog=$conf_ptr->{rram_settings}->{Tprog}->{val}\n",0);
     &tab_print($spfh,".param vprog=$conf_ptr->{rram_settings}->{Vdd_break}->{val}\n",0);
     &tab_print($spfh,"* Global port for programming vdd \n",0);
-    &tab_print($spfh,".global prog_vdd prog_gnd\n",0);
+    &tab_print($spfh,".global prog_vdd_bulk prog_vdd prog_gnd\n",0);
     &tab_print($spfh,"* Include RRAM verilogA model \n",0);
     # Include RRAM verilogA model
     if ($conf_ptr->{rram_settings}->{rram_verilogA_model_path}->{val} =~ m/\.va$/) {
@@ -1406,15 +1412,16 @@ sub gen_rram_mux_sp_stimulates($) {
   # Add Stimulates: Standard VDD
   &tab_print($spfh,"* Standard Vdd\n",0);
   &tab_print($spfh,"* PUSLE(V1 V2 TDELAY TRISE TFALL PW PERIOD)\n",0);
-  &tab_print($spfh,"Vsupply $conf_ptr->{general_settings}->{VDD_port_name}->{val} 0 pulse(vsp vsp \'(2*N+1)*tprog\' \'input_slew\' \'input_slew\' \'(2*N+1)*tprog\' \'(4*N+2)*tprog\')\n",0);
-  &tab_print($spfh, "Vload_supply $conf_ptr->{general_settings}->{LOAD_VDD_port_name}->{val} 0 pulse(vsp vsp \'(2*N+1)*tprog\' \'input_slew\' \'input_slew\' \'(2*N+1)*tprog\' \'(4*N+2)*tprog\')\n",0);
+  &tab_print($spfh,"Vsupply $conf_ptr->{general_settings}->{VDD_port_name}->{val} 0 pulse(0 vsp \'(2*N+1)*tprog\' \'input_slew\' \'input_slew\' \'(2*N+1)*tprog\' \'(4*N+2)*tprog\')\n",0);
+  &tab_print($spfh, "Vload_supply $conf_ptr->{general_settings}->{LOAD_VDD_port_name}->{val} 0 pulse(0 vsp \'(2*N+1)*tprog\' \'input_slew\' \'input_slew\' \'(2*N+1)*tprog\' \'(4*N+2)*tprog\')\n",0);
 
   if ("0" ne $conf_ptr->{general_settings}->{GND_port_name}->{val}) {
     &tab_print($spfh,"Vgnd $conf_ptr->{general_settings}->{GND_port_name}->{val} 0 0\n",0);
   }
   # Add Stimulates: Programming Vdd
   &tab_print($spfh,"* Programming Vdd\n",0);
-  &tab_print($spfh,"Vprog_vdd prog_vdd 0 pulse(\'vprog/2\' \'vsp\' \'(2*N+1)*tprog\' input_slew input_slew \'(2*N+1)*tprog\' \'(4*N+2)*tprog\')\n",0);
+  &tab_print($spfh,"Vprog_vdd prog_vdd 0 pulse(\'vprog/2\' \'0\' \'(2*N+1)*tprog\' input_slew input_slew \'(2*N+1)*tprog\' \'(4*N+2)*tprog\')\n",0);
+  &tab_print($spfh,"Vprog_vdd_bulk prog_vdd_bulk 0 pulse(\'vprog/2\' \'vsp\' \'(2*N+1)*tprog\' input_slew input_slew \'(2*N+1)*tprog\' \'(4*N+2)*tprog\')\n",0);
   &tab_print($spfh,"Vprog_gnd prog_gnd 0 pulse(\'-vprog/2\' 0 \'(2*N+1)*tprog\' input_slew input_slew \'(2*N+1)*tprog\' \'(4*N+2)*tprog\')\n",0);
  
   # Add Stimulates: Controlling signals for programming RRAM.
@@ -1632,8 +1639,8 @@ sub gen_1level_mux_subckt($ $ $ $ $ $) {
   if ("on" eq $rram_enhance) {
     for (my $i = 0; $i < $mux_size; $i++) {
       #  Program Pair 
-      &tab_print($spfh, "Xprog_pmos$i mux1level_in$i bl[$i]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
-      &tab_print($spfh, "Xprog_nmos$i mux1level_in$i wl[$i] prog_gnd prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
+      &tab_print($spfh, "Xprog_pmos$i mux1level_in$i bl[$i]_b prog_vdd_inter prog_vdd_bulk_inter $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+      &tab_print($spfh, "Xprog_nmos$i mux1level_in$i wl[$i] prog_gnd_inter prog_gnd_inter $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
       # Initilization: RRAM0 (in0) is off, rest of RRAMs are on. Programming will switch RRAM0 to on and the rest to off.
       if (0 == $i) {
         &tab_print($spfh, "Xrram$i mux1level_in$i mux1level_out $conf_ptr->{rram_settings}->{rram_subckt_name}->{val} $offgap_kw=gap_off\n");
@@ -1644,8 +1651,11 @@ sub gen_1level_mux_subckt($ $ $ $ $ $) {
       }
     }
     # Add output program pair 
-    &tab_print($spfh, "Xprog_pmos$mux_size mux1level_out bl[$mux_size]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
-    &tab_print($spfh, "Xprog_nmos$mux_size mux1level_out wl[$mux_size] prog_gnd prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
+    &tab_print($spfh, "Xprog_pmos$mux_size mux1level_out bl[$mux_size]_b prog_vdd_inter prog_vdd_bulk_inter $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+    &tab_print($spfh, "Xprog_nmos$mux_size mux1level_out wl[$mux_size] prog_gnd_inter prog_gnd_inter $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
+    &tab_print($spfh, "Rfloat_prog_vdd_inter prog_vdd_inter prog_vdd \'500e6-V(prog_vdd, prog_gnd)/vprog*500e6\'\n", 0); 
+    &tab_print($spfh, "Rfloat_prog_vdd_bulk_inter prog_vdd_bulk_inter prog_vdd_bulk \'500e6-V(prog_vdd, prog_gnd)/vprog*500e6\'\n", 0); 
+    &tab_print($spfh, "Rfloat_prog_gnd_inter prog_gnd_inter prog_gnd \'500e6-V(prog_vdd, prog_gnd)/vprog*500e6\'\n", 0); 
   } else {
     for (my $i = 0; $i < $mux_size; $i++) {
       # Call defined 1level Subckt 
@@ -1657,24 +1667,42 @@ sub gen_1level_mux_subckt($ $ $ $ $ $) {
   for (my $i=0; $i < $mux_size; $i++) {
     if ("buffered" eq $buffered) {
       &tab_print($spfh,"Xinv$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux1level_in$i ",0); 
-      &tab_print($spfh,"svdd sgnd $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'inv_size_in\'\n",0);
+      &tab_print($spfh,"svdd_inv_in sgnd_inv_in $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'inv_size_in\'\n",0);
       #&tab_print($spfh,"$conf_ptr->{general_settings}->{VDD_port_name}->{val} $conf_ptr->{general_settings}->{GND_port_name}->{val} $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'inv_size_in\'\n",0);
     } else {
       &tab_print($spfh,"V$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i muxlevel_in$i 0\n",0); 
     }
   }
 
+  if (("buffered" eq $buffered)&&("on" eq $rram_enhance)) {
+    &tab_print($spfh, "Rfloat_svdd_inv_in svdd_inv_in svdd \'V(prog_vdd, prog_gnd)/vprog*500e6\'\n", 0); 
+    &tab_print($spfh, "Rfloat_sgnd_inv_in sgnd_inv_in sgnd \'V(prog_vdd, prog_gnd)/vprog*500e6\'\n", 0); 
+  } else {
+    &tab_print($spfh, "Rfloat_svdd_inv_in svdd_inv_in svdd 0\n",0);
+    &tab_print($spfh, "Rfloat_sgnd_inv_in sgnd_inv_in sgnd 0\n",0);
+  }
+
   if ("on" eq $opt_ptr->{auto_out_tapered_buffer}) {
     my ($tapbuf_size) = (4**$opt_ptr->{auto_out_tapered_buffer_val});
     # Call the subckt 
-    &tab_print($spfh, "Xtapbuf mux1level_out $conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd sgnd tapbuf_size$tapbuf_size\n", 0);
+    &tab_print($spfh, "Xtapbuf mux1level_out $conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd_inv_out sgnd_inv_out tapbuf_size$tapbuf_size\n", 0);
   } elsif ("buffered" eq $buffered) {
     &tab_print($spfh,"Xinv_out mux1level_out ",0); 
-    &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd sgnd $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'inv_size_out\'\n",0);
+    &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd_inv_out sgnd_inv_out $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'inv_size_out\'\n",0);
   } else {
     &tab_print($spfh,"Vout mux1level_out ",0); 
     &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} 0\n",0);
   } 
+
+  if (("on" eq $opt_ptr->{auto_out_tapered_buffer})||("buffered" eq $buffered)) {
+    if ("on" eq $rram_enhance) {
+      &tab_print($spfh, "Rfloat_svdd_inv_out svdd_inv_out svdd \'V(prog_vdd, prog_gnd)/vprog*500e6\'\n", 0); 
+      &tab_print($spfh, "Rfloat_sgnd_inv_out sgnd_inv_out sgnd \'V(prog_vdd, prog_gnd)/vprog*500e6\'\n", 0); 
+    } else {
+      &tab_print($spfh, "Rfloat_svdd_inv_out svdd_inv_out svdd 0\n",0);
+      &tab_print($spfh, "Rfloat_sgnd_inv_out sgnd_inv_out sgnd 0\n",0);
+    }
+  }
 
   # Print end of subckt
   &tab_print($spfh,".eom $subckt_name\n",0);
@@ -3061,6 +3089,8 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
     $on_gap = $val;
     ($kw, $val) = split /:/,$off_gap;
     $off_gap = $val;
+   
+    print "Current vsp = $ivsp...\n";
 
     if ("on" eq $rram_enhance) {
       $rram_enhance_on = 1;

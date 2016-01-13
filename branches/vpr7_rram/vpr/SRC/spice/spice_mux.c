@@ -360,16 +360,16 @@ void fprint_spice_mux_model_basis_rram_subckt(FILE* fp, char* subckt_name,
       fprintf(fp, "Xrram_%d in%d out sel%d sel_inv%d rram_behavior switch_thres=vsp ron=ron roff=roff\n",
               i, i, i, i);
       /* Programming transistor pairs */
-      fprintf(fp, "Xnmos_prog_pair%d in%d sgnd sgnd sgnd %s W=\'%g*io_wn\' \n",
-              i, i, io_nmos_subckt_name, spice_model.wprog_reset_nmos);
-      fprintf(fp, "Xpmos_prog_pair%d in%d svdd sgnd svdd %s W=\'%g*io_wp\' \n",
-              i, i, io_pmos_subckt_name, spice_model.wprog_set_pmos);
+      fprintf(fp, "Xnmos_prog_pair%d in%d sgnd sgnd sgnd %s W=\'wprog_reset_nmos\' \n",
+              i, i, io_nmos_subckt_name);
+      fprintf(fp, "Xpmos_prog_pair%d in%d svdd sgnd svdd %s W=\'wprog_set_pmos\' \n",
+              i, i, io_pmos_subckt_name);
     }
     /* Programming transistor pairs shared at the output */
-    fprintf(fp, "Xnmos_prog_pair_out out sgnd sgnd sgnd %s W=\'%g*io_wn\' \n",
-            io_nmos_subckt_name, spice_model.wprog_set_nmos);
-    fprintf(fp, "Xpmos_prog_pair_out out svdd sgnd svdd %s W=\'%g*io_wp\' \n",
-            io_pmos_subckt_name, spice_model.wprog_reset_pmos);
+    fprintf(fp, "Xnmos_prog_pair_out out sgnd sgnd sgnd %s W=\'wprog_set_nmos\' \n",
+            io_nmos_subckt_name);
+    fprintf(fp, "Xpmos_prog_pair_out out svdd sgnd svdd %s W=\'wprog_reset_pmos\' \n",
+            io_pmos_subckt_name);
     fprintf(fp,".eom\n");
     fprintf(fp,"\n");
     break;
@@ -735,25 +735,25 @@ void fprint_spice_rram_mux_multilevel_structure(FILE* fp, char* mux_basis_subckt
           /* PMOS */
           fprintf(fp, "Xspecial_basis_pmos_prog_pair%d ", k); /* given_name */
           fprintf(fp, "mux2_l%d_in%d ", level, j+k); /* input0  */
-          fprintf(fp, "svdd sgnd svdd %s W=\'%g*io_wp\' \n", 
-                  io_pmos_subckt_name, spice_model.wprog_set_pmos);
+          fprintf(fp, "svdd sgnd svdd %s W=\'wprog_set_pmos\' \n", 
+                  io_pmos_subckt_name);
           /* NMOS */
           fprintf(fp, "Xspecial_basis_nmos_prog_pair%d ", k); /* given_name */
           fprintf(fp, "mux2_l%d_in%d ", level, j+k); /* input0  */
-          fprintf(fp, "sgnd sgnd sgnd %s W=\'%g*io_wn\' \n", 
-                  io_nmos_subckt_name, spice_model.wprog_reset_nmos);
+          fprintf(fp, "sgnd sgnd sgnd %s W=\'wprog_reset_nmos\' \n", 
+                  io_nmos_subckt_name);
         }
         /* A pair of programming transistor at the output */
         /* PMOS */
         fprintf(fp, "Xspecial_basis_pmos_prog_pair%d ", k); /* given_name */
         fprintf(fp, "mux2_l%d_in%d_b ", nextlevel, out_idx); /* output  */
-        fprintf(fp, "svdd sgnd svdd %s W=\'%g*io_wp\' \n", 
-                io_pmos_subckt_name, spice_model.wprog_reset_pmos);
+        fprintf(fp, "svdd sgnd svdd %s W=\'wprog_reset_pmos\' \n", 
+                io_pmos_subckt_name);
          /* NMOS */
         fprintf(fp, "Xspecial_basis_nmos_prog_pair%d ", k); /* given_name */
         fprintf(fp, "mux2_l%d_in%d_b ", nextlevel, out_idx); /* output  */
-        fprintf(fp, "sgnd sgnd sgnd %s W=\'%g*io_wn\' \n", 
-                io_nmos_subckt_name, spice_model.wprog_set_nmos);
+        fprintf(fp, "sgnd sgnd sgnd %s W=\'wprog_set_nmos\' \n", 
+                io_nmos_subckt_name);
         /* Hang a inverter */
 
         special_basis_cnt++;
@@ -775,10 +775,10 @@ void fprint_spice_rram_mux_multilevel_structure(FILE* fp, char* mux_basis_subckt
     } 
   }   
   /* programming pair at the output port */
-  fprintf(fp, "Xnmos_prog_pair_out mux2_l%d_in%d sgnd sgnd sgnd %s W=\'%g*wn\' \n",
-          nextlevel, out_idx, nmos_subckt_name, spice_model.pass_gate_logic->nmos_size);
-  fprintf(fp, "Xpmos_prog_pair_out mux2_l%d_in%d svdd sgnd svdd %s W=\'%g*wp\' \n",
-          nextlevel, out_idx, pmos_subckt_name, spice_model.pass_gate_logic->pmos_size);
+  fprintf(fp, "Xnmos_prog_pair_out mux2_l%d_in%d sgnd sgnd sgnd %s W=\'wprog_reset_pmos\' \n",
+          nextlevel, out_idx, nmos_subckt_name);
+  fprintf(fp, "Xpmos_prog_pair_out mux2_l%d_in%d svdd sgnd svdd %s W=\'wprog_set_nmos\' \n",
+          nextlevel, out_idx, pmos_subckt_name);
   /* Assert */
   assert(0 == nextlevel);
   assert(0 == out_idx);
@@ -819,26 +819,26 @@ void fprint_spice_rram_mux_onelevel_structure(FILE* fp, t_spice_model spice_mode
     /* PMOS */
     fprintf(fp, "Xpmos_prog_pair%d ", i); /* given_name */
     fprintf(fp, "mux2_l%d_in%d ", 1, i); /* input0  */
-    fprintf(fp, "svdd sgnd svdd %s W=\'%g*io_wp\' \n", 
-            io_pmos_subckt_name, spice_model.wprog_set_pmos);
+    fprintf(fp, "svdd sgnd svdd %s W=\'wprog_set_pmos\' \n", 
+            io_pmos_subckt_name);
     /* NMOS */
     fprintf(fp, "Xnmos_prog_pair%d ", i); /* given_name */
     fprintf(fp, "mux2_l%d_in%d ", 1, i); /* input0  */
-    fprintf(fp, "sgnd sgnd sgnd %s W=\'%g*io_wn\' \n", 
-            io_nmos_subckt_name, spice_model.wprog_reset_nmos);
+    fprintf(fp, "sgnd sgnd sgnd %s W=\'wprog_reset_nmos\' \n", 
+            io_nmos_subckt_name);
   }
 
   /* Add the shared programmming pair at the output */
   /* PMOS */
   fprintf(fp, "Xpmos_prog_pair_out "); /* given_name */
   fprintf(fp, "mux2_l%d_in%d ", 0, 0); /* input0  */
-  fprintf(fp, "svdd sgnd svdd %s W=\'%g*io_wp\' \n", 
-          io_pmos_subckt_name, spice_model.wprog_reset_pmos);
+  fprintf(fp, "svdd sgnd svdd %s W=\'wprog_reset_pmos\' \n", 
+          io_pmos_subckt_name);
   /* NMOS */
   fprintf(fp, "Xnmos_prog_pair_out "); /* given_name */
   fprintf(fp, "mux2_l%d_in%d ", 0, 0); /* input0  */
-  fprintf(fp, "sgnd sgnd sgnd %s W=\'%g*io_wn\' \n", 
-          io_nmos_subckt_name, spice_model.wprog_set_nmos);
+  fprintf(fp, "sgnd sgnd sgnd %s W=\'wprog_set_nmos\' \n", 
+          io_nmos_subckt_name);
 
   return;
 }
