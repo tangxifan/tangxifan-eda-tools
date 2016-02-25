@@ -1,6 +1,6 @@
 // Analytical VerilogA model for RRAM in NonVolatileFlipFlops, Memristor, veriloga
 
-`include "constants.vams"
+//`include "constants.vams"
 `include "disciplines.vams"
 
 module rram_analytical(te, be);
@@ -9,69 +9,118 @@ parameter integer initial_state = 0; // 0: HRS; 1: LRS;
 parameter real Vset_min = 1.2; // [V] Minimum voltage that RRAM set process will be invoked 
 parameter real Vreset_min = -1.2; // [V] Minimum voltage that RRAM reset process will be invoked 
 parameter real Iset_max = 500e-6; // [A] Maximum current for set process
-parameter real Ireset_max = 500e-6; // [A] Maximum current for set process
+parameter real Ireset_max = Iset_max * (Vreset_min/Vset_min); // [A] Maximum current for set process
 parameter real Rhrs = 20e6; // [Ohm] High resistance state
 // Gap of RRAM device, modelling the filament growth
-parameter real gap_ini = 0 from (0:1); // [Ohm] 
+parameter real gap_ini = 0 from [0:1]; // ratio between the current and maximum set current 
+parameter real set_pulse_width = 100e-9 from (0:inf); // [s] the transition time of RRAM to response to a SET change
+parameter real reset_pulse_width = 100e-9 from (0:inf); // [s] the transition time of RRAM to response to a RESET change
+// Minimum time step for this model
+parameter real time_step = 1e-9 from (1e-15, 1); // [s] Minimum time step for simulation
+
  
 inout te, be; // te: Top Electrode; be: Bottom Electrode;
 electrical te, be; //External Nodes
+//debugging node
+electrical R_out, gap_rate_out;
 
 // Local parameters
 real Vtb, Itb; // Present Voltage/Current across Top Electrode and Bottom Electrode
-real res;
 real state; // 0: Reset; 1: Set; 2: Reset Process; 3: Set Process;
-real gap, gap_min; 
+real res;
+real gap_set, gap_reset, gap_rate; 
+real gap_set_max = Vset_min * Iset_max * set_pulse_width;
+real gap_reset_max = Vreset_min * Ireset_max * reset_pulse_width; 
+real Iset_min = Vset_min/Rhrs, Ireset_min = Vreset_min/Rhrs;
+real Iset_eq, Ireset_eq;
+real c_time, p_time; // current_time_stamp and previous_time_stamp
 
 analog begin : rram_module
   // Present Vtb, Itb
   Vtb = V(te, be);
   Itb = I(te, be);
 
-  @(initial_step)
-  begin
+  $bound_step(time_step);
+  
+  @(initial_step) begin
     state=initial_state; // determine the initial_state
-    gap_min = Vset_min/Rhrs/Iset_max;
-    gap = gap_min + gap_ini*(1 - gap_min); // determine the gap
+    gap_rate = gap_ini;
+    gap_set = gap_rate * gap_set_max;
+    gap_reset = gap_rate * gap_reset_max;
     // Print Gap:
-    $stobe("CurrentGap=%g\n", gap);
+    //$strobe("initial:\n");
+    //$strobe("SetGap=%g\n", gap_set);
+    //$strobe("ResetGap=%g\n", gap_reset);
   end 
 
-  if ((Vreset_min < Vtb) && (Vtb < Vset_min)) 
-  begin
+  c_time = $abstime;
+
+  if ((Vreset_min < Vtb) && (Vtb < Vset_min)) begin
     // The voltage does not meet the threshold, stay in the original state
     if (2 == state) // Reset process: stop to HRS 
       state = 0;
     if (3 == state) // Set process: stop to LRS
       state = 1;
     // Otherwise, stay in the original state
-  end
-  else if (Vtb < Vreset_min) // May change from HRS to LRS;
-  begin
-    if (abs(Itb) > gap) // Start Reset Process, only the current is sufficent
-      state = 2;
-    // Otherwise, stay in the original state
-  end
-  else if (Vset_min < Vtb) 
-  begin
+  end else if (Vtb <= Vreset_min) begin // May change from HRS to LRS;
+    state = 2; // Start Reset Process
+  end else if (Vset_min <= Vtb) begin
     state = 3; // Start Set Process
   end
 
   // Determine the resistance according to the state
-  if (0 == state) // HRS
-    res = Rhrs;
-  else if (1 == state) // LRS
-    res = Vset_min/(gap*Iset_max);
-  else if (2 == state) // Reset Process
-    res = Rhrs; 
-  else if (3 == state) // Set Process
-    res = Vset_min/Itb;
-    gap = (Itb - gap_min*Iset_max)/(Iset_max*(1-gap_min))
-    // Print Gap:
-    $stobe("CurrentGap=%g\n", gap);
-  else 
-   $stobe("Warning: State is not deterministic!\n");
- 
-  I(te,be) <+ V(te,be) / res;
+  if (0 == state) begin // HRS
+    //$strobe("state=%d\n", state);
+    Ireset_eq = (Ireset_max - Ireset_min) * gap_rate + Ireset_min; 
+    res = Vreset_min / Ireset_eq; 
+  end else if (1 == state) begin // LRS
+    //$strobe("state=%d\n", state);
+    Iset_eq = (Iset_max - Iset_min) * gap_rate + Iset_min; 
+    res = Vset_min / Iset_eq;
+  end else if (2 == state) begin // Reset Process
+    //$strobe("state=%d\n", state);
+    // Gap reconstruction
+    gap_reset = gap_reset - abs(Vtb * Ireset_max) * (c_time - p_time);
+    gap_rate = (gap_reset/gap_reset_max); 
+    if (gap_rate > 1) begin
+      gap_rate = 1; 
+      gap_reset = gap_reset_max;
+    end else if (gap_rate < 0) begin
+      gap_rate = 0;
+      gap_reset = 0;
+    end
+    //$strobe("gap_rate=%g\n", gap_rate);
+    gap_set = gap_set_max * gap_rate;
+    Ireset_eq = (Ireset_max - Ireset_min) * gap_rate + Ireset_min; 
+    res = Vreset_min / Ireset_eq;
+  end else if (3 == state) begin // Set Process
+    //$strobe("state=%d\n", state);
+    // Gap reconstruction
+    gap_set = gap_set + abs(Vtb * Iset_max) * (c_time - p_time);
+    //$strobe("gap_set/gap_set_max=%g/%g\n", gap_set, gap_set_max);
+    gap_rate = (gap_set/gap_set_max); 
+    if (gap_rate > 1) begin
+      gap_rate = 1; 
+      gap_set = gap_set_max;
+    end else if (gap_rate < 0) begin
+      gap_rate = 0;
+      gap_set = 0;
+    end 
+    //$strobe("gap_rate=%g\n", gap_rate);
+    gap_reset = gap_reset_max * gap_rate;
+    Iset_eq = (Iset_max - Iset_min) * gap_rate + Iset_min; 
+    res = Vset_min / Iset_eq;
+  end else 
+    $strobe("Warning: State is not deterministic!\n");
+
+  // Record time stamp
+  p_time = c_time;
+
+  $strobe("CurrentGap=%g\n", gap_rate);
+  
+  I(te,be) <+ V(te, be) / res;
+  // Debug output
+  V(R_out) <+ res;
+  V(gap_rate_out) <+ gap_rate; 
 end
 endmodule

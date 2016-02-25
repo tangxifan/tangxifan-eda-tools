@@ -752,7 +752,7 @@ sub determine_2level_mux_basis($) {
 sub determine_mux_num_sram($) {
   my ($mux_size) = @_;
   
-  if (2 == $mux_size) {
+  if ((2 == $mux_size)&&("off" eq $opt_ptr->{rram_enhance})) {
     return &determine_mux_level($mux_size);
   }
 
@@ -1373,7 +1373,7 @@ sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
   }
  
   # Special care for 2-input MUX, only one-level structure is supported
-  if (2 == $mux_size) {
+  if ((2 == $mux_size)&&(!$rram_enhance)) {
     print "2-input MUX is forced to employ multi-level structure!\n";
     # Generate the sub circuit of N-input MUX with a given 2-input MUX subckt
     &gen_multilevel_mux_subckt($spfh,$mux_size,"mux2_size$mux_size",$conf_ptr->{mux_settings}->{mux_subckt_name}->{val},"buffered",$rram_enhance);
@@ -1648,6 +1648,8 @@ sub gen_1level_mux_subckt($ $ $ $ $ $) {
   my ($spfh,$mux_size,$subckt_name,$mux1level_subckt,$buffered,$rram_enhance) = @_;
   my ($num_sram) = ($mux_size);
   my ($ongap_kw, $ongap_val, $offgap_kw, $offgap_val);
+
+  print "INFO: generating 1-level mux structure...\n";
 
   if ("on" eq $rram_enhance) {
     my ($rram_init_on_gap, $rram_init_off_gap);
