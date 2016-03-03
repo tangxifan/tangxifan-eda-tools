@@ -112,6 +112,8 @@ t_linked_int *insert_in_int_list(t_linked_int * head, int data,
 void free_int_list(t_linked_int ** int_list_head_ptr);
 void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
 		int num_items, struct s_ivec *ivec, t_linked_int ** free_list_head_ptr);
+/****** Xifan TANG's utils ******/
+int spot_int_in_array(int array_len, int* array, int targ);
 
 /****************** File and parsing utilities *******************************/
 

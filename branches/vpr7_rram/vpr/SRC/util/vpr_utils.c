@@ -1153,3 +1153,4 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
 	*direct_type_from_blk_pin = temp_direct_type_from_blk_pin;
 
 }
+

@@ -240,7 +240,9 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 							curr_inet = next_inet;
 							
 							// Assume that carry chains only has 1 sink - direct connection
+							if (clb_net[curr_inet].num_sinks != 1) {
 							assert(clb_net[curr_inet].num_sinks == 1);
+                            }
 							next_iblk = clb_net[curr_inet].node_block[1];
 							
 							// Assume that the from_iblk_pin index is the same for the next block
@@ -251,7 +253,13 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 							// Mark down this block as a member of the macro
 							imember = pl_macro_num_members[num_macro];
 							pl_macro_member_blk_num_of_this_blk[imember] = next_iblk;
-
+                            /* Xifan TANG: Should detect if there is a combinational loop inside */
+                            if (1 == spot_int_in_array(imember, pl_macro_member_blk_num_of_this_blk, next_iblk )) {
+                              vpr_printf(TIO_MESSAGE_INFO, "Find a combinational loop in macro placement! More info:\n");
+                              vpr_printf(TIO_MESSAGE_ERROR,"next_inet: %d, num_macro: %d, imember: %d, next_iblk: %d.\n", 
+                                         next_inet, num_macro, imember, next_iblk);
+                              exit(1);
+                            }
 							// Increment the num_member count.
 							pl_macro_num_members[num_macro]++;
 
@@ -314,7 +322,7 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 	pl_macro_idirect = (int *) my_calloc (num_blocks , sizeof(int));
 	pl_macro_member_blk_num = (int **) my_calloc (num_blocks , sizeof(int*));
 	pl_macro_member_blk_num_of_this_blk = (int *) my_calloc (num_blocks , sizeof(int));
-
+ 
 	/* Compute required size:                                                *
 	 * Go through all the pins with possible direct connections in           *
 	 * f_idirect_from_blk_pin. Count the number of heads (which is the same  *
@@ -443,4 +451,82 @@ void free_placement_macros_structs(void) {
 	// This frees up the imacro from iblk mapping array.
 	free_imacro_from_iblk();
 	
+}
+
+/* Xifan TANG: Find the position of a blk in a macro */
+int spot_blk_position_in_a_macro(t_pl_macro pl_macros,
+                                 int blk_idx) {
+  int imember;
+
+  for (imember = 0; imember < pl_macros.num_blocks; imember++) {
+    if (blk_idx == pl_macros.members[imember].blk_index) {
+      return imember;
+    }
+  } 
+
+  return -1;
+}
+
+/* Xifan TANG: Check if 1st macro contains the 2nd macro */
+void get_start_end_points_one_macro(t_pl_macro pl_macro,
+                                    int* upper_x, int* lower_x, 
+                                    int* upper_y, int* lower_y) {
+  int imemb, iblk;
+
+  /* Initialize */
+  (*upper_x) = -1;
+  (*lower_x) = -1;
+  (*upper_y) = -1;
+  (*lower_y) = -1;
+
+  /* Determine the upper/lower bound of x,y of macros*/ 
+  for (imemb = 0; imemb < pl_macro.num_blocks; imemb++) {
+    iblk = pl_macro.members[imemb].blk_index;
+    if (0 == imemb) {
+      (*upper_x) = block[iblk].x;
+      (*upper_y) = block[iblk].y;
+      (*lower_x) = block[iblk].x;
+      (*lower_y) = block[iblk].y;
+      /* macro_a_upper_z = block[iblk_a].z; */
+    } else {
+      if (block[iblk].x > (*upper_x)) {
+        (*upper_x) = block[iblk].x;
+      }
+      if (block[iblk].y > (*upper_y)) {
+        (*upper_y) = block[iblk].y;
+      }
+      if (block[iblk].x < (*lower_x)) {
+        (*lower_x) = block[iblk].x;
+      }
+      if (block[iblk].y < (*lower_y)) {
+        (*lower_y) = block[iblk].y;
+      }
+    }
+  }
+  /* check: this is currently true, as carry chain is vertical
+   * maybe changed if a new carry chain style is applied */
+  if (!(((*upper_x) == (*lower_x))&&(((*upper_y) - (*lower_y) + 1) == (pl_macro.num_blocks)))) {
+  assert (((*upper_x) == (*lower_x))&&(((*upper_y) - (*lower_y) + 1) == (pl_macro.num_blocks)));
+  }
+} 
+
+/* Xifan TANG: Check if 1st macro contains the 2nd macro */
+int check_macros_contained(t_pl_macro pl_macro_a,
+                           t_pl_macro pl_macro_b) {
+  int macro_a_upper_x, macro_a_upper_y;
+  int macro_a_lower_x, macro_a_lower_y;
+  int macro_b_upper_x, macro_b_upper_y;
+  int macro_b_lower_x, macro_b_lower_y;
+
+  get_start_end_points_one_macro(pl_macro_a, &macro_a_upper_x, &macro_a_lower_x, 
+                                 &macro_a_upper_y, &macro_a_lower_y);
+
+  get_start_end_points_one_macro(pl_macro_b, &macro_b_upper_x, &macro_b_lower_x, 
+                                 &macro_b_upper_y, &macro_b_lower_y);
+
+  if ((macro_a_upper_y < macro_b_upper_y)||(macro_a_lower_y > macro_b_lower_y)) {
+    return 0;
+  }
+  
+  return 1;
 }

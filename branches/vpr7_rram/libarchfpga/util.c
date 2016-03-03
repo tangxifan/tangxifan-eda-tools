@@ -786,3 +786,24 @@ int ipow(int base, int exp) {
 
 	return result;
 }
+
+/* Xifan TANG: find if an element is aleady in an array */
+int spot_int_in_array(int array_len, int* array,
+                      int targ) {
+  int i;
+ 
+  if (0 == array_len) {
+    return 0;
+  }
+
+  assert(NULL != array);
+
+  for (i = 0; i < array_len; i++) {
+    if (targ == array[i]) {
+      return 1;
+    } 
+  }
+ 
+  return 0;
+}
+         

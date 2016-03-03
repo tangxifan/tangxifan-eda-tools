@@ -1116,6 +1116,9 @@ static int setup_blocks_affected(int b_from, int x_to, int y_to, int z_to) {
 	int x_from, y_from, z_from, b_to;
 	int abort_swap = FALSE;
 
+    /* Xifan TANG: support swap between macros */
+    /* int from_macro; */
+
 	x_from = block[b_from].x;
 	y_from = block[b_from].y;
 	z_from = block[b_from].z;
@@ -1145,7 +1148,12 @@ static int setup_blocks_affected(int b_from, int x_to, int y_to, int z_to) {
 	} else {
 
 		// Does not allow a swap with a macro yet
+        /* Xifan TANG: allow macro swapping...*/
 		get_imacro_from_iblk(&imacro, b_to, pl_macros, num_pl_macros);
+		/* get_imacro_from_iblk(&from_macro, b_from, pl_macros, num_pl_macros);
+		if (((-1 != from_macro)||(imacro != -1))
+		  &&(!((-1 != from_macro)&&(imacro != -1)))) {
+        */
 		if (imacro != -1) {
 			abort_swap = TRUE;
 			return (abort_swap);
@@ -1198,6 +1206,8 @@ static int find_affected_blocks(int b_from, int x_to, int y_to, int z_to) {
 	int x_swap_offset, y_swap_offset, z_swap_offset, x_from, y_from, z_from, b_to;
 	int curr_b_from, curr_x_from, curr_y_from, curr_z_from, curr_b_to, curr_x_to, curr_y_to, curr_z_to;
 	int abort_swap = FALSE;
+
+    /* int to_imacro;*/ /* Xifan TANG: for more checking */
 	
 	x_from = block[b_from].x;
 	y_from = block[b_from].y;
@@ -1227,17 +1237,64 @@ static int find_affected_blocks(int b_from, int x_to, int y_to, int z_to) {
 			curr_x_to = curr_x_from + x_swap_offset;
 			curr_y_to = curr_y_from + y_swap_offset;
 			curr_z_to = curr_z_from + z_swap_offset;
+
+            /* Xifan TANG: double check*/
+            assert(block[curr_b_from].type == grid[curr_x_from][curr_y_from].type);
 			
 			// Make sure that the swap_to location is still on the chip
 			if (curr_x_to < 1 || curr_x_to > nx || curr_y_to < 1 || curr_y_to > ny || curr_z_to < 0) {
-				abort_swap = TRUE;
-			} else {
-				curr_b_to = grid[curr_x_to][curr_y_to].blocks[curr_z_to];
-				abort_swap = setup_blocks_affected(curr_b_from, curr_x_to, curr_y_to, curr_z_to);
-			}
+              abort_swap = TRUE;
+            /* Xifan TANG: We need to check if the swap_to location has the same type! */
+			/*
+            } else if (grid[curr_x_from][curr_y_from].type != grid[curr_x_to][curr_y_to].type) {
+              abort_swap = TRUE;
+            */
+            } else {
+              /* Xifan TANG: Check if the to_x, to_y is also a marco...
+               * If the follow cases are true then we should abort the swap
+               * 1. length of to_macro is larger than this macro
+               * 2. length of to_macro is the same as this macro, but its starting point is not align with this macro.
+               * 2. length of to_macro is less this macro, but its starting/ending point is out of the range of this macro.
+               */
+    		/*
+              curr_b_to = grid[curr_x_to][curr_y_to].blocks[curr_z_to];
+              if (OPEN != curr_b_to) {
+	            get_imacro_from_iblk(&to_imacro, curr_b_to, pl_macros, num_pl_macros);
+              }
+              if (OPEN != to_imacro) {
+                if (pl_macros[imacro].num_blocks < pl_macros[to_imacro].num_blocks) {
+                  abort_swap = TRUE;
+                } else if ((pl_macros[imacro].num_blocks == pl_macros[to_imacro].num_blocks)
+                         && (imember != spot_blk_position_in_a_macro(pl_macros[to_imacro],curr_b_to))) {
+                  abort_swap = TRUE;
+                } else if ((pl_macros[imacro].num_blocks > pl_macros[to_imacro].num_blocks)
+                         && (0 == check_macros_contained(pl_macros[imacro], pl_macros[to_imacro]))) {
+                  abort_swap = TRUE;
+                }
+              }
+            }
+        }
+        */
+        /* Xifan TANG: Only all the memebers in the macro pass the check, we can proceed to setup swap */
+        /*
+        if (FALSE == abort_swap) {
+		  for (imember = 0; imember < pl_macros[imacro].num_blocks && abort_swap == FALSE; imember++) {
+			// Gets the new from and to info for every block in the macro
+			// cannot use the old from and to info
+			curr_b_from = pl_macros[imacro].members[imember].blk_index;
+			
+			curr_x_from = block[curr_b_from].x;
+			curr_y_from = block[curr_b_from].y;
+			curr_z_from = block[curr_b_from].z;
 
-		} // Finish going through all the blocks in the macro
-
+			curr_x_to = curr_x_from + x_swap_offset;
+			curr_y_to = curr_y_from + y_swap_offset;
+			curr_z_to = curr_z_from + z_swap_offset;
+          */
+    		curr_b_to = grid[curr_x_to][curr_y_to].blocks[curr_z_to];
+			abort_swap = setup_blocks_affected(curr_b_from, curr_x_to, curr_y_to, curr_z_to);
+		  } // Finish going through all the blocks in the macro
+        }
 	} else { 
 		
 		// This is not a macro - I could use the from and to info from before
@@ -1263,7 +1320,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	 * rlim is the range limiter.                                        */
 
 	enum swap_result keep_switch;
-	int b_from, x_from, y_from, z_from, x_to, y_to, z_to;
+	int b_from, x_from, y_from, z_from, x_to, y_to, z_to, b_to;
 	int num_nets_affected;
 	float delta_c, bb_delta_c, timing_delta_c, delay_delta_c;
 	int inet, iblk, bnum, iblk_pin, inet_affected;
@@ -1297,8 +1354,9 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	z_from = block[b_from].z;
 
 	if (!find_to(x_from, y_from, block[b_from].type, rlim, &x_to,
-			&y_to))
+			&y_to)) {
 		return REJECTED;
+    }
 
 	z_to = 0;
 	if (grid[x_to][y_to].type->capacity > 1) {
@@ -1419,6 +1477,8 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 				x_to = blocks_affected.moved_blocks[iblk].xnew;
 				y_to = blocks_affected.moved_blocks[iblk].ynew;
 				z_to = blocks_affected.moved_blocks[iblk].znew;
+                /* Xifan TANG: not sure if this is needed */
+				//b_to = grid[x_to][y_to].blocks[z_to];
 
 				x_from = blocks_affected.moved_blocks[iblk].xold;
 				y_from = blocks_affected.moved_blocks[iblk].yold;
@@ -1427,6 +1487,8 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 				b_from = blocks_affected.moved_blocks[iblk].block_num;
 
 				grid[x_to][y_to].blocks[z_to] = b_from;
+                /* Xifan TANG: not sure if this is needed */
+			    //grid[x_from][y_from].blocks[z_from] = b_to; 
 
 				if (blocks_affected.moved_blocks[iblk].swapped_to_empty == TRUE) {
 					grid[x_to][y_to].usage++;
@@ -1530,7 +1592,9 @@ static boolean find_to(int x_from, int y_from, t_type_ptr type, float rlim, int 
 	boolean is_legal;
 	int block_index, ipos;
 
+	if (type != grid[x_from][y_from].type) {
 	assert(type == grid[x_from][y_from].type);
+    }
 
 	rlx = (int)std::min((float)nx + 1, rlim); 
 	rly = (int)std::min((float)ny + 1, rlim); /* Added rly for aspect_ratio != 1 case. */

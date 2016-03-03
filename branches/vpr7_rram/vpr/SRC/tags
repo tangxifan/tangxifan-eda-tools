@@ -482,7 +482,7 @@ OT_FIRST_ITER_PRES_FAC	base/OptionTokens.h	/^	OT_FIRST_ITER_PRES_FAC,$/;"	e	enum
 OT_FIX_PINS	base/OptionTokens.h	/^	OT_FIX_PINS,$/;"	e	enum:e_OptionBaseToken
 OT_FPGA_SPICE	base/OptionTokens.h	/^    OT_FPGA_SPICE, \/* Xifan TANG: FPGA SPICE Model Support *\/$/;"	e	enum:e_OptionBaseToken
 OT_FPGA_SPICE_LEAKAGE_ONLY	base/OptionTokens.h	/^    OT_FPGA_SPICE_LEAKAGE_ONLY, \/* Xifan TANG: Print SPICE Testbench for MUXes *\/$/;"	e	enum:e_OptionBaseToken
-OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION_OFF	base/OptionTokens.h	/^    OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION_OFF, \/* Xifan TANG: Turn parasitic net estimation off*\/$/;"	e	enum:e_OptionBaseToken
+OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION_OFF	base/OptionTokens.h	/^    OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION_OFF, \/* Xifan TANG: turn off the parasitic net estimation*\/$/;"	e	enum:e_OptionBaseToken
 OT_FULL_STATS	base/OptionTokens.h	/^	OT_FULL_STATS,$/;"	e	enum:e_OptionBaseToken
 OT_GENERATE_POST_SYNTHESIS_NETLIST	base/OptionTokens.h	/^	OT_GENERATE_POST_SYNTHESIS_NETLIST,$/;"	e	enum:e_OptionBaseToken
 OT_GLOBAL	base/OptionTokens.h	/^	OT_GLOBAL,$/;"	e	enum:e_OptionArgToken
@@ -862,8 +862,10 @@ SPICE_MODEL_STRUCTURE_TREE	../../libarchfpga/include/spice_types.h	/^  SPICE_MOD
 SPICE_MODEL_WIRE	../../libarchfpga/include/spice_types.h	/^  SPICE_MODEL_WIRE, $/;"	e	enum:e_spice_model_type
 SPICE_PB_MUX_TB	spice/spice_mux_testbench.h	/^  SPICE_CB_MUX_TB, SPICE_SB_MUX_TB, SPICE_PB_MUX_TB$/;"	e	enum:e_spice_mux_tb_type
 SPICE_SB_MUX_TB	spice/spice_mux_testbench.h	/^  SPICE_CB_MUX_TB, SPICE_SB_MUX_TB, SPICE_PB_MUX_TB$/;"	e	enum:e_spice_mux_tb_type
-SPICE_TRANS_NMOS	../../libarchfpga/include/spice_types.h	/^  SPICE_TRANS_NMOS, SPICE_TRANS_PMOS$/;"	e	enum:e_spice_trans_type
-SPICE_TRANS_PMOS	../../libarchfpga/include/spice_types.h	/^  SPICE_TRANS_NMOS, SPICE_TRANS_PMOS$/;"	e	enum:e_spice_trans_type
+SPICE_TRANS_IO_NMOS	../../libarchfpga/include/spice_types.h	/^  SPICE_TRANS_NMOS, SPICE_TRANS_PMOS, SPICE_TRANS_IO_NMOS, SPICE_TRANS_IO_PMOS$/;"	e	enum:e_spice_trans_type
+SPICE_TRANS_IO_PMOS	../../libarchfpga/include/spice_types.h	/^  SPICE_TRANS_NMOS, SPICE_TRANS_PMOS, SPICE_TRANS_IO_NMOS, SPICE_TRANS_IO_PMOS$/;"	e	enum:e_spice_trans_type
+SPICE_TRANS_NMOS	../../libarchfpga/include/spice_types.h	/^  SPICE_TRANS_NMOS, SPICE_TRANS_PMOS, SPICE_TRANS_IO_NMOS, SPICE_TRANS_IO_PMOS$/;"	e	enum:e_spice_trans_type
+SPICE_TRANS_PMOS	../../libarchfpga/include/spice_types.h	/^  SPICE_TRANS_NMOS, SPICE_TRANS_PMOS, SPICE_TRANS_IO_NMOS, SPICE_TRANS_IO_PMOS$/;"	e	enum:e_spice_trans_type
 STAR	timing/slre.c	/^  END, BRANCH, ANY, EXACT, ANYOF, ANYBUT, OPEN, CLOSE, BOL, EOL, STAR, PLUS,$/;"	e	enum:__anon19	file:
 STARQ	timing/slre.c	/^  STARQ, PLUSQ, QUEST, SPACE, NONSPACE, DIGIT$/;"	e	enum:__anon19	file:
 STTRAM	../../libarchfpga/include/arch_types_mrfpga.h	/^  CONV = 0, MONO, STTRAM, PCRAM_Xie, PCRAM_Pierre, NEM $/;"	e	enum:e_tech_comp
@@ -993,7 +995,7 @@ WHITE	base/easygl_constants.h	/^enum color_types {WHITE, BLACK, DARKGREY, LIGHTG
 WILTON	../../libarchfpga/include/physical_types.h	/^	SUBSET, WILTON, UNIVERSAL, FULL$/;"	e	enum:e_switch_block_type
 WIRE_MODEL_PIE	../../libarchfpga/include/spice_types.h	/^  WIRE_MODEL_PIE,$/;"	e	enum:e_wire_model_type
 WIRE_MODEL_T	../../libarchfpga/include/spice_types.h	/^  WIRE_MODEL_T$/;"	e	enum:e_wire_model_type
-WIRE_SEGMENT_LENGTH	base/vpr_api.c	425;"	d	file:
+WIRE_SEGMENT_LENGTH	base/vpr_api.c	426;"	d	file:
 WL	base/place_and_route.h	5;"	d
 WNEED	base/place_and_route.h	4;"	d
 W_seed	base/globals.c	/^int W_seed = -1;$/;"	v
@@ -1330,6 +1332,7 @@ check_keywords_conflict	spice/spice_api.c	/^void check_keywords_conflict(t_arch 
 check_locally_used_clb_opins	route/check_route.c	/^static void check_locally_used_clb_opins(t_ivec ** clb_opins_used_locally,$/;"	f	file:
 check_lookahead_pins_used	pack/cluster.c	/^static boolean check_lookahead_pins_used(t_pb *cur_pb) {$/;"	f	file:
 check_macro_can_be_placed	place/place.c	/^static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z) {$/;"	f	file:
+check_macros_contained	place/place_macro.c	/^int check_macros_contained(t_pl_macro pl_macro_a,$/;"	f
 check_net	base/read_blif.c	/^static void check_net(boolean sweep_hanging_nets_and_inputs) {$/;"	f	file:
 check_netlist	base/check_netlist.c	/^void check_netlist() {$/;"	f
 check_node	route/check_rr_graph.c	/^void check_node(int inode, enum e_route_type route_type) {$/;"	f
@@ -1350,6 +1353,7 @@ check_src_blk_pin	clb_pin_remap/clb_pin_remap_util.c	/^int check_src_blk_pin(int
 check_subblock_internal_nets	base/check_netlist.c	/^static int check_subblock_internal_nets(int iblk, int isub) {$/;"	f	file:
 check_subblocks	base/check_netlist.c	/^static int check_subblocks(int iblk) {$/;"	f	file:
 check_switch	route/check_route.c	/^static void check_switch(struct s_trace *tptr, int num_switch) {$/;"	f	file:
+check_tech_lib	../../libarchfpga/read_xml_spice.c	/^static void check_tech_lib(t_spice_tech_lib tech_lib, $/;"	f	file:
 check_timing_graph	timing/path_delay2.c	/^void check_timing_graph(int num_sinks) {$/;"	f
 child	../../libarchfpga/include/ezxml.h	/^	ezxml_t child; \/* head of sub tag list, NULL if none *\/$/;"	m	struct:ezxml
 child	route/route_tree_timing.h	/^	struct s_rt_node *child;$/;"	m	struct:s_linked_rt_edge	typeref:struct:s_linked_rt_edge::s_rt_node
@@ -2260,6 +2264,7 @@ get_seg_track_counts	route/rr_graph2.c	/^get_seg_track_counts(INP int num_sets, 
 get_segment_usage_stats	route/segment_stats.c	/^void get_segment_usage_stats(int num_segment, t_segment_inf * segment_inf) {$/;"	f
 get_serial_num	route/route_common.c	/^void get_serial_num(void) {$/;"	f
 get_simple_switch_block_track	route/rr_graph_sbox.c	/^int get_simple_switch_block_track(INP enum e_side from_side,$/;"	f
+get_start_end_points_one_macro	place/place_macro.c	/^void get_start_end_points_one_macro(t_pl_macro pl_macro,$/;"	f
 get_std_dev	place/place.c	/^static double get_std_dev(int n, double sum_x_squared, double av_x) {$/;"	f	file:
 get_switch_info	pack/pack.c	/^float get_switch_info(short switch_index, float &Tdel_switch, float &R_switch, float &Cout_switch) {$/;"	f
 get_switch_type	route/rr_graph2.c	/^static void get_switch_type(boolean is_from_sbox, boolean is_to_sbox,$/;"	f	file:
@@ -2457,6 +2462,9 @@ invalid	base/vpr_types.h	/^	t_cluster_placement_primitive *invalid; \/* ptrs to 
 invalidate_heap_entries	route/route_common.c	/^void invalidate_heap_entries(int sink_node, int ipin_node) {$/;"	f
 invalidate_screen	base/graphics.c	/^static void invalidate_screen(void)$/;"	f	file:
 io_line	base/read_blif.c	/^static void io_line(int in_or_out, int doall, t_model *io_model) {$/;"	f	file:
+io_nmos_subckt_name	spice/spice_globals.c	/^char* io_nmos_subckt_name = "vpr_io_nmos";$/;"	v
+io_pmos_subckt_name	spice/spice_globals.c	/^char* io_pmos_subckt_name = "vpr_io_pmos";$/;"	v
+io_vdd	../../libarchfpga/include/spice_types.h	/^  float io_vdd;$/;"	m	struct:s_spice_tech_lib
 ipin_mux_trans_size	../../libarchfpga/include/physical_types.h	/^	float ipin_mux_trans_size;$/;"	m	struct:s_arch
 ipin_mux_trans_size	base/globals.c	/^float ipin_mux_trans_size = 0;$/;"	v
 ipow	../../libarchfpga/util.c	/^int ipow(int base, int exp) {$/;"	f
@@ -3349,7 +3357,6 @@ processPorts	base/read_netlist.c	/^static void processPorts(INOUTP ezxml_t Paren
 process_constraints	timing/path_delay.c	/^static void process_constraints(void) {$/;"	f	file:
 process_settings	base/read_settings.c	/^static int process_settings(ezxml_t Cur, char ** outv)$/;"	f	file:
 process_tech_xml_load_transistor_info	power/power_cmos_tech.c	/^static void process_tech_xml_load_transistor_info(ezxml_t parent) {$/;"	f	file:
-prog_trans_size	../../libarchfpga/include/spice_types.h	/^  float prog_trans_size;$/;"	m	struct:s_spice_model
 prop	../../libarchfpga/include/physical_types.h	/^	int * prop; \/* [0..num_value_prop_pairs - 1] *\/$/;"	m	struct:s_pin_to_pin_annotation
 propagate_clock_domain_and_skew	timing/path_delay.c	/^static void propagate_clock_domain_and_skew(int inode) {$/;"	f	file:
 ps	base/graphics.c	/^static FILE *ps;$/;"	v	file:
@@ -3474,7 +3481,7 @@ rt_edge_free_list	route/route_tree_timing.c	/^static t_linked_rt_edge *rt_edge_f
 rt_node_free_list	route/route_tree_timing.c	/^static t_rt_node *rt_node_free_list = NULL;$/;"	v	file:
 rt_node_of_sink	place/timing_place_lookup.c	/^static t_rt_node **rt_node_of_sink;$/;"	v	file:
 run_hspice_shell_script_name	spice/spice_run_scripts.c	/^static char* run_hspice_shell_script_name = "run_hspice_sim.sh";$/;"	v	file:
-run_parasitic_net_estimation	spice/spice_globals.c	/^int run_parasitic_net_estimation = TRUE;$/;"	v
+run_parasitic_net_estimation	spice/spice_globals.c	/^int run_parasitic_net_estimation = 1;$/;"	v
 s	../../libarchfpga/include/ezxml.h	/^	char *s; \/* start of work area *\/$/;"	m	struct:ezxml_root
 s_TokenPair	base/vpr_types.h	/^struct s_TokenPair {$/;"	s
 s_annealing_sched	base/vpr_types.h	/^struct s_annealing_sched {$/;"	s
@@ -3757,7 +3764,7 @@ sorter_PowerCallibInputs	power/PowerSpicedComponent.c	/^bool sorter_PowerCallibI
 sorter_PowerCallibSize	power/PowerSpicedComponent.c	/^bool sorter_PowerCallibSize(PowerCallibSize * a, PowerCallibSize * b) {$/;"	f
 source_list	base/vpr_types.h	/^	char ** source_list; \/* Array of net names of flip-flops or clocks *\/$/;"	m	struct:s_override_constraint
 spice	../../libarchfpga/include/physical_types.h	/^    t_spice* spice;$/;"	m	struct:s_arch
-spice_backannotate_vpr_post_route_info	spice/spice_backannotate_utils.c	/^void spice_backannotate_vpr_post_route_info() {$/;"	f
+spice_backannotate_vpr_post_route_info	spice/spice_backannotate_utils.c	/^void spice_backannotate_vpr_post_route_info(boolean parasitic_net_estimation_off) {$/;"	f
 spice_cb_mux_tb_dir_name	spice/spice_api.c	/^static char* spice_cb_mux_tb_dir_name = "cb_mux_tb\/";$/;"	v	file:
 spice_cb_mux_testbench_postfix	spice/spice_globals.c	/^char* spice_cb_mux_testbench_postfix = "_cbmux_testbench.sp";$/;"	v
 spice_dff_tb_dir_name	spice/spice_api.c	/^static char* spice_dff_tb_dir_name = "dff_tb\/";$/;"	v	file:
@@ -3791,6 +3798,8 @@ spice_sb_mux_testbench_postfix	spice/spice_globals.c	/^char* spice_sb_mux_testbe
 spice_top_tb_dir_name	spice/spice_api.c	/^static char* spice_top_tb_dir_name = "top_tb\/";$/;"	v	file:
 spice_top_testbench_postfix	spice/spice_globals.c	/^char* spice_top_testbench_postfix = "_top.sp";$/;"	v
 split_path_prog_name	spice/spice_utils.c	/^int split_path_prog_name(char* prog_path,$/;"	f
+spot_blk_position_in_a_macro	place/place_macro.c	/^int spot_blk_position_in_a_macro(t_pl_macro pl_macros,$/;"	f
+spot_int_in_array	../../libarchfpga/util.c	/^int spot_int_in_array(int array_len, int* array,$/;"	f
 sram_inf	../../libarchfpga/include/physical_types.h	/^    t_sram_inf sram_inf;$/;"	m	struct:s_arch
 sram_spice_model	spice/spice_globals.c	/^t_spice_model* sram_spice_model = NULL;$/;"	v
 stage_gain	power/power.h	/^	float stage_gain;$/;"	m	struct:s_power_buffer_strength_inf
@@ -4259,6 +4268,10 @@ wire_type	../../libarchfpga/include/physical_types.h	/^	e_power_wire_type wire_t
 wirelength	base/place_and_route.h	/^	int wirelength; \/* corresponding wirelength of successful routing at wneed *\/$/;"	m	struct:s_fmap_cell
 wires_spice_file_name	spice/spice_globals.c	/^char* wires_spice_file_name = "wires.sp";$/;"	v
 wneed	base/place_and_route.h	/^	int wneed; \/* need wneed to route *\/$/;"	m	struct:s_fmap_cell
+wprog_reset_nmos	../../libarchfpga/include/spice_types.h	/^  float wprog_reset_nmos;$/;"	m	struct:s_spice_model
+wprog_reset_pmos	../../libarchfpga/include/spice_types.h	/^  float wprog_reset_pmos;$/;"	m	struct:s_spice_model
+wprog_set_nmos	../../libarchfpga/include/spice_types.h	/^  float wprog_set_nmos;$/;"	m	struct:s_spice_model
+wprog_set_pmos	../../libarchfpga/include/spice_types.h	/^  float wprog_set_pmos;$/;"	m	struct:s_spice_model
 write	../../libarchfpga/ezxml.c	60;"	d	file:
 x	base/easygl_constants.h	/^	float x; $/;"	m	struct:__anon1
 x	base/vpr_types.h	/^	int x;$/;"	m	struct:s_block

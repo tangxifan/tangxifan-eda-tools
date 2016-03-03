@@ -37,6 +37,8 @@ my $benchmarks_ptr = \%benchmarks;
 
 # Supported flows
 my @supported_flows = ("standard", 
+                       "vtr_mccl",
+                       "vtr_mig_mccl",
                        "mpack2",
                        "mpack1",
                        "vtr",
@@ -57,6 +59,8 @@ my @sctgy;
 # refer to the keywords of dir_path
 @{$sctgy[0]} = ("benchmark_dir",
                 "odin2_path",
+                "cirkit_path",
+                "abc_mccl_path",
                 "abc_path",
                 "abc_with_bb_support_path",
                 "mpack1_path",
@@ -140,7 +144,8 @@ sub print_usage()
   print "      -multi_thread <int>: turn on the mutli-thread mode, specify the number of threads\n";
   print "      -parse_results_only : only parse the flow results and write CSV report.\n";
   print "      -min_hard_adder_size: min. size of hard adder in carry chain defined in Arch XML.(Default:1)\n";
-  print "      -mem_size: size of memory, mandatory when VTR flow is chosen\n";
+  print "      -mem_size: size of memory, mandatory when VTR/VTR_MCCL/VTR_MIG_MCCL flow is chosen\n";
+  print "      -odin2_carry_chain_support: turn on the carry_chain support only valid for VTR_MCCL/VTR_MIG_MCCL flow \n";
   print "      -debug : debug mode\n";
   print "      -help : print usage\n";
   exit(1);
@@ -271,8 +276,6 @@ sub opts_read()
   &read_opt_into_hash("K","on","off");
   &read_opt_into_hash("I","on","off");
   &read_opt_into_hash("M","on","off");
-  &read_opt_into_hash("min_hard_adder_size","on","off");
-  &read_opt_into_hash("mem_size","on","off");
   &read_opt_into_hash("power","off","off");
   &read_opt_into_hash("vpr_place_clb_pin_remap","off","off");
   &read_opt_into_hash("black_box_ace","off","off");
@@ -285,6 +288,13 @@ sub opts_read()
   &read_opt_into_hash("multi_task","on","off");
   &read_opt_into_hash("multi_thread","on","off");
   &read_opt_into_hash("parse_results_only","off","off");
+ 
+  # VTR/VTR_MCCL/VTR_MIG_MCCL flow options 
+  &read_opt_into_hash("min_hard_adder_size","on","off");
+  &read_opt_into_hash("mem_size","on","off");
+  &read_opt_into_hash("odin2_carry_chain_support","off","off");
+
+  # FPGA-SPICE options
   &read_opt_into_hash("vpr_fpga_spice","on","off");
   &read_opt_into_hash("vpr_fpga_spice_print_cbsbtb","off","off");
   &read_opt_into_hash("vpr_fpga_spice_print_pbtb","off","off");
@@ -564,9 +574,51 @@ sub run_abc_bb_fpgamap($ $ $)
   }
 
   chdir $cwd;
-
 }
 
+# Run ABC Carry-chain premapping by FPGA-oriented synthesis
+sub run_abc_mccl_fpgamap($ $ $) 
+{
+  my ($bm,$blif_out,$log) = @_;
+  # Get ABC path
+  my ($abc_mccl_dir,$abc_mccl_name) = &split_prog_path($conf_ptr->{dir_path}->{abc_mccl_path}->{val});
+  my ($abc_bb_dir,$abc_bb_name) = &split_prog_path($conf_ptr->{dir_path}->{abc_with_bb_support_path}->{val});
+  my ($lut_num) = $opt_ptr->{K_val};
+  # Before we run this blif, identify it is a combinational or sequential
+  my ($abc_seq_optimize) = ("");
+  if (("on" eq $opt_ptr->{abc_scl})&&("seq" eq &check_blif_type($bm))) {
+    ($abc_seq_optimize) = ("scleanup;scleanup;scleanup;scleanup;scleanup;scleanup;scleanup;scleanup;scleanup;scleanup;");
+  }
+  my ($fpga_synthesis_method) = ("if");
+  #my ($fpga_synthesis_method) = ("fpga");
+
+  # Name the intermediate file
+  my ($fadds_blif, $interm_blif) = ($bm, $bm); 
+  $fadds_blif =~ s/\.blif$/_fadds.blif/;
+  $interm_blif =~ s/\.blif$/_interm.blif/;
+
+  my ($min_chain_length) = (4);
+  my ($mccl_opt_A, $mccl_opt_B, $mccl_opt_S) = (3, 3, 2);
+
+  chdir $abc_mccl_dir;
+
+  # Run ABC three times:
+  # 1st time: run abc_with_mccl: read the $bm and do carry-chain detection
+  `csh -cx './$abc_mccl_name -c \"read $bm; strash; &get; &fadds -nv -N $min_chain_length; \&getspec; \&put; wfadds $fadds_blif; quit;\" > $log.ccdetect'`;
+
+  # 2nd time: run abc_with_mccl: read the $fadds_blif and do carry-chain LUT premapping
+  `csh -cx './$abc_mccl_name -c \"read $fadds_blif; resyn; resyn2; mccl -A $mccl_opt_A -B $mccl_opt_B -S $mccl_opt_S -K $lut_num -O 1 -r -o $interm_blif; quit;\" > $log.mccl'`;
+
+  chdir $abc_bb_dir;
+  # 3rd time: run abc_with_bb_support: read the pre-processed blif and do cleanup and recover  
+  `csh -cx './$abc_bb_name -c \"read $interm_blif; $abc_seq_optimize sweep; write_hie $interm_blif $blif_out; quit;\" > $log'`;
+
+  if (!(-e $blif_out)) {
+    die "ERROR: Fail ABC_mccl_FPGA_mapping for benchmark $bm.\n";
+  }
+
+  chdir $cwd;
+}
 
 sub run_mpack1p5($ $ $ $ $) 
 {
@@ -846,12 +898,17 @@ sub gen_odin2_config_xml($ $ $ $ $ $) {
   close($XMLFH);
 }
 
-sub run_odin2($ $) {
-  my ($config_xml, $log) = @_;
+sub run_odin2($ $ $) {
+  my ($config_xml, $carry_chain_support, $log) = @_;
   my ($odin2_dir, $odin2_name) = &split_prog_path($conf_ptr->{dir_path}->{odin2_path}->{val});
+  my ($options) = ("");
+
+  if ("on" eq $carry_chain_support) {
+    $options = $options." -Z";
+  }
 
   chdir $odin2_dir;
-  `csh -cx './$odin2_name -c $config_xml > $log'`;
+  `csh -cx './$odin2_name -c $config_xml $options > $log'`;
   chdir $cwd;
 }
 
@@ -1689,7 +1746,7 @@ sub run_vtr_flow($ $ $ $) {
   # Auto-generate a configuration XML for ODIN2
   &gen_odin2_config_xml($odin2_config, $odin2_verilog, $abc_bm, $vpr_arch, $mem_size, $min_hard_adder_size); 
   # RUN ODIN II
-  &run_odin2($odin2_config, $odin2_log);
+  &run_odin2($odin2_config, "off", $odin2_log);
 
   if (!(-e $abc_bm)) {
     die "ERROR: Fail ODIN II for benchmark $benchmark.\n";
@@ -1858,7 +1915,231 @@ sub parse_vtr_flow_results($ $ $) {
   }
 
   return;
+}
 
+# VTR_MCCL_flow: 
+# Differences from vtr_flow: 
+# 1. Need to turn off the carry-chain support for ODIN II
+# 2. Use Carry-chain detection and Carry-chain LUTs pre-mapping in ABC scripts 
+sub run_vtr_mccl_flow($ $ $ $) {
+  my ($tag,$benchmark_file,$vpr_arch,$parse_results) = @_;
+  my ($rpt_dir,$prefix);
+  my ($min_hard_adder_size, $mem_size, $odin2_verilog, $odin2_config, $odin2_log);
+  my ($abc_bm,$abc_blif_out,$abc_log,$abc_blif_out_bak);
+  my ($vpr_net,$vpr_place,$vpr_route,$vpr_reroute_log,$vpr_log);
+  my ($odin2_carry_chain_support) = ("on");
+
+  # The input of VTR flow is verilog file
+  my ($benchmark) = ($benchmark_file);
+  $benchmark =~ s/\.v$//g;     
+  # Run Verilog To Routiing flow 
+  $rpt_dir = "$conf_ptr->{dir_path}->{rpt_dir}->{val}"."/$benchmark/$tag";
+  &generate_path($rpt_dir);
+  # ODIN II output blif 
+  $odin2_verilog = "$conf_ptr->{dir_path}->{benchmark_dir}->{val}"."/$benchmark".".v";
+  $prefix = "$rpt_dir/$benchmark\_"."K$opt_ptr->{K_val}\_"."N$opt_ptr->{N_val}\_";
+  # ODIN II config XML
+  $odin2_config = "$prefix"."odin2_config.xml";
+  $odin2_log = "$prefix"."odin2.log"; 
+  # ODIN II output blif 
+  $abc_bm = "$prefix"."odin2.blif";
+  # ABC II output blif 
+  $abc_blif_out = "$prefix"."abc.blif";
+  $abc_blif_out_bak = "$prefix"."abc_bak.blif";
+  $abc_log = "$prefix"."abc.log";
+
+  # Initialize min_hard_adder_size 
+  $min_hard_adder_size = 1; # Default value
+  if ("on" eq $opt_ptr->{min_hard_adder_size}) {
+    if (1 > $opt_ptr->{min_hard_adder_size_val}) {
+      die "ERROR: Invalid min_hard_adder_size($opt_ptr->{min_hard_adder_size})!Should be no less than 1!";
+    } else {
+      $min_hard_adder_size = $opt_ptr->{min_hard_adder_size_val};
+    }
+  }
+  # TODO: Initialize the mem_size by parsing the ARCH XML?
+  if ("on" eq $opt_ptr->{mem_size}) {
+    $mem_size = $opt_ptr->{mem_size_val}; 
+  } else {
+    die "ERROR: -mem_size is mandatory when vtr flow is chosen!\n";
+  }
+  # Auto-generate a configuration XML for ODIN2
+  &gen_odin2_config_xml($odin2_config, $odin2_verilog, $abc_bm, $vpr_arch, $mem_size, $min_hard_adder_size); 
+
+  if ("on" eq $opt_ptr->{odin2_carry_chain_support}) {
+    $odin2_carry_chain_support = ("on");
+  }
+  # RUN ODIN II
+  &run_odin2($odin2_config, $odin2_carry_chain_support, $odin2_log);
+
+  if (!(-e $abc_bm)) {
+    die "ERROR: Fail ODIN II for benchmark $benchmark.\n";
+  }
+
+  # RUN ABC 
+  &run_abc_mccl_fpgamap($abc_bm,$abc_blif_out_bak,$abc_log);
+
+  `perl pro_blif.pl -i $abc_blif_out_bak -o $abc_blif_out`;
+  if (!(-e $abc_blif_out_bak)) {
+    die "ERROR: Fail pro_blif for benchmark $benchmark.\n";
+  }
+
+  my ($act_file,$ace_new_blif,$ace_log) = ("$prefix"."ace.act","$prefix"."ace.blif","$prefix"."ace.log");
+  if ("on" eq $opt_ptr->{power}) {
+    &run_ace($abc_blif_out,$act_file,$ace_new_blif,$ace_log);
+    $abc_blif_out = $ace_new_blif;
+  }
+
+  $vpr_net = "$prefix"."vpr.net";
+  $vpr_place = "$prefix"."vpr.place";
+  $vpr_route = "$prefix"."vpr.route";
+  $vpr_log = "$prefix"."vpr.log";
+  $vpr_reroute_log = "$prefix"."vpr_reroute.log";
+
+  if ("on" eq $opt_ptr->{min_route_chan_width}) {
+    &run_std_vpr($abc_blif_out,$benchmark,$vpr_arch,$vpr_net,$vpr_place,$vpr_route,-1,$vpr_log.".min_chan_width",$act_file);
+    # Get the Minimum channel width
+    my ($min_chan_width) = (&extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_log.".min_chan_width",$opt_ptr->{K_val}, $opt_ptr->{min_route_chan_width}, $parse_results));
+    $min_chan_width = int($min_chan_width*$opt_ptr->{min_route_chan_width_val});
+    if (0 != $min_chan_width%2) {
+      $min_chan_width += 1;
+    }
+    # Remove previous route results
+    `rm $vpr_route`;
+    # Keep increase min_chan_width until route success 
+    # Extract data from VPR stats
+    while (1) {
+      &run_vpr_route($abc_blif_out,$benchmark,$vpr_arch,$vpr_net,$vpr_place,$vpr_route,$min_chan_width,$vpr_reroute_log,$act_file);
+      if (-e $vpr_route) {
+        print "INFO: try route_chan_width($min_chan_width) Success!\n";
+        last; #Jump out
+      } else {
+        print "INFO: try route_chan_width($min_chan_width) failed! Retry with +2...\n";
+        $min_chan_width += 2;
+      }
+    }
+    # Extract data from VPR stats
+    if (1 == $parse_results) {
+      &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val}, "off", $parse_results);
+      &extract_vpr_stats($tag,$benchmark,$vpr_log."min_chan_width",$opt_ptr->{K_val});
+      &extract_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val});
+    }
+  } elsif ("on" eq $opt_ptr->{fix_route_chan_width}) {
+    my ($fix_chan_width) = ($benchmarks_ptr->{$benchmark_file}->{fix_route_chan_width});
+    # Remove previous route results
+    `rm $vpr_route`;
+    # Keep increase min_chan_width until route success 
+    &run_std_vpr($abc_blif_out,$benchmark,$vpr_arch,$vpr_net,$vpr_place,$vpr_route,$fix_chan_width,$vpr_log,$act_file);
+    # Extract data from VPR stats
+    while (1) {
+      if (-e $vpr_route) {
+        print "INFO: try route_chan_width($fix_chan_width) Success!\n";
+        last; #Jump out
+      } else {
+        print "INFO: try route_chan_width($fix_chan_width) failed! Retry with +2...\n";
+        $fix_chan_width += 2;
+        &run_vpr_route($abc_blif_out,$benchmark,$vpr_arch,$vpr_net,$vpr_place,$vpr_route,$fix_chan_width,$vpr_reroute_log,$act_file);
+      }
+    }
+    if (1 == $parse_results) {
+      &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val}, "off", $parse_results);
+      &extract_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val});
+      if (-e $vpr_reroute_log) {
+        &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val}, "off", $parse_results);
+        &extract_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val});
+      }
+    }
+  } else {
+    &run_std_vpr($abc_blif_out,$benchmark,$vpr_arch,$vpr_net,$vpr_place,$vpr_route,-1,$vpr_log,$act_file);
+    if (!(-e $vpr_route)) {
+      die "ERROR: Route Fail for $abc_blif_out!\n";
+    }
+    # Get the Minimum channel width
+    my ($min_chan_width) = (&extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val},$parse_results));
+    if (1 == $parse_results) {
+      &extract_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val});
+    }
+  }
+
+  # Extract data from VPR Power stats
+  if (("on" eq $opt_ptr->{power})
+     &&(1 == $parse_results)) {
+    &extract_vpr_power_esti($tag,$abc_blif_out,$benchmark,$opt_ptr->{K_val});
+  }
+  return;
+}
+
+# Currently it is the same as vtr
+sub parse_vtr_mccl_flow_results($ $ $) {
+  my ($tag,$benchmark,$vpr_arch) = @_;
+  my ($min_hard_adder_size, $mem_size, $odin2_verilog, $odin2_config, $odin2_log);
+  my ($rpt_dir,$prefix);
+  my ($abc_bm,$abc_blif_out,$abc_log);
+  my ($mpack_blif_out,$mpack_stats,$mpack_log);
+  my ($vpr_net,$vpr_place,$vpr_route,$vpr_reroute_log,$vpr_log);
+
+  $benchmark =~ s/\.v$//g;     
+  # Run Standard flow
+  $rpt_dir = "$conf_ptr->{dir_path}->{rpt_dir}->{val}"."/$benchmark/$tag";
+  &generate_path($rpt_dir);
+  # ODIN II output blif 
+  $odin2_verilog = "$conf_ptr->{dir_path}->{benchmark_dir}->{val}"."/$benchmark".".v";
+  $prefix = "$rpt_dir/$benchmark\_"."K$opt_ptr->{K_val}\_"."N$opt_ptr->{N_val}\_";
+  # ODIN II config XML
+  $odin2_config = "$prefix"."odin2_config.xml";
+  $odin2_log = "$prefix"."odin2.log"; 
+  # ODIN II output blif 
+  $abc_bm = "$prefix"."odin2.blif";
+  # ABC output blif 
+  $abc_blif_out = "$prefix"."abc.blif";
+  $abc_log = "$prefix"."abc.log";
+ 
+  rename $abc_blif_out,"$abc_blif_out".".bak";
+
+  my ($act_file,$ace_new_blif,$ace_log) = ("$prefix"."ace.act","$prefix"."ace.blif","$prefix"."ace.log");
+  if ("on" eq $opt_ptr->{power}) {
+    if ("on" eq $opt_ptr->{black_box_ace}) {
+    } else {
+      $abc_blif_out = $ace_new_blif;
+    }
+  }
+
+  $vpr_net = "$prefix"."vpr.net";
+  $vpr_place = "$prefix"."vpr.place";
+  $vpr_route = "$prefix"."vpr.route";
+  $vpr_log = "$prefix"."vpr.log";
+  $vpr_reroute_log = "$prefix"."vpr_reroute.log";
+
+  if ("on" eq $opt_ptr->{min_route_chan_width}) {
+    &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_log.".min_chan_width",$opt_ptr->{K_val},"on",1);
+    &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val},"off",1);
+    &extract_vpr_stats($tag,$benchmark,$vpr_log.".min_chan_width",$opt_ptr->{K_val});
+    &extract_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val});
+  } elsif ("on" eq $opt_ptr->{fix_route_chan_width}) {
+    &extract_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val});
+    if (-e $vpr_reroute_log) {
+      &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val},"off",1);
+      &extract_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val});
+    } else {
+      &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val},"off",1);
+    }
+  } else {
+    &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val}, "on", 1);
+    &extract_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val});
+  }
+ 
+  # Extract data from VPR Power stats
+  if ("on" eq $opt_ptr->{power}) {
+    &extract_vpr_power_esti($tag,$abc_blif_out,$benchmark,$opt_ptr->{K_val});
+  }
+
+  # TODO: HOW TO DEAL WITH SPICE NETLISTS???
+  # Output a file contain information of SPICE Netlists
+  if ("on" eq $opt_ptr->{vpr_fpga_spice}) { 
+    &output_fpga_spice_task("$opt_ptr->{vpr_fpga_spice_val}"."_vtr.txt", $benchmark, $abc_blif_out, $rpt_dir);
+  }
+
+  return;
 }
 
 sub run_benchmark_selected_flow($ $ $) 
@@ -1875,6 +2156,10 @@ sub run_benchmark_selected_flow($ $ $)
     &run_standard_flow("vtr_standard",$benchmark,$conf_ptr->{flow_conf}->{vpr_arch}->{val},"abc_black_box", $parse_results);
   } elsif ($flow_type eq "vtr") {
     &run_vtr_flow("vtr",$benchmark,$conf_ptr->{flow_conf}->{vpr_arch}->{val}, $parse_results);
+  } elsif ($flow_type eq "vtr_mccl") {
+    &run_vtr_mccl_flow("vtr_mccl",$benchmark,$conf_ptr->{flow_conf}->{vpr_arch}->{val}, $parse_results);
+  } elsif ($flow_type eq "vtr_mig_mccl") {
+    &run_vtr_mig_mccl_flow("vtr_mig_mccl",$benchmark,$conf_ptr->{flow_conf}->{vpr_arch}->{val}, $parse_results);
   } else {
     die "ERROR: unsupported flow type ($flow_type) is chosen!\n";
   } 
@@ -1895,6 +2180,10 @@ sub parse_benchmark_selected_flow($ $) {
     &parse_standard_flow_results("vtr_standard",$benchmark,$conf_ptr->{flow_conf}->{vpr_arch}->{val},"abc_black_box");
   } elsif ($flow_type eq "vtr") {
     &parse_vtr_flow_results("vtr", $benchmark, $conf_ptr->{flow_conf}->{vpr_arch}->{val});
+  } elsif ($flow_type eq "vtr_mccl") {
+    &parse_vtr_mccl_flow_results("vtr_mccl", $benchmark, $conf_ptr->{flow_conf}->{vpr_arch}->{val});
+  } elsif ($flow_type eq "vtr_mig_mccl") {
+    &parse_vtr_mig_mccl_flow_results("vtr_mig_mccl", $benchmark, $conf_ptr->{flow_conf}->{vpr_arch}->{val});
   } else {
     die "ERROR: unsupported flow type ($flow_type) is chosen!\n";
   } 

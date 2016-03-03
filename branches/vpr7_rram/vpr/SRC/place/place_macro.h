@@ -164,4 +164,10 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 void get_imacro_from_iblk(int * imacro, int iblk, t_pl_macro * macros, int num_macros);
 void free_placement_macros_structs(void);
 
+/* Xifan TANG: spot the position of a block in a macro*/
+int spot_blk_position_in_a_macro(t_pl_macro pl_macros, int blk_idx);
+
+int check_macros_contained(t_pl_macro pl_macro_a,
+                           t_pl_macro pl_macro_b);
+
 #endif

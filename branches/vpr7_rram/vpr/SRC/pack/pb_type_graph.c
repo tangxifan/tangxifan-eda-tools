@@ -503,7 +503,9 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins * interc_pins,
 	case MUX_INTERC:
 		if (!interconnect->interconnect_power->port_info_initialized) {
 			for (set_idx = 0; set_idx < num_input_sets; set_idx++) {
-				assert(num_input_pins[set_idx] == num_output_pins[0]);
+				if (num_input_pins[set_idx] != num_output_pins[0]) {
+				assert(num_input_pins[set_idx] == num_output_pins[0]); 
+                }
 			}
 			interconnect->interconnect_power->num_pins_per_port =
 					num_input_pins[0];
