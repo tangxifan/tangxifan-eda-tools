@@ -2779,6 +2779,16 @@ sub gen_csv_rpt($)
           print "INFO: writing vtr flow results ...\n";
           &gen_csv_rpt_vtr_flow("vtr",$CSVFH);
         }
+      } elsif ($flow_type eq "vtr_mccl") {
+        if (1 == &check_flow_all_benchmarks_done("vtr")) {
+          print "INFO: writing vtr_mccl flow results ...\n";
+          &gen_csv_rpt_vtr_flow("vtr",$CSVFH);
+        }
+      } elsif ($flow_type eq "vtr_mig_mccl") {
+        if (1 == &check_flow_all_benchmarks_done("vtr")) {
+          print "INFO: writing vtr_mig_mccl flow results ...\n";
+          &gen_csv_rpt_vtr_flow("vtr",$CSVFH);
+        }
       } else {
         die "ERROR: flow_type: $flow_type is not supported!\n";
       }
