@@ -338,6 +338,38 @@ insert_in_int_list(t_linked_int * head, int data,
 	return (linked_int);
 }
 
+/* Xifan TANG: add a node to an int list*/
+struct s_linked_int *
+insert_node_to_int_list(struct s_linked_int *head, int int_to_add) {
+
+	/* Inserts a new element at the head of a linked list of void pointers. *
+	 * Returns the new head of the list.                                    */
+
+	struct s_linked_int *linked_int;
+
+	linked_int = (struct s_linked_int *) my_malloc(
+			sizeof(struct s_linked_int));
+
+	linked_int->data = int_to_add;
+	linked_int->next = head;
+	return (linked_int); /* New head of the list */
+}
+
+/* Xifan TANG: search an int in the list*/
+t_linked_int* search_in_int_list(t_linked_int* int_list_head, 
+                                 int data_target) {
+  t_linked_int* head = int_list_head;
+  
+  while (head) {
+    if (data_target == head->data) {
+      return head;
+    }
+    head = head->next;
+  }
+
+  return NULL;
+}
+
 void free_int_list(t_linked_int ** int_list_head_ptr) {
 
 	/* This routine truly frees (calls free) all the integer list elements    * 

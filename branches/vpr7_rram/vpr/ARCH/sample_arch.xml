@@ -222,6 +222,7 @@
         <design_technology type="cmos"/>
         <input_buffer exist="on" type="inverter" size="4" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="4" tapered="off"/>
+        <lut_input_buffer exist="on" type="inverter" size="1" tapered="on" tap_buf_level="2" f_per_stage="4"/>
         <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1"/>
         <port type="input" prefix="in" size="5"/>
         <port type="output" prefix="out" size="1"/>
@@ -231,6 +232,7 @@
         <design_technology type="cmos"/>
         <input_buffer exist="on" type="inverter" size="4" tapered="off"/>
         <output_buffer exist="on" type="inverter" size="4" tapered="off"/>
+        <lut_input_buffer exist="on" type="inverter" size="1" tapered="on" tap_buf_level="2" f_per_stage="4"/>
         <pass_gate_logic type="transmission_gate" nmos_size="1" pmos_size="1"/>
         <port type="input" prefix="in" size="6"/>
         <port type="output" prefix="out" size="1"/>
@@ -412,7 +414,7 @@
 	   assume, but note that the total routing area really includes the crossbar, which would push
 	   routing area up significantly, we estimate into the ~70% range. 
 	   -->
-    <pb_type name="clb" area="53894">
+    <pb_type name="clb" area="53894" opin_to_cb="true">
       <input name="I" num_pins="40" equivalent="true"/>
       <output name="O" num_pins="20" equivalent="false"/>
       <clock name="clk" num_pins="1"/>

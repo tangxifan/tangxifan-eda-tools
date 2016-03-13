@@ -686,6 +686,9 @@ struct s_type_descriptor /* TODO rename this.  maybe physical type descriptor or
     int* pin_index_per_side;
     int* pin_ptc_to_side;
     /* end */
+
+    /* Xifan TANG: opin_to_cb support */
+    boolean opin_to_cb;
 };
 typedef struct s_type_descriptor t_type_descriptor;
 typedef const struct s_type_descriptor *t_type_ptr;

@@ -1738,6 +1738,9 @@ static void ProcessComplexBlockProps(ezxml_t Node, t_type_descriptor * Type) {
 	Type->height = GetIntProperty(Node, "height", FALSE, 1);
 	Type->area = GetFloatProperty(Node, "area", FALSE, UNDEFINED);
 
+    /* Xifan TANG: add opin_to_cb support */
+    Type->opin_to_cb = GetBooleanProperty(Node, "opin_to_cb", FALSE, FALSE);
+
 	if (atof(Prop) < 0) {
 		vpr_printf(TIO_MESSAGE_ERROR,
 				"[LINE %d] Area for type %s must be non-negative\n", Node->line,

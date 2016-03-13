@@ -458,8 +458,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				/*it doesn't make sense to do a timing analysis here since there*
 				 *is only one logical_block clustered it would not change anything      */
 			}
-			cur_cluster_placement_stats_ptr = &cluster_placement_stats[clb[num_clb
-					- 1].type->index];
+			cur_cluster_placement_stats_ptr = &cluster_placement_stats[clb[num_clb - 1].type->index];
 			num_unrelated_clustering_attempts = 0;
 			next_molecule = get_molecule_for_cluster(PACK_BRUTE_FORCE,
 					clb[num_clb - 1].pb, allow_unrelated_clustering,
@@ -467,10 +466,10 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					cur_cluster_placement_stats_ptr);
 			prev_molecule = istart;
 			while (next_molecule != NULL && prev_molecule != next_molecule) {
-				block_pack_status = try_pack_molecule(
-						cur_cluster_placement_stats_ptr, next_molecule,
-						primitives_list, clb[num_clb - 1].pb, num_models,
-						max_cluster_size, num_clb - 1, max_nets_in_pb_type, detailed_routing_stage);
+				block_pack_status = try_pack_molecule(cur_cluster_placement_stats_ptr, next_molecule,
+   						                              primitives_list, clb[num_clb - 1].pb, num_models,
+						                              max_cluster_size, num_clb - 1, max_nets_in_pb_type, 
+                                                      detailed_routing_stage);
 				prev_molecule = next_molecule;
 				if (block_pack_status != BLK_PASSED) {
 					if (next_molecule != NULL) {
@@ -844,10 +843,8 @@ static boolean primitive_feasible(int iblk, t_pb *cur_pb) {
 		memory_class_pb = cur_pb->parent_pb;
 		for (i = 0; i < cur_pb_type->parent_mode->num_pb_type_children; i++) {
 			if (memory_class_pb->child_pbs[cur_pb->mode][i].name != NULL
-					&& memory_class_pb->child_pbs[cur_pb->mode][i].logical_block
-							!= OPEN) {
-				sibling_memory_blk =
-						memory_class_pb->child_pbs[cur_pb->mode][i].logical_block;
+			   && memory_class_pb->child_pbs[cur_pb->mode][i].logical_block != OPEN) {
+				sibling_memory_blk = memory_class_pb->child_pbs[cur_pb->mode][i].logical_block;
 			}
 		}
 		if (sibling_memory_blk == OPEN) {
@@ -883,48 +880,38 @@ static boolean primitive_type_and_memory_feasible(int iblk,
 					if (port->dir == IN_PORT && !port->is_clock) {
 						if (memory_class_pb) {
 							if (cur_pb_type->ports[i].port_class == NULL
-									|| strstr(cur_pb_type->ports[i].port_class,
-											"data")
-											!= cur_pb_type->ports[i].port_class) {
-								if (logical_block[iblk].input_nets[port->index][j]
-										!= logical_block[sibling_memory_blk].input_nets[port->index][j]) {
+                             || strstr(cur_pb_type->ports[i].port_class,"data") != cur_pb_type->ports[i].port_class) {
+								if (logical_block[iblk].input_nets[port->index][j] != logical_block[sibling_memory_blk].input_nets[port->index][j]) {
 									return FALSE;
 								}
 							}
 						}
-						if (logical_block[iblk].input_nets[port->index][j]
-								!= OPEN
-								&& j >= cur_pb_type->ports[i].num_pins) {
+						if (logical_block[iblk].input_nets[port->index][j] != OPEN
+							&& j >= cur_pb_type->ports[i].num_pins) {
 							return FALSE;
 						}
 					} else if (port->dir == OUT_PORT) {
 						if (memory_class_pb) {
 							if (cur_pb_type->ports[i].port_class == NULL
-									|| strstr(cur_pb_type->ports[i].port_class,
-											"data")
-											!= cur_pb_type->ports[i].port_class) {
-								if (logical_block[iblk].output_nets[port->index][j]
-										!= logical_block[sibling_memory_blk].output_nets[port->index][j]) {
+							|| strstr(cur_pb_type->ports[i].port_class,	"data") != cur_pb_type->ports[i].port_class) {
+								if (logical_block[iblk].output_nets[port->index][j]	!= logical_block[sibling_memory_blk].output_nets[port->index][j]) {
 									return FALSE;
 								}
 							}
 						}
-						if (logical_block[iblk].output_nets[port->index][j]
-								!= OPEN
-								&& j >= cur_pb_type->ports[i].num_pins) {
+						if (logical_block[iblk].output_nets[port->index][j] != OPEN
+							&& j >= cur_pb_type->ports[i].num_pins) {
 							return FALSE;
 						}
 					} else {
 						assert(port->dir == IN_PORT && port->is_clock);
 						assert(j == 0);
 						if (memory_class_pb) {
-							if (logical_block[iblk].clock_net
-									!= logical_block[sibling_memory_blk].clock_net) {
+							if (logical_block[iblk].clock_net != logical_block[sibling_memory_blk].clock_net) {
 								return FALSE;
 							}
 						}
-						if (logical_block[iblk].clock_net != OPEN
-								&& j >= cur_pb_type->ports[i].num_pins) {
+						if (logical_block[iblk].clock_net != OPEN && j >= cur_pb_type->ports[i].num_pins) {
 							return FALSE;
 						}
 					}
@@ -934,8 +921,8 @@ static boolean primitive_type_and_memory_feasible(int iblk,
 		}
 		if (i == cur_pb_type->num_ports) {
 			if (((logical_block[iblk].model->inputs != NULL) && !second_pass)
-					|| (logical_block[iblk].model->outputs != NULL
-							&& second_pass)) {
+				|| (logical_block[iblk].model->outputs != NULL
+				&& second_pass)) {
 				/* physical port not found */
 				return FALSE;
 			}
@@ -1246,15 +1233,12 @@ static enum e_block_pack_status try_pack_molecule(
 					for (i = 0; i < molecule_size; i++) {
 						if (molecule->logical_block_ptrs[i] != NULL) {
 							/* invalidate all molecules that share logical block with current molecule */
-							cur_molecule =
-									molecule->logical_block_ptrs[i]->packed_molecules;
+							cur_molecule = molecule->logical_block_ptrs[i]->packed_molecules;
 							while (cur_molecule != NULL) {
-								((t_pack_molecule*) cur_molecule->data_vptr)->valid =
-										FALSE;
+								((t_pack_molecule*) cur_molecule->data_vptr)->valid = FALSE;
 								cur_molecule = cur_molecule->next;
 							}
-							commit_primitive(cluster_placement_stats_ptr,
-									primitives_list[i]);
+							commit_primitive(cluster_placement_stats_ptr, primitives_list[i]);
 						}
 					}
 				}
@@ -1262,9 +1246,7 @@ static enum e_block_pack_status try_pack_molecule(
 			if (block_pack_status != BLK_PASSED) {
 				for (i = 0; i < failed_location; i++) {
 					if (molecule->logical_block_ptrs[i] != NULL) {
-						revert_place_logical_block(
-								molecule->logical_block_ptrs[i]->index,
-								max_models);
+						revert_place_logical_block(molecule->logical_block_ptrs[i]->index, max_models);
 					}
 				}
 				restore_routing_cluster();
@@ -1322,43 +1304,25 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
 		set_pb_graph_mode(parent_pb->pb_graph_node, 0, 0); /* TODO: default mode is to use mode 0, document this! */
 		set_pb_graph_mode(parent_pb->pb_graph_node, parent_pb->mode, 1);
-		parent_pb->child_pbs =
-				(t_pb **) my_calloc(
-						parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children,
-						sizeof(t_pb *));
-		for (i = 0;
-				i
-						< parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children;
-				i++) {
-			parent_pb->child_pbs[i] =
-					(t_pb *) my_calloc(
-							parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].pb_type_children[i].num_pb,
-							sizeof(t_pb));
-			for (j = 0;
-					j
-							< parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].pb_type_children[i].num_pb;
-					j++) {
+		parent_pb->child_pbs = (t_pb **) my_calloc(parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children,	sizeof(t_pb *));
+		for (i = 0;	i < parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children;	i++) {
+			parent_pb->child_pbs[i] = (t_pb *) my_calloc(parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].pb_type_children[i].num_pb, sizeof(t_pb));
+			for (j = 0;	j < parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].pb_type_children[i].num_pb; j++) {
 				parent_pb->child_pbs[i][j].parent_pb = parent_pb;
 				parent_pb->child_pbs[i][j].logical_block = OPEN;
-				parent_pb->child_pbs[i][j].pb_graph_node =
-						&(parent_pb->pb_graph_node->child_pb_graph_nodes[parent_pb->mode][i][j]);
+				parent_pb->child_pbs[i][j].pb_graph_node = &(parent_pb->pb_graph_node->child_pb_graph_nodes[parent_pb->mode][i][j]);
 			}
 		}
 	} else {
 		assert(parent_pb->mode == pb_graph_node->pb_type->parent_mode->index);
 	}
 
-	for (i = 0;
-			i
-					< parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children;
-			i++) {
-		if (pb_graph_node->pb_type
-				== &parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].pb_type_children[i]) {
+	for (i = 0;	i < parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children;	i++) {
+		if (pb_graph_node->pb_type == &parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].pb_type_children[i]) {
 			break;
 		}
 	}
-	assert(
-			i < parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children);
+	assert(i < parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children);
 	pb = &parent_pb->child_pbs[i][pb_graph_node->placement_index];
 	*parent = pb; /* this pb is parent of it's child that called this function */
 	assert(pb->pb_graph_node == pb_graph_node);
@@ -1370,8 +1334,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 	is_primitive = (boolean) (pb_type->num_modes == 0);
 
 	if (is_primitive) {
-		assert(
-				pb->logical_block == OPEN && logical_block[ilogical_block].pb == NULL && logical_block[ilogical_block].clb_index == NO_CLUSTER);
+		assert(pb->logical_block == OPEN && logical_block[ilogical_block].pb == NULL && logical_block[ilogical_block].clb_index == NO_CLUSTER);
 		/* try pack to location */
 		pb->name = my_strdup(logical_block[ilogical_block].name);
 		pb->logical_block = ilogical_block;

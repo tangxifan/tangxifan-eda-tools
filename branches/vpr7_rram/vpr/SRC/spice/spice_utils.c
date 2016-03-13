@@ -672,7 +672,7 @@ int determine_num_input_basis_multilevel_mux(int mux_size,
 
   if (2 == mux_level) {
     num_input_per_unit = (int)sqrt(mux_size);
-    if (num_input_per_unit*num_input_per_unit < mux_size) {
+    while (num_input_per_unit*num_input_per_unit < mux_size) {
       num_input_per_unit++;
     }
     return num_input_per_unit;

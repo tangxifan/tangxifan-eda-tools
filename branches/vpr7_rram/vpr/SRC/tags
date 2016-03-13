@@ -66,7 +66,7 @@ CHANX_COST_INDEX_START	base/vpr_types.h	/^	CHANX_COST_INDEX_START$/;"	e	enum:e_c
 CHANY	base/vpr_types.h	/^	SOURCE = 0, SINK, IPIN, OPIN, CHANX, CHANY, INTRA_CLUSTER_EDGE, NUM_RR_TYPES$/;"	e	enum:e_rr_type
 CHECK	place/place.c	/^	NORMAL, CHECK$/;"	e	enum:cost_methods	file:
 CHECK_NETLIST_H	base/check_netlist.h	2;"	d
-CHECK_RAND	../../libarchfpga/util.c	702;"	d	file:
+CHECK_RAND	../../libarchfpga/util.c	734;"	d	file:
 CHECK_RR_GRAPH_H	route/check_rr_graph.h	2;"	d
 CHUNK_SIZE	../../libarchfpga/util.c	208;"	d	file:
 CLOCK_DENS	power/power.h	37;"	d
@@ -319,9 +319,9 @@ HIGH_FANOUT_NET_LIM	base/vpr_types.h	86;"	d
 HILL_CLIMBING	pack/cluster.c	/^	HILL_CLIMBING, NOT_HILL_CLIMBING$/;"	e	enum:e_gain_type	file:
 HUGE_NEGATIVE_FLOAT	base/vpr_types.h	80;"	d
 HUGE_POSITIVE_FLOAT	base/vpr_types.h	79;"	d
-IA	../../libarchfpga/util.c	699;"	d	file:
-IC	../../libarchfpga/util.c	700;"	d	file:
-IM	../../libarchfpga/util.c	701;"	d	file:
+IA	../../libarchfpga/util.c	731;"	d	file:
+IC	../../libarchfpga/util.c	732;"	d	file:
+IM	../../libarchfpga/util.c	733;"	d	file:
 IMPOSSIBLE	place/timing_place_lookup.h	1;"	d
 INC_DIRECTION	base/vpr_types.h	/^	INC_DIRECTION = 0, DEC_DIRECTION = 1, BI_DIRECTION = 2$/;"	e	enum:e_direction
 INFEASIBLE	pack/cluster.c	/^	FEASIBLE, INFEASIBLE$/;"	e	enum:e_feasibility	file:
@@ -1035,11 +1035,15 @@ add_lut	base/read_blif.c	/^static boolean add_lut(int doall, t_model *logic_mode
 add_molecule_to_pb_stats_candidates	pack/cluster.c	/^static void add_molecule_to_pb_stats_candidates(t_pack_molecule *molecule,$/;"	f	file:
 add_net_rr_terminal_cluster	pack/cluster_legality.c	/^static void add_net_rr_terminal_cluster(int iblk_net,$/;"	f	file:
 add_net_to_hash	base/read_netlist.c	/^static int add_net_to_hash(INOUTP struct s_hash **nhash, INP char *net_name,$/;"	f	file:
+add_opin_fast_edge_to_ipin	route/rr_graph_opincb.c	/^int add_opin_fast_edge_to_ipin(t_rr_node* opin, $/;"	f	file:
+add_opin_list_ipin_list_fast_edge	route/rr_graph_opincb.c	/^int add_opin_list_ipin_list_fast_edge(int num_opins, t_rr_node** opin_list, $/;"	f	file:
 add_override_constraint	timing/read_sdc.c	/^static void add_override_constraint(char ** from_list, int num_from, char ** to_list, int num_to, $/;"	f	file:
 add_path_to_route_tree	route/route_tree_timing.c	/^add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {$/;"	f	file:
 add_pattern_name_to_hash	pack/prepack.c	/^static int add_pattern_name_to_hash(INOUTP struct s_hash **nhash,$/;"	f	file:
 add_route_tree_to_heap	route/route_timing.c	/^static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,$/;"	f	file:
 add_rr_graph_C_from_switches	route/rr_graph_timing_params.c	/^void add_rr_graph_C_from_switches(float C_ipin_cblock) {$/;"	f
+add_rr_graph_fast_edge_opin_to_cb	route/rr_graph_opincb.c	/^int add_rr_graph_fast_edge_opin_to_cb(t_ivec*** LL_rr_node_indices) {$/;"	f
+add_rr_graph_one_grid_fast_edge_opin_to_cb	route/rr_graph_opincb.c	/^int add_rr_graph_one_grid_fast_edge_opin_to_cb(int grid_x, $/;"	f	file:
 add_rr_graph_switch_segment_pattern	route/rr_graph_swseg.c	/^int add_rr_graph_switch_segment_pattern(enum e_directionality directionality,$/;"	f
 add_size	power/PowerSpicedComponent.c	/^void PowerCallibInputs::add_size(float transistor_size, float power) {$/;"	f	class:PowerCallibInputs
 add_subckt	base/read_blif.c	/^static void add_subckt(int doall, t_model *user_models) {$/;"	f	file:
@@ -2211,6 +2215,7 @@ get_first_pin	place/timing_place_lookup.c	/^static int get_first_pin(enum e_pin_
 get_free_molecule_with_most_ext_inputs_for_cluster	pack/cluster.c	/^static t_pack_molecule *get_free_molecule_with_most_ext_inputs_for_cluster($/;"	f	file:
 get_grid_block_subckt_name	spice/spice_pbtypes.c	/^char* get_grid_block_subckt_name(int x,$/;"	f
 get_grid_side_pin_rr_nodes	spice/spice_routing.c	/^t_rr_node** get_grid_side_pin_rr_nodes(int* num_pin_rr_nodes,$/;"	f
+get_grid_side_pins	route/rr_graph_opincb.c	/^void get_grid_side_pins(int grid_x, int grid_y, $/;"	f	file:
 get_grid_testbench_one_grid_num_sim_clock_cycles	spice/spice_grid_testbench.c	/^int get_grid_testbench_one_grid_num_sim_clock_cycles(FILE* fp, $/;"	f
 get_hash_entry	util/hash.c	/^get_hash_entry(struct s_hash **hash_table, char *name) {$/;"	f
 get_hash_stats	util/hash.c	/^void get_hash_stats(struct s_hash **hash_table, char *hash_table_name){$/;"	f
@@ -2220,6 +2225,7 @@ get_imacro_from_iblk	place/place_macro.c	/^void get_imacro_from_iblk(int * imacr
 get_init_buffer_plan	mrfpga/buffer_insertion.c	/^static t_buffer_plan get_init_buffer_plan( int inode, int num_pins, int* isink_to_inode )$/;"	f	file:
 get_init_buffer_plan_list	mrfpga/buffer_insertion.c	/^static t_buffer_plan_list get_init_buffer_plan_list( int inode, int num_pins, int* isink_to_inode )$/;"	f	file:
 get_int_list_length	mrfpga/buffer_insertion.c	/^static int get_int_list_length( t_linked_int* list )$/;"	f	file:
+get_ipin_switch_index	route/rr_graph_opincb.c	/^int get_ipin_switch_index(t_rr_node* ipin) {$/;"	f	file:
 get_keypress_input	base/graphics.c	/^static bool get_keypress_input, get_mouse_move_input;$/;"	v	file:
 get_length_and_bends_stats	base/stats.c	/^void get_length_and_bends_stats(void) {$/;"	f
 get_longest_segment_length	place/timing_place_lookup.c	/^static int get_longest_segment_length($/;"	f	file:
@@ -2431,6 +2437,7 @@ insert_in_int_list	../../libarchfpga/util.c	/^insert_in_int_list(t_linked_int * 
 insert_in_int_list2	mrfpga/mrfpga_util.c	/^t_linked_int* insert_in_int_list2 (t_linked_int *head, int data )$/;"	f
 insert_in_vptr_list	../../libarchfpga/util.c	/^insert_in_vptr_list(struct s_linked_vptr *head, void *vptr_to_add) {$/;"	f
 insert_llist_node	spice/linkedlist.c	/^t_llist* insert_llist_node(t_llist* cur) {$/;"	f
+insert_node_to_int_list	../../libarchfpga/util.c	/^insert_node_to_int_list(struct s_linked_int *head, int int_to_add) {$/;"	f
 insert_switch_to_buffer_list	mrfpga/buffer_insertion.c	/^static void insert_switch_to_buffer_list( t_buffer_plan_list list, struct s_switch_inf switch_inf_local)$/;"	f	file:
 insert_switch_to_buffer_plan	mrfpga/buffer_insertion.c	/^static t_buffer_plan insert_switch_to_buffer_plan( t_buffer_plan plan, struct s_switch_inf switch_inf_local)$/;"	f	file:
 insert_to_linked_list	base/verilog_writer.c	/^pb_list *insert_to_linked_list(t_pb *pb_new , pb_list *list)$/;"	f
@@ -2999,6 +3006,7 @@ open	../../libarchfpga/ezxml.c	58;"	d	file:
 operator <	power/PowerSpicedComponent.h	/^	const bool operator<(const PowerCallibSize & rhs) {$/;"	f	class:PowerCallibSize
 opin_switch	../../libarchfpga/include/physical_types.h	/^	short opin_switch;$/;"	m	struct:s_segment_inf
 opin_switch	base/vpr_types.h	/^	short opin_switch;$/;"	m	struct:s_seg_details
+opin_to_cb	../../libarchfpga/include/physical_types.h	/^    boolean opin_to_cb;$/;"	m	struct:s_type_descriptor
 opin_to_wire_switch	base/vpr_types.h	/^    short opin_to_wire_switch; \/* mrFPGA: Xifan TANG*\/$/;"	m	struct:s_det_routing_arch
 options	timing/slre.c	/^  enum slre_option options;$/;"	m	struct:slre	typeref:enum:slre::slre_option	file:
 ordered	../../libarchfpga/include/ezxml.h	/^	ezxml_t ordered; \/* next tag, same section and depth, in original order *\/$/;"	m	struct:ezxml
@@ -3663,6 +3671,7 @@ sdc_clocks	timing/read_sdc.c	/^t_sdc_clock * sdc_clocks = NULL; \/* List of cloc
 sdc_file_name	base/vpr_types.h	/^	char *sdc_file_name;$/;"	m	struct:s_packer_opts
 sdf_DFF_delay_printing	base/verilog_writer.c	/^void sdf_DFF_delay_printing(FILE *SDF , t_pb *pb)$/;"	f
 sdf_LUT_delay_printing	base/verilog_writer.c	/^void sdf_LUT_delay_printing(FILE *SDF , t_pb *pb)$/;"	f
+search_in_int_list	../../libarchfpga/util.c	/^t_linked_int* search_in_int_list(t_linked_int* int_list_head, $/;"	f
 search_llist_tail	spice/linkedlist.c	/^t_llist* search_llist_tail(t_llist* head) {$/;"	f
 search_mapped_block	spice/spice_utils.c	/^t_block* search_mapped_block(int x, int y, int z) {$/;"	f
 search_mux_linked_list	spice/spice_mux.c	/^t_llist* search_mux_linked_list(t_llist* mux_head,$/;"	f

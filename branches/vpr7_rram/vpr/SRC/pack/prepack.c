@@ -83,8 +83,7 @@ t_pack_patterns *alloc_and_load_pack_patterns(OUTP int *num_packing_patterns) {
 	nhash = alloc_hash_table();
 	ncount = 0;
 	for (i = 0; i < num_types; i++) {
-		discover_pattern_names_in_pb_graph_node(
-				type_descriptors[i].pb_graph_head, nhash, &ncount);
+		discover_pattern_names_in_pb_graph_node(type_descriptors[i].pb_graph_head, nhash, &ncount);
 	}
 
 	list_of_packing_patterns = alloc_and_init_pattern_list_from_hash(ncount,
@@ -93,15 +92,13 @@ t_pack_patterns *alloc_and_load_pack_patterns(OUTP int *num_packing_patterns) {
 	/* load packing patterns by traversing the edges to find edges belonging to pattern */
 	for (i = 0; i < ncount; i++) {
 		for (j = 0; j < num_types; j++) {
-			expansion_edge = find_expansion_edge_of_pattern(i,
-					type_descriptors[j].pb_graph_head);
+			expansion_edge = find_expansion_edge_of_pattern(i, type_descriptors[j].pb_graph_head);
 			if (expansion_edge == NULL) {
 				continue;
 			}
 			L_num_blocks = 0;
 			list_of_packing_patterns[i].base_cost = 0;
-			backward_expand_pack_pattern_from_edge(expansion_edge,
-					list_of_packing_patterns, i, NULL, NULL, &L_num_blocks);
+			backward_expand_pack_pattern_from_edge(expansion_edge, list_of_packing_patterns, i, NULL, NULL, &L_num_blocks);
 			list_of_packing_patterns[i].num_blocks = L_num_blocks;
 
 			/* Default settings: A section of a netlist must match all blocks in a pack pattern before it can be made a molecule except for carry-chains.  For carry-chains, since carry-chains are typically
@@ -163,26 +160,16 @@ static void discover_pattern_names_in_pb_graph_node(
 	for (i = 0; i < pb_graph_node->num_input_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
 			hasPattern = FALSE;
-			for (k = 0; k < pb_graph_node->input_pins[i][j].num_output_edges;
-					k++) {
-				for (m = 0;
-						m
-								< pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns;
-						m++) {
+			for (k = 0; k < pb_graph_node->input_pins[i][j].num_output_edges; k++) {
+				for (m = 0; m < pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns;	m++) {
 					hasPattern = TRUE;
-					index =
-							add_pattern_name_to_hash(nhash,
-									pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_names[m],
-									ncount);
-					if (pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices
-							== NULL) {
-						pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices = (int*)
-								my_malloc(
-										pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns
-												* sizeof(int));
+					index =	add_pattern_name_to_hash(nhash,	
+                                                     pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_names[m],
+                                                     ncount);
+					if (pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices == NULL) {
+						pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices = (int*) my_malloc(pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns * sizeof(int));
 					}
-					pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices[m] =
-							index;
+					pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices[m] = index;
 				}								
 			}
 			if (hasPattern == TRUE) {
@@ -195,26 +182,16 @@ static void discover_pattern_names_in_pb_graph_node(
 	for (i = 0; i < pb_graph_node->num_output_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
 			hasPattern = FALSE;
-			for (k = 0; k < pb_graph_node->output_pins[i][j].num_output_edges;
-					k++) {
-				for (m = 0;
-						m
-								< pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns;
-						m++) {
+			for (k = 0; k < pb_graph_node->output_pins[i][j].num_output_edges; k++) {
+				for (m = 0;	m < pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns; m++) {
 					hasPattern = TRUE;
-					index =
-							add_pattern_name_to_hash(nhash,
-									pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_names[m],
-									ncount);
-					if (pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices
-							== NULL) {
-						pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices = (int*)
-								my_malloc(
-										pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns
-												* sizeof(int));
+					index =	add_pattern_name_to_hash(nhash,
+                 									 pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_names[m],
+									                 ncount);
+					if (pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices == NULL) {
+						pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices = (int*) my_malloc(pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns* sizeof(int));
 					}
-					pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices[m] =
-							index;
+					pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices[m] =	index;
 				}
 			}
 			if (hasPattern == TRUE) {
@@ -227,26 +204,16 @@ static void discover_pattern_names_in_pb_graph_node(
 	for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
 			hasPattern = FALSE;
-			for (k = 0; k < pb_graph_node->clock_pins[i][j].num_output_edges;
-					k++) {
-				for (m = 0;
-						m
-								< pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns;
-						m++) {
+			for (k = 0; k < pb_graph_node->clock_pins[i][j].num_output_edges; k++) {
+				for (m = 0;	m < pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns;	m++) {
 					hasPattern = TRUE;
-					index =
-							add_pattern_name_to_hash(nhash,
-									pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_names[m],
-									ncount);
-					if (pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices
-							== NULL) {
-						pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices = (int*)
-								my_malloc(
-										pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns
-												* sizeof(int));
+					index =	add_pattern_name_to_hash(nhash,
+													pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_names[m],
+													ncount);
+					if (pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices == NULL) {
+						pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices = (int*) my_malloc(pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns	* sizeof(int));
 					}
-					pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices[m] =
-							index;
+					pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices[m] = index;
 				}
 			}
 			if (hasPattern == TRUE) {
@@ -257,15 +224,9 @@ static void discover_pattern_names_in_pb_graph_node(
 	}
 
 	for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-		for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children;
-				j++) {
-			for (k = 0;
-					k
-							< pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb;
-					k++) {
-				discover_pattern_names_in_pb_graph_node(
-						&pb_graph_node->child_pb_graph_nodes[i][j][k], nhash,
-						ncount);
+		for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
+			for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
+				discover_pattern_names_in_pb_graph_node(&pb_graph_node->child_pb_graph_nodes[i][j][k], nhash, ncount);
 			}
 		}
 	}
@@ -352,14 +313,9 @@ static t_pb_graph_edge * find_expansion_edge_of_pattern(INP int pattern_index,
 
 	for (i = 0; i < pb_graph_node->num_input_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
-			for (k = 0; k < pb_graph_node->input_pins[i][j].num_output_edges;
-					k++) {
-				for (m = 0;
-						m
-								< pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns;
-						m++) {
-					if (pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices[m]
-							== pattern_index) {
+			for (k = 0; k < pb_graph_node->input_pins[i][j].num_output_edges; k++) {
+				for (m = 0;	m < pb_graph_node->input_pins[i][j].output_edges[k]->num_pack_patterns;	m++) {
+					if (pb_graph_node->input_pins[i][j].output_edges[k]->pack_pattern_indices[m] == pattern_index) {
 						return pb_graph_node->input_pins[i][j].output_edges[k];
 					}
 				}
@@ -369,14 +325,9 @@ static t_pb_graph_edge * find_expansion_edge_of_pattern(INP int pattern_index,
 
 	for (i = 0; i < pb_graph_node->num_output_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
-			for (k = 0; k < pb_graph_node->output_pins[i][j].num_output_edges;
-					k++) {
-				for (m = 0;
-						m
-								< pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns;
-						m++) {
-					if (pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices[m]
-							== pattern_index) {
+			for (k = 0; k < pb_graph_node->output_pins[i][j].num_output_edges; k++) {
+				for (m = 0;	m < pb_graph_node->output_pins[i][j].output_edges[k]->num_pack_patterns; m++) {
+					if (pb_graph_node->output_pins[i][j].output_edges[k]->pack_pattern_indices[m] == pattern_index) {
 						return pb_graph_node->output_pins[i][j].output_edges[k];
 					}
 				}
@@ -386,30 +337,20 @@ static t_pb_graph_edge * find_expansion_edge_of_pattern(INP int pattern_index,
 
 	for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
-			for (k = 0; k < pb_graph_node->clock_pins[i][j].num_output_edges;
-					k++) {
-				for (m = 0;
-						m
-								< pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns;
-						m++) {
-					if (pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices[m]
-							== pattern_index) {
+			for (k = 0; k < pb_graph_node->clock_pins[i][j].num_output_edges; k++) {
+				for (m = 0;	m < pb_graph_node->clock_pins[i][j].output_edges[k]->num_pack_patterns; m++) {
+					if (pb_graph_node->clock_pins[i][j].output_edges[k]->pack_pattern_indices[m] == pattern_index) {
 						return pb_graph_node->clock_pins[i][j].output_edges[k];
 					}
 				}
 			}
 		}
 	}
-
+    /* Xifan TANG's note: Go recursively downto the children pb_graph_node*/
 	for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-		for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children;
-				j++) {
-			for (k = 0;
-					k
-							< pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb;
-					k++) {
-				edge = find_expansion_edge_of_pattern(pattern_index,
-						&pb_graph_node->child_pb_graph_nodes[i][j][k]);
+		for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
+			for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
+				edge = find_expansion_edge_of_pattern(pattern_index, &pb_graph_node->child_pb_graph_nodes[i][j][k]);
 				if (edge != NULL) {
 					return edge;
 				}
@@ -456,12 +397,10 @@ static void forward_expand_pack_pattern_from_edge(
 			if (destination_pb_graph_node->temp_scratch_pad == NULL
 				|| ((t_pack_pattern_block*) destination_pb_graph_node->temp_scratch_pad)->pattern_index != curr_pattern_index) {
 				destination_block = (t_pack_pattern_block*)my_calloc(1, sizeof(t_pack_pattern_block));
-				list_of_packing_patterns[curr_pattern_index].base_cost +=
-						compute_primitive_base_cost(destination_pb_graph_node);
+				list_of_packing_patterns[curr_pattern_index].base_cost += compute_primitive_base_cost(destination_pb_graph_node);
 				destination_block->block_id = *L_num_blocks;
 				(*L_num_blocks)++;
-				destination_pb_graph_node->temp_scratch_pad =
-						(void *) destination_block;
+				destination_pb_graph_node->temp_scratch_pad = (void *) destination_block;
 				destination_block->pattern_index = curr_pattern_index;
 				destination_block->pb_type = destination_pb_graph_node->pb_type;
 				for (iport = 0;	iport < destination_pb_graph_node->num_input_ports; iport++) {
@@ -720,8 +659,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 				cur_molecule->next = list_of_molecules_head;
 				/* In the event of multiple molecules with the same logical block pattern, bias to use the molecule with less costly physical resources first */
 				/* TODO: Need to normalize magical number 100 */
-				cur_molecule->base_gain = cur_molecule->num_blocks
-						- (cur_molecule->pack_pattern->base_cost / 100);
+				cur_molecule->base_gain = cur_molecule->num_blocks - (cur_molecule->pack_pattern->base_cost / 100);
 				list_of_molecules_head = cur_molecule;
 				if(logical_block[j].packed_molecules == NULL || logical_block[j].packed_molecules->data_vptr != cur_molecule) {
 					/* molecule did not cover current atom (possibly because molecule created is part of a long chain that extends past multiple logic blocks), try again */
@@ -750,8 +688,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 			cur_molecule->num_ext_inputs = logical_block[i].used_input_pins;
 			cur_molecule->chain_pattern = NULL;
 			cur_molecule->pack_pattern = NULL;
-			cur_molecule->logical_block_ptrs = (t_logical_block**) my_malloc(
-					1 * sizeof(t_logical_block*));
+			cur_molecule->logical_block_ptrs = (t_logical_block**) my_malloc(1 * sizeof(t_logical_block*));
 			cur_molecule->logical_block_ptrs[0] = &logical_block[i];
 			cur_molecule->next = list_of_molecules_head;
 			cur_molecule->base_gain = 1;
@@ -813,8 +750,7 @@ static t_pack_molecule *try_create_molecule(
 	molecule->logical_block_ptrs = (t_logical_block **)my_calloc(molecule->pack_pattern->num_blocks,
 			sizeof(t_logical_block *));
 	molecule->num_blocks = list_of_pack_patterns[pack_pattern_index].num_blocks;
-	molecule->root =
-			list_of_pack_patterns[pack_pattern_index].root_block->block_id;
+	molecule->root = list_of_pack_patterns[pack_pattern_index].root_block->block_id;
 	molecule->num_ext_inputs = 0;
 
 	if(list_of_pack_patterns[pack_pattern_index].is_chain == TRUE) {
@@ -822,8 +758,7 @@ static t_pack_molecule *try_create_molecule(
 		block_index = find_new_root_atom_for_chain(block_index, &list_of_pack_patterns[pack_pattern_index]);
 	}
 
-	if (block_index != OPEN && try_expand_molecule(molecule, block_index,
-			molecule->pack_pattern->root_block) == TRUE) {
+	if (block_index != OPEN && try_expand_molecule(molecule, block_index, molecule->pack_pattern->root_block) == TRUE) {
 		/* Success! commit module */
 		for (i = 0; i < molecule->pack_pattern->num_blocks; i++) {
 			if(molecule->logical_block_ptrs[i] == NULL) {
@@ -832,10 +767,8 @@ static t_pack_molecule *try_create_molecule(
 			}			
 			molecule_linked_list = (struct s_linked_vptr*) my_calloc(1, sizeof(struct s_linked_vptr));
 			molecule_linked_list->data_vptr = (void *) molecule;
-			molecule_linked_list->next =
-					molecule->logical_block_ptrs[i]->packed_molecules;
-			molecule->logical_block_ptrs[i]->packed_molecules =
-					molecule_linked_list;
+			molecule_linked_list->next = molecule->logical_block_ptrs[i]->packed_molecules;
+			molecule->logical_block_ptrs[i]->packed_molecules =	molecule_linked_list;
 		}
 	} else {
 		/* Does not match pattern, free molecule */
@@ -1102,6 +1035,7 @@ static int find_new_root_atom_for_chain(INP int block_index, INP t_pack_patterns
 		return OPEN;
 	}
 
+    /* Xifan TANG: this is trying to find the root logical_block which is the head of a carry chain */
 	/* Assign driver furthest up the chain that matches the root node and is unassigned to a molecule as the root */
 	model_port = root_ipin->port->model_port;
 	driver_net = logical_block[block_index].input_nets[model_port->index][root_ipin->pin_number];
@@ -1110,6 +1044,9 @@ static int find_new_root_atom_for_chain(INP int block_index, INP t_pack_patterns
 		return block_index;
 	}
 
+    /* Xifan TANG: this is trying to find a possible starting logical block, whose preceding block is already assigned
+     *             to another molecule
+     */
 	driver_block = vpack_net[driver_net].node_block[0];
 	if(logical_block[driver_block].packed_molecules != NULL) {
 		/* Driver is used/invalid, so current block is the furthest up the chain, return it */

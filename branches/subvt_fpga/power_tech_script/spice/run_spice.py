@@ -62,6 +62,8 @@ f.write ("Auto Spice\n")
 m = re.search("\.lib$", tech_file)
 if (m) : 
   f.write (".lib \'" + tech_file + "\' TT\n")
+else if (re.search("\.l$", tech_file)
+  f.write (".lib \'" + tech_file + "\' TT_TOP\n")
 else :
   f.write (".include \'" + tech_file + "\'\n")
 

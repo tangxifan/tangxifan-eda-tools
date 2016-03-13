@@ -258,7 +258,7 @@ sub print_usage()
   print "      -two_level_mux <spice>: build two-level MUX(Applicable for both SRAM and RRAM), the SPICE netlist of SRAM/RRAM-based switch should be provided!\n";
   print "      -wprog_sweep <max_wprog>: sweep the wprog when turn on enhancements for RRAM (Valid for MUX only)\n";
   print "      -enum_mux_leakage: test all cases for multiplexer leakages\n";
-  print "      -auto_out_tapered_buffer <level>: automatically add a tapered buffer at output port for high-fan-out nets.\n";
+  print "      -auto_out_tapered_buffer <level>: automatically add a tapered buffer at output port for high-fan-out nets(equivalent fanout = 4^<level>).\n";
   print "      -mux_unbuffered: turn off adding buffers to inputs and outputs of MUXes\n";
   print "      -hspice64 : use 64-bit hspice, by default it is 32bit.\n";
   print "      -debug : debug mode\n";
@@ -1807,19 +1807,19 @@ sub gen_2level_mux_subckt($ $ $ $ $ $) {
       my ($in2lvl) = int($i/$basis);
       my ($offset) = ($i % $basis);
       # Call defined 2level Subckt 
-      &tab_print($spfh, "Xmux2_l1_in$i mux2_l1_in$i mux2_l0_in$in2lvl $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$offset $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$offset svdd sgnd $mux2level_subckt\n",0);
+      &tab_print($spfh, "Xmux2_l2_in$i mux2_l2_in$i mux2_l1_in$in2lvl $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$offset $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$offset svdd sgnd $mux2level_subckt\n",0);
     }
     # Second level 
     for (my $i = 0; $i < $basis; $i++) {
       my ($offset) = ($basis + $i);
-      &tab_print($spfh, "Xmux2_l0_in$i mux2_l0_in$i mux2_l0_in0 $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$offset $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$offset svdd sgnd $mux2level_subckt\n",0);
+      &tab_print($spfh, "Xmux2_l1_in$i mux2_l1_in$i mux2_l0_in0 $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$offset $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$offset svdd sgnd $mux2level_subckt\n",0);
     }
   }
 
   # Add buffers
   for (my $i=0; $i < $mux_size; $i++) {
     if ("buffered" eq $buffered) {
-      &tab_print($spfh,"Xinv$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux2_l1_in$i ",0); 
+      &tab_print($spfh,"Xinv$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux2_l2_in$i ",0); 
       &tab_print($spfh,"svdd sgnd $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'inv_size_in\'\n",0);
       #&tab_print($spfh,"$conf_ptr->{general_settings}->{VDD_port_name}->{val} $conf_ptr->{general_settings}->{GND_port_name}->{val} $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'inv_size_in\'\n",0);
     } else {
@@ -3196,7 +3196,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
           if (0 == $i%2) {
             $input_vectors .= "r,";
           } else { 
-            $input_vectors .= "r,";
+            $input_vectors .= "0,";
           } 
         }  
         $input_vectors =~ s/,$//;
@@ -3213,7 +3213,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
           if (0 == $i%2) {
             $input_vectors .= "f,";
           } else { 
-            $input_vectors .= "f,";
+            $input_vectors .= "0,";
           } 
         }  
         $input_vectors =~ s/,$//;
@@ -3294,7 +3294,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
         if (0 == $i%2) {
           $input_vectors .= "r,";
         } else { 
-          $input_vectors .= "r,";
+          $input_vectors .= "0,";
         } 
       }  
       $input_vectors =~ s/,$//;
@@ -3311,7 +3311,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
         if (0 == $i%2) {
           $input_vectors .= "f,";
         } else { 
-          $input_vectors .= "f,";
+          $input_vectors .= "0,";
         } 
       }  
       $input_vectors =~ s/,$//;

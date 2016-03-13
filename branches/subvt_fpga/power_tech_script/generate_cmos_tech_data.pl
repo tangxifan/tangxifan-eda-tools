@@ -34,15 +34,18 @@ my $simt = "5n";
 my $pn_interval           = 0.1;
 my $pn_search_lower_bound = 0.5;
 my $pn_search_upper_bound = 4.0;
+#my $pn_search_upper_bound = 2.0;
 
 # Transistor Capacitances
 my $max_size      = 500;
+#my $max_size      = 5;
 my $size_interval = 1.05;
 
 # NMOS Pass transistor sizes
 my @nmos_pass_sizes;
 my $nmos_pass_interval = 1.25;
 my $nmos_pass_max_size = 25;
+#my $nmos_pass_max_size = 3;
 
 # Multiplexer Voltages
 my $max_mux_size  = 30;
@@ -788,6 +791,8 @@ sub spice_header {
     $s = $s . ".global Vdd gnd\n";
     if ($tech_file =~ m/\.lib$/) {
 	  $s = $s . ".lib \'$tech_file\' TT\n";
+    } elsif ($tech_file =~ m/\.l$/) {
+	  $s = $s . ".lib \'$tech_file\' TOP_TT\n";
     } else {
 	  $s = $s . ".include \'$tech_file\'\n";
     }
@@ -867,7 +872,7 @@ sub spice_run {
 			/transient analysis.*?$result_name\s*=\s*[+-]*(\S+)/s )
 		{
 			push( @results, $1 );
-            #print "DEBUG: Xifan TANG, $result_name = $1\n";
+            print "<!--DEBUG: Xifan TANG, $result_name = $1 -->\n";
 		}
 		else {
 			die "Could not find $result_name in spice output($spice_out).\n";

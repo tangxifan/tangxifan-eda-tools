@@ -109,6 +109,10 @@ struct s_linked_vptr *insert_in_vptr_list(struct s_linked_vptr *head,
 struct s_linked_vptr *delete_in_vptr_list(struct s_linked_vptr *head);
 t_linked_int *insert_in_int_list(t_linked_int * head, int data,
 		t_linked_int ** free_list_head_ptr);
+/* Xifan TANG:  Search the int list */
+t_linked_int* insert_node_to_int_list(struct s_linked_int *head, int int_to_add);
+t_linked_int* search_in_int_list(t_linked_int* int_list_head, int data_target);
+/* END */
 void free_int_list(t_linked_int ** int_list_head_ptr);
 void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
 		int num_items, struct s_ivec *ivec, t_linked_int ** free_list_head_ptr);

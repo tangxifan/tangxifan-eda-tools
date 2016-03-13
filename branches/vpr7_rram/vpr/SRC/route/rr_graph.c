@@ -19,6 +19,9 @@
 /* Xifan TANG: SWSEG SUPPORT */
 #include "rr_graph_swseg.h" 
 /* end */
+/* Xifan TANG: opin_to_cb support */
+#include "rr_graph_opincb.h" 
+/* end */
 
 /* mrFPGA: Xifan TANG */
 #include "mrfpga_globals.h" 
@@ -432,6 +435,12 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 			}
 		}
 	}
+
+    /* Xifan TANG: Add Fast Interconnection from LB OPINs to adjacent LB IPINs*/
+    vpr_printf(TIO_MESSAGE_INFO,"Adding %d fast edges from logic block OPIN to logic block IPIN ...\n",
+               add_rr_graph_fast_edge_opin_to_cb(rr_node_indices));
+    /*END*/
+
 
     /*Xifan TANG: Switch Segment Pattern Support*/
     if (NULL != swseg_patterns) { // Do only the pointer is not NULL

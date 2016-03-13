@@ -1,9 +1,9 @@
 Auto Spice
-.lib '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/power_tech_script/tech/MM180_LVT18_V113.lib' TT
-.param tech = 180e-9
+.include '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/process/tsmc40nm/toplevel_crn45gs_2d5_v1d1_shrink0d9_embedded_usage.l'
+.param tech = 40e-9
 .param tempr = 25
 .param simt = 5n
-.param Vol=1.8
+.param Vol=0.9
 .param pnratio=2
 .include /home/xitang/tangxifan-eda-tools/branches/subvt_fpga/power_tech_script/spice/subckt/nmos_pmos.sp
 .include /home/xitang/tangxifan-eda-tools/branches/subvt_fpga/power_tech_script/spice/subckt/mux2.sp

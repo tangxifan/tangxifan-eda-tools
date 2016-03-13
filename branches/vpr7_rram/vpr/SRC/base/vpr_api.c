@@ -74,7 +74,7 @@ void vpr_print_title(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "Compiled: " __DATE__ ".\n");
 	vpr_printf(TIO_MESSAGE_INFO, "University of Toronto\n");
 	vpr_printf(TIO_MESSAGE_INFO, "vpr@eecg.utoronto.ca\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Enhancements: mrFPGA, RRAM, SWSEG, SPICE, CLB_PIN_REMAP by Xifan TANG, EPFL/LSI\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Enhancements: mrFPGA, RRAM, SWSEG, SPICE, OPIN_TO_CB, CLB_PIN_REMAP by Xifan TANG, EPFL/LSI\n");
 	vpr_printf(TIO_MESSAGE_INFO, "xifan.tang@epfl.ch\n");
 	vpr_printf(TIO_MESSAGE_INFO, "This is free open source code under MIT license.\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
