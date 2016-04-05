@@ -23,14 +23,14 @@
 .temp 25
 .param beta = 1
 .param alpha = 3
-*.param nl = 40e-9
-*.param pl = 40e-9
-*.param wn = '140e-9'
-*.param wp = 'beta*140e-9'
-.param nl = 270e-9
-.param pl = 270e-9
-.param wn = '320e-9'
-.param wp = 'beta*320e-9'
+.param nl = 40e-9
+.param pl = 40e-9
+.param wn = '140e-9'
+.param wp = 'beta*140e-9'
+*.param nl = 270e-9
+*.param pl = 270e-9
+*.param wn = '320e-9'
+*.param wp = 'beta*320e-9'
 
 .option POST 
 .option captab

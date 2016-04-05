@@ -1322,7 +1322,7 @@ sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
   &tab_print($spfh,".param input_slew=$input_slew\n",0);
   &tab_print($spfh,".param inv_size_in=$inv_size_in\n",0);
   &tab_print($spfh,".param inv_size_out=$inv_size_out\n",0);
-  
+ 
   if ($rram_enhance) {
     # Print info
     print "RRAM info:\n";
@@ -1346,6 +1346,11 @@ sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
     } else {
       &tab_print($spfh,".include \'$conf_ptr->{rram_settings}->{rram_verilogA_model_path}->{val}\'\n",0);
     }
+
+    # TODO: could be more flexible
+    my ($op_clock_period) = &process_unit($conf_ptr->{general_settings}->{clk_slew}->{val},"time")*10;
+    print "Auto determine clock period at operation mode is $op_clock_period (=10*clk_slew)\n";
+    &tab_print($spfh,".param op_clk_period=\'$op_clock_period\'\n",0);
   }
  
   &tab_print($spfh,"* Include Circuits Library\n",0);
@@ -1424,17 +1429,23 @@ sub gen_rram_mux_sp_stimulates($) {
   # Add Stimulates: Standard VDD
   &tab_print($spfh,"* Standard Vdd\n",0);
   &tab_print($spfh,"* PUSLE(V1 V2 TDELAY TRISE TFALL PW PERIOD)\n",0);
-  &tab_print($spfh,"Vsupply $conf_ptr->{general_settings}->{VDD_port_name}->{val} 0 pulse(0 vsp \'(4*N+4)*tprog\' \'input_slew\' \'input_slew\' \'(2*N+1)*tprog\' \'(6*N+5)*tprog\')\n",0);
-  &tab_print($spfh, "Vload_supply $conf_ptr->{general_settings}->{LOAD_VDD_port_name}->{val} 0 pulse(0 vsp \'(4*N+4)*tprog\' \'input_slew\' \'input_slew\' \'(2*N+1)*tprog\' \'(6*N+5)*tprog\')\n",0);
+  
+  # Old settings: consider op_clk_period = 2*tprog
+  #&tab_print($spfh,"Vsupply $conf_ptr->{general_settings}->{VDD_port_name}->{val} 0 pulse(0 vsp \'(4*N+4)*tprog\' \'input_slew\' \'input_slew\' \'(2*N+1)*tprog\' \'(6*N+5)*tprog\')\n",0);
+  #&tab_print($spfh, "Vload_supply $conf_ptr->{general_settings}->{LOAD_VDD_port_name}->{val} 0 pulse(0 vsp \'(4*N+4)*tprog\' \'input_slew\' \'input_slew\' \'(2*N+1)*tprog\' \'(6*N+5)*tprog\')\n",0);
+
+  # New: use op_clk_period independent from tprog
+  &tab_print($spfh,"Vsupply $conf_ptr->{general_settings}->{VDD_port_name}->{val} 0 pulse(0 vsp \'(2*N+4)*tprog\' \'input_slew\' \'input_slew\' \'(N+0.4)*op_clk_period\' \'(2*N+4)*tprog+(N+0.4)*op_clk_period\')\n",0);
+  &tab_print($spfh, "Vload_supply $conf_ptr->{general_settings}->{LOAD_VDD_port_name}->{val} 0 pulse(0 vsp \'(2*N+4)*tprog\' \'input_slew\' \'input_slew\' \'(N+0.4)*op_clk_period\' \'(2*N+4)*tprog+(N+0.4)*op_clk_period\')\n",0);
 
   if ("0" ne $conf_ptr->{general_settings}->{GND_port_name}->{val}) {
     &tab_print($spfh,"Vgnd $conf_ptr->{general_settings}->{GND_port_name}->{val} 0 0\n",0);
   }
   # Add Stimulates: Programming Vdd
   &tab_print($spfh,"* Programming Vdd\n",0);
-  &tab_print($spfh,"Vprog_vdd prog_vdd 0 pulse(\'+vprog/2\' \'vsp\' \'(2*N+1)*tprog\' input_slew input_slew \'(4*N+4)*tprog\' \'(6*N+5)*tprog\')\n",0);
+  &tab_print($spfh,"Vprog_vdd prog_vdd 0 pulse(\'+vprog/2\' \'vsp\' \'(2*N+1)*tprog\' input_slew input_slew \'3*tprog+(N+0.4)*op_clk_period\' \'(2*N+4)*tprog+(N+0.4)*op_clk_period\')\n",0);
   #&tab_print($spfh,"Vprog_vdd_bulk prog_vdd_bulk 0 pulse(\'vprog\' \'vsp\' \'(4*N+4)*tprog\' input_slew input_slew \'(4*N+4)*tprog\' \'(6*N+5)*tprog\')\n",0);
-  &tab_print($spfh,"Vprog_gnd prog_gnd 0 pulse(\'-vprog/2\' 0 \'(2*N+1)*tprog\' input_slew input_slew \'(4*N+4)*tprog\' \'(6*N+5)*tprog\')\n",0);
+  &tab_print($spfh,"Vprog_gnd prog_gnd 0 pulse(\'-vprog/2\' 0 \'(2*N+1)*tprog\' input_slew input_slew \'3*tprog+N*op_clk_period\' \'(2*N+4)*tprog+N*op_clk_period\')\n",0);
  
   # Add Stimulates: Controlling signals for programming RRAM.
   &tab_print($spfh,"* Control signals for Programming Vdd\n",0);
@@ -1446,8 +1457,8 @@ sub gen_rram_mux_sp_stimulates($) {
   &tab_print($spfh,"+   \'2*tprog\' \'+vprog/2\' \n",0);
   &tab_print($spfh,"+   \'(2*N+1)*tprog-input_slew\' \'+vprog/2\' \n",0);
   &tab_print($spfh,"+   \'(2*N+1)*tprog\' \'+vprog/2\' \n",0);
-  &tab_print($spfh,"+   \'(4*N+4)*tprog-input_slew\' \'+vprog/2\'  \n",0);
-  &tab_print($spfh,"+   \'(4*N+4)*tprog\' \'vsp\')\n",0);
+  &tab_print($spfh,"+   \'(2*N+4)*tprog-input_slew\' \'+vprog/2\'  \n",0);
+  &tab_print($spfh,"+   \'(2*N+4)*tprog\' \'vsp\')\n",0);
   #&tab_print($spfh,"pulse(\'+vprog/2+vsp/2\' \'-vprog/2+vsp/2\' tprog input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
   # WL[0] should be always 0 during the programming phase, flip once during the uncharge phase
   &tab_print($spfh,"Vwl[0] wl[0] 0 ",0);
@@ -1455,17 +1466,17 @@ sub gen_rram_mux_sp_stimulates($) {
   &tab_print($spfh,"pwl(0 \'-vprog/2\' \n",0); 
   &tab_print($spfh,"+   \'(2*N+1)*tprog-input_slew\' \'-vprog/2\'\n",0);  
   &tab_print($spfh,"+   \'(2*N+1)*tprog\' \'0\'\n",0);  
-  # For uncharge phase
+  # For discharge phase
   &tab_print($spfh,"+   \'(1+2*N+1)*tprog-input_slew\' \'0\'\n",0);  
   &tab_print($spfh,"+   \'(1+2*N+1)*tprog\' \'vsp\'\n",0);  
   &tab_print($spfh,"+   \'(2+2*N+1)*tprog-input_slew\' \'vsp\'\n",0);   
   &tab_print($spfh,"+   \'(2+2*N+1)*tprog\' \'0\'\n",0);   
-  &tab_print($spfh,"+   \'(6*N+5)*tprog\' 0)\n",0);
+  &tab_print($spfh,"+   \'(2*N+4)*tprog+(N+0.4)*op_clk_period\' 0)\n",0);
 
   for (my $i=1; $i < $opt_ptr->{mux_size_val}; $i++) {
     # BL[i]_b 1 <= i < mux_size should be always 0
     &tab_print($spfh,"Vbl[$i]_b bl[$i]_b 0 ",0);
-    &tab_print($spfh,"pulse(\'+vprog/2\' \'vsp\' \'(4*N+4)*tprog\' input_slew input_slew \'(2*N+1)*tprog\' \'(6*N+5)*tprog\')\n",0);
+    &tab_print($spfh,"pulse(\'+vprog/2\' \'vsp\' \'(2*N+1)*tprog\' input_slew input_slew \'3*tprog+N*op_clk_period\' \'(2*N+4)*tprog+(N+0.4)*op_clk_period\')\n",0);
     #&tab_print($spfh,"pulse(\'+vprog/2+vsp/2\' vsp\' \'(1+2*$i)*tprog\' input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
     # WL[1..N] should flip once during the programming phase, flip once during the uncharge phase
     &tab_print($spfh,"Vwl[$i] wl[$i] 0 ",0);
@@ -1476,12 +1487,18 @@ sub gen_rram_mux_sp_stimulates($) {
     &tab_print($spfh,"+   \'(2+2*$i)*tprog\' \'-vprog/2\'\n",0); 
     &tab_print($spfh,"+   \'(2*N+1)*tprog-input_slew\' \'-vprog/2\'\n",0);  
     &tab_print($spfh,"+   \'(2*N+1)*tprog\' \'0\'\n",0);  
-    # For uncharge phase
-    &tab_print($spfh,"+   \'(1+2*$i+2*N+1)*tprog-input_slew\' \'0\'\n",0); 
-    &tab_print($spfh,"+   \'(1+2*$i+2*N+1)*tprog\' \'vprog\'\n",0); 
-    &tab_print($spfh,"+   \'(2+2*$i+2*N+1)*tprog-input_slew\' \'vprog\'\n",0); 
-    &tab_print($spfh,"+   \'(2+2*$i+2*N+1)*tprog\' \'0\'\n",0); 
-    &tab_print($spfh,"+   \'(6*N+5)*tprog\' 0)\n",0);
+    # For discharge phase
+    &tab_print($spfh,"+   \'(1+2*N+1)*tprog-input_slew\' \'0\'\n",0);  
+    &tab_print($spfh,"+   \'(1+2*N+1)*tprog\' \'vsp\'\n",0);  
+    &tab_print($spfh,"+   \'(2+2*N+1)*tprog-input_slew\' \'vsp\'\n",0);   
+    &tab_print($spfh,"+   \'(2+2*N+1)*tprog\' \'0\'\n",0);   
+    &tab_print($spfh,"+   \'(2*N+4)*tprog+(N+0.4)*op_clk_period\' 0)\n",0);
+    # old stuff: discharge WL one by one
+    #&tab_print($spfh,"+   \'(1+2*$i+2*N+1)*tprog-input_slew\' \'0\'\n",0); 
+    #&tab_print($spfh,"+   \'(1+2*$i+2*N+1)*tprog\' \'vprog\'\n",0); 
+    #&tab_print($spfh,"+   \'(2+2*$i+2*N+1)*tprog-input_slew\' \'vprog\'\n",0); 
+    #&tab_print($spfh,"+   \'(2+2*$i+2*N+1)*tprog\' \'0\'\n",0); 
+    #&tab_print($spfh,"+   \'(6*N+5)*tprog\' 0)\n",0);
     #&tab_print($spfh,"pulse(\'-vprog/2+vsp/2\' \'+vprog/2+vsp/2\' \'(1+2*$i)*tprog\' input_slew input_slew tprog \'(4*N+2)*tprog\')\n",0);
   }
   my ($mux_size) = ($opt_ptr->{mux_size_val});
@@ -1495,9 +1512,9 @@ sub gen_rram_mux_sp_stimulates($) {
   }
   &tab_print($spfh,"+   \'(2*N+1)*tprog-input_slew\' \'+vprog/2\'  \n",0);
   &tab_print($spfh,"+   \'(2*N+1)*tprog\' \'vsp\'  \n",0);
-  # For uncharge phase
-  &tab_print($spfh,"+   \'(4*N+4)*tprog-input_slew\' \'vsp\'  \n",0);
-  &tab_print($spfh,"+   \'(4*N+4)*tprog\' \'vsp\')\n",0);
+  # For discharge phase
+  &tab_print($spfh,"+   \'(2*N+4)*tprog-input_slew\' \'vsp\'  \n",0);
+  &tab_print($spfh,"+   \'(2*N+4)*tprog\' \'vsp\')\n",0);
   # WL[mux_size] should be always 0 except the first cycle
   &tab_print($spfh,"Vwl[$mux_size] wl[$mux_size] 0 ",0);
   &tab_print($spfh,"pwl(0 \'-vprog/2\' \n",0);
@@ -1507,18 +1524,24 @@ sub gen_rram_mux_sp_stimulates($) {
   &tab_print($spfh,"+   \'2*tprog\' \'-vprog/2\'  \n",0);
   &tab_print($spfh,"+   \'(2*N+1)*tprog-input_slew\' \'-vprog/2\'  \n",0);
   &tab_print($spfh,"+   \'(2*N+1)*tprog\' \'0\'  \n",0);
-  # For uncharge phase
-  &tab_print($spfh,"+   \'(1+2*N+2*N+1)*tprog-input_slew\' \'0\'\n",0); 
-  &tab_print($spfh,"+   \'(1+2*N+2*N+1)*tprog\' \'vsp\'\n",0); 
-  &tab_print($spfh,"+   \'(2+2*N+2*N+1)*tprog-input_slew\' \'vsp\'\n",0); 
-  &tab_print($spfh,"+   \'(2+2*N+2*N+1)*tprog\' \'0\'\n",0); 
-  &tab_print($spfh,"+   \'(6*N+5)*tprog\' \'0\' ) \n",0);
+  # For discharge phase
+  &tab_print($spfh,"+   \'(1+2*N+1)*tprog-input_slew\' \'0\'\n",0);  
+  &tab_print($spfh,"+   \'(1+2*N+1)*tprog\' \'vsp\'\n",0);  
+  &tab_print($spfh,"+   \'(2+2*N+1)*tprog-input_slew\' \'vsp\'\n",0);   
+  &tab_print($spfh,"+   \'(2+2*N+1)*tprog\' \'0\'\n",0);   
+  &tab_print($spfh,"+   \'(2*N+4)*tprog+(N+0.4)*op_clk_period\' 0)\n",0);
+  # old stuff: dischage WL one by one
+  #&tab_print($spfh,"+   \'(1+2*N+2*N+1)*tprog-input_slew\' \'0\'\n",0); 
+  #&tab_print($spfh,"+   \'(1+2*N+2*N+1)*tprog\' \'vsp\'\n",0); 
+  #&tab_print($spfh,"+   \'(2+2*N+2*N+1)*tprog-input_slew\' \'vsp\'\n",0); 
+  #&tab_print($spfh,"+   \'(2+2*N+2*N+1)*tprog\' \'0\'\n",0); 
+  #&tab_print($spfh,"+   \'(6*N+5)*tprog\' \'0\' ) \n",0);
 
   # Add Stimulates, input_ports
   &tab_print($spfh,"* MUX inputs signals\n",0);
   for (my $i=0; $i<$opt_ptr->{mux_size_val}; $i++) {
     &tab_print($spfh,"Vin$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i 0 ",0);
-    &tab_print($spfh,"pulse(0 vsp \'(4*N+4+1+$i*2)*tprog\' input_slew input_slew tprog \'(6*N+5)*tprog\')\n",0);
+    &tab_print($spfh,"pulse(0 vsp \'(2*N+4)*tprog+(0.4+$i)*op_clk_period\' input_slew input_slew \'0.4*op_clk_period\' \'(2*N+4)*tprog+(N+0.4)*op_clk_period\')\n",0);
   }
   &tab_print($spfh,"\n",0);
   
@@ -1587,34 +1610,34 @@ sub gen_rram_mux_sp_measure($ $ $ $ $ $ $) {
   my ($spfh,$tran_step,$tran_time,$delay_measure,$delay_measure_input,$input_vector_type,$output_vector_type) = @_;
 
   # .Tran
-  &tab_print($spfh,".tran $tran_step \'(6*N+5)*tprog\'\n",0);
+  &tab_print($spfh,".tran $tran_step \'(2*N+4)*tprog+(N+0.4)*op_clk_period\'\n",0);
   &tab_print($spfh,"\n",0);
 
   # Measure
-  &tab_print($spfh,".measure tran pleak avg p(vsupply) from=\'(4*N+4)*tprog\' to=\'(4*N+5)*tprog'\n",0);
+  &tab_print($spfh,".measure tran pleak avg p(vsupply) from=\'(2*N+4)*tprog\' to=\'(2*N+4)*tprog+0.4*op_clk_period'\n",0);
 
   if (1 == $delay_measure) {
     &tab_print($spfh,"* Measure delay: rising edge \n",0);
     $input_vector_type = "rise";
     $output_vector_type = "rise";
-    &tab_print($spfh,".measure tran dly_mux_rise trig v($conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$delay_measure_input) val=\'input_threshold_pct_$input_vector_type*vsp\' $input_vector_type=1 td=\'(4*N+5)*tprog\'\n",0);
-    &tab_print($spfh,"+                     targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'output_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(4*N+5)*tprog\'\n",0);
-    &tab_print($spfh,".measure tran slew_mux_rise trig v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_lower_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(4*N+5)*tprog\'\n",0);
-    &tab_print($spfh,"+                      targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_upper_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(4*N+5)*tprog\'\n",0);
-    &tab_print($spfh,".measure tran pdynamic_rise avg p(vsupply) from=\'(4*N+5)*tprog\' to=\'(4*N+5)*tprog+input_slew+slew_mux_rise\'\n",0);
+    &tab_print($spfh,".measure tran dly_mux_rise trig v($conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$delay_measure_input) val=\'input_threshold_pct_$input_vector_type*vsp\' $input_vector_type=1 td=\'(2*N+4)*tprog+0.4*op_clk_period\'\n",0);
+    &tab_print($spfh,"+                     targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'output_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2*N+4)*tprog+0.4*op_clk_period\'\n",0);
+    &tab_print($spfh,".measure tran slew_mux_rise trig v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_lower_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2*N+4)*tprog+0.4*op_clk_period\'\n",0);
+    &tab_print($spfh,"+                      targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_upper_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2*N+4)*tprog+0.4*op_clk_period\'\n",0);
+    &tab_print($spfh,".measure tran pdynamic_rise avg p(vsupply) from=\'(2*N+4)*tprog+0.4*op_clk_period\' to=\'(2*N+4)*tprog+input_slew+slew_mux_rise+0.4*op_clk_period\'\n",0);
     &tab_print($spfh,".measure tran energy_per_toggle_rise param=\'pdynamic_rise*(input_slew+slew_mux_rise)\'\n",0);
     &tab_print($spfh,"* Measure delay: falling edge \n",0);
     $input_vector_type = "fall";
     $output_vector_type = "fall";
-    &tab_print($spfh,".measure tran dly_mux_fall trig v($conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$delay_measure_input) val=\'input_threshold_pct_$input_vector_type*vsp\' $input_vector_type=1 td=\'(4*N+6)*tprog\'\n",0);
-    &tab_print($spfh,"+                     targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'output_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(4*N+6)*tprog\'\n",0);
-    &tab_print($spfh,".measure tran slew_mux_fall trig v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_lower_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(4*N+6)*tprog\'\n",0);
-    &tab_print($spfh,"+                      targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_upper_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(4*N+6)*tprog\'\n",0);
-    &tab_print($spfh,".measure tran pdynamic_fall avg p(vsupply) from=\'(4*N+6)*tprog\' to=\'(4*N+6)*tprog+input_slew+slew_mux_fall\'\n",0);
+    &tab_print($spfh,".measure tran dly_mux_fall trig v($conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$delay_measure_input) val=\'input_threshold_pct_$input_vector_type*vsp\' $input_vector_type=1 td=\'(2*N+4)*tprog+0.9*op_clk_period\'\n",0);
+    &tab_print($spfh,"+                     targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'output_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2*N+4)*tprog+0.9*op_clk_period\'\n",0);
+    &tab_print($spfh,".measure tran slew_mux_fall trig v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_lower_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2*N+4)*tprog+0.9*op_clk_period\'\n",0);
+    &tab_print($spfh,"+                      targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_upper_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2*N+4)*tprog+0.9*op_clk_period\'\n",0);
+    &tab_print($spfh,".measure tran pdynamic_fall avg p(vsupply) from=\'(2*N+4)*tprog\' to=\'(2*N+4)*tprog+input_slew+slew_mux_fall+0.9*op_clk_period\'\n",0);
     &tab_print($spfh,".measure tran energy_per_toggle_fall param=\'pdynamic_fall*(input_slew+slew_mux_fall)\'\n",0);
 
-    &tab_print($spfh,".measure tran avg_vmux_high avg V($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) from=\'(4*N+5)*tprog+input_slew+slew_mux_rise\' to=\'(4*N+6)*tprog\'\n",0);
-    &tab_print($spfh,".measure tran avg_vmux_low avg V($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) from=\'(4*N+6)*tprog+input_slew+slew_mux_fall\' to=\'(6*N+5)*tprog\'\n",0);
+    &tab_print($spfh,".measure tran avg_vmux_high avg V($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) from=\'(2*N+4)*tprog+input_slew+slew_mux_rise+0.4*op_clk_period\' to=\'(2*N+4)*tprog+0.9*op_clk_period\'\n",0);
+    &tab_print($spfh,".measure tran avg_vmux_low avg V($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) from=\'(2*N+4)*tprog+input_slew+slew_mux_fall+0.9*op_clk_period\' to=\'(2*N+4)*tprog+(N+0.4)*op_clk_period\'\n",0);
   }
   &tab_print($spfh,".end Sub-Vt MUX HSPICE Bench\n",0);
 
@@ -3196,7 +3219,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
           if (0 == $i%2) {
             $input_vectors .= "r,";
           } else { 
-            $input_vectors .= "0,";
+            $input_vectors .= "r,";
           } 
         }  
         $input_vectors =~ s/,$//;
@@ -3213,7 +3236,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
           if (0 == $i%2) {
             $input_vectors .= "f,";
           } else { 
-            $input_vectors .= "0,";
+            $input_vectors .= "f,";
           } 
         }  
         $input_vectors =~ s/,$//;
@@ -3294,7 +3317,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
         if (0 == $i%2) {
           $input_vectors .= "r,";
         } else { 
-          $input_vectors .= "0,";
+          $input_vectors .= "r,";
         } 
       }  
       $input_vectors =~ s/,$//;
@@ -3311,7 +3334,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
         if (0 == $i%2) {
           $input_vectors .= "f,";
         } else { 
-          $input_vectors .= "0,";
+          $input_vectors .= "f,";
         } 
       }  
       $input_vectors =~ s/,$//;

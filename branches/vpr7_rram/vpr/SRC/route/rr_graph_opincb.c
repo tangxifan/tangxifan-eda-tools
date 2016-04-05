@@ -25,7 +25,7 @@ int add_rr_graph_one_grid_fast_edge_opin_to_cb(int grid_x,
 
 static 
 void get_grid_side_pins(int grid_x, int grid_y, 
-                        enum e_side side, enum e_pin_type pin_type,
+                        int side, enum e_pin_type pin_type,
                         t_ivec*** LL_rr_node_indices,
                         int *num_pins, t_rr_node** *pin_list);
 
@@ -40,11 +40,39 @@ int add_opin_fast_edge_to_ipin(t_rr_node* opin,
 static 
 int get_ipin_switch_index(t_rr_node* ipin);
 
+static 
+void find_rr_nodes_ipin_driver_switch();
+
+static 
+void recover_rr_nodes_ipin_driver_switch();
+
 /* Xifan TANG: Create Fast Interconnection between LB OPIN and CB INPUT*/
 /* TOP function */
 int add_rr_graph_fast_edge_opin_to_cb(t_ivec*** LL_rr_node_indices) {
   int ix, iy;
   int add_edge_counter = 0;
+  int run_opintocb = 0;
+
+  /* Decide if we run this part */
+
+  /* For each grid, include I/O*/
+  for (ix = 1; ix < (nx+1); ix++) {
+    for (iy = 1; iy < (ny+1); iy++) {
+      if ((EMPTY_TYPE != grid[ix][iy].type)&&(TRUE == grid[ix][iy].type->opin_to_cb)) {
+        run_opintocb = 1;
+        break;
+      }
+    }
+    if (1 == run_opintocb) {
+      break;
+    }
+  }
+
+  if (0 == run_opintocb) {
+    return add_edge_counter;
+  }
+
+  find_rr_nodes_ipin_driver_switch();
 
   /* For each grid, include I/O*/
   for (ix = 1; ix < (nx+1); ix++) {
@@ -52,6 +80,8 @@ int add_rr_graph_fast_edge_opin_to_cb(t_ivec*** LL_rr_node_indices) {
       add_edge_counter += add_rr_graph_one_grid_fast_edge_opin_to_cb(ix, iy, LL_rr_node_indices);
     }
   }
+
+  recover_rr_nodes_ipin_driver_switch();
 
   return add_edge_counter;
 }
@@ -61,6 +91,8 @@ static
 int add_rr_graph_one_grid_fast_edge_opin_to_cb(int grid_x, 
                                                int grid_y,
                                                t_ivec*** LL_rr_node_indices) {
+  int opin_side, ipin_side;
+  boolean early_stop = FALSE;
   int num_opins = 0;
   t_rr_node** opin_list = NULL;
   int num_ipins = 0;
@@ -83,158 +115,237 @@ int add_rr_graph_one_grid_fast_edge_opin_to_cb(int grid_x,
   /* Check each side of this grid,
    * determine how many adjacent LB should be taken into account.
    */
-  /* TOP side*/
-  /* Check if there is one grid above*/
-  if (grid_y < ny) {
-    /* Find the opins on the top side of current grid */   
-    get_grid_side_pins(grid_x, grid_y, TOP, DRIVER, LL_rr_node_indices, &num_opins, &opin_list);
-    /* Find the IPINs on the top side of the grid above*/
-    /* If the above grid is an I/O, we only need IPINs at the bottom side */
-    get_grid_side_pins(grid_x, grid_y+1, TOP, RECEIVER, LL_rr_node_indices, &num_ipins, &ipin_list);
-    /* Create fast edge from the OPINs to IPINs*/
-    add_edge_counter += add_opin_list_ipin_list_fast_edge(num_opins, opin_list, num_ipins, ipin_list);
-    /* Free ipin_list */
-    num_ipins = 0;
-    free(ipin_list);
-    /* Find the IPINs on the bottom side of the grid above*/
-    if ((grid_y + 1) < (ny + 1)) { /* Make sure this is not the most bottom grid */
-      get_grid_side_pins(grid_x, grid_y+1, BOTTOM, RECEIVER, LL_rr_node_indices, &num_ipins, &ipin_list);
-      /* Create fast edge from the OPINs to IPINs*/
-      add_edge_counter += add_opin_list_ipin_list_fast_edge(num_opins, opin_list, num_ipins, ipin_list);
-      /* Free ipin_list */
-      num_ipins = 0;
-      free(ipin_list);
+  for (opin_side = 0; opin_side < 4; opin_side++) {
+    early_stop = FALSE;
+    switch(opin_side) {
+    case TOP:
+      /* Only I/O on the bottom side of FPGA allows to continue */
+      if ((0 == grid_x)||(ny + 1 == grid_y)||(nx + 1 == grid_x)) {
+        early_stop = TRUE;
+      }
+      break;
+    case RIGHT:
+      /* Only I/O on the left side of FPGA allows to continue */
+      if ((0 == grid_y)||(ny + 1 == grid_y)||(nx + 1 == grid_x)) {
+        early_stop = TRUE;
+      }
+      break;
+    case BOTTOM:
+      /* Only I/O on the top side of FPGA allows to continue */
+      if ((0 == grid_x)||(0 == grid_y)||(nx + 1 == grid_x)) {
+        early_stop = TRUE;
+      }
+      break;
+    case LEFT:
+      /* Only I/O on the right side of FPGA allows to continue */
+      if ((0 == grid_x)||(ny + 1 == grid_y)||(0 == grid_y)) {
+        early_stop = TRUE;
+      }
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File: %s, [LINE%d]) Invalid opin_side(%d)!\n", 
+                 __FILE__, __LINE__, opin_side);
+      exit(1);
     }
-    /* Find the IPINs on the bottom side of the grid below */
-    if (grid_y-1 > 0) { /* Make sure this is not the most bottom grid */
-      get_grid_side_pins(grid_x, grid_y-1, TOP, RECEIVER, LL_rr_node_indices, &num_ipins, &ipin_list);
-      /* Create fast edge from the OPINs to IPINs*/
-      add_edge_counter += add_opin_list_ipin_list_fast_edge(num_opins, opin_list, num_ipins, ipin_list);
-      /* Free ipin_list */
-      num_ipins = 0;
-      free(ipin_list);
+    /* Decide if we should do something or not */
+    if (TRUE == early_stop) {
+      continue;
+    }
+      
+    /* Find the opins on the opin_side of current grid */   
+    get_grid_side_pins(grid_x, grid_y, opin_side, DRIVER, LL_rr_node_indices, &num_opins, &opin_list);
+    if (0 == num_opins) { /* Do nothing if there is no OPIN available */
+      continue;
+    }
+
+    switch(opin_side) {
+    case TOP:
+      /* Create fast connection to the grid above*/
+      for (ipin_side = 0; ipin_side < 4; ipin_side++) {
+        /* For the grid on the boundary, we only create connections to the bottom side */
+        if (((grid_y + 1) == (ny + 1))&&(BOTTOM != ipin_side)) { 
+          continue;
+        }
+        /* We also skip the top side because we believe a IPIN at the top side 
+         * can be swapped to others by using logic equivalence. Which is faster. 
+         */
+        if (TOP == ipin_side) {
+          continue; 
+        }
+        get_grid_side_pins(grid_x, grid_y+1, ipin_side, RECEIVER, LL_rr_node_indices, &num_ipins, &ipin_list);
+        /* Create fast edge from the OPINs to IPINs*/
+        add_edge_counter += add_opin_list_ipin_list_fast_edge(num_opins, opin_list, num_ipins, ipin_list);
+        /* Free ipin_list */
+        num_ipins = 0;
+        free(ipin_list);
+      }
+      /* If this is already the bottom side of FPGA, we skip */
+      if (0 == grid_y) { 
+        break;
+      }
+      /* Create fast connection to the grid below */
+      for (ipin_side = 0; ipin_side < 4; ipin_side++) {
+        /* For the grid on the boundary, we only create connections to the top side */
+        if (((grid_y - 1) == 0)&&(TOP != ipin_side)) { 
+          continue;
+        }
+        /* We also skip the bottom side because we believe a IPIN at the bottom side 
+         * can be swapped to others by using logic equivalence. Which is faster. 
+         */
+        if (BOTTOM == ipin_side) {
+          continue; 
+        }
+        get_grid_side_pins(grid_x, grid_y-1, ipin_side, RECEIVER, LL_rr_node_indices, &num_ipins, &ipin_list);
+        /* Create fast edge from the OPINs to IPINs*/
+        add_edge_counter += add_opin_list_ipin_list_fast_edge(num_opins, opin_list, num_ipins, ipin_list);
+        /* Free ipin_list */
+        num_ipins = 0;
+        free(ipin_list);
+      }
+      break;
+    case RIGHT:
+      /* Create fast connection to the grid on the right side */
+      for (ipin_side = 0; ipin_side < 4; ipin_side++) {
+        /* For the grid on the boundary, we only create connections to the left side */
+        if (((grid_x + 1) == (nx + 1))&&(LEFT != ipin_side)) { 
+          continue;
+        }
+        /* We also skip the top side because we believe a IPIN at the top side 
+         * can be swapped to others by using logic equivalence. Which is faster. 
+         */
+        if (RIGHT == ipin_side) {
+          continue; 
+        }
+        get_grid_side_pins(grid_x+1, grid_y, ipin_side, RECEIVER, LL_rr_node_indices, &num_ipins, &ipin_list);
+        /* Create fast edge from the OPINs to IPINs*/
+        add_edge_counter += add_opin_list_ipin_list_fast_edge(num_opins, opin_list, num_ipins, ipin_list);
+        /* Free ipin_list */
+        num_ipins = 0;
+        free(ipin_list);
+      }
+      /* If this is already the left side of FPGA, we skip */
+      if (0 == grid_x) { 
+        break;
+      }
+      /* Create fast connection to the grid on the left side */
+      for (ipin_side = 0; ipin_side < 4; ipin_side++) {
+        /* For the grid on the boundary, we only create connections to the rigth side */
+        if (((grid_x - 1) == 0)&&(RIGHT != ipin_side)) { 
+          continue;
+        }
+        /* We also skip the bottom side because we believe a IPIN at the bottom side 
+         * can be swapped to others by using logic equivalence. Which is faster. 
+         */
+        if (LEFT == ipin_side) {
+          continue; 
+        }
+        get_grid_side_pins(grid_x-1, grid_y, ipin_side, RECEIVER, LL_rr_node_indices, &num_ipins, &ipin_list);
+        /* Create fast edge from the OPINs to IPINs*/
+        add_edge_counter += add_opin_list_ipin_list_fast_edge(num_opins, opin_list, num_ipins, ipin_list);
+        /* Free ipin_list */
+        num_ipins = 0;
+        free(ipin_list);
+      }
+      break;
+    case BOTTOM:
+      /* Create fast connection to the grid on the bottom side */
+      for (ipin_side = 0; ipin_side < 4; ipin_side++) {
+        /* For the grid on the boundary, we only create connections to the left side */
+        if (((grid_y - 1) == 0)&&(TOP != ipin_side)) { 
+          continue;
+        }
+        /* We also skip the top side because we believe a IPIN at the bottom side 
+         * can be swapped to others by using logic equivalence. Which is faster. 
+         */
+        if (BOTTOM == ipin_side) {
+          continue; 
+        }
+        get_grid_side_pins(grid_x, grid_y-1, ipin_side, RECEIVER, LL_rr_node_indices, &num_ipins, &ipin_list);
+        /* Create fast edge from the OPINs to IPINs*/
+        add_edge_counter += add_opin_list_ipin_list_fast_edge(num_opins, opin_list, num_ipins, ipin_list);
+        /* Free ipin_list */
+        num_ipins = 0;
+        free(ipin_list);
+      }
+      /* If this is already the left side of FPGA, we skip */
+      if ((ny + 1) == grid_y) { 
+        break;
+      }
+      /* Create fast connection to the grid on the top side */
+      for (ipin_side = 0; ipin_side < 4; ipin_side++) {
+        /* For the grid on the boundary, we only create connections to the rigth side */
+        if (((grid_y + 1) == (ny + 1))&&(BOTTOM != ipin_side)) { 
+          continue;
+        }
+        /* We also skip the bottom side because we believe a IPIN at the bottom side 
+         * can be swapped to others by using logic equivalence. Which is faster. 
+         */
+        if (TOP == ipin_side) {
+          continue; 
+        }
+        if (grid_y + 1 == ny + 1) {
+          assert(BOTTOM == ipin_side);
+        }
+        get_grid_side_pins(grid_x, grid_y+1, ipin_side, RECEIVER, LL_rr_node_indices, &num_ipins, &ipin_list);
+        /* Create fast edge from the OPINs to IPINs*/
+        add_edge_counter += add_opin_list_ipin_list_fast_edge(num_opins, opin_list, num_ipins, ipin_list);
+        /* Free ipin_list */
+        num_ipins = 0;
+        free(ipin_list);
+      }
+      break;
+    case LEFT:
+      /* Create fast connection to the grid on the left side */
+      for (ipin_side = 0; ipin_side < 4; ipin_side++) {
+        /* For the grid on the boundary, we only create connections to the left side */
+        if (((grid_x - 1) == 0)&&(RIGHT != ipin_side)) { 
+          continue;
+        }
+        /* We also skip the top side because we believe a IPIN at the top side 
+         * can be swapped to others by using logic equivalence. Which is faster. 
+         */
+        if (LEFT == ipin_side) {
+          continue; 
+        }
+        get_grid_side_pins(grid_x-1, grid_y, ipin_side, RECEIVER, LL_rr_node_indices, &num_ipins, &ipin_list);
+        /* Create fast edge from the OPINs to IPINs*/
+        add_edge_counter += add_opin_list_ipin_list_fast_edge(num_opins, opin_list, num_ipins, ipin_list);
+        /* Free ipin_list */
+        num_ipins = 0;
+        free(ipin_list);
+      }
+      /* If this is already the right side of FPGA, we skip */
+      if ((nx + 1) == grid_x) { 
+        break;
+      }
+      /* Create fast connection to the grid on the right side */
+      for (ipin_side = 0; ipin_side < 4; ipin_side++) {
+        /* For the grid on the boundary, we only create connections to the right side */
+        if (((grid_x + 1) == (nx + 1))&&(LEFT != ipin_side)) { 
+          continue;
+        }
+        /* We also skip the bottom side because we believe a IPIN at the bottom side 
+         * can be swapped to others by using logic equivalence. Which is faster. 
+         */
+        if (RIGHT == ipin_side) {
+          continue; 
+        }
+        get_grid_side_pins(grid_x+1, grid_y, ipin_side, RECEIVER, LL_rr_node_indices, &num_ipins, &ipin_list);
+        /* Create fast edge from the OPINs to IPINs*/
+        add_edge_counter += add_opin_list_ipin_list_fast_edge(num_opins, opin_list, num_ipins, ipin_list);
+        /* Free ipin_list */
+        num_ipins = 0;
+        free(ipin_list);
+      }
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File: %s, [LINE%d]) Invalid opin_side(%d)!\n", 
+                 __FILE__, __LINE__, opin_side);
+      exit(1);
     }
     /* Free opin_list */
     num_opins = 0;
     free(opin_list);
-  } else {
-    /* This is most top LB...*/
-  }
-
-  /* Right side*/
-  /* Check if there is one grid above*/
-  if (grid_x < nx) {
-    /* Find the opins on the right side of current grid */   
-    get_grid_side_pins(grid_x, grid_y, RIGHT, DRIVER, LL_rr_node_indices, &num_opins, &opin_list);
-    /* Find the IPINs on the left side of the grid above*/
-    /* If the right grid is an I/O, we only need IPINs at the left side */
-    get_grid_side_pins(grid_x+1, grid_y, LEFT, RECEIVER, LL_rr_node_indices, &num_ipins, &ipin_list);
-    /* Create fast edge from the OPINs to IPINs*/
-    add_edge_counter += add_opin_list_ipin_list_fast_edge(num_opins, opin_list, num_ipins, ipin_list);
-    /* Free ipin_list */
-    num_ipins = 0;
-    free(ipin_list);
-    /* Find the IPINs on the right side of the grid*/
-    if ((grid_x+1) < nx) { /* Make sure this is not the most left grid */
-      get_grid_side_pins(grid_x+1, grid_y, RIGHT, RECEIVER, LL_rr_node_indices, &num_ipins, &ipin_list);
-      /* Create fast edge from the OPINs to IPINs*/
-      add_edge_counter += add_opin_list_ipin_list_fast_edge(num_opins, opin_list, num_ipins, ipin_list);
-      /* Free ipin_list */
-      num_ipins = 0;
-      free(ipin_list);
-    }
-    /* Find the IPINs on the left side of the grid left */
-    if (grid_x-1 > -1) { /* Make sure this is not the most left grid */
-      get_grid_side_pins(grid_x-1, grid_y, RIGHT, RECEIVER, LL_rr_node_indices, &num_ipins, &ipin_list);
-      /* Create fast edge from the OPINs to IPINs*/
-      add_edge_counter += add_opin_list_ipin_list_fast_edge(num_opins, opin_list, num_ipins, ipin_list);
-      /* Free ipin_list */
-      num_ipins = 0;
-      free(ipin_list);
-    }
-    /* Free opin_list */
-    num_opins = 0;
-    free(opin_list);
-  } else {
-    /* This is most right LB...*/
-  }
-
-  /* Bottom side*/
-  /* Check if there is one grid below*/
-  if (grid_y > 0) {
-    /* Find the opins on the bottom side of current grid */   
-    get_grid_side_pins(grid_x, grid_y, BOTTOM, DRIVER, LL_rr_node_indices, &num_opins, &opin_list);
-    /* Find the IPINs on the top side of the grid below*/
-    /* If the grid below is an I/O, we only need IPINs at the top side */
-    get_grid_side_pins(grid_x, grid_y-1, TOP, RECEIVER, LL_rr_node_indices, &num_ipins, &ipin_list);
-    /* Create fast edge from the OPINs to IPINs*/
-    add_edge_counter += add_opin_list_ipin_list_fast_edge(num_opins, opin_list, num_ipins, ipin_list);
-    /* Free ipin_list */
-    num_ipins = 0;
-    free(ipin_list);
-    /* Find the IPINs on the bottom side of the grid below */
-    if ((grid_y - 1) > 0) { /* Make sure this is not the most top grid */
-      get_grid_side_pins(grid_x, grid_y-1, BOTTOM, RECEIVER, LL_rr_node_indices, &num_ipins, &ipin_list);
-      /* Create fast edge from the OPINs to IPINs*/
-      add_edge_counter += add_opin_list_ipin_list_fast_edge(num_opins, opin_list, num_ipins, ipin_list);
-      /* Free ipin_list */
-      num_ipins = 0;
-      free(ipin_list);
-    }
-    /* Find the IPINs on the bottom side of the grid above */
-    if ((grid_y + 1) < (ny + 1)) { /* Make sure this is not the most top grid */
-      get_grid_side_pins(grid_x, grid_y+1, BOTTOM, RECEIVER, LL_rr_node_indices, &num_ipins, &ipin_list);
-      /* Create fast edge from the OPINs to IPINs*/
-      add_edge_counter += add_opin_list_ipin_list_fast_edge(num_opins, opin_list, num_ipins, ipin_list);
-      /* Free ipin_list */
-      num_ipins = 0;
-      free(ipin_list);
-    }
-    /* Free opin_list */
-    num_opins = 0;
-    free(opin_list);
-  } else {
-    /* This is most right LB...*/
-  }
-
-  /* LEFT side*/
-  /* Check if there is one grid on the LEFT*/
-  if (grid_x > 0) {
-    /* Find the opins on the right side of current grid */   
-    get_grid_side_pins(grid_x, grid_y, LEFT, DRIVER, LL_rr_node_indices, &num_opins, &opin_list);
-    /* Find the IPINs on the RIGHT side of the grid LEFT*/
-    /* If the grid LEFT is an I/O, we only need IPINs at the RIGHT side */
-    get_grid_side_pins(grid_x-1, grid_y, RIGHT, RECEIVER, LL_rr_node_indices, &num_ipins, &ipin_list);
-    /* Create fast edge from the OPINs to IPINs*/
-    add_edge_counter += add_opin_list_ipin_list_fast_edge(num_opins, opin_list, num_ipins, ipin_list);
-    /* Free ipin_list */
-    num_ipins = 0;
-    free(ipin_list);
-
-    /* Find the IPINs on the LEFT side of the grid LEFT */
-    if ((grid_x - 1) > 0) { /* Make sure this is not the most RIGHT grid */
-      get_grid_side_pins(grid_x-1, grid_y, LEFT, RECEIVER, LL_rr_node_indices, &num_ipins, &ipin_list);
-      /* Create fast edge from the OPINs to IPINs*/
-      add_edge_counter += add_opin_list_ipin_list_fast_edge(num_opins, opin_list, num_ipins, ipin_list);
-      /* Free ipin_list */
-      num_ipins = 0;
-      free(ipin_list);
-    }
-
-    /* Find the IPINs on the LEFT side of the grid RIGHT */
-    if ((grid_x + 1) < (nx + 1)) { /* Make sure this is not the most RIGHT grid */
-      get_grid_side_pins(grid_x+1, grid_y, LEFT, RECEIVER, LL_rr_node_indices, &num_ipins, &ipin_list);
-      /* Create fast edge from the OPINs to IPINs*/
-      add_edge_counter += add_opin_list_ipin_list_fast_edge(num_opins, opin_list, num_ipins, ipin_list);
-      /* Free ipin_list */
-      num_ipins = 0;
-      free(ipin_list);
-    }
-    /* Free opin_list */
-    num_opins = 0;
-    free(opin_list);
-  } else {
-    /* This is most LEFT LB...*/
   }
 
   return add_edge_counter;
@@ -245,7 +356,7 @@ int add_rr_graph_one_grid_fast_edge_opin_to_cb(int grid_x,
  */
 static 
 void get_grid_side_pins(int grid_x, int grid_y, 
-                        enum e_side side, enum e_pin_type pin_type,
+                        int side, enum e_pin_type pin_type,
                         t_ivec*** LL_rr_node_indices,
                         int *num_pins, t_rr_node** *pin_list) {
   int ipin, iheight, class_idx, cur_pin, inode;
@@ -271,8 +382,8 @@ void get_grid_side_pins(int grid_x, int grid_y,
   /* (*pin_class_list) = NULL; */
 
   /* Make sure this is a valid grid*/
-  assert((-1 < grid_x) && (grid_x < (nx+1)));
-  assert((-1 < grid_y) && (grid_y < (ny+1)));
+  assert((-1 < grid_x) && (grid_x < (nx+2)));
+  assert((-1 < grid_y) && (grid_y < (ny+2)));
 
   assert((-1 < side) && (side < 4));
 
@@ -282,25 +393,25 @@ void get_grid_side_pins(int grid_x, int grid_y,
   switch(side) {
   case TOP:
     /* If this is the most top grid, return*/ 
-    if (grid_y == ny) {
+    if ((ny+1 == grid_y)||(0 == grid_x)||(nx + 1 == grid_x)) {
       return;
     }
     break;
   case RIGHT:
     /* If this is the most right grid, return*/ 
-    if (grid_x == nx) {
+    if ((nx + 1 == grid_x)||(ny + 1 == grid_y)||(0 == grid_y)) {
       return;
     }
     break;
   case BOTTOM: 
     /* If this is the most bottom grid, return*/ 
-    if (grid_y == 0) {
+    if ((0 == grid_y)||(0 == grid_x)||(nx + 1 == grid_x)) {
       return;
     }
     break;
   case LEFT:
     /* If this is the most left grid, return*/ 
-    if (grid_x == 0) {
+    if ((0 == grid_x)||(0 == grid_y)||(ny + 1 == grid_y)) {
       return;
     }
     break;
@@ -317,7 +428,8 @@ void get_grid_side_pins(int grid_x, int grid_y,
       class_idx = type_descriptor->pin_class[ipin];
       assert((-1 < class_idx) && (class_idx < type_descriptor->num_class));
       if ((1 == type_descriptor->pinloc[iheight][side][ipin])
-         &&(pin_type == type_descriptor->class_inf[class_idx].type)) {
+         &&(pin_type == type_descriptor->class_inf[class_idx].type)
+         &&(TRUE == type_descriptor->opin_to_cb)) {
         (*num_pins)++;
       } 
     }   
@@ -335,7 +447,8 @@ void get_grid_side_pins(int grid_x, int grid_y,
       class_idx = type_descriptor->pin_class[ipin];
       assert((-1 < class_idx) && (class_idx < type_descriptor->num_class));
       if ((1 == type_descriptor->pinloc[iheight][side][ipin])
-         &&(pin_type == type_descriptor->class_inf[class_idx].type)) {
+         &&(pin_type == type_descriptor->class_inf[class_idx].type)
+         &&(TRUE == type_descriptor->opin_to_cb)) {
         inode = get_rr_node_index(grid_x, grid_y, pin_rr_type, ipin, LL_rr_node_indices);
         (*pin_list)[cur_pin] = &rr_node[inode];
         /* (*pin_class_list)[cur_pin] = class_idx; */
@@ -366,11 +479,16 @@ int add_opin_list_ipin_list_fast_edge(int num_opins, t_rr_node** opin_list,
     return add_edge_counter;
   }
 
+  if (0 == num_ipins) {
+    assert(NULL == ipin_list);
+    return add_edge_counter;
+  }
+
   /* Count the number of common source of these ipin */
   for (ipin = 0; ipin < num_ipins; ipin++) {
     ipin_sink_index[ipin] = OPEN;
+    assert(IPIN == ipin_list[ipin]->type);
     for (iedge = 0; iedge < ipin_list[ipin]->num_edges; iedge++) {
-      assert(IPIN == ipin_list[ipin]->type);
       to_node = ipin_list[ipin]->edges[iedge];
       if (SINK == rr_node[to_node].type) {
         /* Search if the source exists in the list */
@@ -389,7 +507,7 @@ int add_opin_list_ipin_list_fast_edge(int num_opins, t_rr_node** opin_list,
   /* For each OPIN node, create a edge to each ipin whose ipin_src is different */
   for (ipin = 0; ipin < num_opins; ipin++) {
     for (jpin = 0; jpin < num_ipins; jpin++) {
-      if (OPEN != ipin_sink_index[jpin]) {
+      //if (OPEN != ipin_sink_index[jpin]) {
         /* Find its ipin source node*/
         //ipin_sink_list_node = search_in_int_list(ipin_sink_head, ipin_sink_index[jpin]);
         //if (NULL != ipin_sink_list_node) {
@@ -398,7 +516,7 @@ int add_opin_list_ipin_list_fast_edge(int num_opins, t_rr_node** opin_list,
           /* Make the sink list node invalid */
         //  ipin_sink_list_node->data = OPEN;
        // }
-      }
+      //}
     }
   } 
   
@@ -413,6 +531,7 @@ static
 int add_opin_fast_edge_to_ipin(t_rr_node* opin, 
                                t_rr_node* ipin) {
   int ipin_switch_index = OPEN;
+  int iedge, to_node;
 
   /* Make sure we have an OPIN and an IPIN*/
   assert(OPIN == opin->type);
@@ -422,6 +541,15 @@ int add_opin_fast_edge_to_ipin(t_rr_node* opin,
   ipin_switch_index = get_ipin_switch_index(ipin); 
   if (OPEN == ipin_switch_index) {
     return 0;
+  }
+
+  /* Check if OPIN has a fan-out to IPIN already*/
+  for (iedge = 0; iedge < opin->num_edges; iedge++) {
+    to_node = opin->edges[iedge];
+    if ((IPIN == rr_node[to_node].type)&&(ipin == &rr_node[to_node])) {
+      vpr_printf(TIO_MESSAGE_WARNING, "(File:%s,[LINE%d])OPIN rr_node[%d] has an fan-out to IPIN rr_node[%d]. Fast edge will not be created.\n", __FILE__, __LINE__, opin-rr_node, ipin-rr_node);
+      return 0;
+    }
   }
 
   /* create a fast edge */
@@ -442,29 +570,57 @@ int add_opin_fast_edge_to_ipin(t_rr_node* opin,
 /* This is not efficent, should be improved by using LL_rr_node_indices*/
 static 
 int get_ipin_switch_index(t_rr_node* ipin) {
-  int inode, iedge, to_node, fan_in_counter;
+  return ipin->driver_switch;
+} 
+
+static 
+void find_rr_nodes_ipin_driver_switch() {
+  int inode, jnode, iedge, to_node, fan_in_counter;
   int ipin_switch_index = OPEN;
 
-  /* Create a counter, check the correctness*/
-  fan_in_counter = 0;
-   
+  vpr_printf(TIO_MESSAGE_INFO, "Building rr_node driver switches...\n");
+
   for (inode = 0; inode < num_rr_nodes; inode++) {
-    for (iedge = 0; iedge < rr_node[inode].num_edges; iedge++) {
-      to_node = rr_node[inode].edges[iedge];
-      if (ipin == &(rr_node[to_node])) {
-        fan_in_counter++;
-        if (OPEN == ipin_switch_index) {
-          ipin_switch_index = rr_node[inode].switches[iedge];
-        } else {
-          assert(ipin_switch_index == rr_node[inode].switches[iedge]);
+    if (IPIN != rr_node[inode].type) {
+      continue;
+    }
+    /* Create a counter, check the correctness*/
+    fan_in_counter = 0;
+    ipin_switch_index = OPEN;
+    for (jnode = 0; jnode < num_rr_nodes; jnode++) {
+      for (iedge = 0; iedge < rr_node[jnode].num_edges; iedge++) {
+        to_node = rr_node[jnode].edges[iedge];
+        if (inode == to_node) {
+          fan_in_counter++;
+          if (OPEN == ipin_switch_index) {
+            ipin_switch_index = rr_node[jnode].switches[iedge];
+          } else {
+            assert(ipin_switch_index == rr_node[jnode].switches[iedge]);
+          }
         }
       }
     }
+    assert(fan_in_counter == rr_node[inode].fan_in);
+    if (0 != fan_in_counter) {
+      assert(OPEN != ipin_switch_index);
+    }
+    rr_node[inode].driver_switch = ipin_switch_index;
   }
-  assert(fan_in_counter == ipin->fan_in);
-  if (0 != fan_in_counter) {
-    assert(OPEN != ipin_switch_index);
-  }
+   
+  return;
+}
 
-  return ipin_switch_index;
-} 
+static 
+void recover_rr_nodes_ipin_driver_switch() {
+  int inode;
+
+  vpr_printf(TIO_MESSAGE_INFO, "Recovering rr_node driver switches...\n");
+
+  for (inode = 0; inode < num_rr_nodes; inode++) {
+    if (IPIN == rr_node[inode].type) {
+      rr_node[inode].driver_switch = OPEN;
+    }
+  }
+  return;
+}
+

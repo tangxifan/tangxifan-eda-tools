@@ -16,17 +16,19 @@
 #perl subvt_fpga_elc.pl -conf conf/tsmc40nm_fpga/local_routing.conf -rpt results/tsmc40nm_fpga/interconn_cbmux260.csv -mux spice/subvt_lut.sp -mux_size 260  -two_level_mux cpt
 #perl subvt_fpga_elc.pl -conf conf/tsmc40nm_fpga/local_routing.conf -rpt results/tsmc40nm_fpga/interconn_cbmux340.csv -mux spice/subvt_lut.sp -mux_size 340  -two_level_mux cpt
 #perl subvt_fpga_elc.pl -conf conf/tsmc40nm_fpga/local_routing.conf -rpt results/tsmc40nm_fpga/local_routing_mux53.csv -mux spice/subvt_lut.sp -mux_size 53  -two_level_mux cpt
-perl subvt_fpga_elc.pl -conf conf/tsmc40nm_fpga/local_routing.conf -rpt results/tsmc40nm_fpga/local_routing_mux60.csv -mux spice/subvt_lut.sp -mux_size 60 -two_level_mux cpt
+#perl subvt_fpga_elc.pl -conf conf/tsmc40nm_fpga/local_routing.conf -rpt results/tsmc40nm_fpga/local_routing_mux60.csv -mux spice/subvt_lut.sp -mux_size 60 -two_level_mux cpt
 #perl subvt_fpga_elc.pl -conf conf/tsmc40nm_fpga/local_routing.conf -rpt results/tsmc40nm_fpga/interconn_cbmux58.csv -mux spice/subvt_lut.sp -mux_size 58  -two_level_mux cpt
 #perl subvt_fpga_elc.pl -conf conf/tsmc40nm_fpga/local_routing.conf -rpt results/tsmc40nm_fpga/interconn_cbmux90.csv -mux spice/subvt_lut.sp -mux_size 90  -two_level_mux cpt
 #perl subvt_fpga_elc.pl -conf conf/tsmc40nm_fpga/local_routing.conf -rpt results/tsmc40nm_fpga/interconn_cbmux170.csv -mux spice/subvt_lut.sp -mux_size 170  -two_level_mux cpt
 #perl subvt_fpga_elc.pl -conf conf/tsmc40nm_fpga/local_routing.conf -rpt results/tsmc40nm_fpga/interconn_cbmux250.csv -mux spice/subvt_lut.sp -mux_size 250  -two_level_mux cpt
 #perl subvt_fpga_elc.pl -conf conf/tsmc40nm_fpga/local_routing.conf -rpt results/tsmc40nm_fpga/interconn_cbmux330.csv -mux spice/subvt_lut.sp -mux_size 330  -two_level_mux cpt
 #perl subvt_fpga_elc.pl -conf conf/tsmc40nm_fpga/sb_route.conf -rpt results/tsmc40nm_fpga/sbmux4.csv -mux spice/subvt_lut.sp -mux_size 4 -auto_out_tapered_buffer 4 -one_level_mux cpt
+#perl subvt_fpga_elc.pl -conf conf/tsmc40nm_fpga/sb_route.conf -rpt results/tsmc40nm_fpga/sbmux8.csv -mux spice/subvt_lut.sp -mux_size 8 -auto_out_tapered_buffer 4 -two_level_mux cpt
+#perl subvt_fpga_elc.pl -conf conf/tsmc40nm_fpga/sb_route.conf -rpt results/tsmc40nm_fpga/sbmux10.csv -mux spice/subvt_lut.sp -mux_size 10 -auto_out_tapered_buffer 4 -two_level_mux cpt
 #perl subvt_fpga_elc.pl -conf conf/tsmc40nm_fpga/sb_route_ideal.conf -rpt results/tsmc40nm_fpga/sbmux4_zeroload.csv -mux spice/subvt_lut.sp -mux_size 4 -auto_out_tapered_buffer 4 -one_level_mux cpt
 # Fc,in = 0.15, 0.25, 0.5, 0.75, 1
 #perl subvt_fpga_elc.pl -conf conf/tsmc40nm_fpga/cb_route.conf -rpt results/tsmc40nm_fpga/cbmux18_fci0p15.csv -mux spice/subvt_lut.sp -mux_size 18 -auto_out_tapered_buffer 3 -two_level_mux cpt
-perl subvt_fpga_elc.pl -conf conf/tsmc40nm_fpga/cb_route.conf -rpt results/tsmc40nm_fpga/cbmux48_fci0p15.csv -mux spice/subvt_lut.sp -mux_size 48 -auto_out_tapered_buffer 1 -two_level_mux cpt
+#perl subvt_fpga_elc.pl -conf conf/tsmc40nm_fpga/cb_route.conf -rpt results/tsmc40nm_fpga/cbmux48_fci0p15.csv -mux spice/subvt_lut.sp -mux_size 48 -auto_out_tapered_buffer 1 -two_level_mux cpt
 #perl subvt_fpga_elc.pl -conf conf/tsmc40nm_fpga/cb_route.conf -rpt results/tsmc40nm_fpga/cbmux30_fci0p25.csv -mux spice/subvt_lut.sp -mux_size 30 -auto_out_tapered_buffer 3 -two_level_mux cpt
 #perl subvt_fpga_elc.pl -conf conf/tsmc40nm_fpga/cb_route.conf -rpt results/tsmc40nm_fpga/cbmux60_fci0p5.csv -mux spice/subvt_lut.sp -mux_size 60 -auto_out_tapered_buffer 3 -two_level_mux cpt
 #perl subvt_fpga_elc.pl -conf conf/tsmc40nm_fpga/cb_route.conf -rpt results/tsmc40nm_fpga/cbmux90_fci0p75.csv -mux spice/subvt_lut.sp -mux_size 90 -auto_out_tapered_buffer 3 -two_level_mux cpt

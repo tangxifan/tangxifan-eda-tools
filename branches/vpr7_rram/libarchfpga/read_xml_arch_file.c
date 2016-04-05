@@ -129,6 +129,10 @@ static void ProcessSwitchSegmentPatterns(INOUTP ezxml_t Parent,
                                          INP struct s_switch_inf* switches,
                                          INP boolean timing_enabled);
 
+/* Xifan TANG: Pin Equivalence Auto-Detection */
+static 
+void SetupPinEquivalenceAutoDetect(ezxml_t Parent, t_type_descriptor* Type);
+
 /* Sets up the pinloc map and pin classes for the type. Unlinks the loc nodes
  * from the XML tree.
  * Pins and pin classses must already be setup by SetupPinClasses */
@@ -1228,6 +1232,7 @@ static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port,
 	ezxml_set_attr(Parent, "chain", NULL);
 
 	port->equivalent = GetBooleanProperty(Parent, "equivalent", FALSE, FALSE);
+   
 	port->num_pins = GetIntProperty(Parent, "num_pins", TRUE, 0);
 	port->is_non_clock_global = GetBooleanProperty(Parent,
 			"is_non_clock_global", FALSE, FALSE);
@@ -2583,6 +2588,15 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 		Type->num_receivers = Type->capacity * Type->pb_type->num_input_pins;
 		Type->num_drivers = Type->capacity * Type->pb_type->num_output_pins;
 
+        /* Xifan TANG: pin equivalence auto-detection */
+	    if (1 == CountChildren(CurType, "pin_equivalence_auto_detect", 0)) {
+           Cur = FindFirstElement(CurType, "pin_equivalence_auto_detect", TRUE);
+           SetupPinEquivalenceAutoDetect(Cur, Type);
+           FreeNode(Cur);
+        } else {
+	      assert(0 == CountChildren(CurType, "pin_equivalence_auto_detect", 0));
+        }
+
 		/* Load pin names and classes and locations */
 		Cur = FindElement(CurType, "pinlocations", TRUE);
 		SetupPinLocationsAndPinClasses(Cur, Type);
@@ -3874,5 +3888,37 @@ e_power_estimation_method power_method_inherited(
 	}
 }
 
+/* Xifan TANG: Pin Equivalence Auto-Detection */
+static 
+void SetupPinEquivalenceAutoDetect(ezxml_t Parent, t_type_descriptor* Type) {
+  const char* Prop;
 
+  Prop = FindProperty(Parent, "input_ports", TRUE);
+
+  if (strcmp(Prop, "on") == 0) {
+    Type->input_ports_eq_auto_detect = TRUE;
+  } else if (strcmp(Prop, "off") == 0) {
+    Type->input_ports_eq_auto_detect = FALSE;
+  } else {
+	vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] %s is an invalid pin equivalence auto detect attribute.\n",
+               Parent->line, Prop);
+    exit(1);
+  }
+  ezxml_set_attr(Parent, "input_ports", NULL);
+
+  Prop = FindProperty(Parent, "output_ports", TRUE);
+
+  if (strcmp(Prop, "on") == 0) {
+    Type->output_ports_eq_auto_detect = TRUE;
+  } else if (strcmp(Prop, "off") == 0) {
+    Type->output_ports_eq_auto_detect = FALSE;
+  } else {
+	vpr_printf(TIO_MESSAGE_ERROR, "[LINE %d] %s is an invalid pin equivalence auto detect attribute.\n",
+               Parent->line, Prop);
+    exit(1);
+  }
+  ezxml_set_attr(Parent, "output_ports", NULL);
+
+  return;
+}
 

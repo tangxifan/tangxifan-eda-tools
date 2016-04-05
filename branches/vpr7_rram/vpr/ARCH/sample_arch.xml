@@ -295,7 +295,7 @@
       <x distr="uniform" peak="1.000000"/>
       <y distr="uniform" peak="1.000000"/>
     </chan_width_distr>
-    <switch_block type="wilton" fs="3"/>
+    <switch_block type="wilton" fs="6"/>
   </device>
 
   <cblocks>
@@ -326,10 +326,15 @@
     <!--- VB & JL: using ITRS metal stack data, 96 nm half pitch wires, which are intermediate metal width/space.  
 			     With the 96 nm half pitch, such wires would take 60 um of height, vs. a 90 nm high (approximated as square) Stratix IV tile so this seems
 			     reasonable. Using a tile length of 90 nm, corresponding to the length of a Stratix IV tile if it were square. -->
-    <segment freq="1" length="4" type="unidir" Rmetal="101" Cmetal="22.5e-15" spice_model_name="chan_segment">
+    <!--segment freq="1" length="4" type="unidir" Rmetal="101" Cmetal="22.5e-15" spice_model_name="chan_segment">
       <mux name="0"/>
-      <sb type="pattern">1 1 1 1 1</sb>
+      <sb type="pattern">0 1 0 1 0</sb>
       <cb type="pattern">1 1 1 1</cb>
+    </segment-->
+    <segment freq="1" length="2" type="unidir" Rmetal="101" Cmetal="22.5e-15" spice_model_name="chan_segment">
+      <mux name="0"/>
+      <sb type="pattern">0 1 0</sb>
+      <cb type="pattern">1 1 </cb>
     </segment>
     <!--segment freq="0.5" length="1" type="unidir" Rmetal="101" Cmetal="22.5e-15" spice_model_name="chan_segment">
       <mux name="0"/>
@@ -349,12 +354,12 @@
     <!-- Define I/O pads begin -->
     <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->
 	  <!-- Not sure of the area of an I/O (varies widely), and it's not relevant to the design of the FPGA core, so we're setting it to 0. -->
-    <pb_type name="io" capacity="8" area="0" idle_mode_name="inpad">
+    <pb_type name="io" capacity="8" area="0" idle_mode_name="inpad" opin_to_cb="false">
       <input name="outpad" num_pins="1"/>
       <output name="inpad" num_pins="1"/>
       <clock name="clock" num_pins="1"/>
 
-      <!-- IOs can operate as either inputs or outputs.
+      <!-- IOs can operate as either inputs or outputs.§
 	     Delays below come from Ian Kuon. They are small, so they should be interpreted as
 	     the delays to and from registers in the I/O (and generally I/Os are registered 
 	     today and that is when you timing analyze them.
@@ -414,9 +419,12 @@
 	   assume, but note that the total routing area really includes the crossbar, which would push
 	   routing area up significantly, we estimate into the ~70% range. 
 	   -->
-    <pb_type name="clb" area="53894" opin_to_cb="true">
+    <pb_type name="clb" area="53894" opin_to_cb="false">
+      <pin_equivalence_auto_detect input_ports ="off" output_ports="on"/>
       <input name="I" num_pins="40" equivalent="true"/>
       <output name="O" num_pins="20" equivalent="false"/>
+      <!--input name="I" num_pins="40" equivalent="true"/-->
+      <!--output name="O" num_pins="20" equivalent="false"/-->
       <clock name="clk" num_pins="1"/>
 
       <!-- Describe fracturable logic element.  

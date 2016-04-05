@@ -241,6 +241,7 @@ struct s_port {
 	boolean is_non_clock_global;
 	int num_pins;
 	boolean equivalent;
+
 	struct s_pb_type *parent_pb_type;
 	char * port_class;
 
@@ -689,6 +690,9 @@ struct s_type_descriptor /* TODO rename this.  maybe physical type descriptor or
 
     /* Xifan TANG: opin_to_cb support */
     boolean opin_to_cb;
+    /* Xifan TANG: Pin equivalence auto detect */
+    boolean input_ports_eq_auto_detect;
+    boolean output_ports_eq_auto_detect;
 };
 typedef struct s_type_descriptor t_type_descriptor;
 typedef const struct s_type_descriptor *t_type_ptr;
