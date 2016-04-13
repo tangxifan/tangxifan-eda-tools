@@ -1810,7 +1810,7 @@ sub gen_mux_sp_measure($ $ $ $ $ $ $)
     &tab_print($spfh,"+                      targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_upper_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'input_pwl\'\n",0);
     &tab_print($spfh,".measure tran pdynamic avg p(vsupply) from=\'input_pwl\' to=\'input_pwl+input_slew+slew_mux\'\n",0);
     &tab_print($spfh,".measure tran energy_per_toggle param=\'pdynamic*(input_slew+slew_mux)\'\n",0);
-    &tab_print($spfh,".measure tran avg_vmux avg V($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) from=\'input_slew+slew_mux\' to=\'$tran_time\'\n",0);
+    &tab_print($spfh,".measure tran avg_vmux avg V($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) from=\'input_pwl+input_slew+slew_mux\' to=\'$tran_time\'\n",0);
   }
   &tab_print($spfh,".end Sub-Vt MUX HSPICE Bench\n",0);
 
@@ -2672,8 +2672,8 @@ sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
           return 0;
         }
       }
+      return 1; 
     }
-    return 1; 
   }
 }
 
