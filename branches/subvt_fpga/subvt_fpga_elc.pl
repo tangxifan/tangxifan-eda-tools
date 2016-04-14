@@ -1346,8 +1346,7 @@ sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
     &tab_print($spfh,".param wprog=$wprog\n",0);
     &tab_print($spfh,".param tprog=$conf_ptr->{rram_settings}->{Tprog}->{val}\n",0);
     &tab_print($spfh,".param vprog=$conf_ptr->{rram_settings}->{Vdd_break}->{val}\n",0);
-    &tab_print($spfh,"* Global port for programming vdd \n",0);
-    &tab_print($spfh,".global prog_vdd_bulk prog_vdd prog_gnd\n",0);
+    #&tab_print($spfh,"* Global port for programming vdd \n",0);
     &tab_print($spfh,"* Include RRAM verilogA model \n",0);
     # Include RRAM verilogA model
     if ($conf_ptr->{rram_settings}->{rram_verilogA_model_path}->{val} =~ m/\.va$/) {
@@ -1458,9 +1457,9 @@ sub gen_rram_mux_isolate_sp_stimulates($) {
 
   # Add Stimulates: Programming Vdd
   &tab_print($spfh,"* Programming Vdd\n",0);
-  &tab_print($spfh,"Vprog_vdd prog_vdd 0 pulse(\'+vprog/2+vsp/2\' \'0\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
+  &tab_print($spfh,"Vprog_vdd prog_vdd 0 pulse(\'+vprog/2+vsp/2\' \'+vprog/2+vsp/2\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
   &tab_print($spfh,"* Programming GND\n",0);
-  &tab_print($spfh,"Vprog_gnd prog_gnd 0 pulse(\'-vprog/2+vsp/2\' \'0\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
+  &tab_print($spfh,"Vprog_gnd prog_gnd 0 pulse(\'-vprog/2+vsp/2\' \'-vprog/2+vsp/2\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
 
   # Add Stimulates: Control signal for isolating transistors
   &tab_print($spfh,"* Control signals for isolating transistors\n",0);
@@ -1475,7 +1474,7 @@ sub gen_rram_mux_isolate_sp_stimulates($) {
   &tab_print($spfh,"+ \'(3-0.5)*tprog-2*input_slew\' \'-vprog/2+vsp/2\'\n",0);
   &tab_print($spfh,"+ \'(3-0.5)*tprog - input_slew\' \'+vprog/2+vsp/2\'\n",0);
   &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog-input_slew\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'0\')\n",0);
+  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'+vprog/2+vsp/2\')\n",0);
 
   &tab_print($spfh,"Vwl[1] wl[1] 0 pwl(0 \'-vprog/2+vsp/2\'\n",0);
   &tab_print($spfh,"+ \'(2-0.5)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
@@ -1483,7 +1482,7 @@ sub gen_rram_mux_isolate_sp_stimulates($) {
   &tab_print($spfh,"+ \'(3-0.5)*tprog-2*input_slew\' \'+vprog/2+vsp/2\'\n",0);
   &tab_print($spfh,"+ \'(3-0.5)*tprog - input_slew\' \'-vprog/2+vsp/2\'\n",0);
   &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'0\')\n",0);
+  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'-vprog/2+vsp/2\')\n",0);
 
   &tab_print($spfh,"* Control signals for SET process\n",0);
   &tab_print($spfh,"Vbl[0]_b bl[0]_b 0 pwl(0 \'+vprog/2+vsp/2\'\n",0);
@@ -1492,7 +1491,7 @@ sub gen_rram_mux_isolate_sp_stimulates($) {
   &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +2)*tprog-2*input_slew\' \'-vprog/2+vsp/2\'\n",0);
   &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +2)*tprog - input_slew\' \'+vprog/2+vsp/2\'\n",0);
   &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog-input_slew\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'0\')\n",0);
+  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'+vprog/2+vsp/2\')\n",0);
 
   &tab_print($spfh,"Vwl[$mux_size] wl[$mux_size] 0 pwl(0 \'-vprog/2+vsp/2\'\n",0);
   &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +1)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
@@ -1500,17 +1499,17 @@ sub gen_rram_mux_isolate_sp_stimulates($) {
   &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +2)*tprog-2*input_slew\' \'+vprog/2+vsp/2\'\n",0);
   &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +2)*tprog - input_slew\' \'-vprog/2+vsp/2\'\n",0);
   &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'0\')\n",0);
+  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'-vprog/2+vsp/2\')\n",0);
 
   # Rest of Bit lines and Word lines should be always disabled
   &tab_print($spfh,"* Other Bit lines and Word lines are always disabled\n",0);
   for (my $i = 1; $i < $mux_size; $i++) {
-    &tab_print($spfh,"Vbl[$i]_b bl[$i]_b 0 pulse(\'+vprog/2+vsp/2\' \'0\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
+    &tab_print($spfh,"Vbl[$i]_b bl[$i]_b 0 pulse(\'+vprog/2+vsp/2\' \'+vprog/2+vsp/2\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
   }
 
   for (my $i = 0; $i < $mux_size; $i++) {
     if (1 != $i) {
-      &tab_print($spfh,"Vwl[$i] wl[$i] 0 pulse(\'-vprog/2+vsp/2\' \'0\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
+      &tab_print($spfh,"Vwl[$i] wl[$i] 0 pulse(\'-vprog/2+vsp/2\' \'-vprog/2+vsp/2\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
     }
   }
 
@@ -1569,9 +1568,9 @@ sub gen_rram_mux_nonisolate_sp_stimulates($) {
 
   # Add Stimulates: Programming Vdd
   &tab_print($spfh,"* Programming Vdd\n",0);
-  &tab_print($spfh,"Vprog_vdd prog_vdd 0 pulse(\'+vprog/2+vsp/2\' \'0\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
+  &tab_print($spfh,"Vprog_vdd prog_vdd 0 pulse(\'+vprog/2+vsp/2\' \'+vprog/2+vsp/2\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
   &tab_print($spfh,"* Programming GND\n",0);
-  &tab_print($spfh,"Vprog_gnd prog_gnd 0 pulse(\'-vprog/2+vsp/2\' \'0\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
+  &tab_print($spfh,"Vprog_gnd prog_gnd 0 pulse(\'-vprog/2+vsp/2\' \'-vprog/2+vsp/2\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
  
   # Add Stimulates: Controlling signals for programming RRAM.
   &tab_print($spfh,"* Control signals for Bit lines and Word lines\n",0);
@@ -1582,7 +1581,7 @@ sub gen_rram_mux_nonisolate_sp_stimulates($) {
   &tab_print($spfh,"+ \'(3-0.5)*tprog-2*input_slew\' \'-vprog/2+vsp/2\'\n",0);
   &tab_print($spfh,"+ \'(3-0.5)*tprog - input_slew\' \'+vprog/2+vsp/2\'\n",0);
   &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog-input_slew\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'0\')\n",0);
+  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'+vprog/2+vsp/2\')\n",0);
 
   &tab_print($spfh,"Vwl[1] wl[1] 0 pwl(0 \'-vprog/2+vsp/2\'\n",0);
   &tab_print($spfh,"+ \'(2-0.5)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
@@ -1590,7 +1589,7 @@ sub gen_rram_mux_nonisolate_sp_stimulates($) {
   &tab_print($spfh,"+ \'(3-0.5)*tprog-2*input_slew\' \'+vprog/2+vsp/2\'\n",0);
   &tab_print($spfh,"+ \'(3-0.5)*tprog - input_slew\' \'-vprog/2+vsp/2\'\n",0);
   &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'0\')\n",0);
+  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'-vprog/2+vsp/2\')\n",0);
 
   &tab_print($spfh,"* Control signals for SET process\n",0);
   &tab_print($spfh,"Vbl[0]_b bl[0]_b 0 pwl(0 \'+vprog/2+vsp/2\'\n",0);
@@ -1599,7 +1598,7 @@ sub gen_rram_mux_nonisolate_sp_stimulates($) {
   &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +2)*tprog-2*input_slew\' \'-vprog/2+vsp/2\'\n",0);
   &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +2)*tprog - input_slew\' \'+vprog/2+vsp/2\'\n",0);
   &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog-input_slew\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'0\')\n",0);
+  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'+vprog/2+vsp/2\')\n",0);
 
   &tab_print($spfh,"Vwl[$mux_size] wl[$mux_size] 0 pwl(0 \'-vprog/2+vsp/2\'\n",0);
   &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +1)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
@@ -1607,17 +1606,17 @@ sub gen_rram_mux_nonisolate_sp_stimulates($) {
   &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +2)*tprog-2*input_slew\' \'+vprog/2+vsp/2\'\n",0);
   &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +2)*tprog - input_slew\' \'-vprog/2+vsp/2\'\n",0);
   &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'0\')\n",0);
+  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'-vprog/2+vsp/2\')\n",0);
 
   # Rest of Bit lines and Word lines should be always disabled
   &tab_print($spfh,"* Other Bit lines and Word lines are always disabled\n",0);
   for (my $i = 1; $i < $mux_size; $i++) {
-    &tab_print($spfh,"Vbl[$i]_b bl[$i]_b 0 pulse(\'+vprog/2+vsp/2\' \'0\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
+    &tab_print($spfh,"Vbl[$i]_b bl[$i]_b 0 pulse(\'+vprog/2+vsp/2\' \'+vprog/2+vsp/2\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
   }
 
   for (my $i = 0; $i < $mux_size; $i++) {
     if (1 != $i) {
-      &tab_print($spfh,"Vwl[$i] wl[$i] 0 pulse(\'-vprog/2+vsp/2\' \'0\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
+      &tab_print($spfh,"Vwl[$i] wl[$i] 0 pulse(\'-vprog/2+vsp/2\' \'-vprog/2+vsp/2\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
     }
   }
 
@@ -1834,15 +1833,13 @@ sub gen_1level_rram_mux_isolate_subckt($ $ $ $ $ $) {
   $rram_init_off_gap = $conf_ptr->{rram_settings}->{rram_initial_off_gap}->{val};
   ($ongap_kw, $ongap_val) = split /:/,$rram_init_on_gap;
   ($offgap_kw, $offgap_val) = split /:/,$rram_init_off_gap;
-  &tab_print($spfh,".global ",0);
-  for (my $i = 0; $i < ($mux_size+1); $i++) {
-    &tab_print($spfh,"bl[$i]_b wl[$i] ",0);
-  }
-  &tab_print($spfh,"\n",0);
+  &tab_print($spfh,".global prog_vdd prog_gnd \n",0);
   # For isolating RRAM MUX design
-  &tab_print($spfh,".global ", 0);
-  &tab_print($spfh,"isolate_vdd isolate_gnd \n", 0)
-  &tab_print($spfh,"+ prog_clk op_clk\n", 0)
+  &tab_print($spfh,"+ isolate_vdd isolate_gnd \n", 0);
+  &tab_print($spfh,"+ prog_clk op_clk\n", 0);
+  for (my $i = 0; $i < ($mux_size+1); $i++) {
+    &tab_print($spfh,"+ bl[$i]_b wl[$i] \n",0);
+  }
   &tab_print($spfh,"\n",0);
 
   # Print definitions 
@@ -1931,17 +1928,16 @@ sub gen_1level_rram_mux_subckt($ $ $ $ $ $) {
   $rram_init_off_gap = $conf_ptr->{rram_settings}->{rram_initial_off_gap}->{val};
   ($ongap_kw, $ongap_val) = split /:/,$rram_init_on_gap;
   ($offgap_kw, $offgap_val) = split /:/,$rram_init_off_gap;
-  &tab_print($spfh,".global ",0);
+  &tab_print($spfh,".global prog_vdd prog_gnd \n",0);
+  # For isolating RRAM MUX design
+  &tab_print($spfh,"+ svdd_in sgnd_in svdd_out sgnd_out \n",0);
+  #&tab_print($spfh,"+ op_mode_enb op_mode_en \n ",0);
+  #&tab_print($spfh,"+ set_enb set_en rst_enb rst_en\n",0);
+  &tab_print($spfh,"+ prog_clk op_clk\n", 0);
   for (my $i = 0; $i < ($mux_size+1); $i++) {
-    &tab_print($spfh,"bl[$i]_b wl[$i] ",0);
+    &tab_print($spfh,"+ bl[$i]_b wl[$i] \n",0);
   }
   &tab_print($spfh,"\n",0);
-  # For isolating RRAM MUX design
-  &tab_print($spfh,".global ", 0);
-  &tab_print($spfh,"svdd_in sgnd_in svdd_out sgnd_out \n",0);
-  &tab_print($spfh,"+ op_mode_enb op_mode_en \n ",0);
-  &tab_print($spfh,"+ set_enb set_en rst_enb rst_en\n",0);
-  &tab_print($spfh,"+ prog_clk op_clk\n", 0)
 
   # Print definitions 
   &tab_print($spfh,".subckt $subckt_name ",0);
