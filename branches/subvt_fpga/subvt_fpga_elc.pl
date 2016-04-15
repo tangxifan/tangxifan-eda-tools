@@ -752,6 +752,21 @@ sub determine_2level_mux_basis($) {
  
   return $basis;
 }
+
+sub determine_multilevel_mux_basis($ $) {
+  my ($mux_size, $num_lvls) = @_;
+  
+  if (1 == $num_lvls) {
+    return $mux_size;
+  }
+
+  my ($basis) = int(log($mux_size)/log($num_lvls)); 
+
+  while ($mux_size > $basis**$num_lvls) {
+    $basis++;
+  }
+  return $basis;
+}
  
 sub determine_mux_num_sram($) {
   my ($mux_size) = @_;
@@ -1431,9 +1446,11 @@ sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
 
 }
 
-sub gen_rram_mux_isolate_sp_stimulates($) {
-  my ($spfh,$SRAM_bits,$input_vectors) = @_;
-  my ($mux_size) = ($opt_ptr->{mux_size_val});
+sub gen_rram_mux_sp_basic_stimulates($ $ $) {
+  my ($spfh, $num_mux_levels, $mux_size) = @_;
+
+  my ($basis) = (&determine_multilevel_mux_basis($mux_size, $num_mux_levels));
+  my ($num_sram) = ($num_mux_levels*($basis+1));
 
   # Add Stimulates: Standard VDD
   &tab_print($spfh,"* Stimulis for RRAM MUX with isolating transistors\n",0);
@@ -1461,57 +1478,77 @@ sub gen_rram_mux_isolate_sp_stimulates($) {
   &tab_print($spfh,"* Programming GND\n",0);
   &tab_print($spfh,"Vprog_gnd prog_gnd 0 pulse(\'-vprog/2+vsp/2\' \'-vprog/2+vsp/2\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
 
-  # Add Stimulates: Control signal for isolating transistors
-  &tab_print($spfh,"* Control signals for isolating transistors\n",0);
-  &tab_print($spfh,"Visolate_vdd isolate_vdd 0 pulse(\'vprog\' \'-vprog/2+vsp/2\' \'0.5*tprog-input_slew\' input_slew input_slew \'(1+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
- 
   # Add Stimulates: Controlling signals for programming RRAM.
   &tab_print($spfh,"* Control signals for Bit lines and Word lines\n",0);
-  &tab_print($spfh,"* Control signals for RESET process\n",0);
-  &tab_print($spfh,"Vbl[$mux_size]_b bl[$mux_size]_b 0 pwl(0 \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5)*tprog-input_slew\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5)*tprog\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(3-0.5)*tprog-2*input_slew\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(3-0.5)*tprog - input_slew\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog-input_slew\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'+vprog/2+vsp/2\')\n",0);
 
-  &tab_print($spfh,"Vwl[1] wl[1] 0 pwl(0 \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5)*tprog\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(3-0.5)*tprog-2*input_slew\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(3-0.5)*tprog - input_slew\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'-vprog/2+vsp/2\')\n",0);
+  for (my $lvl = 0; $lvl < $num_mux_levels; $lvl++) {
+    # Default values 
+    my ($rst_bl_b, $rst_wl) = (($basis+1)*$lvl + $basis, ($basis+1)*$lvl + 1); 
+    my ($set_bl_b, $set_wl) = (($basis+1)*$lvl, ($basis+1)*$lvl+$basis); 
 
-  &tab_print($spfh,"* Control signals for SET process\n",0);
-  &tab_print($spfh,"Vbl[0]_b bl[0]_b 0 pwl(0 \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +1)*tprog-input_slew\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +1)*tprog\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +2)*tprog-2*input_slew\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +2)*tprog - input_slew\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog-input_slew\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'+vprog/2+vsp/2\')\n",0);
+    # For some intermediate levels, RRAMs are placed in opposite TE and BE.
+    if (1 == $lvl % 2) {
+     ($rst_bl_b, $rst_wl) = (($basis+1)*$lvl + 1, ($basis+1)*$lvl+$basis); 
+     ($set_bl_b, $set_wl) = (($basis+1)*$lvl + $basis, ($basis+1)*$lvl); 
+    }
 
-  &tab_print($spfh,"Vwl[$mux_size] wl[$mux_size] 0 pwl(0 \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +1)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +1)*tprog\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +2)*tprog-2*input_slew\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +2)*tprog - input_slew\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'-vprog/2+vsp/2\')\n",0);
+    &tab_print($spfh,"* WL/BL lines for Level $lvl\n",0);
+    &tab_print($spfh,"* Control signals for RESET process\n",0);
+    &tab_print($spfh,"Vbl[$rst_bl_b]_b bl[$rst_bl_b]_b 0 pwl(0 \'+vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(2-0.5)*tprog-input_slew\' \'+vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(2-0.5)*tprog\' \'-vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(3-0.5)*tprog-2*input_slew\' \'-vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(3-0.5)*tprog - input_slew\' \'+vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog-input_slew\' \'+vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'+vprog/2+vsp/2\')\n",0);
 
-  # Rest of Bit lines and Word lines should be always disabled
-  &tab_print($spfh,"* Other Bit lines and Word lines are always disabled\n",0);
-  for (my $i = 1; $i < $mux_size; $i++) {
-    &tab_print($spfh,"Vbl[$i]_b bl[$i]_b 0 pulse(\'+vprog/2+vsp/2\' \'+vprog/2+vsp/2\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
-  }
+    &tab_print($spfh,"Vwl[$rst_wl] wl[$rst_wl] 0 pwl(0 \'-vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(2-0.5)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(2-0.5)*tprog\' \'+vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(3-0.5)*tprog-2*input_slew\' \'+vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(3-0.5)*tprog - input_slew\' \'-vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'-vprog/2+vsp/2\')\n",0);
 
-  for (my $i = 0; $i < $mux_size; $i++) {
-    if (1 != $i) {
+    &tab_print($spfh,"* Control signals for SET process\n",0);
+    &tab_print($spfh,"Vbl[$set_bl_b]_b bl[$set_bl_b]_b 0 pwl(0 \'+vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +1)*tprog-input_slew\' \'+vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +1)*tprog\' \'-vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +2)*tprog-2*input_slew\' \'-vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +2)*tprog - input_slew\' \'+vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog-input_slew\' \'+vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'+vprog/2+vsp/2\')\n",0);
+
+    &tab_print($spfh,"Vwl[$set_wl] wl[$set_wl] 0 pwl(0 \'-vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +1)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +1)*tprog\' \'+vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +2)*tprog-2*input_slew\' \'+vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +2)*tprog - input_slew\' \'-vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
+    &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'-vprog/2+vsp/2\')\n",0);
+
+    &tab_print($spfh,"\n",0);
+
+    # Bit lines and Word lines for RRAMs that would not be SET or RESET should be always disabled
+    &tab_print($spfh,"* Other Bit lines and Word lines are always disabled\n",0);
+    for (my $i = ($basis+1)*$lvl; $i < ($basis+1)*$lvl; $i++) {
+      # BLs
+      if (($i == $set_bl_b) || ($i == $rst_bl_b)) {
+        next;
+      }
+      &tab_print($spfh,"Vbl[$i]_b bl[$i]_b 0 pulse(\'+vprog/2+vsp/2\' \'+vprog/2+vsp/2\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
+    }
+
+    for (my $i = ($basis+1)*$lvl; $i < ($basis+1)*$lvl+$basis; $i++) {
+      # WLs
+      if (($i == $set_wl) || ($i == $rst_wl)) {
+        next;
+      }
       &tab_print($spfh,"Vwl[$i] wl[$i] 0 pulse(\'-vprog/2+vsp/2\' \'-vprog/2+vsp/2\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
     }
+    &tab_print($spfh,"\n",0);
   }
+  &tab_print($spfh,"\n",0);
 
   # Add Stimulates, input_ports
   &tab_print($spfh,"* MUX inputs signals\n",0);
@@ -1528,129 +1565,66 @@ sub gen_rram_mux_isolate_sp_stimulates($) {
     &tab_print($spfh,"+ \'(2 +N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog + ($i+0.5)*op_clk_period\' \'0\') \n",0);
     #&tab_print($spfh,"pulse(0 vsp \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew + $i*op_clk_period\' input_slew input_slew \'op_clk_period/2 - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
   }
-  &tab_print($spfh,"\n",0);
-  
+  &tab_print($spfh,"* Basic RRAM MUX Stimulus ends here\n",0);
+
 }
 
-sub gen_rram_mux_nonisolate_sp_stimulates($) {
-  my ($spfh,$SRAM_bits,$input_vectors) = @_;
-  my ($mux_size) = ($opt_ptr->{mux_size_val});
+sub gen_rram_mux_isolate_sp_stimulates($ $ $) {
+  my ($spfh, $num_mux_levels, $mux_size) = @_;
 
-  # Add Stimulates: Standard VDD
-  &tab_print($spfh,"* Standard Vdd\n",0);
-  &tab_print($spfh,"* PUSLE(V1 V2 TDELAY TRISE TFALL PW PERIOD)\n",0);
+  &gen_rram_mux_sp_basic_stimulates($spfh, $num_mux_levels, $mux_size);
 
-  # Clocks
-  &tab_print($spfh,"* Programming clock\n",0);
-  &tab_print($spfh,"Vprog_clk prog_clk 0 pulse(0 \'vsp\' \'tprog/2-input_slew\' \'input_slew\' \'input_slew\' \'tprog/2 - input_slew\' \'tprog\')\n",0);
-  &tab_print($spfh,"* Operating clock: delay = no. of cycles for SET and RESET + 1 switching cycle\n",0);
-  &tab_print($spfh,"Vop_clk op_clk 0 pulse(0 vsp \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' \'input_slew\' \'input_slew\' \'op_clk_period/2 - input_slew\' \'op_clk_period\')\n",0);
+  &tab_print($spfh,"* Stimulus for RRAM MUX with isolating transistors only\n",0);
+  
+  # Add Stimulates: Control signal for isolating transistors
+  &tab_print($spfh,"* Control signals for isolating transistors\n",0);
+  &tab_print($spfh,"Visolate_vdd isolate_vdd 0 pulse(\'vprog\' \'-vprog/2+vsp/2\' \'0.5*tprog-input_slew\' input_slew input_slew \'(1+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
+  
+  &tab_print($spfh,"\n",0);
 
+}
+
+sub gen_rram_mux_nonisolate_sp_stimulates($ $ $) {
+  my ($spfh, $num_mux_levels, $mux_size) = @_;
+
+  &gen_rram_mux_sp_basic_stimulates($spfh, $num_mux_levels, $mux_size);
+
+  &tab_print($spfh,"* Stimulus for RRAM MUX without isolating transistors only\n",0);
+ 
   # VDDs and GNDs
   &tab_print($spfh,"* Operating VDD\n",0);
-  &tab_print($spfh,"Vop_vdd $conf_ptr->{general_settings}->{VDD_port_name}->{val} 0 \'vsp\'\n",0);
-
   &tab_print($spfh,"Vop_vdd_out svdd_out 0 pulse(\'vsp\' \'0\' \'(2+ N_RRAM_TO_SET)*tprog-input_slew\' input_slew input_slew \'(N_RRAM_TO_RST+1)*tprog - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog + N*op_clk_period\')\n",0);
 
   &tab_print($spfh,"Vop_vdd_in svdd_in 0 pulse(\'vsp\' \'0\' \'1*tprog-input_slew\' input_slew input_slew \'(N_RRAM_TO_SET+1)*tprog - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog + N*op_clk_period\')\n",0);
-
-  if ("0" ne $conf_ptr->{general_settings}->{GND_port_name}->{val}) {
-    &tab_print($spfh,"* Operating GND\n",0);
-    &tab_print($spfh,"Vop_gnd $conf_ptr->{general_settings}->{GND_port_name}->{val} 0 0\n",0);
-  }
 
   &tab_print($spfh,"Vop_gnd_out sgnd_out 0 pulse(\'0\' \'vsp\' \'1*tprog-input_slew\' input_slew input_slew \'(N_RRAM_TO_SET+1)*tprog - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog + N*op_clk_period\')\n",0);
 
   &tab_print($spfh,"Vop_gnd_in sgnd_in 0 pulse(\'0\' \'vsp\' \'(2+ N_RRAM_TO_SET)*tprog-input_slew\' input_slew input_slew \'(N_RRAM_TO_RST+1)*tprog - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog + N*op_clk_period\')\n",0);
 
-  &tab_print($spfh,"* VDD of loads\n",0);
-  &tab_print($spfh, "Vload_vdd $conf_ptr->{general_settings}->{LOAD_VDD_port_name}->{val} 0 \'vsp\'\n",0);
-
-  # Add Stimulates: Programming Vdd
-  &tab_print($spfh,"* Programming Vdd\n",0);
-  &tab_print($spfh,"Vprog_vdd prog_vdd 0 pulse(\'+vprog/2+vsp/2\' \'+vprog/2+vsp/2\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
-  &tab_print($spfh,"* Programming GND\n",0);
-  &tab_print($spfh,"Vprog_gnd prog_gnd 0 pulse(\'-vprog/2+vsp/2\' \'-vprog/2+vsp/2\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
- 
-  # Add Stimulates: Controlling signals for programming RRAM.
-  &tab_print($spfh,"* Control signals for Bit lines and Word lines\n",0);
-  &tab_print($spfh,"* Control signals for RESET process\n",0);
-  &tab_print($spfh,"Vbl[$mux_size]_b bl[$mux_size]_b 0 pwl(0 \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5)*tprog-input_slew\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5)*tprog\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(3-0.5)*tprog-2*input_slew\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(3-0.5)*tprog - input_slew\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog-input_slew\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'+vprog/2+vsp/2\')\n",0);
-
-  &tab_print($spfh,"Vwl[1] wl[1] 0 pwl(0 \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5)*tprog\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(3-0.5)*tprog-2*input_slew\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(3-0.5)*tprog - input_slew\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'-vprog/2+vsp/2\')\n",0);
-
-  &tab_print($spfh,"* Control signals for SET process\n",0);
-  &tab_print($spfh,"Vbl[0]_b bl[0]_b 0 pwl(0 \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +1)*tprog-input_slew\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +1)*tprog\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +2)*tprog-2*input_slew\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +2)*tprog - input_slew\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog-input_slew\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'+vprog/2+vsp/2\')\n",0);
-
-  &tab_print($spfh,"Vwl[$mux_size] wl[$mux_size] 0 pwl(0 \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +1)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +1)*tprog\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +2)*tprog-2*input_slew\' \'+vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5 +N_RRAM_TO_RST +2)*tprog - input_slew\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
-  &tab_print($spfh,"+ \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog\' \'-vprog/2+vsp/2\')\n",0);
-
-  # Rest of Bit lines and Word lines should be always disabled
-  &tab_print($spfh,"* Other Bit lines and Word lines are always disabled\n",0);
-  for (my $i = 1; $i < $mux_size; $i++) {
-    &tab_print($spfh,"Vbl[$i]_b bl[$i]_b 0 pulse(\'+vprog/2+vsp/2\' \'+vprog/2+vsp/2\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
-  }
-
-  for (my $i = 0; $i < $mux_size; $i++) {
-    if (1 != $i) {
-      &tab_print($spfh,"Vwl[$i] wl[$i] 0 pulse(\'-vprog/2+vsp/2\' \'-vprog/2+vsp/2\' \'(2-0.5+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
-    }
-  }
-
-  # Add Stimulates, input_ports
-  &tab_print($spfh,"* MUX inputs signals\n",0);
-  for (my $i=0; $i<$opt_ptr->{mux_size_val}; $i++) {
-    &tab_print($spfh,"Vin$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i 0 ",0);
-    &tab_print($spfh,"pwl(0 \'0\' \n",0);
-    &tab_print($spfh,"+ \'(2+N_RRAM_TO_RST)*tprog - input_slew\' \'0\' \n",0);
-    &tab_print($spfh,"+ \'(2+N_RRAM_TO_RST)*tprog\' \'vsp\' \n",0);
-    &tab_print($spfh,"+ \'(2+N_RRAM_TO_RST+2)*tprog - input_slew\' \'vsp\' \n",0);
-    &tab_print($spfh,"+ \'(2+N_RRAM_TO_RST+2)*tprog\' \'0\' \n",0);
-    &tab_print($spfh,"+ \'(2 +N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew + $i*op_clk_period\' \'0\' \n",0);
-    &tab_print($spfh,"+ \'(2 +N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog + $i*op_clk_period\' \'vsp\' \n",0);
-    &tab_print($spfh,"+ \'(2 +N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog + ($i+0.5)*op_clk_period - input_slew\' \'vsp\' \n",0);
-    &tab_print($spfh,"+ \'(2 +N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog + ($i+0.5)*op_clk_period\' \'0\') \n",0);
-    #&tab_print($spfh,"pulse(0 vsp \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew + $i*op_clk_period\' input_slew input_slew \'op_clk_period/2 - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
-  }
-
   &tab_print($spfh,"\n",0);
   
 }
 
-sub gen_rram_mux_sp_stimulates($) {
-  my ($spfh,$SRAM_bits,$input_vectors) = @_;
+sub gen_rram_mux_sp_stimulates($ $) {
+  my ($spfh, $mux_size) = @_;
+  my ($num_mux_levels);
 
   if ("on" ne $opt_ptr->{rram_enhance}) {
     die "ERROR: Stimulis of RRAM MUX would not be generated because rram_enhance is off!\n";
   }
 
-  if ("on" eq $opt_ptr->{rram_mux_isolate}) {
-    &gen_rram_mux_isolate_sp_stimulates($spfh);
+  if ("on" eq $opt_ptr->{one_level_mux}) {
+    $num_mux_levels = 1;
+  } elsif ("on" eq $opt_ptr->{two_level_mux}) {
+    $num_mux_levels = 2;
   } else {
-    &gen_rram_mux_nonisolate_sp_stimulates($spfh);
+    $num_mux_levels = &determine_mux_level($mux_size);
+  }
+
+  if ("on" eq $opt_ptr->{rram_mux_isolate}) {
+    &gen_rram_mux_isolate_sp_stimulates($spfh, $num_mux_levels, $mux_size);
+  } else {
+    &gen_rram_mux_nonisolate_sp_stimulates($spfh, $num_mux_levels, $mux_size);
   } 
  
   return; 
@@ -1990,20 +1964,7 @@ sub gen_1level_rram_mux_subckt($ $ $ $ $ $) {
     &tab_print($spfh,"Vout mux1level_out ",0); 
     &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} 0\n",0);
   } 
-
-  # Power-gate transistors 
-  #&tab_print($spfh, "* Power-gate transistors \n", 0);
-  #&tab_print($spfh, "* Input \n", 0);
-  #for (my $j = 0; $j < $pg_trans_w; $j++) {
-  #  &tab_print($spfh, "Xpg_pmos_in_$j svdd_in_inv sgnd_in_inv svdd_in svdd_in elc_pmos L=\'pl\' W=\'wp*beta\' \n", 0);
-  #  &tab_print($spfh, "Xpg_nmos_in_$j sgnd_in_inv svdd_in_inv sgnd_in sgnd_in elc_pmos L=\'nl\' W=\'wn\' \n", 0);
-  #}
-  #&tab_print($spfh, "* Output \n", 0);
-  #for (my $j = 0; $j < $pg_trans_w; $j++) {
-  #  &tab_print($spfh, "Xpg_pmos_out_$j svdd_out_inv sgnd_out_inv svdd_out svdd_out elc_pmos L=\'pl\' W=\'wp*beta\' \n", 0);
-  #  &tab_print($spfh, "Xpg_nmos_out_$j sgnd_out_inv svdd_out_inv sgnd_out sgnd_out elc_pmos L=\'nl\' W=\'wn\' \n", 0);
-  #}
-
+ 
   # Pull-up/down transistors at the input/output inverters
   &tab_print($spfh, "* Pull-Up/Down transistors at input/output inverters \n", 0);
   for (my $i = 0; $i < $mux_size; $i++) {
@@ -2081,8 +2042,285 @@ sub gen_1level_mux_subckt($ $ $ $ $ $) {
   &tab_print($spfh,".eom $subckt_name\n",0);
 }
 
+sub gen_multilevel_rram_mux_isolate_subckt($ $ $ $ $ $ $) {
+  my ($spfh,$mux_size,$num_lvls,$subckt_name,$mux1level_subckt,$buffered,$rram_enhance) = @_;
+  my ($isolate_node_postfix) = ("_isolate");
+  my ($ongap_kw, $ongap_val, $offgap_kw, $offgap_val);
+  my ($basis) = (&determine_multilevel_mux_basis($mux_size));
+  my ($num_blwl) = ($num_lvls*($basis + 1));
+  my ($num_sram) = ($num_lvls*$basis);
+
+  print "Two-level MUX: number of a basis is auto-set to $basis.\n";
+  print "Two-level MUX: number of configurable bits is auto-set to $num_sram.\n";
+
+  print "INFO: generating 2-level RRAM mux structure with isolating transistors...\n";
+
+  if ("on" ne $rram_enhance) {
+    die "ERROR: RRAM MUX would not be generated because rram_enhance is off!\n";
+  }
+
+  my ($rram_init_on_gap, $rram_init_off_gap);
+  # Find initial parameters for RRAMs that are initialized to ON/OFF states.
+  $rram_init_on_gap = $conf_ptr->{rram_settings}->{rram_initial_on_gap}->{val};
+  $rram_init_off_gap = $conf_ptr->{rram_settings}->{rram_initial_off_gap}->{val};
+  ($ongap_kw, $ongap_val) = split /:/,$rram_init_on_gap;
+  ($offgap_kw, $offgap_val) = split /:/,$rram_init_off_gap;
+  &tab_print($spfh,".global prog_vdd prog_gnd \n",0);
+  # For isolating RRAM MUX design
+  &tab_print($spfh,"+ isolate_vdd isolate_gnd \n", 0);
+  &tab_print($spfh,"+ prog_clk op_clk\n", 0);
+  for (my $i = 0; $i < $num_blwl; $i++) {
+    &tab_print($spfh,"+ bl[$i]_b wl[$i] \n",0);
+  }
+  &tab_print($spfh,"\n",0);
+
+  # Print definitions 
+  &tab_print($spfh,".subckt $subckt_name ",0);
+  for (my $i=0; $i<$num_sram; $i++) {
+    &tab_print($spfh,"$conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$i ",0);
+    &tab_print($spfh,"$conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$i ",0);
+  }
+  for (my $i=0; $i<$mux_size; $i++) {
+    &tab_print($spfh,"$conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i ",0);
+  }
+  &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} ",0);
+  &tab_print($spfh,"svdd sgnd \n", 0);
+
+  # Print array of transistors/RRAMs
+  # Two-levels
+  for (my $lvl = 0; $lvl < $num_lvls; $lvl++) {
+    my ($num_inputs_cur_lvl, $in_blwl_idx, $out_blwl_idx) = ($mux_size, ($basis+1)*$lvl, ($basis+1)*$lvl+$basis);
+    my ($next_lvl, $next_lvl_input) = ($lvl+1, 0);
+
+    # The number of inputs at the first level depends on the mux_size, but the rest depends on the basis.
+    if ($lvl > 0) { 
+      $num_inputs_cur_lvl = $basis**($num_lvls - $lvl); 
+    }
+
+    for (my $i = 0; $i < $num_inputs_cur_lvl; $i++) {
+      # Determine the input index of next level
+      $next_lvl_input = int($i / $basis);
+      #  Program Pair 
+      &tab_print($spfh, "Xprog_pmos_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+      &tab_print($spfh, "Xprog_nmos_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i wl[$in_blwl_idx] prog_gnd prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
+      # RRAMs' TEs and BEs: level 0 (first level) RRAM is organized as (TE, BE).
+      # level 1 (second level) RRAM is organized as (BE, TE), opposite to the first level.
+      if (0 == $lvl % 2) {
+        &tab_print($spfh, "Xrram_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i mux2lvl_lvl$next_lvl\_in$next_lvl_input $conf_ptr->{rram_settings}->{rram_subckt_name}->{val} ");
+      } else {
+        &tab_print($spfh, "Xrram_lvl$lvl\_in$i mux2lvl_lvl$next_lvl\_in$next_lvl_input mux2lvl_lvl$lvl\_in$i $conf_ptr->{rram_settings}->{rram_subckt_name}->{val} ");
+      }
+      # Initilization: RRAM0 (in0) is off, rest of RRAMs are on. Programming will switch RRAM0 to on and the rest to off.
+      if (1 == $i) {
+        &tab_print($spfh, "$offgap_kw=gap_on\n");
+      } else { 
+        &tab_print($spfh, "$ongap_kw=gap_off\n");
+      }
+
+      # Calculate the index of BL/WL lines
+      $in_blwl_idx++;
+      if (!($in_blwl_idx < $out_blwl_idx)) {
+        $in_blwl_idx = $basis*$lvl;
+      }
+    }
+    # Add output program pair 
+    &tab_print($spfh, "Xprog_pmos_out_lvl$next_lvl\_in$next_lvl_input mux2lvl_lvl$next_lvl\_in$next_lvl_input bl[$out_blwl_idx]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+    &tab_print($spfh, "Xprog_nmos_out_lvl$next_lvl\_in$next_lvl_input mux2lvl_lvl$next_lvl\_in$next_lvl_input wl[$out_blwl_idx] prog_gnd prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
+
+  }
+
+  &tab_print($spfh, "* Isolating transistors \n", 0);
+  # Add isolating transistors
+  for (my $i=0; $i < $mux_size; $i++) {
+    &tab_print($spfh, "* Input $i \n", 0);
+    for (my $j = 0; $j < $opt_ptr->{rram_mux_isolate_val}; $j++) {
+      &tab_print($spfh, "Xisolate_in$i\_$j mux2lvl_lvl0_in$i isolate_vdd mux2lvl_in$i prog_gnd elc_prog_nmos L=\'prog_nl\' W=\'prog_wn\'\n", 0);
+    }
+  }
+  &tab_print($spfh, "* Output \n", 0);
+  for (my $j = 0; $j < $opt_ptr->{rram_mux_isolate_val}; $j++) {
+    &tab_print($spfh, "Xisolate_out_$j mux2lvl_lvl$num_lvls\_in0 isolate_vdd mux2lvl_out prog_gnd elc_prog_nmos L=\'prog_nl\' W=\'prog_wn\'\n", 0);
+  }
+
+  # Add buffers
+  for (my $i=0; $i < $mux_size; $i++) {
+    if ("buffered" eq $buffered) {
+      &tab_print($spfh,"Xinv$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux2lvl_in$i ",0); 
+      &tab_print($spfh,"svdd sgnd $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'inv_size_in\'\n",0);
+    } else {
+      &tab_print($spfh,"V$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux2lvl_in$i 0\n",0); 
+    }
+  }
+
+  if ("on" eq $opt_ptr->{auto_out_tapered_buffer}) {
+    my ($tapbuf_size) = (4**$opt_ptr->{auto_out_tapered_buffer_val});
+    # Call the subckt 
+    &tab_print($spfh, "Xtapbuf mux2lvl_out $conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd sgnd tapbuf_size$tapbuf_size\n", 0);
+  } elsif ("buffered" eq $buffered) {
+    &tab_print($spfh,"Xinv_out mux2lvl_out ",0); 
+    &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd sgnd $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'inv_size_out\'\n",0);
+  } else {
+    &tab_print($spfh,"Vout mux2lvl_out ",0); 
+    &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} 0\n",0);
+  } 
+
+  # Print end of subckt
+  &tab_print($spfh,".eom $subckt_name\n",0);
+}
+
+sub gen_multilevel_rram_mux_subckt($ $ $ $ $ $ $) {
+  my ($spfh,$mux_size,$num_lvls,$subckt_name,$mux1level_subckt,$buffered,$rram_enhance) = @_;
+  my ($ongap_kw, $ongap_val, $offgap_kw, $offgap_val);
+  my ($basis) = (&determine_multilevel_mux_basis($mux_size, $num_lvls));
+  my ($num_blwl) = ($num_lvls*($basis + 1));
+  my ($num_sram) = ($num_lvls*$basis);
+
+  if ("on" ne $rram_enhance) {
+    die "ERROR: RRAM MUX would not be generated because rram_enhance is off!\n";
+  }
+
+  print "INFO: generating 2-level RRAM mux structure without isolating transistors...\n";
+
+  my ($rram_init_on_gap, $rram_init_off_gap);
+  # Find initial parameters for RRAMs that are initialized to ON/OFF states.
+  $rram_init_on_gap = $conf_ptr->{rram_settings}->{rram_initial_on_gap}->{val};
+  $rram_init_off_gap = $conf_ptr->{rram_settings}->{rram_initial_off_gap}->{val};
+  ($ongap_kw, $ongap_val) = split /:/,$rram_init_on_gap;
+  ($offgap_kw, $offgap_val) = split /:/,$rram_init_off_gap;
+  &tab_print($spfh,".global prog_vdd prog_gnd \n",0);
+  # For isolating RRAM MUX design
+  &tab_print($spfh,"+ svdd_in sgnd_in svdd_out sgnd_out \n",0);
+  #&tab_print($spfh,"+ op_mode_enb op_mode_en \n ",0);
+  #&tab_print($spfh,"+ set_enb set_en rst_enb rst_en\n",0);
+  &tab_print($spfh,"+ prog_clk op_clk\n", 0);
+  for (my $i = 0; $i < $num_blwl; $i++) {
+    &tab_print($spfh,"+ bl[$i]_b wl[$i] \n",0);
+  }
+  &tab_print($spfh,"\n",0);
+
+  # Print definitions 
+  &tab_print($spfh,".subckt $subckt_name ",0);
+  for (my $i=0; $i<$num_sram; $i++) {
+    &tab_print($spfh,"$conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$i ",0);
+    &tab_print($spfh,"$conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$i ",0);
+  }
+  for (my $i=0; $i<$mux_size; $i++) {
+    &tab_print($spfh,"$conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i ",0);
+  }
+  &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} ",0);
+  &tab_print($spfh,"svdd sgnd \n", 0);
+
+  # Print array of transistors/RRAMs
+  # Two-levels
+  for (my $lvl = 0; $lvl < $num_lvls; $lvl++) {
+    my ($num_inputs_cur_lvl, $in_blwl_idx, $out_blwl_idx) = ($mux_size, ($basis+1)*$lvl, ($basis+1)*$lvl+$basis);
+    my ($next_lvl, $next_lvl_input) = ($lvl+1, 0);
+
+    # The number of inputs at the first level depends on the mux_size, but the rest depends on the basis.
+    if ($lvl > 0) { 
+      $num_inputs_cur_lvl = $basis**($num_lvls - $lvl); 
+    }
+
+    &tab_print($spfh, "* Programming Pair: level $lvl\n",0);
+    for (my $i = 0; $i < $num_inputs_cur_lvl; $i++) {
+      # Determine the input index of next level
+      $next_lvl_input = int($i / $basis);
+      #  Program Pair 
+      &tab_print($spfh, "* Input $i \n",0);
+      &tab_print($spfh, "Xprog_pmos_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+      &tab_print($spfh, "Xprog_nmos_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i wl[$in_blwl_idx] prog_gnd prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
+      # RRAMs' TEs and BEs: level 0 (first level) RRAM is organized as (TE, BE).
+      # level 1 (second level) RRAM is organized as (BE, TE), opposite to the first level.
+      if (0 == $lvl % 2) {
+        &tab_print($spfh, "Xrram_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i mux2lvl_lvl$next_lvl\_in$next_lvl_input $conf_ptr->{rram_settings}->{rram_subckt_name}->{val} ");
+      } else {
+        &tab_print($spfh, "Xrram_lvl$lvl\_in$i mux2lvl_lvl$next_lvl\_in$next_lvl_input mux2lvl_lvl$lvl\_in$i $conf_ptr->{rram_settings}->{rram_subckt_name}->{val} ");
+      }
+      # Initilization: RRAM0 (in0) is off, rest of RRAMs are on. Programming will switch RRAM0 to on and the rest to off.
+      if (1 == $i) {
+        &tab_print($spfh, "$offgap_kw=gap_on\n");
+      } else { 
+        &tab_print($spfh, "$ongap_kw=gap_off\n");
+      }
+
+      # Calculate the index of BL/WL lines
+      $in_blwl_idx++;
+      if (!($in_blwl_idx < $out_blwl_idx)) {
+        $in_blwl_idx = $basis*$lvl;
+      }
+    }
+    # Add output program pair 
+    &tab_print($spfh, "* Programming Pair: level $lvl\n",0);
+    &tab_print($spfh, "* Output \n",0);
+    &tab_print($spfh, "Xprog_pmos_out_lvl$next_lvl\_in$next_lvl_input mux2lvl_lvl$next_lvl\_in$next_lvl_input bl[$out_blwl_idx]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+    &tab_print($spfh, "Xprog_nmos_out_lvl$next_lvl\_in$next_lvl_input mux2lvl_lvl$next_lvl\_in$next_lvl_input wl[$out_blwl_idx] prog_gnd prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
+  }
+
+  # Add buffers
+  for (my $i=0; $i < $mux_size; $i++) {
+    if ("buffered" eq $buffered) {
+      &tab_print($spfh,"Xinv$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux2lvl_lvl0_in$i ",0); 
+      &tab_print($spfh,"svdd_in sgnd_in $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'inv_size_in\'\n",0);
+    } else {
+      &tab_print($spfh,"V$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux2lvl_lvl0_in$i 0\n",0); 
+    }
+  }
+
+  if ("on" eq $opt_ptr->{auto_out_tapered_buffer}) {
+    my ($tapbuf_size) = (4**$opt_ptr->{auto_out_tapered_buffer_val});
+    # Call the subckt 
+    if (1 == $num_lvls % 2) {
+      &tab_print($spfh, "Xtapbuf mux2lvl_lvl$num_lvls\_in0 $conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd_out sgnd_out tapbuf_size$tapbuf_size\n", 0);
+    } else {
+      &tab_print($spfh, "Xtapbuf mux2lvl_lvl$num_lvls\_in0 $conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd_in sgnd_in tapbuf_size$tapbuf_size\n", 0);
+    }
+  } elsif ("buffered" eq $buffered) {
+    &tab_print($spfh,"Xinv_out mux2lvl_lvl$num_lvls\_in0 ",0); 
+    if (1 == $num_lvls % 2) {
+      &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd_out sgnd_out $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'inv_size_out\'\n",0);
+    } else {
+      &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd_in sgnd_in $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'inv_size_out\'\n",0);
+    }
+  } else {
+    &tab_print($spfh,"Vout mux2lvl_lvl$num_lvls\_in0 ",0); 
+    &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} 0\n",0);
+  } 
+ 
+  # Pull-up/down transistors at the input/output inverters
+  &tab_print($spfh, "* Pull-Up/Down transistors at input/output inverters \n", 0);
+  for (my $i = 0; $i < $mux_size; $i++) {
+    &tab_print($spfh, "* Input $i \n", 0);
+    &tab_print($spfh, "XsetEN_in$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i svdd_out svdd svdd elc_pmos L=\'pl\' W=\'wp\' \n", 0);
+    &tab_print($spfh, "XrstEN_in$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i sgnd_out sgnd sgnd elc_nmos L=\'nl\' W=\'wn\' \n", 0);
+  }
+
+  &tab_print($spfh, "* Output \n", 0);
+  # Depend on the number of levels, the output should be pulled-up or down when SET/RESET.
+  if (1 == $num_lvls % 2) {
+    &tab_print($spfh, "XsetEN_out $conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd_in svdd svdd elc_pmos L=\'pl\' W=\'wp\' \n", 0);
+    &tab_print($spfh, "XrstEN_out $conf_ptr->{mux_settings}->{OUT_port_name}->{val} sgnd_in sgnd sgnd elc_nmos L=\'nl\' W=\'wn\' \n", 0);
+  } else {
+    &tab_print($spfh, "XsetEN_out $conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd_out svdd svdd elc_pmos L=\'pl\' W=\'wp\' \n", 0);
+    &tab_print($spfh, "XrstEN_out $conf_ptr->{mux_settings}->{OUT_port_name}->{val} sgnd_out sgnd sgnd elc_nmos L=\'nl\' W=\'wn\' \n", 0);
+  }
+
+  # Print end of subckt
+  &tab_print($spfh,".eom $subckt_name\n",0);
+}
+
+
 sub gen_2level_mux_subckt($ $ $ $ $ $) {
   my ($spfh,$mux_size,$subckt_name,$mux2level_subckt,$buffered,$rram_enhance) = @_;
+
+  if ("on" eq $rram_enhance) {
+    if ("on" eq $opt_ptr->{rram_mux_isolate}) {
+      &gen_multilevel_rram_mux_isolate_subckt($spfh,$mux_size,2,$subckt_name,$mux2level_subckt,$buffered,$rram_enhance);
+    } else {
+      &gen_multilevel_rram_mux_subckt($spfh,$mux_size,2,$subckt_name,$mux2level_subckt,$buffered,$rram_enhance);
+    }
+    return;
+  }
+
   my ($basis) = (&determine_2level_mux_basis($mux_size));
   my ($num_sram) = (2*$basis);
 
@@ -2101,46 +2339,18 @@ sub gen_2level_mux_subckt($ $ $ $ $ $) {
   &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} ",0);
   &tab_print($spfh,"svdd sgnd \n", 0);
 
-  # Print array of transistors/RRAMs
-  if ($rram_enhance) {
-    # First level 
-    for (my $i = 0; $i < $mux_size; $i++) {
-      my ($in2lvl) = int($i/$basis);
-      my ($offset) = $i % $basis;
-      # Call defined 1level Subckt - Program Pair 
-      #&tab_print($spfh, "Xmux2_l2_$i mux2_l2_in$i $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$offset $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$offset svdd sgnd $mux2level_subckt wprog=\'wprog\'\n",0);
-      #if (0 == $i) {
-      #  &tab_print($spfh,"Rmux2level_$i mux2_l2_in$i mux2_l1_in$in2lvl \'ron\'\n",0);
-      #} else { 
-      #  &tab_print($spfh,"Rmux2level_$i mux2_l2_in$i mux2_l1_in$in2lvl \'roff\'\n",0);
-      #}
-    }
-    # Add output program pair 
-    for (my $i = 0; $i < $basis; $i++) {
-      #&tab_print($spfh, "Xmux2_l2_progpairout mux2_l1_in$i $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$i $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$i svdd sgnd $mux2level_subckt wprog=\'wprog\'\n",0);
-    }
-    # Add intermedia inverter 
-    # Second level 
-    for (my $i = 0; $i < $basis; $i++) {
-      my ($offset) = ($basis + $i);
-    }
-    # Add output program pair 
-   ;
-    # Add intermedia inverter 
-  } else {
-    # CMOS 2-level MUX
-    # First level 
-    for (my $i = 0; $i < $mux_size; $i++) {
-      my ($in2lvl) = int($i/$basis);
-      my ($offset) = ($i % $basis);
-      # Call defined 2level Subckt 
-      &tab_print($spfh, "Xmux2_l2_in$i mux2_l2_in$i mux2_l1_in$in2lvl $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$offset $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$offset svdd sgnd $mux2level_subckt\n",0);
-    }
-    # Second level 
-    for (my $i = 0; $i < $basis; $i++) {
-      my ($offset) = ($basis + $i);
-      &tab_print($spfh, "Xmux2_l1_in$i mux2_l1_in$i mux2_l0_in0 $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$offset $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$offset svdd sgnd $mux2level_subckt\n",0);
-    }
+  # CMOS 2-level MUX
+  # First level 
+  for (my $i = 0; $i < $mux_size; $i++) {
+    my ($in2lvl) = int($i/$basis);
+    my ($offset) = ($i % $basis);
+    # Call defined 2level Subckt 
+    &tab_print($spfh, "Xmux2_l2_in$i mux2_l2_in$i mux2_l1_in$in2lvl $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$offset $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$offset svdd sgnd $mux2level_subckt\n",0);
+  }
+  # Second level 
+  for (my $i = 0; $i < $basis; $i++) {
+    my ($offset) = ($basis + $i);
+    &tab_print($spfh, "Xmux2_l1_in$i mux2_l1_in$i mux2_l0_in0 $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$offset $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$offset svdd sgnd $mux2level_subckt\n",0);
   }
 
   # Add buffers
@@ -2184,6 +2394,15 @@ sub gen_multilevel_mux_subckt($ $ $ $ $ $)
   #if ($mux_size != ($#input_vects + 1)) {
   #  die "Error: MUX size is $mux_size, but given input vectors consist of ".$#input_vects+1."bits!\n";
   #}
+
+  if ("on" eq $rram_enhance) {
+    if ("on" eq $opt_ptr->{rram_mux_isolate}) {
+      &gen_multilevel_rram_mux_isolate_subckt($spfh,$mux_size,$num_sram,$subckt_name,$mux2_subckt,$buffered,$rram_enhance);
+    } else {
+      &gen_multilevel_rram_mux_subckt($spfh,$mux_size,$num_sram,$subckt_name,$mux2_subckt,$buffered,$rram_enhance);
+    }
+    return;
+  }
  
   # Print definitions 
   &tab_print($spfh,".subckt $subckt_name ",0);
@@ -2565,7 +2784,7 @@ sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
     &gen_mux_sp_common($spfh,"mux$mux_size\_delay_power",$cload,$input_pwl,$input_pwh,$input_slew,$vsp,$mux_size,$inv_size_in,$inv_size_out,$rram_enhance,$ron,$wprog,$roff, $on_gap, $off_gap);
     # FOR RRAM MUX: we need special stimulates for programming phase!
     if ("on" eq $rram_enhance) {
-      &gen_rram_mux_sp_stimulates($spfh,$SRAM_bits,$input_vectors); 
+      &gen_rram_mux_sp_stimulates($spfh, $mux_size); 
       &gen_rram_mux_sp_measure($spfh,$tran_step,$tran_stop,$delay_measure,$delay_measure_input,$input_vector_type,$output_vector_type);
     } else {
     # FOR SRAM MUX: go normally.
@@ -2592,7 +2811,7 @@ sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
       print "INFO: updating gaps in $mux_file...\n";
       &gen_mux_sp_common($spfh,"mux$mux_size\_delay_power",$cload,$input_pwl,$input_pwh,$input_slew,$vsp,$mux_size,$inv_size_in,$inv_size_out,$rram_enhance,$ron,$wprog,$roff,$on_gap, $off_gap);
       # FOR RRAM MUX: we need special stimulates for programming phase!
-      &gen_rram_mux_sp_stimulates($spfh,$SRAM_bits,$input_vectors); 
+      &gen_rram_mux_sp_stimulates($spfh,$mux_size); 
       &gen_rram_mux_sp_measure($spfh,$tran_step,$tran_stop,$delay_measure,$delay_measure_input,$input_vector_type,$output_vector_type);
       close($spfh);
     } else {
