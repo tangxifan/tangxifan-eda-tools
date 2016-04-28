@@ -1554,14 +1554,14 @@ sub gen_rram_mux_sp_basic_stimulates($ $ $) {
   for (my $i=0; $i<$opt_ptr->{mux_size_val}; $i++) {
     &tab_print($spfh,"Vin$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i 0 ",0);
     &tab_print($spfh,"pwl(0 \'0\' \n",0);
-    #&tab_print($spfh,"+ \'tprog - input_slew\' \'0\' \n",0);
-    #&tab_print($spfh,"+ \'tprog\' \'vsp\' \n",0);
-    #&tab_print($spfh,"+ \'3*tprog - input_slew\' \'vsp\' \n",0);
-    #&tab_print($spfh,"+ \'3*tprog\' \'0\' \n",0);
-    &tab_print($spfh,"+ \'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew + $i*op_clk_period\' \'0\' \n",0);
-    &tab_print($spfh,"+ \'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog + $i*op_clk_period\' \'vsp\' \n",0);
-    &tab_print($spfh,"+ \'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog + ($i+0.5)*op_clk_period - input_slew\' \'vsp\' \n",0);
-    &tab_print($spfh,"+ \'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog + ($i+0.5)*op_clk_period\' \'0\') \n",0);
+    &tab_print($spfh,"+ \'(1)*tprog - input_slew\' \'0\' \n",0);
+    &tab_print($spfh,"+ \'(1)*tprog\' \'vsp\' \n",0);
+    &tab_print($spfh,"+ \'(1+ 2*N_RRAM_TO_RST)*tprog - input_slew\' \'vsp\' \n",0);
+    &tab_print($spfh,"+ \'(1+ 2*N_RRAM_TO_RST)*tprog\' \'0\' \n",0);
+    &tab_print($spfh,"+ \'(2 +2*N_RRAM_TO_RST +2*N_RRAM_TO_SET)*tprog - input_slew + $i*op_clk_period\' \'0\' \n",0);
+    &tab_print($spfh,"+ \'(2 +2*N_RRAM_TO_RST +2*N_RRAM_TO_SET)*tprog + $i*op_clk_period\' \'vsp\' \n",0);
+    &tab_print($spfh,"+ \'(2 +2*N_RRAM_TO_RST +2*N_RRAM_TO_SET)*tprog + ($i+0.5)*op_clk_period - input_slew\' \'vsp\' \n",0);
+    &tab_print($spfh,"+ \'(2 +2*N_RRAM_TO_RST +2*N_RRAM_TO_SET)*tprog + ($i+0.5)*op_clk_period\' \'0\') \n",0);
     #&tab_print($spfh,"pulse(0 vsp \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog - input_slew + $i*op_clk_period\' input_slew input_slew \'op_clk_period/2 - input_slew\' \'(2+ N_RRAM_TO_SET+1 +N_RRAM_TO_RST+1)*tprog+N*op_clk_period\')\n",0);
   }
   &tab_print($spfh,"* Basic RRAM MUX Stimulus ends here\n",0);
