@@ -778,11 +778,11 @@ sub determine_mux_num_sram($) {
   if (("on" eq $opt_ptr->{one_level_mux})) {
     return $mux_size;
   } elsif ("on" eq $opt_ptr->{two_level_mux}) {
-    if (2 == &determine_2level_mux_basis($mux_size)) {
-      return &determine_2level_mux_basis($mux_size);
-    } else {
+    #if (2 == &determine_2level_mux_basis($mux_size)) {
+    #  return &determine_2level_mux_basis($mux_size);
+    #} else {
       return 2*&determine_2level_mux_basis($mux_size);
-    }
+    #}
   } else {
     return &determine_mux_level($mux_size);
   }
@@ -1730,12 +1730,12 @@ sub gen_rram_mux_sp_measure($ $ $ $ $ $ $) {
   # Measure leakage
   &tab_print($spfh,"* Measure leakage power \n",0);
   if ("on" eq $opt_ptr->{rram_mux_isolate}) {
-    &tab_print($spfh,".measure tran pleak_op_vdd avg p(Vop_vdd) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog\' to=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+ 0.5*op_clk_period - input_slew'\n",0);
-    &tab_print($spfh,".measure tran pleak_isolate_vdd avg p(Visolate_vdd) from=\'(1.5 +N_RRAM_TO_SET +N_RRAM_TO_RST)*tprog\' to=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+ 0.5*op_clk_period - input_slew'\n",0);
+    &tab_print($spfh,".measure tran pleak_op_vdd avg p(Vop_vdd) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew'\n",0);
+    &tab_print($spfh,".measure tran pleak_isolate_vdd avg p(Visolate_vdd) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew'\n",0);
     &tab_print($spfh,".measure tran pleak param=\'pleak_op_vdd+pleak_isolate_vdd\'\n",0);
   } else {
-    &tab_print($spfh,".measure tran pleak_op_vdd_in avg p(Vop_vdd_in) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog\' to=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+ 0.5*op_clk_period - input_slew'\n",0);
-    &tab_print($spfh,".measure tran pleak_op_vdd_out avg p(Vop_vdd_out) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog\' to=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+ 0.5*op_clk_period - input_slew'\n",0);
+    &tab_print($spfh,".measure tran pleak_op_vdd_in avg p(Vop_vdd_in) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew'\n",0);
+    &tab_print($spfh,".measure tran pleak_op_vdd_out avg p(Vop_vdd_out) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew'\n",0);
     &tab_print($spfh,".measure tran pleak param=\'pleak_op_vdd_in+pleak_op_vdd_out\'\n",0);
   } 
 
@@ -1743,46 +1743,46 @@ sub gen_rram_mux_sp_measure($ $ $ $ $ $ $) {
     &tab_print($spfh,"* Measure delay: rising edge \n",0);
     $input_vector_type = "rise";
     $output_vector_type = "rise";
-    &tab_print($spfh,".measure tran dly_mux_rise trig v($conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$delay_measure_input) val=\'input_threshold_pct_$input_vector_type*vsp\' $input_vector_type=1 td=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\'\n",0);
-    &tab_print($spfh,"+                     targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'output_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\'\n",0);
+    &tab_print($spfh,".measure tran dly_mux_rise trig v($conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$delay_measure_input) val=\'input_threshold_pct_$input_vector_type*vsp\' $input_vector_type=1 td=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\'\n",0);
+    &tab_print($spfh,"+                     targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'output_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\'\n",0);
 
     &tab_print($spfh,"* Measure slew: rising edge \n",0);
-    &tab_print($spfh,".measure tran slew_mux_rise trig v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_lower_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\'\n",0);
-    &tab_print($spfh,"+                      targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_upper_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\'\n",0);
+    &tab_print($spfh,".measure tran slew_mux_rise trig v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_lower_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog- input_slew\'\n",0);
+    &tab_print($spfh,"+                      targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_upper_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\'\n",0);
 
     &tab_print($spfh,"* Measure Dynamic Power: rising edge \n",0);
     if ("on" eq $opt_ptr->{rram_mux_isolate}) {
-      &tab_print($spfh,".measure tran pdynamic_rise_op_vdd avg p(Vop_vdd) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+slew_mux_rise+0.5*op_clk_period - input_slew\'\n",0);
-      &tab_print($spfh,".measure tran pdynamic_rise_isolate_vdd avg p(Visolate_vdd) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+slew_mux_rise+0.5*op_clk_period\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_rise_op_vdd avg p(Vop_vdd) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_rise+0.5*op_clk_period - input_slew\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_rise_isolate_vdd avg p(Visolate_vdd) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_rise+0.5*op_clk_period-input_slew\'\n",0);
       &tab_print($spfh,".measure tran pdynamic_rise param=\'pdynamic_rise_op_vdd+pdynamic_rise_isolate_vdd\'\n",0);
     } else {
-      &tab_print($spfh,".measure tran pdynamic_rise_op_vdd_in avg p(Vop_vdd_in) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+slew_mux_rise+0.5*op_clk_period - input_slew\'\n",0);
-      &tab_print($spfh,".measure tran pdynamic_rise_op_vdd_out avg p(Vop_vdd_out) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+slew_mux_rise+0.5*op_clk_period - input_slew\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_rise_op_vdd_in avg p(Vop_vdd_in) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_rise+0.5*op_clk_period - input_slew\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_rise_op_vdd_out avg p(Vop_vdd_out) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_rise+0.5*op_clk_period - input_slew\'\n",0);
       &tab_print($spfh,".measure tran pdynamic_rise param=\'pdynamic_rise_op_vdd_in+pdynamic_rise_op_vdd_out\'\n",0);
     }
-    &tab_print($spfh,".measure tran energy_per_toggle_rise param=\'pdynamic_rise*(dly_mux_rise)\'\n",0);
+    &tab_print($spfh,".measure tran energy_per_toggle_rise param=\'pdynamic_rise*(input_slew+slew_mux_rise)\'\n",0);
 
     $input_vector_type = "fall";
     $output_vector_type = "fall";
     &tab_print($spfh,"* Measure delay: falling edge \n",0);
-    &tab_print($spfh,".measure tran dly_mux_fall trig v($conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$delay_measure_input) val=\'input_threshold_pct_$input_vector_type*vsp\' $input_vector_type=1 td=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+op_clk_period - input_slew\'\n",0);
-    &tab_print($spfh,"+                     targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'output_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+op_clk_period - input_slew\'\n",0);
+    &tab_print($spfh,".measure tran dly_mux_fall trig v($conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$delay_measure_input) val=\'input_threshold_pct_$input_vector_type*vsp\' $input_vector_type=1 td=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\'\n",0);
+    &tab_print($spfh,"+                     targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'output_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\'\n",0);
 
     &tab_print($spfh,"* Measure slew: falling edge \n",0);
-    &tab_print($spfh,".measure tran slew_mux_fall trig v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_lower_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+op_clk_period - input_slew\'\n",0);
-    &tab_print($spfh,"+                      targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_upper_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+op_clk_period - input_slew\'\n",0);
+    &tab_print($spfh,".measure tran slew_mux_fall trig v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_lower_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\'\n",0);
+    &tab_print($spfh,"+                      targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_upper_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\'\n",0);
 
     &tab_print($spfh,"* Measure Dynamic Power: falling edge \n",0);
     if ("on" eq $opt_ptr->{rram_mux_isolate}) {
-      &tab_print($spfh,".measure tran pdynamic_fall_op_vdd avg p(Vop_vdd) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+op_clk_period - input_slew\' to=\'(1.5 +N_RRAM_TO_SET +N_RRAM_TO_RST)*tprog+slew_mux_fall+op_clk_period - input_slew\'\n",0);
-      &tab_print($spfh,".measure tran pdynamic_fall_isolate_vdd avg p(Visolate_vdd) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+op_clk_period - input_slew\' to=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+slew_mux_fall+op_clk_period - input_slew\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_fall_op_vdd avg p(Vop_vdd) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_fall+0.5*op_clk_period - input_slew\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_fall_isolate_vdd avg p(Visolate_vdd) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_fall+0.5*op_clk_period - input_slew\'\n",0);
       &tab_print($spfh,".measure tran pdynamic_fall param=\'pdynamic_fall_op_vdd+pdynamic_fall_isolate_vdd\'\n",0);
     } else {
-      &tab_print($spfh,".measure tran pdynamic_fall_op_vdd_in avg p(Vop_vdd_in) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+op_clk_period - input_slew\' to=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+slew_mux_fall+op_clk_period - input_slew\'\n",0);
-      &tab_print($spfh,".measure tran pdynamic_fall_op_vdd_out avg p(Vop_vdd_out) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+op_clk_period - input_slew\' to=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_fall+op_clk_period - input_slew\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_fall_op_vdd_in avg p(Vop_vdd_in) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_fall+0.5*op_clk_period - input_slew\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_fall_op_vdd_out avg p(Vop_vdd_out) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_fall+0.5*op_clk_period - input_slew\'\n",0);
       &tab_print($spfh,".measure tran pdynamic_fall param=\'pdynamic_fall_op_vdd_in+pdynamic_fall_op_vdd_out\'\n",0);
     }
-    &tab_print($spfh,".measure tran energy_per_toggle_fall param=\'pdynamic_fall*(dly_mux_fall)\'\n",0);
+    &tab_print($spfh,".measure tran energy_per_toggle_fall param=\'pdynamic_fall*(input_slew+slew_mux_fall)\'\n",0);
    
     &tab_print($spfh,".measure tran avg_vmux_high max V($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+slew_mux_rise+dly_mux_rise\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\'\n",0);
     &tab_print($spfh,".measure tran avg_vmux_low avg V($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+op_clk_period-input_slew+slew_mux_fall\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+N*op_clk_period - input_slew\'\n",0);
@@ -1807,8 +1807,8 @@ sub gen_mux_sp_measure($ $ $ $ $ $ $)
     &tab_print($spfh,"+                     targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'output_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'input_pwl\'\n",0);
     &tab_print($spfh,".measure tran slew_mux trig v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_lower_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'input_pwl\'\n",0);
     &tab_print($spfh,"+                      targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_upper_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'input_pwl\'\n",0);
-    &tab_print($spfh,".measure tran pdynamic avg p(vsupply) from=\'input_pwl\' to=\'input_pwl+slew_mux\'\n",0);
-    &tab_print($spfh,".measure tran energy_per_toggle param=\'pdynamic*dly_mux\'\n",0);
+    &tab_print($spfh,".measure tran pdynamic avg p(vsupply) from=\'input_pwl+input_slew\' to=\'input_pwl+input_slew+slew_mux\'\n",0);
+    &tab_print($spfh,".measure tran energy_per_toggle param=\'pdynamic*(input_slew+slew_mux)\'\n",0);
     &tab_print($spfh,".measure tran avg_vmux avg V($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) from=\'input_pwl+input_slew+slew_mux\' to=\'$tran_time\'\n",0);
   }
   &tab_print($spfh,".end Sub-Vt MUX HSPICE Bench\n",0);
@@ -2112,7 +2112,7 @@ sub gen_multilevel_rram_mux_isolate_subckt($ $ $ $ $ $ $) {
 
   # Special: if basis is 2, only 1 SRAM is needed for each subckt. 
   # The total number of SRAMs should be divided by 2.
-  if (2 == $basis) {
+  if ((2 == $basis)&&(2 < $num_lvls)) {
     $num_sram = $num_sram/2;
   }
 
@@ -2255,7 +2255,7 @@ sub gen_multilevel_rram_mux_subckt($ $ $ $ $ $ $) {
 
   # Special: if basis is 2, only 1 SRAM is needed for each subckt. 
   # The total number of SRAMs should be divided by 2.
-  if (2 == $basis) {
+  if ((2 == $basis)&&(2 < $num_lvls)) {
     $num_sram = $num_sram/2;
   }
 
