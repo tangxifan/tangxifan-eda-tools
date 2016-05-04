@@ -1374,7 +1374,7 @@ sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
 
     # TODO: could be more flexible
     my ($op_clock_period) = &process_unit($conf_ptr->{general_settings}->{clk_slew}->{val},"time")*50;
-    print "Auto determine clock period at operation mode is $op_clock_period (=10*clk_slew)\n";
+    print "Auto determine clock period at operation mode is $op_clock_period (=50*clk_slew)\n";
     &tab_print($spfh,".param op_clk_period=\'$op_clock_period\'\n",0);
   }
  
@@ -1456,7 +1456,7 @@ sub gen_rram_mux_sp_basic_stimulates($ $ $ $) {
 
   my ($op_prog_vdd, $op_prog_gnd) = ("+vprog/2+vsp/2", "-vprog/2+vsp/2");
   if ("on" eq $prog_vdd_switch) {
-    ($op_prog_vdd, $op_prog_gnd) = ("+vsp", "0");
+    ($op_prog_vdd, $op_prog_gnd) = ("+vprog", "0");
   }
 
   # Add Stimulates: Standard VDD
@@ -1572,7 +1572,9 @@ sub gen_rram_mux_isolate_sp_stimulates($ $ $) {
   # Add Stimulates: Control signal for isolating transistors
   &tab_print($spfh,"* Control signals for isolating transistors\n",0);
   &tab_print($spfh,"Visolate_vdd isolate_vdd 0 pulse(\'+vprog\' \'-vprog/2+vsp/2\' \'0.5*tprog-input_slew\' input_slew input_slew \'(1+ 2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\' \'(2+ 2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+N*op_clk_period\')\n",0);
+  &tab_print($spfh,"Visolate_vdd_b isolate_vdd_b 0 pulse(\'0\' \'+vprog/2+vsp/2\' \'0.5*tprog-input_slew\' input_slew input_slew \'(1+ 2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\' \'(2+ 2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+N*op_clk_period\')\n",0);
   &tab_print($spfh,"Visolate_gnd isolate_gnd 0 pulse(\'0\' \'-vprog/2+vsp/2\' \'0.5*tprog-input_slew\' input_slew input_slew \'(1+ 2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\' \'(2+ 2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+N*op_clk_period\')\n",0);
+  &tab_print($spfh,"Visolate_gnd_b isolate_gnd_b 0 pulse(\'+vprog\' \'+vprog/2+vsp/2\' \'0.5*tprog-input_slew\' input_slew input_slew \'(1+ 2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\' \'(2+ 2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+N*op_clk_period\')\n",0);
 
   # Add Stimulates, input_ports
   &tab_print($spfh,"* MUX inputs signals\n",0);
@@ -1881,11 +1883,13 @@ sub gen_1level_rram_mux_isolate_subckt($ $ $ $ $ $) {
     &tab_print($spfh, "* Input $i \n", 0);
     for (my $j = 0; $j < $opt_ptr->{rram_mux_isolate_val}; $j++) {
       &tab_print($spfh, "Xisolate_nmos_in$i\_$j mux1level_in$i$isolate_node_postfix isolate_vdd mux1level_in$i isolate_gnd elc_prog_nmos L=\'prog_nl\' W=\'prog_wn\'\n", 0);
+      &tab_print($spfh, "Xisolate_pmos_in$i\_$j mux1level_in$i$isolate_node_postfix isolate_gnd_b mux1level_in$i isolate_vdd_b elc_prog_pmos L=\'prog_pl\' W=\'prog_beta*prog_wp\'\n", 0);
     }
   }
   &tab_print($spfh, "* Output \n", 0);
   for (my $j = 0; $j < $opt_ptr->{rram_mux_isolate_val}; $j++) {
     &tab_print($spfh, "Xisolate_nmos_out_$j mux1level_out$isolate_node_postfix isolate_vdd mux1level_out isolate_gnd elc_prog_nmos L=\'prog_nl\' W=\'prog_wn\'\n", 0);
+    &tab_print($spfh, "Xisolate_pmos_out_$j mux1level_out$isolate_node_postfix isolate_gnd_b mux1level_out isolate_vdd_b elc_prog_pmos L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n", 0);
   }
   &tab_print($spfh,"\n", 0);
 
@@ -2079,7 +2083,7 @@ sub gen_multilevel_rram_mux_isolate_subckt($ $ $ $ $ $ $) {
   my ($spfh,$mux_size,$num_lvls,$subckt_name,$mux1level_subckt,$buffered,$rram_enhance) = @_;
   my ($isolate_node_postfix) = ("_isolate");
   my ($ongap_kw, $ongap_val, $offgap_kw, $offgap_val);
-  my ($basis) = (&determine_multilevel_mux_basis($mux_size));
+  my ($basis) = (&determine_multilevel_mux_basis($mux_size,$num_lvls));
   my ($num_blwl) = ($num_lvls*($basis + 1));
   my ($num_sram) = ($num_lvls*$basis);
 
@@ -2183,12 +2187,14 @@ sub gen_multilevel_rram_mux_isolate_subckt($ $ $ $ $ $ $) {
   for (my $i=0; $i < $mux_size; $i++) {
     &tab_print($spfh, "* Input $i \n", 0);
     for (my $j = 0; $j < $opt_ptr->{rram_mux_isolate_val}; $j++) {
-      &tab_print($spfh, "Xisolate_in$i\_$j mux2lvl_lvl0_in$i isolate_vdd mux2lvl_in$i prog_gnd elc_prog_nmos L=\'prog_nl\' W=\'prog_wn\'\n", 0);
+      &tab_print($spfh, "Xisolate_nmos_in$i\_$j mux2lvl_lvl0_in$i isolate_vdd mux2lvl_in$i isolate_gnd elc_prog_nmos L=\'prog_nl\' W=\'prog_wn\'\n", 0);
+      &tab_print($spfh, "Xisolate_pmos_in$i\_$j mux2lvl_lvl0_in$i isolate_gnd_b mux2lvl_in$i isolate_vdd_b elc_prog_pmos L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n", 0);
     }
   }
   &tab_print($spfh, "* Output \n", 0);
   for (my $j = 0; $j < $opt_ptr->{rram_mux_isolate_val}; $j++) {
-    &tab_print($spfh, "Xisolate_out_$j mux2lvl_lvl$num_lvls\_in0 isolate_vdd mux2lvl_out prog_gnd elc_prog_nmos L=\'prog_nl\' W=\'prog_wn\'\n", 0);
+    &tab_print($spfh, "Xisolate_nmos_out_$j mux2lvl_lvl$num_lvls\_in0 isolate_vdd mux2lvl_out isolate_gnd elc_prog_nmos L=\'prog_nl\' W=\'prog_wn\'\n", 0);
+    &tab_print($spfh, "Xisolate_pmos_out_$j mux2lvl_lvl$num_lvls\_in0 isolate_gnd_b mux2lvl_out isolate_vdd_b elc_prog_pmos L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n", 0);
   }
 
   # Add buffers
@@ -3812,10 +3818,11 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
         $sram_bits =~ s/,$//;
         for (my $i=0; $i<$mux_size; $i++) {
           # Test the worst case of leakage!
-          if (0 == $i%2) {
+          #if (0 == $i%2) {
+          if (0 == $i) {
             $input_vectors .= "r,";
           } else { 
-            $input_vectors .= "r,";
+            $input_vectors .= "0,";
           } 
         }  
         $input_vectors =~ s/,$//;
@@ -3829,10 +3836,11 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
         $input_vectors = "";
         for (my $i=0; $i<$mux_size; $i++) {
           # Test the worst case of leakage!
-          if (0 == $i%2) {
+          #if (0 == $i%2) {
+          if (0 == $i) {
             $input_vectors .= "f,";
           } else { 
-            $input_vectors .= "f,";
+            $input_vectors .= "0,";
           } 
         }  
         $input_vectors =~ s/,$//;
