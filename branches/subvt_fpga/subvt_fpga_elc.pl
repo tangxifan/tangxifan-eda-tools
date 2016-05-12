@@ -1455,8 +1455,10 @@ sub gen_rram_mux_sp_basic_stimulates($ $ $ $) {
   my ($num_sram) = ($num_mux_levels*($basis+1));
 
   my ($op_prog_vdd, $op_prog_gnd) = ("+vprog/2+vsp/2", "-vprog/2+vsp/2");
-  if ("on" eq $prog_vdd_switch) {
+  if ("isolate_design" eq $prog_vdd_switch) {
     ($op_prog_vdd, $op_prog_gnd) = ("+vprog", "0");
+  } elsif ("nonisolate_design" eq $prog_vdd_switch) {
+    ($op_prog_vdd, $op_prog_gnd) = ("+vsp", "0");
   }
 
   # Add Stimulates: Standard VDD
@@ -1565,7 +1567,7 @@ sub gen_rram_mux_sp_basic_stimulates($ $ $ $) {
 sub gen_rram_mux_isolate_sp_stimulates($ $ $) {
   my ($spfh, $num_mux_levels, $mux_size) = @_;
 
-  &gen_rram_mux_sp_basic_stimulates($spfh, $num_mux_levels, $mux_size, "on");
+  &gen_rram_mux_sp_basic_stimulates($spfh, $num_mux_levels, $mux_size, "isolate_design");
 
   &tab_print($spfh,"* Stimulus for RRAM MUX with isolating transistors only\n",0);
   
@@ -1599,7 +1601,7 @@ sub gen_rram_mux_isolate_sp_stimulates($ $ $) {
 sub gen_rram_mux_nonisolate_sp_stimulates($ $ $) {
   my ($spfh, $num_mux_levels, $mux_size) = @_;
 
-  &gen_rram_mux_sp_basic_stimulates($spfh, $num_mux_levels, $mux_size, "off");
+  &gen_rram_mux_sp_basic_stimulates($spfh, $num_mux_levels, $mux_size, "nonisolate_design");
 
   &tab_print($spfh,"* Stimulus for RRAM MUX without isolating transistors only\n",0);
  
@@ -1738,7 +1740,10 @@ sub gen_rram_mux_sp_measure($ $ $ $ $ $ $) {
   } else {
     &tab_print($spfh,".measure tran pleak_op_vdd_in avg p(Vop_vdd_in) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew'\n",0);
     &tab_print($spfh,".measure tran pleak_op_vdd_out avg p(Vop_vdd_out) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew'\n",0);
-    &tab_print($spfh,".measure tran pleak param=\'pleak_op_vdd_in+pleak_op_vdd_out\'\n",0);
+    &tab_print($spfh,".measure tran pleak_prog_vdd avg p(Vprog_vdd) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew'\n",0);
+    &tab_print($spfh,".measure tran pleak_prog_gnd avg p(Vprog_gnd) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew'\n",0);
+    &tab_print($spfh,".measure tran pleak param=\'abs(pleak_op_vdd_in)+abs(pleak_op_vdd_out)\'\n",0);
+    #&tab_print($spfh,".measure tran pleak param=\'abs(pleak_op_vdd_in)+abs(pleak_op_vdd_out)+abs(pleak_prog_vdd)+abs(pleak_prog_gnd)\'\n",0);
   } 
 
   if (1 == $delay_measure) {
@@ -1754,13 +1759,17 @@ sub gen_rram_mux_sp_measure($ $ $ $ $ $ $) {
 
     &tab_print($spfh,"* Measure Dynamic Power: rising edge \n",0);
     if ("on" eq $opt_ptr->{rram_mux_isolate}) {
-      &tab_print($spfh,".measure tran pdynamic_rise_op_vdd avg p(Vop_vdd) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_rise+0.5*op_clk_period - input_slew\'\n",0);
-      &tab_print($spfh,".measure tran pdynamic_rise_isolate_vdd avg p(Visolate_vdd) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_rise+0.5*op_clk_period-input_slew\'\n",0);
-      &tab_print($spfh,".measure tran pdynamic_rise param=\'pdynamic_rise_op_vdd+pdynamic_rise_isolate_vdd\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_rise_op_vdd avg p(Vop_vdd) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_rise - input_slew\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_rise_isolate_vdd avg p(Visolate_vdd) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_rise-input_slew\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_rise_isolate_gnd_b avg p(Visolate_gnd_b) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_rise-input_slew\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_rise param=\'abs(pdynamic_rise_op_vdd)+abs(pdynamic_rise_isolate_vdd)+abs(pdynamic_rise_isolate_gnd_b)\'\n",0);
     } else {
-      &tab_print($spfh,".measure tran pdynamic_rise_op_vdd_in avg p(Vop_vdd_in) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_rise+0.5*op_clk_period - input_slew\'\n",0);
-      &tab_print($spfh,".measure tran pdynamic_rise_op_vdd_out avg p(Vop_vdd_out) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_rise+0.5*op_clk_period - input_slew\'\n",0);
-      &tab_print($spfh,".measure tran pdynamic_rise param=\'pdynamic_rise_op_vdd_in+pdynamic_rise_op_vdd_out\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_rise_op_vdd_in avg p(Vop_vdd_in) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_rise - input_slew\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_rise_op_vdd_out avg p(Vop_vdd_out) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_rise - input_slew\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_rise_prog_vdd avg p(Vprog_vdd) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_rise - input_slew\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_rise_prog_gnd avg p(Vprog_gnd) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_rise - input_slew\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_rise param=\'abs(pdynamic_rise_op_vdd_in)+abs(pdynamic_rise_op_vdd_out)\'\n",0);
+      #&tab_print($spfh,".measure tran pdynamic_rise param=\'abs(pdynamic_rise_op_vdd_in)+abs(pdynamic_rise_op_vdd_out)+abs(pdynamic_rise_prog_gnd)+abs(pdynamic_rise_prog_vdd)\'\n",0);
     }
     &tab_print($spfh,".measure tran energy_per_toggle_rise param=\'pdynamic_rise*(input_slew+slew_mux_rise)\'\n",0);
 
@@ -1778,11 +1787,15 @@ sub gen_rram_mux_sp_measure($ $ $ $ $ $ $) {
     if ("on" eq $opt_ptr->{rram_mux_isolate}) {
       &tab_print($spfh,".measure tran pdynamic_fall_op_vdd avg p(Vop_vdd) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_fall+0.5*op_clk_period - input_slew\'\n",0);
       &tab_print($spfh,".measure tran pdynamic_fall_isolate_vdd avg p(Visolate_vdd) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_fall+0.5*op_clk_period - input_slew\'\n",0);
-      &tab_print($spfh,".measure tran pdynamic_fall param=\'pdynamic_fall_op_vdd+pdynamic_fall_isolate_vdd\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_fall_isolate_gnd_b avg p(Visolate_gnd_b) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_fall+0.5*op_clk_period - input_slew\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_fall param=\'abs(pdynamic_fall_op_vdd)+abs(pdynamic_fall_isolate_vdd)+abs(pdynamic_fall_isolate_gnd_b)\'\n",0);
     } else {
       &tab_print($spfh,".measure tran pdynamic_fall_op_vdd_in avg p(Vop_vdd_in) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_fall+0.5*op_clk_period - input_slew\'\n",0);
       &tab_print($spfh,".measure tran pdynamic_fall_op_vdd_out avg p(Vop_vdd_out) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_fall+0.5*op_clk_period - input_slew\'\n",0);
-      &tab_print($spfh,".measure tran pdynamic_fall param=\'pdynamic_fall_op_vdd_in+pdynamic_fall_op_vdd_out\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_fall_prog_vdd avg p(Vprog_vdd) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_fall+0.5*op_clk_period - input_slew\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_fall_prog_gnd avg p(Vprog_gnd) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_fall+0.5*op_clk_period - input_slew\'\n",0);
+      &tab_print($spfh,".measure tran pdynamic_fall param=\'abs(pdynamic_fall_op_vdd_in)+abs(pdynamic_fall_op_vdd_out)\'\n",0);
+      #&tab_print($spfh,".measure tran pdynamic_fall param=\'abs(pdynamic_fall_op_vdd_in)+abs(pdynamic_fall_op_vdd_out)+abs(pdynamic_fall_prog_vdd)+abs(pdynamic_fall_prog_gnd)\'\n",0);
     }
     &tab_print($spfh,".measure tran energy_per_toggle_fall param=\'pdynamic_fall*(input_slew+slew_mux_fall)\'\n",0);
    
@@ -1809,7 +1822,7 @@ sub gen_mux_sp_measure($ $ $ $ $ $ $)
     &tab_print($spfh,"+                     targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'output_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'input_pwl\'\n",0);
     &tab_print($spfh,".measure tran slew_mux trig v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_lower_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'input_pwl\'\n",0);
     &tab_print($spfh,"+                      targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_upper_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'input_pwl\'\n",0);
-    &tab_print($spfh,".measure tran pdynamic avg p(vsupply) from=\'input_pwl+input_slew\' to=\'input_pwl+input_slew+slew_mux\'\n",0);
+    &tab_print($spfh,".measure tran pdynamic avg p(vsupply) from=\'input_pwl\' to=\'input_pwl+input_slew+slew_mux\'\n",0);
     &tab_print($spfh,".measure tran energy_per_toggle param=\'pdynamic*(input_slew+slew_mux)\'\n",0);
     &tab_print($spfh,".measure tran avg_vmux avg V($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) from=\'input_pwl+input_slew+slew_mux\' to=\'$tran_time\'\n",0);
   }
@@ -2004,11 +2017,11 @@ sub gen_1level_rram_mux_subckt($ $ $ $ $ $) {
  
   # Pull-up/down transistors at the input/output inverters
   &tab_print($spfh, "* Pull-Up/Down transistors at input/output inverters \n", 0);
-  for (my $i = 0; $i < $mux_size; $i++) {
-    &tab_print($spfh, "* Input $i \n", 0);
-    &tab_print($spfh, "XsetEN_in$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i svdd_out svdd svdd elc_pmos L=\'pl\' W=\'wp\' \n", 0);
-    &tab_print($spfh, "XrstEN_in$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i sgnd_out sgnd sgnd elc_nmos L=\'nl\' W=\'wn\' \n", 0);
-  }
+  #for (my $i = 0; $i < $mux_size; $i++) {
+  #  &tab_print($spfh, "* Input $i \n", 0);
+  #  &tab_print($spfh, "XsetEN_in$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i svdd_out svdd svdd elc_pmos L=\'pl\' W=\'wp\' \n", 0);
+  #  &tab_print($spfh, "XrstEN_in$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i sgnd_out sgnd sgnd elc_nmos L=\'nl\' W=\'wn\' \n", 0);
+  #}
   &tab_print($spfh, "* Output \n", 0);
   &tab_print($spfh, "XsetEN_out $conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd_in svdd svdd elc_pmos L=\'pl\' W=\'wp\' \n", 0);
   &tab_print($spfh, "XrstEN_out $conf_ptr->{mux_settings}->{OUT_port_name}->{val} sgnd_in sgnd sgnd elc_nmos L=\'nl\' W=\'wn\' \n", 0);
@@ -2360,11 +2373,11 @@ sub gen_multilevel_rram_mux_subckt($ $ $ $ $ $ $) {
  
   # Pull-up/down transistors at the input/output inverters
   &tab_print($spfh, "* Pull-Up/Down transistors at input/output inverters \n", 0);
-  for (my $i = 0; $i < $mux_size; $i++) {
-    &tab_print($spfh, "* Input $i \n", 0);
-    &tab_print($spfh, "XsetEN_in$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i svdd_out svdd svdd elc_pmos L=\'pl\' W=\'wp\' \n", 0);
-    &tab_print($spfh, "XrstEN_in$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i sgnd_out sgnd sgnd elc_nmos L=\'nl\' W=\'wn\' \n", 0);
-  }
+  #for (my $i = 0; $i < $mux_size; $i++) {
+  #  &tab_print($spfh, "* Input $i \n", 0);
+  #  &tab_print($spfh, "XsetEN_in$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i svdd_out svdd svdd elc_pmos L=\'pl\' W=\'wp\' \n", 0);
+  #  &tab_print($spfh, "XrstEN_in$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i sgnd_out sgnd sgnd elc_nmos L=\'nl\' W=\'wn\' \n", 0);
+  #}
 
   &tab_print($spfh, "* Output \n", 0);
   # Depend on the number of levels, the output should be pulled-up or down when SET/RESET.
@@ -2842,13 +2855,13 @@ sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
   $lis_file =~ s/sp$/lis/;
   my @sim_keywds = ("dly_mux","slew_mux","pleak","pdynamic","avg_vmux","energy_per_toggle");
       
-  print "SRAM_bits: $SRAM_bits\n";
+  #print "SRAM_bits: $SRAM_bits\n";
   ($delay_measure_input,$output_vector) = &mux_output_vector($mux_size,$SRAM_bits,$input_vectors); 
   ($delay_measure,$input_vector_type,$output_vector_type) = &determine_lut_delay_measure($delay_measure_input,$input_vectors,$output_vector); 
 
-  #print "MUX size=$mux_size.\nSRAM bits: $SRAM_bits\n";
-  #print "MUX Input Vectors: $input_vectors\n";
-  #print "MUX Output Vector: $output_vector\nDelay measure input: $delay_measure_input\n";
+  print "MUX size=$mux_size.\nSRAM bits: $SRAM_bits\n";
+  print "MUX Input Vectors: $input_vectors\n";
+  print "MUX Output Vector: $output_vector\nDelay measure input: $delay_measure_input\n";
 
   # Create a SPICE file
   my $spfh = FileHandle->new;
@@ -3806,13 +3819,17 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
               $sram_bits .= "0,";
             }
           } 
-        } else {
+        } elsif ("on" eq $opt_ptr->{two_level_mux}) {
           for (my $i=0; $i<$num_sram; $i++) {
             if ((0 == $i)||($i == $num_sram/2)) {
               $sram_bits .= "1,";
             } else {
               $sram_bits .= "0,";
             }
+          }
+        } else {
+          for (my $i=0; $i<$num_sram; $i++) {
+            $sram_bits .= "1,";
           }
         } 
         $sram_bits =~ s/,$//;
@@ -3906,7 +3923,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
             $sram_bits .= "0,";
           }
         } 
-      } else {
+      } elsif ("on" eq $opt_ptr->{two_level_mux}) {
         for (my $i=0; $i<$num_sram; $i++) {
           if ((0 == $i)||($i == $num_sram/2)) {
             $sram_bits .= "1,";
@@ -3914,14 +3931,19 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
             $sram_bits .= "0,";
           }
         } 
+      } else {
+        for (my $i=0; $i<$num_sram; $i++) {
+          $sram_bits .= "1,";
+        }
       }
       $sram_bits =~ s/,$//;
       for (my $i=0; $i<$mux_size; $i++) {
         # Test the worst case of leakage!
-        if (0 == $i%2) {
+        #if (0 == $i%2) {
+        if (0 == $i) {
           $input_vectors .= "r,";
         } else { 
-          $input_vectors .= "r,";
+          $input_vectors .= "0,";
         } 
       }  
       $input_vectors =~ s/,$//;
@@ -3935,10 +3957,11 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
       $input_vectors = "";
       for (my $i=0; $i<$mux_size; $i++) {
         # Test the worst case of leakage!
-        if (0 == $i%2) {
+        #if (0 == $i%2) {
+        if (0 == $i) {
           $input_vectors .= "f,";
         } else { 
-          $input_vectors .= "f,";
+          $input_vectors .= "0,";
         } 
       }  
       $input_vectors =~ s/,$//;
