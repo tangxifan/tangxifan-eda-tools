@@ -67,7 +67,12 @@ int main(int argc, char **argv) {
     if (vpr_setup.SpiceOpts.do_spice) {
       vpr_print_spice_netlists(vpr_setup, Arch,vpr_setup.FileNameOpts.CircuitName);
     }
-	
+
+    /* Xifan TANG: Synthesizable verilog dumping */
+    if (vpr_setup.SynVerilogOpts.dump_syn_verilog) {
+      vpr_dump_syn_verilog(vpr_setup, Arch, vpr_setup.FileNameOpts.CircuitName);
+    }	
+
 	entire_flow_end = clock();
 	
 	#ifdef CLOCKS_PER_SEC

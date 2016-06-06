@@ -91,8 +91,10 @@ struct s_options {
 	/* Last read settings file */
 	int read_settings;
 
-    /*SPICE Support*/
+    /* Xifan TANG: SPICE Support*/
     char* spice_dir;
+    /* Xifan TANG: Synthesizable Verilog */
+    char* syn_verilog_dir;
 };
 
 enum e_echo_files {

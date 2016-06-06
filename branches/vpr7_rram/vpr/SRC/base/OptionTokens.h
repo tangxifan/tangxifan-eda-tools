@@ -86,6 +86,9 @@ enum e_OptionBaseToken {
     OT_PRINT_SPICE_DFF_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for FFs */
     OT_FPGA_SPICE_LEAKAGE_ONLY, /* Xifan TANG: Print SPICE Testbench for MUXes */
     OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION_OFF, /* Xifan TANG: turn off the parasitic net estimation*/
+    /* Xifan TANG: Verilog Generation */
+    OT_FPGA_VERILOG_SYN, /* Xifan TANG: Synthesizable Verilog Dump */
+    OT_FPGA_VERILOG_SYN_DIR, /* Xifan TANG: Synthesizable Verilog Dump */
     /* mrFPGA: Xifan TANG */
     OT_SHOW_SRAM,
     OT_SHOW_PASS_TRANS,

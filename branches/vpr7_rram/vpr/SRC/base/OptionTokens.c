@@ -69,6 +69,9 @@ struct s_TokenPair OptionBaseTokenList[] = {
         { "print_spice_dff_testbench", OT_PRINT_SPICE_DFF_TESTBENCH }, /* Print the SPICE Testbench for Grids  */
         { "fpga_spice_leakage_only", OT_FPGA_SPICE_LEAKAGE_ONLY }, /* Only simulate leakage power in FPGA SPICE */
         { "fpga_spice_parasitic_net_estimation_off", OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION_OFF }, /* Xifan TANG: turn off the parasitic net estimation*/
+        /* Xifan TANG: Synthsizable Verilog */
+        { "fpga_syn_verilog", OT_FPGA_VERILOG_SYN },
+        { "fpga_syn_verilog_dir", OT_FPGA_VERILOG_SYN_DIR },
         /* mrFPGA: Xifan TANG */
         {"show_sram", OT_SHOW_SRAM},
         {"show_pass_trans", OT_SHOW_PASS_TRANS},

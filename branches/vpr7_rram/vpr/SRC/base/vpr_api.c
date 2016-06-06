@@ -74,7 +74,9 @@ void vpr_print_title(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "Compiled: " __DATE__ ".\n");
 	vpr_printf(TIO_MESSAGE_INFO, "University of Toronto\n");
 	vpr_printf(TIO_MESSAGE_INFO, "vpr@eecg.utoronto.ca\n");
-	vpr_printf(TIO_MESSAGE_INFO, "Enhancements: mrFPGA, RRAM, SWSEG, SPICE, OPIN_TO_CB, CLB_PIN_REMAP by Xifan TANG, EPFL/LSI\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Enhancements: mrFPGA, RRAM, SWSEG, FPGA-SPICE,  by Xifan TANG, EPFL/LSI\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Enhancements: OPIN_TO_CB, CLB_PIN_REMAP,  by Xifan TANG, EPFL/LSI\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Enhancements: Synthesizable Verilog Support  by Xifan TANG, EPFL/LSI\n");
 	vpr_printf(TIO_MESSAGE_INFO, "xifan.tang@epfl.ch\n");
 	vpr_printf(TIO_MESSAGE_INFO, "This is free open source code under MIT license.\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
@@ -159,6 +161,7 @@ void vpr_print_usage(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "\t--activity_file <activity.act>\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--tech_properties <tech_properties.xml>\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
+    /* Xifan TANG: FPGA-SPICE Support*/
 	vpr_printf(TIO_MESSAGE_INFO, "Spice Support Options:\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--spice_dir <directory_path_output_spice_netlists>\n");
@@ -171,6 +174,10 @@ void vpr_print_usage(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "\t--print_spice_grid_testbench\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_leakage_only\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_parasitic_net_estimation_off\n");
+    /* Xifan TANG: Synthesizable Verilog Dump*/
+	vpr_printf(TIO_MESSAGE_INFO, "Dump synthesizable verilog files Options:\n");
+	vpr_printf(TIO_MESSAGE_INFO, "--fpga_syn_verilog\n");
+	vpr_printf(TIO_MESSAGE_INFO, "--fpga_syn_verilog_dir <directory_path_of_dumped_verilog_files>\n");
 }
 
 /* Initialize VPR 
@@ -227,7 +234,7 @@ void vpr_init(INP int argc, INP char **argv, OUTP t_options *options,
 			&vpr_setup->Segments, &vpr_setup->Timing, &vpr_setup->ShowGraphics,
 			&vpr_setup->GraphPause, &vpr_setup->PowerOpts,
             /*Xifan TANG: Switch Segment Pattern Support*/
-            &vpr_setup->swseg_patterns, &vpr_setup->SpiceOpts);
+            &vpr_setup->swseg_patterns, &vpr_setup->SpiceOpts, &vpr_setup->SynVerilogOpts);
 
 	/* Check inputs are reasonable */
 	CheckOptions(*options, vpr_setup->TimingEnabled);

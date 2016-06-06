@@ -1088,3 +1088,35 @@ void spice_backannotate_vpr_post_route_info(boolean parasitic_net_estimation_off
 
   return;
 }
+
+void backannotate_vpr_post_route_info() {
+
+  vpr_printf(TIO_MESSAGE_INFO, "Start backannotating post route information...\n");
+  /* Build previous node lists for each rr_node */
+  vpr_printf(TIO_MESSAGE_INFO, "Building previous node list for all Routing Resource Nodes...\n");
+  build_prev_node_list_rr_nodes(num_rr_nodes, rr_node);
+  /* This function should go very first because it gives all the net_num */
+  vpr_printf(TIO_MESSAGE_INFO,"Back annotating mapping information to global routing resource nodes...\n");
+  back_annotate_rr_node_map_info();
+  /* Update local_rr_graphs to match post-route results*/
+  vpr_printf(TIO_MESSAGE_INFO, "Update logic block local routing graph to match post-route results...\n");
+  update_grid_pbs_post_route_rr_graph();
+  vpr_printf(TIO_MESSAGE_INFO,"Back annotating mapping information to local routing resource nodes...\n");
+  back_annotate_pb_rr_node_map_info();
+
+  /* Backannotate activity information, initialize the waveform information */
+  vpr_printf(TIO_MESSAGE_INFO, "Backannoating local routing net (1st time: for output pins)...\n");
+  backannotate_pb_rr_nodes_net_info();
+  vpr_printf(TIO_MESSAGE_INFO, "Update logic block pins parasitic nets (1st time: for output pins)...\n");
+  update_grid_pb_pins_parasitic_nets();
+  vpr_printf(TIO_MESSAGE_INFO, "Backannoating global routing net...\n");
+  backannotate_rr_nodes_net_info();
+  vpr_printf(TIO_MESSAGE_INFO, "Update logic block pins parasitic nets (2nd time: for input pins)...\n");
+  update_grid_pb_pins_parasitic_nets();
+  vpr_printf(TIO_MESSAGE_INFO, "Backannoating local routing net (2nd time: for input pins)...\n");
+  backannotate_pb_rr_nodes_net_info();
+
+  vpr_printf(TIO_MESSAGE_INFO, "Finish backannotating post route information.\n");
+
+  return;
+}

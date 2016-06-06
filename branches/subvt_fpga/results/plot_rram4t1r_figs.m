@@ -553,9 +553,9 @@ plot(abs(rram2n1r_vprog2p5V_inv20_format(:,6)),'k-*','LineWidth', 2, 'MarkerSize
 hold on
 plot(abs(rram2n1r_vprog3p0V_inv20_format(:,6)),'k-o','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(abs(rram2t1r_vprog2p5V_inv20_format(:,6)),'b-*','LineWidth', 2, 'MarkerSize',10);
+%plot(abs(rram2t1r_vprog2p5V_inv20_format(:,6)),'b-*','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(abs(rram2t1r_vprog3p0V_inv20_format(:,6)),'b-o','LineWidth', 2, 'MarkerSize',10);
+%plot(abs(rram2t1r_vprog3p0V_inv20_format(:,6)),'b-o','LineWidth', 2, 'MarkerSize',10);
 hold on
 plot(abs(rram4t1r_vprog2p5V_format(:,6)),'r-*','LineWidth', 2, 'MarkerSize',10);
 hold on

@@ -411,7 +411,7 @@ NET_USED	place/timing_place_lookup.c	45;"	d	file:
 NET_USED_SINK_BLOCK	place/timing_place_lookup.c	48;"	d	file:
 NET_USED_SOURCE_BLOCK	place/timing_place_lookup.c	47;"	d	file:
 NEVER_CLUSTER	base/vpr_types.h	99;"	d
-NMOS	power/power.h	/^	NMOS, PMOS$/;"	e	enum:__anon11
+NMOS	power/power.h	/^	NMOS, PMOS$/;"	e	enum:__anon13
 NMOS_1X_C_d	power/power.h	/^	float NMOS_1X_C_d;$/;"	m	struct:s_power_commonly_used
 NMOS_1X_C_g	power/power.h	/^	float NMOS_1X_C_g;$/;"	m	struct:s_power_commonly_used
 NMOS_1X_C_s	power/power.h	/^	float NMOS_1X_C_s;$/;"	m	struct:s_power_commonly_used
@@ -483,6 +483,8 @@ OT_FIX_PINS	base/OptionTokens.h	/^	OT_FIX_PINS,$/;"	e	enum:e_OptionBaseToken
 OT_FPGA_SPICE	base/OptionTokens.h	/^    OT_FPGA_SPICE, \/* Xifan TANG: FPGA SPICE Model Support *\/$/;"	e	enum:e_OptionBaseToken
 OT_FPGA_SPICE_LEAKAGE_ONLY	base/OptionTokens.h	/^    OT_FPGA_SPICE_LEAKAGE_ONLY, \/* Xifan TANG: Print SPICE Testbench for MUXes *\/$/;"	e	enum:e_OptionBaseToken
 OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION_OFF	base/OptionTokens.h	/^    OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION_OFF, \/* Xifan TANG: turn off the parasitic net estimation*\/$/;"	e	enum:e_OptionBaseToken
+OT_FPGA_VERILOG_SYN	base/OptionTokens.h	/^    OT_FPGA_VERILOG_SYN, \/* Xifan TANG: Synthesizable Verilog Dump *\/$/;"	e	enum:e_OptionBaseToken
+OT_FPGA_VERILOG_SYN_DIR	base/OptionTokens.h	/^    OT_FPGA_VERILOG_SYN_DIR, \/* Xifan TANG: Synthesizable Verilog Dump *\/$/;"	e	enum:e_OptionBaseToken
 OT_FULL_STATS	base/OptionTokens.h	/^	OT_FULL_STATS,$/;"	e	enum:e_OptionBaseToken
 OT_GENERATE_POST_SYNTHESIS_NETLIST	base/OptionTokens.h	/^	OT_GENERATE_POST_SYNTHESIS_NETLIST,$/;"	e	enum:e_OptionBaseToken
 OT_GLOBAL	base/OptionTokens.h	/^	OT_GLOBAL,$/;"	e	enum:e_OptionArgToken
@@ -586,7 +588,7 @@ PLACE_PATH_WEIGHT	timing/path_delay.h	36;"	d
 PLUM	base/easygl_constants.h	/^CYAN, RED, DARKGREEN, MAGENTA, BISQUE, LIGHTBLUE, THISTLE, PLUM, KHAKI, CORAL,$/;"	e	enum:color_types
 PLUS	timing/slre.c	/^  END, BRANCH, ANY, EXACT, ANYOF, ANYBUT, OPEN, CLOSE, BOL, EOL, STAR, PLUS,$/;"	e	enum:__anon19	file:
 PLUSQ	timing/slre.c	/^  STARQ, PLUSQ, QUEST, SPACE, NONSPACE, DIGIT$/;"	e	enum:__anon19	file:
-PMOS	power/power.h	/^	NMOS, PMOS$/;"	e	enum:__anon11
+PMOS	power/power.h	/^	NMOS, PMOS$/;"	e	enum:__anon13
 PMOS_1X_C_d	power/power.h	/^	float PMOS_1X_C_d;$/;"	m	struct:s_power_commonly_used
 PMOS_1X_C_g	power/power.h	/^	float PMOS_1X_C_g;$/;"	m	struct:s_power_commonly_used
 PMOS_1X_C_s	power/power.h	/^	float PMOS_1X_C_s;$/;"	m	struct:s_power_commonly_used
@@ -606,35 +608,35 @@ POWER_BUFFER_TYPE_ABSOLUTE_SIZE	../../libarchfpga/include/physical_types.h	/^	PO
 POWER_BUFFER_TYPE_AUTO	../../libarchfpga/include/physical_types.h	/^	POWER_BUFFER_TYPE_AUTO,$/;"	e	enum:__anon21
 POWER_BUFFER_TYPE_NONE	../../libarchfpga/include/physical_types.h	/^	POWER_BUFFER_TYPE_NONE,$/;"	e	enum:__anon21
 POWER_BUFFER_TYPE_UNDEFINED	../../libarchfpga/include/physical_types.h	/^	POWER_BUFFER_TYPE_UNDEFINED = 0,$/;"	e	enum:__anon21
-POWER_CALLIB_COMPONENT_BUFFER	power/power_callibrate.h	/^	POWER_CALLIB_COMPONENT_BUFFER = 0,$/;"	e	enum:__anon12
-POWER_CALLIB_COMPONENT_BUFFER_WITH_LEVR	power/power_callibrate.h	/^	POWER_CALLIB_COMPONENT_BUFFER_WITH_LEVR,$/;"	e	enum:__anon12
-POWER_CALLIB_COMPONENT_FF	power/power_callibrate.h	/^	POWER_CALLIB_COMPONENT_FF,$/;"	e	enum:__anon12
-POWER_CALLIB_COMPONENT_LUT	power/power_callibrate.h	/^	POWER_CALLIB_COMPONENT_LUT,$/;"	e	enum:__anon12
-POWER_CALLIB_COMPONENT_MAX	power/power_callibrate.h	/^	POWER_CALLIB_COMPONENT_MAX$/;"	e	enum:__anon12
-POWER_CALLIB_COMPONENT_MUX	power/power_callibrate.h	/^	POWER_CALLIB_COMPONENT_MUX,$/;"	e	enum:__anon12
-POWER_COMPONENT_CLOCK	power/power_components.h	/^	POWER_COMPONENT_CLOCK, \/* Clock network *\/$/;"	e	enum:__anon13
-POWER_COMPONENT_CLOCK_BUFFER	power/power_components.h	/^	POWER_COMPONENT_CLOCK_BUFFER, \/* Buffers in clock network *\/$/;"	e	enum:__anon13
-POWER_COMPONENT_CLOCK_WIRE	power/power_components.h	/^	POWER_COMPONENT_CLOCK_WIRE, \/* Wires in clock network *\/$/;"	e	enum:__anon13
-POWER_COMPONENT_IGNORE	power/power_components.h	/^	POWER_COMPONENT_IGNORE = 0, \/* *\/$/;"	e	enum:__anon13
-POWER_COMPONENT_MAX_NUM	power/power_components.h	/^	POWER_COMPONENT_MAX_NUM$/;"	e	enum:__anon13
-POWER_COMPONENT_PB	power/power_components.h	/^	POWER_COMPONENT_PB, \/* Logic Blocks, and other hard blocks *\/$/;"	e	enum:__anon13
-POWER_COMPONENT_PB_BUFS_WIRE	power/power_components.h	/^	POWER_COMPONENT_PB_BUFS_WIRE, \/* Local buffers and wire capacitance *\/$/;"	e	enum:__anon13
-POWER_COMPONENT_PB_INTERC_MUXES	power/power_components.h	/^	POWER_COMPONENT_PB_INTERC_MUXES, \/* Local interconnect structures (muxes) *\/$/;"	e	enum:__anon13
-POWER_COMPONENT_PB_OTHER	power/power_components.h	/^	POWER_COMPONENT_PB_OTHER, \/* Power from other estimation methods - not transistor-level *\/$/;"	e	enum:__anon13
-POWER_COMPONENT_PB_PRIMITIVES	power/power_components.h	/^	POWER_COMPONENT_PB_PRIMITIVES, \/* Primitives (LUTs, FF, etc) *\/$/;"	e	enum:__anon13
-POWER_COMPONENT_ROUTE_CB	power/power_components.h	/^	POWER_COMPONENT_ROUTE_CB, \/* Connection box*\/$/;"	e	enum:__anon13
-POWER_COMPONENT_ROUTE_GLB_WIRE	power/power_components.h	/^	POWER_COMPONENT_ROUTE_GLB_WIRE, \/* Wires *\/$/;"	e	enum:__anon13
-POWER_COMPONENT_ROUTE_SB	power/power_components.h	/^	POWER_COMPONENT_ROUTE_SB, \/* Switch-box *\/$/;"	e	enum:__anon13
-POWER_COMPONENT_ROUTING	power/power_components.h	/^	POWER_COMPONENT_ROUTING, \/* Power for routing fabric (not local routing) *\/$/;"	e	enum:__anon13
-POWER_COMPONENT_TOTAL	power/power_components.h	/^	POWER_COMPONENT_TOTAL, \/* Total power for entire FPGA *\/$/;"	e	enum:__anon13
+POWER_CALLIB_COMPONENT_BUFFER	power/power_callibrate.h	/^	POWER_CALLIB_COMPONENT_BUFFER = 0,$/;"	e	enum:__anon9
+POWER_CALLIB_COMPONENT_BUFFER_WITH_LEVR	power/power_callibrate.h	/^	POWER_CALLIB_COMPONENT_BUFFER_WITH_LEVR,$/;"	e	enum:__anon9
+POWER_CALLIB_COMPONENT_FF	power/power_callibrate.h	/^	POWER_CALLIB_COMPONENT_FF,$/;"	e	enum:__anon9
+POWER_CALLIB_COMPONENT_LUT	power/power_callibrate.h	/^	POWER_CALLIB_COMPONENT_LUT,$/;"	e	enum:__anon9
+POWER_CALLIB_COMPONENT_MAX	power/power_callibrate.h	/^	POWER_CALLIB_COMPONENT_MAX$/;"	e	enum:__anon9
+POWER_CALLIB_COMPONENT_MUX	power/power_callibrate.h	/^	POWER_CALLIB_COMPONENT_MUX,$/;"	e	enum:__anon9
+POWER_COMPONENT_CLOCK	power/power_components.h	/^	POWER_COMPONENT_CLOCK, \/* Clock network *\/$/;"	e	enum:__anon10
+POWER_COMPONENT_CLOCK_BUFFER	power/power_components.h	/^	POWER_COMPONENT_CLOCK_BUFFER, \/* Buffers in clock network *\/$/;"	e	enum:__anon10
+POWER_COMPONENT_CLOCK_WIRE	power/power_components.h	/^	POWER_COMPONENT_CLOCK_WIRE, \/* Wires in clock network *\/$/;"	e	enum:__anon10
+POWER_COMPONENT_IGNORE	power/power_components.h	/^	POWER_COMPONENT_IGNORE = 0, \/* *\/$/;"	e	enum:__anon10
+POWER_COMPONENT_MAX_NUM	power/power_components.h	/^	POWER_COMPONENT_MAX_NUM$/;"	e	enum:__anon10
+POWER_COMPONENT_PB	power/power_components.h	/^	POWER_COMPONENT_PB, \/* Logic Blocks, and other hard blocks *\/$/;"	e	enum:__anon10
+POWER_COMPONENT_PB_BUFS_WIRE	power/power_components.h	/^	POWER_COMPONENT_PB_BUFS_WIRE, \/* Local buffers and wire capacitance *\/$/;"	e	enum:__anon10
+POWER_COMPONENT_PB_INTERC_MUXES	power/power_components.h	/^	POWER_COMPONENT_PB_INTERC_MUXES, \/* Local interconnect structures (muxes) *\/$/;"	e	enum:__anon10
+POWER_COMPONENT_PB_OTHER	power/power_components.h	/^	POWER_COMPONENT_PB_OTHER, \/* Power from other estimation methods - not transistor-level *\/$/;"	e	enum:__anon10
+POWER_COMPONENT_PB_PRIMITIVES	power/power_components.h	/^	POWER_COMPONENT_PB_PRIMITIVES, \/* Primitives (LUTs, FF, etc) *\/$/;"	e	enum:__anon10
+POWER_COMPONENT_ROUTE_CB	power/power_components.h	/^	POWER_COMPONENT_ROUTE_CB, \/* Connection box*\/$/;"	e	enum:__anon10
+POWER_COMPONENT_ROUTE_GLB_WIRE	power/power_components.h	/^	POWER_COMPONENT_ROUTE_GLB_WIRE, \/* Wires *\/$/;"	e	enum:__anon10
+POWER_COMPONENT_ROUTE_SB	power/power_components.h	/^	POWER_COMPONENT_ROUTE_SB, \/* Switch-box *\/$/;"	e	enum:__anon10
+POWER_COMPONENT_ROUTING	power/power_components.h	/^	POWER_COMPONENT_ROUTING, \/* Power for routing fabric (not local routing) *\/$/;"	e	enum:__anon10
+POWER_COMPONENT_TOTAL	power/power_components.h	/^	POWER_COMPONENT_TOTAL, \/* Total power for entire FPGA *\/$/;"	e	enum:__anon10
 POWER_DRC_MIN_DIFF_L	power/power_sizing.h	34;"	d
 POWER_DRC_MIN_L	power/power_sizing.h	32;"	d
 POWER_DRC_MIN_W	power/power_sizing.h	33;"	d
 POWER_DRC_POLY_OVERHANG	power/power_sizing.h	36;"	d
 POWER_DRC_SPACING	power/power_sizing.h	35;"	d
-POWER_LOG_ERROR	power/power.h	/^	POWER_LOG_ERROR, POWER_LOG_WARNING, POWER_LOG_NUM_TYPES$/;"	e	enum:__anon10
-POWER_LOG_NUM_TYPES	power/power.h	/^	POWER_LOG_ERROR, POWER_LOG_WARNING, POWER_LOG_NUM_TYPES$/;"	e	enum:__anon10
-POWER_LOG_WARNING	power/power.h	/^	POWER_LOG_ERROR, POWER_LOG_WARNING, POWER_LOG_NUM_TYPES$/;"	e	enum:__anon10
+POWER_LOG_ERROR	power/power.h	/^	POWER_LOG_ERROR, POWER_LOG_WARNING, POWER_LOG_NUM_TYPES$/;"	e	enum:__anon12
+POWER_LOG_NUM_TYPES	power/power.h	/^	POWER_LOG_ERROR, POWER_LOG_WARNING, POWER_LOG_NUM_TYPES$/;"	e	enum:__anon12
+POWER_LOG_WARNING	power/power.h	/^	POWER_LOG_ERROR, POWER_LOG_WARNING, POWER_LOG_NUM_TYPES$/;"	e	enum:__anon12
 POWER_LUT_SLOW	power/power_components.h	37;"	d
 POWER_LUT_SLOW	power/power_components.h	39;"	d
 POWER_METHOD_ABSOLUTE	../../libarchfpga/include/physical_types.h	/^	POWER_METHOD_ABSOLUTE \/* Dynamic: Aboslute, Static: Absolute *\/$/;"	e	enum:e_power_estimation_method_
@@ -647,9 +649,9 @@ POWER_METHOD_TOGGLE_PINS	../../libarchfpga/include/physical_types.h	/^	POWER_MET
 POWER_METHOD_UNDEFINED	../../libarchfpga/include/physical_types.h	/^	POWER_METHOD_UNDEFINED = 0, POWER_METHOD_IGNORE, \/* Ignore power of this PB, and all children PB *\/$/;"	e	enum:e_power_estimation_method_
 POWER_MTA_L	power/power_sizing.h	39;"	d
 POWER_MTA_W	power/power_sizing.h	38;"	d
-POWER_RET_CODE_ERRORS	power/power.h	/^	POWER_RET_CODE_SUCCESS = 0, POWER_RET_CODE_ERRORS, POWER_RET_CODE_WARNINGS$/;"	e	enum:__anon9
-POWER_RET_CODE_SUCCESS	power/power.h	/^	POWER_RET_CODE_SUCCESS = 0, POWER_RET_CODE_ERRORS, POWER_RET_CODE_WARNINGS$/;"	e	enum:__anon9
-POWER_RET_CODE_WARNINGS	power/power.h	/^	POWER_RET_CODE_SUCCESS = 0, POWER_RET_CODE_ERRORS, POWER_RET_CODE_WARNINGS$/;"	e	enum:__anon9
+POWER_RET_CODE_ERRORS	power/power.h	/^	POWER_RET_CODE_SUCCESS = 0, POWER_RET_CODE_ERRORS, POWER_RET_CODE_WARNINGS$/;"	e	enum:__anon11
+POWER_RET_CODE_SUCCESS	power/power.h	/^	POWER_RET_CODE_SUCCESS = 0, POWER_RET_CODE_ERRORS, POWER_RET_CODE_WARNINGS$/;"	e	enum:__anon11
+POWER_RET_CODE_WARNINGS	power/power.h	/^	POWER_RET_CODE_SUCCESS = 0, POWER_RET_CODE_ERRORS, POWER_RET_CODE_WARNINGS$/;"	e	enum:__anon11
 POWER_WIRE_TYPE_ABSOLUTE_LENGTH	../../libarchfpga/include/physical_types.h	/^	POWER_WIRE_TYPE_ABSOLUTE_LENGTH,$/;"	e	enum:__anon20
 POWER_WIRE_TYPE_AUTO	../../libarchfpga/include/physical_types.h	/^	POWER_WIRE_TYPE_AUTO$/;"	e	enum:__anon20
 POWER_WIRE_TYPE_C	../../libarchfpga/include/physical_types.h	/^	POWER_WIRE_TYPE_C,$/;"	e	enum:__anon20
@@ -882,6 +884,7 @@ SetupEmptyType	../../libarchfpga/read_xml_arch_file.c	/^static void SetupEmptyTy
 SetupGridLocations	../../libarchfpga/read_xml_arch_file.c	/^static void SetupGridLocations(ezxml_t Locations, t_type_descriptor * Type) {$/;"	f	file:
 SetupOperation	base/SetupVPR.c	/^static void SetupOperation(INP t_options Options,$/;"	f	file:
 SetupPackerOpts	base/SetupVPR.c	/^void SetupPackerOpts(INP t_options Options, INP boolean TimingEnabled,$/;"	f
+SetupPinEquivalenceAutoDetect	../../libarchfpga/read_xml_arch_file.c	/^void SetupPinEquivalenceAutoDetect(ezxml_t Parent, t_type_descriptor* Type) {$/;"	f	file:
 SetupPinLocationsAndPinClasses	../../libarchfpga/read_xml_arch_file.c	/^static void SetupPinLocationsAndPinClasses(ezxml_t Locations,$/;"	f	file:
 SetupPlacerOpts	base/SetupVPR.c	/^static void SetupPlacerOpts(INP t_options Options, INP boolean TimingEnabled,$/;"	f	file:
 SetupPowerOpts	base/SetupVPR.c	/^static void SetupPowerOpts(t_options Options, t_power_opts *power_opts,$/;"	f	file:
@@ -890,6 +893,7 @@ SetupRoutingArch	base/SetupVPR.c	/^static void SetupRoutingArch(INP t_arch Arch,
 SetupSpiceOpts	base/SetupVPR.c	/^static void SetupSpiceOpts(t_options Options, $/;"	f	file:
 SetupSwitches	base/SetupVPR.c	/^static void SetupSwitches(INP t_arch Arch,$/;"	f	file:
 SetupSwitches_mrFPGA	base/SetupVPR.c	/^static void SetupSwitches_mrFPGA(INP t_arch Arch,$/;"	f	file:
+SetupSynVerilogOpts	base/SetupVPR.c	/^static void SetupSynVerilogOpts(t_options Options, $/;"	f	file:
 SetupTiming	base/SetupVPR.c	/^static void SetupTiming(INP t_options Options, INP t_arch Arch,$/;"	f	file:
 SetupVPR	base/SetupVPR.c	/^void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,$/;"	f
 ShowAnnealSched	base/ShowSetup.c	/^static void ShowAnnealSched(INP struct s_annealing_sched AnnealSched) {$/;"	f	file:
@@ -905,6 +909,7 @@ SpiceOpts	base/vpr_types.h	/^    t_spice_opts SpiceOpts; \/* Xifan TANG: SPICE S
 StatusWND	base/graphics.c	/^StatusWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)$/;"	f	file:
 Str	base/vpr_types.h	/^	const char *Str;$/;"	m	struct:s_TokenPair
 Switches	../../libarchfpga/include/physical_types.h	/^	struct s_switch_inf *Switches;$/;"	m	struct:s_arch	typeref:struct:s_arch::s_switch_inf
+SynVerilogOpts	base/vpr_types.h	/^    t_syn_verilog_opts SynVerilogOpts; \/* Xifan TANG: Synthesizable verilog dumping*\/$/;"	m	struct:s_vpr_setup
 SyncModelsPbTypes	../../libarchfpga/read_xml_arch_file.c	/^static void SyncModelsPbTypes(INOUTP struct s_arch *arch,$/;"	f	file:
 SyncModelsPbTypes_rec	../../libarchfpga/read_xml_arch_file.c	/^static void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,$/;"	f	file:
 TABLENGTH	pack/output_blif.c	19;"	d	file:
@@ -995,7 +1000,7 @@ WHITE	base/easygl_constants.h	/^enum color_types {WHITE, BLACK, DARKGREY, LIGHTG
 WILTON	../../libarchfpga/include/physical_types.h	/^	SUBSET, WILTON, UNIVERSAL, FULL$/;"	e	enum:e_switch_block_type
 WIRE_MODEL_PIE	../../libarchfpga/include/spice_types.h	/^  WIRE_MODEL_PIE,$/;"	e	enum:e_wire_model_type
 WIRE_MODEL_T	../../libarchfpga/include/spice_types.h	/^  WIRE_MODEL_T$/;"	e	enum:e_wire_model_type
-WIRE_SEGMENT_LENGTH	base/vpr_api.c	426;"	d	file:
+WIRE_SEGMENT_LENGTH	base/vpr_api.c	433;"	d	file:
 WL	base/place_and_route.h	5;"	d
 WNEED	base/place_and_route.h	4;"	d
 W_seed	base/globals.c	/^int W_seed = -1;$/;"	v
@@ -1199,6 +1204,7 @@ backannotate_clb_nets_init_val	spice/spice_backannotate_utils.c	/^void backannot
 backannotate_one_pb_rr_nodes_net_info_rec	spice/spice_backannotate_utils.c	/^void backannotate_one_pb_rr_nodes_net_info_rec(t_pb* cur_pb) {$/;"	f	file:
 backannotate_pb_rr_nodes_net_info	spice/spice_backannotate_utils.c	/^void backannotate_pb_rr_nodes_net_info() {$/;"	f	file:
 backannotate_rr_nodes_net_info	spice/spice_backannotate_utils.c	/^void backannotate_rr_nodes_net_info() {$/;"	f	file:
+backannotate_vpr_post_route_info	spice/spice_backannotate_utils.c	/^void backannotate_vpr_post_route_info() {$/;"	f
 background_cindex	base/graphics.c	/^   int background_cindex;$/;"	m	struct:__anon5	file:
 backup_one_pb_rr_node_pack_prev_node_edge	spice/spice_backannotate_utils.c	/^void backup_one_pb_rr_node_pack_prev_node_edge(t_rr_node* pb_rr_node) {$/;"	f
 backward_expand_pack_pattern_from_edge	pack/prepack.c	/^static void backward_expand_pack_pattern_from_edge($/;"	f	file:
@@ -1624,6 +1630,7 @@ dum_parse	base/read_blif.c	/^void dum_parse(char *buf) {$/;"	f
 dummy_type_descriptors	place/timing_place_lookup.c	/^static t_type_descriptor dummy_type_descriptors[NUM_TYPES_USED];$/;"	v	file:
 dump_rr_graph	route/rr_graph.c	/^void dump_rr_graph(INP const char *file_name) {$/;"	f
 dump_seg_details	route/rr_graph2.c	/^void dump_seg_details(t_seg_details * seg_details, int nodes_per_chan,$/;"	f
+dump_syn_verilog	base/vpr_types.h	/^  boolean dump_syn_verilog;$/;"	m	struct:s_syn_verilog_opts
 dynamic	../../libarchfpga/include/physical_types.h	/^	float dynamic;$/;"	m	struct:s_power_usage
 e	../../libarchfpga/include/ezxml.h	/^	char *e; \/* end of work area *\/$/;"	m	struct:ezxml_root
 e_Fc_type	../../libarchfpga/include/physical_types.h	/^enum e_Fc_type {$/;"	g
@@ -1670,12 +1677,12 @@ e_pin_type	../../libarchfpga/include/physical_types.h	/^enum e_pin_type {$/;"	g
 e_place_algorithm	base/vpr_types.h	/^enum e_place_algorithm {$/;"	g
 e_power_breakdown_entry_type	power/power.c	/^} e_power_breakdown_entry_type;$/;"	t	typeref:enum:__anon8	file:
 e_power_buffer_type	../../libarchfpga/include/physical_types.h	/^} e_power_buffer_type;$/;"	t	typeref:enum:__anon21
-e_power_callib_component	power/power_callibrate.h	/^} e_power_callib_component;$/;"	t	typeref:enum:__anon12
-e_power_component_type	power/power_components.h	/^} e_power_component_type;$/;"	t	typeref:enum:__anon13
+e_power_callib_component	power/power_callibrate.h	/^} e_power_callib_component;$/;"	t	typeref:enum:__anon9
+e_power_component_type	power/power_components.h	/^} e_power_component_type;$/;"	t	typeref:enum:__anon10
 e_power_estimation_method	../../libarchfpga/include/physical_types.h	/^typedef enum e_power_estimation_method_ e_power_estimation_method;$/;"	t	typeref:enum:e_power_estimation_method_
 e_power_estimation_method_	../../libarchfpga/include/physical_types.h	/^enum e_power_estimation_method_ {$/;"	g
-e_power_log_type	power/power.h	/^} e_power_log_type;$/;"	t	typeref:enum:__anon10
-e_power_ret_code	power/power.h	/^} e_power_ret_code;$/;"	t	typeref:enum:__anon9
+e_power_log_type	power/power.h	/^} e_power_log_type;$/;"	t	typeref:enum:__anon12
+e_power_ret_code	power/power.h	/^} e_power_ret_code;$/;"	t	typeref:enum:__anon11
 e_power_wire_type	../../libarchfpga/include/physical_types.h	/^} e_power_wire_type;$/;"	t	typeref:enum:__anon20
 e_removal_policy	pack/cluster.c	/^enum e_removal_policy {$/;"	g	file:
 e_route_type	base/vpr_types.h	/^enum e_route_type {$/;"	g
@@ -1698,7 +1705,7 @@ e_swseg_pattern_type	../../libarchfpga/include/physical_types.h	/^enum e_swseg_p
 e_tech_comp	../../libarchfpga/include/arch_types_mrfpga.h	/^enum e_tech_comp { $/;"	g
 e_tnode_type	base/vpr_types.h	/^} e_tnode_type;$/;"	t	typeref:enum:__anon7
 e_token_type	util/token.h	/^enum e_token_type {$/;"	g
-e_tx_type	power/power.h	/^} e_tx_type;$/;"	t	typeref:enum:__anon11
+e_tx_type	power/power.h	/^} e_tx_type;$/;"	t	typeref:enum:__anon13
 e_wire_model_type	../../libarchfpga/include/spice_types.h	/^enum e_wire_model_type {$/;"	g
 echoFileEnabled	base/ReadOptions.c	/^static boolean *echoFileEnabled = NULL;$/;"	v	file:
 echoFileNames	base/ReadOptions.c	/^static char **echoFileNames = NULL;$/;"	v	file:
@@ -1866,6 +1873,7 @@ find_pb_type_idle_mode_index	spice/spice_utils.c	/^int find_pb_type_idle_mode_in
 find_pb_type_port_match_spice_model_port	spice/spice_utils.c	/^t_port* find_pb_type_port_match_spice_model_port(t_pb_type* pb_type,$/;"	f
 find_pb_type_ports_match_spice_model_port_type	spice/spice_utils.c	/^t_port** find_pb_type_ports_match_spice_model_port_type(t_pb_type* pb_type,$/;"	f
 find_prev_rr_nodes_with_src	spice/spice_utils.c	/^void find_prev_rr_nodes_with_src(t_rr_node* src_rr_node,$/;"	f
+find_rr_nodes_ipin_driver_switch	route/rr_graph_opincb.c	/^void find_rr_nodes_ipin_driver_switch() {$/;"	f	file:
 find_spice_model_ports	spice/spice_utils.c	/^t_spice_model_port** find_spice_model_ports(t_spice_model* spice_model,$/;"	f
 find_spice_mux_testbench_pb_pin_mux_load_inv_size	spice/spice_mux_testbench.c	/^float find_spice_mux_testbench_pb_pin_mux_load_inv_size(t_spice_model* fan_out_spice_model) {$/;"	f
 find_spice_mux_testbench_rr_mux_load_inv_size	spice/spice_mux_testbench.c	/^float find_spice_mux_testbench_rr_mux_load_inv_size(t_rr_node* load_rr_node,$/;"	f
@@ -2420,6 +2428,7 @@ input_pins	../../libarchfpga/include/physical_types.h	/^	struct s_pb_graph_pin *
 input_pins	../../libarchfpga/include/physical_types.h	/^	t_pb_graph_pin **input_pins; \/* [0..num_input_ports-1] [0..num_port_pins-1]*\/$/;"	m	struct:s_pb_graph_node
 input_pins	../../libarchfpga/include/physical_types.h	/^	t_pb_graph_pin **input_pins;$/;"	m	struct:s_pb_graph_edge
 input_pins_used	base/vpr_types.h	/^	int **input_pins_used; \/* [0..pb_graph_node->num_pin_classes-1][0..pin_class_size] number of input pins of this class that are used *\/$/;"	m	struct:s_pb_stats
+input_ports_eq_auto_detect	../../libarchfpga/include/physical_types.h	/^    boolean input_ports_eq_auto_detect;$/;"	m	struct:s_type_descriptor
 input_slew_fall_time	../../libarchfpga/include/spice_types.h	/^  float input_slew_fall_time;  $/;"	m	struct:s_spice_stimulate_params
 input_slew_fall_type	../../libarchfpga/include/spice_types.h	/^  enum e_spice_accuracy_type input_slew_fall_type;$/;"	m	struct:s_spice_stimulate_params	typeref:enum:s_spice_stimulate_params::e_spice_accuracy_type
 input_slew_rise_time	../../libarchfpga/include/spice_types.h	/^  float input_slew_rise_time;  $/;"	m	struct:s_spice_stimulate_params
@@ -3002,6 +3011,7 @@ off	../../libarchfpga/include/ezxml.h	/^	size_t off; \/* tag offset from start o
 offset	base/vpr_types.h	/^	int offset;$/;"	m	struct:s_grid_tile
 old_num_rr_nodes	base/draw.c	/^static int old_num_rr_nodes = 0;$/;"	v	file:
 olines	base/read_blif.c	/^static int ilines, olines, model_lines, endlines;$/;"	v	file:
+one_type_pin_equivalence_auto_detect	route/pb_pin_eq_auto_detect.c	/^int one_type_pin_equivalence_auto_detect(t_type_descriptor* cur_type) {$/;"	f
 open	../../libarchfpga/ezxml.c	58;"	d	file:
 operator <	power/PowerSpicedComponent.h	/^	const bool operator<(const PowerCallibSize & rhs) {$/;"	f	class:PowerCallibSize
 opin_switch	../../libarchfpga/include/physical_types.h	/^	short opin_switch;$/;"	m	struct:s_segment_inf
@@ -3034,6 +3044,7 @@ output_pins	../../libarchfpga/include/physical_types.h	/^	struct s_pb_graph_pin 
 output_pins	../../libarchfpga/include/physical_types.h	/^	t_pb_graph_pin **output_pins; \/* [0..num_output_ports-1] [0..num_port_pins-1]*\/$/;"	m	struct:s_pb_graph_node
 output_pins	../../libarchfpga/include/physical_types.h	/^	t_pb_graph_pin **output_pins;$/;"	m	struct:s_pb_graph_edge
 output_pins_used	base/vpr_types.h	/^	int **output_pins_used; \/* [0..pb_graph_node->num_pin_classes-1][0..pin_class_size] number of output pins of this class that are used *\/$/;"	m	struct:s_pb_stats
+output_ports_eq_auto_detect	../../libarchfpga/include/physical_types.h	/^    boolean output_ports_eq_auto_detect;$/;"	m	struct:s_type_descriptor
 output_string	../../libarchfpga/include/physical_types.h	/^	char *output_string;$/;"	m	struct:s_interconnect
 output_thres_pct_fall	../../libarchfpga/include/spice_types.h	/^  float output_thres_pct_fall;$/;"	m	struct:s_spice_meas_params
 output_thres_pct_rise	../../libarchfpga/include/spice_types.h	/^  float output_thres_pct_rise;$/;"	m	struct:s_spice_meas_params
@@ -3412,6 +3423,7 @@ recompute_crit_iter	base/vpr_types.h	/^	int recompute_crit_iter;$/;"	m	struct:s_
 recompute_occupancy_from_scratch	route/check_route.c	/^static void recompute_occupancy_from_scratch(t_ivec ** clb_opins_used_locally) {$/;"	f	file:
 recompute_timing_after	base/ReadOptions.h	/^	int recompute_timing_after;$/;"	m	struct:s_options
 recompute_timing_after	base/vpr_types.h	/^	int recompute_timing_after;$/;"	m	struct:s_packer_opts
+recover_rr_nodes_ipin_driver_switch	route/rr_graph_opincb.c	/^void recover_rr_nodes_ipin_driver_switch() {$/;"	f	file:
 rect_off_screen	base/graphics.c	/^rect_off_screen (float x1, float y1, float x2, float y2) $/;"	f	file:
 redraw_screen	base/draw.c	/^static void redraw_screen() {$/;"	f	file:
 regex_match	timing/read_sdc.c	/^static boolean regex_match (char * string, char * regular_expression) {$/;"	f	file:
@@ -3625,6 +3637,7 @@ s_spicetb_info	../../libarchfpga/include/spice_types.h	/^struct s_spicetb_info {
 s_sram_inf	../../libarchfpga/include/spice_types.h	/^struct s_sram_inf {$/;"	s
 s_switch_inf	../../libarchfpga/include/physical_types.h	/^typedef struct s_switch_inf {$/;"	s
 s_swseg_pattern_inf	../../libarchfpga/include/physical_types.h	/^struct s_swseg_pattern_inf {$/;"	s
+s_syn_verilog_opts	base/vpr_types.h	/^struct s_syn_verilog_opts {$/;"	s
 s_tedge	base/vpr_types.h	/^typedef struct s_tedge {$/;"	s
 s_timing_constraints	base/vpr_types.h	/^typedef struct s_timing_constraints { \/* Container structure for all SDC timing constraints. $/;"	s
 s_timing_inf	../../libarchfpga/include/physical_types.h	/^typedef struct s_timing_inf {$/;"	s
@@ -3857,6 +3870,8 @@ switches	base/vpr_types.h	/^	short *switches;$/;"	m	struct:s_rr_node
 swseg_pattern_change_switch_type	route/rr_graph_swseg.c	/^int swseg_pattern_change_switch_type(int cur_node,$/;"	f	file:
 swseg_patterns	../../libarchfpga/include/physical_types.h	/^    t_swseg_pattern_inf* swseg_patterns;$/;"	m	struct:s_arch
 swseg_patterns	base/vpr_types.h	/^    t_swseg_pattern_inf* swseg_patterns; \/* Xifan TANG: Switch Segment Pattern Support *\/$/;"	m	struct:s_vpr_setup
+syn_verilog_dir	base/ReadOptions.h	/^    char* syn_verilog_dir;$/;"	m	struct:s_options
+syn_verilog_dump_dir	base/vpr_types.h	/^  char* syn_verilog_dump_dir;$/;"	m	struct:s_syn_verilog_opts
 sync_arch_mrfpga_globals	mrfpga/mrfpga_api.c	/^void sync_arch_mrfpga_globals(t_arch_mrfpga arch_mrfpga) {$/;"	f
 sync_grid_to_blocks	util/vpr_utils.c	/^void sync_grid_to_blocks(INP int L_num_blocks,$/;"	f
 szAppName	base/graphics.c	/^static TCHAR szAppName[256], $/;"	v	file:
@@ -3995,6 +4010,7 @@ t_sram_inf	../../libarchfpga/include/spice_types.h	/^typedef struct s_sram_inf t
 t_switch_block_type	../../libarchfpga/include/physical_types.h	/^typedef enum e_switch_block_type t_switch_block_type;$/;"	t	typeref:enum:e_switch_block_type
 t_switch_inf	../../libarchfpga/include/physical_types.h	/^} t_switch_inf;$/;"	t	typeref:struct:s_switch_inf
 t_swseg_pattern_inf	../../libarchfpga/include/physical_types.h	/^typedef struct s_swseg_pattern_inf t_swseg_pattern_inf;$/;"	t	typeref:struct:s_swseg_pattern_inf
+t_syn_verilog_opts	base/vpr_types.h	/^typedef struct s_syn_verilog_opts t_syn_verilog_opts;$/;"	t	typeref:struct:s_syn_verilog_opts
 t_tedge	base/vpr_types.h	/^} t_tedge;$/;"	t	typeref:struct:s_tedge
 t_timing_constraints	base/vpr_types.h	/^} t_timing_constraints;$/;"	t	typeref:struct:s_timing_constraints
 t_timing_inf	../../libarchfpga/include/physical_types.h	/^} t_timing_inf;$/;"	t	typeref:struct:s_timing_inf
@@ -4167,6 +4183,7 @@ type	base/vpr_types.h	/^	t_type_ptr type;$/;"	m	struct:s_grid_tile
 type	util/token.h	/^	enum e_token_type type;$/;"	m	struct:s_token	typeref:enum:s_token::e_token_type
 type_descriptors	base/globals.c	/^struct s_type_descriptor *type_descriptors = NULL;$/;"	v	typeref:struct:s_type_descriptor
 type_descriptors_backup	place/timing_place_lookup.c	/^static t_type_descriptor *type_descriptors_backup;$/;"	v	file:
+types_pin_equivalence_auto_detect	route/pb_pin_eq_auto_detect.c	/^void types_pin_equivalence_auto_detect() {$/;"	f
 u	../../libarchfpga/include/ezxml.h	/^	char *u; \/* UTF-8 conversion of string if original was UTF-16 *\/$/;"	m	struct:ezxml_root
 u	route/route_common.h	/^	} u;$/;"	m	struct:s_heap	typeref:union:s_heap::__anon14
 u	route/route_tree_timing.h	/^	} u;$/;"	m	struct:s_rt_node	typeref:union:s_rt_node::__anon16

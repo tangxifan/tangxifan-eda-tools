@@ -720,7 +720,7 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   t_end = clock();
 
   run_time_sec = (float)(t_end - t_start) / CLOCKS_PER_SEC;
-  vpr_printf(TIO_MESSAGE_INFO, "SPICE netlists generation took %g seconds\n", run_time_sec);  
+  vpr_printf(TIO_MESSAGE_INFO, "SPICE netlists dumping took %g seconds\n", run_time_sec);  
 
   /* Free spice_net_info */
   free_clb_nets_spice_net_info();

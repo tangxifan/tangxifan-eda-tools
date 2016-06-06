@@ -1095,6 +1095,12 @@ struct s_spice_opts {
   char* subckt_dir;
 };
 
+/* Xifan TANG: synthesizable verilog dumping */
+typedef struct s_syn_verilog_opts t_syn_verilog_opts;
+struct s_syn_verilog_opts {
+  boolean dump_syn_verilog;
+  char* syn_verilog_dump_dir;
+};
 
 /* Power estimation options */
 struct s_power_opts {
@@ -1127,6 +1133,7 @@ typedef struct s_vpr_setup {
 	int GraphPause; /* user interactiveness graphics option */
 	t_power_opts PowerOpts;
     t_spice_opts SpiceOpts; /* Xifan TANG: SPICE Support*/
+    t_syn_verilog_opts SynVerilogOpts; /* Xifan TANG: Synthesizable verilog dumping*/
 } t_vpr_setup;
 
 #endif

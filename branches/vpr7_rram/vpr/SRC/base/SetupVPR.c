@@ -41,6 +41,11 @@ static void SetupSpiceOpts(t_options Options,
                            t_spice_opts* spice_opts,
                            t_arch* arch);
 /* end */
+/* Xifan TANG: synthesizable verilog dumping */
+static void SetupSynVerilogOpts(t_options Options, 
+                                t_syn_verilog_opts* syn_verilog_opts,
+                                t_arch* arch);
+/* end */
 
 /* mrFPGA */
 static void SetupSwitches_mrFPGA(INP t_arch Arch,
@@ -187,6 +192,9 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 	SetupPowerOpts(*Options, PowerOpts, Arch);
     /* Xifan TANG: SPICE Support*/
     SetupSpiceOpts(*Options, SpiceOpts, Arch);   
+    /* END */
+    /* Xifan TANG: Synthesizable Verilog Dumping*/
+    SetupSynVerilogOpts(*Options, SynVerilogOpts, Arch);   
     /* END */
 
 	if (readArchFile == TRUE) {
@@ -938,7 +946,7 @@ static void SetupPowerOpts(t_options Options, t_power_opts *power_opts,
 static void SetupSpiceOpts(t_options Options, 
                            t_spice_opts* spice_opts,
                            t_arch* arch) {
-  /* Initialze */  
+  /* Initialize */  
   spice_opts->do_spice = FALSE;
   spice_opts->print_spice_top_testbench = FALSE;
   spice_opts->print_spice_pb_mux_testbench = FALSE;
@@ -1004,6 +1012,35 @@ static void SetupSpiceOpts(t_options Options,
   /* If spice option is selected*/
   arch->read_xml_spice = spice_opts->do_spice;
   arch->spice = (t_spice*)my_malloc(sizeof(t_spice));
+
+  return;
+}
+
+/*Xifan TANG: Synthesizable Verilog Dumping */
+static void SetupSynVerilogOpts(t_options Options, 
+                                t_syn_verilog_opts* syn_verilog_opts,
+                                t_arch* arch) {
+
+  /* Initialize */  
+  syn_verilog_opts->dump_syn_verilog = FALSE;
+  syn_verilog_opts->syn_verilog_dump_dir = NULL;
+
+  /* Turn on Syn_verilog options */
+  if (Options.Count[OT_FPGA_VERILOG_SYN]) {
+    syn_verilog_opts->dump_syn_verilog = TRUE;
+  } else {
+    return;
+  }
+
+  if (Options.Count[OT_FPGA_VERILOG_SYN_DIR]) {
+    syn_verilog_opts->syn_verilog_dump_dir = my_strdup(Options.syn_verilog_dir);
+  }
+
+  /* SynVerilog needs the input from spice modeling */
+  if (FALSE == arch->read_xml_spice) {
+    arch->read_xml_spice = syn_verilog_opts->dump_syn_verilog;
+    arch->spice = (t_spice*)my_malloc(sizeof(t_spice));
+  }
 
   return;
 }

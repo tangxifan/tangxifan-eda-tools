@@ -362,13 +362,13 @@ void fprint_spice_mux_model_basis_rram_subckt(FILE* fp, char* subckt_name,
       /* Programming transistor pairs */
       fprintf(fp, "Xnmos_prog_pair%d in%d sgnd sgnd sgnd %s W=\'wprog_reset_nmos\' \n",
               i, i, io_nmos_subckt_name);
-      fprintf(fp, "Xpmos_prog_pair%d in%d svdd sgnd svdd %s W=\'wprog_set_pmos\' \n",
+      fprintf(fp, "Xpmos_prog_pair%d in%d svdd svdd svdd %s W=\'wprog_set_pmos\' \n",
               i, i, io_pmos_subckt_name);
     }
     /* Programming transistor pairs shared at the output */
     fprintf(fp, "Xnmos_prog_pair_out out sgnd sgnd sgnd %s W=\'wprog_set_nmos\' \n",
             io_nmos_subckt_name);
-    fprintf(fp, "Xpmos_prog_pair_out out svdd sgnd svdd %s W=\'wprog_reset_pmos\' \n",
+    fprintf(fp, "Xpmos_prog_pair_out out svdd svdd svdd %s W=\'wprog_reset_pmos\' \n",
             io_pmos_subckt_name);
     fprintf(fp,".eom\n");
     fprintf(fp,"\n");
@@ -819,7 +819,7 @@ void fprint_spice_rram_mux_onelevel_structure(FILE* fp, t_spice_model spice_mode
     /* PMOS */
     fprintf(fp, "Xpmos_prog_pair%d ", i); /* given_name */
     fprintf(fp, "mux2_l%d_in%d ", 1, i); /* input0  */
-    fprintf(fp, "svdd sgnd svdd %s W=\'wprog_set_pmos\' \n", 
+    fprintf(fp, "svdd svdd svdd %s W=\'wprog_set_pmos\' \n", 
             io_pmos_subckt_name);
     /* NMOS */
     fprintf(fp, "Xnmos_prog_pair%d ", i); /* given_name */
@@ -832,7 +832,7 @@ void fprint_spice_rram_mux_onelevel_structure(FILE* fp, t_spice_model spice_mode
   /* PMOS */
   fprintf(fp, "Xpmos_prog_pair_out "); /* given_name */
   fprintf(fp, "mux2_l%d_in%d ", 0, 0); /* input0  */
-  fprintf(fp, "svdd sgnd svdd %s W=\'wprog_reset_pmos\' \n", 
+  fprintf(fp, "svdd svdd svdd %s W=\'wprog_reset_pmos\' \n", 
           io_pmos_subckt_name);
   /* NMOS */
   fprintf(fp, "Xnmos_prog_pair_out "); /* given_name */
@@ -1325,6 +1325,7 @@ t_llist* stats_spice_muxes(int num_switch,
   t_llist* muxes_head = NULL; 
   //t_llist* temp = NULL;
   int inode;
+  int iedge;
   int itype;
   int imodel;
   t_rr_node* node;
@@ -1344,7 +1345,17 @@ t_llist* stats_spice_muxes(int num_switch,
    *  for the rest is a switch box
    */
   /* Update the driver switch for each rr_node*/
-  update_rr_nodes_driver_switch(routing_arch->directionality);
+  /* I can do a simple job here: 
+   * just assign driver_switch from drive_switches[0]
+   * which has been done in backannotation_vpr_post_route_info
+   */
+  /* update_rr_nodes_driver_switch(routing_arch->directionality); */
+  for (inode = 0; inode < num_rr_nodes; inode++) {
+    rr_node[inode].driver_switch = rr_node[inode].drive_switches[0];
+    for (iedge = 0; iedge < rr_node[inode].num_driver_nodes; iedge++) {
+     assert (rr_node[inode].driver_switch == rr_node[inode].drive_switches[iedge]);
+    }
+  }
   /* Count the sizes of muliplexers in routing architecture */  
   /* Visit the global variable : num_rr_nodes, rr_node */
   for (inode = 0; inode < num_rr_nodes; inode++) {
@@ -1470,8 +1481,8 @@ void generate_spice_muxes(char* subckt_dir,
     if (NULL != cur_spice_mux_model->spice_model->model_netlist) {
       input_ports = find_spice_model_ports(cur_spice_mux_model->spice_model, SPICE_MODEL_PORT_INPUT, &num_input_ports);
       sram_ports = find_spice_model_ports(cur_spice_mux_model->spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_ports);
-      assert(0 == num_input_ports);
-      assert(0 == num_sram_ports);
+      assert(0 != num_input_ports);
+      assert(0 != num_sram_ports);
       /* Check the Input port size */
       if (cur_spice_mux_model->size != input_ports[0]->size) {
         vpr_printf(TIO_MESSAGE_ERROR, 

@@ -344,23 +344,26 @@ wprog_list = 1:0.1:1.9;
 rram_mux_nonisolate_sweep_wprog_fig_data
 % Plot figure
 fig_handle10 = figure;
-plot(rram_mux32_nonisolate_one_level_sweep_wprog_0p7V(:,5)./max(rram_mux32_nonisolate_one_level_sweep_wprog_0p7V(:,5)),'k-o','LineWidth', 2, 'MarkerSize',10);
+plot(rram_mux32_nonisolate_one_level_sweep_wprog_0p9V(:,2)/1e-12,'r-+','LineWidth', 2, 'MarkerSize',10);
+%plot(rram_mux32_nonisolate_one_level_sweep_wprog_0p7V(:,5)./max(rram_mux32_nonisolate_one_level_sweep_wprog_0p7V(:,5)),'k-o','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram_mux32_nonisolate_one_level_sweep_wprog_0p9V(:,5)./max(rram_mux32_nonisolate_one_level_sweep_wprog_0p9V(:,5)),'r-+','LineWidth', 2, 'MarkerSize',10);
+%plot(rram_mux32_nonisolate_one_level_sweep_wprog_0p9V(:,5)./max(rram_mux32_nonisolate_one_level_sweep_wprog_0p9V(:,5)),'r-+','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram_mux32_nonisolate_two_level_sweep_wprog_0p9V(:,5)./max(rram_mux32_nonisolate_two_level_sweep_wprog_0p9V(:,5)),'b-s','LineWidth', 2, 'MarkerSize',10);
+%plot(rram_mux32_nonisolate_two_level_sweep_wprog_0p9V(:,5)./max(rram_mux32_nonisolate_two_level_sweep_wprog_0p9V(:,5)),'b-s','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram_mux32_nonisolate_multi_level_sweep_wprog_0p9V(:,5)./max(rram_mux32_nonisolate_multi_level_sweep_wprog_0p9V(:,5)),'g-*','LineWidth', 2, 'MarkerSize',10);
+%plot(rram_mux32_nonisolate_multi_level_sweep_wprog_0p9V(:,5)./max(rram_mux32_nonisolate_multi_level_sweep_wprog_0p9V(:,5)),'g-*','LineWidth', 2, 'MarkerSize',10);
 hold on
 %title('Power-Delay Product (fJ) and MUX size N','FontSize',18)
 xlabel('Wprog (1 Wprog = 320nm)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
-ylabel('Normalized Energy (Power-Delay Product)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+%ylabel('Normalized Energy (Power-Delay Product)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('Delay (ps)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
 %set(gca,'xlim',[0.1 1],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 %set(gca,'XTick',wprog_list);
 set(gca,'XTickLabel',wprog_list);
 %%set(gca,'ylim',[10 22],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca, 'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
-hleg = legend([{'one-level 4T1R MUX(V_{DD}=0.7V)'}, {'one-level 4T1R MUX (V_{DD}=0.9V)'}, {'two-level 4T1R MUX (V_{DD}=0.9V)'}, {'tree-like 4T1R MUX (V_{DD}=0.9V)'}]);
+hleg = legend([{'one-level 4T1R MUX'}]);
+%hleg = legend([{'one-level 4T1R MUX(V_{DD}=0.7V)'}, {'one-level 4T1R MUX (V_{DD}=0.9V)'}, {'two-level 4T1R MUX (V_{DD}=0.9V)'}, {'tree-like 4T1R MUX (V_{DD}=0.9V)'}]);
 set(fig_handle10, 'Position', [1 1 800 600]);
 grid on
 
