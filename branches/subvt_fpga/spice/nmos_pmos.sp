@@ -11,13 +11,13 @@
 *.eom pmos
 
 * CMOS TSMC 40nm I/O transistor 2.5V
-.subckt nmos drain gate source bulk L=nl W=wn
-M1 drain gate source bulk nch_25 l=L w=W
-.eom nmos
+*.subckt nmos drain gate source bulk L=nl W=wn
+*M1 drain gate source bulk nch_25 l=L w=W
+*.eom nmos
 
-.subckt pmos drain gate source bulk L=pl W=wp
-M1 drain gate source bulk pch_25 l=L w=W 
-.eom pmos
+*.subckt pmos drain gate source bulk L=pl W=wp
+*M1 drain gate source bulk pch_25 l=L w=W 
+*.eom pmos
 
 * CMOS UMC 0.18um 3.3V
 *.subckt nmos drain gate source bulk L=nl W=wn
@@ -45,6 +45,15 @@ M1 drain gate source bulk pch_25 l=L w=W
 *.subckt pmos drain gate source bulk L=L W=wp
 *M1 drain gate source bulk pmos L=L W=W
 *.eom pmos
+
+* PTM 7nm FinFET models
+.subckt nmos drain gate source bulk L=nl W=wn
+M1 drain gate source bulk nmos_lvt L=L W=W
+.eom nmos
+
+.subckt pmos drain gate source bulk L=L W=wp
+M1 drain gate source bulk pmos_lvt L=L W=W
+.eom pmos
 
 * ST 28nm Models
 *.subckt nmos drain gate source bulk L=nl W=wn
