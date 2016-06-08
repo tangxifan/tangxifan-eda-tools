@@ -3088,7 +3088,8 @@ sub gen_multilevel_rram_mux_subckt($ $ $ $ $ $ $ $) {
   &tab_print($spfh,".global prog_vdd0 prog_gnd0 prog_vdd1 prog_gnd1 \n",0);
   # For isolating RRAM MUX design
   #&tab_print($spfh,"+ svdd_in sgnd_in svdd_out sgnd_out \n",0);
-  &tab_print($spfh,"+ op_mode_enb op_mode_en \n ",0);
+  &tab_print($spfh,"+ op_mode_enb0 op_mode_en0 \n",0);
+  &tab_print($spfh,"+ op_mode_enb1 op_mode_en1 \n",0);
   #&tab_print($spfh,"+ set_enb set_en rst_enb rst_en\n",0);
   &tab_print($spfh,"+ prog_clk op_clk\n", 0);
   for (my $i = 0; $i < $num_blwl; $i++) {
