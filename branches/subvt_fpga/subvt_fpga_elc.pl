@@ -879,8 +879,10 @@ sub check_lib_settings()
 
   # Check if this is a FinFET tech
   if ("on" eq $conf_ptr->{general_settings}->{finfet_tech}->{val}) {
+    print "FinFET technology optimization is enabled.\n";
     $finfet_tech = "on";
   } else {
+    print "FinFET technology optimization is disabled.\n";
     $finfet_tech = "off";
   }
 
@@ -1172,7 +1174,7 @@ sub gen_sp_subckt_fanout_inv_tree($ $ $) {
 
 sub gen_inv_buf_subckt($ $ $) {
   my ($spfh, $inv_size_in, $inv_size_out) = @_;
-  my ($wpg_inv_in, $wpg_inv_out) = ($inv_size_in, $inv_size_out);
+  my ($wpg_inv_in, $wpg_inv_out) = (10*$inv_size_in, 10*$inv_size_out);
 
   # Input inverter subckt 
   &tab_print($spfh, "* Input inverter subckt size=$inv_size_in \n", 0); 
@@ -1261,6 +1263,7 @@ sub gen_auto_out_tapered_buffer($ $ $) {
   my ($spfh, $fan_out, $f_inv) = @_;
   my ($num_level_tapered_buf) = int(0.5 + log($fan_out)/log($f_inv));
   my ($cur_level_f, $i, $nexti);
+  my ($wpg_inv_in, $wpg_inv_out) = (10, 10);
   
   # Print the definition
   &tab_print($spfh, ".subckt tapbuf_size$fan_out in out svdd sgnd\n", 0); 
@@ -1291,9 +1294,11 @@ sub gen_auto_out_tapered_buffer($ $ $) {
     $nexti = $i + 1;
     for (my $j = 0; $j < $cur_level_f; $j++) {
       &tab_print($spfh, "Xinvlvl$i\_no$j\_tapbuf in_lvl$i in_lvl$nexti svdd_out sgnd_out $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=1\n", 0);
-      &tab_print($spfh, "* Power-gate transistors: no. $j \n", 0);
-      &tab_print($spfh, "Xpg_pmos$j svdd_out enb svdd svdd $elc_pmos_subckt_name L=\'pl\' W=\'wp*beta\'\n",0);
-      &tab_print($spfh, "Xpg_nmos$j sgnd_out en sgnd sgnd $elc_nmos_subckt_name L=\'nl\' W=\'wn\'\n",0);
+      for (my $k = 0; $k < $wpg_inv_out*$cur_level_f; $k++) {
+        &tab_print($spfh, "* Power-gate transistors: no. $k \n", 0);
+        &tab_print($spfh, "Xpg_pmos$k svdd_out enb svdd svdd $elc_pmos_subckt_name L=\'pl\' W=\'wp*beta\'\n",0);
+        &tab_print($spfh, "Xpg_nmos$k sgnd_out en sgnd sgnd $elc_nmos_subckt_name L=\'nl\' W=\'wn\'\n",0);
+      }
     }
   }
   if (1 == $i%2) {
@@ -1302,9 +1307,11 @@ sub gen_auto_out_tapered_buffer($ $ $) {
   } else {
     # Add one more inverter 
     &tab_print($spfh, "Xinv_in in in_lvl0 svdd_out sgnd_out $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=1\n", 0);
-    &tab_print($spfh, "* Power-gate transistors \n", 0);
-    &tab_print($spfh, "Xpg_pmos_in svdd_out enb svdd svdd $elc_pmos_subckt_name L=\'pl\' W=\'wp*beta\'\n",0);
-    &tab_print($spfh, "Xpg_nmos_in sgnd_out en sgnd sgnd $elc_nmos_subckt_name L=\'nl\' W=\'wn\'\n",0);
+    for (my $k = 0; $k < $wpg_inv_out; $k++) {
+      &tab_print($spfh, "* Power-gate transistors:$k\n", 0);
+      &tab_print($spfh, "Xpg_pmos_in$k svdd_out enb svdd svdd $elc_pmos_subckt_name L=\'pl\' W=\'wp*beta\'\n",0);
+      &tab_print($spfh, "Xpg_nmos_in$k sgnd_out en sgnd sgnd $elc_nmos_subckt_name L=\'nl\' W=\'wn\'\n",0);
+    }
   }
   # Short connected output
   &tab_print($spfh, "Rout in_lvl$i out 0\n", 0);
@@ -1324,7 +1331,7 @@ sub gen_sp_inv_loads($ $ $ $) {
 
   for (my $i = 0; $i < $inv_load_num; $i++) {
     if ("on" eq $finfet_tech) {
-      for  (my $j = 0; $j <= $inv_load_size; $j++) {
+      for  (my $j = 0; $j < $inv_load_size; $j++) {
         &tab_print($spfh, "Xinv_load$i\_$j $load_port_name inv_load$i\_out$j $conf_ptr->{general_settings}->{LOAD_VDD_port_name}->{val} $conf_ptr->{general_settings}->{GND_port_name}->{val} inv size=1\n", 0);
       }
     } else {
@@ -1835,7 +1842,7 @@ sub gen_rram_mux_nonisolate_sp_stimulates($ $ $) {
      ($rst_bl_b, $rst_wl) = (($basis+1)*$lvl + 1, ($basis+1)*$lvl+$basis); 
      ($set_bl_b, $set_wl) = (($basis+1)*$lvl + $basis, ($basis+1)*$lvl); 
     }   
-    my ($prog_cycle) = ($lvl);
+    my ($prog_cycle) = ($num_mux_levels - $lvl - 1);
 
     &tab_print($spfh,"* WL/BL lines for Level $lvl\n",0);
     &tab_print($spfh,"* Control signals for RESET process\n",0);
@@ -2248,11 +2255,15 @@ sub gen_rram_mux_nonisolate_sp_measure($ $ $ $ $ $ $) {
     &tab_print($spfh,".measure tran slew_mux_rise trig v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_lower_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog- input_slew\'\n",0);
     &tab_print($spfh,"+                      targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_upper_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\'\n",0);
 
+    &tab_print($spfh,"* Measure full-swing: rising edge \n",0);
+    &tab_print($spfh,".measure tran full_swing_rise trig v($conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$delay_measure_input) val=\'slew_lower_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog- input_slew\'\n",0);
+    &tab_print($spfh,"+                      targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_upper_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\'\n",0);
+
     &tab_print($spfh,"* Measure Dynamic Power: rising edge \n",0);
-    &tab_print($spfh,".measure tran pdynamic_rise_prog_vdd0 avg p(Vprog_vdd0) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_rise - input_slew\'\n",0);
-    &tab_print($spfh,".measure tran pdynamic_rise_prog_vdd1 avg p(Vprog_vdd1) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_rise - input_slew\'\n",0);
-    &tab_print($spfh,".measure tran pdynamic_rise param=\'abs(pdynamic_rise_prog_vdd0)+abs(pdynamic_rise_prog_vdd1)\'\n",0);
-    &tab_print($spfh,".measure tran energy_per_toggle_rise param=\'pdynamic_rise*(input_slew+slew_mux_rise)\'\n",0);
+    &tab_print($spfh,".measure tran pdynamic_rise_prog_vdd0 avg p(Vprog_vdd0) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+full_swing_rise\'\n",0);
+    &tab_print($spfh,".measure tran pdynamic_rise_prog_vdd1 avg p(Vprog_vdd1) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+full_swing_rise\'\n",0);
+    &tab_print($spfh,".measure tran pdynamic_rise param=\'abs(pdynamic_rise_prog_vdd0+pdynamic_rise_prog_vdd1)\'\n",0);
+    &tab_print($spfh,".measure tran energy_per_toggle_rise param=\'pdynamic_rise*(input_slew+full_swing_rise)\'\n",0);
 
     $input_vector_type = "fall";
     $output_vector_type = "fall";
@@ -2264,11 +2275,15 @@ sub gen_rram_mux_nonisolate_sp_measure($ $ $ $ $ $ $) {
     &tab_print($spfh,".measure tran slew_mux_fall trig v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_lower_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\'\n",0);
     &tab_print($spfh,"+                      targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_upper_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\'\n",0);
 
+    &tab_print($spfh,"* Measure full_swing: falling edge \n",0);
+    &tab_print($spfh,".measure tran full_swing_fall trig v($conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$delay_measure_input) val=\'slew_lower_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\'\n",0);
+    &tab_print($spfh,"+                      targ v($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) val=\'slew_upper_threshold_pct_$output_vector_type*vsp\' $output_vector_type=1 td=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\'\n",0);
+
     &tab_print($spfh,"* Measure Dynamic Power: falling edge \n",0);
-    &tab_print($spfh,".measure tran pdynamic_fall_prog_vdd0 avg p(Vprog_vdd0) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_fall+0.5*op_clk_period - input_slew\'\n",0);
-    &tab_print($spfh,".measure tran pdynamic_fall_prog_vdd1 avg p(Vprog_vdd1) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+input_slew+slew_mux_fall+0.5*op_clk_period - input_slew\'\n",0);
-    &tab_print($spfh,".measure tran pdynamic_fall param=\'abs(pdynamic_fall_prog_vdd0)+abs(pdynamic_fall_prog_vdd1)\'\n",0);
-    &tab_print($spfh,".measure tran energy_per_toggle_fall param=\'pdynamic_fall*(input_slew+slew_mux_fall)\'\n",0);
+    &tab_print($spfh,".measure tran pdynamic_fall_prog_vdd0 avg p(Vprog_vdd0) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+full_swing_fall+0.5*op_clk_period\'\n",0);
+    &tab_print($spfh,".measure tran pdynamic_fall_prog_vdd1 avg p(Vprog_vdd1) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+full_swing_fall+0.5*op_clk_period\'\n",0);
+    &tab_print($spfh,".measure tran pdynamic_fall param=\'abs(pdynamic_fall_prog_vdd0+pdynamic_fall_prog_vdd1)\'\n",0);
+    &tab_print($spfh,".measure tran energy_per_toggle_fall param=\'pdynamic_fall*(input_slew+full_swing_fall)\'\n",0);
    
     &tab_print($spfh,".measure tran avg_vmux_high max V($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+slew_mux_rise+dly_mux_rise\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+0.5*op_clk_period - input_slew\'\n",0);
     &tab_print($spfh,".measure tran avg_vmux_low avg V($conf_ptr->{mux_settings}->{OUT_port_name}->{val}) from=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+op_clk_period-input_slew+slew_mux_fall\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+N*op_clk_period - input_slew\'\n",0);
@@ -2369,7 +2384,7 @@ sub gen_1level_rram_mux_isolate_subckt($ $ $ $ $ $ $) {
   for (my $i = 0; $i < $mux_size; $i++) {
     #  Program Pair 
     if ("on" eq $finfet_tech) {
-      for (my $jfin = 0; $jfin <= $wprog; $jfin++) {
+      for (my $jfin = 0; $jfin < $wprog; $jfin++) {
         &tab_print($spfh, "Xprog_pmos$i\_$jfin mux1level_in$i$isolate_node_postfix bl[$i]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
         &tab_print($spfh, "Xprog_nmos$i\_$jfin mux1level_in$i$isolate_node_postfix wl[$i] prog_gnd prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
       }
@@ -2388,7 +2403,7 @@ sub gen_1level_rram_mux_isolate_subckt($ $ $ $ $ $ $) {
   }
   # Add output program pair 
   if ("on" eq $finfet_tech) {
-    for (my $jfin = 0; $jfin <= $wprog; $jfin++) {
+    for (my $jfin = 0; $jfin < $wprog; $jfin++) {
       &tab_print($spfh, "Xprog_pmos$mux_size\_$jfin mux1level_out$isolate_node_postfix bl[$mux_size]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'*prog_wp*prog_beta\'\n",0);
       &tab_print($spfh, "Xprog_nmos$mux_size\_$jfin mux1level_out$isolate_node_postfix wl[$mux_size] prog_gnd prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
     }
@@ -2486,7 +2501,7 @@ sub gen_1level_rram_mux_dvc_subckt($ $ $ $ $ $ $) {
   for (my $i = 0; $i < $mux_size; $i++) {
     #  Program Pair 
     if ("on" eq $finfet_tech) {
-      for (my $jfin = 0; $jfin <= $wprog; $jfin++) {
+      for (my $jfin = 0; $jfin < $wprog; $jfin++) {
         &tab_print($spfh, "Xprog_pmos$i\_$jfin mux1level_in$i bl[$i]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
         &tab_print($spfh, "Xprog_nmos$i\_$jfin mux1level_in$i wl[$i] prog_gnd prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
       }
@@ -2505,7 +2520,7 @@ sub gen_1level_rram_mux_dvc_subckt($ $ $ $ $ $ $) {
   }
   # Add output program pair 
   if ("on" eq $finfet_tech) {
-    for (my $jfin = 0; $jfin <= $wprog; $jfin++) {
+    for (my $jfin = 0; $jfin < $wprog; $jfin++) {
       &tab_print($spfh, "Xprog_pmos$mux_size\_$jfin mux1level_out bl[$mux_size]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
       &tab_print($spfh, "Xprog_nmos$mux_size\_$jfin mux1level_out wl[$mux_size] prog_gnd prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
     }
@@ -2610,32 +2625,35 @@ sub gen_1level_rram_mux_subckt($ $ $ $ $ $ $) {
   for (my $i = 0; $i < $mux_size; $i++) {
     #  Program Pair 
     if ("on" eq $finfet_tech) {
-      for (my $jfin = 0; $jfin <= $wprog; $jfin++) {
-        &tab_print($spfh, "Xprog_pmos$i\_$jfin mux1level_in$i bl[$i]_b prog_vdd0 prog_vdd0 $elc_pmos_subckt_name L=\'pl\' W=\'wp*beta\'\n",0);
-        &tab_print($spfh, "Xprog_nmos$i\_$jfin mux1level_in$i wl[$i] prog_gnd0 prog_gnd0 $elc_nmos_subckt_name L=\'nl\' W=\'wn\'\n",0);
+      for (my $jfin = 0; $jfin < $wprog; $jfin++) {
+        &tab_print($spfh, "Xprog_pmos$i\_$jfin mux1level_in$i bl[$i]_b prog_vdd0 prog_vdd0 $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
+        &tab_print($spfh, "Xprog_nmos$i\_$jfin mux1level_in$i wl[$i] prog_gnd0 prog_gnd0 $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
       }
     } else {
-      &tab_print($spfh, "Xprog_pmos$i mux1level_in$i bl[$i]_b prog_vdd0 prog_vdd0 $elc_pmos_subckt_name L=\'pl\' W=\'wprog*wp*beta\'\n",0);
-      &tab_print($spfh, "Xprog_nmos$i mux1level_in$i wl[$i] prog_gnd0 prog_gnd0 $elc_nmos_subckt_name L=\'nl\' W=\'wprog*wn\'\n",0);
+      &tab_print($spfh, "Xprog_pmos$i mux1level_in$i bl[$i]_b prog_vdd0 prog_vdd0 $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+      &tab_print($spfh, "Xprog_nmos$i mux1level_in$i wl[$i] prog_gnd0 prog_gnd0 $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
     }
     # Initilization: RRAM0 (in0) is off, rest of RRAMs are on. Programming will switch RRAM0 to on and the rest to off.
     if (1 == $i) {
       &tab_print($spfh, "Xrram$i mux1level_in$i mux1level_out $conf_ptr->{rram_settings}->{rram_subckt_name}->{val} $offgap_kw=gap_on\n");
       #&tab_print($spfh,"Rmux1level_$i mux1level_in$i mux1level_out \'ron\'\n",0);
+    } elsif (0 == $i) { 
+      &tab_print($spfh, "Xrram$i mux1level_in$i mux1level_out $conf_ptr->{rram_settings}->{rram_subckt_name}->{val} $ongap_kw=gap_off print_gap=1\n");
     } else { 
       &tab_print($spfh, "Xrram$i mux1level_in$i mux1level_out $conf_ptr->{rram_settings}->{rram_subckt_name}->{val} $ongap_kw=gap_off\n");
       #&tab_print($spfh,"Rmux1level_$i mux1level_in$i mux1level_out \'roff\'\n",0);
     }
+    &tab_print($spfh,"*.print V(Xrram$i.R_out) V(Xrram$i.gap_out)\n",0);
   }
   # Add output program pair 
   if ("on" eq $finfet_tech) {
-    for (my $jfin = 0; $jfin <= $wprog; $jfin++) {
-      &tab_print($spfh, "Xprog_pmos$mux_size\_$jfin mux1level_out bl[$mux_size]_b prog_vdd1 prog_vdd1 $elc_pmos_subckt_name L=\'pl\' W=\'wp*beta\'\n",0);
-      &tab_print($spfh, "Xprog_nmos$mux_size\_$jfin mux1level_out wl[$mux_size] prog_gnd1 prog_gnd1 $elc_nmos_subckt_name L=\'nl\' W=\'wn\'\n",0);
+    for (my $jfin = 0; $jfin < $wprog; $jfin++) {
+      &tab_print($spfh, "Xprog_pmos$mux_size\_$jfin mux1level_out bl[$mux_size]_b prog_vdd1 prog_vdd1 $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
+      &tab_print($spfh, "Xprog_nmos$mux_size\_$jfin mux1level_out wl[$mux_size] prog_gnd1 prog_gnd1 $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
     }
   } else {
-    &tab_print($spfh, "Xprog_pmos$mux_size mux1level_out bl[$mux_size]_b prog_vdd1 prog_vdd1 $elc_pmos_subckt_name L=\'pl\' W=\'wprog*wp*beta\'\n",0);
-    &tab_print($spfh, "Xprog_nmos$mux_size mux1level_out wl[$mux_size] prog_gnd1 prog_gnd1 $elc_nmos_subckt_name L=\'nl\' W=\'wprog*wn\'\n",0);
+    &tab_print($spfh, "Xprog_pmos$mux_size mux1level_out bl[$mux_size]_b prog_vdd1 prog_vdd1 $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+    &tab_print($spfh, "Xprog_nmos$mux_size mux1level_out wl[$mux_size] prog_gnd1 prog_gnd1 $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
   }
 
   # Add buffers
@@ -2651,10 +2669,12 @@ sub gen_1level_rram_mux_subckt($ $ $ $ $ $ $) {
   if ("on" eq $opt_ptr->{auto_out_tapered_buffer}) {
     my ($tapbuf_size) = (4**$opt_ptr->{auto_out_tapered_buffer_val});
     # Call the subckt 
-    &tab_print($spfh, "Xtapbuf mux1level_out $conf_ptr->{mux_settings}->{OUT_port_name}->{val} prog_vdd1 prog_gnd1 op_mode_enb1 op_mode_en1 tapbuf_pg_size$tapbuf_size\n", 0);
+    #&tab_print($spfh, "Xtapbuf mux1level_out $conf_ptr->{mux_settings}->{OUT_port_name}->{val} prog_vdd1 prog_gnd1 op_mode_enb1 op_mode_en1 tapbuf_pg_size$tapbuf_size\n", 0);
+    &tab_print($spfh, "Xtapbuf mux1level_out $conf_ptr->{mux_settings}->{OUT_port_name}->{val} prog_vdd1 prog_gnd1 tapbuf_size$tapbuf_size\n", 0);
   } elsif ("buffered" eq $buffered) {
     &tab_print($spfh,"Xinv_out mux1level_out ",0); 
-    &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} prog_vdd1 prog_gnd1 op_mode_enb1 op_mode_en1 output_inv_pg'\n",0);
+    #&tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} prog_vdd1 prog_gnd1 op_mode_enb1 op_mode_en1 output_inv_pg'\n",0);
+    &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} prog_vdd1 prog_gnd1 output_inv'\n",0);
   } else {
     &tab_print($spfh,"Vout mux1level_out ",0); 
     &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} 0\n",0);
@@ -2797,7 +2817,7 @@ sub gen_multilevel_rram_mux_isolate_subckt($ $ $ $ $ $ $ $) {
       $next_lvl_input = int($i / $basis);
       #  Program Pair 
       if ("on" eq $finfet_tech) {
-        for (my $jfin = 0; $jfin <= $wprog; $jfin++) {
+        for (my $jfin = 0; $jfin < $wprog; $jfin++) {
           &tab_print($spfh, "Xprog_pmos_in_lvl$lvl\_in$i\_$jfin mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
           &tab_print($spfh, "Xprog_nmos_in_lvl$lvl\_in$i\_$jfin mux2lvl_lvl$lvl\_in$i wl[$in_blwl_idx] prog_gnd prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
         }
@@ -2833,7 +2853,7 @@ sub gen_multilevel_rram_mux_isolate_subckt($ $ $ $ $ $ $ $) {
       &tab_print($spfh, "* Programming Pair: level $lvl\n",0);
       &tab_print($spfh, "* Output $j\n",0);
       if ("on" eq $finfet_tech) {
-        for (my $jfin = 0; $jfin <= $wprog; $jfin++) {
+        for (my $jfin = 0; $jfin < $wprog; $jfin++) {
           &tab_print($spfh, "Xprog_pmos_out_lvl$next_lvl\_in$j\_$jfin mux2lvl_lvl$next_lvl\_in$j bl[$out_blwl_idx]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
           &tab_print($spfh, "Xprog_nmos_out_lvl$next_lvl\_in$j\_$jfin mux2lvl_lvl$next_lvl\_in$j wl[$out_blwl_idx] prog_gnd prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
         } 
@@ -2958,7 +2978,7 @@ sub gen_multilevel_rram_mux_dvc_subckt($ $ $ $ $ $ $ $) {
       #  Program Pair 
       &tab_print($spfh, "* Input $i \n",0);
       if ("on" eq $finfet_tech) {
-        for (my $jfin = 0; $jfin <= $wprog; $jfin++) {
+        for (my $jfin = 0; $jfin < $wprog; $jfin++) {
           &tab_print($spfh, "Xprog_pmos_in_lvl$lvl\_in$i\_$jfin mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
           &tab_print($spfh, "Xprog_nmos_in_lvl$lvl\_in$i\_$jfin mux2lvl_lvl$lvl\_in$i wl[$in_blwl_idx] prog_gnd prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
         }
@@ -2994,7 +3014,7 @@ sub gen_multilevel_rram_mux_dvc_subckt($ $ $ $ $ $ $ $) {
       &tab_print($spfh, "* Programming Pair: level $lvl\n",0);
       &tab_print($spfh, "* Output $j\n",0);
       if ("on" eq $finfet_tech) {
-        for (my $jfin = 0; $jfin <= $wprog; $jfin++) {
+        for (my $jfin = 0; $jfin < $wprog; $jfin++) {
           &tab_print($spfh, "Xprog_pmos_out_lvl$next_lvl\_in$j\_$jfin mux2lvl_lvl$next_lvl\_in$j bl[$out_blwl_idx]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
           &tab_print($spfh, "Xprog_nmos_out_lvl$next_lvl\_in$j\_$jfin mux2lvl_lvl$next_lvl\_in$j wl[$out_blwl_idx] prog_gnd prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
         }
@@ -3138,13 +3158,13 @@ sub gen_multilevel_rram_mux_subckt($ $ $ $ $ $ $ $) {
       #  Program Pair 
       &tab_print($spfh, "* Input $i \n",0);
       if ("on" eq $finfet_tech) {
-        for (my $j = 0; $j <= $wprog; $j++) {
-          &tab_print($spfh, "Xprog_pmos_in_lvl$lvl\_in$i\_$j mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx]_b $prog_vdd $prog_vdd $elc_pmos_subckt_name L=\'pl\' W=\'wp*beta\'\n",0);
-          &tab_print($spfh, "Xprog_nmos_in_lvl$lvl\_in$i\_$j mux2lvl_lvl$lvl\_in$i wl[$in_blwl_idx] $prog_gnd $prog_gnd $elc_nmos_subckt_name L=\'nl\' W=\'wn\'\n",0);
+        for (my $j = 0; $j < $wprog; $j++) {
+          &tab_print($spfh, "Xprog_pmos_in_lvl$lvl\_in$i\_$j mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
+          &tab_print($spfh, "Xprog_nmos_in_lvl$lvl\_in$i\_$j mux2lvl_lvl$lvl\_in$i wl[$in_blwl_idx] $prog_gnd $prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
         }
       } else {
-        &tab_print($spfh, "Xprog_pmos_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx]_b $prog_vdd $prog_vdd $elc_pmos_subckt_name L=\'pl\' W=\'wprog*wp*beta\'\n",0);
-        &tab_print($spfh, "Xprog_nmos_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i wl[$in_blwl_idx] $prog_gnd $prog_gnd $elc_nmos_subckt_name L=\'nl\' W=\'wprog*wn\'\n",0);
+        &tab_print($spfh, "Xprog_pmos_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+        &tab_print($spfh, "Xprog_nmos_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i wl[$in_blwl_idx] $prog_gnd $prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
       }
       # RRAMs' TEs and BEs: level 0 (first level) RRAM is organized as (TE, BE).
       # level 1 (second level) RRAM is organized as (BE, TE), opposite to the first level.
@@ -3154,16 +3174,24 @@ sub gen_multilevel_rram_mux_subckt($ $ $ $ $ $ $ $) {
         &tab_print($spfh, "Xrram_lvl$lvl\_in$i mux2lvl_lvl$next_lvl\_in$next_lvl_input mux2lvl_lvl$lvl\_in$i $conf_ptr->{rram_settings}->{rram_subckt_name}->{val} ");
       }
       # Initilization: RRAM0 (in0) is off, rest of RRAMs are on. Programming will switch RRAM0 to on and the rest to off.
-      if (1 == $i) {
-        &tab_print($spfh, "$offgap_kw=gap_on\n");
-      } else { 
-        &tab_print($spfh, "$ongap_kw=gap_off\n");
+      if (0 == $i % $basis) {
+        &tab_print($spfh, "$ongap_kw=gap_off ");
+      } elsif (1 == $i % $basis) { 
+        &tab_print($spfh, "$offgap_kw=gap_on ");
+      } else {
+        &tab_print($spfh, "$offgap_kw=gap_off ");
       }
+      if ((0 == $lvl)&&(0 == $i)) {
+        &tab_print($spfh, "print_gap=1\n");
+      } else {
+        &tab_print($spfh, "\n");
+      }
+      &tab_print($spfh,"*.print V(Xrram_lvl$lvl\_in$i.R_out) V(Xrram_lvl$lvl\_in$i.gap_out)\n",0);
 
       # Calculate the index of BL/WL lines
       $in_blwl_idx++;
       if (!($in_blwl_idx < $out_blwl_idx)) {
-        $in_blwl_idx = $basis*$lvl;
+        $in_blwl_idx = ($basis+1)*$lvl;
       }
     }
 
@@ -3179,13 +3207,13 @@ sub gen_multilevel_rram_mux_subckt($ $ $ $ $ $ $ $) {
       &tab_print($spfh, "* Programming Pair: level $lvl\n",0);
       &tab_print($spfh, "* Output $j\n",0);
       if ("on" eq $finfet_tech) {
-        for (my $jfin = 0; $jfin <= $wprog; $jfin++) {
-          &tab_print($spfh, "Xprog_pmos_out_lvl$next_lvl\_in$j\_$jfin mux2lvl_lvl$next_lvl\_in$j bl[$out_blwl_idx]_b $prog_vdd $prog_vdd $elc_pmos_subckt_name L=\'pl\' W=\'wp*beta\'\n",0);
-          &tab_print($spfh, "Xprog_nmos_out_lvl$next_lvl\_in$j\_$jfin mux2lvl_lvl$next_lvl\_in$j wl[$out_blwl_idx] $prog_gnd $prog_gnd $elc_nmos_subckt_name L=\'nl\' W=\'wn\'\n",0);
+        for (my $jfin = 0; $jfin < $wprog; $jfin++) {
+          &tab_print($spfh, "Xprog_pmos_out_lvl$next_lvl\_in$j\_$jfin mux2lvl_lvl$next_lvl\_in$j bl[$out_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
+          &tab_print($spfh, "Xprog_nmos_out_lvl$next_lvl\_in$j\_$jfin mux2lvl_lvl$next_lvl\_in$j wl[$out_blwl_idx] $prog_gnd $prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
         }
       } else {
-        &tab_print($spfh, "Xprog_pmos_out_lvl$next_lvl\_in$j mux2lvl_lvl$next_lvl\_in$j bl[$out_blwl_idx]_b $prog_vdd $prog_vdd $elc_pmos_subckt_name L=\'pl\' W=\'wprog*wp*beta\'\n",0);
-        &tab_print($spfh, "Xprog_nmos_out_lvl$next_lvl\_in$j mux2lvl_lvl$next_lvl\_in$j wl[$out_blwl_idx] $prog_gnd $prog_gnd $elc_nmos_subckt_name L=\'nl\' W=\'wprog*wn\'\n",0);
+        &tab_print($spfh, "Xprog_pmos_out_lvl$next_lvl\_in$j mux2lvl_lvl$next_lvl\_in$j bl[$out_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+        &tab_print($spfh, "Xprog_nmos_out_lvl$next_lvl\_in$j mux2lvl_lvl$next_lvl\_in$j wl[$out_blwl_idx] $prog_gnd $prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
       }
     }
   }
@@ -3212,14 +3240,16 @@ sub gen_multilevel_rram_mux_subckt($ $ $ $ $ $ $ $) {
     my ($tapbuf_size) = (4**$opt_ptr->{auto_out_tapered_buffer_val});
     # Call the subckt 
     #if (1 == $num_lvls % 2) {
-      &tab_print($spfh, "Xtapbuf mux2lvl_lvl$num_lvls\_in0 $conf_ptr->{mux_settings}->{OUT_port_name}->{val} $prog_vdd $prog_gnd $op_mode_enb $op_mode_en tapbuf_pg_size$tapbuf_size\n", 0);
+      #&tab_print($spfh, "Xtapbuf mux2lvl_lvl$num_lvls\_in0 $conf_ptr->{mux_settings}->{OUT_port_name}->{val} $prog_vdd $prog_gnd $op_mode_enb $op_mode_en tapbuf_pg_size$tapbuf_size\n", 0);
+      &tab_print($spfh, "Xtapbuf mux2lvl_lvl$num_lvls\_in0 $conf_ptr->{mux_settings}->{OUT_port_name}->{val} $prog_vdd $prog_gnd tapbuf_size$tapbuf_size\n", 0);
     #} else {
     #  &tab_print($spfh, "Xtapbuf mux2lvl_lvl$num_lvls\_in0 $conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd_in sgnd_in tapbuf_size$tapbuf_size\n", 0);
     #}
   } elsif ("buffered" eq $buffered) {
     &tab_print($spfh,"Xinv_out mux2lvl_lvl$num_lvls\_in0 ",0); 
     #if (1 == $num_lvls % 2) {
-      &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} $prog_vdd $prog_gnd $op_mode_enb $op_mode_en output_inv_pg\'\n",0);
+      #&tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} $prog_vdd $prog_gnd $op_mode_enb $op_mode_en output_inv_pg\'\n",0);
+      &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} $prog_vdd $prog_gnd output_inv\'\n",0);
     #} else {
     #  &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} svdd_in sgnd_in $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'inv_size_out\'\n",0);
     #}
@@ -3708,7 +3738,7 @@ sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
   # Create a SPICE file
   my $spfh = FileHandle->new;
   if ($spfh->open("> $mux_file")) {
-    &gen_mux_sp_common($spfh,"mux$mux_size\_delay_power",$cload,$input_pwl,$input_pwh,$input_slew,$vsp,$mux_size,$inv_size_in,$inv_size_out,$rram_enhance,$ron,$wprog,$roff, $on_gap, $off_gap);
+    &gen_mux_sp_common($spfh,"mux$mux_size\_delay_power",$cload,$input_pwl,$input_pwh,$input_slew,$vsp,$mux_size,$inv_size_in,$inv_size_out,$rram_enhance,$ron,$wprog,$roff, $off_gap, $off_gap);
     # FOR RRAM MUX: we need special stimulates for programming phase!
     if ("on" eq $rram_enhance) {
       $delay_measure_input = 0;
@@ -3753,7 +3783,7 @@ sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
     &get_sim_results($lis_file,\@sim_keywds,$results);
     if (($results->{avg_vmux_high} eq "failed")||($results->{avg_vmux_low} eq "failed")) {
       return 0;
-    } elsif (($results->{avg_vmux_high} < $vsp*0.95)||($results->{avg_vmux_low} > $vsp*0.05)) {
+    } elsif (($results->{avg_vmux_high} < $vsp*0.9)||($results->{avg_vmux_low} > $vsp*0.1)) {
       print "Warning: avg_vmux_high is not valid!\n";
       return 0;
     }
