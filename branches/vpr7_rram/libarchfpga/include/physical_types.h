@@ -366,6 +366,9 @@ struct s_mode {
  
 	/* Power releated members */
 	t_mode_power * mode_power;
+
+    /* Xifan TANG: FPGA-SPICE and SynVerilog */
+    /* int default_mode_num_conf_bits; */
 };
 
 struct s_mode_power {
@@ -555,6 +558,7 @@ struct s_pb_graph_node {
 	 */
 	t_pb_graph_node_power * pb_node_power;
 	t_interconnect_pins ** interconnect_pins; /* [0..num_modes-1][0..num_interconnect_in_mode] */
+
 };
 
 struct s_pb_graph_node_power {
@@ -606,6 +610,11 @@ struct s_pb_type {
 
 	/* Power related members */
 	t_pb_type_power * pb_type_power;
+
+    /* Xifan TANG: FPGA-SPICE and SynVerilog */
+    int default_mode_num_conf_bits;
+    int default_mode_num_inpads;
+    int default_mode_num_outpads;
 };
 typedef struct s_pb_type t_pb_type;
 

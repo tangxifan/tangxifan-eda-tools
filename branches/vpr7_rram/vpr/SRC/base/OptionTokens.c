@@ -64,6 +64,8 @@ struct s_TokenPair OptionBaseTokenList[] = {
         { "print_spice_pb_mux_testbench", OT_PRINT_SPICE_PB_MUX_TESTBENCH }, /* Print the SPICE Testbench for MUXes */
         { "print_spice_cb_mux_testbench", OT_PRINT_SPICE_CB_MUX_TESTBENCH }, /* Print the SPICE Testbench for MUXes */
         { "print_spice_sb_mux_testbench", OT_PRINT_SPICE_SB_MUX_TESTBENCH }, /* Print the SPICE Testbench for MUXes */
+        { "print_spice_cb_testbench", OT_PRINT_SPICE_CB_TESTBENCH }, /* Print the SPICE Testbench for CBs */
+        { "print_spice_sb_testbench", OT_PRINT_SPICE_SB_TESTBENCH }, /* Print the SPICE Testbench for SBs */
         { "print_spice_grid_testbench", OT_PRINT_SPICE_GRID_TESTBENCH }, /* Print the SPICE Testbench for Grids  */
         { "print_spice_lut_testbench", OT_PRINT_SPICE_LUT_TESTBENCH }, /* Print the SPICE Testbench for Grids  */
         { "print_spice_dff_testbench", OT_PRINT_SPICE_DFF_TESTBENCH }, /* Print the SPICE Testbench for Grids  */

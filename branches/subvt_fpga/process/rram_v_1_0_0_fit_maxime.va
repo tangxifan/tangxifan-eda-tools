@@ -71,33 +71,33 @@ parameter real		q		= 1.6e-19;
   //  average switching fitting parameters g0, V0, I0, beta, gamma0
 parameter real		g0		= 0.25e-9 from(0:2e-9);
 parameter real		V0		= 0.8    from(0:10);
-parameter real		Vel0		= 10    from(0:20);
+parameter real		Vel0		= 0.4    from(0:20);
 parameter real		I0		= 570e-6 from(0:1e-2);
-parameter real		beta		= 0.8    from(0:inf);
-parameter real		gamma0		= 28  from(0:inf); 
+parameter real		beta		= 1e-2    from(0:inf);
+parameter real		gamma0		= 12  from(0:inf); 
 //  threshold temperature for significant random variations
 parameter real		T_crit		= 450		from(390, 460);
 //  variations fitting parameters
 parameter real          deltaGap0	= 0.02		from[0, 0.1);
 
 parameter real		T_smth		= 500		from(400, 600);//  activation energy for vacancy generation
-parameter real		Ea		= 0.6 from(0:1);
+parameter real		Ea		= 0.1 from(0:1);
 //  atom spacing, a0
-parameter real		a0		= 0.25e-9 from(0:inf);
+parameter real		a0		= 0.35e-10 from(0:inf);
 //  initial room temperature in devices
 parameter real		T_ini		= 273 + 25 from(0:inf);
 //  minimum field requirement to enhance gap formation, F_min
 parameter real		F_min		= 1.4e9 from(0:3e9);
 //  initial gap distance, gap_ini
-parameter real		gap_ini		= 2e-10 from(0:100e-10);
+parameter real		gap_ini		= 1e-10 from(0:100e-10);
 //  minimum gap distance, gap_min
-parameter real		gap_min		= 2e-10 from(0:100e-10);
+parameter real		gap_min		= 1e-10 from(0:100e-10);
 //  maximum gap distance, gap_max
 parameter real		gap_max		= 24.8e-10 from(0:100e-10);
 //  thermal resistance
 parameter real		Rth		= 2.1e3 from(0:inf);
 //  oxide thickness, thickness
-parameter real		tox		= 12e-9 from(0:100e-9);
+parameter real		tox		= 10e-9 from(0:100e-9);
 // initial random seed
 parameter integer	rand_seed_ini	= 0 from(-1.6e9, 1.6e9);
 // time step boundary
@@ -118,6 +118,12 @@ integer			rand_seed;
 real			deltaGap;
 // Xifan TANG: debugging
 parameter real Vread = 0.9 from(0,inf); // [V] read out voltage
+// Xifan TANG: for print gap changing
+real			cur_gap;
+parameter real Vset = 1.2 from (0, inf);
+parameter real Vrst = -1.2 from (-inf, 0);
+real			act_gap;
+parameter integer	print_gap		= 0    from[0, 1];
 
 parameter real		pulse_width = 20n;
 	analog begin
@@ -130,6 +136,7 @@ parameter real		pulse_width = 20n;
 // initialize random seed, rand_seed
 		@(initial_step) 
 			rand_seed = rand_seed_ini;
+            cur_gap = gap_ini;
 			
 // calculate local enhancement factor, reference RRAM_CompactModel_I.pdf
 // added
@@ -150,14 +157,37 @@ parameter real		pulse_width = 20n;
 // gap time derivative - variation part
 		deltaGap = deltaGap0 * model_switch;
 		gap_random_ddt = $rdist_normal(rand_seed, 0, 1) * deltaGap / (1 + exp((T_crit - T_cur)/T_smth));
-		gap = idt(gap_ddt+gap_random_ddt, gap_ini);
+// Xifan TANG: only above the threshold, we change the gap
+        //act_gap = gap;
+
+        //if ((Vrst < Vtb)&&(Vtb < Vset)) begin
+        //  gap_ddt = 0; 
+        //  gap_random_ddt = 0; 
+        //end 
+
+  		gap = idt(gap_ddt+gap_random_ddt, gap_ini);
+
+
 		if(gap<gap_min) begin
 			gap = gap_min;
 		end else if ( gap>gap_max) begin
 			gap=gap_max;
 		end
+
 		Itb = I0 * exp(-gap/g0)*sinh(Vtb/V0);
 		I(TE,BE)<+Itb;
+
+        // Xifan TANG: Print Gap 
+        if (1 == print_gap) begin
+          if (0 > gap_ddt) begin
+            $strobe("Time point:\n");       
+            $strobe("CurrentGap=%g\n", gap);       
+            $strobe("CurrentGamma=%g\n", gamma);       
+            $strobe("Currentddt=%g\n", gap_ddt);       
+            $strobe("CurrentItb=%g\n", Itb);       
+            $strobe("CurrentVtb=%g\n", Vtb);       
+          end
+        end 
 
         // Read out
         V(R_out) <+ Vread/(I0*exp(-gap/g0)*sinh(Vread/V0)); // Xifan TANG: for reading out Resistance

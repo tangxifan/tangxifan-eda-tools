@@ -31,16 +31,22 @@ char* spice_grid_testbench_postfix = "_grid_testbench.sp";
 char* spice_pb_mux_testbench_postfix = "_pbmux_testbench.sp";
 char* spice_cb_mux_testbench_postfix = "_cbmux_testbench.sp";
 char* spice_sb_mux_testbench_postfix = "_sbmux_testbench.sp";
+char* spice_cb_testbench_postfix = "_cb_testbench.sp";
+char* spice_sb_testbench_postfix = "_sb_testbench.sp";
 char* spice_lut_testbench_postfix = "_lut_testbench.sp";
 char* spice_dff_testbench_postfix = "_dff_testbench.sp";
 
 /* SRAM SPICE MODEL should be set as global*/
 t_spice_model* sram_spice_model = NULL;
+enum e_sram_orgz sram_orgz_type = SPICE_SRAM_STANDALONE;
 /* Global counters */
 int rram_design_tech = 0;
+int num_used_grid_mux_tb = 0;
 int num_used_grid_tb = 0;
 int num_used_cb_tb = 0;
 int num_used_sb_tb = 0;
+int num_used_cb_mux_tb = 0;
+int num_used_sb_mux_tb = 0;
 int num_used_lut_tb = 0;
 int num_used_dff_tb = 0;
 /* Default init_value */
@@ -48,5 +54,8 @@ int default_signal_init_value = 0;
 /* Default do parasitic net estimation !!!*/
 int run_parasitic_net_estimation = 1;
 
+/* linked-list for all the testbenches */
 t_llist* tb_head = NULL;
+/* linked-list for heads of scan-chain */
+t_llist* scan_chain_heads = NULL;
 

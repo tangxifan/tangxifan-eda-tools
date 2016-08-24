@@ -397,8 +397,12 @@ static void ProcessSpiceModelPort(ezxml_t Node,
     port->type = SPICE_MODEL_PORT_CLOCK;
   } else if (0 == strcmp(FindProperty(Node,"type",TRUE),"sram")) {
     port->type = SPICE_MODEL_PORT_SRAM;
+  } else if (0 == strcmp(FindProperty(Node,"type",TRUE),"bl")) {
+    port->type = SPICE_MODEL_PORT_BL;
+  } else if (0 == strcmp(FindProperty(Node,"type",TRUE),"wl")) {
+    port->type = SPICE_MODEL_PORT_WL;
   } else {
-    vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] Invalid type of port. Should be [input|output|clock|sram].\n",
+    vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] Invalid type of port. Should be [input|output|clock|sram|bl|wl].\n",
                Node->line);
     exit(1);
   } 
@@ -468,8 +472,10 @@ static void ProcessSpiceModel(ezxml_t Parent,
     spice_model->type = SPICE_MODEL_SRAM;
   } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"hard_logic")) {
     spice_model->type = SPICE_MODEL_HARDLOGIC;
+  } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"sff")) {
+    spice_model->type = SPICE_MODEL_SCFF;
   } else {
-    vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] Invalid type of spice model(%s). Should be [mux|lut|ff|io|sram|hard_logic].\n",
+    vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] Invalid type of spice model(%s). Should be [mux|lut|ff|io|sram|hard_logic|sff].\n",
                Parent->line, FindProperty(Parent, "type", TRUE));
     exit(1);
   }

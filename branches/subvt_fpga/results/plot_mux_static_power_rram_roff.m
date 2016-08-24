@@ -128,3 +128,78 @@ set(gca,'XTick', xindex);
 set(gca,'XTickLabel', avg_power_fpga(:,1));
 hleg = legend(fpga_arch_list);
 grid on
+%
+%%
+static_power_mux32 = [
+% RHRS(Omega) = 10M, 20M, 50M, 100M, 200M 
+% Wprog = 1
+2.1e-6, 1.14e-6, 562e-9, 368e-9, 271e-9;
+262e-9, 262e-9, 262e-9,262e-9, 262e-9;
+% Wprog = 2
+];
+rhrs_list = [{'10'},{'20'},{'50'},{'100'},{'200'}];
+mux_list = [{'4T1R MUX'},{'SRAM MUX'}];
+
+% Fig. plot
+fig_handle5 = figure;
+xindex = 1:1:length(static_power_mux32(1,:));
+plot(static_power_mux32(1,:)/1e-9,'b-*','LineWidth', 2, 'MarkerSize',10);
+hold on
+plot(static_power_mux32(2,:)/1e-9,'r-o','LineWidth', 2, 'MarkerSize',10);
+hold on
+%title('Delay-Wprog of 32-input Multiplexer, UMC 0.18um','FontSize',18)
+xlabel('R_{HRS}(M{\Omega})','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('Leakage Power (nW)','FontSize',20, 'FontWeight','bold', 'FontName', 'Times');
+set(gca,'xlim',[0.5 length(static_power_mux32(1,:))+0.5],'Fontsize',18, 'FontWeight','bold', 'FontName', 'Times');
+set(gca,'ylim',[250 2100],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+%yticks = [get(gca,'ytick')]'; % There is a transpose operation here.
+%percentsy = repmat('%', length(yticks),1);  %  equal to the size
+%yticklabel = [num2str(yticks) percentsy]; % concatenates the tick labels
+%set(gca,'YtickLabel',yticklabel)% Sets tick labels back on the Axis
+set(gca,'XTick', xindex);
+set(gca,'XTickLabel', rhrs_list);
+hleg = legend(mux_list);
+grid on
+
+%% Area vs. wprog
+wprog_list = 1:0.1:1.9;
+pn_ratio = 1.9;
+prog_pn_ratio = 3;
+mux_size = 1;
+sram_area = 6;
+area_io_std = 1.4; % area overhead of a I/O transistor compared to a standard logic transistor
+mux_list = [{'4T1R cell'},{'SRAM cell'}];
+for i = 1:1:length(wprog_list)
+  area_rram_multiplexing = (mux_size+1)*area_io_std*(trans_area(wprog_list(i))+trans_area(prog_pn_ratio*wprog_list(i)));
+  area_sram_multiplexing = (mux_size) * (trans_area(1)+ trans_area(1*pn_ratio));
+  area_srams = sram_area * mux_size;
+  if ( mux_size > 12) 
+    area_sram_multiplexing = area_sram_multiplexing + ceil(sqrt(mux_size)) * (trans_area(1)+ trans_area(1*pn_ratio));
+    area_srams = sram_area * ceil(sqrt(mux_size));
+  end 
+  area_buf = (mux_size + 1)*(trans_area(1)+trans_area(1*pn_ratio));
+  area_rram_mux(i) = (area_rram_multiplexing + 0*area_buf)/mux_size;
+  area_sram_mux(i) = (area_sram_multiplexing + 0*area_buf + area_srams)/mux_size; 
+end
+% Fig. plot
+fig_handle6 = figure;
+xindex = 1:1:length(wprog_list);
+plot(area_rram_mux,'b-*','LineWidth', 2, 'MarkerSize',10);
+hold on
+plot(area_sram_mux,'r-o','LineWidth', 2, 'MarkerSize',10);
+hold on
+%title('Delay-Wprog of 32-input Multiplexer, UMC 0.18um','FontSize',18)
+xlabel('Wprog(1 Wprog = 320nm)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('Area (#. of Min.Width Trans. Area)','FontSize',20, 'FontWeight','bold', 'FontName', 'Times');
+set(gca,'Fontsize',18, 'FontWeight','bold', 'FontName', 'Times');
+%set(gca,'xlim',[min(wprog_list) max(wprog_list)],'Fontsize',18, 'FontWeight','bold', 'FontName', 'Times');
+%set(gca,'ylim',[250 2100],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+%yticks = [get(gca,'ytick')]'; % There is a transpose operation here.
+%percentsy = repmat('%', length(yticks),1);  %  equal to the size
+%yticklabel = [num2str(yticks) percentsy]; % concatenates the tick labels
+%set(gca,'YtickLabel',yticklabel)% Sets tick labels back on the Axis
+%set(gca,'XTick', xindex);
+set(gca,'XTickLabel', wprog_list);
+hleg = legend(mux_list);
+grid on
+

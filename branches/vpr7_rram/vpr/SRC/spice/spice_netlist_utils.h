@@ -69,9 +69,11 @@ void fprint_call_defined_connection_boxes(FILE* fp,
 
 void fprint_call_defined_switch_box(FILE* fp,
                                     int x, 
-                                    int y);
+                                    int y,
+                                    t_ivec*** LL_rr_node_indices);
 
-void fprint_call_defined_switch_boxes(FILE* fp);
+void fprint_call_defined_switch_boxes(FILE* fp,
+                                      t_ivec*** LL_rr_node_indices);
 
 void fprint_tech_lib(FILE* fp,
                      t_spice_tech_lib tech_lib);

@@ -64,10 +64,17 @@ void fprint_spice_lut_testbench_global_ports(FILE* fp, int grid_x, int grid_y,
   fprintf(fp, ".global gvdd gset greset\n");
   fprintf(fp, ".global gvdd_local_interc gvdd_hardlogic\n");
   fprintf(fp, ".global gvdd_sram_local_routing gvdd_sram_luts\n");
-  fprintf(fp, ".global %s->in\n", sram_spice_model->prefix);
   fprintf(fp, ".global gvdd_load\n");
   fprintf(fp, "***** Global Clock Signals *****\n");
   fprintf(fp, ".global gclock\n");
+
+  /* Print scan-chain global ports */
+  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+    fprintf(fp, ".global sc_clk sc_set sc_rst\n");
+    fprintf(fp, ".global %s[0]->in\n", sram_spice_model->prefix);
+  } else {
+    fprintf(fp, ".global %s->in\n", sram_spice_model->prefix);
+  }
 
   /*Global Vdds for LUTs*/
   fprint_grid_global_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_LUT, spice);
@@ -438,6 +445,50 @@ void fprint_spice_lut_testbench_call_defined_luts(FILE* fp, t_ivec*** LL_rr_node
   return;
 }
 
+void fprint_spice_lut_testbench_conkt_lut_scan_chains(FILE* fp, int grid_x, int grid_y, 
+                                                      t_spice spice) {
+  int imodel, isc; 
+  t_spice_model* lut_spice_model = NULL;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  for (imodel = 0; imodel < spice.num_spice_model; imodel++) {
+    if (SPICE_MODEL_LUT == spice.spice_models[imodel].type) {
+      lut_spice_model = &(spice.spice_models[imodel]);
+      /* Bypass LUT SPICE models that are contained by this grid */
+      assert(-1 < (lut_spice_model->grid_index_high[grid_x][grid_y] - lut_spice_model->grid_index_low[grid_x][grid_y])); 
+      if (0 == (lut_spice_model->grid_index_high[grid_x][grid_y] - lut_spice_model->grid_index_low[grid_x][grid_y])) { 
+        continue;
+      }
+      fprintf(fp, "***** Connecting Scan-chains of %s in this grid[%d][%d] *****\n", 
+              lut_spice_model->name, grid_x, grid_y);
+      for (isc = lut_spice_model->grid_index_low[grid_x][grid_y];
+           isc < lut_spice_model->grid_index_high[grid_x][grid_y];
+           isc++) {
+        fprintf(fp, "R%s[%d]_sc_short %s[%d]_sc_tail %s[%d]_sc_head\n",
+                lut_spice_model->prefix, isc,
+                lut_spice_model->prefix, isc,
+                lut_spice_model->prefix, isc + 1);
+      }
+      fprintf(fp, "***** END *****\n");
+      fprintf(fp, "***** Scan-Chain Head of %s in grid[%d][%d]\n", 
+              lut_spice_model->name, grid_x, grid_y);
+      fprintf(fp, "V%s[%d]_sc_head %s[%d]_sc_head 0 0\n", 
+              lut_spice_model->prefix, lut_spice_model->grid_index_low[grid_x][grid_y],
+              lut_spice_model->prefix, lut_spice_model->grid_index_low[grid_x][grid_y]);
+      fprintf(fp, ".nodeset V(%s[%d]_sc_head) 0\n",
+              lut_spice_model->prefix, lut_spice_model->grid_index_low[grid_x][grid_y]);
+    }
+  }
+ 
+  return;
+}
+
 void fprint_spice_lut_testbench_stimulations(FILE* fp, int grid_x, int grid_y,
                                              int num_clock, 
                                              t_spice spice, 
@@ -481,9 +532,16 @@ void fprint_spice_lut_testbench_stimulations(FILE* fp, int grid_x, int grid_y,
             sram_spice_model->prefix, i, sram_spice_model->prefix, i);
   }
   */
-  fprintf(fp, "V%s->in %s->in 0 0\n", 
-          sram_spice_model->prefix, sram_spice_model->prefix);
-  fprintf(fp, ".nodeset V(%s->in) 0\n", sram_spice_model->prefix);
+  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+    fprintf(fp, "Vsc_clk sc_clk 0 0\n");
+    fprintf(fp, "Vsc_rst sc_rst 0 0\n");
+    fprintf(fp, "Vsc_set sc_set 0 0\n");
+    fprint_spice_lut_testbench_conkt_lut_scan_chains(fp, grid_x, grid_y, spice); 
+  } else {
+    fprintf(fp, "V%s->in %s->in 0 0\n", 
+            sram_spice_model->prefix, sram_spice_model->prefix);
+    fprintf(fp, ".nodeset V(%s->in) 0\n", sram_spice_model->prefix);
+  }
 
   fprintf(fp, "***** Global Clock signal *****\n");
   if (0 < num_clock) {

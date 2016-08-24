@@ -568,21 +568,64 @@ void fprint_pb_primitive_lut(FILE* fp,
 
   /* Call SRAM subckts*/
   cur_sram = sram_spice_model->cnt;
-  for (i = 0; i < num_sram; i++) {
-    fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, cur_sram); /* SRAM subckts*/
-    /* fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, cur_sram);*/ /* Input*/
-    fprintf(fp, "%s->in ", sram_spice_model->prefix); /* Input*/
-    fprintf(fp, "%s[%d]->out %s[%d]->outb ", 
-            sram_spice_model->prefix, cur_sram, sram_spice_model->prefix, cur_sram); /* Outputs */
-    fprintf(fp, "gvdd_sram_luts sgnd %s\n", sram_spice_model->name);  //
-    /* Add nodeset to help convergence */ 
-    fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, cur_sram);
-    fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, cur_sram);
-    cur_sram++;
+  /* Depend on the type of SRAM organization */
+  switch (sram_orgz_type) {
+  case SPICE_SRAM_STANDALONE:
+  case SPICE_SRAM_MEMORY_BANK:
+    for (i = 0; i < num_sram; i++) {
+      fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, cur_sram); /* SRAM subckts*/
+      /* fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, cur_sram);*/ /* Input*/
+      fprintf(fp, "%s->in ", sram_spice_model->prefix); /* Input*/
+      fprintf(fp, "%s[%d]->out %s[%d]->outb ", 
+              sram_spice_model->prefix, cur_sram, sram_spice_model->prefix, cur_sram); /* Outputs */
+      fprintf(fp, "gvdd_sram_luts sgnd %s\n", sram_spice_model->name);  //
+      /* Add nodeset to help convergence */ 
+      fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, cur_sram);
+      fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, cur_sram);
+      cur_sram++;
+    }
+    break;
+  case SPICE_SRAM_SCAN_CHAIN: 
+    for (i = 0; i < num_sram; i++) {
+      fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, cur_sram); /* SRAM subckts*/
+      fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, cur_sram); /* Input*/
+      fprintf(fp, "%s[%d]->out %s[%d]->outb ", 
+              sram_spice_model->prefix, cur_sram, sram_spice_model->prefix, cur_sram); /* Outputs */
+      fprintf(fp, "sc_clk sc_rst sc_set \n");  //
+      fprintf(fp, "gvdd_sram_luts sgnd %s\n", sram_spice_model->name);  //
+      /* Add nodeset to help convergence */ 
+      fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, cur_sram);
+      fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, cur_sram);
+      /* Connect to the tail of previous Scan-chain FF*/
+      fprintf(fp,"R%s[%d]_short %s[%d]->out %s[%d]->in 0\n", 
+              sram_spice_model->prefix, cur_sram,
+              sram_spice_model->prefix, cur_sram,
+              sram_spice_model->prefix, cur_sram + 1);
+      /* Specify this is a global signal*/
+      fprintf(fp, ".global %s[%d]->in\n", sram_spice_model->prefix, cur_sram);
+      cur_sram++;
+    }
+    /* Specify the head and tail of the scan-chain of this LUT */
+    fprintf(fp,"R%s[%d]_sc_head %s[%d]_sc_head %s[%d]->in 0\n", 
+            spice_model->prefix, spice_model->cnt, 
+            spice_model->prefix, spice_model->cnt, 
+            sram_spice_model->prefix, sram_spice_model->cnt);
+    fprintf(fp,"R%s[%d]_sc_tail %s[%d]_sc_tail %s[%d]->in 0\n", 
+            spice_model->prefix, spice_model->cnt, 
+            spice_model->prefix, spice_model->cnt, 
+            sram_spice_model->prefix, cur_sram);
+    fprintf(fp,".global %s[%d]_sc_head %s[%d]_sc_tail\n",
+            spice_model->prefix, spice_model->cnt, 
+            spice_model->prefix, spice_model->cnt);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Invalid SRAM organization type!\n",
+               __FILE__, __LINE__);
+    exit(1);
   }
 
   /* Call LUT subckt*/
-  fprintf(fp, "X%s[%d] ", spice_model->name, spice_model->cnt);
+  fprintf(fp, "X%s[%d] ", spice_model->prefix, spice_model->cnt);
   /* Connect inputs*/ 
   /* Connect outputs*/
   fprint_pb_type_ports(fp, port_prefix, 0, cur_pb_type); 

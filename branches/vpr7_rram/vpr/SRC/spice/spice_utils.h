@@ -83,6 +83,10 @@ int* decode_tree_mux_sram_bits(int fan_in,
                                int mux_level,
                                int path_id);
 
+void decode_cmos_mux_sram_bits(t_spice_model* mux_spice_model,
+                               int mux_size, int path_id, 
+                               int* bit_len, int** conf_bits, int* mux_level);
+
 char** my_strtok(char* str, 
                  char* delims, 
                  int* len);
@@ -94,6 +98,9 @@ void init_spice_net_info(t_spice_net_info* spice_net_info);
 
 t_spice_model* find_inpad_spice_model(int num_spice_model,
                                       t_spice_model* spice_models);
+
+t_spice_model* find_outpad_spice_model(int num_spice_model,
+                                       t_spice_model* spice_models);
 
 char* generate_string_spice_model_type(enum e_spice_model_type spice_model_type);
 
@@ -172,6 +179,11 @@ void auto_select_num_sim_clock_cycle(t_spice* spice);
 
 void alloc_spice_model_grid_index_low_high(t_spice_model* cur_spice_model);
 
+void free_one_spice_model_grid_index_low_high(t_spice_model* cur_spice_model);
+
+void free_spice_model_grid_index_low_high(int num_spice_models, 
+                                          t_spice_model* spice_model);
+
 void update_one_spice_model_grid_index_low(int x, int y, 
                                            t_spice_model* cur_spice_model);
 
@@ -185,6 +197,11 @@ void update_one_spice_model_grid_index_high(int x, int y,
 void update_spice_models_grid_index_high(int x, int y, 
                                         int num_spice_models, 
                                         t_spice_model* spice_model);
+
+void zero_one_spice_model_grid_index_low_high(t_spice_model* cur_spice_model);
+
+void zero_spice_model_grid_index_low_high(int num_spice_models, 
+                                          t_spice_model* spice_model);
 
 char* gen_str_spice_model_structure(enum e_spice_model_structure spice_model_structure);
 
@@ -218,3 +235,69 @@ int is_sb_interc_between_segments(int switch_box_x,
                                   int switch_box_y, 
                                   t_rr_node* src_rr_node, 
                                   int chan_side);
+
+int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
+                                        int mux_size);
+
+int count_num_conf_bit_one_interc(t_interconnect* cur_interc);
+
+int count_num_conf_bits_pb_type_default_mode_interc(t_mode* cur_pb_type_default_mode);
+
+int rec_count_num_conf_bits_pb_type_default_mode(t_pb_type* cur_pb_type);
+
+int rec_count_num_conf_bits_pb(t_pb* cur_pb);
+
+void init_one_grid_num_conf_bits(int ix, int iy);
+
+void init_grids_num_conf_bits();
+
+void zero_spice_models_cnt(int num_spice_models, t_spice_model* spice_model);
+
+void zero_one_spice_model_routing_index_low_high(t_spice_model* cur_spice_model);
+
+void zero_spice_models_routing_index_low_high(int num_spice_models, 
+                                              t_spice_model* spice_model);
+
+void alloc_spice_model_routing_index_low_high(t_spice_model* cur_spice_model);
+
+void free_one_spice_model_routing_index_low_high(t_spice_model* cur_spice_model);
+
+void free_spice_model_routing_index_low_high(int num_spice_models, 
+                                             t_spice_model* spice_model);
+
+void update_one_spice_model_routing_index_high(int x, int y, 
+                                               t_spice_model* cur_spice_model);
+
+void update_spice_models_routing_index_high(int x, int y, 
+                                            int num_spice_models, 
+                                            t_spice_model* spice_model);
+
+void update_one_spice_model_routing_index_low(int x, int y, 
+                                               t_spice_model* cur_spice_model);
+
+void update_spice_models_routing_index_low(int x, int y, 
+                                           int num_spice_models, 
+                                           t_spice_model* spice_model);
+
+void rec_count_num_iopads_pb_type_default_mode(t_pb_type* cur_pb_type);
+
+void rec_count_num_iopads_pb(t_pb* cur_pb);
+
+void init_one_grid_num_iopads(int ix, int iy);
+
+void init_grids_num_iopads();
+
+void check_sram_spice_model_ports(t_spice_model* cur_spice_model,
+                                  boolean include_bl_wl);
+
+void check_ff_spice_model_ports(t_spice_model* cur_spice_model,
+                                boolean is_scff);
+
+t_conf_bit_info*  
+alloc_one_conf_bit_info(int index, int sram_val, int bl_val, int wl_val,
+                        t_spice_model* parent_spice_model);
+
+t_llist* 
+add_conf_bit_info_to_llist(t_llist* head,
+                           int index, int sram_val, int bl_val, int wl_val,
+                           t_spice_model* parent_spice_model);

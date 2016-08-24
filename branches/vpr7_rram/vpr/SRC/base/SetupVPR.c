@@ -73,7 +73,7 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 		t_power_opts * PowerOpts,
         /*Xifan TANG: Switch Segment Pattern Support*/
         t_swseg_pattern_inf** swseg_patterns,
-        t_spice_opts* SpiceOpts) {
+        t_spice_opts* SpiceOpts, t_syn_verilog_opts* SynVerilogOpts) {
 	int i, j, len;
 
 	len = strlen(Options->CircuitName) + 6; /* circuit_name.blif/0*/
@@ -952,6 +952,8 @@ static void SetupSpiceOpts(t_options Options,
   spice_opts->print_spice_pb_mux_testbench = FALSE;
   spice_opts->print_spice_cb_mux_testbench = FALSE;
   spice_opts->print_spice_sb_mux_testbench = FALSE;
+  spice_opts->print_spice_cb_testbench = FALSE;
+  spice_opts->print_spice_sb_testbench = FALSE;
   spice_opts->print_spice_lut_testbench = FALSE;
   spice_opts->print_spice_dff_testbench = FALSE;
   spice_opts->print_spice_grid_testbench = FALSE;
@@ -977,6 +979,12 @@ static void SetupSpiceOpts(t_options Options,
     if (Options.Count[OT_PRINT_SPICE_SB_MUX_TESTBENCH]) {
       spice_opts->print_spice_sb_mux_testbench = TRUE;
     }
+    if (Options.Count[OT_PRINT_SPICE_CB_TESTBENCH]) {
+      spice_opts->print_spice_cb_testbench = TRUE;
+    }
+    if (Options.Count[OT_PRINT_SPICE_SB_TESTBENCH]) {
+      spice_opts->print_spice_sb_testbench = TRUE;
+    }
     if (Options.Count[OT_PRINT_SPICE_GRID_TESTBENCH]) {
       spice_opts->print_spice_grid_testbench = TRUE;
     }
@@ -1000,6 +1008,8 @@ static void SetupSpiceOpts(t_options Options,
     &&(FALSE == spice_opts->print_spice_pb_mux_testbench)
     &&(FALSE == spice_opts->print_spice_cb_mux_testbench)
     &&(FALSE == spice_opts->print_spice_sb_mux_testbench)
+    &&(FALSE == spice_opts->print_spice_cb_testbench)
+    &&(FALSE == spice_opts->print_spice_sb_testbench)
     &&(FALSE == spice_opts->print_spice_lut_testbench)
     &&(FALSE == spice_opts->print_spice_dff_testbench)) {
     spice_opts->print_spice_pb_mux_testbench = TRUE;

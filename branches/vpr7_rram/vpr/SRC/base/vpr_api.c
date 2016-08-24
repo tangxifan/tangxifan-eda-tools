@@ -171,13 +171,15 @@ void vpr_print_usage(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "\t--print_spice_pb_mux_testbench\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--print_spice_cb_mux_testbench\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--print_spice_sb_mux_testbench\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--print_spice_cb_testbench\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--print_spice_sb_testbench\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--print_spice_grid_testbench\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_leakage_only\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_parasitic_net_estimation_off\n");
     /* Xifan TANG: Synthesizable Verilog Dump*/
 	vpr_printf(TIO_MESSAGE_INFO, "Dump synthesizable verilog files Options:\n");
-	vpr_printf(TIO_MESSAGE_INFO, "--fpga_syn_verilog\n");
-	vpr_printf(TIO_MESSAGE_INFO, "--fpga_syn_verilog_dir <directory_path_of_dumped_verilog_files>\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_syn_verilog\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_syn_verilog_dir <directory_path_of_dumped_verilog_files>\n");
 }
 
 /* Initialize VPR 
@@ -452,6 +454,8 @@ void vpr_pack(INP t_vpr_setup vpr_setup, INP t_arch arch) {
 #else
 	vpr_printf(TIO_MESSAGE_INFO, "Packing took %g seconds.\n", (float)(end - begin) / CLK_PER_SEC);
 #endif
+    /* Xifan TANG: print the run time of packing placement */
+	vpr_printf(TIO_MESSAGE_INFO, "Packing routing took %g seconds.\n", pack_route_time);
 	fflush(stdout);
 }
 
@@ -850,11 +854,13 @@ void vpr_setup_vpr(INP t_options *Options, INP boolean TimingEnabled,
         /*Xifan TANG: Switch Segment Pattern Support*/
         OUTP t_swseg_pattern_inf** swseg_patterns,
         /* Xifan TANG: SPICE Support*/
-        OUTP t_spice_opts* SpiceOpts) {
+        OUTP t_spice_opts* SpiceOpts,
+        /* Xifan TANG: Synthesizable verilog dumping Support*/
+        OUTP t_syn_verilog_opts* SynVerilogOpts) {
 	SetupVPR(Options, TimingEnabled, readArchFile, FileNameOpts, Arch,
 			Operation, user_models, library_models, PackerOpts, PlacerOpts,
 			AnnealSched, RouterOpts, RoutingArch, Segments, Timing,
-			ShowGraphics, GraphPause, PowerOpts, swseg_patterns,SpiceOpts);
+			ShowGraphics, GraphPause, PowerOpts, swseg_patterns, SpiceOpts, SynVerilogOpts);
 }
 /* Check inputs are reasonable */
 void vpr_check_options(INP t_options Options, INP boolean TimingEnabled) {

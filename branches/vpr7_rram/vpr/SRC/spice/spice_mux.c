@@ -29,9 +29,6 @@
 #include "spice_mux.h"
 
 /***** Subroutines *****/
-void init_spice_mux_arch(t_spice_mux_arch* spice_mux_arch,
-                         int mux_size);
-
 void fprint_spice_mux_model_basis_cmos_subckt(FILE* fp,
                                         char* subckt_name,
                                         t_spice_model spice_model);
@@ -55,11 +52,6 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
 
 void fprint_spice_mux_model_subckt(FILE* fp,
                                    t_spice_mux_model* spice_mux_model);
-
-t_llist* stats_spice_muxes(int num_switch,
-                           t_switch_inf* switches,
-                           t_spice* spice,
-                           t_det_routing_arch* routing_arch);
 
 
 /***** Subroutines *****/
@@ -407,6 +399,13 @@ void fprint_spice_mux_model_basis_subckt(FILE* fp,
   /* Generate the spice_mux_arch */
   spice_mux_model->spice_mux_arch = (t_spice_mux_arch*)my_malloc(sizeof(t_spice_mux_arch));
   init_spice_mux_arch(spice_mux_model->spice_model, spice_mux_model->spice_mux_arch, spice_mux_model->size);
+
+  /* Corner case: Error out  MUX_SIZE = 2, automatcially give a one-level structure */
+  if ((2 == spice_mux_model->size)&&(SPICE_MODEL_STRUCTURE_ONELEVEL != spice_mux_model->spice_model->structure)) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Structure of SPICE model (%s) should be one-level because it is linked to a 2:1 MUX!\n",
+               __FILE__, __LINE__, spice_mux_model->spice_model->name);
+    exit(1);
+  }
 
   /* Prepare the basis subckt name */
   mux_basis_subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_mux_model->spice_model->name) + 5 
@@ -885,7 +884,6 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
   assert(1 == num_sram_port);
   assert(1 == output_port[0]->size);
 
-  /* Print the definition of subckt*/
   if (SPICE_MODEL_LUT == spice_model.type) {
     /* Special for LUT MUX*/
     fprintf(fp, "***** CMOS MUX info: spice_model_name= %s_MUX, size=%d *****\n", spice_model.name, mux_size);
@@ -1297,6 +1295,15 @@ void fprint_spice_mux_model_subckt(FILE* fp,
     exit(1);
   }
 
+  /* Corner case: Error out  MUX_SIZE = 2, automatcially give a one-level structure */
+  if ((2 == spice_mux_model->size)&&(SPICE_MODEL_STRUCTURE_ONELEVEL != spice_mux_model->spice_model->structure)) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Structure of SPICE model (%s) should be one-level because it is linked to a 2:1 MUX!\n",
+               __FILE__, __LINE__, spice_mux_model->spice_model->name);
+    exit(1);
+  }
+
+  /* Print the definition of subckt*/
+
   /* Check the design technology*/
   switch (spice_mux_model->spice_model->design_tech) {
   case SPICE_MODEL_DESIGN_CMOS:
@@ -1351,9 +1358,14 @@ t_llist* stats_spice_muxes(int num_switch,
    */
   /* update_rr_nodes_driver_switch(routing_arch->directionality); */
   for (inode = 0; inode < num_rr_nodes; inode++) {
+    if (0 == rr_node[inode].fan_in) {
+      assert(0 == rr_node[inode].num_drive_rr_nodes);
+      assert(NULL == rr_node[inode].drive_switches);
+      continue;
+    }
     rr_node[inode].driver_switch = rr_node[inode].drive_switches[0];
-    for (iedge = 0; iedge < rr_node[inode].num_driver_nodes; iedge++) {
-     assert (rr_node[inode].driver_switch == rr_node[inode].drive_switches[iedge]);
+    for (iedge = 0; iedge < rr_node[inode].num_drive_rr_nodes; iedge++) {
+      assert (rr_node[inode].driver_switch == rr_node[inode].drive_switches[iedge]);
     }
   }
   /* Count the sizes of muliplexers in routing architecture */  

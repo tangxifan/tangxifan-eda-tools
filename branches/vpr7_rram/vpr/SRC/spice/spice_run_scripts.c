@@ -66,10 +66,10 @@ void fprint_run_hspice_shell_script(t_spice spice,
   } 
 
   /* Go to the subckt dir for HSPICE VerilogA sim*/
-  fprintf(fp, "cd %s\n", subckt_dir_path);
 
   /* For VerilogA initilization */
   if (1 == rram_design_tech) {
+    fprintf(fp, "cd %s\n", subckt_dir_path);
     fprintf(fp, "source /softs/synopsys/hspice/2013.12/hspice/bin/cshrc.meta\n");
   }
 
@@ -92,6 +92,7 @@ void fprint_run_hspice_shell_script(t_spice spice,
     fprintf(fp, "echo Simulation progress: %d Finish, %d to go, total %d\n",
             progress_cnt, total_num_sim-progress_cnt, total_num_sim);
     progress_cnt++;
+   
     fprintf(fp, "hspice64 -mt 8 -i %s -o %s%s.lis ", 
             testbench_file, sim_results_dir_path, chomped_testbench_name);
     temp = temp->next;
@@ -105,7 +106,9 @@ void fprint_run_hspice_shell_script(t_spice spice,
   fprintf(fp, "echo Simulation progress: %d Finish, %d to go, total %d\n",
           progress_cnt, total_num_sim-progress_cnt, total_num_sim);
 
-  fprintf(fp, "cd %s\n", spice_dir_path);
+  if (1 == rram_design_tech) {
+    fprintf(fp, "cd %s\n", spice_dir_path);
+  }
 
   /* close fp */
   fclose(fp);

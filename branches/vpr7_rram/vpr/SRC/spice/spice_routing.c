@@ -85,12 +85,36 @@ void fprint_routing_chan_subckt(FILE* fp,
    */
   fprintf(fp, "+ ");
   for (itrack = 0; itrack < chan_width; itrack++) {
-    fprintf(fp, "in%d ", itrack);
+    switch (chan_rr_nodes[itrack]->direction) {
+    case INC_DIRECTION:
+      fprintf(fp, "in%d ", itrack); /* INC_DIRECTION: input on the left/bottom side */
+      break;
+    case DEC_DIRECTION:
+      fprintf(fp, "out%d ", itrack); /* DEC_DIRECTION: output on the left/bottom side*/
+      break;
+    case BI_DIRECTION:
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of %s[%d][%d]_track[%d]!\n",
+                 __FILE__, __LINE__, chan_prefix, x, y, itrack);
+      exit(1);
+    }
   }
   fprintf(fp, "\n");
   fprintf(fp, "+ ");
   for (itrack = 0; itrack < chan_width; itrack++) {
-    fprintf(fp, "out%d ", itrack);
+    switch (chan_rr_nodes[itrack]->direction) {
+    case INC_DIRECTION:
+      fprintf(fp, "out%d ", itrack); /* INC_DIRECTION: output on the right/top side*/
+      break;
+    case DEC_DIRECTION:
+      fprintf(fp, "in%d ", itrack); /* DEC_DIRECTION: input on the right/top side */
+      break;
+    case BI_DIRECTION:
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of rr_node %s[%d][%d]_track[%d]!\n",
+                 __FILE__, __LINE__, chan_prefix, x, y, itrack);
+      exit(1);
+    }
   }
   fprintf(fp, "\n");
   fprintf(fp, "+ ");
@@ -307,11 +331,11 @@ void determine_src_chan_coordinate_switch_box(t_rr_node* src_rr_node,
     if ((INC_DIRECTION == src_rr_node->direction)&&(CHANY == src_rr_node->type)) {
       (*src_chan_x) = switch_box_x;
       (*src_chan_y) = switch_box_y;
-      (*src_chan_port_name) = "out";
+      (*src_chan_port_name) = "in";
     } else if ((INC_DIRECTION == src_rr_node->direction)&&(CHANX == src_rr_node->type)) {
       (*src_chan_x) = switch_box_x;
       (*src_chan_y) = switch_box_y;
-      (*src_chan_port_name) = "out";
+      (*src_chan_port_name) = "in";
     } else if ((DEC_DIRECTION == src_rr_node->direction)&&(CHANX == src_rr_node->type)) {
       (*src_chan_x) = switch_box_x + 1;
       (*src_chan_y) = switch_box_y;
@@ -336,11 +360,11 @@ void determine_src_chan_coordinate_switch_box(t_rr_node* src_rr_node,
     } else if ((INC_DIRECTION == src_rr_node->direction)&&(CHANX == src_rr_node->type)) {
       (*src_chan_x) = switch_box_x;
       (*src_chan_y) = switch_box_y;
-      (*src_chan_port_name) = "out";
+      (*src_chan_port_name) = "in";
     } else if ((INC_DIRECTION == src_rr_node->direction)&&(CHANY == src_rr_node->type)) {
       (*src_chan_x) = switch_box_x;
       (*src_chan_y) = switch_box_y;
-      (*src_chan_port_name) = "out";
+      (*src_chan_port_name) = "in";
     } else {
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid source channel!\n", __FILE__, __LINE__);
       exit(1);
@@ -361,7 +385,7 @@ void determine_src_chan_coordinate_switch_box(t_rr_node* src_rr_node,
     } else if ((INC_DIRECTION == src_rr_node->direction)&&(CHANX == src_rr_node->type)) {
       (*src_chan_x) = switch_box_x;
       (*src_chan_y) = switch_box_y;
-      (*src_chan_port_name) = "out";
+      (*src_chan_port_name) = "in";
     } else if ((DEC_DIRECTION == src_rr_node->direction)&&(CHANX == src_rr_node->type)) {
       (*src_chan_x) = switch_box_x + 1;
       (*src_chan_y) = switch_box_y;
@@ -386,7 +410,7 @@ void determine_src_chan_coordinate_switch_box(t_rr_node* src_rr_node,
     } else if ((INC_DIRECTION == src_rr_node->direction)&&(CHANY == src_rr_node->type)) {
       (*src_chan_x) = switch_box_x;
       (*src_chan_y) = switch_box_y;
-      (*src_chan_port_name) = "out";
+      (*src_chan_port_name) = "in";
     } else if ((DEC_DIRECTION == src_rr_node->direction)&&(CHANY == src_rr_node->type)) {
       (*src_chan_x) = switch_box_x;
       (*src_chan_y) = switch_box_y + 1;
@@ -426,12 +450,12 @@ void fprint_switch_box_chan_port(FILE* fp,
   case 0: /*TOP*/
     /* The destination rr_node only have one condition!!! */
     assert((INC_DIRECTION == cur_rr_node->direction)&&(CHANY == cur_rr_node->type));
-    fprintf(fp, "chany[%d][%d]_in[%d] ", switch_box_x, switch_box_y + 1, cur_rr_node->ptc_num);
+    fprintf(fp, "chany[%d][%d]_out[%d] ", switch_box_x, switch_box_y + 1, cur_rr_node->ptc_num);
     break;
   case 1: /*RIGHT*/
     /* The destination rr_node only have one condition!!! */
     assert((INC_DIRECTION == cur_rr_node->direction)&&(CHANX == cur_rr_node->type));
-    fprintf(fp, "chanx[%d][%d]_in[%d] ", switch_box_x + 1, switch_box_y, cur_rr_node->ptc_num);
+    fprintf(fp, "chanx[%d][%d]_out[%d] ", switch_box_x + 1, switch_box_y, cur_rr_node->ptc_num);
     break;
   case 2: /*BOTTOM*/
     /* The destination rr_node only have one condition!!! */
@@ -509,7 +533,7 @@ void fprint_switch_box_short_interc(FILE* fp,
     exit(1);
   }
 
-  fprintf(fp, "V%s[%d][%d]_%s[%d] ", 
+  fprintf(fp, "R%s[%d][%d]_%s[%d] ", 
           chan_name, switch_box_x, switch_box_y, des_chan_port_name, cur_rr_node->ptc_num);
 
   /* Check the driver*/
@@ -770,18 +794,58 @@ void fprint_switch_box_mux(FILE* fp,
   fprintf(fp, "*****\n");
 
   /* Call SRAM subckts*/
-  for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
-    fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, sram_spice_model->cnt);
-    /*fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, sram_spice_model->cnt);*/
-    fprintf(fp, "%s->in ", sram_spice_model->prefix); /* Input*/
-    fprintf(fp, "%s[%d]->out ", sram_spice_model->prefix, sram_spice_model->cnt);
-    fprintf(fp, "%s[%d]->outb ", sram_spice_model->prefix, sram_spice_model->cnt);
-    fprintf(fp, "gvdd_sram_sbs sgnd %s\n", sram_spice_model->name);
-    /* Add nodeset to help convergence */ 
-    fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, sram_spice_model->cnt);
-    fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, sram_spice_model->cnt);
-    /* Pull Up/Down the SRAM outputs*/
-    sram_spice_model->cnt++;
+  switch (sram_orgz_type) {
+  case SPICE_SRAM_STANDALONE:
+  case SPICE_SRAM_MEMORY_BANK:
+    for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
+      fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, sram_spice_model->cnt);
+      /*fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, sram_spice_model->cnt);*/
+      fprintf(fp, "%s->in ", sram_spice_model->prefix); /* Input*/
+      fprintf(fp, "%s[%d]->out ", sram_spice_model->prefix, sram_spice_model->cnt);
+      fprintf(fp, "%s[%d]->outb ", sram_spice_model->prefix, sram_spice_model->cnt);
+      fprintf(fp, "gvdd_sram_sbs sgnd %s\n", sram_spice_model->name);
+      /* Add nodeset to help convergence */ 
+      fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, sram_spice_model->cnt);
+      fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, sram_spice_model->cnt);
+      /* Pull Up/Down the SRAM outputs*/
+      sram_spice_model->cnt++;
+    }
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+    for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
+      fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, sram_spice_model->cnt);
+      fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, sram_spice_model->cnt); /* Input*/
+      fprintf(fp, "%s[%d]->out ", sram_spice_model->prefix, sram_spice_model->cnt);
+      fprintf(fp, "%s[%d]->outb ", sram_spice_model->prefix, sram_spice_model->cnt);
+      fprintf(fp, "sc_clk sc_rst sc_set \n");
+      fprintf(fp, "gvdd_sram_sbs sgnd %s\n", sram_spice_model->name);
+      /* Add nodeset to help convergence */ 
+      fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, sram_spice_model->cnt);
+      fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, sram_spice_model->cnt);
+      /* Connect to the tail of previous Scan-chain FF*/
+      fprintf(fp,"R%s[%d]_short %s[%d]->out %s[%d]->in 0\n", 
+              sram_spice_model->prefix, sram_spice_model->cnt, 
+              sram_spice_model->prefix, sram_spice_model->cnt, 
+              sram_spice_model->prefix, sram_spice_model->cnt + 1);
+      /* Specify this is a global signal*/
+      fprintf(fp, ".global %s[%d]->in\n", sram_spice_model->prefix, sram_spice_model->cnt);
+      /* Pull Up/Down the SRAM outputs*/
+      sram_spice_model->cnt++;
+    }
+    /* Specify the head and tail of the scan-chain of this MUX */
+    fprintf(fp,"R%s[%d]_sc_head %s[%d]_sc_head %s[%d]->in 0\n", 
+            spice_model->prefix, spice_model->cnt, 
+            spice_model->prefix, spice_model->cnt,
+             sram_spice_model->prefix, sram_spice_model->cnt - num_mux_sram_bits);
+    fprintf(fp,"R%s[%d]_sc_tail %s[%d]_sc_tail %s[%d]->in 0\n", 
+            spice_model->prefix, spice_model->cnt, 
+            spice_model->prefix, spice_model->cnt, 
+            sram_spice_model->prefix, sram_spice_model->cnt);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Invalid SRAM organization type!\n",
+               __FILE__, __LINE__);
+    exit(1);
   }
 
   /* Free */
@@ -874,6 +938,14 @@ void fprint_switch_box_interc(FILE* fp,
  *    |   [x][y]   |  [x][y]  |  [x+1][y]  |
  *    |            |          |            |
  *    --------------          --------------
+ * For channels chanY with INC_DIRECTION on the top side, they should be marked as outputs
+ * For channels chanY with DEC_DIRECTION on the top side, they should be marked as inputs
+ * For channels chanY with INC_DIRECTION on the bottom side, they should be marked as inputs
+ * For channels chanY with DEC_DIRECTION on the bottom side, they should be marked as outputs
+ * For channels chanX with INC_DIRECTION on the left side, they should be marked as inputs
+ * For channels chanX with DEC_DIRECTION on the left side, they should be marked as outputs
+ * For channels chanX with INC_DIRECTION on the right side, they should be marked as outputs
+ * For channels chanX with DEC_DIRECTION on the right side, they should be marked as inputs
  */
 void fprint_routing_switch_box_subckt(FILE* fp, 
                                       int x, 
@@ -995,25 +1067,73 @@ void fprint_routing_switch_box_subckt(FILE* fp,
   fprintf(fp, "+ ");
   /* 1. Channel Y [x][y+1] inputs */
   for (itrack = 0; itrack < chan_width[0]; itrack++) {
-    fprintf(fp, "chany[%d][%d]_in[%d] ", x, y + 1, itrack);
+    switch (chan_rr_nodes[0][itrack]->direction) {
+    case INC_DIRECTION:
+      fprintf(fp, "chany[%d][%d]_out[%d] ", x, y + 1, itrack); /* For SB: this is an output */
+      break;
+    case DEC_DIRECTION:
+      fprintf(fp, "chany[%d][%d]_in[%d] ", x, y + 1, itrack); /* For SB: this is an input */
+      break;
+    case BI_DIRECTION:
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of chany[%d][%d]_track[%d]!\n",
+                 __FILE__, __LINE__, x, y + 1, itrack);
+      exit(1);
+    }
   }
   fprintf(fp, "\n");
   fprintf(fp, "+ ");
   /* 2. Channel X [x+1][y] inputs */
   for (itrack = 0; itrack < chan_width[1]; itrack++) {
-    fprintf(fp, "chanx[%d][%d]_in[%d] ", x + 1, y, itrack);
+    switch (chan_rr_nodes[1][itrack]->direction) {
+    case INC_DIRECTION:
+      fprintf(fp, "chanx[%d][%d]_out[%d] ", x + 1, y, itrack); /* For SB: this is an output */
+      break;
+    case DEC_DIRECTION:
+      fprintf(fp, "chanx[%d][%d]_in[%d] ", x + 1, y, itrack); /* For SB: this is an input */
+      break;
+    case BI_DIRECTION:
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of chanx[%d][%d]_track[%d]!\n",
+                 __FILE__, __LINE__, x + 1, y, itrack);
+      exit(1);
+    }
   }
   fprintf(fp, "\n");
   fprintf(fp, "+ ");
   /* 3. Channel Y [x][y] outputs */
   for (itrack = 0; itrack < chan_width[2]; itrack++) {
-    fprintf(fp, "chany[%d][%d]_out[%d] ", x, y, itrack);
+    switch (chan_rr_nodes[2][itrack]->direction) {
+    case INC_DIRECTION:
+      fprintf(fp, "chany[%d][%d]_in[%d] ", x, y, itrack); /* For SB: this is an input */
+      break;
+    case DEC_DIRECTION:
+      fprintf(fp, "chany[%d][%d]_out[%d] ", x, y, itrack); /* For SB: this is an output */
+      break;
+    case BI_DIRECTION:
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of chany[%d][%d]_track[%d]!\n",
+                 __FILE__, __LINE__, x, y, itrack);
+      exit(1);
+    }
   }
   fprintf(fp, "\n");
   fprintf(fp, "+ ");
   /* 4. Channel X [x][y] outputs */
   for (itrack = 0; itrack < chan_width[3]; itrack++) {
-    fprintf(fp, "chanx[%d][%d]_out[%d] ", x, y, itrack);
+    switch (chan_rr_nodes[3][itrack]->direction) {
+    case INC_DIRECTION:
+      fprintf(fp, "chanx[%d][%d]_out[%d] ", x, y, itrack); /* For SB: this is an input */
+      break;
+    case DEC_DIRECTION:
+      fprintf(fp, "chanx[%d][%d]_out[%d] ", x, y, itrack); /* For SB: this is an output */
+      break;
+    case BI_DIRECTION:
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of chanx[%d][%d]_track[%d]!\n",
+                 __FILE__, __LINE__, x, y, itrack);
+      exit(1);
+    }
   }
   fprintf(fp, "\n");
   fprintf(fp, "+ ");
@@ -1071,6 +1191,13 @@ void fprint_routing_switch_box_subckt(FILE* fp,
 
   /* Local Vdd and Gnd */
   fprintf(fp, "svdd sgnd\n");
+
+  /* Specify the head of scan-chain */
+  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+    fprintf(fp, "***** Head of scan-chain *****\n");
+    fprintf(fp, "Rsb[%d][%d]_sc_head sb[%d][%d]_sc_head %s[%d]->in 0\n",
+            x, y, x, y, sram_spice_model->prefix, sram_spice_model->cnt);
+  }
 
   /* Put down all the multiplexers */
   for (side = 0; side < 4; side++) {
@@ -1140,6 +1267,13 @@ void fprint_routing_switch_box_subckt(FILE* fp,
       exit(1);
     }
   }
+
+  /* Specify the tail of scan-chain */
+  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+    fprintf(fp, "***** Tail of scan-chain *****\n");
+    fprintf(fp, "Rsb[%d][%d]_sc_tail sb[%d][%d]_sc_tail %s[%d]->in 0\n",
+            x, y, x, y, sram_spice_model->prefix, sram_spice_model->cnt);
+  }
  
   fprintf(fp, ".eom\n");
 
@@ -1193,10 +1327,10 @@ void fprint_connection_box_short_interc(FILE* fp,
   /* Call the zero-resistance model */
   switch(chan_type) {
   case CHANX:
-    fprintf(fp, "Vcbx[%d][%d]_grid[%d][%d]_pin[%d] ", cb_x, cb_y, xlow, ylow + height, src_rr_node->ptc_num);
+    fprintf(fp, "Rcbx[%d][%d]_grid[%d][%d]_pin[%d] ", cb_x, cb_y, xlow, ylow + height, src_rr_node->ptc_num);
     break;
   case CHANY:
-    fprintf(fp, "Vcby[%d][%d]_grid[%d][%d]_pin[%d] ", cb_x, cb_y, xlow, ylow + height, src_rr_node->ptc_num);
+    fprintf(fp, "Rcby[%d][%d]_grid[%d][%d]_pin[%d] ", cb_x, cb_y, xlow, ylow + height, src_rr_node->ptc_num);
     break;
   default: 
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
@@ -1435,17 +1569,56 @@ void fprint_connection_box_mux(FILE* fp,
   fprintf(fp, "*****\n");
 
   /* Call SRAM subckts*/
-  for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
-    fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, sram_spice_model->cnt);
-    /*fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, sram_spice_model->cnt);*/
-    fprintf(fp, "%s->in ", sram_spice_model->prefix); /* Input*/
-    fprintf(fp, "%s[%d]->out ", sram_spice_model->prefix, sram_spice_model->cnt);
-    fprintf(fp, "%s[%d]->outb ", sram_spice_model->prefix, sram_spice_model->cnt);
-    fprintf(fp, "gvdd_sram_cbs sgnd %s\n", sram_spice_model->name);
-    /* Add nodeset to help convergence */ 
-    fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, sram_spice_model->cnt);
-    fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, sram_spice_model->cnt);
-    sram_spice_model->cnt++;
+  switch (sram_orgz_type) {
+  case SPICE_SRAM_STANDALONE:
+  case SPICE_SRAM_MEMORY_BANK:
+    for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
+      fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, sram_spice_model->cnt);
+      /*fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, sram_spice_model->cnt);*/
+      fprintf(fp, "%s->in ", sram_spice_model->prefix); /* Input*/
+      fprintf(fp, "%s[%d]->out ", sram_spice_model->prefix, sram_spice_model->cnt);
+      fprintf(fp, "%s[%d]->outb ", sram_spice_model->prefix, sram_spice_model->cnt);
+      fprintf(fp, "gvdd_sram_cbs sgnd %s\n", sram_spice_model->name);
+      /* Add nodeset to help convergence */ 
+      fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, sram_spice_model->cnt);
+      fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, sram_spice_model->cnt);
+      sram_spice_model->cnt++;
+    }
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+    for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
+      fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, sram_spice_model->cnt);
+      fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, sram_spice_model->cnt); /* Input*/
+      fprintf(fp, "%s[%d]->out ", sram_spice_model->prefix, sram_spice_model->cnt);
+      fprintf(fp, "%s[%d]->outb ", sram_spice_model->prefix, sram_spice_model->cnt);
+      fprintf(fp, "sc_clk sc_rst sc_set \n");
+      fprintf(fp, "gvdd_sram_cbs sgnd %s\n", sram_spice_model->name);
+      /* Add nodeset to help convergence */ 
+      fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, sram_spice_model->cnt);
+      fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, sram_spice_model->cnt);
+      /* Connect to the tail of previous Scan-chain FF*/
+      fprintf(fp,"R%s[%d]_short %s[%d]->out %s[%d]->in 0\n", 
+              sram_spice_model->prefix, sram_spice_model->cnt, 
+              sram_spice_model->prefix, sram_spice_model->cnt, 
+              sram_spice_model->prefix, sram_spice_model->cnt + 1);
+      /* Specify this is a global signal*/
+      fprintf(fp, ".global %s[%d]->in\n", sram_spice_model->prefix, sram_spice_model->cnt);
+      sram_spice_model->cnt++;
+    }
+    /* Specify the head and tail of the scan-chain of this MUX */
+    fprintf(fp,"R%s[%d]_sc_head %s[%d]_sc_head %s[%d]->in 0\n", 
+            mux_spice_model->prefix, mux_spice_model->cnt, 
+            mux_spice_model->prefix, mux_spice_model->cnt,
+            sram_spice_model->prefix, sram_spice_model->cnt - num_mux_sram_bits);
+    fprintf(fp,"R%s[%d]_sc_tail %s[%d]_sc_tail %s[%d]->in 0\n", 
+            mux_spice_model->prefix, mux_spice_model->cnt, 
+            mux_spice_model->prefix, mux_spice_model->cnt, 
+            sram_spice_model->prefix, sram_spice_model->cnt);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Invalid SRAM organization type!\n",
+               __FILE__, __LINE__);
+    exit(1);
   }
 
   /* Check SRAM counters */
@@ -1689,11 +1862,46 @@ void fprint_routing_connection_box_subckt(FILE* fp,
   /* subckt definition ends with svdd and sgnd*/
   fprintf(fp, "svdd sgnd\n");
 
+  /* Specify the head of scan-chain */
+  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+    switch(chan_type) {
+    case CHANX:
+      fprintf(fp, "***** Head of scan-chain *****\n");
+      fprintf(fp, "Rcbx[%d][%d]_sc_head cbx[%d][%d]_sc_head %s[%d]->in 0\n",
+              x, y, x, y, sram_spice_model->prefix, sram_spice_model->cnt);
+    case CHANY:
+      fprintf(fp, "***** Head of scan-chain *****\n");
+      fprintf(fp, "Rcby[%d][%d]_sc_head cby[%d][%d]_sc_head %s[%d]->in 0\n",
+              x, y, x, y, sram_spice_model->prefix, sram_spice_model->cnt);
+      break;
+    default: 
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
+      exit(1);
+    }
+  }
 
   /* Print multiplexers or direct interconnect*/
   for (inode = 0; inode < num_ipin_rr_node; inode++) {
     fprint_connection_box_interc(fp, ipin_rr_nodes[inode]->type, x, y, ipin_rr_nodes[inode]);
   } 
+
+  /* Specify the tail of scan-chain */
+  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+    switch(chan_type) {
+    case CHANX:
+      fprintf(fp, "***** Tail of scan-chain *****\n");
+      fprintf(fp, "Rcbx[%d][%d]_sc_tail cbx[%d][%d]_sc_tail %s[%d]->in 0\n",
+              x, y, x, y, sram_spice_model->prefix, sram_spice_model->cnt);
+    case CHANY:
+      fprintf(fp, "***** Tail of scan-chain *****\n");
+      fprintf(fp, "Rcby[%d][%d]_sc_tail cby[%d][%d]_sc_tail %s[%d]->in 0\n",
+              x, y, x, y, sram_spice_model->prefix, sram_spice_model->cnt);
+      break;
+    default: 
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
+      exit(1);
+    }
+  }
 
   fprintf(fp, ".eom\n");
 
@@ -1764,7 +1972,9 @@ void generate_spice_routing_resources(char* subckt_dir,
   vpr_printf(TIO_MESSAGE_INFO, "Writing Switch Boxes...\n");
   for (ix = 0; ix < (nx + 1); ix++) {
     for (iy = 0; iy < (ny + 1); iy++) {
+      update_spice_models_routing_index_low(ix, iy, arch.spice->num_spice_model, arch.spice->spice_models);
       fprint_routing_switch_box_subckt(fp, ix, iy, LL_rr_node_indices);
+      update_spice_models_routing_index_high(ix, iy, arch.spice->num_spice_model, arch.spice->spice_models);
     }
   }
 
@@ -1774,14 +1984,18 @@ void generate_spice_routing_resources(char* subckt_dir,
   for (iy = 0; iy < (ny + 1); iy++) {
     for (ix = 1; ix < (nx + 1); ix++) {
       chan_width = chan_width_x[iy];
+      update_spice_models_routing_index_low(ix, iy, arch.spice->num_spice_model, arch.spice->spice_models);
       fprint_routing_connection_box_subckt(fp, CHANX, ix, iy, chan_width, LL_rr_node_indices);
+      update_spice_models_routing_index_high(ix, iy, arch.spice->num_spice_model, arch.spice->spice_models);
     }
   }
   /* Y - channels [1...ny][0..nx]*/
   for (ix = 0; ix < (nx + 1); ix++) {
     for (iy = 1; iy < (ny + 1); iy++) {
       chan_width = chan_width_y[ix];
+      update_spice_models_routing_index_low(ix, iy, arch.spice->num_spice_model, arch.spice->spice_models);
       fprint_routing_connection_box_subckt(fp, CHANY, ix, iy, chan_width, LL_rr_node_indices);
+      update_spice_models_routing_index_high(ix, iy, arch.spice->num_spice_model, arch.spice->spice_models);
     }
   }
   

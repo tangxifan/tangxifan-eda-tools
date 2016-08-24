@@ -1935,13 +1935,31 @@ static void ProcessDevice(INOUTP ezxml_t Node, OUTP struct s_arch *arch,
     
     // Xifan TANG: SRAM and SPICE Support 
 	Cur = FindElement(Node, "sram", arch->read_xml_spice);
+    /* Process area */
 	arch->sram_inf.area = GetFloatProperty(Cur, "area", FALSE, 6);
     if (NULL != Cur) {
       arch->sram_inf.spice_model_name = my_strdup(FindProperty(Cur, "spice_model_name", arch->read_xml_spice));
       arch->sram_inf.spice_model = NULL;
       ezxml_set_attr(Cur, "spice_model_name", NULL);
-	  FreeNode(Cur);
+      /* read organization type*/
+      Prop = FindProperty(Cur, "organization", arch->read_xml_spice);
+      if (NULL == Prop) {
+        arch->sram_inf.orgz_type = SPICE_SRAM_STANDALONE; /* Default */
+      } else if (0 == strcmp("scan-chain", Prop)) {
+        arch->sram_inf.orgz_type = SPICE_SRAM_SCAN_CHAIN;
+      } else if (0 == strcmp("memory_bank", Prop)) {
+        arch->sram_inf.orgz_type = SPICE_SRAM_MEMORY_BANK;
+      } else if (0 == strcmp("standalone", Prop)) {
+        arch->sram_inf.orgz_type = SPICE_SRAM_STANDALONE;
+      } else {
+		vpr_printf(TIO_MESSAGE_ERROR,
+				"[LINE %d] Unknown property %s for SRAM organization\n",
+				Cur->line, FindProperty(Cur, "organization", arch->read_xml_spice));
+        exit(1);
+      }
+      ezxml_set_attr(Cur, "organization", NULL);
       // END
+	  FreeNode(Cur);
     }
 
 	Cur = FindElement(Node, "chan_width_distr", FALSE);

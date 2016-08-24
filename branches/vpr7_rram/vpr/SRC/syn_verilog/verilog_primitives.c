@@ -232,7 +232,7 @@ void dump_verilog_pb_primitive_hardlogic(FILE* fp,
     mapped_logical_block->mapped_spice_model_index = verilog_model->cnt;
   }
 
-  /* Call the dff subckt*/
+  /* Call the hardlogic subckt*/
   fprintf(fp, "%s %s[%d] ", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
   /* print ports*/
   dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, FALSE); 
@@ -320,7 +320,7 @@ void dump_verilog_pb_primitive_io(FILE* fp,
   if ((0 == strcmp(".input", prim_pb_type->blif_model))||(0 == strcmp(".clock", prim_pb_type->blif_model))) {
     /* Add input port to Input Pad */
     /* Print input port */
-    fprintf(fp, "gfpga_input[%d]_%s[%d], ", verilog_model->cnt, verilog_model->prefix, verilog_model->cnt);
+    fprintf(fp, "gfpga_input_%s[%d], ", verilog_model->prefix, verilog_model->cnt);
     /* print ports --> output ports */
     dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, FALSE); 
   } else if (0 == strcmp(".output", prim_pb_type->blif_model)){
@@ -328,7 +328,7 @@ void dump_verilog_pb_primitive_io(FILE* fp,
     /* print ports --> input ports */
     dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, FALSE); 
     /* Print output port */
-    fprintf(fp, "gfpga_output[%d]_%s[%d], ", verilog_model->cnt, verilog_model->prefix, verilog_model->cnt);
+    fprintf(fp, "gfpga_output_%s[%d], ", verilog_model->prefix, verilog_model->cnt);
 
     /* Add clock port to Input Pad */
   } else {

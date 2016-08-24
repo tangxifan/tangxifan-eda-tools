@@ -101,7 +101,12 @@ char *vpr_get_output_file_name(enum e_output_files ename);
 t_trace* vpr_resync_post_route_netlist_to_TI_CLAY_v1_architecture(
 		INP const t_arch *arch);
 
+/* FPGA-SPICE */
 void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
                               t_arch Arch,
                               char* circuit_name);
+/* Dump synthesizable verilog  */
+void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
+                          t_arch Arch,
+                          char* circuit_name);
 #endif

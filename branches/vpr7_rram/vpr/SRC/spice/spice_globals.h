@@ -22,6 +22,8 @@ extern char* spice_grid_testbench_postfix;
 extern char* spice_pb_mux_testbench_postfix;
 extern char* spice_cb_mux_testbench_postfix;
 extern char* spice_sb_mux_testbench_postfix;
+extern char* spice_cb_testbench_postfix;
+extern char* spice_sb_testbench_postfix;
 extern char* spice_lut_testbench_postfix;
 extern char* spice_dff_testbench_postfix;
 /* RUN HSPICE Shell Script Name */
@@ -39,13 +41,20 @@ extern char* spice_dff_tb_dir_name;
 */
 
 extern t_spice_model* sram_spice_model;
+extern enum e_sram_orgz sram_orgz_type;
+
 extern int rram_design_tech;
+extern int num_used_grid_mux_tb;
+extern int num_used_cb_mux_tb;
+extern int num_used_sb_mux_tb;
 extern int num_used_grid_tb;
 extern int num_used_cb_tb;
 extern int num_used_sb_tb;
 extern int num_used_lut_tb;
 extern int num_used_dff_tb;
 extern t_llist* tb_head;
+/* Heads of scan-chain */
+extern t_llist* scan_chain_heads;
 
 extern int default_signal_init_value;
 extern int run_parasitic_net_estimation;
@@ -54,5 +63,6 @@ extern int run_parasitic_net_estimation;
 enum e_pin2pin_interc_type {
  INPUT2INPUT_INTERC, OUTPUT2OUTPUT_INTERC
 };
+
 
 

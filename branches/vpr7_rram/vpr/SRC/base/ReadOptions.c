@@ -487,6 +487,10 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
       return Args;
     case OT_PRINT_SPICE_SB_MUX_TESTBENCH:
       return Args;
+    case OT_PRINT_SPICE_CB_TESTBENCH:
+      return Args;
+    case OT_PRINT_SPICE_SB_TESTBENCH:
+      return Args;
     case OT_PRINT_SPICE_GRID_TESTBENCH:
       return Args;
     case OT_PRINT_SPICE_LUT_TESTBENCH:
@@ -501,7 +505,7 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
     case OT_FPGA_VERILOG_SYN:
       return Args;
     case OT_FPGA_VERILOG_SYN_DIR:
-      return ReadString(Args, &Options->verilog_dir);
+      return ReadString(Args, &Options->syn_verilog_dir);
     /* mrFPGA: Xifan TANG */
     case OT_SHOW_SRAM:
     case OT_SHOW_PASS_TRANS:

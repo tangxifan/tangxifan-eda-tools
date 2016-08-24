@@ -1347,7 +1347,9 @@ static void check_net(boolean sweep_hanging_nets_and_inputs) {
 			}
 			port = port->next;
 		}
+		if (count_inputs != logical_block_input_count[i]) {
 		assert(count_inputs == logical_block_input_count[i]);
+        }
 		logical_block[i].used_input_pins = count_inputs;
 
 		port = logical_block[i].model->outputs;

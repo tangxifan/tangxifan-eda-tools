@@ -73,6 +73,10 @@ void fprint_spice_grid_testbench_global_ports(FILE* fp, int x, int y,
   fprintf(fp, ".global gvdd_load\n");
   fprintf(fp, "***** Global Clock Signals *****\n");
   fprintf(fp, ".global gclock\n");
+  /* Print scan-chain global ports */
+  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+    fprintf(fp, ".global sc_clk sc_set sc_rst\n");
+  }
 
   /*Global Vdds for LUTs*/
   fprint_grid_global_vdds_spice_model(fp, x, y, SPICE_MODEL_LUT, spice);
@@ -382,9 +386,20 @@ void fprint_spice_grid_testbench_stimulations(FILE* fp,
             sram_spice_model->prefix, i, sram_spice_model->prefix, i);
   }
   */
-  fprintf(fp, "V%s->in %s->in 0 0\n", 
-          sram_spice_model->prefix, sram_spice_model->prefix);
-  fprintf(fp, ".nodeset V(%s->in) 0\n", sram_spice_model->prefix);
+  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+    fprintf(fp, "Vsc_clk sc_clk 0 0\n");
+    fprintf(fp, "Vsc_rst sc_rst 0 0\n");
+    fprintf(fp, "Vsc_set sc_set 0 0\n");
+    /* Find the head of scan-chain in this grid */
+    fprintf(fp, "***** Head of scan-chain in grid[%d][%d] *****\n", grid_x, grid_y);
+    fprintf(fp, "Vgrid[%d][%d]_sc_head grid[%d][%d]_sc_head 0 0\n", 
+            grid_x, grid_y, grid_x, grid_y);
+    fprintf(fp, ".nodeset Vgrid[%d][%d]_sc_head) 0\n", grid_x, grid_y);
+  } else {
+    fprintf(fp, "V%s->in %s->in 0 0\n", 
+            sram_spice_model->prefix, sram_spice_model->prefix);
+    fprintf(fp, ".nodeset V(%s->in) 0\n", sram_spice_model->prefix);
+  }
 
   fprintf(fp, "***** Global Clock signal *****\n");
   if (0 < num_clock) {

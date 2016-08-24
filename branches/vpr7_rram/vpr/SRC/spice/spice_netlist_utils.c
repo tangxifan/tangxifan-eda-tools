@@ -230,6 +230,7 @@ void fprint_global_pad_ports_spice_model(FILE* fp,
     case SPICE_MODEL_LUT:
     case SPICE_MODEL_FF:
     case SPICE_MODEL_HARDLOGIC:
+    case SPICE_MODEL_SCFF:
       break;
     default:
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Unknown type for spice model!\n",
@@ -927,12 +928,19 @@ void fprint_call_defined_connection_boxes(FILE* fp,
 }
 
 /* Call the defined switch box sub-circuit
- * TODO: This function is also copied from
+ * Critical difference between this function and 
  * spice_routing.c : fprint_routing_switch_box_subckt
+ * Whether a channel node of a Switch block should be input or output depends on it location:
+ * For example, a channel chanX INC_DIRECTION on the right side of a SB, it is marked as an input  
+ * In fprint_routing_switch_box_subckt: it is marked as an output.
+ * For channels chanY with INC_DIRECTION on the top/bottom side, they should be marked as inputs
+ * For channels chanY with DEC_DIRECTION on the top/bottom side, they should be marked as outputs
+ * For channels chanX with INC_DIRECTION on the left/right side, they should be marked as inputs
+ * For channels chanX with DEC_DIRECTION on the left/right side, they should be marked as outputs
  */
 void fprint_call_defined_switch_box(FILE* fp,
-                                    int x, 
-                                    int y) {
+                                    int x, int y,
+                                    t_ivec*** LL_rr_node_indices) {
   int side, itrack;
   int* chan_width = (int*)my_malloc(sizeof(int)*4);
 
@@ -1079,7 +1087,7 @@ void fprint_call_defined_switch_box(FILE* fp,
   return;
 }
 
-void fprint_call_defined_switch_boxes(FILE* fp) {
+void fprint_call_defined_switch_boxes(FILE* fp, t_ivec*** LL_rr_node_indices) {
   int ix, iy;
 
   /* Check the file handler*/ 
@@ -1091,7 +1099,7 @@ void fprint_call_defined_switch_boxes(FILE* fp) {
 
   for (ix = 0; ix < (nx + 1); ix++) {
     for (iy = 0; iy < (ny + 1); iy++) {
-      fprint_call_defined_switch_box(fp, ix, iy);
+      fprint_call_defined_switch_box(fp, ix, iy, LL_rr_node_indices);
     }
   }
 
@@ -1527,7 +1535,7 @@ void fprint_stimulate_dangling_one_grid_pin(FILE* fp,
     rr_node_index = get_rr_node_index(x, y, IPIN, pin_index, LL_rr_node_indices); 
     /* Zero fan-in IPIN */
     if (0 == rr_node[rr_node_index].fan_in) {
-      fprintf(fp, "Vdangling_grid[%d][%d]_pin[%d][%d][%d] grid[%d][%d]_pin[%d][%d][%d] 0 0\n",
+      fprintf(fp, "Rdangling_grid[%d][%d]_pin[%d][%d][%d] grid[%d][%d]_pin[%d][%d][%d] 0 0\n",
               x, y, height, side, pin_index,
               x, y, height, side, pin_index);
       fprintf(fp, ".nodeset V(grid[%d][%d]_pin[%d][%d][%d]) 0\n",

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <time.h>
 
 #include "util.h"
 #include "physical_types.h"
@@ -628,6 +629,11 @@ boolean try_breadth_first_route_cluster(void) {
 	int itry, inet, net_index;
 	struct s_router_opts router_opts;
 
+    /* Xifan TANG: Count runtime for routing in packing stage */
+    clock_t begin, end;
+
+    begin = clock();
+
 	/* Usually the first iteration uses a very small (or 0) pres_fac to find  *
 	 * the shortest path and get a congestion map.  For fast compiles, I set  *
 	 * pres_fac high even for the first iteration.                            */
@@ -666,6 +672,15 @@ boolean try_breadth_first_route_cluster(void) {
 
 		success = feasible_routing();
 		if (success) {
+            /* End of packing routing */
+            end = clock();
+            /* accumulate the runtime for pack routing */
+#ifdef CLOCKS_PER_SEC
+            pack_route_time += (float)(end - begin)/ CLOCKS_PER_SEC; 
+#else
+            pack_route_time += (float)(end - begin)/ CLK_PER_SEC; 
+#endif
+            /* vpr_printf(TIO_MESSAGE_INFO, "Updated: Packing routing took %g seconds\n", pack_route_time); */
 			return (TRUE);
 		}
 
@@ -678,6 +693,15 @@ boolean try_breadth_first_route_cluster(void) {
 
 		pathfinder_update_cost(pres_fac, router_opts.acc_fac);
 	}
+    /* End of packing routing */
+    end = clock();
+    /* accumulate the runtime for pack routing */
+#ifdef CLOCKS_PER_SEC
+    pack_route_time += (float)(end - begin)/ CLOCKS_PER_SEC; 
+#else
+    pack_route_time += (float)(end - begin)/ CLK_PER_SEC; 
+#endif
+    /* vpr_printf(TIO_MESSAGE_INFO, "Updated: Packing routing took %g seconds\n", pack_route_time); */
 
 	return (FALSE);
 }

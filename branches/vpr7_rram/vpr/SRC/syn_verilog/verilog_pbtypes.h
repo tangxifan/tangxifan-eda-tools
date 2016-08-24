@@ -90,14 +90,14 @@ void dump_verilog_block(FILE* fp,
                         t_block* mapped_block);
 
 void dump_verilog_grid_pins(FILE* fp,
-                      int x, int y,
-                      int top_level,
-                      int dump_port_type);
+                            int x, int y,
+                            int top_level,
+                            boolean dump_port_type);
 
 void dump_verilog_io_grid_pins(FILE* fp,
-                         int x, int y,
-                         int top_level,
-                         int dump_port_type);
+                               int x, int y,
+                               int top_level,
+                               boolean dump_port_type);
 
 char* get_grid_block_subckt_name(int x,
                                  int y,

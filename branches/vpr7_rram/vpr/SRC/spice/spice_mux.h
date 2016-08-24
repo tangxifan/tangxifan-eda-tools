@@ -1,4 +1,14 @@
 
+void init_spice_mux_arch(t_spice_model* spice_model,
+                         t_spice_mux_arch* spice_mux_arch,
+                         int mux_size);
+
+t_llist* stats_spice_muxes(int num_switch,
+                           t_switch_inf* switches,
+                           t_spice* spice,
+                           t_det_routing_arch* routing_arch);
+
+
 void generate_spice_muxes(char* subckt_dir,
                           int num_switch,
                           t_switch_inf* switches,

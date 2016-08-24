@@ -3,7 +3,7 @@
 # use the strict mode
 use strict;
 # Use the Shell enviornment
-use Shell;
+#use Shell;
 # Use the time
 use Time::gmtime;
 # Use switch module
@@ -94,6 +94,7 @@ my @sctgy;
                 "std_vdd",
                 "vthn",
                 "vthp",
+                "w_power_gate_trans",
                );
 # refer to the keywords of dff_settings
 @{$sctgy[1]} = ( # Alias
@@ -142,6 +143,8 @@ my @sctgy;
                 "load_inv_size",
                 "load_inv_num",
                 "worst_delay",
+                "w_cpt",
+                "w_cpt_step",
                );
 
 # refer to the keywords of inv_settings
@@ -192,6 +195,7 @@ my @sctgy;
                 "prog_process_type",
                 "prog_trans_model_ref",
                 "gap_keyword",
+                "C_RRAM",
                );
 
 # ----------Subrountines------------#
@@ -254,6 +258,7 @@ sub print_usage()
   print "      -driver_inv_size: define the size of inverters that drive rram2t1r structure\n";
   print "      Options for Multiplexers:\n";
   print "      -mux <mux2_spice> : run HSPICE simulations for Multiplexer. 2-input multiplexer spice netlist should be provided\n";
+  print "      -w_cpt_sweep <max_w_cpt>: sweep the w_cpt (Valid for SRAM MUX only)\n";
   print "      -mux_size <int> : number of inputs of multiplexer, mandatory when option mux is enabled.\n";
   print "      -rram_enhance : turn on enhancements for RRAM (Valid for MUX only)\n";
   print "      -one_level_mux:<spice>: build one-level MUX(Applicable for both SRAM and RRAM), the SPICE netlist of SRAM/RRAM-based switch should be provided!\n";
@@ -384,6 +389,7 @@ sub opts_read() {
 
   if ("on" eq $opt_ptr->{mux}) {
     &read_opt_into_hash("mux_size","on","on");  # Check -mux_size
+    &read_opt_into_hash("w_cpt_sweep","on","off");  # Check -w_cpt_sweep
     &read_opt_into_hash("rram_enhance","off","off");  # Check -rram_enhance
     &read_opt_into_hash("enum_mux_leakage","on","off");  # Check -enum_mux_leakage
     &read_opt_into_hash("one_level_mux","on","off");  # Check -one_level_mux
@@ -1174,7 +1180,7 @@ sub gen_sp_subckt_fanout_inv_tree($ $ $) {
 
 sub gen_inv_buf_subckt($ $ $) {
   my ($spfh, $inv_size_in, $inv_size_out) = @_;
-  my ($wpg_inv_in, $wpg_inv_out) = (10*$inv_size_in, 10*$inv_size_out);
+  my ($wpg_inv_in, $wpg_inv_out) = ($conf_ptr->{general_settings}->{w_power_gate_trans}->{val}*$inv_size_in, $conf_ptr->{general_settings}->{w_power_gate_trans}->{val}*$inv_size_out);
 
   # Input inverter subckt 
   &tab_print($spfh, "* Input inverter subckt size=$inv_size_in \n", 0); 
@@ -1263,7 +1269,7 @@ sub gen_auto_out_tapered_buffer($ $ $) {
   my ($spfh, $fan_out, $f_inv) = @_;
   my ($num_level_tapered_buf) = int(0.5 + log($fan_out)/log($f_inv));
   my ($cur_level_f, $i, $nexti);
-  my ($wpg_inv_in, $wpg_inv_out) = (10, 10);
+  my ($wpg_inv_in, $wpg_inv_out) = ($conf_ptr->{general_settings}->{w_power_gate_trans}->{val}, $conf_ptr->{general_settings}->{w_power_gate_trans}->{val});
   
   # Print the definition
   &tab_print($spfh, ".subckt tapbuf_size$fan_out in out svdd sgnd\n", 0); 
@@ -1466,7 +1472,7 @@ sub gen_lut_sp_measure($ $ $ $ $ $ $)
 
 sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $) 
 {
-  my ($spfh,$usage,$cload,$input_pwl,$input_pwh,$input_slew,$vsp,$mux_size,$inv_size_in,$inv_size_out,$rram_enhance,$ron,$wprog, $roff,$gap_on, $gap_off) = @_;
+  my ($spfh,$usage,$cload,$input_pwl,$input_pwh,$input_slew,$vsp,$mux_size,$inv_size_in,$inv_size_out,$w_cpt, $rram_enhance,$ron,$wprog, $roff,$gap_on, $gap_off) = @_;
 
   # Print Header
   &tab_print($spfh,"Sub-Vt MUX HSPICE Bench\n",0);
@@ -1487,6 +1493,8 @@ sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
   &tab_print($spfh,".param input_slew=$input_slew\n",0);
   #&tab_print($spfh,".param inv_size_in=$inv_size_in\n",0);
   #&tab_print($spfh,".param inv_size_out=$inv_size_out\n",0);
+  &tab_print($spfh,"* Only for SRAM MUX:\n",0);
+  &tab_print($spfh,".param w_cpt=$w_cpt\n",0);
  
   if ($rram_enhance) {
     # Print info
@@ -1502,6 +1510,7 @@ sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
     &tab_print($spfh,".param wprog=$wprog\n",0);
     &tab_print($spfh,".param tprog=$conf_ptr->{rram_settings}->{Tprog}->{val}\n",0);
     &tab_print($spfh,".param vprog=$conf_ptr->{rram_settings}->{Vdd_break}->{val}\n",0);
+    &tab_print($spfh,".param c_rram=$conf_ptr->{rram_settings}->{C_RRAM}->{val}\n",0);
     #&tab_print($spfh,"* Global port for programming vdd \n",0);
     &tab_print($spfh,"* Include RRAM verilogA model \n",0);
     # Include RRAM verilogA model
@@ -1547,16 +1556,16 @@ sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
   if ((2 == $mux_size)&&(!$rram_enhance)) {
     print "2-input MUX is forced to employ multi-level structure!\n";
     # Generate the sub circuit of N-input MUX with a given 2-input MUX subckt
-    &gen_multilevel_mux_subckt($spfh,$mux_size,"mux2_size$mux_size",$conf_ptr->{mux_settings}->{mux_subckt_name}->{val},"buffered",$rram_enhance, $wprog);
+    &gen_multilevel_mux_subckt($spfh,$mux_size,"mux2_size$mux_size",$conf_ptr->{mux_settings}->{mux_subckt_name}->{val},"buffered",$w_cpt,$rram_enhance, $wprog);
   } else {
     if (("on" eq $opt_ptr->{one_level_mux})) {
       # Generate the sub circuit of 1-level N-input MUX
-      &gen_1level_mux_subckt($spfh,$mux_size,"mux2_size$mux_size",$opt_ptr->{one_level_mux_val},"buffered",$rram_enhance, $wprog);
+      &gen_1level_mux_subckt($spfh,$mux_size,"mux2_size$mux_size",$opt_ptr->{one_level_mux_val},"buffered",$w_cpt,$rram_enhance, $wprog);
     } elsif ("on" eq $opt_ptr->{two_level_mux}) {
-      &gen_2level_mux_subckt($spfh,$mux_size,"mux2_size$mux_size",$opt_ptr->{two_level_mux_val},"buffered",$rram_enhance, $wprog);
+      &gen_2level_mux_subckt($spfh,$mux_size,"mux2_size$mux_size",$opt_ptr->{two_level_mux_val},"buffered",$w_cpt,$rram_enhance, $wprog);
     } else {
       # Generate the sub circuit of N-input MUX with a given 2-input MUX subckt
-      &gen_multilevel_mux_subckt($spfh,$mux_size,"mux2_size$mux_size",$conf_ptr->{mux_settings}->{mux_subckt_name}->{val},"buffered",$rram_enhance, $wprog);
+      &gen_multilevel_mux_subckt($spfh,$mux_size,"mux2_size$mux_size",$conf_ptr->{mux_settings}->{mux_subckt_name}->{val},"buffered",$w_cpt,$rram_enhance, $wprog);
     }
   } 
 
@@ -2637,10 +2646,14 @@ sub gen_1level_rram_mux_subckt($ $ $ $ $ $ $) {
     if (1 == $i) {
       &tab_print($spfh, "Xrram$i mux1level_in$i mux1level_out $conf_ptr->{rram_settings}->{rram_subckt_name}->{val} $offgap_kw=gap_on\n");
       #&tab_print($spfh,"Rmux1level_$i mux1level_in$i mux1level_out \'ron\'\n",0);
+      # include the parasitic capacitances 
+      &tab_print($spfh,"Cmux1level_$i mux1level_in$i mux1level_out \'c_rram\'\n",0);
     } elsif (0 == $i) { 
       &tab_print($spfh, "Xrram$i mux1level_in$i mux1level_out $conf_ptr->{rram_settings}->{rram_subckt_name}->{val} $ongap_kw=gap_off print_gap=1\n");
+      &tab_print($spfh,"Cmux1level_$i mux1level_out mux1level_in$i \'c_rram\'\n",0);
     } else { 
       &tab_print($spfh, "Xrram$i mux1level_in$i mux1level_out $conf_ptr->{rram_settings}->{rram_subckt_name}->{val} $ongap_kw=gap_off\n");
+      &tab_print($spfh,"Cmux1level_$i mux1level_in$i mux1level_out \'c_rram\'\n",0);
       #&tab_print($spfh,"Rmux1level_$i mux1level_in$i mux1level_out \'roff\'\n",0);
     }
     &tab_print($spfh,"*.print V(Xrram$i.R_out) V(Xrram$i.gap_out)\n",0);
@@ -2685,7 +2698,7 @@ sub gen_1level_rram_mux_subckt($ $ $ $ $ $ $) {
 }
 
 sub gen_1level_mux_subckt($ $ $ $ $ $ $) {
-  my ($spfh,$mux_size,$subckt_name,$mux1level_subckt,$buffered,$rram_enhance,$wprog) = @_;
+  my ($spfh,$mux_size,$subckt_name,$mux1level_subckt,$buffered,$w_cpt,$rram_enhance,$wprog) = @_;
   my ($num_sram) = ($mux_size);
   my ($ongap_kw, $ongap_val, $offgap_kw, $offgap_val);
 
@@ -2718,7 +2731,9 @@ sub gen_1level_mux_subckt($ $ $ $ $ $ $) {
   # SRAM-based MUX design
   for (my $i = 0; $i < $mux_size; $i++) {
     # Call defined 1level Subckt 
-    &tab_print($spfh, "Xmux1level_$i mux1level_in$i mux1level_out $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$i $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$i svdd sgnd $mux1level_subckt\n",0);
+    for (my $iwcpt = 0; $iwcpt < $w_cpt; $iwcpt++) {
+      &tab_print($spfh, "Xmux1level_$i\_wcpt$iwcpt mux1level_in$i mux1level_out $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$i $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$i svdd sgnd $mux1level_subckt\n",0);
+    }
   }
 
   # Add buffers
@@ -3182,11 +3197,18 @@ sub gen_multilevel_rram_mux_subckt($ $ $ $ $ $ $ $) {
         &tab_print($spfh, "$offgap_kw=gap_off ");
       }
       if ((0 == $lvl)&&(0 == $i)) {
+      #if (($num_lvls - 1 == $lvl)&&(0 == $i)) {
         &tab_print($spfh, "print_gap=1\n");
       } else {
         &tab_print($spfh, "\n");
       }
       &tab_print($spfh,"*.print V(Xrram_lvl$lvl\_in$i.R_out) V(Xrram_lvl$lvl\_in$i.gap_out)\n",0);
+      # Parasitic capacitances of RRAM
+      if (0 == $lvl % 2) {
+        &tab_print($spfh, "Crram_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i mux2lvl_lvl$next_lvl\_in$next_lvl_input \'c_rram\'\n");
+      } else {
+        &tab_print($spfh, "Crram_lvl$lvl\_in$i mux2lvl_lvl$next_lvl\_in$next_lvl_input mux2lvl_lvl$lvl\_in$i \'c_rram\'\n");
+      }
 
       # Calculate the index of BL/WL lines
       $in_blwl_idx++;
@@ -3263,7 +3285,7 @@ sub gen_multilevel_rram_mux_subckt($ $ $ $ $ $ $ $) {
 }
 
 sub gen_2level_mux_subckt($ $ $ $ $ $ $) {
-  my ($spfh,$mux_size,$subckt_name,$mux2level_subckt,$buffered,$rram_enhance,$wprog) = @_;
+  my ($spfh,$mux_size,$subckt_name,$mux2level_subckt,$buffered,$w_cpt,$rram_enhance,$wprog) = @_;
 
   if ("on" eq $rram_enhance) {
     if ("on" eq $opt_ptr->{rram_mux_isolate}) {
@@ -3300,12 +3322,16 @@ sub gen_2level_mux_subckt($ $ $ $ $ $ $) {
     my ($in2lvl) = int($i/$basis);
     my ($offset) = ($i % $basis);
     # Call defined 2level Subckt 
-    &tab_print($spfh, "Xmux2_l2_in$i mux2_l2_in$i mux2_l1_in$in2lvl $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$offset $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$offset svdd sgnd $mux2level_subckt\n",0);
+    for (my $iwcpt = 0; $iwcpt < $w_cpt; $iwcpt++) {
+      &tab_print($spfh, "Xmux2_l2_in$i\_wcpt$iwcpt mux2_l2_in$i mux2_l1_in$in2lvl $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$offset $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$offset svdd sgnd $mux2level_subckt\n",0);
+    }
   }
   # Second level 
   for (my $i = 0; $i < $basis; $i++) {
     my ($offset) = ($basis + $i);
-    &tab_print($spfh, "Xmux2_l1_in$i mux2_l1_in$i mux2_l0_in0 $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$offset $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$offset svdd sgnd $mux2level_subckt\n",0);
+    for (my $iwcpt = 0; $iwcpt < $w_cpt; $iwcpt++) {
+      &tab_print($spfh, "Xmux2_l1_in$i\_wcpt$iwcpt mux2_l1_in$i mux2_l0_in0 $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$offset $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$offset svdd sgnd $mux2level_subckt\n",0);
+    }
   }
 
   # Add buffers
@@ -3337,7 +3363,7 @@ sub gen_2level_mux_subckt($ $ $ $ $ $ $) {
 
 sub gen_multilevel_mux_subckt($ $ $ $ $ $ $)
 {
-  my ($spfh,$mux_size,$subckt_name,$mux2_subckt,$buffered,$rram_enhance,$wprog) = @_;
+  my ($spfh,$mux_size,$subckt_name,$mux2_subckt,$buffered,$w_cpt,$rram_enhance,$wprog) = @_;
   my ($num_sram) = (&determine_mux_level($mux_size));
   
   #if ($num_sram != $mux_level_esti) {
@@ -3408,11 +3434,13 @@ sub gen_multilevel_mux_subckt($ $ $ $ $ $ $)
     for (my $j=0; $j < $num_input_cur_level; $j++) {
       my ($nextj) = ($j + 1);
       my ($out_idx) = int($j/2);
-      &tab_print($spfh,"Xmux2_no$mux2_cnt $mux2_in$j $mux2_in$nextj $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$nextlevel $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$nextlevel $mux2_out$out_idx svdd sgnd $mux2_subckt ",0); 
-      if ($rram_enhance) {
-        &tab_print($spfh,"ron=\'ron\' wprog=\'wprog\'",0);
+      for (my $iwcpt = 0; $iwcpt < $w_cpt; $iwcpt++) {
+        &tab_print($spfh,"Xmux2_no$mux2_cnt\_wcpt$iwcpt $mux2_in$j $mux2_in$nextj $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$nextlevel $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$nextlevel $mux2_out$out_idx svdd sgnd $mux2_subckt ",0); 
+        if ($rram_enhance) {
+          &tab_print($spfh,"ron=\'ron\' wprog=\'wprog\'",0);
+        }
+        &tab_print($spfh,"\n",0);
       }
-      &tab_print($spfh,"\n",0);
       if ($rram_enhance) {
         my ($nextnextj) = ($nextj + 1);
         if (0 == $j) { 
@@ -3715,7 +3743,7 @@ sub run_lut_sim($ $ $ $ $ $ $ $)
 
 sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
 {
-  my ($mux_size,$SRAM_bits,$input_vectors,$vsp,$input_slew,$input_pwl,$input_pwh,$cload,$tran_step,$tran_stop,$results,$inv_size_in,$inv_size_out,$rram_enhance,$ron,$wprog,$roff,$on_gap, $off_gap) = @_;
+  my ($mux_size,$SRAM_bits,$input_vectors,$vsp,$input_slew,$input_pwl,$input_pwh,$cload,$w_cpt,$tran_step,$tran_stop,$results,$inv_size_in,$inv_size_out,$rram_enhance,$ron,$wprog,$roff,$on_gap, $off_gap) = @_;
 
   my ($delay_measure,$delay_measure_input,$output_vector,$input_vector_type,$output_vector_type);
 
@@ -3738,7 +3766,7 @@ sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
   # Create a SPICE file
   my $spfh = FileHandle->new;
   if ($spfh->open("> $mux_file")) {
-    &gen_mux_sp_common($spfh,"mux$mux_size\_delay_power",$cload,$input_pwl,$input_pwh,$input_slew,$vsp,$mux_size,$inv_size_in,$inv_size_out,$rram_enhance,$ron,$wprog,$roff, $off_gap, $off_gap);
+    &gen_mux_sp_common($spfh,"mux$mux_size\_delay_power",$cload,$input_pwl,$input_pwh,$input_slew,$vsp,$mux_size,$inv_size_in,$inv_size_out,$w_cpt,$rram_enhance,$ron,$wprog,$roff, $off_gap, $off_gap);
     # FOR RRAM MUX: we need special stimulates for programming phase!
     if ("on" eq $rram_enhance) {
       $delay_measure_input = 0;
@@ -4236,7 +4264,7 @@ sub measure_mux_leakage($ $ $ $ $ $ $ $ $ $ $ $)
 
 sub run_mux_once($ $ $ $ $ $ $ $ $ $ $ $ $ $)
 {
-  my ($tag,$vsp,$mux_size,$SRAM_bits,$input_vectors,$input_slew,$cload,$tran_step,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap) = @_;
+  my ($tag,$vsp,$mux_size,$SRAM_bits,$input_vectors,$input_slew,$cload, $w_cpt, $tran_step,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap) = @_;
 
   my (%sim_results);
   my ($sim_results_ref) = \%sim_results;
@@ -4247,7 +4275,7 @@ sub run_mux_once($ $ $ $ $ $ $ $ $ $ $ $ $ $)
   $input_pwh = 10*$slew_clk*$input_slew;
   $tran_stop = $input_pwl+$input_slew+$input_pwh;
 
-  if (0 == &run_mux_sim($mux_size,$SRAM_bits,$input_vectors,$vsp,$input_slew,$input_pwl,$input_pwh,$cload,$tran_step,$tran_stop,\%sim_results,$conf_ptr->{mux_settings}->{inv_size_in}->{val},$conf_ptr->{mux_settings}->{inv_size_out}->{val},$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap)) {
+  if (0 == &run_mux_sim($mux_size,$SRAM_bits,$input_vectors,$vsp,$input_slew,$input_pwl,$input_pwh,$cload,$w_cpt, $tran_step,$tran_stop,\%sim_results,$conf_ptr->{mux_settings}->{inv_size_in}->{val},$conf_ptr->{mux_settings}->{inv_size_out}->{val},$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap)) {
     die "ERROR: functionality of Multiplexer maybe wrong!\n";
   }
 
@@ -4437,7 +4465,7 @@ sub print_rpt_mux_data($ $)
   &tab_print($rptfh,"$rpt_ptr->{$tag}->{dynamic_power},",0);
   &tab_print($rptfh,"$rpt_ptr->{$tag}->{energy_per_toggle},",0);
   &tab_print($rptfh,"$rpt_ptr->{$tag}->{elmore_delay},",0);
-  &tab_print($rptfh,"\n",0);
+  &tab_print($rptfh,";\n",0);
 
 }
 
@@ -4612,7 +4640,7 @@ sub run_dff_elc($ $ $ $ $ $ $) {
 }
 
 sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
-  my ($rptfh,$clk_slew,$d_slew,$mux_size,$inv_size_in,$inv_size_out,$load_cap,
+  my ($rptfh,$clk_slew,$d_slew,$mux_size,$inv_size_in,$inv_size_out,$load_cap, $w_cpt_sweep,
       $rram_enhance,$wprog_sweep,$vsp_lowbound,$vsp_upbound,$vsp_sweepstep) = @_;
 
   &tab_print($rptfh,"* MUX size = $mux_size, inv_size_in = $inv_size_in, inv_size_out = $inv_size_out,Load_cap = $load_cap",0);
@@ -4623,7 +4651,11 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
   }
 
   if ("off" eq $rram_enhance) {
-    &tab_print($rptfh,"vsp,delay,leakage,dynamic_power,energy_per_toggle\n",0);
+    if ("on" eq $w_cpt_sweep) {
+      &tab_print($rptfh,"w_cpt,delay,leakage,dynamic_power\n",0);
+    } else {
+      &tab_print($rptfh,"vsp,delay,leakage,dynamic_power,energy_per_toggle\n",0);
+    }
   } elsif ("off" eq $wprog_sweep) {
     &tab_print($rptfh,"Ron,Wprog,vsp,delay,leakage,dynamic_power,energy_per_toggle\n",0);
   }
@@ -4718,7 +4750,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
 
         # Test rising delay
         $rise_tag = $tag."_rise_wprog$wprog\_vprog$vprog";
-        &run_mux_once($rise_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-13,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap);
+        &run_mux_once($rise_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"), 0, 1e-13,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap);
 
         # Test falling delay
         $fall_tag = $tag."_fall_wprog$wprog\_vprog$vprog";
@@ -4733,7 +4765,7 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
           } 
         }  
         $input_vectors =~ s/,$//;
-        &run_mux_once($fall_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-13,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap);
+        &run_mux_once($fall_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"), 0, 1e-13,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap);
   
         # Average rise and fall
         $avg_tag = $tag."_avg_wprog$wprog\_vprog$vprog";
@@ -4786,6 +4818,17 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
       &tab_print($rptfh,"\n",0); 
 
     } else {
+      # SRAM MUX or RRAM MUX without Wprog sweeping 
+      # Initialize the lowbound and upbound of w_cpt
+      my ($w_cpt_lowbound, $w_cpt_step, $w_cpt_upbound);
+      $w_cpt_lowbound = ($conf_ptr->{mux_settings}->{w_cpt}->{val});
+      $w_cpt_step = $conf_ptr->{mux_settings}->{w_cpt_step}->{val};
+      if ("on" eq $w_cpt_sweep) {
+        $w_cpt_upbound = ($opt_ptr->{w_cpt_sweep_val});
+      } else {
+        $w_cpt_upbound = $w_cpt_lowbound;
+      }
+      # Prepare configuration bits and input vectors
       ($sram_bits,$input_vectors) = ("","");
       if ("on" eq $opt_ptr->{one_level_mux}) {
         for (my $i=0; $i<$num_sram; $i++) {
@@ -4820,37 +4863,46 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
       }  
       $input_vectors =~ s/,$//;
 
-      # Test rising delay
-      $rise_tag = $tag."_rise_wprog$wprog\_vprog$vprog";
-      &run_mux_once($rise_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-13,$rram_enhance_on,$ron,$wprog,$roff,$on_gap,$off_gap);
-
-      # Test falling delay
-      $fall_tag = $tag."_fall_wprog$wprog\_vprog$vprog";
-      $input_vectors = "";
-      for (my $i=0; $i<$mux_size; $i++) {
-        # Test the worst case of leakage!
-        #if (0 == $i%2) {
-        if (0 == $i) {
-          $input_vectors .= "f,";
-        } else { 
-          $input_vectors .= "0,";
-        } 
-      }  
-      $input_vectors =~ s/,$//;
-      &run_mux_once($fall_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"),1e-13,$rram_enhance_on,$ron,$wprog,$roff,$on_gap,$off_gap);
-  
-      # Average rise and fall
-      $avg_tag = $tag."_avg_wprog$wprog\_vprog$vprog";
-      &average_results($avg_tag,$rise_tag,$fall_tag);
-
-      if ("on" eq $opt_ptr->{enum_mux_leakage}) {
-        &enum_measure_mux_leakage($tag,$ivsp,$mux_size,$d_slew,$ron,$wprog,$vprog,$rram_enhance_on,$avg_tag,$num_sram);
-      }        
-      if ("on" eq $rram_enhance) {
-        &tab_print($rptfh,"$ron,$wprog,",0);
+      if ("on" eq $w_cpt_sweep) {
+        &tab_print($rptfh,"* vsp = $ivsp\n",0);
+      } else {
+        &tab_print($rptfh,"$ivsp,",0);
       }
-      &tab_print($rptfh,"$ivsp,",0);
-      &print_rpt_mux_data($rptfh,$avg_tag);
+      # Sweep w_cpt if needed
+      for (my $iwcpt = $w_cpt_lowbound; $iwcpt <= $w_cpt_upbound; $iwcpt = $iwcpt + $w_cpt_step) {
+        # Test rising delay
+        $rise_tag = $tag."_rise_wcpt$iwcpt\_wprog$wprog\_vprog$vprog";
+        &run_mux_once($rise_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"), $iwcpt, 1e-13, $rram_enhance_on,$ron,$wprog,$roff,$on_gap,$off_gap);
+
+        # Test falling delay
+        $fall_tag = $tag."_fall_wcpt$iwcpt\_wprog$wprog\_vprog$vprog";
+        $input_vectors = "";
+        for (my $i=0; $i<$mux_size; $i++) {
+          # Test the worst case of leakage!
+          #if (0 == $i%2) {
+          if (0 == $i) {
+            $input_vectors .= "f,";
+          } else { 
+            $input_vectors .= "0,";
+          } 
+        }  
+        $input_vectors =~ s/,$//;
+        &run_mux_once($fall_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"), $iwcpt, 1e-13,$rram_enhance_on,$ron,$wprog,$roff,$on_gap,$off_gap);
+  
+        # Average rise and fall
+        $avg_tag = $tag."_avg_wprog$wprog\_vprog$vprog";
+        &average_results($avg_tag,$rise_tag,$fall_tag);
+
+        if ("on" eq $opt_ptr->{enum_mux_leakage}) {
+          &enum_measure_mux_leakage($tag,$ivsp,$mux_size,$d_slew,$ron,$wprog,$vprog,$rram_enhance_on,$avg_tag,$num_sram);
+        }        
+        if ("on" eq $rram_enhance) {
+          &tab_print($rptfh,"$ron,$wprog,",0);
+        }
+        &tab_print($rptfh,"$iwcpt,",0);
+        &print_rpt_mux_data($rptfh,$avg_tag);
+        &tab_print($rptfh,"\n",0);
+      }
     }
   }
 }
@@ -5186,6 +5238,7 @@ sub sweep_components_vsp()  {
     &run_mux_elc($rptfh,$clk_slew,$d_slew,$opt_ptr->{mux_size_val},$conf_ptr->{mux_settings}->{inv_size_in}->{val},
                  $conf_ptr->{mux_settings}->{inv_size_out}->{val},
                  $conf_ptr->{mux_settings}->{load_cap}->{val},
+                 $opt_ptr->{w_cpt_sweep},
                  $opt_ptr->{rram_enhance},$opt_ptr->{wprog_sweep},
                  $conf_ptr->{general_settings}->{vsp_sweep}->{low_bound},
                  $conf_ptr->{general_settings}->{vsp_sweep}->{high_bound}, 

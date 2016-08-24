@@ -1,19 +1,23 @@
-%% SRAM MUX
+%% SRAM MUX APSP 7nm FinFET
 % Size <= 12, use area, delay and power of one-level mux
 % Size > 12, use area, delay and power of two-level mux
 
 %% Area
-area_sram_mux = 2:2:32;
+area_sram_mux = 2:2:50;
 pn_ratio = 1;
+one_sram_cell_area = 4;
 for i=1:1:length(area_sram_mux)
   area_multiplexing = (2*i) * (trans_area(1)+ trans_area(1*pn_ratio));
+  area_sram = one_sram_cell_area*(2*i);
+
   if ( 2*i > 12) 
     area_multiplexing = area_multiplexing + ceil(sqrt(2*i)) * (trans_area(1)+ trans_area(1*pn_ratio));
+    area_sram = one_sram_cell_area*(2*ceil(sqrt(2*i)));
   end 
 
   area_buf = (2*i + 1) * (trans_area(1)+ trans_area(1*pn_ratio));
 
-  area_sram_mux(i) = area_multiplexing + area_buf;
+  area_sram_mux(i) = area_multiplexing + area_buf + area_sram;
 end
 
 %% Delay and power when VDD=0.5V 
@@ -35,6 +39,15 @@ sram_mux_0p5V = [ % size, delay, leakage, dynamic_power, energy_per_toggle
 28,3.6215e-11,3.8425e-10,1.7028e-06,3.1425e-17;
 30,3.6215e-11,4.0625e-10,1.70275e-06,3.1425e-17;
 32,3.6215e-11,4.3495e-10,1.70275e-06,3.14245e-17;
+34, 3.6215e-11,4.5685e-10,1.70275e-06,3.14245e-17;
+36, 3.6215e-11,4.7885e-10,1.70275e-06,3.1424e-17;
+38, 3.922e-11,5.0945e-10,1.71715e-06,3.3155e-17;
+40, 3.922e-11,5.3145e-10,1.71715e-06,3.3155e-17;
+42, 3.922e-11,5.5335e-10,1.71715e-06,3.3155e-17;
+44, 3.922e-11,5.8205e-10,1.7171e-06,3.31545e-17;
+46, 3.922e-11,6.04e-10,1.7171e-06,3.31545e-17;
+48, 3.922e-11,6.2595e-10,1.7171e-06,3.3154e-17;
+50, 4.2185e-11,6.566e-10,1.72505e-06,3.50935e-17;
 ];
 
 %% Delay and power when VDD=0.6V 
@@ -55,6 +68,15 @@ sram_mux_0p6V = [ % size, delay, leakage, dynamic_power, energy_per_toggle
 28,2.2995e-11,5.819e-10,3.5077e-06,5.3284e-17;
 30,2.2995e-11,6.164e-10,3.5077e-06,5.32835e-17;
 32,2.2995e-11,6.5865e-10,3.5077e-06,5.32835e-17;
+34, 2.2995e-11,6.9315e-10,3.50765e-06,5.3283e-17;
+36, 2.2995e-11,7.276e-10,3.50765e-06,5.3283e-17;
+38, 2.474e-11,7.7425e-10,3.58605e-06,5.4689e-17;
+40, 2.474e-11,8.087e-10,3.58605e-06,5.46885e-17;
+42, 2.474e-11,8.432e-10,3.58605e-06,5.46885e-17;
+44, 2.474e-11,8.854e-10,3.586e-06,5.4688e-17;
+46, 2.474e-11,9.2015e-10,3.586e-06,5.4688e-17;
+48, 2.474e-11,9.544e-10,3.58595e-06,5.46875e-17;
+50, 2.6495e-11,1.00085e-09,3.62365e-06,5.75125e-17;
 ];
 
 %% Delay and power when VDD=0.7V 
@@ -75,5 +97,14 @@ sram_mux_0p7V = [ % size, delay, leakage, dynamic_power, energy_per_toggle
 28,1.722e-11,8.527e-10,5.793e-06,7.93415e-17;
 30,1.722e-11,9.0485e-10,5.793e-06,7.93415e-17;
 32,1.722e-11,9.6535e-10,5.79295e-06,7.9341e-17;
+34, 1.722e-11,1.0174e-09,5.79295e-06,7.93405e-17;
+36, 1.722e-11,1.06945e-09,5.7929e-06,7.93405e-17;
+38, 1.8325e-11,1.138e-09,5.97755e-06,8.3216e-17;
+40, 1.8325e-11,1.19e-09,5.97755e-06,8.3216e-17;
+42, 1.8325e-11,1.242e-09,5.9775e-06,8.32155e-17;
+44, 1.8325e-11,1.3025e-09,5.9775e-06,8.3215e-17;
+46, 1.8325e-11,1.3545e-09,5.97745e-06,8.3215e-17;
+48, 1.8325e-11,1.4065e-09,5.97745e-06,8.32145e-17;
+50, 1.9605e-11,1.4755e-09,6.16125e-06,8.51925e-17;
 ];
 

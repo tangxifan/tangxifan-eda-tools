@@ -7,9 +7,6 @@ q = 1.6e-19;
 T_crit = 450;
 % Variation fitting parameters
 T_smth = 500;
-Ea = 0.1;
-% Atom spacing
-a0 = 0.25e-9/10;
 % Initial room temperature in devices
 T_ini = 273+25;
 % minimum field requirement to enhance gap formation, F_min
@@ -36,27 +33,33 @@ time_step = 1e-9;
 % Vset = Vreset = 1.2V
 % Iset,max = 500uA
 % RLRS = 2.4kOhm, RHRS = 20MOhm
-%gap_max = 2.48e-9;
-%gap_min = 0.2e-9;
-%g0 = 0.25e-9;
-%V0 = 0.8;
-%beta = 0.8;
-%I0 = 570e-6;
-%gamma0 = 28;
-%Vel0 = 10;
-
-%% Fit Device parameters:
-% Vset = Vreset = 0.9V
-% Iset,max = 500uA
-% RLRS = 1.8kOhm, RHRS = 20MOhm
 gap_max = 2.48e-9;
 gap_min = 0.10e-9;
 g0 = 0.25e-9;
 V0 = 0.8;
 I0 = 570e-6;
 beta = 1e-2;
-gamma0 = 28;
+gamma0 = 12;
 Vel0 = 0.4;
+% Atom spacing
+a0 = 0.35e-9/10;
+Ea = 0.1;
+
+%% Fit Device parameters:
+% Vset = Vreset = 0.9V
+% Iset,max = 500uA
+% RLRS = 1.8kOhm, RHRS = 20MOhm
+%gap_max = 2.48e-9;
+%gap_min = 0.10e-9;
+%g0 = 0.25e-9;
+%V0 = 0.8;
+%I0 = 570e-6;
+%beta = 1e-2;
+%gamma0 = 28;
+%Vel0 = 0.4;
+% Atom spacing
+%a0 = 0.25e-9/10;
+%Ea = 0.1;
 
 %% I-V equation
 %Vtb = -1.3:0.1:1.3;
@@ -73,6 +76,9 @@ disp('Rtb_set(kOhm):');
 disp(Rtb_set/1e3);
 disp('Rtb_reset(MOhm):');
 disp(Rtb_reset/1e6);
+
+disp_vtb_max = 1.4;
+disp_vtb_min = -1.4;
 
 %% I-V Data for Sweep V0
 V0_sweep = [0.6,0.7,0.8]; % [0,10]
@@ -95,7 +101,7 @@ hold on
 plot(Vtb, Itb_set/1e-3, 'r-*', 'LineWidth', 2, 'MarkerSize', 10);
 hold on
 xlabel('V_{TB} (V)', 'FontSize', 18, 'FontWeight', 'bold', 'FontName', 'Times');
-set(gca,'xlim',[-1.0 1.0],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+set(gca,'xlim',[-1.4 1.4],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 ylabel('I_{TB} (mA)', 'FontSize', 18, 'FontWeight', 'bold', 'FontName', 'Times');
 set(gca, 'Fontsize', 16, 'FontWeight', 'bold', 'FontName', 'Times');
 hleg = legend(iv_legend);
@@ -108,7 +114,7 @@ hold on
 plot(Vtb, Rtb_set/1e3, 'r-*', 'LineWidth', 2, 'MarkerSize', 10);
 hold on
 xlabel('V_{TB} (V)', 'FontSize', 18, 'FontWeight', 'bold', 'FontName', 'Times');
-set(gca,'xlim',[-1.0 1.0],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+set(gca,'xlim',[disp_vtb_min disp_vtb_max],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 ylabel('R_{TB} (kOhm)', 'FontSize', 18, 'FontWeight', 'bold', 'FontName', 'Times');
 set(gca, 'Fontsize', 16, 'FontWeight', 'bold', 'FontName', 'Times');
 hleg = legend(res_legend);
@@ -123,7 +129,7 @@ hold on
 plot(Vtb, Itb_set_V0_3, 'g-*', 'LineWidth', 2, 'MarkerSize', 10);
 hold on
 xlabel('V_{TB} (V)', 'FontSize', 18, 'FontWeight', 'bold', 'FontName', 'Times');
-set(gca,'xlim',[-1.0 1.0],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+set(gca,'xlim',[disp_vtb_min disp_vtb_max],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 ylabel('I_{TB} (A)', 'FontSize', 18, 'FontWeight', 'bold', 'FontName', 'Times');
 set(gca, 'Fontsize', 16, 'FontWeight', 'bold', 'FontName', 'Times');
 hleg = legend(V0_sweep_legend);
@@ -138,15 +144,15 @@ hold on
 plot(Vtb, Itb_set_g0_3, 'g-*', 'LineWidth', 2, 'MarkerSize', 10);
 hold on
 xlabel('V_{TB} (V)', 'FontSize', 18, 'FontWeight', 'bold', 'FontName', 'Times');
-set(gca,'xlim',[-1.0 1.0],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+set(gca,'xlim',[disp_vtb_min disp_vtb_max],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 ylabel('I_{TB} (A)', 'FontSize', 18, 'FontWeight', 'bold', 'FontName', 'Times');
 set(gca, 'Fontsize', 16, 'FontWeight', 'bold', 'FontName', 'Times');
 hleg = legend(g0_sweep_legend);
 grid on
 
 %% Fig. 5: plot Field - Vtb
-gamma0_sweep = [gamma0,20,18]; % (0,20);
-gamma0_sweep_legend = [{'gamma0=24'}, {'gamma0=20'}, {'gamma0=18'}];
+gamma0_sweep = [gamma0,10,8]; % (0,20);
+gamma0_sweep_legend = [{'gamma0=12'}, {'gamma0=10'}, {'gamma0=8'}];
 
 gamma = gamma0 - beta * (gap_max/1e-9)^3;
 F = (gamma*abs(Vtb)/tox);
@@ -166,7 +172,7 @@ plot(Vtb, F_min/1e9, 'r-*', 'LineWidth', 2, 'MarkerSize', 10);
 hold on
 xlabel('V_{TB} (V)', 'FontSize', 18, 'FontWeight', 'bold', 'FontName', 'Times');
 ylabel('Field strength(1e9), reach F_min will invoke set process', 'FontSize', 18, 'FontWeight', 'bold', 'FontName', 'Times');
-set(gca,'xlim',[-1.0 1.0],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+set(gca,'xlim',[disp_vtb_min disp_vtb_max],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca, 'Fontsize', 16, 'FontWeight', 'bold', 'FontName', 'Times');
 hleg = legend(gamma0_sweep_legend);
 grid on

@@ -50,6 +50,8 @@ static char* spice_grid_tb_dir_name = "grid_tb/";
 static char* spice_pb_mux_tb_dir_name = "pb_mux_tb/";
 static char* spice_cb_mux_tb_dir_name = "cb_mux_tb/";
 static char* spice_sb_mux_tb_dir_name = "sb_mux_tb/";
+static char* spice_cb_tb_dir_name = "cb_tb/";
+static char* spice_sb_tb_dir_name = "sb_tb/";
 static char* spice_lut_tb_dir_name = "lut_tb/";
 static char* spice_dff_tb_dir_name = "dff_tb/";
   
@@ -186,11 +188,44 @@ void init_check_arch_spice_models(t_arch* arch,
                                       arch->spice->spice_models); 
   }
   if (NULL == arch->sram_inf.spice_model) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d])Invalid SPICE model name(%s) of SRAM is undefined in SPICE models!\n",__FILE__ ,__LINE__, arch->Switches[i].spice_model_name, arch->Switches[i].name);
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d])Invalid SPICE model name(%s) of SRAM is undefined in SPICE models!\n",
+               __FILE__ ,__LINE__, arch->sram_inf.spice_model->name);
     exit(1);
   }
-  /* Find the sram model and assign the global variable*/
-  sram_spice_model = arch->sram_inf.spice_model;
+  /* Check the type of SRAM_SPICE_MODEL */
+  switch (arch->sram_inf.orgz_type) {
+  case SPICE_SRAM_STANDALONE:
+    if (SPICE_MODEL_SRAM != arch->sram_inf.spice_model->type) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Standalone SRAM organization requires a SPICE model(type=sram)!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+    /* TODO: check SRAM ports */
+    check_sram_spice_model_ports(arch->sram_inf.spice_model, FALSE);
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+    if (SPICE_MODEL_SCFF != arch->sram_inf.spice_model->type) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Scan-chain SRAM organization requires a SPICE model(type=sff)!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+    /* TODO: check Scan-chain Flip-flop ports */
+    check_ff_spice_model_ports(arch->sram_inf.spice_model, TRUE);
+    break;
+  case SPICE_SRAM_MEMORY_BANK:
+    if (SPICE_MODEL_SRAM != arch->sram_inf.spice_model->type) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Memory-bank SRAM organization requires a SPICE model(type=sram)!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+    /* TODO: check if this one has bit lines and word lines */
+    check_sram_spice_model_ports(arch->sram_inf.spice_model, TRUE);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Invalid SRAM organization type!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
 
   /* Step D: Find the segment spice_model*/
   for (i = 0; i < arch->num_segments; i++) {
@@ -227,8 +262,15 @@ void init_check_arch_spice_models(t_arch* arch,
   /* 3. Initial grid_index_low/high for each spice_model */
   for (i = 0; i < arch->spice->num_spice_model; i++) {
     alloc_spice_model_grid_index_low_high(&(arch->spice->spice_models[i]));
+    alloc_spice_model_routing_index_low_high(&(arch->spice->spice_models[i]));
   }
-
+  /* 4. zero the counter of each spice_model */
+  zero_spice_models_cnt(arch->spice->num_spice_model, arch->spice->spice_models);
+  /* 5. zero all index low high */
+  /*
+  zero_spice_model_grid_index_low_high(arch->spice->num_spice_model, arch->spice->spice_models);
+  zero_spice_models_routing_index_low_high(arch->spice->num_spice_model, arch->spice->spice_models);
+  */
   return;
 }
 
@@ -572,6 +614,8 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   char* pb_mux_testbench_dir_path = NULL;
   char* cb_mux_testbench_dir_path = NULL;
   char* sb_mux_testbench_dir_path = NULL;
+  char* cb_testbench_dir_path = NULL;
+  char* sb_testbench_dir_path = NULL;
   char* grid_testbench_dir_path = NULL;
   char* lut_testbench_dir_path = NULL;
   char* dff_testbench_dir_path = NULL;
@@ -594,6 +638,14 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   /* Initial Arch SPICE MODELS*/
   init_check_arch_spice_models(&Arch, &vpr_setup.RoutingArch);
   init_list_include_netlists(Arch.spice); 
+
+  /* assign the global variable of SRAM model */
+  sram_spice_model = Arch.sram_inf.spice_model;
+  sram_orgz_type = Arch.sram_inf.orgz_type;
+  
+  /* Initialize the number of configuration bits of all the grids */
+  init_grids_num_conf_bits();
+  init_grids_num_iopads();
 
   /* Add keyword checking */
   check_keywords_conflict(Arch);
@@ -675,6 +727,24 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
                                vpr_setup.SpiceOpts.fpga_spice_leakage_only);
   }
 
+  if (vpr_setup.SpiceOpts.print_spice_cb_testbench) {
+    cb_testbench_dir_path = my_strcat(spice_dir_formatted, spice_cb_tb_dir_name);
+    create_dir_path(cb_testbench_dir_path);
+    fprint_spice_mux_testbench(cb_testbench_dir_path, chomped_circuit_name,
+                               include_dir_path, subckt_dir_path,
+                               rr_node_indices, num_clocks, Arch, SPICE_CB_TB, 
+                               vpr_setup.SpiceOpts.fpga_spice_leakage_only);
+  }
+
+  if (vpr_setup.SpiceOpts.print_spice_sb_testbench) {
+    sb_testbench_dir_path = my_strcat(spice_dir_formatted, spice_sb_tb_dir_name);
+    create_dir_path(sb_testbench_dir_path);
+    fprint_spice_mux_testbench(sb_testbench_dir_path, chomped_circuit_name, 
+                               include_dir_path, subckt_dir_path,
+                               rr_node_indices, num_clocks, Arch, SPICE_SB_TB, 
+                               vpr_setup.SpiceOpts.fpga_spice_leakage_only);
+  }
+
   if (vpr_setup.SpiceOpts.print_spice_lut_testbench) {
     lut_testbench_dir_path = my_strcat(spice_dir_formatted, spice_lut_tb_dir_name); 
     create_dir_path(lut_testbench_dir_path);
@@ -722,6 +792,9 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   run_time_sec = (float)(t_end - t_start) / CLOCKS_PER_SEC;
   vpr_printf(TIO_MESSAGE_INFO, "SPICE netlists dumping took %g seconds\n", run_time_sec);  
 
+  /* Free index low and high */
+  free_spice_model_grid_index_low_high(Arch.spice->num_spice_model, Arch.spice->spice_models);
+  free_spice_model_routing_index_low_high(Arch.spice->num_spice_model, Arch.spice->spice_models);
   /* Free spice_net_info */
   free_clb_nets_spice_net_info();
   /* TODO: Free tb_llist */

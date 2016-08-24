@@ -79,6 +79,12 @@ void fprint_top_netlist_global_ports(FILE* fp,
   /* Define a global clock port if we need one*/
   fprintf(fp, "***** Global Clock Signals *****\n");
   fprintf(fp, ".global gclock\n");
+
+  /* Print scan-chain global ports */
+  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+    fprintf(fp, ".global sc_clk sc_set sc_rst\n");
+  }
+
   /*Global Vdds for LUTs*/
   fprint_global_vdds_spice_model(fp, SPICE_MODEL_LUT, spice);
   /*Global Vdds for FFs*/
@@ -169,9 +175,17 @@ void fprint_top_netlist_stimulations(FILE* fp,
             sram_spice_model->prefix, i, sram_spice_model->prefix, i);
   }
   */
-  fprintf(fp, "V%s->in %s->in 0 0\n", 
-          sram_spice_model->prefix, sram_spice_model->prefix);
-  fprintf(fp, ".nodeset V(%s->in) 0\n", sram_spice_model->prefix);
+  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+    fprintf(fp, "Vsc_clk sc_clk 0 0\n");
+    fprintf(fp, "Vsc_rst sc_rst 0 0\n");
+    fprintf(fp, "Vsc_set sc_set 0 0\n");
+    fprintf(fp, "V%s[0]->in %s[0]->in 0 0\n", sram_spice_model->prefix, sram_spice_model->prefix);
+    fprintf(fp, ".nodeset V(%s[0]->in) 0\n", sram_spice_model->prefix);
+  } else {
+    fprintf(fp, "V%s->in %s->in 0 0\n", 
+            sram_spice_model->prefix, sram_spice_model->prefix);
+    fprintf(fp, ".nodeset V(%s->in) 0\n", sram_spice_model->prefix);
+  }
   
   /* Every Switch Box (SB) use an independent Voltage source */
   fprintf(fp, "***** Global VDD for Switch Boxes(SBs) *****\n");
@@ -673,7 +687,7 @@ void fprint_spice_top_netlist(char* circuit_name,
   fprint_call_defined_connection_boxes(fp, LL_rr_node_indices);
   
   /* Quote Routing structures: Switch Boxes */
-  fprint_call_defined_switch_boxes(fp); 
+  fprint_call_defined_switch_boxes(fp, LL_rr_node_indices); 
 
   /* Add stimulations */
   fprint_top_netlist_stimulations(fp, num_clock, spice);

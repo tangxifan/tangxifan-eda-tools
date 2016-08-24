@@ -201,6 +201,11 @@ typedef struct s_pb {
 
     /* Xifan TANG: SPICE model support*/
     char* spice_name_tag;
+
+    /* Xifan TANG: FPGA-SPICE and SynVerilog */
+    int num_conf_bits;
+    int num_inpads;
+    int num_outpads;
 } t_pb;
 
 struct s_tnode;
@@ -1081,6 +1086,8 @@ struct s_spice_opts {
   boolean do_spice;
   boolean print_spice_top_testbench; 
   boolean print_spice_grid_testbench; 
+  boolean print_spice_cb_testbench; 
+  boolean print_spice_sb_testbench; 
   boolean print_spice_pb_mux_testbench; 
   boolean print_spice_cb_mux_testbench; 
   boolean print_spice_sb_mux_testbench; 

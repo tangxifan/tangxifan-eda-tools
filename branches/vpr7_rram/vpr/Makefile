@@ -14,7 +14,7 @@ export BUILD_TYPE = debug
 # can be debug or release - this option gets inherited by the library libarchfpga 
 # by default, though libarchfpga's build type can be set independently in libarchfpga's Makefile.
 
-COMPILER = g++44
+COMPILER = g++
 
 OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD = -O3
 # can be -O0 (no optimization) to -O3 (full optimization), or -Os (optimize space)
@@ -26,7 +26,7 @@ LIB_DIR = -L.
 LIB = -lm -lvpr
 SRC_DIR = SRC
 OBJ_DIR = OBJ
-OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/route -ISRC/power -ISRC/mrfpga -ISRC/spice -ISRC/clb_pin_remap -I../printhandler/SRC/TIO_InputOutputHandlers
+OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/route -ISRC/power -ISRC/mrfpga -ISRC/spice -ISRC/clb_pin_remap -ISRC/syn_verilog -I../printhandler/SRC/TIO_InputOutputHandlers
 
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
 

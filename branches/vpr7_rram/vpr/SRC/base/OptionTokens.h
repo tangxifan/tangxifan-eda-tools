@@ -81,6 +81,8 @@ enum e_OptionBaseToken {
     OT_PRINT_SPICE_PB_MUX_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for MUXes */
     OT_PRINT_SPICE_CB_MUX_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for MUXes */
     OT_PRINT_SPICE_SB_MUX_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for MUXes */
+    OT_PRINT_SPICE_CB_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for CBs */
+    OT_PRINT_SPICE_SB_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for SBs */
     OT_PRINT_SPICE_GRID_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for Grids */
     OT_PRINT_SPICE_LUT_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for LUTs */
     OT_PRINT_SPICE_DFF_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for FFs */

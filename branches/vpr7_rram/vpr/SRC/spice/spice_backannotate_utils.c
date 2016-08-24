@@ -281,6 +281,9 @@ void build_prev_node_list_rr_nodes(int LL_num_rr_nodes,
   for (inode = 0; inode < LL_num_rr_nodes; inode++) {
     /* Malloc */
     LL_rr_node[inode].num_drive_rr_nodes = LL_rr_node[inode].fan_in;
+    if (0 == LL_rr_node[inode].fan_in) {
+     continue;
+    }
     LL_rr_node[inode].drive_rr_nodes = (t_rr_node**)my_malloc(sizeof(t_rr_node*)*LL_rr_node[inode].num_drive_rr_nodes);
     LL_rr_node[inode].drive_switches = (int*)my_malloc(sizeof(int)*LL_rr_node[inode].num_drive_rr_nodes);
   }

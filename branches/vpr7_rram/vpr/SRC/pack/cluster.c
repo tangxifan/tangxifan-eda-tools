@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <map>
+#include <time.h>
 
 #include "util.h"
 #include "vpr_types.h"
@@ -1164,7 +1165,8 @@ static enum e_block_pack_status try_pack_molecule(
 	t_logical_block *chain_root_block;
 	boolean is_root_of_chain;
 	t_pb_graph_pin *chain_root_pin;
-
+    /* Xifan TANG: count the runtime for packing placement*/
+	clock_t begin, end;
 	
 	parent = NULL;
 	
@@ -1208,6 +1210,8 @@ static enum e_block_pack_status try_pack_molecule(
 				}
 			}
 			if (block_pack_status == BLK_PASSED) {
+                /* start of pack placement */
+                begin = clock();
 				/* Try to route if heuristic is to route for every atom
 					Skip routing if heuristic is to route at the end of packing complex block
 				*/
@@ -1242,6 +1246,14 @@ static enum e_block_pack_status try_pack_molecule(
 						}
 					}
 				}
+                /* end of pack route */
+                end = clock();
+                /* accumulate the runtime for pack route */
+#ifdef CLOCKS_PER_SEC
+                pack_route_time += (float)(end - begin)/ CLOCKS_PER_SEC; 
+#else
+                pack_route_time += (float)(end - begin)/ CLK_PER_SEC; 
+#endif
 			}
 			if (block_pack_status != BLK_PASSED) {
 				for (i = 0; i < failed_location; i++) {

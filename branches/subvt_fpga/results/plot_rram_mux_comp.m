@@ -3,7 +3,7 @@ clear all;
 close all;
 
 %% Data
-mux_size_list = 2:2:32;
+mux_size_list = 2:2:50;
 mux_list_area_comp = [{'SRAM MUX'}, {'RRAM MUX (1-level)'}, {'RRAM MUX (2-level)'}, {'RRAM MUX (tree-like)'}];
 mux_list_delay_comp = [{'SRAM MUX V_{DD}=0.5V'}, {'SRAM MUX V_{DD}=0.6V'}, {'SRAM MUX V_{DD}=0.7V'}];
 
@@ -294,15 +294,44 @@ hleg = legend([{'CMOS MUX (V_{DD}=0.5V)'},{'CMOS MUX (V_{DD}=0.7V)'}, {'1-level 
 set(fig_handle7_2, 'Position', [1 1 650 500]);
 grid on
 
+%% RRAM MUX with best PDP
+for i = 2:2:50
+  if (i < 24) 
+    area_rram_mux_nonisolate(i/2) = area_rram_mux_nonisolate_one_level(i/2);
+    delay_rram_mux_nonisolate_0p5V(i/2) = rram_mux_nonisolate_one_level_0p5V(i/2,2);
+    delay_rram_mux_nonisolate_0p6V(i/2) = rram_mux_nonisolate_one_level_0p6V(i/2,2);
+    delay_rram_mux_nonisolate_0p7V(i/2) = rram_mux_nonisolate_one_level_0p7V(i/2,2);
+    power_rram_mux_nonisolate_0p5V(i/2) = rram_mux_nonisolate_one_level_0p5V(i/2,4);
+    power_rram_mux_nonisolate_0p6V(i/2) = rram_mux_nonisolate_one_level_0p6V(i/2,4);
+    power_rram_mux_nonisolate_0p7V(i/2) = rram_mux_nonisolate_one_level_0p7V(i/2,4);
+  else 
+    area_rram_mux_nonisolate(i/2) = area_rram_mux_nonisolate_two_level(i/2);
+    delay_rram_mux_nonisolate_0p5V(i/2) = rram_mux_nonisolate_two_level_0p5V(i/2,2);
+    delay_rram_mux_nonisolate_0p6V(i/2) = rram_mux_nonisolate_two_level_0p6V(i/2,2);
+    delay_rram_mux_nonisolate_0p7V(i/2) = rram_mux_nonisolate_two_level_0p7V(i/2,2);
+    power_rram_mux_nonisolate_0p5V(i/2) = rram_mux_nonisolate_two_level_0p5V(i/2,4);
+    power_rram_mux_nonisolate_0p6V(i/2) = rram_mux_nonisolate_two_level_0p6V(i/2,4);
+    power_rram_mux_nonisolate_0p7V(i/2) = rram_mux_nonisolate_two_level_0p7V(i/2,4);
+  end 
+end
+
 % Fig. 8, Area-Delay Comparison - SRAM MUX vs. RRAM MUX 
+adp_sram_mux_0p7V = (area_sram_mux').*sram_mux_0p7V(:,2)/1e-12;
+adp_rram_mux_nonisolate_0p5V = area_rram_mux_nonisolate.*delay_rram_mux_nonisolate_0p5V/1e-12;
+adp_rram_mux_nonisolate_0p6V = area_rram_mux_nonisolate.*delay_rram_mux_nonisolate_0p6V/1e-12;
+adp_rram_mux_nonisolate_0p7V = area_rram_mux_nonisolate.*delay_rram_mux_nonisolate_0p7V/1e-12;
+% Plot figure
 fig_handle8 = figure;
-plot(sram_mux_0p7V(:,1), (area_sram_mux').*sram_mux_0p7V(:,2)/1e-12,'k-o','LineWidth', 2, 'MarkerSize',10);
+plot(sram_mux_0p7V(:,1), adp_sram_mux_0p7V,'k-o','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram_mux_nonisolate_one_level_0p5V(:,1), (area_rram_mux_nonisolate_one_level').*rram_mux_nonisolate_one_level_0p5V(:,2)/1e-12,'b-*','LineWidth', 2, 'MarkerSize',10);
+%plot(rram_mux_nonisolate_one_level_0p5V(:,1), (area_rram_mux_nonisolate_one_level').*rram_mux_nonisolate_one_level_0p5V(:,2)/1e-12,'b-*','LineWidth', 2, 'MarkerSize',10);
+plot(rram_mux_nonisolate_one_level_0p5V(:,1), adp_rram_mux_nonisolate_0p5V,'b-*','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram_mux_nonisolate_one_level_0p6V(:,1), (area_rram_mux_nonisolate_one_level').*rram_mux_nonisolate_one_level_0p6V(:,2)/1e-12,'g-s','LineWidth', 2, 'MarkerSize',10);
+%plot(rram_mux_nonisolate_one_level_0p6V(:,1), (area_rram_mux_nonisolate_one_level').*rram_mux_nonisolate_one_level_0p6V(:,2)/1e-12,'g-s','LineWidth', 2, 'MarkerSize',10);
+plot(rram_mux_nonisolate_one_level_0p6V(:,1), adp_rram_mux_nonisolate_0p6V,'g-s','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram_mux_nonisolate_one_level_0p7V(:,1), (area_rram_mux_nonisolate_one_level').*rram_mux_nonisolate_one_level_0p7V(:,2)/1e-12,'r-+','LineWidth', 2, 'MarkerSize',10);
+%plot(rram_mux_nonisolate_one_level_0p7V(:,1), (area_rram_mux_nonisolate_one_level').*rram_mux_nonisolate_one_level_0p7V(:,2)/1e-12,'r-+','LineWidth', 2, 'MarkerSize',10);
+plot(rram_mux_nonisolate_one_level_0p7V(:,1), adp_rram_mux_nonisolate_0p7V,'r-+','LineWidth', 2, 'MarkerSize',10);
 hold on
 %title('Area-Delay Product (M.W.T.A * ps) and MUX size N','FontSize',18)
 xlabel('MUX size','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
@@ -312,22 +341,30 @@ set(gca,'XTick',mux_size_list);
 %set(gca,'XTickLabel',fc_in);
 %set(gca,'ylim',[10 22],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca, 'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
-hleg = legend([{'CMOS MUX (V_{DD}=0.7V)'}, {'1-level 4T1R MUX (V_{DD}=0.5V)'}, {'1-level 4T1R MUX (V_{DD}=0.6V)'}, {'1-level 4T1R MUX(V_{DD}=0.7V)'}]);
+hleg = legend([{'CMOS MUX (V_{DD}=0.7V)'}, {'4T1R MUX (V_{DD}=0.5V)'}, {'4T1R MUX (V_{DD}=0.6V)'}, {'4T1R MUX(V_{DD}=0.7V)'}]);
 set(fig_handle8, 'Position', [1 1 650 500]);
 grid on
 
 % Fig. 9, Power-Delay Comparison - SRAM MUX vs. RRAM MUX 
+pdp_sram_mux_0p7V = (sram_mux_0p7V(:,2)/1e-12).*(sram_mux_0p7V(:,4)/1e-3);
+pdp_rram_mux_nonisolate_0p5V = (delay_rram_mux_nonisolate_0p5V/1e-12).*(power_rram_mux_nonisolate_0p5V/1e-3);
+pdp_rram_mux_nonisolate_0p6V = (delay_rram_mux_nonisolate_0p6V/1e-12).*(power_rram_mux_nonisolate_0p6V/1e-3);
+pdp_rram_mux_nonisolate_0p7V = (delay_rram_mux_nonisolate_0p7V/1e-12).*(power_rram_mux_nonisolate_0p7V/1e-3);
+% Plot figure
 fig_handle9 = figure;
-plot(sram_mux_0p7V(:,1), (sram_mux_0p7V(:,2)/1e-12).*(sram_mux_0p7V(:,4)/1e-3),'k-o','LineWidth', 2, 'MarkerSize',10);
+plot(sram_mux_0p7V(:,1), pdp_sram_mux_0p7V,'k-o','LineWidth', 2, 'MarkerSize',10);
 %plot(sram_mux_0p7V(:,1), (sram_mux_0p7V(:,5)/1e-15),'k-o','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram_mux_nonisolate_one_level_0p5V(:,1), (rram_mux_nonisolate_one_level_0p5V(:,2)/1e-12).*(rram_mux_nonisolate_one_level_0p5V(:,4)/1e-3),'b-*','LineWidth', 2, 'MarkerSize',10);
+%plot(rram_mux_nonisolate_one_level_0p5V(:,1), (rram_mux_nonisolate_one_level_0p5V(:,2)/1e-12).*(rram_mux_nonisolate_one_level_0p5V(:,4)/1e-3),'b-*','LineWidth', 2, 'MarkerSize',10);
+plot(rram_mux_nonisolate_one_level_0p5V(:,1), pdp_rram_mux_nonisolate_0p5V,'b-*','LineWidth', 2, 'MarkerSize',10);
 %plot(rram_mux_nonisolate_one_level_0p5V(:,1), (rram_mux_nonisolate_one_level_0p5V(:,5)/1e-15),'b-*','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram_mux_nonisolate_one_level_0p6V(:,1), (rram_mux_nonisolate_one_level_0p6V(:,2)/1e-12).*(rram_mux_nonisolate_one_level_0p6V(:,4)/1e-3),'r-+','LineWidth', 2, 'MarkerSize',10);
+%plot(rram_mux_nonisolate_one_level_0p6V(:,1), (rram_mux_nonisolate_one_level_0p6V(:,2)/1e-12).*(rram_mux_nonisolate_one_level_0p6V(:,4)/1e-3),'r-+','LineWidth', 2, 'MarkerSize',10);
+plot(rram_mux_nonisolate_one_level_0p6V(:,1), pdp_rram_mux_nonisolate_0p6V, 'r-+','LineWidth', 2, 'MarkerSize',10);
 %plot(rram_mux_nonisolate_one_level_0p6V(:,1), (rram_mux_nonisolate_one_level_0p6V(:,5)/1e-15),'r-+','LineWidth', 2, 'MarkerSize',10);
 hold on
-plot(rram_mux_nonisolate_one_level_0p7V(:,1), (rram_mux_nonisolate_one_level_0p7V(:,2)/1e-12).*(rram_mux_nonisolate_one_level_0p7V(:,4)/1e-3),'g-s','LineWidth', 2, 'MarkerSize',10);
+%plot(rram_mux_nonisolate_one_level_0p7V(:,1), (rram_mux_nonisolate_one_level_0p7V(:,2)/1e-12).*(rram_mux_nonisolate_one_level_0p7V(:,4)/1e-3),'g-s','LineWidth', 2, 'MarkerSize',10);
+plot(rram_mux_nonisolate_one_level_0p7V(:,1), pdp_rram_mux_nonisolate_0p7V,'g-s','LineWidth', 2, 'MarkerSize',10);
 %plot(rram_mux_nonisolate_one_level_0p7V(:,1), (rram_mux_nonisolate_one_level_0p7V(:,5)/1e-15),'g-s','LineWidth', 2, 'MarkerSize',10);
 hold on
 %title('Power-Delay Product (fJ) and MUX size N','FontSize',18)
@@ -338,7 +375,7 @@ set(gca,'XTick',mux_size_list);
 %%set(gca,'XTickLabel',fc_in);
 %%set(gca,'ylim',[10 22],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca, 'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
-hleg = legend([{'CMOS MUX (V_{DD}=0.7V)'}, {'1-level 4T1R MUX (V_{DD}=0.5V)'}, {'1-level 4T1R MUX (V_{DD}=0.6V)'}, {'1-level 4T1R MUX(V_{DD}=0.7V)'}]);
+hleg = legend([{'CMOS MUX (V_{DD}=0.7V)'}, {'4T1R MUX (V_{DD}=0.5V)'}, {'4T1R MUX (V_{DD}=0.6V)'}, {'4T1R MUX(V_{DD}=0.7V)'}]);
 set(fig_handle9, 'Position', [1 1 650 500]);
 grid on
 

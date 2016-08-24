@@ -42,7 +42,8 @@ enum e_spice_model_type {
   SPICE_MODEL_INPAD, 
   SPICE_MODEL_OUTPAD, 
   SPICE_MODEL_SRAM, 
-  SPICE_MODEL_HARDLOGIC
+  SPICE_MODEL_HARDLOGIC,
+  SPICE_MODEL_SCFF
 };
 
 enum e_spice_model_design_tech {
@@ -87,7 +88,9 @@ enum e_spice_model_port_type {
   SPICE_MODEL_PORT_OUTPUT, 
   SPICE_MODEL_PORT_INOUT, 
   SPICE_MODEL_PORT_CLOCK, 
-  SPICE_MODEL_PORT_SRAM
+  SPICE_MODEL_PORT_SRAM,
+  SPICE_MODEL_PORT_BL,
+  SPICE_MODEL_PORT_WL
 };
 
 typedef struct s_spice_model_port t_spice_model_port;
@@ -153,6 +156,15 @@ struct s_spice_model {
   /* Grid index counter */
   int** grid_index_low;
   int** grid_index_high;
+  /* CBX index counter */
+  int** cbx_index_low;
+  int** cbx_index_high;
+  /* CBY index counter */
+  int** cby_index_low;
+  int** cby_index_high;
+  /* SB index counter */
+  int** sb_index_low;
+  int** sb_index_high;
 };
 
 enum e_spice_accuracy_type {
@@ -249,11 +261,18 @@ struct s_spice_mux_model {
 };
 
 /* For SRAM */
+enum e_sram_orgz {
+  SPICE_SRAM_STANDALONE,
+  SPICE_SRAM_SCAN_CHAIN,
+  SPICE_SRAM_MEMORY_BANK
+};
+
 typedef struct s_sram_inf t_sram_inf;
 struct s_sram_inf {
   float area; //Xifan TANG
   char* spice_model_name; // Xifan TANG: Spice Support
   t_spice_model* spice_model; // Xifan TANG: Spice Support
+  enum e_sram_orgz orgz_type;
 };
 
 /* Xifan TANG: SPICE net information */
@@ -274,6 +293,24 @@ typedef struct s_spicetb_info t_spicetb_info;
 struct s_spicetb_info {
   char* tb_name;
   int num_sim_clock_cycles;
+};
+
+/* Data structure for storing configurtion bits*/
+typedef struct s_conf_bit_info t_conf_bit_info;
+struct s_conf_bit_info {
+  /* index in all the srams/bit lines/word lines */
+  int index;
+  /* value stored in a SRAM*/
+  int sram_val;
+  /* If bl and wl is required, this is the value to be stored */
+  int bl_val;
+  int wl_val;
+  /* Which spice model this conf. bit belongs to */
+  t_spice_model* parent_spice_model;
+  int parent_spice_model_index;
+  /* TODO: add location information?
+   * i.e. grid location? sb/cb location? 
+   */
 };
 
 /* SPICE support end*/

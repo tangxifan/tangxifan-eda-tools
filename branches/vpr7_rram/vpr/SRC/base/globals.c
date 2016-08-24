@@ -95,3 +95,5 @@ const t_pb_type *pbtype_max_internal_delay = NULL; /* physical block type with h
 
 /********** Structures representing the global clock network */
 t_clock_arch * g_clock_arch;
+/* Xifan TANG: detailed runtime statistics */
+float pack_route_time = 0.;

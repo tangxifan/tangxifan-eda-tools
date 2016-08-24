@@ -91,9 +91,13 @@ void match_pb_types_spice_model_rec(t_pb_type* cur_pb_type,
         default:
           break; 
         }        
+        vpr_printf(TIO_MESSAGE_INFO,"INFO: Link a SPICE model (%s) for Interconnect (%s)!\n",
+                   cur_pb_type->modes[imode].interconnect[jinterc].spice_model->name, cur_pb_type->modes[imode].interconnect[jinterc].name);
       } else {
         cur_pb_type->modes[imode].interconnect[jinterc].spice_model = 
           find_name_matched_spice_model(cur_pb_type->modes[imode].interconnect[jinterc].spice_model_name, num_spice_model, spice_models);
+        vpr_printf(TIO_MESSAGE_INFO,"INFO: Link a SPICE model (%s) for Interconnect (%s)!\n",
+                   cur_pb_type->modes[imode].interconnect[jinterc].spice_model->name, cur_pb_type->modes[imode].interconnect[jinterc].name);
         if (NULL == cur_pb_type->modes[imode].interconnect[jinterc].spice_model) {
           vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,LINE[%d]) Fail to find a defined SPICE model called %s, in pb_type(%s)!\n",__FILE__, __LINE__, cur_pb_type->modes[imode].interconnect[jinterc].spice_model_name, cur_pb_type->name);
           exit(1);
@@ -1001,19 +1005,56 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
     fprintf(fp, "*****\n");
     /* Print all the srams*/
     cur_sram = sram_spice_model->cnt; 
-    for (ilevel = 0; ilevel < num_sram_bits; ilevel++) {
-      fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, cur_sram); /* SRAM subckts*/
-      /* fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, cur_sram);*/ /* Input*/
-      fprintf(fp, "%s->in ", sram_spice_model->prefix); /* Input*/
-      fprintf(fp, "%s[%d]->out %s[%d]->outb ", 
-              sram_spice_model->prefix, cur_sram, sram_spice_model->prefix, cur_sram); /* Outputs */
-      fprintf(fp, "gvdd_sram_local_routing sgnd %s\n", sram_spice_model->name);  //
-      /* Add nodeset to help convergence */ 
-      fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, cur_sram);
-      fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, cur_sram);
-      
-      cur_sram++;
+    switch (sram_orgz_type) {
+    case SPICE_SRAM_STANDALONE:
+    case SPICE_SRAM_MEMORY_BANK:
+      for (ilevel = 0; ilevel < num_sram_bits; ilevel++) {
+        fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, cur_sram); /* SRAM subckts*/
+        /* fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, cur_sram);*/ /* Input*/
+        fprintf(fp, "%s->in ", sram_spice_model->prefix); /* Input*/
+        fprintf(fp, "%s[%d]->out %s[%d]->outb ", 
+                sram_spice_model->prefix, cur_sram, sram_spice_model->prefix, cur_sram); /* Outputs */
+        fprintf(fp, "gvdd_sram_local_routing sgnd %s\n", sram_spice_model->name);  //
+        /* Add nodeset to help convergence */ 
+        fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, cur_sram);
+        fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, cur_sram);
+        cur_sram++;
+      }
+      break;
+    case SPICE_SRAM_SCAN_CHAIN:
+      for (ilevel = 0; ilevel < num_sram_bits; ilevel++) {
+        fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, cur_sram); /* SRAM subckts*/
+        fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, cur_sram); /* Input*/
+        fprintf(fp, "%s[%d]->out %s[%d]->outb ", 
+                sram_spice_model->prefix, cur_sram, sram_spice_model->prefix, cur_sram); /* Outputs */
+        fprintf(fp, "sc_clk sc_rst sc_set \n");
+        fprintf(fp, "gvdd_sram_local_routing sgnd %s\n", sram_spice_model->name);  //
+        /* Add nodeset to help convergence */ 
+        fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, cur_sram);
+        fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, cur_sram);
+        /* Connect to the tail of previous Scan-chain FF*/
+        fprintf(fp,"R%s[%d]_short %s[%d]->out %s[%d]->in 0\n", 
+                sram_spice_model->prefix, cur_sram, 
+                sram_spice_model->prefix, cur_sram, 
+                sram_spice_model->prefix, cur_sram + 1);
+        /* Specify this is a global signal*/
+        fprintf(fp, ".global %s[%d]->in\n", sram_spice_model->prefix, cur_sram);
+        cur_sram++;
+      }
+      /* Specify the head and tail of the scan-chain of this MUX */
+      fprintf(fp,"R%s[%d]_sc_head %s[%d]_sc_head %s[0]->in 0\n", 
+              cur_interc->spice_model->prefix, cur_interc->spice_model->cnt, 
+              cur_interc->spice_model->prefix, cur_interc->spice_model->cnt, sram_spice_model->prefix);
+      fprintf(fp,"R%s[%d]_sc_tail %s[%d]_sc_tail %s[%d]->in 0\n", 
+              cur_interc->spice_model->prefix, cur_interc->spice_model->cnt, 
+              cur_interc->spice_model->prefix, cur_interc->spice_model->cnt, sram_spice_model->prefix, cur_sram);
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Invalid SRAM organization type!\n",
+                 __FILE__, __LINE__);
+      exit(1);
     }
+
     assert(cur_sram == num_sram);
     sram_spice_model->cnt = cur_sram;
     //for (ilevel = 0; ilevel < mux_level; ilevel++) {
@@ -1418,6 +1459,29 @@ void fprint_spice_idle_pb_graph_node_rec(FILE* fp,
   }
   cur_pb_type = cur_pb_graph_node->pb_type;
 
+  /* Recursively finish all the child pb_types*/
+  if (NULL == cur_pb_type->spice_model) { 
+    /* Find the mode that define_idle_mode*/
+    mode_index = find_pb_type_idle_mode_index((*cur_pb_type));
+    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+        /* Pass the SPICE mode prefix on, 
+         * <subckt_name>mode[<mode_name>]_
+         */
+        pass_on_prefix = (char*)my_malloc(sizeof(char)*
+                           (strlen(formatted_subckt_prefix) + strlen(cur_pb_type->name) + 1 
+                            + strlen(my_itoa(pb_type_index)) + 7 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1 + 1));
+        sprintf(pass_on_prefix, "%s%s[%d]_mode[%s]_", 
+                formatted_subckt_prefix, cur_pb_type->name, pb_type_index, cur_pb_type->modes[mode_index].name);
+        /* Recursive*/
+        fprint_spice_idle_pb_graph_node_rec(fp, pass_on_prefix,
+                                            &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]), jpb);
+        /* Free */
+        my_free(pass_on_prefix);
+      }
+    }
+  }
+
   /* Check if this has defined a spice_model*/
   if (NULL != cur_pb_type->spice_model) {
     /* TODO: Consider the num_pb, create all the subckts*/
@@ -1450,6 +1514,14 @@ void fprint_spice_idle_pb_graph_node_rec(FILE* fp,
     /* Finish with local vdd and gnd */
     fprintf(fp, "svdd sgnd\n");
     /* Definition ends*/
+
+    /* Specify the head of scan-chain */
+    if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+      fprintf(fp, "***** Head of scan-chain *****\n");
+      fprintf(fp, "R%s_sc_head %s_sc_head %s[%d]->in 0\n",
+              subckt_name, subckt_name, sram_spice_model->prefix, sram_spice_model->cnt);
+    }
+
     /* Quote all child pb_types */
     for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
       /* Each child may exist multiple times in the hierarchy*/
@@ -1504,33 +1576,18 @@ void fprint_spice_idle_pb_graph_node_rec(FILE* fp,
     /* Print interconnections, set is_idle as TRUE*/
     fprint_spice_pb_graph_interc(fp, subckt_name, cur_pb_graph_node, NULL, mode_index, 1);
     /* Check each pins of pb_graph_node */ 
+
+    /* Specify the Tail of scan-chain */
+    if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+      fprintf(fp, "***** Tail of scan-chain *****\n");
+      fprintf(fp, "R%s_sc_tail %s_sc_tail %s[%d]->in 0\n",
+              subckt_name, subckt_name, sram_spice_model->prefix, sram_spice_model->cnt);
+    }
+
     /* End the subckt */
     fprintf(fp, ".eom\n");
     /* Free subckt name*/
     my_free(subckt_name);
-  }
-
-  /* Recursively finish all the child pb_types*/
-  if (NULL == cur_pb_type->spice_model) { 
-    /* Find the mode that define_idle_mode*/
-    mode_index = find_pb_type_idle_mode_index((*cur_pb_type));
-    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
-      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
-        /* Pass the SPICE mode prefix on, 
-         * <subckt_name>mode[<mode_name>]_
-         */
-        pass_on_prefix = (char*)my_malloc(sizeof(char)*
-                           (strlen(formatted_subckt_prefix) + strlen(cur_pb_type->name) + 1 
-                            + strlen(my_itoa(pb_type_index)) + 7 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1 + 1));
-        sprintf(pass_on_prefix, "%s%s[%d]_mode[%s]_", 
-                formatted_subckt_prefix, cur_pb_type->name, pb_type_index, cur_pb_type->modes[mode_index].name);
-        /* Recursive*/
-        fprint_spice_idle_pb_graph_node_rec(fp, pass_on_prefix,
-                                            &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]), jpb);
-        /* Free */
-        my_free(pass_on_prefix);
-      }
-    }
   }
 
   return;
@@ -1565,6 +1622,35 @@ void fprint_spice_pb_graph_node_rec(FILE* fp,
   }
   cur_pb_type = cur_pb_graph_node->pb_type;
   mode_index = cur_pb->mode; 
+
+  /* Recursively finish all the child pb_types*/
+  if (NULL == cur_pb_type->spice_model) { 
+    /* recursive for the child_pbs*/
+    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+        /* Pass the SPICE mode prefix on, 
+         * <subckt_name><pb_type_name>[<pb_index>]_mode[<mode_name>]_
+         */
+        pass_on_prefix = (char*)my_malloc(sizeof(char)*
+                          (strlen(formatted_subckt_prefix) + strlen(cur_pb_type->name) + 1 
+                           + strlen(my_itoa(pb_type_index)) + 7 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1 + 1));
+        sprintf(pass_on_prefix, "%s%s[%d]_mode[%s]_", 
+                formatted_subckt_prefix, cur_pb_type->name, pb_type_index, cur_pb_type->modes[mode_index].name);
+        /* Recursive*/
+        /* Refer to pack/output_clustering.c [LINE 392] */
+        if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
+          fprint_spice_pb_graph_node_rec(fp, pass_on_prefix, &(cur_pb->child_pbs[ipb][jpb]), 
+                                         cur_pb->child_pbs[ipb][jpb].pb_graph_node, jpb);
+        } else {
+          /* Check if this pb has no children, no children mean idle*/
+          fprint_spice_idle_pb_graph_node_rec(fp, pass_on_prefix,
+                                            cur_pb->child_pbs[ipb][jpb].pb_graph_node, jpb);
+        }
+        /* Free */
+        my_free(pass_on_prefix);
+      }
+    }
+  }
 
   /* Check if this has defined a spice_model*/
   if (NULL != cur_pb_type->spice_model) {
@@ -1685,35 +1771,6 @@ void fprint_spice_pb_graph_node_rec(FILE* fp,
     fprintf(fp, ".eom\n");
     /* Free subckt name*/
     my_free(subckt_name);
-  }
-
-  /* Recursively finish all the child pb_types*/
-  if (NULL == cur_pb_type->spice_model) { 
-    /* recursive for the child_pbs*/
-    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
-      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
-        /* Pass the SPICE mode prefix on, 
-         * <subckt_name><pb_type_name>[<pb_index>]_mode[<mode_name>]_
-         */
-        pass_on_prefix = (char*)my_malloc(sizeof(char)*
-                          (strlen(formatted_subckt_prefix) + strlen(cur_pb_type->name) + 1 
-                           + strlen(my_itoa(pb_type_index)) + 7 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1 + 1));
-        sprintf(pass_on_prefix, "%s%s[%d]_mode[%s]_", 
-                formatted_subckt_prefix, cur_pb_type->name, pb_type_index, cur_pb_type->modes[mode_index].name);
-        /* Recursive*/
-        /* Refer to pack/output_clustering.c [LINE 392] */
-        if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
-          fprint_spice_pb_graph_node_rec(fp, pass_on_prefix, &(cur_pb->child_pbs[ipb][jpb]), 
-                                         cur_pb->child_pbs[ipb][jpb].pb_graph_node, jpb);
-        } else {
-          /* Check if this pb has no children, no children mean idle*/
-          fprint_spice_idle_pb_graph_node_rec(fp, pass_on_prefix,
-                                            cur_pb->child_pbs[ipb][jpb].pb_graph_node, jpb);
-        }
-        /* Free */
-        my_free(pass_on_prefix);
-      }
-    }
   }
 
   return;
@@ -2194,6 +2251,50 @@ void fprint_grid_blocks(FILE* fp,
   subckt_name = (char*)my_malloc(sizeof(char)*subckt_name_str_len);
   sprintf(subckt_name, "grid[%d][%d]_", ix, iy);
 
+  /* Specify the head of scan-chain */
+  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+    fprintf(fp, "***** Head of scan-chain *****\n");
+    fprintf(fp, "Rgrid[%d][%d]_sc_head grid[%d][%d]_sc_head %s[%d]->in 0\n",
+            ix, iy, ix, iy, sram_spice_model->prefix, sram_spice_model->cnt);
+    fprintf(fp, ".global grid[%d][%d]_sc_head \n",
+            ix, iy);
+  }
+
+  cur_block_index = 0;
+  /* check capacity and if this has been mapped */
+  for (iz = 0; iz < capacity; iz++) {
+    /* Check in all the blocks(clustered logic block), there is a match x,y,z*/
+    mapped_block = search_mapped_block(ix, iy, iz); 
+    /* Comments: Grid [x][y]*/
+    fprintf(fp, "***** Grid[%d][%d] type_descriptor: %s[%d] *****\n", ix, iy, grid[ix][iy].type->name, iz);
+    if (NULL == mapped_block) {
+      /* Print a NULL logic block...*/
+      fprint_spice_idle_block(fp, subckt_name, ix, iy, iz, grid[ix][iy].type);
+    } else {
+      if (iz == mapped_block->z) {
+        // assert(mapped_block == &(block[grid[ix][iy].blocks[cur_block_index]]));
+        cur_block_index++;
+      }
+      /* Print a logic block with specific configurations*/ 
+      fprint_spice_block(fp, subckt_name, ix, iy, iz, grid[ix][iy].type, mapped_block);
+    }
+    fprintf(fp, "***** END *****\n\n");
+  } 
+
+  /* Specify the tail of scan-chain */
+  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+    fprintf(fp, "***** Tail of scan-chain *****\n");
+    fprintf(fp, "Rgrid[%d][%d]_sc_tail grid[%d][%d]_sc_tail %s[%d]->in 0\n",
+            ix, iy, ix, iy, sram_spice_model->prefix, sram_spice_model->cnt);
+    fprintf(fp, ".global grid[%d][%d]_sc_tail \n",
+            ix, iy);
+  }
+
+  assert(cur_block_index == grid[ix][iy].usage);
+
+  /* Update the grid_index_high for each spice_model */
+  update_spice_models_grid_index_high(ix, iy, arch->spice->num_spice_model, arch->spice->spice_models);
+
   fprintf(fp, "***** Grid[%d][%d], Capactity: %d *****\n", ix, iy, capacity);
   fprintf(fp, "***** Top Protocol *****\n");
   /* Definition */
@@ -2225,32 +2326,6 @@ void fprint_grid_blocks(FILE* fp,
   }
 
   fprintf(fp, ".eom\n");
-
-  cur_block_index = 0;
-  /* check capacity and if this has been mapped */
-  for (iz = 0; iz < capacity; iz++) {
-    /* Check in all the blocks(clustered logic block), there is a match x,y,z*/
-    mapped_block = search_mapped_block(ix, iy, iz); 
-    /* Comments: Grid [x][y]*/
-    fprintf(fp, "***** Grid[%d][%d] type_descriptor: %s[%d] *****\n", ix, iy, grid[ix][iy].type->name, iz);
-    if (NULL == mapped_block) {
-      /* Print a NULL logic block...*/
-      fprint_spice_idle_block(fp, subckt_name, ix, iy, iz, grid[ix][iy].type);
-    } else {
-      if (iz == mapped_block->z) {
-        // assert(mapped_block == &(block[grid[ix][iy].blocks[cur_block_index]]));
-        cur_block_index++;
-      }
-      /* Print a logic block with specific configurations*/ 
-      fprint_spice_block(fp, subckt_name, ix, iy, iz, grid[ix][iy].type, mapped_block);
-    }
-    fprintf(fp, "***** END *****\n\n");
-  } 
-
-  assert(cur_block_index == grid[ix][iy].usage);
-
-  /* Update the grid_index_high for each spice_model */
-  update_spice_models_grid_index_high(ix, iy, arch->spice->num_spice_model, arch->spice->spice_models);
 
   /* Free */
   my_free(subckt_name);
