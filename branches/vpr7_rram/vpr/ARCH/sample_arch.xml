@@ -324,7 +324,7 @@
 	<area grid_logic_tile_area="0"/> 
     <!--sram area="6" organization="standalone" spice_model_name="sram6T"-->
     <!--sram area="6" organization="scan-chain" spice_model_name="sc_dff"-->
-    <sram area="6" organization="memory_bank" spice_model_name="sram6T">
+    <sram area="6" organization="memory_bank" spice_model_name="sram6T_blwl">
     </sram>
     <chan_width_distr>
       <io width="1.000000"/>

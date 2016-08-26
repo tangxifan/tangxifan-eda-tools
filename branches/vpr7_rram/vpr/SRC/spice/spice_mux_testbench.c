@@ -516,8 +516,14 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
     break;
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
     mux_level = 1;
-    num_mux_sram_bits = mux_size;
-    mux_sram_bits = decode_onelevel_mux_sram_bits(mux_size, mux_level, path_id); 
+    /* Special for 2-input MUX */
+    if (2 == mux_size) {
+      num_mux_sram_bits = 1;
+      mux_sram_bits = decode_tree_mux_sram_bits(mux_size, mux_level, path_id); 
+    } else {
+      num_mux_sram_bits = mux_size;
+      mux_sram_bits = decode_onelevel_mux_sram_bits(mux_size, mux_level, path_id); 
+    }
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
     mux_level = mux_spice_model->mux_num_level;

@@ -23,6 +23,7 @@
 /* Include spice support headers*/
 #include "linkedlist.h"
 #include "spice_utils.h"
+#include "spice_lut.h"
 
 /* Include verilog support headers*/
 #include "verilog_global.h"
@@ -89,6 +90,9 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   num_sram = (int)pow(2.,(double)(lut_size));
   assert(num_sram == sram_ports[0]->size);
   assert(1 == output_ports[0]->size);
+
+  /* Generate sram bits*/
+  sram_bits = generate_lut_sram_bits(truth_table_length, truth_table, lut_size);
 
   /* Print the subckts*/ 
   cur_pb_type = cur_pb_graph_node->pb_type;

@@ -926,7 +926,15 @@ void decode_cmos_mux_sram_bits(t_spice_model* mux_spice_model,
   /* Initialization */
   (*bit_len) = 0;
   (*conf_bits) = NULL;
-  
+
+  /* Special for MUX-2: whatever structure it is, it has always one-level and one configuration bit */
+  if (2 == mux_size) {
+    (*bit_len) = 1;
+    (*mux_level) = 1;
+    (*conf_bits) = decode_tree_mux_sram_bits(mux_size, (*mux_level), path_id); 
+    return;
+  }
+  /* Other general cases */ 
   switch (mux_spice_model->structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     (*mux_level) = determine_tree_mux_level(mux_size);
@@ -2338,7 +2346,7 @@ int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
       num_conf_bits = determine_tree_mux_level(mux_size);
       break;
     case SPICE_MODEL_STRUCTURE_ONELEVEL:
-      num_conf_bits = 1;
+      num_conf_bits = mux_size;
       break;
     case SPICE_MODEL_STRUCTURE_MULTILEVEL:
       num_conf_bits = cur_spice_model->mux_num_level
@@ -2947,11 +2955,11 @@ void rec_count_num_iopads_pb(t_pb* cur_pb) {
   if (NULL != cur_pb_type->spice_model) {
     if (SPICE_MODEL_INPAD == cur_pb_type->spice_model->type) {
       sum_num_inpads = 1;
-      cur_pb_type->default_mode_num_inpads = sum_num_inpads;
+      cur_pb->num_inpads = sum_num_inpads;
     }
     if (SPICE_MODEL_OUTPAD == cur_pb_type->spice_model->type) {
       sum_num_outpads = 1;
-      cur_pb_type->default_mode_num_outpads = sum_num_outpads;
+      cur_pb->num_outpads = sum_num_outpads;
     }
   } else {
     /* Definition ends*/
@@ -2974,8 +2982,8 @@ void rec_count_num_iopads_pb(t_pb* cur_pb) {
     }
     /* Count the number of configuration bits of interconnection */
     /* Update the info in pb_type */
-    cur_pb_type->default_mode_num_inpads = sum_num_inpads;
-    cur_pb_type->default_mode_num_outpads = sum_num_outpads;
+    cur_pb->num_inpads = sum_num_inpads;
+    cur_pb->num_outpads = sum_num_outpads;
   }
 
   return;
@@ -3123,6 +3131,7 @@ void check_sram_spice_model_ports(t_spice_model* cur_spice_model,
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) SRAM SPICE MODEL with BL and WL should have only 1 BL port!\n",
                __FILE__, __LINE__);
     num_err++;
+    exit(1);
     if (1 != bl_ports[0]->size) {
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) SRAM SPICE MODEL should have a BL port with size 1!\n",
                  __FILE__, __LINE__);
@@ -3135,6 +3144,7 @@ void check_sram_spice_model_ports(t_spice_model* cur_spice_model,
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) SRAM SPICE MODEL with WL and WL should have only 1 WL port!\n",
                __FILE__, __LINE__);
     num_err++;
+    exit(1);
     if (1 != wl_ports[0]->size) {
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) SRAM SPICE MODEL should have a WL port with size 1!\n",
                  __FILE__, __LINE__);

@@ -4823,7 +4823,8 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
       my ($w_cpt_lowbound, $w_cpt_step, $w_cpt_upbound);
       $w_cpt_lowbound = ($conf_ptr->{mux_settings}->{w_cpt}->{val});
       $w_cpt_step = $conf_ptr->{mux_settings}->{w_cpt_step}->{val};
-      if ("on" eq $w_cpt_sweep) {
+      # w_cpt_sweep is only applicable to SRAM MUX
+      if (("on" eq $w_cpt_sweep)&&("off" eq $rram_enhance)) {
         $w_cpt_upbound = ($opt_ptr->{w_cpt_sweep_val});
       } else {
         $w_cpt_upbound = $w_cpt_lowbound;

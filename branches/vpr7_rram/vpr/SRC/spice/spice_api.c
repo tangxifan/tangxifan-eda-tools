@@ -195,6 +195,7 @@ void init_check_arch_spice_models(t_arch* arch,
   /* Check the type of SRAM_SPICE_MODEL */
   switch (arch->sram_inf.orgz_type) {
   case SPICE_SRAM_STANDALONE:
+    vpr_printf(TIO_MESSAGE_INFO, "INFO: Checking if SRAM spice model fit standalone organization...\n");
     if (SPICE_MODEL_SRAM != arch->sram_inf.spice_model->type) {
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Standalone SRAM organization requires a SPICE model(type=sram)!\n",
                  __FILE__, __LINE__);
@@ -204,6 +205,7 @@ void init_check_arch_spice_models(t_arch* arch,
     check_sram_spice_model_ports(arch->sram_inf.spice_model, FALSE);
     break;
   case SPICE_SRAM_SCAN_CHAIN:
+    vpr_printf(TIO_MESSAGE_INFO, "INFO: Checking if SRAM spice model fit scan-chain organization...\n");
     if (SPICE_MODEL_SCFF != arch->sram_inf.spice_model->type) {
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Scan-chain SRAM organization requires a SPICE model(type=sff)!\n",
                  __FILE__, __LINE__);
@@ -213,6 +215,7 @@ void init_check_arch_spice_models(t_arch* arch,
     check_ff_spice_model_ports(arch->sram_inf.spice_model, TRUE);
     break;
   case SPICE_SRAM_MEMORY_BANK:
+    vpr_printf(TIO_MESSAGE_INFO, "INFO: Checking if SRAM spice model fit memory-bank organization...\n");
     if (SPICE_MODEL_SRAM != arch->sram_inf.spice_model->type) {
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Memory-bank SRAM organization requires a SPICE model(type=sram)!\n",
                  __FILE__, __LINE__);

@@ -958,8 +958,14 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
       break;
     case SPICE_MODEL_STRUCTURE_ONELEVEL:
       mux_level = 1;
-      num_sram_bits = fan_in;
-      sram_bits = decode_onelevel_mux_sram_bits(fan_in, mux_level, select_edge);
+      /* Special for 2-input MUX */
+      if (2 == fan_in) {
+        num_sram_bits = 1;
+        sram_bits = decode_tree_mux_sram_bits(fan_in, mux_level, select_edge); 
+      } else {
+        num_sram_bits = fan_in;
+        sram_bits = decode_onelevel_mux_sram_bits(fan_in, mux_level, select_edge);
+      }
       break;
     case SPICE_MODEL_STRUCTURE_MULTILEVEL:
       mux_level = cur_interc->spice_model->mux_num_level;
