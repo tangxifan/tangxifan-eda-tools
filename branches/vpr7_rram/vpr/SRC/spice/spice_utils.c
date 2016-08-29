@@ -2412,27 +2412,32 @@ int count_num_conf_bit_one_interc(t_interconnect* cur_interc) {
    * 2. Identify the number of fan-in (Consider interconnection edges of only selected mode)
    * 3. Select and print the SPICE netlist
    */
-  if ((NULL == cur_interc)||(0 == fan_in)) { 
+  if (NULL == cur_interc) { 
     return num_conf_bits;
+  } else {
+    fan_in = cur_interc->fan_in;
+    if (0 == fan_in) {
+      return num_conf_bits;
+    }
   }
   /* Initialize the interconnection type that will be implemented in SPICE netlist*/
   switch (cur_interc->type) {
-    case DIRECT_INTERC:
-      assert(1 == fan_in);
+  case DIRECT_INTERC:
+    assert(cur_interc->fan_out == fan_in);
+    spice_interc_type = DIRECT_INTERC;
+    break;
+  case COMPLETE_INTERC:
+    if (1 == fan_in) {
       spice_interc_type = DIRECT_INTERC;
-      break;
-    case COMPLETE_INTERC:
-      if (1 == fan_in) {
-        spice_interc_type = DIRECT_INTERC;
-      } else {
-        assert((2 == fan_in)||(2 < fan_in));
-        spice_interc_type = MUX_INTERC;
-      }
-      break;
-    case MUX_INTERC:
+    } else {
       assert((2 == fan_in)||(2 < fan_in));
       spice_interc_type = MUX_INTERC;
-      break;
+    }
+    break;
+  case MUX_INTERC:
+    assert((2 == fan_in)||(2 < fan_in));
+    spice_interc_type = MUX_INTERC;
+    break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid interconnection type for %s (Arch[LINE%d])!\n",
                __FILE__, __LINE__, cur_interc->name, cur_interc->line_num);
@@ -2444,7 +2449,8 @@ int count_num_conf_bit_one_interc(t_interconnect* cur_interc) {
     /* Check : 
      * 1. Direct interc has only one fan-in!
      */
-    assert(1 == fan_in);
+    assert((cur_interc->fan_out == fan_in)
+         ||((COMPLETE_INTERC == cur_interc->type)&&(1 == fan_in)));
     break;
   case COMPLETE_INTERC:
   case MUX_INTERC:
@@ -2452,9 +2458,17 @@ int count_num_conf_bit_one_interc(t_interconnect* cur_interc) {
      * MUX should have at least 2 fan_in
      */
     assert((2 == fan_in)||(2 < fan_in));
+    assert((1 == cur_interc->fan_out)||(1 < cur_interc->fan_out));
     /* 2. spice_model is a wire */ 
     assert(NULL != cur_interc->spice_model);
     assert(SPICE_MODEL_MUX == cur_interc->spice_model->type);
+    /* Note: 2-input MUX has only 1 conf_bit */
+    if (2 == fan_in) {
+      num_conf_bits = 1;
+      /* FOR COMPLETE_INTERC: we should consider fan_out number ! */
+      num_conf_bits = num_conf_bits * cur_interc->fan_out;
+      break;
+    }
     switch (cur_interc->spice_model->structure) {
     case SPICE_MODEL_STRUCTURE_TREE:
       /* 1. Get the mux level*/
@@ -2474,6 +2488,8 @@ int count_num_conf_bit_one_interc(t_interconnect* cur_interc) {
                  __FILE__, __LINE__, cur_interc->spice_model->name);
       exit(1);
     } 
+    /* FOR COMPLETE_INTERC: we should consider fan_out number ! */
+    num_conf_bits = num_conf_bits * cur_interc->fan_out;
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid interconnection type for %s (Arch[LINE%d])!\n",

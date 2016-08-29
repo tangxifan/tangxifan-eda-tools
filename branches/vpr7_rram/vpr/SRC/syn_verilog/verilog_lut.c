@@ -97,7 +97,7 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   /* Print the subckts*/ 
   cur_pb_type = cur_pb_graph_node->pb_type;
   /* Subckt definition*/
-  fprintf(fp, "module %s%s[%d] (", formatted_subckt_prefix, cur_pb_type->name, index);
+  fprintf(fp, "module %s%s_%d_ (", formatted_subckt_prefix, cur_pb_type->name, index);
   /* Print inputs, outputs, inouts, clocks, NO SRAMs*/
   /*
   port_prefix = (char*)my_malloc(sizeof(char)*
@@ -109,24 +109,27 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   port_prefix = (char*)my_malloc(sizeof(char)*
                 (strlen(cur_pb_type->name) + 1 +
                  strlen(my_itoa(index)) + 1 + 1));
-  sprintf(port_prefix, "%s[%d]", cur_pb_type->name, index);
+  sprintf(port_prefix, "%s_%d_", cur_pb_type->name, index);
   
   dump_verilog_pb_type_ports(fp, port_prefix, 0, cur_pb_type, TRUE); 
+  fprintf(fp, ",\n");
   /* Print SRAM ports */
   switch (sram_verilog_orgz_type) {
   case SPICE_SRAM_MEMORY_BANK:
     /* TODO: when memory-bank style is selected,
      * control lines should be bit lines and word lines 
      */
-    fprintf(fp, "input %s_bl[%d:%d], %s_wl[%d:%d];\n",
-            sram_verilog_model->prefix, sram_verilog_model->cnt, sram_verilog_model->cnt + num_sram - 1,
-            sram_verilog_model->prefix, sram_verilog_model->cnt, sram_verilog_model->cnt + num_sram - 1);
+    fprintf(fp, "input [%d:%d] %s_bl,\n",
+            sram_verilog_model->cnt + num_sram - 1, sram_verilog_model->cnt, sram_verilog_model->prefix); 
+    fprintf(fp, "input [%d:%d] %s_wl\n",
+            sram_verilog_model->cnt + num_sram - 1, sram_verilog_model->cnt, sram_verilog_model->prefix);
     break;
   case SPICE_SRAM_STANDALONE:
   case SPICE_SRAM_SCAN_CHAIN:
-    fprintf(fp, "input %s_out[%d:%d], %s_outb[%d:%d];\n",
-            sram_verilog_model->prefix, sram_verilog_model->cnt, sram_verilog_model->cnt + num_sram - 1,
-            sram_verilog_model->prefix, sram_verilog_model->cnt, sram_verilog_model->cnt + num_sram - 1);
+    fprintf(fp, "input [%d:%d] %s_out,\n",
+            sram_verilog_model->cnt + num_sram - 1, sram_verilog_model->cnt, sram_verilog_model->prefix);
+    fprintf(fp, "input [%d:%d] %s_outb\n",
+            sram_verilog_model->cnt + num_sram - 1, sram_verilog_model->cnt, sram_verilog_model->prefix);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid SRAM organization type!\n",
@@ -136,6 +139,12 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   /* Local Vdd and gnd*/ 
   fprintf(fp, ");\n");
   /* Definition ends*/
+
+  /* Specify SRAM output are wires */
+  fprintf(fp, "wire [%d:%d] %s_out;\n",
+          sram_verilog_model->cnt + num_sram - 1, sram_verilog_model->cnt, sram_verilog_model->prefix);
+  fprintf(fp, "wire [%d:%d] %s_outb;\n",
+          sram_verilog_model->cnt + num_sram - 1, sram_verilog_model->cnt, sram_verilog_model->prefix);
 
   /* Print the encoding in SPICE netlist for debugging */
   fprintf(fp, "//----- Truth Table for LUT[%d], size=%d. -----\n", 
@@ -159,9 +168,9 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
     /* TODO: how to handle Bit lines and Word lines */
     cur_sram = sram_verilog_model->cnt;
     for (i = 0; i < num_sram; i++) {
-      fprintf(fp, "%s %s[%d] (", sram_verilog_model->name, sram_verilog_model->prefix, cur_sram); /* SRAM subckts*/
+      fprintf(fp, "%s %s_%d_ (", sram_verilog_model->name, sram_verilog_model->prefix, cur_sram); /* SRAM subckts*/
       fprintf(fp, "%s_out[%d], ", sram_verilog_model->prefix, cur_sram); /* Input*/
-      fprintf(fp, "%s_out[%d], %s_outb[%d] ", 
+      fprintf(fp, "%s_out[%d], %s_outb[%d], ", 
               sram_verilog_model->prefix, cur_sram, 
               sram_verilog_model->prefix, cur_sram); /* Outputs */
       /* Connect to Bit lines and Word lines */
@@ -192,10 +201,14 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   }
 
   /* Call LUT subckt*/
-  fprintf(fp, "%s %s[%d] (", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
+  fprintf(fp, "%s %s_%d_ (", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
   /* Connect inputs*/ 
   /* Connect outputs*/
+  fprintf(fp, "\n");
+  fprintf(fp, "//----- Input and output ports -----\n");
   dump_verilog_pb_type_ports(fp, port_prefix, 0, cur_pb_type, FALSE); 
+  fprintf(fp, ",\n");
+  fprintf(fp, "//----- SRAM ports -----\n");
   /* Connect srams*/
   cur_sram = sram_verilog_model->cnt;
   for (i = 0; i < num_sram; i++) {
@@ -204,7 +217,7 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   }
   cur_sram = sram_verilog_model->cnt;
   for (i = 0; i < num_sram; i++) {
-    fprintf(fp, "%s_outb[%d], ", sram_verilog_model->prefix, i); 
+    fprintf(fp, "%s_outb[%d], ", sram_verilog_model->prefix, cur_sram); 
     cur_sram++;
   }
   /* vdd should be connected to special global wire gvdd_lut and gnd,

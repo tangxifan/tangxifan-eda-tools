@@ -38,10 +38,10 @@ void dump_verilog_file_header(FILE* fp,
   } 
   fprintf(fp,"//-------------------------------------------\n");
   fprintf(fp,"//    FPGA Synthesizable Verilog Netlist     \n");
-  fprintf(fp,"//    Description: %s*\n",usage);
+  fprintf(fp,"//    Description: %s \n",usage);
   fprintf(fp,"//           Author: Xifan TANG              \n");
   fprintf(fp,"//        Organization: EPFL/IC/LSI          \n");
-  fprintf(fp,"//    Date: %s *\n",my_gettime());
+  fprintf(fp,"//    Date: %s \n",my_gettime());
   fprintf(fp,"//-------------------------------------------\n");
   fprintf(fp,"//----- Time scale -----\n");
   fprintf(fp,"`timescale 1ns / 1ps\n");

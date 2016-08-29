@@ -102,7 +102,7 @@ void dump_verilog_pb_primitive_ff(FILE* fp,
   port_prefix = (char*)my_malloc(sizeof(char)*
                 (strlen(prim_pb_type->name) + 1
                  + strlen(my_itoa(index)) + 1 + 1));
-  sprintf(port_prefix, "%s[%d]", prim_pb_type->name, index);
+  sprintf(port_prefix, "%s_%d_", prim_pb_type->name, index);
   /* Definition line */
   fprintf(fp, "module %s%s (", formatted_subckt_prefix, port_prefix);
   /* print ports*/
@@ -112,7 +112,7 @@ void dump_verilog_pb_primitive_ff(FILE* fp,
   /* Definition ends*/
 
   /* Call the dff subckt*/
-  fprintf(fp, "%s %s[%d] (", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
+  fprintf(fp, "%s %s_%d_ (", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
   /* print ports*/
   dump_verilog_pb_type_ports(fp, port_prefix, 1, prim_pb_type, FALSE); /* Use global clock for each DFF...*/ 
   /* print global set and reset */
@@ -217,7 +217,7 @@ void dump_verilog_pb_primitive_hardlogic(FILE* fp,
   port_prefix = (char*)my_malloc(sizeof(char)*
                 (strlen(prim_pb_type->name) + 1
                  + strlen(my_itoa(index)) + 1 + 1));
-  sprintf(port_prefix, "%s[%d]", prim_pb_type->name, index);
+  sprintf(port_prefix, "%s_%d_", prim_pb_type->name, index);
   /* Definition line */
   fprintf(fp, "module %s%s (", formatted_subckt_prefix, port_prefix);
   /* print ports*/
@@ -233,7 +233,7 @@ void dump_verilog_pb_primitive_hardlogic(FILE* fp,
   }
 
   /* Call the hardlogic subckt*/
-  fprintf(fp, "%s %s[%d] ", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
+  fprintf(fp, "%s %s_%d_ ", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
   /* print ports*/
   dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, FALSE); 
   /* Local vdd and gnd, verilog_model name, 
@@ -306,7 +306,7 @@ void dump_verilog_pb_primitive_io(FILE* fp,
   port_prefix = (char*)my_malloc(sizeof(char)*
                 (strlen(prim_pb_type->name) + 1
                  + strlen(my_itoa(index)) + 1 + 1));
-  sprintf(port_prefix, "%s[%d]", prim_pb_type->name, index);
+  sprintf(port_prefix, "%s_%d_", prim_pb_type->name, index);
   /* Definition line */
   fprintf(fp, "module %s%s (", formatted_subckt_prefix, port_prefix);
   /* print ports*/
@@ -316,17 +316,19 @@ void dump_verilog_pb_primitive_io(FILE* fp,
   /* Definition ends*/
 
   /* Call the dff subckt*/
-  fprintf(fp, "%s %s[%d] (", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
+  fprintf(fp, "%s %s_%d_ (", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
   if ((0 == strcmp(".input", prim_pb_type->blif_model))||(0 == strcmp(".clock", prim_pb_type->blif_model))) {
     /* Add input port to Input Pad */
     /* Print input port */
     fprintf(fp, "gfpga_input_%s[%d], ", verilog_model->prefix, verilog_model->cnt);
     /* print ports --> output ports */
     dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, FALSE); 
+    fprintf(fp, ",\n");
   } else if (0 == strcmp(".output", prim_pb_type->blif_model)){
     /* Add output port to Output Pad */
     /* print ports --> input ports */
     dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, FALSE); 
+    fprintf(fp, ",\n");
     /* Print output port */
     fprintf(fp, "gfpga_output_%s[%d], ", verilog_model->prefix, verilog_model->cnt);
 

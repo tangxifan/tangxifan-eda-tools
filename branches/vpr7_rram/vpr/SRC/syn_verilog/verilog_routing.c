@@ -78,7 +78,7 @@ void dump_verilog_routing_chan_subckt(FILE* fp,
   }
 
   /* Chan subckt definition */
-  fprintf(fp, "module %s[%d][%d]( \n", chan_prefix, x, y);
+  fprintf(fp, "module %s_%d__%d_ ( \n", chan_prefix, x, y);
   /* Inputs and outputs,
    * Rules for CHANX:
    * print left-hand ports(in) first, then right-hand ports(out)
@@ -230,7 +230,7 @@ void dump_verilog_grid_side_in_with_given_index(FILE* fp,
   height = grid[x][y].offset;
   class_id = type->pin_class[pin_index];
   if ((1 == type->pinloc[height][side][pin_index])) {
-    fprintf(fp, "grid[%d][%d]_pin[%d][%d][%d] ", x, y, height, side, pin_index);
+    fprintf(fp, "grid_%d__%d__pin_%d__%d__%d_ ", x, y, height, side, pin_index);
   } else {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Fail to print a grid pin (x=%d, y=%d, height=%d, side=%d, index=%d)",
               __FILE__, __LINE__, x, y, height, side, pin_index);
@@ -289,7 +289,7 @@ void dump_verilog_grid_side_pins(FILE* fp,
       if (TRUE == dump_port_type) {
         fprintf(fp, "%s ", verilog_port_type);
       }
-      fprintf(fp, " grid[%d][%d]_pin[%d][%d][%d]", x, y, height, side, ipin);
+      fprintf(fp, " grid_%d__%d__pin_%d__%d__%d_", x, y, height, side, ipin);
       if (TRUE == dump_port_type) {
         fprintf(fp, ";\n");
       } else {
@@ -452,22 +452,22 @@ void dump_verilog_switch_box_chan_port(FILE* fp,
   case 0: /*TOP*/
     /* The destination rr_node only have one condition!!! */
     assert((INC_DIRECTION == cur_rr_node->direction)&&(CHANY == cur_rr_node->type));
-    fprintf(fp, "chany[%d][%d]_out[%d], ", switch_box_x, switch_box_y + 1, cur_rr_node->ptc_num);
+    fprintf(fp, "chany_%d__%d__out_%d_, ", switch_box_x, switch_box_y + 1, cur_rr_node->ptc_num);
     break;
   case 1: /*RIGHT*/
     /* The destination rr_node only have one condition!!! */
     assert((INC_DIRECTION == cur_rr_node->direction)&&(CHANX == cur_rr_node->type));
-    fprintf(fp, "chanx[%d][%d]_out[%d], ", switch_box_x + 1, switch_box_y, cur_rr_node->ptc_num);
+    fprintf(fp, "chanx_%d__%d__out_%d_, ", switch_box_x + 1, switch_box_y, cur_rr_node->ptc_num);
     break;
   case 2: /*BOTTOM*/
     /* The destination rr_node only have one condition!!! */
     assert((DEC_DIRECTION == cur_rr_node->direction)&&(CHANY == cur_rr_node->type));
-    fprintf(fp, "chany[%d][%d]_out[%d], ", switch_box_x, switch_box_y, cur_rr_node->ptc_num);
+    fprintf(fp, "chany_%d__%d__out_%d_, ", switch_box_x, switch_box_y, cur_rr_node->ptc_num);
     break;
   case 3: /*LEFT*/
     /* The destination rr_node only have one condition!!! */
     assert((DEC_DIRECTION == cur_rr_node->direction)&&(CHANX == cur_rr_node->type));
-    fprintf(fp, "chanx[%d][%d]_out[%d] ", switch_box_x, switch_box_y, cur_rr_node->ptc_num);
+    fprintf(fp, "chanx_%d__%d__out_%d_ ", switch_box_x, switch_box_y, cur_rr_node->ptc_num);
     break;
   default: 
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s, [LINE%d])Invalid side!\n", __FILE__, __LINE__);
@@ -587,7 +587,7 @@ void dump_verilog_switch_box_short_interc(FILE* fp,
     pin_written_times = 0;
     side = determine_io_grid_side(grid_x, grid_y);
     if (1 == type->pinloc[height][side][pin_index]) {
-      fprintf(fp, "grid[%d][%d]_pin[%d][%d][%d] ", 
+      fprintf(fp, "grid_%d__%d__pin_%d__%d__%d_ ", 
               grid_x, grid_y, height, side, pin_index);
       pin_written_times++;
     }
@@ -599,7 +599,7 @@ void dump_verilog_switch_box_short_interc(FILE* fp,
                                              switch_box_x, switch_box_y, &src_chan_x, &src_chan_y, &src_chan_port_name);
     /* For channels, ptc_num is the track_index*/
     track_index = drive_rr_node->ptc_num; 
-    fprintf(fp, "chanx[%d][%d]_%s[%d] ", src_chan_x, src_chan_y, src_chan_port_name, track_index);
+    fprintf(fp, "chanx_%d__%d__%s_%d_ ", src_chan_x, src_chan_y, src_chan_port_name, track_index);
     //my_free(src_chan_port_name);
     break;
   case CHANY:
@@ -607,7 +607,7 @@ void dump_verilog_switch_box_short_interc(FILE* fp,
                                              switch_box_x, switch_box_y, &src_chan_x, &src_chan_y, &src_chan_port_name);
     /* For channels, ptc_num is the track_index*/
     track_index = drive_rr_node->ptc_num; 
-    fprintf(fp, "chany[%d][%d]_%s[%d] ", src_chan_x, src_chan_y, src_chan_port_name, track_index);
+    fprintf(fp, "chany_%d__%d__%s_%d_ ", src_chan_x, src_chan_y, src_chan_port_name, track_index);
     //my_free(src_chan_port_name);
     break;
   /* SOURCE is invalid as well */
@@ -663,7 +663,7 @@ void dump_verilog_switch_box_mux(FILE* fp,
   /* Get verilog model*/
   verilog_model = switch_inf[switch_index].spice_model;
   /* Now it is the time print the SPICE netlist of MUX*/
-  fprintf(fp, "%s_size%d %s_size%d[%d] (", 
+  fprintf(fp, "%s_size%d %s_size%d_%d_ (", 
           verilog_model->prefix, mux_size,
           verilog_model->prefix, mux_size, verilog_model->cnt);
   verilog_model->cnt++;
@@ -715,7 +715,7 @@ void dump_verilog_switch_box_mux(FILE* fp,
       }
       /* Find the pin to be printed*/
       if (1 == type->pinloc[height][side][pin_index]) {
-        fprintf(fp, "grid[%d][%d]_pin[%d][%d][%d], ", grid_x, grid_y, height, side, pin_index);
+        fprintf(fp, "grid_%d__%d__pin_%d__%d__%d_, ", grid_x, grid_y, height, side, pin_index);
         pin_written_times++;
       }
       /* Make sure this pin is printed only once!!! (TODO: make sure for IO PAD, this remains ok)*/
@@ -726,7 +726,7 @@ void dump_verilog_switch_box_mux(FILE* fp,
                                                switch_box_x, switch_box_y, &src_chan_x, &src_chan_y, &src_chan_port_name);
       /* For channels, ptc_num is the track_index*/
       track_index = drive_rr_nodes[inode]->ptc_num; 
-      fprintf(fp, "chanx[%d][%d]_%s[%d], ", src_chan_x, src_chan_y, src_chan_port_name, track_index);
+      fprintf(fp, "chanx_%d__%d__%s_%d_, ", src_chan_x, src_chan_y, src_chan_port_name, track_index);
       //my_free(src_chan_port_name);
       break;
     case CHANY:
@@ -734,7 +734,7 @@ void dump_verilog_switch_box_mux(FILE* fp,
                                                switch_box_x, switch_box_y, &src_chan_x, &src_chan_y, &src_chan_port_name);
       /* For channels, ptc_num is the track_index*/
       track_index = drive_rr_nodes[inode]->ptc_num; 
-      fprintf(fp, "chany[%d][%d]_%s[%d], ", src_chan_x, src_chan_y, src_chan_port_name, track_index);
+      fprintf(fp, "chany_%d__%d__%s_%d_, ", src_chan_x, src_chan_y, src_chan_port_name, track_index);
       //my_free(src_chan_port_name);
       break;
     default: /* IPIN, SINK are invalid*/
@@ -778,12 +778,12 @@ void dump_verilog_switch_box_mux(FILE* fp,
   /* TODO: What about RRAM-based MUX? */
   cur_num_sram = sram_verilog_model->cnt;
   for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
-    fprintf(fp,"%s_out[%d], ", sram_verilog_model->prefix, cur_num_sram);
+    fprintf(fp,"%s_out_%d_, ", sram_verilog_model->prefix, cur_num_sram);
     cur_num_sram++;
   }
   cur_num_sram = sram_verilog_model->cnt;
   for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
-    fprintf(fp,"%s_outb[%d], ", sram_verilog_model->prefix, cur_num_sram);
+    fprintf(fp,"%s_outb_%d_, ", sram_verilog_model->prefix, cur_num_sram);
     cur_num_sram++;
   }
   /* End */
@@ -1143,16 +1143,16 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp,
 
   /* Print the definition of subckt*/
   fprintf(fp, "//----- Switch Box[%d][%d] Sub-Circuit -----\n", x, y);
-  fprintf(fp, "module sb[%d][%d]( \n", x, y);
+  fprintf(fp, "module sb_%d__%d_ ( \n", x, y);
   fprintf(fp, "//----- Inputs/outputs of Channel Y [%d][%d] -----\n", x, y+1);
   /* 1. Channel Y [x][y+1] inputs */
   for (itrack = 0; itrack < chan_width[0]; itrack++) {
     switch (chan_rr_nodes[0][itrack]->direction) {
     case INC_DIRECTION:
-      fprintf(fp, "  input chany[%d][%d]_in[%d],\n", x, y + 1, itrack);
+      fprintf(fp, "  input chany_%d__%d__in_%d_,\n", x, y + 1, itrack);
       break;
     case DEC_DIRECTION:
-      fprintf(fp, "  output chany[%d][%d]_in[%d],\n", x, y + 1, itrack);
+      fprintf(fp, "  output chany_%d__%d__in_%d_,\n", x, y + 1, itrack);
       break;
     case BI_DIRECTION:
     default:
@@ -1166,10 +1166,10 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp,
   for (itrack = 0; itrack < chan_width[1]; itrack++) {
     switch (chan_rr_nodes[1][itrack]->direction) {
     case INC_DIRECTION:
-      fprintf(fp, "  output chanx[%d][%d]_in[%d],\n", x + 1, y, itrack);
+      fprintf(fp, "  output chanx_%d__%d__in_%d_,\n", x + 1, y, itrack);
       break;
     case DEC_DIRECTION:
-      fprintf(fp, "  input chanx[%d][%d]_in[%d],\n", x + 1, y, itrack);
+      fprintf(fp, "  input chanx_%d__%d__in_%d_,\n", x + 1, y, itrack);
       break;
     case BI_DIRECTION:
     default:
@@ -1183,10 +1183,10 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp,
   for (itrack = 0; itrack < chan_width[2]; itrack++) {
     switch (chan_rr_nodes[2][itrack]->direction) {
     case INC_DIRECTION:
-      fprintf(fp, "  input chany[%d][%d]_out[%d],\n", x, y, itrack);
+      fprintf(fp, "  input chany_%d__%d__out_%d_,\n", x, y, itrack);
       break;
     case DEC_DIRECTION:
-      fprintf(fp, "  output chany[%d][%d]_out[%d],\n", x, y, itrack);
+      fprintf(fp, "  output chany_%d__%d__out_%d_,\n", x, y, itrack);
       break;
     case BI_DIRECTION:
     default:
@@ -1200,10 +1200,10 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp,
   for (itrack = 0; itrack < chan_width[3]; itrack++) {
     switch (chan_rr_nodes[3][itrack]->direction) {
     case INC_DIRECTION:
-      fprintf(fp, "  input chanx[%d][%d]_out[%d],\n", x, y, itrack);
+      fprintf(fp, "  input chanx_%d__%d__out_%d_,\n", x, y, itrack);
       break;
     case DEC_DIRECTION:
-      fprintf(fp, "  output chanx[%d][%d]_out[%d],\n", x, y, itrack);
+      fprintf(fp, "  output chanx_%d__%d__out_%d_,\n", x, y, itrack);
       break;
     case BI_DIRECTION:
     default:
@@ -1465,10 +1465,10 @@ void dump_verilog_connection_box_short_interc(FILE* fp,
   /* output porti -- > connect to the output at middle point of a channel */
   switch(drive_rr_node->type) {
   case CHANX:
-    fprintf(fp, "chanx[%d][%d]_midout[%d] ", cb_x, cb_y, drive_rr_node->ptc_num);
+    fprintf(fp, "chanx_%d__%d__midout_%d_ ", cb_x, cb_y, drive_rr_node->ptc_num);
     break;
   case CHANY:
-    fprintf(fp, "chany[%d][%d]_midout[%d] ", cb_x, cb_y, drive_rr_node->ptc_num);
+    fprintf(fp, "chany_%d__%d__midout_%d_ ", cb_x, cb_y, drive_rr_node->ptc_num);
     break;
   default: 
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of drive_rr_node!\n", __FILE__, __LINE__);
@@ -1568,7 +1568,7 @@ void dump_verilog_connection_box_mux(FILE* fp,
   mux_verilog_model = switch_inf[switch_index].spice_model;
 
   /* Call the MUX SPICE model */
-  fprintf(fp, "%s_size%d %s_size%d[%d] (", 
+  fprintf(fp, "%s_size%d %s_size%d_%d_ (", 
           mux_verilog_model->name, mux_size, 
           mux_verilog_model->prefix, mux_size, mux_verilog_model->cnt);
   mux_verilog_model->cnt++;
@@ -1585,10 +1585,10 @@ void dump_verilog_connection_box_mux(FILE* fp,
   for (inode = 0; inode < mux_size; inode++) {
     switch(drive_rr_nodes[inode]->type) {
     case CHANX:
-      fprintf(fp, "chanx[%d][%d]_midout[%d], ", cb_x, cb_y, drive_rr_nodes[inode]->ptc_num);
+      fprintf(fp, "chanx_%d__%d__midout_%d_, ", cb_x, cb_y, drive_rr_nodes[inode]->ptc_num);
       break;
     case CHANY:
-      fprintf(fp, "chany[%d][%d]_midout[%d], ", cb_x, cb_y, drive_rr_nodes[inode]->ptc_num);
+      fprintf(fp, "chany_%d__%d__midout_%d_, ", cb_x, cb_y, drive_rr_nodes[inode]->ptc_num);
       break;
     default: 
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of drive_rr_node!\n", __FILE__, __LINE__);
@@ -1802,10 +1802,10 @@ void dump_verilog_routing_connection_box_subckt(FILE* fp,
   /* Identify the type of connection box */
   switch(chan_type) {
   case CHANX:
-    fprintf(fp, "cbx[%d][%d] ", x, y);
+    fprintf(fp, "cbx_%d__%d_ ", x, y);
     break;
   case CHANY:
-    fprintf(fp, "cby[%d][%d] ", x, y);
+    fprintf(fp, "cby_%d__%d_ ", x, y);
     break;
   default: 
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
@@ -1818,10 +1818,10 @@ void dump_verilog_routing_connection_box_subckt(FILE* fp,
   for (itrack = 0; itrack < chan_width; itrack++) {
     switch(chan_type) { 
     case CHANX:
-      fprintf(fp, "input chanx[%d][%d]_midout[%d], \n", x, y, itrack);
+      fprintf(fp, "input chanx_%d__%d__midout_%d_, \n", x, y, itrack);
       break;
     case CHANY:
-      fprintf(fp, "input chany[%d][%d]_midout[%d], \n ", x, y, itrack);
+      fprintf(fp, "input chany_%d__%d__midout_%d_, \n ", x, y, itrack);
       break;
     default: 
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);

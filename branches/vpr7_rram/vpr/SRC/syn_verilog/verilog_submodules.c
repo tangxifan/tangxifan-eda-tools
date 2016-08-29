@@ -52,10 +52,10 @@ void dump_verilog_cmos_mux_one_basis_module(FILE* fp,
   /* Print the port list and definition */
   fprintf(fp, "module %s (\n", mux_basis_subckt_name);
   /* Port list */
-  fprintf(fp, "input in[0:%d],\n", num_input_basis_subckt);
+  fprintf(fp, "input [0:%d] in,\n", num_input_basis_subckt);
   fprintf(fp, "output out,\n");
-  fprintf(fp, "input mem[0:%d], mem_inv[0:%d]);\n",
-          num_mem - 1, num_mem - 1);
+  fprintf(fp, "input [0:%d] mem, mem_inv);\n",
+          num_mem - 1);
   /* Verilog Behavior description for a MUX */
   fprintf(fp, "//---- Behavior-level description -----\n");
   fprintf(fp, "assign out = in[mem];\n");
@@ -85,10 +85,10 @@ void dump_verilog_rram_mux_one_basis_module(FILE* fp,
   /* Print the port list and definition */
   fprintf(fp, "module %s (\n", mux_basis_subckt_name);
   /* Port list */
-  fprintf(fp, "input in[0:%d],\n", num_input_basis_subckt);
+  fprintf(fp, "input [0:%d] in,\n", num_input_basis_subckt);
   fprintf(fp, "output out,\n");
-  fprintf(fp, "input bl[0:%d], wl[0:%d]);\n",
-          num_mem - 1, num_mem - 1);
+  fprintf(fp, "input [0:%d] bl,wl);\n",
+          num_mem - 1);
 
   /* Print the internal logics: 
    * ONLY 4T1R programming structure is supported up to now
@@ -250,7 +250,7 @@ void dump_verilog_cmos_mux_tree_structure(FILE* fp,
       fprintf(fp, "%s mux_basis_no%d (", mux_basis_subckt_name, mux_basis_cnt); /* given_name */
       fprintf(fp, "mux2_l%d_in%d, mux2_l%d_in%d, ", level, j, level, nextj); /* input0 input1 */
       fprintf(fp, "mux2_l%d_in%d, ", nextlevel, out_idx); /* output */
-      fprintf(fp, "%s[%d] %s_inv[%d]);\n", sram_port[0]->prefix, nextlevel, sram_port[0]->prefix, nextlevel); /* sram sram_inv */
+      fprintf(fp, "%s[%d], %s_inv[%d]);\n", sram_port[0]->prefix, nextlevel, sram_port[0]->prefix, nextlevel); /* sram sram_inv */
       /* Update the counter */
       j = nextj;
       mux_basis_cnt++;
@@ -312,8 +312,9 @@ void dump_verilog_cmos_mux_multilevel_structure(FILE* fp,
           fprintf(fp, "mux2_l%d_in%d, ", nextlevel, out_idx); /* output */
         }
         for (k = 0; k < cur_num_input_basis; k++) {
-          fprintf(fp, "%s%d, %s_inv%d, ", sram_port[0]->prefix, sram_idx+k, sram_port[0]->prefix, sram_idx+k); /* sram sram_inv */
+          fprintf(fp, "%s[%d], %s_inv[%d], ", sram_port[0]->prefix, sram_idx+k, sram_port[0]->prefix, sram_idx+k); /* sram sram_inv */
         }
+        fprintf(fp, ");\n");
         special_basis_cnt++;
         continue;
       }
@@ -326,7 +327,7 @@ void dump_verilog_cmos_mux_multilevel_structure(FILE* fp,
       fprintf(fp, "mux2_l%d_in%d, ", nextlevel, out_idx); /* output */
       /* Print number of sram bits for this basis */
       for (k = sram_idx; k < (sram_idx + cur_num_input_basis); k++) {
-        fprintf(fp, "%s%d, %s_inv%d, ", sram_port[0]->prefix, k, sram_port[0]->prefix, k); /* sram sram_inv */
+        fprintf(fp, "%s[%d], %s_inv[%d], ", sram_port[0]->prefix, k, sram_port[0]->prefix, k); /* sram sram_inv */
       }
       fprintf(fp, ");\n");
       /* Update the counter */
@@ -367,7 +368,7 @@ void dump_verilog_cmos_mux_onelevel_structure(FILE* fp,
   fprintf(fp, "\n");
   fprintf(fp, "//----- SRAM ports -----\n");
   for (i = 0; i < spice_mux_arch.num_input; i++) {
-    fprintf(fp, "%s%d, %s_inv%d, ", sram_port[0]->prefix, i, sram_port[0]->prefix, i); /* sram sram_inv */
+    fprintf(fp, "%s[%d], %s_inv[%d], ", sram_port[0]->prefix, i, sram_port[0]->prefix, i); /* sram sram_inv */
   }
   fprintf(fp, "\n");
   fprintf(fp, ");\n");
@@ -428,27 +429,25 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
     fprintf(fp, "module %s_size%d (", spice_model.name, mux_size);
   }
   /* Print input ports*/
-  fprintf(fp, "input %s[0:%d], \n", input_port[0]->prefix, mux_size - 1);
+  fprintf(fp, "input [0:%d] %s,\n", mux_size - 1,  input_port[0]->prefix);
   /* Print output ports*/
-  fprintf(fp, "output %s, \n", output_port[0]->prefix);
+  fprintf(fp, "output %s,\n", output_port[0]->prefix);
   switch (spice_model.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     /* Print sram ports*/
-    fprintf(fp, "input %s[0:%d], %s_inv[0:%d],\n", 
-            sram_port[0]->prefix, spice_mux_arch.num_level - 1,
-            sram_port[0]->prefix, spice_mux_arch.num_level - 1);
+    fprintf(fp, "input [0:%d] %s, %s_inv\n", 
+            spice_mux_arch.num_level - 1, sram_port[0]->prefix, sram_port[0]->prefix);
     break;
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
     /* Print sram ports*/
-    fprintf(fp, "input %s[0:%d], %s_inv[0:%d],\n", 
-            sram_port[0]->prefix, mux_size - 1,
-            sram_port[0]->prefix, mux_size - 1);
+    fprintf(fp, "input [0:%d] %s, %s_inv\n", 
+            mux_size - 1, sram_port[0]->prefix, sram_port[0]->prefix);
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
     /* Print sram ports*/
-    fprintf(fp, "input %s[0:%d], %s_inv[0:%d],\n", 
-            sram_port[0]->prefix, spice_mux_arch.num_level*spice_mux_arch.num_input_basis - 1,
-            sram_port[0]->prefix, spice_mux_arch.num_level*spice_mux_arch.num_input_basis - 1);
+    fprintf(fp, "input [0:%d] %s, %s_inv\n", 
+            spice_mux_arch.num_level*spice_mux_arch.num_input_basis - 1,
+            sram_port[0]->prefix, sram_port[0]->prefix); 
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
@@ -667,7 +666,7 @@ void dump_verilog_rram_mux_multilevel_structure(FILE* fp,
         /* Print the special basis */
         fprintf(fp, "%s special_basis(\n", special_basis_subckt_name);
         for (k = 0; k < cur_num_input_basis; k++) {
-          fprintf(fp, "mux2_l%d_in%d,  ", level, j + k);
+          fprintf(fp, "mux2_l%d_in%d, ", level, j + k);
           fprintf(fp, "mux2_l%d_in%d, ", nextlevel, out_idx); /* output */
         }
         cur_mem_msb += 2 * (cur_num_input_basis + 1);
@@ -676,6 +675,7 @@ void dump_verilog_rram_mux_multilevel_structure(FILE* fp,
                   sram_port[0]->prefix, k, 
                   sram_port[0]->prefix, k); /* sram sram_inv */
         }
+        fprintf(fp, ");\n");
         special_basis_cnt++;
         continue;
       }
@@ -799,27 +799,25 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
     fprintf(fp, "module %s_size%d( ", spice_model.name, mux_size);
   }
   /* Print input ports*/
-  fprintf(fp, "input %s[0:%d],\n ", input_port[0]->prefix, mux_size - 1);
+  fprintf(fp, "input [0:%d] %s;\n ", mux_size - 1, input_port[0]->prefix);
   /* Print output ports*/
-  fprintf(fp, "output %s,\n ", output_port[0]->prefix);
+  fprintf(fp, "output %s;\n ", output_port[0]->prefix);
   switch (spice_model.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     /* Print sram ports*/
-    fprintf(fp, "input %s[0:%d], %s_inv[0:%d],\n", 
-            sram_port[0]->prefix, spice_mux_arch.num_level - 1,
-            sram_port[0]->prefix, spice_mux_arch.num_level - 1);
+    fprintf(fp, "input [0:%d] %s, %s_inv;\n", 
+            spice_mux_arch.num_level - 1, sram_port[0]->prefix, sram_port[0]->prefix);
     break;
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
     /* Print sram ports*/
-    fprintf(fp, "input %s[0:%d], %s_inv[0:%d],\n", 
-            sram_port[0]->prefix, mux_size - 1,
-            sram_port[0]->prefix, mux_size - 1);
+    fprintf(fp, "input [0:%d] %s, %s_inv;\n", 
+            mux_size - 1, sram_port[0]->prefix, sram_port[0]->prefix);
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
     /* Print sram ports*/
-    fprintf(fp, "input %s[0:%d], %s_inv[0:%d],\n", 
-            sram_port[0]->prefix, spice_mux_arch.num_level*spice_mux_arch.num_input_basis - 1,
-            sram_port[0]->prefix, spice_mux_arch.num_level*spice_mux_arch.num_input_basis - 1);
+    fprintf(fp, "input [0:%d] %s, %s_inv;\n", 
+            spice_mux_arch.num_level*spice_mux_arch.num_input_basis - 1,
+            sram_port[0]->prefix, sram_port[0]->prefix);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",

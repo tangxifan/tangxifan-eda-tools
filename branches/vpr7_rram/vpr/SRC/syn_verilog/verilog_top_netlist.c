@@ -117,8 +117,8 @@ void dump_verilog_defined_grids(FILE* fp) {
   for (ix = 1; ix < (nx + 1); ix++) {
     for (iy = 1; iy < (ny + 1); iy++) {
       assert(IO_TYPE != grid[ix][iy].type);
-      fprintf(fp, "grid[%d][%d]  ", ix, iy); /* Call the name of subckt */ 
-      fprintf(fp, "grid[%d][%d] ", ix, iy);
+      fprintf(fp, "grid_%d__%d_  ", ix, iy); /* Call the name of subckt */ 
+      fprintf(fp, "grid_%d__%d_ ", ix, iy);
       fprintf(fp, "(");
       dump_verilog_grid_pins(fp, ix, iy, 1, FALSE);
       /* Print Input Pad and Output Pad */
@@ -159,8 +159,8 @@ void dump_verilog_defined_grids(FILE* fp) {
   ix = 0;
   for (iy = 1; iy < (ny + 1); iy++) {
     assert(IO_TYPE == grid[ix][iy].type);
-    fprintf(fp, "grid[%d][%d] ", ix, iy); /* Call the name of subckt */ 
-    fprintf(fp, "grid[%d][%d] ", ix, iy);
+    fprintf(fp, "grid_%d__%d_ ", ix, iy); /* Call the name of subckt */ 
+    fprintf(fp, "grid_%d__%d_ ", ix, iy);
     fprintf(fp, "(");
     dump_verilog_io_grid_pins(fp, ix, iy, 1, FALSE);
     /* Print Input Pad and Output Pad */
@@ -199,8 +199,8 @@ void dump_verilog_defined_grids(FILE* fp) {
   ix = nx + 1;
   for (iy = 1; iy < (ny + 1); iy++) {
     assert(IO_TYPE == grid[ix][iy].type);
-    fprintf(fp, "grid[%d][%d] ", ix, iy); /* Call the name of subckt */ 
-    fprintf(fp, "grid[%d][%d] ", ix, iy);
+    fprintf(fp, "grid_%d__%d_ ", ix, iy); /* Call the name of subckt */ 
+    fprintf(fp, "grid_%d__%d_ ", ix, iy);
     fprintf(fp, "(");
     dump_verilog_io_grid_pins(fp, ix, iy, 1, FALSE);
     /* Print Input Pad and Output Pad */
@@ -239,8 +239,8 @@ void dump_verilog_defined_grids(FILE* fp) {
   iy = 0;
   for (ix = 1; ix < (nx + 1); ix++) {
     assert(IO_TYPE == grid[ix][iy].type);
-    fprintf(fp, "grid[%d][%d] ", ix, iy); /* Call the name of subckt */ 
-    fprintf(fp, "grid[%d][%d] ", ix, iy);
+    fprintf(fp, "grid_%d__%d_ ", ix, iy); /* Call the name of subckt */ 
+    fprintf(fp, "grid_%d__%d_ ", ix, iy);
     fprintf(fp, "(");
     dump_verilog_io_grid_pins(fp, ix, iy, 1, FALSE);
     /* Print Input Pad and Output Pad */
@@ -279,8 +279,8 @@ void dump_verilog_defined_grids(FILE* fp) {
   iy = ny + 1;
   for (ix = 1; ix < (nx + 1); ix++) {
     assert(IO_TYPE == grid[ix][iy].type);
-    fprintf(fp, "grid[%d][%d] ", ix, iy); /* Call the name of subckt */ 
-    fprintf(fp, "grid[%d][%d] ", ix, iy);
+    fprintf(fp, "grid_%d__%d_ ", ix, iy); /* Call the name of subckt */ 
+    fprintf(fp, "grid_%d__%d_ ", ix, iy);
     fprintf(fp, "(");
     dump_verilog_io_grid_pins(fp, ix, iy, 1, FALSE);
     /* Print Input Pad and Output Pad */
@@ -342,20 +342,20 @@ void dump_verilog_defined_chan(FILE* fp,
     /* check y*/
     assert((!(0 > y))&&(y < (ny + 1))); 
     /* Call the define sub-circuit */
-    fprintf(fp, "chanx[%d][%d] ", x, y);
-    fprintf(fp, "chanx[%d][%d] ", x, y);
+    fprintf(fp, "chanx_%d__%d_ ", x, y);
+    fprintf(fp, "chanx_%d__%d_ ", x, y);
     fprintf(fp, "(");
     for (itrack = 0; itrack < chan_width; itrack++) {
-      fprintf(fp, "chanx[%d][%d]_in[%d], ", x, y, itrack);
+      fprintf(fp, "chanx_%d__%d__in_%d_, ", x, y, itrack);
       fprintf(fp, "\n");
     }
     for (itrack = 0; itrack < chan_width; itrack++) {
-      fprintf(fp, "chanx[%d][%d]_out[%d], ", x, y, itrack);
+      fprintf(fp, "chanx_%d__%d__out_%d_, ", x, y, itrack);
       fprintf(fp, "\n");
     }
     /* output at middle point */
     for (itrack = 0; itrack < chan_width; itrack++) {
-      fprintf(fp, "chanx[%d][%d]_midout[%d], ", x, y, itrack);
+      fprintf(fp, "chanx_%d__%d__midout_%d_, ", x, y, itrack);
       fprintf(fp, "\n");
     }
     fprintf(fp, ");\n");
@@ -366,20 +366,20 @@ void dump_verilog_defined_chan(FILE* fp,
     /* check y*/
     assert((0 < y)&&(y < (ny + 1))); 
     /* Call the define sub-circuit */
-    fprintf(fp, "chany[%d][%d] ", x, y);
-    fprintf(fp, "chany[%d][%d] ", x, y);
+    fprintf(fp, "chany_%d__%d_ ", x, y);
+    fprintf(fp, "chany_%d__%d_ ", x, y);
     fprintf(fp, "(");
     for (itrack = 0; itrack < chan_width; itrack++) {
-      fprintf(fp, "chany[%d][%d]_in[%d], ", x, y, itrack);
+      fprintf(fp, "chany_%d__%d__in_%d_, ", x, y, itrack);
       fprintf(fp, "\n");
     }
     for (itrack = 0; itrack < chan_width; itrack++) {
-      fprintf(fp, "chany[%d][%d]_out[%d], ", x, y, itrack);
+      fprintf(fp, "chany_%d__%d__out_%d_, ", x, y, itrack);
       fprintf(fp, "\n");
     }
     /* output at middle point */
     for (itrack = 0; itrack < chan_width; itrack++) {
-      fprintf(fp, "chany[%d][%d]_midout[%d], ", x, y, itrack);
+      fprintf(fp, "chany_%d__%d__midout_%d_, ", x, y, itrack);
       fprintf(fp, "\n");
     }
     fprintf(fp, ");\n");
@@ -447,12 +447,12 @@ void dump_verilog_defined_connection_box(FILE* fp,
   /* Identify the type of connection box */
   switch(chan_type) {
   case CHANX:
-    fprintf(fp, "cbx[%d][%d] ", x, y);
-    fprintf(fp, "cbx[%d][%d] ", x, y);
+    fprintf(fp, "cbx_%d__%d_ ", x, y);
+    fprintf(fp, "cbx_%d__%d_ ", x, y);
     break;
   case CHANY:
-    fprintf(fp, "cby[%d][%d] ", x, y);
-    fprintf(fp, "cby[%d][%d] ", x, y);
+    fprintf(fp, "cby_%d__%d_ ", x, y);
+    fprintf(fp, "cby_%d__%d_ ", x, y);
     break;
   default: 
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
@@ -465,10 +465,10 @@ void dump_verilog_defined_connection_box(FILE* fp,
   for (itrack = 0; itrack < chan_width; itrack++) {
     switch(chan_type) { 
     case CHANX:
-      fprintf(fp, "chanx[%d][%d]_midout[%d], ", x, y, itrack);
+      fprintf(fp, "chanx_%d__%d__midout_%d_, ", x, y, itrack);
       break;
     case CHANY:
-      fprintf(fp, "chany[%d][%d]_midout[%d], ", x, y, itrack);
+      fprintf(fp, "chany_%d__%d__midout_%d_, ", x, y, itrack);
       break;
     default: 
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
@@ -712,27 +712,27 @@ void dump_verilog_defined_switch_box(FILE* fp,
     } 
   } 
                                   
-  fprintf(fp, "sb[%d][%d] ", x, y);
-  fprintf(fp, "sb[%d][%d] ", x, y);
+  fprintf(fp, "sb_%d__%d_ ", x, y);
+  fprintf(fp, "sb_%d__%d_ ", x, y);
   fprintf(fp, "(");
   /* 1. Channel Y [x][y+1] inputs */
   for (itrack = 0; itrack < chan_width[0]; itrack++) {
-    fprintf(fp, "chany[%d][%d]_in[%d], ", x, y + 1, itrack);
+    fprintf(fp, "chany_%d__%d__in_%d_, ", x, y + 1, itrack);
     fprintf(fp, "\n");
   }
   /* 2. Channel X [x+1][y] inputs */
   for (itrack = 0; itrack < chan_width[1]; itrack++) {
-    fprintf(fp, "chanx[%d][%d]_in[%d], ", x + 1, y, itrack);
+    fprintf(fp, "chanx_%d__%d__in_%d_, ", x + 1, y, itrack);
     fprintf(fp, "\n");
   }
   /* 3. Channel Y [x][y] outputs */
   for (itrack = 0; itrack < chan_width[2]; itrack++) {
-    fprintf(fp, "chany[%d][%d]_out[%d], ", x, y, itrack);
+    fprintf(fp, "chany_%d__%d__out_%d_, ", x, y, itrack);
     fprintf(fp, "\n");
   }
   /* 4. Channel X [x][y] outputs */
   for (itrack = 0; itrack < chan_width[3]; itrack++) {
-    fprintf(fp, "chanx[%d][%d]_out[%d], ", x, y, itrack);
+    fprintf(fp, "chanx_%d__%d__out_%d_, ", x, y, itrack);
     fprintf(fp, "\n");
   }
 
@@ -881,7 +881,7 @@ void dump_verilog_configuration_circuits_scan_chains(FILE* fp) {
     fprintf(fp, ");\n");
     /* Connect the head of current scff to the tail of previous scff*/
     if (0 < i) {
-      fprintf(fp, "assign %s_in[%d] = %s_out[%d];\n",
+      fprintf(fp, "assign %s_in[%d] <= %s_out[%d];\n",
               sram_verilog_model->prefix, i,
               sram_verilog_model->prefix, i - 1);
     }

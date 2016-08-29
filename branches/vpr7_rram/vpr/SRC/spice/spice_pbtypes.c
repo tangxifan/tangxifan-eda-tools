@@ -1193,7 +1193,7 @@ void fprint_spice_pb_graph_interc(FILE* fp,
             fprintf_spice_pb_graph_pin_interc(fp,
                                               formatted_pin_prefix, /* parent_pin_prefix */
                                               INPUT2INPUT_INTERC,
-                                              &(child_pb_graph_node->input_pins[iport][ipin]),
+                                              &(child_pb_graph_node->clock_pins[iport][ipin]),
                                               cur_mode,
                                               0);
           }
