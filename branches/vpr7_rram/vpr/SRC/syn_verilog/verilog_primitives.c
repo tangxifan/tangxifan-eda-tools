@@ -106,7 +106,7 @@ void dump_verilog_pb_primitive_ff(FILE* fp,
   /* Definition line */
   fprintf(fp, "module %s%s (", formatted_subckt_prefix, port_prefix);
   /* print ports*/
-  dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, TRUE); 
+  dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, TRUE, FALSE); 
   /* Local vdd and gnd*/
   fprintf(fp, ");\n");
   /* Definition ends*/
@@ -114,7 +114,7 @@ void dump_verilog_pb_primitive_ff(FILE* fp,
   /* Call the dff subckt*/
   fprintf(fp, "%s %s_%d_ (", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
   /* print ports*/
-  dump_verilog_pb_type_ports(fp, port_prefix, 1, prim_pb_type, FALSE); /* Use global clock for each DFF...*/ 
+  dump_verilog_pb_type_ports(fp, port_prefix, 1, prim_pb_type, FALSE, TRUE); /* Use global clock for each DFF...*/ 
   /* print global set and reset */
   fprintf(fp, "gset, greset ");
   /* Local vdd and gnd, verilog_model name
@@ -221,7 +221,7 @@ void dump_verilog_pb_primitive_hardlogic(FILE* fp,
   /* Definition line */
   fprintf(fp, "module %s%s (", formatted_subckt_prefix, port_prefix);
   /* print ports*/
-  dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, TRUE); 
+  dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, TRUE, FALSE); 
   /* Local vdd and gnd*/
   fprintf(fp, ");\n");
   /* Definition ends*/
@@ -235,7 +235,7 @@ void dump_verilog_pb_primitive_hardlogic(FILE* fp,
   /* Call the hardlogic subckt*/
   fprintf(fp, "%s %s_%d_ ", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
   /* print ports*/
-  dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, FALSE); 
+  dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, FALSE, FALSE); 
   /* Local vdd and gnd, verilog_model name, 
    * Global vdd for hardlogic to split
    */
@@ -310,7 +310,25 @@ void dump_verilog_pb_primitive_io(FILE* fp,
   /* Definition line */
   fprintf(fp, "module %s%s (", formatted_subckt_prefix, port_prefix);
   /* print ports*/
-  dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, TRUE); 
+  if ((0 == strcmp(".input", prim_pb_type->blif_model))||(0 == strcmp(".clock", prim_pb_type->blif_model))) {
+    /* Add input port to Input Pad */
+    /* Print input port */
+    fprintf(fp, "input [%d:%d] gfpga_input_%s, ", 
+            verilog_model->cnt, verilog_model->cnt, verilog_model->prefix);
+    dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, TRUE, FALSE); 
+  } else if (0 == strcmp(".output", prim_pb_type->blif_model)){
+    /* Add output port to Output Pad */
+    /* print ports --> input ports */
+    dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, TRUE, TRUE); 
+    /* Print output port */
+    fprintf(fp, "output [%d:%d] gfpga_output_%s ",
+            verilog_model->cnt, verilog_model->cnt, verilog_model->prefix);
+    /* Add clock port to Input Pad */
+  } else {
+    /* The rest is invalid */ 
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid blif_model(%s) for prim_pb_type(%s)!\n", 
+               __FILE__, __LINE__, prim_pb_type->blif_model, prim_pb_type->name);
+  } 
   /* Local vdd and gnd*/
   fprintf(fp, ");\n");
   /* Definition ends*/
@@ -322,16 +340,13 @@ void dump_verilog_pb_primitive_io(FILE* fp,
     /* Print input port */
     fprintf(fp, "gfpga_input_%s[%d], ", verilog_model->prefix, verilog_model->cnt);
     /* print ports --> output ports */
-    dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, FALSE); 
-    fprintf(fp, ",\n");
+    dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, FALSE, FALSE); 
   } else if (0 == strcmp(".output", prim_pb_type->blif_model)){
     /* Add output port to Output Pad */
     /* print ports --> input ports */
-    dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, FALSE); 
-    fprintf(fp, ",\n");
+    dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, FALSE, TRUE); 
     /* Print output port */
-    fprintf(fp, "gfpga_output_%s[%d], ", verilog_model->prefix, verilog_model->cnt);
-
+    fprintf(fp, "gfpga_output_%s[%d] ", verilog_model->prefix, verilog_model->cnt);
     /* Add clock port to Input Pad */
   } else {
     /* The rest is invalid */ 

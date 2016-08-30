@@ -117,7 +117,12 @@ void dump_verilog_routing_chan_subckt(FILE* fp,
   }
   /* Middle point output for connection box inputs */
   for (itrack = 0; itrack < chan_width; itrack++) {
-    fprintf(fp, "  output mid_out%d, // Middle output %d to logic blocks \n", itrack, itrack);
+    fprintf(fp, "  output mid_out%d", itrack);
+    if (itrack < (chan_width - 1)) {
+      fprintf(fp, ",");
+    } else {
+    }
+    fprintf(fp, " // Middle output %d to logic blocks \n", itrack);
   }
   fprintf(fp, "  );\n");
 
@@ -130,8 +135,8 @@ void dump_verilog_routing_chan_subckt(FILE* fp,
     /* short connecting inputs and outputs: 
      * length of metal wire and parasitics are handled by semi-custom flow
      */
-    fprintf(fp, "assign out%d = in%d \n", itrack, itrack); 
-    fprintf(fp, "assign mid_out%d = in%d \n", itrack, itrack);
+    fprintf(fp, "assign out%d = in%d; \n", itrack, itrack); 
+    fprintf(fp, "assign mid_out%d = in%d; \n", itrack, itrack);
   }
 
   fprintf(fp, "endmodule\n");
@@ -291,7 +296,7 @@ void dump_verilog_grid_side_pins(FILE* fp,
       }
       fprintf(fp, " grid_%d__%d__pin_%d__%d__%d_", x, y, height, side, ipin);
       if (TRUE == dump_port_type) {
-        fprintf(fp, ";\n");
+        fprintf(fp, ",\n");
       } else {
         fprintf(fp, ",\n");
       }
@@ -452,17 +457,17 @@ void dump_verilog_switch_box_chan_port(FILE* fp,
   case 0: /*TOP*/
     /* The destination rr_node only have one condition!!! */
     assert((INC_DIRECTION == cur_rr_node->direction)&&(CHANY == cur_rr_node->type));
-    fprintf(fp, "chany_%d__%d__out_%d_, ", switch_box_x, switch_box_y + 1, cur_rr_node->ptc_num);
+    fprintf(fp, "chany_%d__%d__out_%d_ ", switch_box_x, switch_box_y + 1, cur_rr_node->ptc_num);
     break;
   case 1: /*RIGHT*/
     /* The destination rr_node only have one condition!!! */
     assert((INC_DIRECTION == cur_rr_node->direction)&&(CHANX == cur_rr_node->type));
-    fprintf(fp, "chanx_%d__%d__out_%d_, ", switch_box_x + 1, switch_box_y, cur_rr_node->ptc_num);
+    fprintf(fp, "chanx_%d__%d__out_%d_ ", switch_box_x + 1, switch_box_y, cur_rr_node->ptc_num);
     break;
   case 2: /*BOTTOM*/
     /* The destination rr_node only have one condition!!! */
     assert((DEC_DIRECTION == cur_rr_node->direction)&&(CHANY == cur_rr_node->type));
-    fprintf(fp, "chany_%d__%d__out_%d_, ", switch_box_x, switch_box_y, cur_rr_node->ptc_num);
+    fprintf(fp, "chany_%d__%d__out_%d_ ", switch_box_x, switch_box_y, cur_rr_node->ptc_num);
     break;
   case 3: /*LEFT*/
     /* The destination rr_node only have one condition!!! */
@@ -618,7 +623,7 @@ void dump_verilog_switch_box_short_interc(FILE* fp,
   }
 
   /* END */
-  fprintf(fp, "\n");
+  fprintf(fp, ";\n");
 
   return;
 }
@@ -746,6 +751,8 @@ void dump_verilog_switch_box_mux(FILE* fp,
 
   /* Output port */
   dump_verilog_switch_box_chan_port(fp, switch_box_x, switch_box_y, chan_side, cur_rr_node);
+  /* Add a comma because dump_verilog_switch_box_chan_port does not add so  */
+  fprintf(fp, ", ");
 
   /* Configuration bits for this MUX*/
   path_id = -1;
@@ -1079,7 +1086,6 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp,
         break;
       }
       /* Start from the TOP side*/
-      fprintf(fp, "***** TOP side Multiplexers *****\n");
       for (itrack = 0; itrack < chan_width[side]; itrack++) {
         assert(CHANY == chan_rr_nodes[side][itrack]->type);
         /* We care INC_DIRECTION tracks at this side*/
@@ -1094,7 +1100,6 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp,
         break;
       }
       /* RIGHT side*/
-      fprintf(fp, "***** RIGHT side Multiplexers *****\n");
       for (itrack = 0; itrack < chan_width[side]; itrack++) {
         assert(CHANX == chan_rr_nodes[side][itrack]->type);
         /* We care INC_DIRECTION tracks at this side*/
@@ -1109,7 +1114,6 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp,
         break;
       }
       /* BOTTOM side*/
-      fprintf(fp, "***** BOTTOM side Multiplexers *****\n");
       for (itrack = 0; itrack < chan_width[side]; itrack++) {
         assert(CHANY == chan_rr_nodes[side][itrack]->type);
         /* We care DEC_DIRECTION tracks at this side*/
@@ -1124,7 +1128,6 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp,
         break;
       }
       /* LEFT side*/
-      fprintf(fp, "***** LEFT side Multiplexers *****\n");
       for (itrack = 0; itrack < chan_width[side]; itrack++) {
         assert(CHANX == chan_rr_nodes[side][itrack]->type);
         /* We care DEC_DIRECTION tracks at this side*/
@@ -1149,10 +1152,10 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp,
   for (itrack = 0; itrack < chan_width[0]; itrack++) {
     switch (chan_rr_nodes[0][itrack]->direction) {
     case INC_DIRECTION:
-      fprintf(fp, "  input chany_%d__%d__in_%d_,\n", x, y + 1, itrack);
+      fprintf(fp, "  output chany_%d__%d__out_%d_,\n", x, y + 1, itrack);
       break;
     case DEC_DIRECTION:
-      fprintf(fp, "  output chany_%d__%d__in_%d_,\n", x, y + 1, itrack);
+      fprintf(fp, "  input chany_%d__%d__in_%d_,\n", x, y + 1, itrack);
       break;
     case BI_DIRECTION:
     default:
@@ -1166,7 +1169,7 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp,
   for (itrack = 0; itrack < chan_width[1]; itrack++) {
     switch (chan_rr_nodes[1][itrack]->direction) {
     case INC_DIRECTION:
-      fprintf(fp, "  output chanx_%d__%d__in_%d_,\n", x + 1, y, itrack);
+      fprintf(fp, "  output chanx_%d__%d__out_%d_,\n", x + 1, y, itrack);
       break;
     case DEC_DIRECTION:
       fprintf(fp, "  input chanx_%d__%d__in_%d_,\n", x + 1, y, itrack);
@@ -1183,7 +1186,7 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp,
   for (itrack = 0; itrack < chan_width[2]; itrack++) {
     switch (chan_rr_nodes[2][itrack]->direction) {
     case INC_DIRECTION:
-      fprintf(fp, "  input chany_%d__%d__out_%d_,\n", x, y, itrack);
+      fprintf(fp, "  input chany_%d__%d__in_%d_,\n", x, y, itrack);
       break;
     case DEC_DIRECTION:
       fprintf(fp, "  output chany_%d__%d__out_%d_,\n", x, y, itrack);
@@ -1200,7 +1203,7 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp,
   for (itrack = 0; itrack < chan_width[3]; itrack++) {
     switch (chan_rr_nodes[3][itrack]->direction) {
     case INC_DIRECTION:
-      fprintf(fp, "  input chanx_%d__%d__out_%d_,\n", x, y, itrack);
+      fprintf(fp, "  input chanx_%d__%d__in_%d_,\n", x, y, itrack);
       break;
     case DEC_DIRECTION:
       fprintf(fp, "  output chanx_%d__%d__out_%d_,\n", x, y, itrack);
@@ -1252,18 +1255,18 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp,
   /* Put down inpad and outpad ports */
   assert(!(0 > (inpad_verilog_model->sb_index_high[x][y] - inpad_verilog_model->sb_index_low[x][y])));
   if (0 < (inpad_verilog_model->sb_index_high[x][y] - inpad_verilog_model->sb_index_low[x][y])) {
-    fprintf(fp, "  input gfpga_input_%s[%d:%d], \n", 
-            inpad_verilog_model->prefix, 
+    fprintf(fp, "  input [%d:%d] gfpga_input_%s, \n", 
             inpad_verilog_model->sb_index_high[x][y] - 1, 
-            inpad_verilog_model->sb_index_low[x][y]);
+            inpad_verilog_model->sb_index_low[x][y],
+            inpad_verilog_model->prefix);
   }
   assert(!(0 > (outpad_verilog_model->sb_index_high[x][y] - outpad_verilog_model->sb_index_low[x][y])));
   if (0 < (outpad_verilog_model->sb_index_high[x][y] - outpad_verilog_model->sb_index_low[x][y])) {
     /* inverted output of each configuration bit */
-    fprintf(fp, "  output gfpga_output_%s[%d:%d], \n", 
-            outpad_verilog_model->prefix, 
+    fprintf(fp, "  output [%d:%d] gfpga_output_%s, \n", 
             outpad_verilog_model->sb_index_high[x][y] - 1, 
-            outpad_verilog_model->sb_index_low[x][y]);
+            outpad_verilog_model->sb_index_low[x][y],
+            outpad_verilog_model->prefix);
   }
   /* Put down configuration port */
   /* output of each configuration bit */
@@ -1272,15 +1275,15 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp,
   sram_verilog_model->sb_index_high[x][y] = esti_sram_cnt;
 
   if (0 < num_conf_bits) {
-    fprintf(fp, "  input %s_out[%d:%d], \n", 
-            sram_verilog_model->prefix, 
+    fprintf(fp, "  input [%d:%d] %s_out, \n", 
             sram_verilog_model->sb_index_high[x][y] - 1, 
-            sram_verilog_model->sb_index_low[x][y]);
+            sram_verilog_model->sb_index_low[x][y],
+            sram_verilog_model->prefix); 
     /* inverted output of each configuration bit */
-    fprintf(fp, "  input %s_outb[%d:%d] \n", 
-            sram_verilog_model->prefix, 
+    fprintf(fp, "  input [%d:%d] %s_outb \n", 
             sram_verilog_model->sb_index_high[x][y] - 1, 
-            sram_verilog_model->sb_index_low[x][y]);
+            sram_verilog_model->sb_index_low[x][y],
+            sram_verilog_model->prefix); 
   }
   fprintf(fp, "); \n");
 
@@ -1293,7 +1296,7 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp,
         break;
       }
       /* Start from the TOP side*/
-      fprintf(fp, "***** TOP side Multiplexers *****\n");
+      fprintf(fp, "//----- TOP side Multiplexers -----\n");
       for (itrack = 0; itrack < chan_width[side]; itrack++) {
         assert(CHANY == chan_rr_nodes[side][itrack]->type);
         /* We care INC_DIRECTION tracks at this side*/
@@ -1308,7 +1311,7 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp,
         break;
       }
       /* RIGHT side*/
-      fprintf(fp, "***** RIGHT side Multiplexers *****\n");
+      fprintf(fp, "//----- RIGHT side Multiplexers -----\n");
       for (itrack = 0; itrack < chan_width[side]; itrack++) {
         assert(CHANX == chan_rr_nodes[side][itrack]->type);
         /* We care INC_DIRECTION tracks at this side*/
@@ -1323,7 +1326,7 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp,
         break;
       }
       /* BOTTOM side*/
-      fprintf(fp, "***** BOTTOM side Multiplexers *****\n");
+      fprintf(fp, "//----- BOTTOM side Multiplexers -----\n");
       for (itrack = 0; itrack < chan_width[side]; itrack++) {
         assert(CHANY == chan_rr_nodes[side][itrack]->type);
         /* We care DEC_DIRECTION tracks at this side*/
@@ -1338,7 +1341,7 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp,
         break;
       }
       /* LEFT side*/
-      fprintf(fp, "***** LEFT side Multiplexers *****\n");
+      fprintf(fp, "//----- LEFT side Multiplexers -----\n");
       for (itrack = 0; itrack < chan_width[side]; itrack++) {
         assert(CHANX == chan_rr_nodes[side][itrack]->type);
         /* We care DEC_DIRECTION tracks at this side*/
@@ -1979,15 +1982,15 @@ void dump_verilog_routing_connection_box_subckt(FILE* fp,
     assert(!(0 > sram_verilog_model->cbx_index_high[x][y] - sram_verilog_model->cbx_index_low[x][y]));
     assert(num_conf_bits == (sram_verilog_model->cbx_index_high[x][y] - sram_verilog_model->cbx_index_low[x][y]));
     if (0 < sram_verilog_model->cbx_index_high[x][y] - sram_verilog_model->cbx_index_low[x][y]) {
-      fprintf(fp, "  %s_out[%d:%d], \n", 
-              sram_verilog_model->prefix, 
+      fprintf(fp, " input [%d:%d] %s_out, \n", 
+              sram_verilog_model->cbx_index_high[x][y] - 1,
               sram_verilog_model->cbx_index_low[x][y],
-              sram_verilog_model->cbx_index_high[x][y] - 1);
+              sram_verilog_model->prefix);
       /* inverted output of each configuration bit */
-      fprintf(fp, "  %s_outb[%d:%d] \n", 
-              sram_verilog_model->prefix, 
+      fprintf(fp, " input [%d:%d] %s_outb \n", 
+              sram_verilog_model->cbx_index_high[x][y] - 1,
               sram_verilog_model->cbx_index_low[x][y],
-              sram_verilog_model->cbx_index_high[x][y] - 1);
+              sram_verilog_model->prefix); 
         
     }
     break;
@@ -2015,15 +2018,15 @@ void dump_verilog_routing_connection_box_subckt(FILE* fp,
     assert(!(0 > sram_verilog_model->cby_index_high[x][y] - sram_verilog_model->cby_index_low[x][y]));
     assert(num_conf_bits == (sram_verilog_model->cby_index_high[x][y] - sram_verilog_model->cby_index_low[x][y]));
     if (0 < sram_verilog_model->cby_index_high[x][y] - sram_verilog_model->cby_index_low[x][y]) {
-      fprintf(fp, "  %s_out[%d:%d], \n", 
-              sram_verilog_model->prefix, 
+      fprintf(fp, " input [%d:%d] %s_out, \n", 
+              sram_verilog_model->cby_index_high[x][y] - 1,
               sram_verilog_model->cby_index_low[x][y],
-              sram_verilog_model->cby_index_high[x][y] - 1);
+              sram_verilog_model->prefix);
       /* inverted output of each configuration bit */
-      fprintf(fp, "  %s_outb[%d:%d] \n", 
-              sram_verilog_model->prefix, 
+      fprintf(fp, " input [%d:%d] %s_outb \n", 
+              sram_verilog_model->cby_index_high[x][y] - 1,
               sram_verilog_model->cby_index_low[x][y],
-              sram_verilog_model->cby_index_high[x][y] - 1);
+              sram_verilog_model->prefix); 
         
     }
     break;

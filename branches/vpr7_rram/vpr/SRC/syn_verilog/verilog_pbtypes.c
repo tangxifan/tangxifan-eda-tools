@@ -384,12 +384,15 @@ void stats_mux_verilog_model_pb_node_rec(t_llist** muxes_head,
 
 /* Print ports of pb_types,
  * SRAM ports are not printed here!!! 
+ * Important feature: manage the comma between ports
+ * Make sure there is no redundant comma and there is no comma after the last element if specified
  */
 void dump_verilog_pb_type_ports(FILE* fp,
                           char* port_prefix,
                           int use_global_clock,
                           t_pb_type* cur_pb_type,
-                          boolean dump_port_type) {
+                          boolean dump_port_type,
+                          boolean dump_last_comma) {
   int iport, ipin;
   int num_pb_type_input_port = 0;
   t_port** pb_type_input_ports = NULL;
@@ -404,6 +407,8 @@ void dump_verilog_pb_type_ports(FILE* fp,
   t_port** pb_type_clk_ports = NULL;
 
   char* formatted_port_prefix = chomp_spice_node_prefix(port_prefix);
+  /* A counter to stats the number of dumped ports and pins */
+  int num_dumped_port = 0;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -412,6 +417,7 @@ void dump_verilog_pb_type_ports(FILE* fp,
   }
 
   /* Inputs */
+  num_dumped_port = 0;
   /* Find pb_type input ports */
   pb_type_input_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_INPUT, &num_pb_type_input_port); 
   for (iport = 0; iport < num_pb_type_input_port; iport++) {
@@ -420,6 +426,8 @@ void dump_verilog_pb_type_ports(FILE* fp,
         fprintf(fp, "input");
       }
       fprintf(fp, " %s__%s_%d_", formatted_port_prefix, pb_type_input_ports[iport]->name, ipin);
+      /* Update the counter */
+      num_dumped_port++;
       /* We do not put a comma at the last element to be dumped */
       if ((iport == num_pb_type_input_port - 1)&&(ipin == pb_type_input_ports[iport]->num_pins - 1)) {
         break;
@@ -437,13 +445,16 @@ void dump_verilog_pb_type_ports(FILE* fp,
   pb_type_output_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_OUTPUT, &num_pb_type_output_port); 
 
   /* Need a comma if this is not the last elemet */
-  if (0 < num_pb_type_output_port) {
+  if ((0 < num_dumped_port)&&(0 < num_pb_type_output_port)) {
     if (TRUE == dump_port_type) {
       fprintf(fp, ",\n");
     } else {
       fprintf(fp, ", ");
     }
+  } else if (0 < num_pb_type_output_port) { /* We keep on dumping, reset the counter */
+    num_dumped_port = 0;
   }
+
   /* Print all the output ports  */
   for (iport = 0; iport < num_pb_type_output_port; iport++) {
     for (ipin = 0; ipin < pb_type_output_ports[iport]->num_pins; ipin++) {
@@ -451,6 +462,8 @@ void dump_verilog_pb_type_ports(FILE* fp,
         fprintf(fp, "output");
       }
       fprintf(fp, " %s__%s_%d_", formatted_port_prefix, pb_type_output_ports[iport]->name, ipin);
+      /* Update the counter */
+      num_dumped_port++;
       /* We do not put a comma at the last element to be dumped */
       if ((iport == num_pb_type_output_port - 1)&&(ipin == pb_type_output_ports[iport]->num_pins - 1)) {
         break;
@@ -468,12 +481,14 @@ void dump_verilog_pb_type_ports(FILE* fp,
   pb_type_inout_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_INOUT, &num_pb_type_inout_port); 
 
   /* Need a comma if this is not the last elemet */
-  if (0 < num_pb_type_inout_port) {
+  if ((0 < num_dumped_port)&&(0 < num_pb_type_inout_port)) {
     if (TRUE == dump_port_type) {
       fprintf(fp, ",\n");
     } else {
       fprintf(fp, ", ");
     }
+  } else if (0 < num_pb_type_inout_port) { /* We keep on dumping, reset the counter */
+    num_dumped_port = 0;
   }
   /* Print all the inout ports  */
   for (iport = 0; iport < num_pb_type_inout_port; iport++) {
@@ -482,6 +497,8 @@ void dump_verilog_pb_type_ports(FILE* fp,
         fprintf(fp, "inout");
       }
       fprintf(fp, "%s__%s_%d_, ", formatted_port_prefix, pb_type_inout_ports[iport]->name, ipin);
+      /* Update the counter */
+      num_dumped_port++;
       /* We do not put a comma at the last element to be dumped */
       if ((iport == num_pb_type_inout_port - 1)&&(ipin == pb_type_inout_ports[iport]->num_pins - 1)) {
         break;
@@ -498,20 +515,24 @@ void dump_verilog_pb_type_ports(FILE* fp,
   /* Find pb_type clock ports */
   pb_type_clk_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_CLOCK, &num_pb_type_clk_port); 
   /* Need a comma if this is not the last elemet */
-  if (0 < num_pb_type_clk_port) {
+  if ((0 < num_dumped_port)&&(0 < num_pb_type_clk_port)) {
     if (TRUE == dump_port_type) {
       fprintf(fp, ",\n");
     } else {
       fprintf(fp, ", ");
     }
+  } else if (0 < num_pb_type_clk_port) { /* We keep on dumping, reset the counter */
+    num_dumped_port = 0;
   }
-  /* Print all the inout ports  */
+  /* Print all the clk ports  */
   for (iport = 0; iport < num_pb_type_clk_port; iport++) {
     for (ipin = 0; ipin < pb_type_clk_ports[iport]->num_pins; ipin++) {
       if (TRUE == dump_port_type) {
         fprintf(fp, "input");
       }
       fprintf(fp, " %s__%s_%d_", formatted_port_prefix, pb_type_clk_ports[iport]->name, ipin);
+      /* Update the counter */
+      num_dumped_port++;
       /* We do not put a comma at the last element to be dumped */
       if ((iport == num_pb_type_clk_port - 1)&&(ipin == pb_type_clk_ports[iport]->num_pins - 1)) {
         break;
@@ -522,6 +543,15 @@ void dump_verilog_pb_type_ports(FILE* fp,
       } else {
         fprintf(fp, ",");
       }
+    }
+  }
+
+  /* Dump the last comma, when the option is enabled and there is something dumped */
+  if ((0 < num_dumped_port)&&(TRUE == dump_last_comma)) {
+    if (TRUE == dump_port_type) {
+      fprintf(fp, ",\n");
+    } else {
+      fprintf(fp, ",");
     }
   }
 
@@ -1356,7 +1386,7 @@ void dump_verilog_pb_graph_primitive_node(FILE* fp,
   fprintf(fp, "module %s (", subckt_name);
   subckt_port_name = format_spice_node_prefix(subckt_name); 
   /* Inputs, outputs, inouts, clocks */
-  dump_verilog_pb_type_ports(fp, subckt_name, 0, cur_pb_type, TRUE);
+  dump_verilog_pb_type_ports(fp, subckt_name, 0, cur_pb_type, TRUE, FALSE);
   /* SRAM ports */
   fprintf(fp, ");\n");
   /* Include the spice_model*/
@@ -1364,7 +1394,7 @@ void dump_verilog_pb_graph_primitive_node(FILE* fp,
   verilog_model->cnt++; /* Stats the number of verilog_model used*/
   /* Make input, output, inout, clocks connected*/
   /* IMPORTANT: (sequence of these ports should be changed!) */
-  dump_verilog_pb_type_ports(fp, subckt_name, 0, cur_pb_type, FALSE);
+  dump_verilog_pb_type_ports(fp, subckt_name, 0, cur_pb_type, FALSE, FALSE);
   fprintf(fp, ");");
   /* Print end of subckt*/
   fprintf(fp, "endmodule\n");
@@ -1547,17 +1577,18 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
     dump_verilog_pb_type_ports(fp, subckt_name, 0, cur_pb_type);
     */
     /* Simplify the port prefix, make SPICE netlist readable */
-    dump_verilog_pb_type_ports(fp, subckt_port_prefix, 0, cur_pb_type, TRUE);
-    fprintf(fp, ",\n");
+    dump_verilog_pb_type_ports(fp, subckt_port_prefix, 0, cur_pb_type, TRUE, FALSE);
     /* Print Input Pad and Output Pad */
     if (0 < (inpad_verilog_model->cnt - stamped_inpad_cnt)) {
-      fprintf(fp, "  input [%d:%d] gfpga_input_%s, \n", 
+      fprintf(fp, ",");
+      fprintf(fp, "  input [%d:%d] gfpga_input_%s \n", 
               inpad_verilog_model->cnt - 1, 
               stamped_inpad_cnt,
               inpad_verilog_model->prefix); 
     }
     if (0 < (outpad_verilog_model->cnt - stamped_outpad_cnt)) {
-      fprintf(fp, "  output [%d:%d] gfpga_output_%s, \n", 
+      fprintf(fp, ",");
+      fprintf(fp, "  output [%d:%d] gfpga_output_%s \n", 
               outpad_verilog_model->cnt - 1, 
               stamped_outpad_cnt,
               outpad_verilog_model->prefix);
@@ -1571,6 +1602,7 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
      */
     num_conf_bits = cur_pb_type->default_mode_num_conf_bits;
     if (0 < num_conf_bits) {
+      fprintf(fp, ",");
       fprintf(fp, "  input [%d:%d] %s_out, \n", 
               stamped_sram_cnt + num_conf_bits - 1, 
               stamped_sram_cnt,
@@ -1627,12 +1659,12 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
         /* Print inputs, outputs, inouts, clocks
          * NO SRAMs !!! They have already been fixed in the bottom level
          */
-        dump_verilog_pb_type_ports(fp, child_pb_type_prefix, 0, &(cur_pb_type->modes[mode_index].pb_type_children[ipb]),FALSE);
-        fprintf(fp, ",\n");
+        dump_verilog_pb_type_ports(fp, child_pb_type_prefix, 0, &(cur_pb_type->modes[mode_index].pb_type_children[ipb]),FALSE, FALSE);
         /* Print input and output pads */
         assert(!(0 > cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_inpads));
         if (0 < cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_inpads) {
-          fprintf(fp, "  gfpga_input_%s[%d:%d], \n", 
+          fprintf(fp, ",");
+          fprintf(fp, "  gfpga_input_%s[%d:%d] \n", 
                   inpad_verilog_model->prefix, 
                   stamped_inpad_cnt,
                   stamped_inpad_cnt + cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_inpads - 1);
@@ -1641,7 +1673,8 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
         }
         assert(!(0 > cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_outpads));
         if (0 < cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_outpads) {
-          fprintf(fp, "  gfpga_output_%s[%d:%d], \n", 
+          fprintf(fp, ",");
+          fprintf(fp, "  gfpga_output_%s[%d:%d] \n", 
                   outpad_verilog_model->prefix, 
                   stamped_outpad_cnt,
                   stamped_outpad_cnt + cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_outpads - 1);
@@ -1651,6 +1684,7 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
         /* Print configuration ports */
         assert(!(0 > cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_conf_bits));
         if (0 < cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_conf_bits) {
+          fprintf(fp, ",");
           fprintf(fp, "  %s_out[%d:%d], \n", 
                   sram_verilog_model->prefix, 
                   stamped_sram_cnt + cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_conf_bits - 1,
@@ -1840,17 +1874,18 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
     dump_verilog_pb_type_ports(fp, subckt_name, 0, cur_pb_type);
     */
     /* Simplify the prefix! Make the SPICE netlist readable*/
-    dump_verilog_pb_type_ports(fp, subckt_port_prefix, 0, cur_pb_type, TRUE);
-    fprintf(fp, ",\n");
+    dump_verilog_pb_type_ports(fp, subckt_port_prefix, 0, cur_pb_type, TRUE, FALSE);
     /* Print Input Pad and Output Pad */
     if (0 < (inpad_verilog_model->cnt - stamped_inpad_cnt)) {
-      fprintf(fp, "  input [%d:%d] gfpga_input_%s, \n", 
+      fprintf(fp, ",");
+      fprintf(fp, "  input [%d:%d] gfpga_input_%s \n", 
               inpad_verilog_model->cnt - 1, 
               stamped_inpad_cnt,
               inpad_verilog_model->prefix); 
     }
     if (0 < (outpad_verilog_model->cnt - stamped_outpad_cnt)) {
-      fprintf(fp, "  output [%d:%d] gfpga_output_%s, \n", 
+      fprintf(fp, ",");
+      fprintf(fp, "  output [%d:%d] gfpga_output_%s \n", 
               outpad_verilog_model->cnt - 1, 
               stamped_outpad_cnt,
               outpad_verilog_model->prefix);
@@ -1862,6 +1897,7 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
      */
     num_conf_bits = cur_pb->num_conf_bits; 
     if (0 < num_conf_bits) {
+      fprintf(fp, ",");
       fprintf(fp, "  input [%d:%d] %s_out, \n", 
               stamped_sram_cnt + num_conf_bits - 1, 
               stamped_sram_cnt,
@@ -1932,12 +1968,12 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
         /* Print inputs, outputs, inouts, clocks
          * NO SRAMs !!! They have already been fixed in the bottom level
          */
-        dump_verilog_pb_type_ports(fp, child_pb_type_prefix, 0, &(cur_pb_type->modes[mode_index].pb_type_children[ipb]), FALSE);
-        fprintf(fp, ",\n");
+        dump_verilog_pb_type_ports(fp, child_pb_type_prefix, 0, &(cur_pb_type->modes[mode_index].pb_type_children[ipb]), FALSE, FALSE);
         /* Print input and output pads */
         assert(!(0 > child_pb_num_inpads));
         if (0 < child_pb_num_inpads) {
-          fprintf(fp, "  gfpga_input_%s[%d:%d], \n", 
+          fprintf(fp, ",");
+          fprintf(fp, "  gfpga_input_%s[%d:%d] \n", 
                   inpad_verilog_model->prefix, 
                   stamped_inpad_cnt,
                   stamped_inpad_cnt + child_pb_num_inpads - 1);
@@ -1946,7 +1982,8 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
         }
         assert(!(0 > child_pb_num_outpads));
         if (0 < child_pb_num_outpads) {
-          fprintf(fp, "  gfpga_output_%s[%d:%d], \n", 
+          fprintf(fp, ",");
+          fprintf(fp, "  gfpga_output_%s[%d:%d] \n", 
                   outpad_verilog_model->prefix, 
                   stamped_outpad_cnt,
                   stamped_outpad_cnt + child_pb_num_outpads - 1);
@@ -1956,6 +1993,7 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
         /* Print configuration ports */
         assert(!(0 > child_pb_num_conf_bits));
         if (0 < child_pb_num_conf_bits) {
+          fprintf(fp, ",");
           fprintf(fp, "  %s_out[%d:%d], \n", 
                   sram_verilog_model->prefix, 
                   stamped_sram_cnt + child_pb_num_conf_bits - 1,
@@ -2075,11 +2113,14 @@ void dump_verilog_grid_pins(FILE* fp,
                       int x,
                       int y,
                       int top_level,
-                      boolean dump_port_type) {
+                      boolean dump_port_type,
+                      boolean dump_last_comma) {
   int iheight, side, ipin, class_id; 
   int side_pin_index;
   t_type_ptr type_descriptor = grid[x][y].type;
   int capacity = grid[x][y].type->capacity;
+  int num_dumped_port = 0;
+  int first_dump = 1;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -2101,6 +2142,16 @@ void dump_verilog_grid_pins(FILE* fp,
       for (iheight = 0; iheight < type_descriptor->height; iheight++) {
         for (ipin = 0; ipin < type_descriptor->num_pins; ipin++) {
           if (1 == type_descriptor->pinloc[iheight][side][ipin]) {
+            /* Add comma if needed */
+            if (1 == first_dump) {
+              first_dump = 0;
+            } else { 
+              if (TRUE == dump_port_type) {
+                fprintf(fp, ",\n");
+              } else {
+                fprintf(fp, ",\n");
+             }
+            }
             if (TRUE == dump_port_type) {
               /* Determine this pin is an input or output */
               class_id = type_descriptor->pin_class[ipin];
@@ -2125,16 +2176,21 @@ void dump_verilog_grid_pins(FILE* fp,
               fprintf(fp, " %s_height_%d__pin_%d_", 
                       convert_side_index_to_string(side), iheight, ipin);
             }
-            if (TRUE == dump_port_type) {
-              fprintf(fp, ",\n");
-            } else {
-              fprintf(fp, ",\n");
-            }
+            /* Update counter */
+            num_dumped_port++;
             side_pin_index++;
           }
         }
       }  
     //}
+  }
+
+  if ((0 < num_dumped_port)&&(TRUE == dump_last_comma)) {
+    if (TRUE == dump_port_type) {
+      fprintf(fp, ",\n");
+    } else {
+      fprintf(fp, ",\n");
+    }
   }
 
   return;
@@ -2149,12 +2205,15 @@ void dump_verilog_grid_pins(FILE* fp,
 void dump_verilog_io_grid_pins(FILE* fp,
                                int x, int y,
                                int top_level,
-                               boolean dump_port_type) {
+                               boolean dump_port_type,
+                               boolean dump_last_comma) {
   int iheight, side, ipin; 
   int side_pin_index;
   t_type_ptr type_descriptor = grid[x][y].type;
   int capacity = grid[x][y].type->capacity;
   int class_id = -1;
+  int num_dumped_port = 0;
+  int first_dump = 1;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -2182,6 +2241,16 @@ void dump_verilog_io_grid_pins(FILE* fp,
     for (iheight = 0; iheight < type_descriptor->height; iheight++) {
       for (ipin = 0; ipin < type_descriptor->num_pins; ipin++) {
         if (1 == type_descriptor->pinloc[iheight][side][ipin]) {
+          /* Add comma if needed */
+          if (1 == first_dump) {
+            first_dump = 0;
+          } else { 
+            if (TRUE == dump_port_type) {
+              fprintf(fp, ",\n");
+            } else {
+              fprintf(fp, ",\n");
+            }
+          }
           /* Determine this pin is an input or output */
           if (TRUE == dump_port_type) {
             class_id = type_descriptor->pin_class[ipin];
@@ -2206,16 +2275,21 @@ void dump_verilog_io_grid_pins(FILE* fp,
             fprintf(fp, " %s_height_%d__pin_%d_", 
                     convert_side_index_to_string(side), iheight, ipin);
           }
-          if (TRUE == dump_port_type) {
-            fprintf(fp, ",\n");
-          } else {
-            fprintf(fp, ",\n");
-          }
+          /* Update counter */
+          num_dumped_port++;
           side_pin_index++;
         }
       }  
     }
   //}
+  
+  if ((0 < num_dumped_port)&&(TRUE == dump_last_comma)) {
+    if (TRUE == dump_port_type) {
+      fprintf(fp, ",\n");
+    } else {
+      fprintf(fp, ",\n");
+    }
+  }
 
   return;
 } 
@@ -2547,31 +2621,34 @@ void dump_verilog_grid_blocks(FILE* fp,
   /* Pins */
   /* Special Care for I/O grid */
   if (IO_TYPE == grid[ix][iy].type) {
-    dump_verilog_io_grid_pins(fp, ix, iy, 0, TRUE);
+    dump_verilog_io_grid_pins(fp, ix, iy, 0, TRUE, FALSE);
   } else {
-    dump_verilog_grid_pins(fp, ix, iy, 0, TRUE);
+    dump_verilog_grid_pins(fp, ix, iy, 0, TRUE, FALSE);
   }
   /* Print Input Pad and Output Pad */
   if (0 < (inpad_verilog_model->grid_index_high[ix][iy] - inpad_verilog_model->grid_index_low[ix][iy])) {
-    fprintf(fp, "  input [%d:%d] gfpga_input_%s, \n", 
+    fprintf(fp, ",\n");
+    fprintf(fp, "  input [%d:%d] gfpga_input_%s ", 
             inpad_verilog_model->grid_index_high[ix][iy] - 1, 
             inpad_verilog_model->grid_index_low[ix][iy],
             inpad_verilog_model->prefix); 
   }
   if (0 < (outpad_verilog_model->grid_index_high[ix][iy] - outpad_verilog_model->grid_index_low[ix][iy])) {
-    fprintf(fp, "  output [%d:%d] gfpga_output_%s, \n", 
+    fprintf(fp, ",\n");
+    fprintf(fp, "  output [%d:%d] gfpga_output_%s ", 
             outpad_verilog_model->grid_index_high[ix][iy] - 1, 
             outpad_verilog_model->grid_index_low[ix][iy],
             outpad_verilog_model->prefix); 
   }
   /* Print configuration ports */
   if (0 < (sram_verilog_model->grid_index_high[ix][iy] - sram_verilog_model->grid_index_low[ix][iy])) {
+    fprintf(fp, ",\n");
     fprintf(fp, "  input [%d:%d] %s_out, \n", 
             sram_verilog_model->grid_index_high[ix][iy] - 1, 
             sram_verilog_model->grid_index_low[ix][iy],
             sram_verilog_model->prefix); 
     /* inverted output of each configuration bit */
-    fprintf(fp, "  input [%d][%d] %s_outb \n", 
+    fprintf(fp, "  input [%d:%d] %s_outb \n", 
             sram_verilog_model->grid_index_high[ix][iy] - 1, 
             sram_verilog_model->grid_index_low[ix][iy],
             sram_verilog_model->prefix);
@@ -2615,17 +2692,18 @@ void dump_verilog_grid_blocks(FILE* fp,
     if (0 < (temp_inpad_msb - temp_inpad_lsb)) {
       fprintf(fp, "  gfpga_input_%s[%d:%d], \n", 
               inpad_verilog_model->prefix, 
-              temp_inpad_lsb, 
-              temp_inpad_msb - 1);
+              temp_inpad_msb - 1,
+              temp_inpad_lsb); 
     }
-    if (0 < (outpad_verilog_model->grid_index_high[ix][iy] - outpad_verilog_model->grid_index_low[ix][iy])) {
-      fprintf(fp, "  gfpga_output_%s[%d:%d], \n", 
+    if (0 < (temp_outpad_msb - temp_outpad_lsb)) {
+      fprintf(fp, "  gfpga_output_%s[%d:%d] \n", 
               outpad_verilog_model->prefix, 
-              temp_outpad_lsb, 
-              temp_outpad_msb - 1);
+              temp_outpad_msb - 1,
+              temp_outpad_lsb); 
     }
     assert(!(0 > temp_sram_msb - temp_sram_lsb));
     if (0 < temp_sram_msb - temp_sram_lsb) {
+      fprintf(fp, ",");
       fprintf(fp, "  %s_out[%d:%d], \n", 
               sram_verilog_model->prefix, 
               temp_sram_msb - 1,
@@ -2640,7 +2718,7 @@ void dump_verilog_grid_blocks(FILE* fp,
     temp_sram_lsb = temp_sram_msb;
     temp_inpad_lsb = temp_inpad_msb;
     temp_outpad_lsb = temp_outpad_msb;
-    fprintf(fp, ");");
+    fprintf(fp, ");\n");
   }
 
   fprintf(fp, "endmodule\n");

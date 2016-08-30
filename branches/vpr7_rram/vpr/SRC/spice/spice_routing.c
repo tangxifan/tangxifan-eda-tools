@@ -1128,7 +1128,7 @@ void fprint_routing_switch_box_subckt(FILE* fp,
   for (itrack = 0; itrack < chan_width[3]; itrack++) {
     switch (chan_rr_nodes[3][itrack]->direction) {
     case INC_DIRECTION:
-      fprintf(fp, "chanx[%d][%d]_out[%d] ", x, y, itrack); /* For SB: this is an input */
+      fprintf(fp, "chanx[%d][%d]_in[%d] ", x, y, itrack); /* For SB: this is an input */
       break;
     case DEC_DIRECTION:
       fprintf(fp, "chanx[%d][%d]_out[%d] ", x, y, itrack); /* For SB: this is an output */

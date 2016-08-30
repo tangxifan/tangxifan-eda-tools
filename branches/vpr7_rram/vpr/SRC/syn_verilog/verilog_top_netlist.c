@@ -69,7 +69,7 @@ void dump_verilog_top_netlist_ports(FILE* fp,
   /* Configuration ports depend on the organization of SRAMs */
   switch(sram_verilog_orgz_type) {
   case SPICE_SRAM_STANDALONE:
-    fprintf(fp, "  input wire [%d:0] %s,\n", 
+    fprintf(fp, "  input wire [%d:0] %s\n", 
             sram_verilog_model->cnt - 1,
             sram_verilog_model->prefix); 
     break;
@@ -77,7 +77,7 @@ void dump_verilog_top_netlist_ports(FILE* fp,
     /* TODO: currently, I use the same number of inputs as SRAM_STANDALONE
      * It will be changed to the number of scan-chain heads we want 
 				*/
-    fprintf(fp, "  input wire [%d:0] %s,\n", 
+    fprintf(fp, "  input wire [%d:0] %s\n", 
             sram_verilog_model->cnt - 1,
             sram_verilog_model->prefix); 
     break;
@@ -88,10 +88,10 @@ void dump_verilog_top_netlist_ports(FILE* fp,
     fprintf(fp, "  input wire [%d:0] addr_wl,\n", 
                    decoder_size - 1);
     /* I add all the Bit lines and Word lines here just for testbench usage */
-    fprintf(fp, "  input wire [%d:0] bl,\n", 
-                   sram_verilog_model->cnt - 1);
-    fprintf(fp, "  input wire [%d:0] wl,\n", 
-                   sram_verilog_model->cnt - 1);
+    fprintf(fp, "  input wire [%d:0] %s_out, //--- bl\n", 
+                   sram_verilog_model->cnt - 1, sram_verilog_model->prefix);
+    fprintf(fp, "  input wire [%d:0] %s_outb //--- wl \n", 
+                   sram_verilog_model->cnt - 1, sram_verilog_model->prefix);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
@@ -100,6 +100,8 @@ void dump_verilog_top_netlist_ports(FILE* fp,
   }
 
   fprintf(fp, ");\n");
+
+  /* Print wires of SRAM outputs */
 
   return; 
 }
@@ -120,18 +122,20 @@ void dump_verilog_defined_grids(FILE* fp) {
       fprintf(fp, "grid_%d__%d_  ", ix, iy); /* Call the name of subckt */ 
       fprintf(fp, "grid_%d__%d_ ", ix, iy);
       fprintf(fp, "(");
-      dump_verilog_grid_pins(fp, ix, iy, 1, FALSE);
+      dump_verilog_grid_pins(fp, ix, iy, 1, FALSE, FALSE);
       /* Print Input Pad and Output Pad */
       assert(!(0 > (inpad_verilog_model->grid_index_high[ix][iy] - inpad_verilog_model->grid_index_low[ix][iy])));
       if (0 < (inpad_verilog_model->grid_index_high[ix][iy] - inpad_verilog_model->grid_index_low[ix][iy])) {
-        fprintf(fp, "  gfpga_input_%s[%d:%d], \n", 
+        fprintf(fp, ",");
+        fprintf(fp, "  gfpga_input_%s[%d:%d] \n", 
                 inpad_verilog_model->prefix, 
                 inpad_verilog_model->grid_index_high[ix][iy] - 1, 
                 inpad_verilog_model->grid_index_low[ix][iy]);
       }
       assert(!(0 > (outpad_verilog_model->grid_index_high[ix][iy] - outpad_verilog_model->grid_index_low[ix][iy])));
       if (0 < (outpad_verilog_model->grid_index_high[ix][iy] - outpad_verilog_model->grid_index_low[ix][iy])) {
-        fprintf(fp, " gfpga_output_%s[%d:%d], \n", 
+        fprintf(fp, ",");
+        fprintf(fp, " gfpga_output_%s[%d:%d] \n", 
                 outpad_verilog_model->prefix, 
                 outpad_verilog_model->grid_index_high[ix][iy] - 1, 
                 outpad_verilog_model->grid_index_low[ix][iy]);
@@ -139,15 +143,16 @@ void dump_verilog_defined_grids(FILE* fp) {
       /* Configuration ports */
       assert(!(0 > sram_verilog_model->grid_index_high[ix][iy] - sram_verilog_model->grid_index_low[ix][iy]));
       if (0 < sram_verilog_model->grid_index_high[ix][iy] - sram_verilog_model->grid_index_low[ix][iy]) {
+        fprintf(fp, ",");
         fprintf(fp, "  %s_out[%d:%d], \n", 
                 sram_verilog_model->prefix, 
-                sram_verilog_model->grid_index_low[ix][iy],
-                sram_verilog_model->grid_index_high[ix][iy] - 1);
+                sram_verilog_model->grid_index_high[ix][iy] - 1,
+                sram_verilog_model->grid_index_low[ix][iy]);
         /* inverted output of each configuration bit */
         fprintf(fp, "  %s_outb[%d:%d] \n", 
                 sram_verilog_model->prefix, 
-                sram_verilog_model->grid_index_low[ix][iy],
-                sram_verilog_model->grid_index_high[ix][iy] - 1);
+                sram_verilog_model->grid_index_high[ix][iy] - 1,
+                sram_verilog_model->grid_index_low[ix][iy]);
         
       }
       fprintf(fp, ");\n");
@@ -162,18 +167,20 @@ void dump_verilog_defined_grids(FILE* fp) {
     fprintf(fp, "grid_%d__%d_ ", ix, iy); /* Call the name of subckt */ 
     fprintf(fp, "grid_%d__%d_ ", ix, iy);
     fprintf(fp, "(");
-    dump_verilog_io_grid_pins(fp, ix, iy, 1, FALSE);
+    dump_verilog_io_grid_pins(fp, ix, iy, 1, FALSE, FALSE);
     /* Print Input Pad and Output Pad */
     assert(!(0 > (inpad_verilog_model->grid_index_high[ix][iy] - inpad_verilog_model->grid_index_low[ix][iy])));
     if (0 < (inpad_verilog_model->grid_index_high[ix][iy] - inpad_verilog_model->grid_index_low[ix][iy])) {
-      fprintf(fp, "  gfpga_input_%s[%d:%d], \n", 
+      fprintf(fp, ",");
+      fprintf(fp, "  gfpga_input_%s[%d:%d] \n", 
               inpad_verilog_model->prefix, 
               inpad_verilog_model->grid_index_high[ix][iy] - 1, 
               inpad_verilog_model->grid_index_low[ix][iy]);
     }
     assert(!(0 > (outpad_verilog_model->grid_index_high[ix][iy] - outpad_verilog_model->grid_index_low[ix][iy])));
     if (0 < (outpad_verilog_model->grid_index_high[ix][iy] - outpad_verilog_model->grid_index_low[ix][iy])) {
-      fprintf(fp, " gfpga_output_%s[%d:%d], \n", 
+      fprintf(fp, ",");
+      fprintf(fp, " gfpga_output_%s[%d:%d] \n", 
               outpad_verilog_model->prefix, 
               outpad_verilog_model->grid_index_high[ix][iy] - 1, 
               outpad_verilog_model->grid_index_low[ix][iy]);
@@ -181,6 +188,7 @@ void dump_verilog_defined_grids(FILE* fp) {
     /* Configuration ports */
     assert(!(0 > sram_verilog_model->grid_index_high[ix][iy] - sram_verilog_model->grid_index_low[ix][iy]));
     if (0 < sram_verilog_model->grid_index_high[ix][iy] - sram_verilog_model->grid_index_low[ix][iy]) {
+      fprintf(fp, ",");
       fprintf(fp, "  %s_out[%d:%d], \n", 
               sram_verilog_model->prefix, 
               sram_verilog_model->grid_index_low[ix][iy],
@@ -202,18 +210,20 @@ void dump_verilog_defined_grids(FILE* fp) {
     fprintf(fp, "grid_%d__%d_ ", ix, iy); /* Call the name of subckt */ 
     fprintf(fp, "grid_%d__%d_ ", ix, iy);
     fprintf(fp, "(");
-    dump_verilog_io_grid_pins(fp, ix, iy, 1, FALSE);
+    dump_verilog_io_grid_pins(fp, ix, iy, 1, FALSE, FALSE);
     /* Print Input Pad and Output Pad */
     assert(!(0 > (inpad_verilog_model->grid_index_high[ix][iy] - inpad_verilog_model->grid_index_low[ix][iy])));
     if (0 < (inpad_verilog_model->grid_index_high[ix][iy] - inpad_verilog_model->grid_index_low[ix][iy])) {
-      fprintf(fp, "  gfpga_input_%s[%d:%d], \n", 
+      fprintf(fp, ",");
+      fprintf(fp, "  gfpga_input_%s[%d:%d] \n", 
               inpad_verilog_model->prefix, 
               inpad_verilog_model->grid_index_high[ix][iy] - 1, 
               inpad_verilog_model->grid_index_low[ix][iy]);
     }
     assert(!(0 > (outpad_verilog_model->grid_index_high[ix][iy] - outpad_verilog_model->grid_index_low[ix][iy])));
     if (0 < (outpad_verilog_model->grid_index_high[ix][iy] - outpad_verilog_model->grid_index_low[ix][iy])) {
-      fprintf(fp, " gfpga_output_%s[%d:%d], \n", 
+      fprintf(fp, ",");
+      fprintf(fp, " gfpga_output_%s[%d:%d] \n", 
               outpad_verilog_model->prefix, 
               outpad_verilog_model->grid_index_high[ix][iy] - 1, 
               outpad_verilog_model->grid_index_low[ix][iy]);
@@ -221,6 +231,7 @@ void dump_verilog_defined_grids(FILE* fp) {
     /* Configuration ports */
     assert(!(0 > sram_verilog_model->grid_index_high[ix][iy] - sram_verilog_model->grid_index_low[ix][iy]));
     if (0 < sram_verilog_model->grid_index_high[ix][iy] - sram_verilog_model->grid_index_low[ix][iy]) {
+      fprintf(fp, ",");
       fprintf(fp, "  %s_out[%d:%d], \n", 
               sram_verilog_model->prefix, 
               sram_verilog_model->grid_index_low[ix][iy],
@@ -242,18 +253,20 @@ void dump_verilog_defined_grids(FILE* fp) {
     fprintf(fp, "grid_%d__%d_ ", ix, iy); /* Call the name of subckt */ 
     fprintf(fp, "grid_%d__%d_ ", ix, iy);
     fprintf(fp, "(");
-    dump_verilog_io_grid_pins(fp, ix, iy, 1, FALSE);
+    dump_verilog_io_grid_pins(fp, ix, iy, 1, FALSE, FALSE);
     /* Print Input Pad and Output Pad */
     assert(!(0 > (inpad_verilog_model->grid_index_high[ix][iy] - inpad_verilog_model->grid_index_low[ix][iy])));
     if (0 < (inpad_verilog_model->grid_index_high[ix][iy] - inpad_verilog_model->grid_index_low[ix][iy])) {
-      fprintf(fp, "  gfpga_input_%s[%d:%d], \n", 
+      fprintf(fp, ",");
+      fprintf(fp, "  gfpga_input_%s[%d:%d] \n", 
               inpad_verilog_model->prefix, 
               inpad_verilog_model->grid_index_high[ix][iy] - 1, 
               inpad_verilog_model->grid_index_low[ix][iy]);
     }
     assert(!(0 > (outpad_verilog_model->grid_index_high[ix][iy] - outpad_verilog_model->grid_index_low[ix][iy])));
     if (0 < (outpad_verilog_model->grid_index_high[ix][iy] - outpad_verilog_model->grid_index_low[ix][iy])) {
-      fprintf(fp, " gfpga_output_%s[%d:%d], \n", 
+      fprintf(fp, ",");
+      fprintf(fp, " gfpga_output_%s[%d:%d] \n", 
               outpad_verilog_model->prefix, 
               outpad_verilog_model->grid_index_high[ix][iy] - 1, 
               outpad_verilog_model->grid_index_low[ix][iy]);
@@ -261,6 +274,7 @@ void dump_verilog_defined_grids(FILE* fp) {
     /* Configuration ports */
     assert(!(0 > sram_verilog_model->grid_index_high[ix][iy] - sram_verilog_model->grid_index_low[ix][iy]));
     if (0 < sram_verilog_model->grid_index_high[ix][iy] - sram_verilog_model->grid_index_low[ix][iy]) {
+      fprintf(fp, ",");
       fprintf(fp, "  %s_out[%d:%d], \n", 
               sram_verilog_model->prefix, 
               sram_verilog_model->grid_index_low[ix][iy],
@@ -282,18 +296,20 @@ void dump_verilog_defined_grids(FILE* fp) {
     fprintf(fp, "grid_%d__%d_ ", ix, iy); /* Call the name of subckt */ 
     fprintf(fp, "grid_%d__%d_ ", ix, iy);
     fprintf(fp, "(");
-    dump_verilog_io_grid_pins(fp, ix, iy, 1, FALSE);
+    dump_verilog_io_grid_pins(fp, ix, iy, 1, FALSE, FALSE);
     /* Print Input Pad and Output Pad */
     assert(!(0 > (inpad_verilog_model->grid_index_high[ix][iy] - inpad_verilog_model->grid_index_low[ix][iy])));
     if (0 < (inpad_verilog_model->grid_index_high[ix][iy] - inpad_verilog_model->grid_index_low[ix][iy])) {
-      fprintf(fp, "  gfpga_input_%s[%d:%d], \n", 
+      fprintf(fp, ",");
+      fprintf(fp, "  gfpga_input_%s[%d:%d] \n", 
               inpad_verilog_model->prefix, 
               inpad_verilog_model->grid_index_high[ix][iy] - 1, 
               inpad_verilog_model->grid_index_low[ix][iy]);
     }
     assert(!(0 > (outpad_verilog_model->grid_index_high[ix][iy] - outpad_verilog_model->grid_index_low[ix][iy])));
     if (0 < (outpad_verilog_model->grid_index_high[ix][iy] - outpad_verilog_model->grid_index_low[ix][iy])) {
-      fprintf(fp, " gfpga_output_%s[%d:%d], \n", 
+      fprintf(fp, ",");
+      fprintf(fp, " gfpga_output_%s[%d:%d] \n", 
               outpad_verilog_model->prefix, 
               outpad_verilog_model->grid_index_high[ix][iy] - 1, 
               outpad_verilog_model->grid_index_low[ix][iy]);
@@ -301,6 +317,7 @@ void dump_verilog_defined_grids(FILE* fp) {
     /* Configuration ports */
     assert(!(0 > sram_verilog_model->grid_index_high[ix][iy] - sram_verilog_model->grid_index_low[ix][iy]));
     if (0 < sram_verilog_model->grid_index_high[ix][iy] - sram_verilog_model->grid_index_low[ix][iy]) {
+      fprintf(fp, ",");
       fprintf(fp, "  %s_out[%d:%d], \n", 
               sram_verilog_model->prefix, 
               sram_verilog_model->grid_index_low[ix][iy],
@@ -568,13 +585,13 @@ void dump_verilog_defined_connection_box(FILE* fp,
     if (0 < sram_verilog_model->cbx_index_high[x][y] - sram_verilog_model->cbx_index_low[x][y]) {
       fprintf(fp, "  %s_out[%d:%d], \n", 
               sram_verilog_model->prefix, 
-              sram_verilog_model->cbx_index_low[x][y],
-              sram_verilog_model->cbx_index_high[x][y] - 1);
+              sram_verilog_model->cbx_index_high[x][y] - 1,
+              sram_verilog_model->cbx_index_low[x][y]);
       /* inverted output of each configuration bit */
       fprintf(fp, "  %s_outb[%d:%d] \n", 
               sram_verilog_model->prefix, 
-              sram_verilog_model->cbx_index_low[x][y],
-              sram_verilog_model->cbx_index_high[x][y] - 1);
+              sram_verilog_model->cbx_index_high[x][y] - 1,
+              sram_verilog_model->cbx_index_low[x][y]);
         
     }
     break;
@@ -598,13 +615,13 @@ void dump_verilog_defined_connection_box(FILE* fp,
     if (0 < sram_verilog_model->cby_index_high[x][y] - sram_verilog_model->cby_index_low[x][y]) {
       fprintf(fp, "  %s_out[%d:%d], \n", 
               sram_verilog_model->prefix, 
-              sram_verilog_model->cby_index_low[x][y],
-              sram_verilog_model->cby_index_high[x][y] - 1);
+              sram_verilog_model->cby_index_high[x][y] - 1,
+              sram_verilog_model->cby_index_low[x][y]);
       /* inverted output of each configuration bit */
       fprintf(fp, "  %s_outb[%d:%d] \n", 
               sram_verilog_model->prefix, 
-              sram_verilog_model->cby_index_low[x][y],
-              sram_verilog_model->cby_index_high[x][y] - 1);
+              sram_verilog_model->cby_index_high[x][y] - 1,
+              sram_verilog_model->cby_index_low[x][y]);
         
     }
     break;
@@ -792,13 +809,13 @@ void dump_verilog_defined_switch_box(FILE* fp,
   if (0 < sram_verilog_model->sb_index_high[x][y] - sram_verilog_model->sb_index_low[x][y]) {
     fprintf(fp, "  %s_out[%d:%d], \n", 
             sram_verilog_model->prefix, 
-            sram_verilog_model->sb_index_low[x][y],
-            sram_verilog_model->sb_index_high[x][y] - 1);
+            sram_verilog_model->sb_index_high[x][y] - 1,
+            sram_verilog_model->sb_index_low[x][y]);
     /* inverted output of each configuration bit */
     fprintf(fp, "  %s_outb[%d:%d] \n", 
             sram_verilog_model->prefix, 
-            sram_verilog_model->sb_index_low[x][y],
-            sram_verilog_model->sb_index_high[x][y] - 1);
+            sram_verilog_model->sb_index_high[x][y] - 1,
+            sram_verilog_model->sb_index_low[x][y]);
   }
 
   fprintf(fp, ");\n");
@@ -909,15 +926,15 @@ void dump_verilog_configuration_circuits_memory_bank(FILE* fp) {
   /* Bit lines decoder */
   fprintf(fp, "decoder%dto%d mem_bank_bl_decoder (",
           decoder_size, sram_verilog_model->cnt);
-  fprintf(fp, "en_bl, addr_bl[0:%d], bl[0:%d] ",
-          decoder_size - 1, sram_verilog_model->cnt - 1);
+  fprintf(fp, "en_bl, addr_bl[%d:0], %s_out[%d:0] ",
+          decoder_size - 1, sram_verilog_model->prefix, sram_verilog_model->cnt - 1);
   fprintf(fp, ");\n");
 
   /* Word lines decoder */
   fprintf(fp, "decoder%dto%d mem_bank_wl_decoder (",
           decoder_size, sram_verilog_model->cnt);
-  fprintf(fp, "en_wl, addr_wl[0:%d], wl[0:%d] ",
-          decoder_size - 1, sram_verilog_model->cnt - 1);
+  fprintf(fp, "en_wl, addr_wl[%d:0], %s_outb[%d:0] ",
+          decoder_size - 1, sram_verilog_model->prefix, sram_verilog_model->cnt - 1);
   fprintf(fp, ");\n");
 
   return; 
@@ -981,17 +998,17 @@ void dump_verilog_top_netlist(char* circuit_name,
   /* Special subckts for Top-level SPICE netlist */
   fprintf(fp, "//----- Include subckt netlists: Look-Up Tables (LUTs) -----\n");
   temp_include_file_path = my_strcat(formatted_subckt_dir_path, luts_verilog_file_name);
-  fprintf(fp, "`include \'%s\'\n", temp_include_file_path);
+  fprintf(fp, "//`include \'%s\'\n", temp_include_file_path);
   my_free(temp_include_file_path);
 
   fprintf(fp, "//------ Include subckt netlists: Logic Blocks -----\n");
   temp_include_file_path = my_strcat(formatted_subckt_dir_path, logic_block_verilog_file_name);
-  fprintf(fp, "`include \'%s\'\n", temp_include_file_path);
+  fprintf(fp, "//`include \'%s\'\n", temp_include_file_path);
   my_free(temp_include_file_path);
 
   fprintf(fp, "//----- Include subckt netlists: Routing structures (Switch Boxes, Channels, Connection Boxes) -----\n");
   temp_include_file_path = my_strcat(formatted_subckt_dir_path, routing_verilog_file_name);
-  fprintf(fp, "`include \'%s\'\n", temp_include_file_path);
+  fprintf(fp, "//`include \'%s\'\n", temp_include_file_path);
   my_free(temp_include_file_path);
  
   /* Include decoders if required */ 
@@ -1003,7 +1020,7 @@ void dump_verilog_top_netlist(char* circuit_name,
     /* Include verilog decoder */
     fprintf(fp, "//----- Include subckt netlists: Routing structures (Switch Boxes, Channels, Connection Boxes) -----\n");
     temp_include_file_path = my_strcat(formatted_subckt_dir_path, decoders_verilog_file_name);
-    fprintf(fp, "`include \'%s\'\n", temp_include_file_path);
+    fprintf(fp, "//`include \'%s\'\n", temp_include_file_path);
     my_free(temp_include_file_path);
     break;
   default:

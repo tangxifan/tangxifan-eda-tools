@@ -111,8 +111,7 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
                  strlen(my_itoa(index)) + 1 + 1));
   sprintf(port_prefix, "%s_%d_", cur_pb_type->name, index);
   
-  dump_verilog_pb_type_ports(fp, port_prefix, 0, cur_pb_type, TRUE); 
-  fprintf(fp, ",\n");
+  dump_verilog_pb_type_ports(fp, port_prefix, 0, cur_pb_type, TRUE, TRUE); 
   /* Print SRAM ports */
   switch (sram_verilog_orgz_type) {
   case SPICE_SRAM_MEMORY_BANK:
@@ -206,8 +205,7 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   /* Connect outputs*/
   fprintf(fp, "\n");
   fprintf(fp, "//----- Input and output ports -----\n");
-  dump_verilog_pb_type_ports(fp, port_prefix, 0, cur_pb_type, FALSE); 
-  fprintf(fp, ",\n");
+  dump_verilog_pb_type_ports(fp, port_prefix, 0, cur_pb_type, FALSE, TRUE); 
   fprintf(fp, "//----- SRAM ports -----\n");
   /* Connect srams*/
   cur_sram = sram_verilog_model->cnt;
