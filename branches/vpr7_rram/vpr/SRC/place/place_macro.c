@@ -530,3 +530,24 @@ int check_macros_contained(t_pl_macro pl_macro_a,
   
   return 1;
 }
+
+/* Xifan TANG: get the maximum length of macros */
+int max_len_pl_macros(int num_pl_macros, 
+                      t_pl_macro* pl_macros) {
+  int imacro;
+  int max_len = 0;
+
+  if (0 == num_pl_macros) {
+    return max_len;
+  }
+  
+  assert(NULL != pl_macros);
+
+  for (imacro = 0; imacro < num_pl_macros; imacro++) {
+    if (max_len < pl_macros[imacro].num_blocks) {
+      max_len = pl_macros[imacro].num_blocks;
+    }
+  }
+
+  return max_len;
+}

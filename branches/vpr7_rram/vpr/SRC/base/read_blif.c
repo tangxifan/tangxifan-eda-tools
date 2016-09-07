@@ -756,8 +756,33 @@ static void add_subckt(int doall, t_model *user_models) {
 
 			/* record the name to be first output net parsed */
 			if(logical_block[num_logical_blocks - 1].name == NULL) {
-				logical_block[num_logical_blocks - 1].name = my_strdup(
-						subckt_logical_block_name);
+                /* Xifan TANG: add the index of logical block in its name !
+                 * Name format is <subckt_logical_block_name>_lb<index>   
+                 * If not, there could be two pbs having the same name during packing! 
+                 */
+                if (NULL == subckt_logical_block_name) {
+                  if (i == (subckt_index_signals - 1)) { 
+                  /* If this is the last signal and still there is no name for this subckt 
+                   * we give a default name. 
+                   * Actually, this should not never happen, elsewhere this is a block with no fan-out
+                   */
+                    logical_block[num_logical_blocks - 1].name = (char*)my_malloc(sizeof(char)*
+                                                            (6 + 3 + 5 + 1)); 
+                    sprintf(logical_block[num_logical_blocks - 1].name, "noname_lb%d",
+                            num_logical_blocks -1);
+                  }
+                } else {
+                  logical_block[num_logical_blocks - 1].name = (char*)my_malloc(sizeof(char)*
+                                                          (strlen(subckt_logical_block_name) + 3 + 5 + 1)); 
+                  /* I do lazy job here, assume 5 bits for the index, whose range is [0, 32767]
+                   * This can be improved by using itoa
+                   */
+                  sprintf(logical_block[num_logical_blocks - 1].name, "%s_lb%d",
+                          subckt_logical_block_name, num_logical_blocks -1);
+               
+                }
+				/* logical_block[num_logical_blocks - 1].name = my_strdup(
+						subckt_logical_block_name); */
 			}
 
 			if (!found_subckt_signal) {

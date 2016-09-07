@@ -49,10 +49,13 @@ void dump_verilog_cmos_mux_one_basis_module(FILE* fp,
     num_mem = 1;
   }
 
+  /* Comment lines */
+  fprintf(fp, "//---- CMOS MUX basis module: %s -----\n", mux_basis_subckt_name);
+
   /* Print the port list and definition */
   fprintf(fp, "module %s (\n", mux_basis_subckt_name);
   /* Port list */
-  fprintf(fp, "input [0:%d] in,\n", num_input_basis_subckt);
+  fprintf(fp, "input [0:%d] in,\n", num_input_basis_subckt - 1);
   fprintf(fp, "output out,\n");
   fprintf(fp, "input [0:%d] mem, mem_inv);\n",
           num_mem - 1);
@@ -62,6 +65,9 @@ void dump_verilog_cmos_mux_one_basis_module(FILE* fp,
 
   /* Put an end to this module */
   fprintf(fp, "endmodule\n");
+
+  /* Comment lines */
+  fprintf(fp, "//---- END CMOS MUX basis module: %s -----\n\n", mux_basis_subckt_name);
 
   return;
 }
@@ -82,10 +88,13 @@ void dump_verilog_rram_mux_one_basis_module(FILE* fp,
     exit(1);
   } 
 
+  /* Comment lines */
+  fprintf(fp, "//---- RRAM MUX basis module: %s -----\n", mux_basis_subckt_name);
+
   /* Print the port list and definition */
   fprintf(fp, "module %s (\n", mux_basis_subckt_name);
   /* Port list */
-  fprintf(fp, "input [0:%d] in,\n", num_input_basis_subckt);
+  fprintf(fp, "input [0:%d] in,\n", num_input_basis_subckt - 1);
   fprintf(fp, "output out,\n");
   fprintf(fp, "input [0:%d] bl,wl);\n",
           num_mem - 1);
@@ -104,6 +113,9 @@ void dump_verilog_rram_mux_one_basis_module(FILE* fp,
  
   /* Put an end to this module */
   fprintf(fp, "endmodule\n");
+
+  /* Comment lines */
+  fprintf(fp, "//---- END RRAM MUX basis module: %s -----\n\n", mux_basis_subckt_name);
 
   return;
 }
@@ -552,7 +564,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
   }
  
   fprintf(fp, "endmodule\n");
-  fprintf(fp, "//----- END CMOS MUX info: spice_model_name=%s, size=%d -----\n", spice_model.name, mux_size);
+  fprintf(fp, "//----- END CMOS MUX info: spice_model_name=%s, size=%d -----\n\n", spice_model.name, mux_size);
   fprintf(fp, "\n");
 
   /* Free */
@@ -923,7 +935,7 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
   }
  
   fprintf(fp, "endmodule\n");
-  fprintf(fp, "//------ END RRAM MUX info: spice_model_name=%s, size=%d -----\n", spice_model.name, mux_size);
+  fprintf(fp, "//------ END RRAM MUX info: spice_model_name=%s, size=%d -----\n\n", spice_model.name, mux_size);
   fprintf(fp, "\n");
 
   /* Free */
@@ -1113,6 +1125,7 @@ void dump_verilog_submodules(char* submodule_dir,
                              t_det_routing_arch* routing_arch) {
 
   /* 1. MUXes */
+  vpr_printf(TIO_MESSAGE_INFO, "Generating modules of multiplexers...\n");
   dump_verilog_submodule_muxes(submodule_dir, routing_arch->num_switch, 
                                switch_inf, Arch.spice, routing_arch);
 

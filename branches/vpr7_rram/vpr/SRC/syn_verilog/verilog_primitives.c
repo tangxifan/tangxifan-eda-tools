@@ -103,6 +103,9 @@ void dump_verilog_pb_primitive_ff(FILE* fp,
                 (strlen(prim_pb_type->name) + 1
                  + strlen(my_itoa(index)) + 1 + 1));
   sprintf(port_prefix, "%s_%d_", prim_pb_type->name, index);
+  /* Comment lines */
+  fprintf(fp, "//----- Flip-flop Verilog module: %s%s -----\n", 
+          formatted_subckt_prefix, port_prefix);
   /* Definition line */
   fprintf(fp, "module %s%s (", formatted_subckt_prefix, port_prefix);
   /* print ports*/
@@ -153,6 +156,10 @@ void dump_verilog_pb_primitive_ff(FILE* fp,
 
   /* End */
   fprintf(fp, "endmodule\n");
+
+  /* Comment lines */
+  fprintf(fp, "//----- END Flip-flop Verilog module: %s%s -----\n\n", 
+          formatted_subckt_prefix, port_prefix);
 
   verilog_model->cnt++;
 
@@ -218,6 +225,9 @@ void dump_verilog_pb_primitive_hardlogic(FILE* fp,
                 (strlen(prim_pb_type->name) + 1
                  + strlen(my_itoa(index)) + 1 + 1));
   sprintf(port_prefix, "%s_%d_", prim_pb_type->name, index);
+  /* Comment lines */
+  fprintf(fp, "//----- Hardlogic Verilog module: %s%s -----\n", 
+          formatted_subckt_prefix, port_prefix);
   /* Definition line */
   fprintf(fp, "module %s%s (", formatted_subckt_prefix, port_prefix);
   /* print ports*/
@@ -243,6 +253,9 @@ void dump_verilog_pb_primitive_hardlogic(FILE* fp,
 
   /* End */
   fprintf(fp, "endmodule\n");
+  /* Comment lines */
+  fprintf(fp, "//----- EDN Hardlogic Verilog module: %s%s -----\n", 
+          formatted_subckt_prefix, port_prefix);
 
   verilog_model->cnt++;
 
@@ -307,6 +320,9 @@ void dump_verilog_pb_primitive_io(FILE* fp,
                 (strlen(prim_pb_type->name) + 1
                  + strlen(my_itoa(index)) + 1 + 1));
   sprintf(port_prefix, "%s_%d_", prim_pb_type->name, index);
+  /* Comment lines */
+  fprintf(fp, "//----- IO Verilog module: %s%s -----\n", 
+          formatted_subckt_prefix, port_prefix);
   /* Definition line */
   fprintf(fp, "module %s%s (", formatted_subckt_prefix, port_prefix);
   /* print ports*/
@@ -367,6 +383,10 @@ void dump_verilog_pb_primitive_io(FILE* fp,
 
   /* End */
   fprintf(fp, "endmodule\n");
+  /* Comment lines */
+  fprintf(fp, "//----- END IO Verilog module: %s%s -----\n\n", 
+          formatted_subckt_prefix, port_prefix);
+
   /* Update the verilog_model counter */
   verilog_model->cnt++;
 

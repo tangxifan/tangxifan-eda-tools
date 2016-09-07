@@ -59,11 +59,13 @@ void dump_verilog_routing_chan_subckt(FILE* fp,
   switch (chan_type) {
   case CHANX:
     chan_prefix = "chanx";
-    fprintf(fp, "//----- Subckt for Channel X [%d][%d] -----\n", x, y);
+    /* Comment lines */
+    fprintf(fp, "//----- Verilog Module of Channel X [%d][%d] -----\n", x, y);
     break;
   case CHANY:
     chan_prefix = "chany";
-    fprintf(fp, "//----- Subckt for Channel Y [%d][%d] -----\n", x, y);
+    /* Comment lines */
+    fprintf(fp, "//----- Verilog Module Channel Y [%d][%d] -----\n", x, y);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid Channel type! Should be CHANX or CHANY.\n",
@@ -88,10 +90,10 @@ void dump_verilog_routing_chan_subckt(FILE* fp,
   for (itrack = 0; itrack < chan_width; itrack++) {
     switch (chan_rr_nodes[itrack]->direction) {
     case INC_DIRECTION:
-      fprintf(fp, "  input in%d, // track %d input \n", itrack, itrack);
+      fprintf(fp, "  input in%d, //--- track %d input \n", itrack, itrack);
       break;
     case DEC_DIRECTION:
-      fprintf(fp, "  output out%d, // track %d output \n", itrack, itrack);
+      fprintf(fp, "  output out%d, //--- track %d output \n", itrack, itrack);
       break;
     case BI_DIRECTION:
     default:
@@ -103,10 +105,10 @@ void dump_verilog_routing_chan_subckt(FILE* fp,
   for (itrack = 0; itrack < chan_width; itrack++) {
     switch (chan_rr_nodes[itrack]->direction) {
     case INC_DIRECTION:
-      fprintf(fp, "  output out%d, // track %d output\n", itrack, itrack);
+      fprintf(fp, "  output out%d, //--- track %d output\n", itrack, itrack);
       break;
     case DEC_DIRECTION:
-      fprintf(fp, "  input in%d, // track %d input \n", itrack, itrack);
+      fprintf(fp, "  input in%d, //--- track %d input \n", itrack, itrack);
       break;
     case BI_DIRECTION:
     default:
@@ -140,6 +142,22 @@ void dump_verilog_routing_chan_subckt(FILE* fp,
   }
 
   fprintf(fp, "endmodule\n");
+
+  /* Comment lines */
+  switch (chan_type) {
+  case CHANX:
+    /* Comment lines */
+    fprintf(fp, "//----- END Verilog Module of Channel X [%d][%d] -----\n\n", x, y);
+    break;
+  case CHANY:
+    /* Comment lines */
+    fprintf(fp, "//----- END Verilog Module of Channel Y [%d][%d] -----\n\n", x, y);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid Channel type! Should be CHANX or CHANY.\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
 
   /* Free */
   my_free(chan_rr_nodes);
@@ -1144,8 +1162,9 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp,
   /* Estimate the sram_verilog_model->cnt */
   esti_sram_cnt = sram_verilog_model->cnt + num_conf_bits;
 
+  /* Comment lines */
+  fprintf(fp, "//----- Verilog Module of Switch Box[%d][%d] -----\n", x, y);
   /* Print the definition of subckt*/
-  fprintf(fp, "//----- Switch Box[%d][%d] Sub-Circuit -----\n", x, y);
   fprintf(fp, "module sb_%d__%d_ ( \n", x, y);
   fprintf(fp, "//----- Inputs/outputs of Channel Y [%d][%d] -----\n", x, y+1);
   /* 1. Channel Y [x][y+1] inputs */
@@ -1357,6 +1376,9 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp,
   }
  
   fprintf(fp, "endmodule\n");
+
+  /* Comment lines */
+  fprintf(fp, "//----- END Verilog Module of Switch Box[%d][%d] -----\n\n", x, y);
 
   /* Check */
   if (esti_sram_cnt != sram_verilog_model->cnt) {
@@ -1801,13 +1823,18 @@ void dump_verilog_routing_connection_box_subckt(FILE* fp,
   assert((!(0 > y))&&(!(y > (ny + 1)))); 
   
   /* Print the definition of subckt*/
-  fprintf(fp, "module ");
   /* Identify the type of connection box */
   switch(chan_type) {
   case CHANX:
+    /* Comment lines */
+    fprintf(fp, "//----- Verilog Module of Connection Box -X direction [%d][%d] -----\n", x, y);
+    fprintf(fp, "module ");
     fprintf(fp, "cbx_%d__%d_ ", x, y);
     break;
   case CHANY:
+    /* Comment lines */
+    fprintf(fp, "//----- Verilog Module of Connection Box -Y direction [%d][%d] -----\n", x, y);
+    fprintf(fp, "module ");
     fprintf(fp, "cby_%d__%d_ ", x, y);
     break;
   default: 
@@ -2045,6 +2072,19 @@ void dump_verilog_routing_connection_box_subckt(FILE* fp,
   } 
 
   fprintf(fp, "endmodule\n");
+
+  /* Comment lines */
+  switch(chan_type) {
+  case CHANX:
+    fprintf(fp, "//----- END Verilog Module of Connection Box -X direction [%d][%d] -----\n\n", x, y);
+    break;
+  case CHANY:
+    fprintf(fp, "//----- END Verilog Module of Connection Box -Y direction [%d][%d] -----\n\n", x, y);
+    break;
+  default: 
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
+    exit(1);
+  }
 
   /* Check */
   assert(esti_sram_cnt == sram_verilog_model->cnt);

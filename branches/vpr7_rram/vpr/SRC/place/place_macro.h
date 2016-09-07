@@ -170,4 +170,7 @@ int spot_blk_position_in_a_macro(t_pl_macro pl_macros, int blk_idx);
 int check_macros_contained(t_pl_macro pl_macro_a,
                            t_pl_macro pl_macro_b);
 
+int max_len_pl_macros(int num_pl_macros, 
+                      t_pl_macro* pl_macros);
+
 #endif

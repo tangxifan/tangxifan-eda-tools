@@ -96,6 +96,9 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
 
   /* Print the subckts*/ 
   cur_pb_type = cur_pb_graph_node->pb_type;
+  /* Comment lines */
+  fprintf(fp, "//----- LUT Verilog module: %s%s_%d_ -----\n",
+          formatted_subckt_prefix, cur_pb_type->name, index);
   /* Subckt definition*/
   fprintf(fp, "module %s%s_%d_ (", formatted_subckt_prefix, cur_pb_type->name, index);
   /* Print inputs, outputs, inouts, clocks, NO SRAMs*/
@@ -226,6 +229,10 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
 
   /* End of subckt*/
   fprintf(fp, "endmodule\n");
+
+  /* Comment lines */
+  fprintf(fp, "//----- END LUT Verilog module: %s%s_%d_ -----\n\n",
+          formatted_subckt_prefix, cur_pb_type->name, index);
   
   verilog_model->cnt++;
   sram_verilog_model->cnt = cur_sram;

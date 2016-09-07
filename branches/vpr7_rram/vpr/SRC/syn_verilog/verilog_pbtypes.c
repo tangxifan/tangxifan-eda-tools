@@ -1568,6 +1568,8 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
     /* Definition*/
     sprintf(subckt_name, "%s%s_%d__mode_%s_", 
             formatted_subckt_prefix, cur_pb_type->name, pb_type_index, cur_pb_type->modes[mode_index].name);
+    /* Comment lines */
+    fprintf(fp, "//----- Idle programmable logic block Verilog module %s -----\n", subckt_name);
     fprintf(fp, "module %s (", subckt_name);
     /* Inputs, outputs, inouts, clocks */
     subckt_port_prefix = (char*)my_malloc(sizeof(char)*
@@ -1713,7 +1715,9 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
     assert(!(stamped_sram_cnt > (stamped_sram_lsb + num_conf_bits)));
     stamped_sram_cnt = stamped_sram_lsb + num_conf_bits;
     /* End the subckt */
-    fprintf(fp, "endmodule\n\n");
+    fprintf(fp, "endmodule\n");
+    /* Comment lines */
+    fprintf(fp, "//----- END Idle programmable logic block Verilog module %s -----\n\n", subckt_name);
     /* Free subckt name*/
     my_free(subckt_name);
   }
@@ -1865,6 +1869,8 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
     /* Definition*/
     sprintf(subckt_name, "%s%s_%d__mode_%s_", 
             formatted_subckt_prefix, cur_pb_type->name, pb_type_index, cur_pb_type->modes[mode_index].name);
+    /* Comment lines */
+    fprintf(fp, "//----- Programmable logic block Verilog module %s -----\n", subckt_name);
     fprintf(fp, "module %s (", subckt_name);
     /* Inputs, outputs, inouts, clocks */
     subckt_port_prefix = (char*)my_malloc(sizeof(char)*
@@ -2018,7 +2024,9 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
     assert(!(stamped_sram_cnt > (stamped_sram_lsb + num_conf_bits)));
     stamped_sram_cnt = stamped_sram_lsb + num_conf_bits;
     /* End the subckt */
-    fprintf(fp, "endmodule\n\n");
+    fprintf(fp, "endmodule\n");
+    /* Comment lines */
+    fprintf(fp, "//----- END Programmable logic block Verilog module %s -----\n\n", subckt_name);
     /* Free subckt name*/
     my_free(subckt_name);
   }
@@ -2722,6 +2730,8 @@ void dump_verilog_grid_blocks(FILE* fp,
   }
 
   fprintf(fp, "endmodule\n");
+  fprintf(fp, "//----- END Top Protocol -----\n");
+  fprintf(fp, "//----- END Grid[%d][%d], Capactity: %d -----\n\n", ix, iy, capacity);
 
   assert(temp_sram_msb == sram_verilog_model->grid_index_high[ix][iy]);
   assert(temp_inpad_msb == inpad_verilog_model->grid_index_high[ix][iy]);
@@ -2757,7 +2767,7 @@ void dump_verilog_logic_blocks(char* subckt_dir,
   /* Create a file*/
   fp = fopen(sp_name, "w");
   if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in create subckt SPICE netlist %s",__FILE__, __LINE__, sp_name); 
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in create verilog netlist %s",__FILE__, __LINE__, sp_name); 
     exit(1);
   } 
   /* Generate the descriptions*/

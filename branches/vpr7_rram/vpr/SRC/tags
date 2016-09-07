@@ -3,7 +3,7 @@
 !_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
-!_TAG_PROGRAM_VERSION	5.6	//
+!_TAG_PROGRAM_VERSION	5.8	//
 AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE	pack/cluster.c	35;"	d	file:
 AAPACK_MAX_HIGH_FANOUT_EXPLORE	pack/cluster.c	37;"	d	file:
 AAPACK_MAX_NET_SINKS_IGNORE	pack/cluster.c	36;"	d	file:
@@ -1014,7 +1014,7 @@ WHITE	base/easygl_constants.h	/^enum color_types {WHITE, BLACK, DARKGREY, LIGHTG
 WILTON	../../libarchfpga/include/physical_types.h	/^	SUBSET, WILTON, UNIVERSAL, FULL$/;"	e	enum:e_switch_block_type
 WIRE_MODEL_PIE	../../libarchfpga/include/spice_types.h	/^  WIRE_MODEL_PIE,$/;"	e	enum:e_wire_model_type
 WIRE_MODEL_T	../../libarchfpga/include/spice_types.h	/^  WIRE_MODEL_T$/;"	e	enum:e_wire_model_type
-WIRE_SEGMENT_LENGTH	base/vpr_api.c	435;"	d	file:
+WIRE_SEGMENT_LENGTH	base/vpr_api.c	483;"	d	file:
 WL	base/place_and_route.h	5;"	d
 WNEED	base/place_and_route.h	4;"	d
 W_seed	base/globals.c	/^int W_seed = -1;$/;"	v
@@ -1514,7 +1514,8 @@ count_routing_transistors	route/rr_graph_area.c	/^void count_routing_transistors
 count_sinks_internal_cb_rr_graph_net_nums	base/read_netlist.c	/^static int count_sinks_internal_cb_rr_graph_net_nums($/;"	f	file:
 count_unidir_routing_transistors	route/rr_graph_area.c	/^void count_unidir_routing_transistors(t_segment_inf * segment_inf,$/;"	f
 count_verilog_connection_box_conf_bits	syn_verilog/verilog_routing.c	/^int count_verilog_connection_box_conf_bits(int num_ipin_rr_nodes,$/;"	f
-count_verilog_switch_box_interc_conf_bits	syn_verilog/verilog_routing.c	/^int count_verilog_switch_box_interc_conf_bits(t_rr_node* cur_rr_node) {$/;"	f
+count_verilog_connection_box_interc_conf_bits	syn_verilog/verilog_routing.c	/^int count_verilog_connection_box_interc_conf_bits(t_rr_node* cur_rr_node) {$/;"	f
+count_verilog_switch_box_interc_conf_bits	syn_verilog/verilog_routing.c	/^int count_verilog_switch_box_interc_conf_bits(int switch_box_x, int switch_box_y, int chan_side, $/;"	f
 cpd	base/vpr_types.h	/^	float ** cpd;$/;"	m	struct:s_timing_stats
 cpt_subckt_name	spice/spice_globals.c	/^char* cpt_subckt_name = "cpt";$/;"	v
 create_button	base/graphics.c	/^void create_button (const char *prev_button_text , const char *button_text, $/;"	f
@@ -2801,6 +2802,7 @@ max_criticality	base/vpr_types.h	/^	float max_criticality;$/;"	m	struct:s_router
 max_ext_index	pack/cluster_legality.c	/^		ext_clock_rr_node_index, max_ext_index;$/;"	v	file:
 max_index	route/rr_graph.c	/^	int max_index;$/;"	m	struct:s_mux_size_distribution	file:
 max_internal_delay	../../libarchfpga/include/physical_types.h	/^	float max_internal_delay;$/;"	m	struct:s_pb_type
+max_len_pl_macros	place/place_macro.c	/^int max_len_pl_macros(int num_pl_macros, $/;"	f
 max_mux_sl_size	power/power.h	/^	int max_mux_sl_size;$/;"	m	struct:s_power_nmos_mux_inf
 max_num_sim_clock_cycles	spice/spice_dff_testbench.c	/^static int max_num_sim_clock_cycles = 2;$/;"	v	file:
 max_pins_per_side	../../libarchfpga/include/arch_types_mrfpga.h	/^  int max_pins_per_side;$/;"	m	struct:s_arch_mrfpga
@@ -3197,7 +3199,6 @@ pack_intrinsic_cost	base/vpr_types.h	/^	float pack_intrinsic_cost;$/;"	m	struct:
 pack_pattern	base/vpr_types.h	/^	t_pack_patterns *pack_pattern; \/* If this is a forced_pack molecule, pattern this molecule matches *\/$/;"	m	struct:s_pack_molecule
 pack_pattern_indices	../../libarchfpga/include/physical_types.h	/^	int *pack_pattern_indices; \/*[0..num_pack_patterns(of_edge)-1]*\/$/;"	m	struct:s_pb_graph_edge
 pack_pattern_names	../../libarchfpga/include/physical_types.h	/^	char **pack_pattern_names; \/*[0..num_pack_patterns(of_edge)-1]*\/$/;"	m	struct:s_pb_graph_edge
-pack_place_time	base/globals.c	/^float pack_place_time = 0.;$/;"	v
 pack_route_time	base/globals.c	/^float pack_route_time = 0.;$/;"	v
 packed_molecules	base/vpr_types.h	/^	struct s_linked_vptr *packed_molecules; \/* List of t_pack_molecules that this logical block is a part of *\/$/;"	m	struct:s_logical_block	typeref:struct:s_logical_block::s_linked_vptr
 packer_algorithm	base/ReadOptions.h	/^	enum e_packer_algorithm packer_algorithm;$/;"	m	struct:s_options	typeref:enum:s_options::e_packer_algorithm
@@ -4426,7 +4427,7 @@ verilog_get_grid_block_subckt_name	syn_verilog/verilog_pbtypes.c	/^char* verilog
 verilog_get_grid_side_pin_rr_nodes	syn_verilog/verilog_routing.c	/^t_rr_node** verilog_get_grid_side_pin_rr_nodes(int* num_pin_rr_nodes,$/;"	f
 verilog_mux_basis_posfix	syn_verilog/verilog_global.c	/^char* verilog_mux_basis_posfix = "_basis";$/;"	v
 verilog_mux_special_basis_posfix	syn_verilog/verilog_global.c	/^char* verilog_mux_special_basis_posfix = "_special_basis";$/;"	v
-verilog_top_postfix	syn_verilog/verilog_global.c	/^char* verilog_top_postfix = "_top.sp";$/;"	v
+verilog_top_postfix	syn_verilog/verilog_global.c	/^char* verilog_top_postfix = "_top.v";$/;"	v
 verilog_writer	base/verilog_writer.c	/^void verilog_writer(void)$/;"	f
 view_mux_size_distribution	route/rr_graph.c	/^view_mux_size_distribution(t_ivec *** L_rr_node_indices,$/;"	f	file:
 visited	power/power.h	/^	boolean visited; \/* When traversing netlist, need to track whether the node has been processed *\/$/;"	m	struct:s_rr_node_power

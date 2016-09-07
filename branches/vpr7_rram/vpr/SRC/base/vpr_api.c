@@ -42,6 +42,9 @@
 #include "read_sdc.h"
 #include "power.h"
 
+/* Xifan TANG: Add place_macro.h */
+#include "place_macro.h"
+
 /* Local subroutines */
 static void free_pb_type(t_pb_type *pb_type);
 static void free_complex_block_types(void);
@@ -273,6 +276,11 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 	int current, high, low;
 	boolean fit;
 
+    /* Xifan TANG: consider marco length in fitting */
+    int imacro, max_len_chain_blocks;
+    int num_pl_macros;
+    t_pl_macro* pl_macros;
+   
 	/* Read in netlist file for placement and routing */
 	if (vpr_setup.FileNameOpts.NetFile) {
 		read_netlist(vpr_setup.FileNameOpts.NetFile, &Arch, &num_blocks, &block,
@@ -317,6 +325,17 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 				alloc_and_load_grid(num_instances_type);
 				freeGrid();
 
+                /* Xifan TANG: We need consider the length of carry-chain CLBs into account! */
+                num_pl_macros = alloc_and_load_placement_macros(Arch.Directs, Arch.num_directs, &pl_macros);
+                /* find length of longest carry-chain logic blocks */
+                max_len_chain_blocks = max_len_pl_macros(num_pl_macros, pl_macros);
+                /* Free all the allocated structs */
+                free_placement_macros_structs();
+	            for (imacro = 0; imacro < num_pl_macros; imacro ++) {
+		          free(pl_macros[imacro].members);
+                }
+	            free(pl_macros);
+
 				/* Test if netlist fits in grid */
 				fit = TRUE;
 				for (i = 0; i < num_types; i++) {
@@ -325,6 +344,14 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 						break;
 					}
 				}
+                /* If the length of macros is longer than ny - 2, fitting should fail.
+                 * Note: carry-chain logic blocks are placed only vertically in FPGA.
+                 */
+                if ((TRUE == fit)&&(max_len_chain_blocks > (ny))) {
+                  fit = FALSE;
+                  vpr_printf(TIO_MESSAGE_INFO, "Carry-chain logic blocks length (%d) is larger than y (%d)!\n",
+                             max_len_chain_blocks, ny);
+                } 
 
 				/* get next value */
 				if (!fit) {
@@ -368,6 +395,17 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 				"The circuit will be mapped into a %d x %d array of clbs.\n",
 				nx, ny);
 
+        /* Xifan TANG: We need consider the length of carry-chain CLBs into account! */
+        num_pl_macros = alloc_and_load_placement_macros(Arch.Directs, Arch.num_directs, &pl_macros);
+        /* find length of longest carry-chain logic blocks */
+        max_len_chain_blocks = max_len_pl_macros(num_pl_macros, pl_macros);
+        /* Free all the allocated structs */
+        free_placement_macros_structs();
+        for (imacro = 0; imacro < num_pl_macros; imacro ++) {
+          free(pl_macros[imacro].members);
+        }
+        free(pl_macros);
+
 		/* Test if netlist fits in grid */
 		fit = TRUE;
 		for (i = 0; i < num_types; i++) {
@@ -376,6 +414,16 @@ void vpr_init_pre_place_and_route(INP t_vpr_setup vpr_setup, INP t_arch Arch) {
 				break;
 			}
 		}
+
+        /* If the length of macros is longer than ny - 2, fitting should fail.
+         * Note: carry-chain logic blocks are placed only vertically in FPGA.
+         */
+        if ((TRUE == fit)&&(max_len_chain_blocks > (ny))) {
+          fit = FALSE;
+          vpr_printf(TIO_MESSAGE_INFO, "Carry-chain logic blocks length (%d) is larger than y (%d) !\n",
+                    max_len_chain_blocks, ny);
+        } 
+
 		if (!fit) {
 			vpr_printf(TIO_MESSAGE_ERROR,
 					"Not enough physical locations for type %s, number of blocks is %d but number of locations is %d.\n",

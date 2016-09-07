@@ -55,13 +55,13 @@ void dump_verilog_top_netlist_ports(FILE* fp,
   /* Inputs and outputs of I/O pads */
   /* Input Pads */
   assert(NULL != inpad_verilog_model);
-  fprintf(fp, " input wire [%d:0] gfpga_input_%s,\n", 
+  fprintf(fp, " input wire [%d:0] gfpga_input_%s, //---FPGA inputs \n", 
           inpad_verilog_model->cnt - 1,
           inpad_verilog_model->prefix);
 
   /* Output Pads */
   assert(NULL != outpad_verilog_model);
-  fprintf(fp, " output wire [%d:0] gfpga_output_%s,\n", 
+  fprintf(fp, " output wire [%d:0] gfpga_output_%s, //---- FPGA outputs \n", 
           outpad_verilog_model->cnt - 1,
           outpad_verilog_model->prefix);
 
@@ -69,7 +69,7 @@ void dump_verilog_top_netlist_ports(FILE* fp,
   /* Configuration ports depend on the organization of SRAMs */
   switch(sram_verilog_orgz_type) {
   case SPICE_SRAM_STANDALONE:
-    fprintf(fp, "  input wire [%d:0] %s\n", 
+    fprintf(fp, "  input wire [%d:0] %s //---- SRAM outputs \n", 
             sram_verilog_model->cnt - 1,
             sram_verilog_model->prefix); 
     break;
@@ -77,20 +77,20 @@ void dump_verilog_top_netlist_ports(FILE* fp,
     /* TODO: currently, I use the same number of inputs as SRAM_STANDALONE
      * It will be changed to the number of scan-chain heads we want 
 				*/
-    fprintf(fp, "  input wire [%d:0] %s\n", 
+    fprintf(fp, "  input wire [%d:0] %s //---- Scan-chain outputs \n", 
             sram_verilog_model->cnt - 1,
             sram_verilog_model->prefix); 
     break;
   case SPICE_SRAM_MEMORY_BANK:
     fprintf(fp, "  input en_bl, en_wl,\n");
-    fprintf(fp, "  input wire [%d:0] addr_bl,\n", 
+    fprintf(fp, "  input wire [%d:0] addr_bl, //--- Address of bit lines \n", 
                    decoder_size - 1);
-    fprintf(fp, "  input wire [%d:0] addr_wl,\n", 
+    fprintf(fp, "  input wire [%d:0] addr_wl, //--- Address of word lines \n", 
                    decoder_size - 1);
     /* I add all the Bit lines and Word lines here just for testbench usage */
-    fprintf(fp, "  input wire [%d:0] %s_out, //--- bl\n", 
+    fprintf(fp, "  input wire [%d:0] %s_out, //--- Bit lines \n", 
                    sram_verilog_model->cnt - 1, sram_verilog_model->prefix);
-    fprintf(fp, "  input wire [%d:0] %s_outb //--- wl \n", 
+    fprintf(fp, "  input wire [%d:0] %s_outb //--- Word lines \n", 
                    sram_verilog_model->cnt - 1, sram_verilog_model->prefix);
     break;
   default:
@@ -119,6 +119,9 @@ void dump_verilog_defined_grids(FILE* fp) {
   for (ix = 1; ix < (nx + 1); ix++) {
     for (iy = 1; iy < (ny + 1); iy++) {
       assert(IO_TYPE != grid[ix][iy].type);
+      /* Comment lines */
+      fprintf(fp, "//----- BEGIN Call Grid[%d][%d] module -----\n", ix, iy);
+      /* Print the Grid module */
       fprintf(fp, "grid_%d__%d_  ", ix, iy); /* Call the name of subckt */ 
       fprintf(fp, "grid_%d__%d_ ", ix, iy);
       fprintf(fp, "(");
@@ -156,6 +159,8 @@ void dump_verilog_defined_grids(FILE* fp) {
         
       }
       fprintf(fp, ");\n");
+      /* Comment lines */
+      fprintf(fp, "//----- END call Grid[%d][%d] module -----\n\n", ix, iy);
     }
   } 
 
@@ -350,7 +355,7 @@ void dump_verilog_defined_chan(FILE* fp,
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
     exit(1);
   }
-  
+ 
   /* Check */
   switch (chan_type) {
   case CHANX:
@@ -358,6 +363,8 @@ void dump_verilog_defined_chan(FILE* fp,
     assert((0 < x)&&(x < (nx + 1))); 
     /* check y*/
     assert((!(0 > y))&&(y < (ny + 1))); 
+    /* Comment lines */
+    fprintf(fp, "//----- BEGIN Call Channel-X [%d][%d] module -----\n", x, y);
     /* Call the define sub-circuit */
     fprintf(fp, "chanx_%d__%d_ ", x, y);
     fprintf(fp, "chanx_%d__%d_ ", x, y);
@@ -376,12 +383,16 @@ void dump_verilog_defined_chan(FILE* fp,
       fprintf(fp, "\n");
     }
     fprintf(fp, ");\n");
+    /* Comment lines */
+    fprintf(fp, "//----- END call Channel-X [%d][%d] module -----\n\n", x, y);
     break;
   case CHANY:
     /* check x*/
     assert((!(0 > x))&&(x < (nx + 1))); 
     /* check y*/
     assert((0 < y)&&(y < (ny + 1))); 
+    /* Comment lines */
+    fprintf(fp, "//----- BEGIN call Call Channel-Y [%d][%d] module -----\n", x, y);
     /* Call the define sub-circuit */
     fprintf(fp, "chany_%d__%d_ ", x, y);
     fprintf(fp, "chany_%d__%d_ ", x, y);
@@ -400,6 +411,8 @@ void dump_verilog_defined_chan(FILE* fp,
       fprintf(fp, "\n");
     }
     fprintf(fp, ");\n");
+    /* Comment lines */
+    fprintf(fp, "//----- END call Channel-Y [%d][%d] module -----\n\n", x, y);
     break;
   default: 
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid Channel Type!\n", __FILE__, __LINE__);
@@ -464,10 +477,16 @@ void dump_verilog_defined_connection_box(FILE* fp,
   /* Identify the type of connection box */
   switch(chan_type) {
   case CHANX:
+    /* Comment lines */
+    fprintf(fp, "//----- BEGIN Call Connection Box-X direction [%d][%d] module -----\n", x, y);
+    /* Print module */
     fprintf(fp, "cbx_%d__%d_ ", x, y);
     fprintf(fp, "cbx_%d__%d_ ", x, y);
     break;
   case CHANY:
+    /* Comment lines */
+    fprintf(fp, "//----- BEGIN Call Connection Box-Y direction [%d][%d] module -----\n", x, y);
+    /* Print module */
     fprintf(fp, "cby_%d__%d_ ", x, y);
     fprintf(fp, "cby_%d__%d_ ", x, y);
     break;
@@ -630,6 +649,20 @@ void dump_verilog_defined_connection_box(FILE* fp,
     exit(1);
   }
   fprintf(fp, ");\n");
+
+  /* Comment lines */
+  switch(chan_type) {
+  case CHANX:
+    fprintf(fp, "//----- END call Connection Box-X direction [%d][%d] module -----\n\n", x, y);
+    break;
+  case CHANY:
+    fprintf(fp, "//----- END call Connection Box-Y direction [%d][%d] module -----\n\n", x, y);
+    break;
+  default: 
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+
   /* Check */
   assert(2 == side_cnt);
  
@@ -728,7 +761,10 @@ void dump_verilog_defined_switch_box(FILE* fp,
       exit(1);
     } 
   } 
-                                  
+                 
+  /* Comment lines */                 
+  fprintf(fp, "//----- BEGIN call module Switch blocks [%d][%d] -----\n", x, y);
+  /* Print module*/
   fprintf(fp, "sb_%d__%d_ ", x, y);
   fprintf(fp, "sb_%d__%d_ ", x, y);
   fprintf(fp, "(");
@@ -819,6 +855,9 @@ void dump_verilog_defined_switch_box(FILE* fp,
   }
 
   fprintf(fp, ");\n");
+
+  /* Comment lines */                 
+  fprintf(fp, "//----- END call module Switch blocks [%d][%d] -----\n\n", x, y);
 
   /* Free */
   my_free(chan_width);
@@ -919,6 +958,9 @@ void dump_verilog_configuration_circuits_memory_bank(FILE* fp) {
     exit(1);
   } 
 
+  /* Comment lines */
+  fprintf(fp, "//----- BEGIN call decoders for memory bank controller -----\n");
+
   /* Dump Decoders for Bit lines and Word lines */
   /* Two huge decoders
    * TODO: divide to a number of small decoders ?
@@ -936,6 +978,9 @@ void dump_verilog_configuration_circuits_memory_bank(FILE* fp) {
   fprintf(fp, "en_wl, addr_wl[%d:0], %s_outb[%d:0] ",
           decoder_size - 1, sram_verilog_model->prefix, sram_verilog_model->cnt - 1);
   fprintf(fp, ");\n");
+
+  /* Comment lines */
+  fprintf(fp, "//----- END call decoders for memory bank controller -----\n\n");
 
   return; 
 }
@@ -998,17 +1043,17 @@ void dump_verilog_top_netlist(char* circuit_name,
   /* Special subckts for Top-level SPICE netlist */
   fprintf(fp, "//----- Include subckt netlists: Look-Up Tables (LUTs) -----\n");
   temp_include_file_path = my_strcat(formatted_subckt_dir_path, luts_verilog_file_name);
-  fprintf(fp, "//`include \'%s\'\n", temp_include_file_path);
+  fprintf(fp, "//`include \"%s\"\n", temp_include_file_path);
   my_free(temp_include_file_path);
 
   fprintf(fp, "//------ Include subckt netlists: Logic Blocks -----\n");
   temp_include_file_path = my_strcat(formatted_subckt_dir_path, logic_block_verilog_file_name);
-  fprintf(fp, "//`include \'%s\'\n", temp_include_file_path);
+  fprintf(fp, "//`include \"%s\"\n", temp_include_file_path);
   my_free(temp_include_file_path);
 
   fprintf(fp, "//----- Include subckt netlists: Routing structures (Switch Boxes, Channels, Connection Boxes) -----\n");
   temp_include_file_path = my_strcat(formatted_subckt_dir_path, routing_verilog_file_name);
-  fprintf(fp, "//`include \'%s\'\n", temp_include_file_path);
+  fprintf(fp, "//`include \"%s\"\n", temp_include_file_path);
   my_free(temp_include_file_path);
  
   /* Include decoders if required */ 
@@ -1018,9 +1063,9 @@ void dump_verilog_top_netlist(char* circuit_name,
     break;
   case SPICE_SRAM_MEMORY_BANK:
     /* Include verilog decoder */
-    fprintf(fp, "//----- Include subckt netlists: Routing structures (Switch Boxes, Channels, Connection Boxes) -----\n");
+    fprintf(fp, "//----- Include subckt netlists: Decoders (controller for memeory bank) -----\n");
     temp_include_file_path = my_strcat(formatted_subckt_dir_path, decoders_verilog_file_name);
-    fprintf(fp, "//`include \'%s\'\n", temp_include_file_path);
+    fprintf(fp, "//`include \"%s\"\n", temp_include_file_path);
     my_free(temp_include_file_path);
     break;
   default:
