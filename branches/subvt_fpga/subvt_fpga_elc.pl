@@ -1185,7 +1185,7 @@ sub gen_inv_buf_subckt($ $ $) {
   my ($spfh, $inv_size_in, $inv_size_out) = @_;
   my ($wpg_inv_in, $wpg_inv_out) = ($conf_ptr->{general_settings}->{w_power_gate_trans}->{val}*$inv_size_in, $conf_ptr->{general_settings}->{w_power_gate_trans}->{val}*$inv_size_out);
 
-  my ($max_w_per_trans) = (5); 
+  my ($max_w_per_trans) = (2.5); 
 
   # Input inverter subckt 
   &tab_print($spfh, "* Input inverter subckt size=$inv_size_in \n", 0); 
@@ -1519,7 +1519,7 @@ sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
   &tab_print($spfh,"* Only for SRAM MUX:\n",0);
   &tab_print($spfh,".param w_cpt=$w_cpt\n",0);
  
-  if ($rram_enhance) {
+  if ("on" eq $rram_enhance) {
     # Print info
     print "RRAM info:\n";
     print "  vprog=$conf_ptr->{rram_settings}->{Vdd_break}->{val}\n";
@@ -1633,6 +1633,7 @@ sub gen_rram_mux_sp_basic_stimulates($ $ $ $) {
     ($op_prog_vdd, $op_prog_gnd) = ("+vprog", "0");
   } elsif ("nonisolate_design" eq $prog_vdd_switch) {
     ($op_prog_vdd, $op_prog_gnd) = ("+vsp", "0");
+    #($op_prog_vdd, $op_prog_gnd) = ("+vprog/2+vsp/2", "-vprog/2+vsp/2");
   }
 
   # Add Stimulates: Standard VDD
@@ -2385,7 +2386,6 @@ sub gen_rram_mux_basic_design_sp_measure($ $ $ $ $ $ $) {
   &tab_print($spfh,"* Measure leakage power \n",0);
   &tab_print($spfh,".measure tran pleak_op_vdd avg p(Vop_vdd) from=\'(1.5 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog\' to=\'(2 +2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew'\n",0);
   &tab_print($spfh,".measure tran pleak param=\'abs(pleak_op_vdd)\'\n",0);
-  #&tab_print($spfh,".measure tran pleak param=\'abs(pleak_op_vdd_in)+abs(pleak_op_vdd_out)+abs(pleak_prog_vdd)+abs(pleak_prog_gnd)\'\n",0);
 
   if (1 == $delay_measure) {
     &tab_print($spfh,"* Measure delay: rising edge \n",0);
@@ -2967,6 +2967,11 @@ sub gen_1level_mux_subckt($ $ $ $ $ $ $) {
 
   print "INFO: generating 1-level mux structure...\n";
 
+  # Exception for 2-input MUX
+  if (2 == $mux_size) {
+    $num_sram = 1;
+  }
+
   # Print definitions 
   &tab_print($spfh,".subckt $subckt_name ",0);
   for (my $i=0; $i<$num_sram; $i++) {
@@ -2982,9 +2987,16 @@ sub gen_1level_mux_subckt($ $ $ $ $ $ $) {
   # Print array of transistors/RRAMs
   # SRAM-based MUX design
   for (my $i = 0; $i < $mux_size; $i++) {
-    # Call defined 1level Subckt 
-    for (my $iwcpt = 0; $iwcpt < $w_cpt; $iwcpt++) {
-      &tab_print($spfh, "Xmux1level_$i\_wcpt$iwcpt mux1level_in$i mux1level_out $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$i $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$i svdd sgnd $mux1level_subckt\n",0);
+    # Exception for 2-input MUX
+    if ((2 == $mux_size)&&(1 == $i)) {
+      for (my $iwcpt = 0; $iwcpt < $w_cpt; $iwcpt++) {
+        &tab_print($spfh, "Xmux1level_$i\_wcpt$iwcpt mux1level_in$i mux1level_out $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$i $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$i svdd sgnd $mux1level_subckt\n",0);
+      }
+    } else {
+      # Call defined 1level Subckt 
+      for (my $iwcpt = 0; $iwcpt < $w_cpt; $iwcpt++) {
+        &tab_print($spfh, "Xmux1level_$i\_wcpt$iwcpt mux1level_in$i mux1level_out $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$i $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$i svdd sgnd $mux1level_subckt\n",0);
+      }
     }
   }
 

@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use Shell;
+#use Shell;
 use POSIX;
 use File::Basename;
 use File::Spec;
