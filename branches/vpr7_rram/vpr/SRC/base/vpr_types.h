@@ -204,8 +204,10 @@ typedef struct s_pb {
 
     /* Xifan TANG: FPGA-SPICE and SynVerilog */
     int num_conf_bits;
+    int num_mode_bits;
     int num_inpads;
     int num_outpads;
+    int num_iopads;
 } t_pb;
 
 struct s_tnode;

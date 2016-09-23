@@ -1491,10 +1491,8 @@ void fprint_spice_idle_pb_graph_node_rec(FILE* fp,
   /* Check if this has defined a spice_model*/
   if (NULL != cur_pb_type->spice_model) {
     /* TODO: Consider the num_pb, create all the subckts*/
-    for (ipb = 0; ipb < cur_pb_type->num_pb; ipb++) {
-      fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
-                                      NULL, cur_pb_graph_node, ipb, cur_pb_type->spice_model, 1);
-    }
+    fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
+                                    NULL, cur_pb_graph_node, pb_type_index, cur_pb_type->spice_model, 1);
   } else {
     /* Find the mode that define_idle_mode*/
     mode_index = find_pb_type_idle_mode_index((*cur_pb_type));
@@ -1671,26 +1669,22 @@ void fprint_spice_pb_graph_node_rec(FILE* fp,
            * Mapped logical block information is stored in child_pbs
            */
           fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
-                                          &(cur_pb->child_pbs[ipb][jpb]), cur_pb_graph_node, ipb, cur_pb_type->spice_model, 0);
+                                          &(cur_pb->child_pbs[ipb][jpb]), cur_pb_graph_node, pb_type_index, cur_pb_type->spice_model, 0);
         }
       }
       break;
     case LATCH_CLASS:
       assert(0 == cur_pb_type->num_modes);
       /* Consider the num_pb, create all the subckts*/
-      for (ipb = 0; ipb < cur_pb_type->num_pb; ipb++) {
-        fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
-                                        cur_pb, cur_pb_graph_node, ipb, cur_pb_type->spice_model, 0);
-      }
+      fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
+                                      cur_pb, cur_pb_graph_node, pb_type_index, cur_pb_type->spice_model, 0);
       break;
     case UNKNOWN_CLASS:
     case MEMORY_CLASS:
       /* Consider the num_pb, create all the subckts*/
-      for (ipb = 0; ipb < cur_pb_type->num_pb; ipb++) {
-        fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
-                                        cur_pb, cur_pb_graph_node, ipb, cur_pb_type->spice_model, 0);
-      }
-      break;  
+      fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
+                                      cur_pb, cur_pb_graph_node, pb_type_index, cur_pb_type->spice_model, 0);
+      break; 
     default:
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Unknown class type of pb_type(%s)!\n",
                  __FILE__, __LINE__, cur_pb_type->name);

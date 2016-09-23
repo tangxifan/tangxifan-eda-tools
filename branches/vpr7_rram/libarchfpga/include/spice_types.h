@@ -1,4 +1,5 @@
 
+#include "util.h"
 
 /* Xifan TANG: Spice support*/
 enum e_spice_tech_lib_type {
@@ -43,7 +44,10 @@ enum e_spice_model_type {
   SPICE_MODEL_OUTPAD, 
   SPICE_MODEL_SRAM, 
   SPICE_MODEL_HARDLOGIC,
-  SPICE_MODEL_SCFF
+  SPICE_MODEL_SCFF,
+  SPICE_MODEL_IOPAD, 
+  SPICE_MODEL_VDD, 
+  SPICE_MODEL_GND 
 };
 
 enum e_spice_model_design_tech {
@@ -98,6 +102,8 @@ struct s_spice_model_port {
   enum e_spice_model_port_type type;
   int size;
   char* prefix; 
+  boolean mode_select;
+  int default_val;
 };
 
 enum e_wire_model_type {
@@ -124,7 +130,8 @@ struct s_spice_model {
   enum e_spice_model_type type;
   char* name;
   char* prefix; /* Prefix when it show up in the spice netlist */
-  char* model_netlist;
+  char* model_netlist; /* SPICE netlist provided by user */
+  char* verilog_netlist; /* Verilog netlist provided by user */
   t_spice_model_netlist* include_netlist;
   int is_default;
 

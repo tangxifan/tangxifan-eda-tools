@@ -377,7 +377,7 @@ sub read_conf()
   my ($line,$post_line);
   my @equation;
   my $cur = "unknown";
-  open (CONF, "< $opt_ptr->{conf_val}") or die "Fail to open $opt_ptr->{conf}!\n";
+  open (CONF, "< $opt_ptr->{conf_val}") or die "Fail to open $opt_ptr->{conf_val}!\n";
   print "Reading $opt_ptr->{conf_val}...\n";
   while(defined($line = <CONF>))
   {
@@ -413,7 +413,7 @@ sub read_benchmarks()
   # Read in file names
   my ($line,$post_line,$cur);
   $cur = 0;
-  open (FCONF,"< $opt_ptr->{benchmark_val}") or die "Fail to open $opt_ptr->{benchmark}!\n";
+  open (FCONF,"< $opt_ptr->{benchmark_val}") or die "Fail to open $opt_ptr->{benchmark_val}!\n";
   print "Reading $opt_ptr->{benchmark_val}...\n";
   while(defined($line = <FCONF>))
   {
@@ -554,8 +554,7 @@ sub run_abc_fpgamap($ $ $)
 }
 
 # Run ABC by FPGA-oriented synthesis
-sub run_abc_bb_fpgamap($ $ $) 
-{
+sub run_abc_bb_fpgamap($ $ $) {
   my ($bm,$blif_out,$log) = @_;
   # Get ABC path
   my ($abc_dir,$abc_name) = &split_prog_path($conf_ptr->{dir_path}->{abc_with_bb_support_path}->{val});
@@ -985,8 +984,7 @@ sub run_ace($ $ $ $) {
     die "ERROR: Fail ACE for benchmark $mpack_vpr_blif.\n";
   }
 
-
-   chdir $cwd;
+  chdir $cwd;
 } 
 
 sub run_std_vpr($ $ $ $ $ $ $ $ $) 
@@ -1189,6 +1187,43 @@ sub run_m2net_m2net($ $ $ $ $)
   chdir $cwd;
 } 
 
+sub run_cirkit_mig_mccl_map($ $ $) {
+  my ($bm,$blif_out,$log) = @_;
+  my ($bm_aig, $bm_v) = ($blif_out, $blif_out);
+  $bm_aig =~ s/blif$/aig/;
+  $bm_v =~ s/blif$/v/;
+
+  # Get ABC path
+  my ($abc_dir,$abc_name) = &split_prog_path($conf_ptr->{dir_path}->{abc_path}->{val});
+  # Get Cirkit path
+  my ($cirkit_dir,$cirkit_name) = &split_prog_path($conf_ptr->{dir_path}->{cirkit_path}->{val});
+  my ($lut_num) = $opt_ptr->{K_val};
+  # Before we run this blif, identify it is a combinational or sequential
+  my ($abc_seq_optimize) = ("");
+  if (("on" eq $opt_ptr->{abc_scl})&&("seq" eq &check_blif_type($bm))) {
+    ($abc_seq_optimize) = ("scleanup;scleanup;scleanup;scleanup;scleanup;scleanup;scleanup;scleanup;scleanup;scleanup;");
+  }
+  my ($fpga_synthesis_method) = ("if");
+  #my ($fpga_synthesis_method) = ("fpga");
+  
+  # Run ABC to rewrite blif to AIG in verilog format
+  chdir $abc_dir;
+  `csh -cx './$abc_name -c \"read_blif $bm; strash writ $bm_aig; quit;\" > $log'`;
+  if (!(-e $bm_aig)) {
+    die "ERROR: Fail ABC for benchmark $bm.\n";
+  }
+
+  chdir $cirkit_dir;
+  # Run FPGA ABC
+  `csh -cx './$cirkit_name -c \"read_aiger $bm_aig; xmglut -k 4; write_verilog -x $bm_v; read_verilog -x --as_mig $bm_v; fpga -c 2 --blif_name $blif_out; quit;\" >> $log'`;
+
+  if (!(-e $blif_out)) {
+    die "ERROR: Fail Cirkit for benchmark $bm.\n";
+  }
+
+  chdir $cwd;
+}
+
 sub init_fpga_spice_task($) {
   my ($task_file) = @_;
   # Open the task file handler
@@ -1232,6 +1267,152 @@ sub output_fpga_spice_task($ $ $ $) {
   close($TASKFH); 
 }
 
+sub run_ace_in_flow($ $ $ $ $ $ $) {
+  my ($prefix, $abc_blif_out, $act_file,$ace_new_blif,$ace_log) = @_;
+
+  if ("on" eq $opt_ptr->{power}) {
+    if ("on" eq $opt_ptr->{black_box_ace}) {
+      my ($tmp_blif) = ($prefix."ace_new.blif");
+      &black_box_blif($abc_blif_out,$tmp_blif); 
+      &run_ace($tmp_blif,$act_file,$ace_new_blif ,$ace_log);
+    } else {
+      &run_ace($abc_blif_out,$act_file,$ace_new_blif,$ace_log);
+      $abc_blif_out = $ace_new_blif;
+    }
+  }
+
+  if (!(-e $act_file)) {
+    die "ERROR: Fail ACE2 for benchmark $act_file.\n";
+  }
+}
+
+sub run_vpr_in_flow($ $ $ $ $ $ $ $ $ $ $ $) {
+  my ($tag, $benchmark,$benchmark_file, $abc_blif_out, $vpr_arch, $act_file, $vpr_net, $vpr_place, $vpr_route, $vpr_log, $vpr_reroute_log, $parse_results) = @_;
+
+  if ("on" eq $opt_ptr->{min_route_chan_width}) {
+    &run_std_vpr($abc_blif_out,$benchmark,$vpr_arch,$vpr_net,$vpr_place,$vpr_route,-1,$vpr_log.".min_chan_width",$act_file);
+    # Get the Minimum channel width
+    my ($min_chan_width) = (&extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_log.".min_chan_width",$opt_ptr->{K_val}, $opt_ptr->{min_route_chan_width}, $parse_results));
+    $min_chan_width = int($min_chan_width*$opt_ptr->{min_route_chan_width_val});
+    if (0 != $min_chan_width%2) {
+      $min_chan_width += 1;
+    }
+    # Remove previous route results
+    if (-e $vpr_route) {
+      `rm $vpr_route`;
+    }
+    # Keep increase min_chan_width until route success 
+    # Extract data from VPR stats
+    #&run_std_vpr($abc_blif_out,$benchmark,$vpr_arch,$vpr_net,$vpr_place,$vpr_route,$min_chan_width,$vpr_log,$act_file);
+    while (1) {
+      &run_vpr_route($abc_blif_out,$benchmark,$vpr_arch,$vpr_net,$vpr_place,$vpr_route,$min_chan_width,$vpr_reroute_log,$act_file);
+      # TODO: Only run the routing stage
+      if (-e $vpr_route) {
+        print "INFO: try route_chan_width($min_chan_width) success!\n";
+        last; #Jump out
+      } else {
+        print "INFO: try route_chan_width($min_chan_width) failed! Retry with +2...\n";
+        $min_chan_width += 2;
+      }
+    }
+    if (1 == $parse_results) {
+      &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val}, "off", $parse_results);
+      &extract_vpr_stats($tag,$benchmark,$vpr_log.".min_chan_width",$opt_ptr->{K_val});
+      &extract_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val});
+    }
+  } elsif ("on" eq $opt_ptr->{fix_route_chan_width}) {
+    my ($fix_chan_width) = ($benchmarks_ptr->{$benchmark_file}->{fix_route_chan_width});
+    # Remove previous route results
+    if (-e $vpr_route) {
+      `rm $vpr_route`;
+    }
+    # Keep increase min_chan_width until route success 
+    &run_std_vpr($abc_blif_out,$benchmark,$vpr_arch,$vpr_net,$vpr_place,$vpr_route,$fix_chan_width,$vpr_log,$act_file);
+    while (1) {
+      # TODO: Only run the routing stage
+      if (-e $vpr_route) {
+        print "INFO: try route_chan_width($fix_chan_width) success!\n";
+        last; #Jump out
+      } else {
+        print "INFO: try route_chan_width($fix_chan_width) failed! Retry with +2...\n";
+        $fix_chan_width += 2;
+        &run_vpr_route($abc_blif_out,$benchmark,$vpr_arch,$vpr_net,$vpr_place,$vpr_route,$fix_chan_width,$vpr_reroute_log,$act_file);
+      }
+    }
+    # Extract data from VPR stats
+    if (1 == $parse_results) {
+      &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val}, "off", $parse_results);
+      &extract_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val});
+      if (-e $vpr_reroute_log) {
+        &extract_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val});
+      }
+    }
+  } else {
+    &run_std_vpr($abc_blif_out,$benchmark,$vpr_arch,$vpr_net,$vpr_place,$vpr_route,-1,$vpr_log,$act_file);
+    if (!(-e $vpr_route)) {
+      die "ERROR: Route Fail for $abc_blif_out!\n";
+    }
+    # Get the Minimum channel width
+    my ($min_chan_width) = (&extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val},"on",$parse_results));
+    if (1 == $parse_results) {
+      &extract_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val});
+    }
+  }
+
+  # Extract data from VPR Power stats
+  if (("on" eq $opt_ptr->{power})
+     &&(1 == $parse_results)) {
+    &extract_vpr_power_esti($tag,$abc_blif_out,$benchmark,$opt_ptr->{K_val});
+  }
+
+  return;
+}
+
+
+sub run_mig_mccl_flow($ $ $ $) {
+  my ($tag,$benchmark_file,$vpr_arch, $parse_results) = @_;
+  my ($benchmark, $rpt_dir,$prefix);
+  my ($cirkit_bm,$cirkit_blif_out,$cirkit_log,$cirkit_blif_out_bak);
+
+  $benchmark = $benchmark_file; 
+  $benchmark =~ s/\.blif$//g;     
+  # Run Standard flow
+  $rpt_dir = "$conf_ptr->{dir_path}->{rpt_dir}->{val}"."/$benchmark/$tag";
+  &generate_path($rpt_dir);
+  $cirkit_bm = "$conf_ptr->{dir_path}->{benchmark_dir}->{val}"."/$benchmark".".blif";
+  $prefix = "$rpt_dir/$benchmark\_"."K$opt_ptr->{K_val}\_"."N$opt_ptr->{N_val}\_";
+  $cirkit_blif_out = "$prefix"."cirkit.blif";
+  $cirkit_blif_out_bak = "$prefix"."cirkit_bak.blif";
+  $cirkit_log = "$prefix"."cirkit.log";
+
+  my ($act_file,$ace_new_blif,$ace_log) = ("$prefix"."ace.act","$prefix"."ace.blif","$prefix"."ace.log");
+
+  my ($vpr_net,$vpr_place,$vpr_route,$vpr_reroute_log,$vpr_log);
+
+  $vpr_net = "$prefix"."vpr.net";
+  $vpr_place = "$prefix"."vpr.place";
+  $vpr_route = "$prefix"."vpr.route";
+  $vpr_log = "$prefix"."vpr.log";
+  $vpr_reroute_log = "$prefix"."vpr_reroute.log";
+ 
+  &run_cirkit_mig_mccl_map($cirkit_bm,$cirkit_blif_out,$cirkit_log);
+  if (!(-e $cirkit_blif_out)) {
+    die "ERROR: Fail Cirkit for benchmark $cirkit_blif_out.\n";
+  }
+ 
+  #`perl pro_blif.pl -i $abc_blif_out_bak -o $abc_blif_out`;
+  #if (!(-e $abc_blif_out)) {
+  #  die "ERROR: Fail pro_blif.pl for benchmark $abc_blif_out.\n";
+  #}
+  
+  &run_ace_in_flow($prefix, $cirkit_blif_out, $act_file, $ace_new_blif, $ace_log);
+
+  &run_vpr_in_flow($tag, $benchmark, $benchmark_file, $cirkit_blif_out, $vpr_arch, $act_file, $vpr_net, $vpr_place, $vpr_route, $vpr_log, $vpr_reroute_log, $parse_results);
+
+  return;  
+}
+
+
 sub run_standard_flow($ $ $ $ $) 
 {
   my ($tag,$benchmark_file,$vpr_arch,$flow_enhance, $parse_results) = @_;
@@ -1274,10 +1455,10 @@ sub run_standard_flow($ $ $ $ $)
       &run_ace($abc_blif_out,$act_file,$ace_new_blif,$ace_log);
       $abc_blif_out = $ace_new_blif;
     }
-  }
 
-  if (!(-e $act_file)) {
-    die "ERROR: Fail ACE2 for benchmark $act_file.\n";
+    if (!(-e $act_file)) {
+      die "ERROR: Fail ACE2 for benchmark $act_file.\n";
+    }
   }
 
   $vpr_net = "$prefix"."vpr.net";
@@ -2150,134 +2331,6 @@ sub run_mccl_flow($ $ $ $ $)
   $rpt_dir = "$conf_ptr->{dir_path}->{rpt_dir}->{val}"."/$benchmark/$tag";
   &generate_path($rpt_dir);
   $abc_bm = "$conf_ptr->{dir_path}->{benchmark_dir}->{val}"."/$benchmark".".v";
-  $prefix = "$rpt_dir/$benchmark\_"."K$opt_ptr->{K_val}\_"."N$opt_ptr->{N_val}\_";
-  $abc_blif_out = "$prefix"."abc.blif";
-  $abc_blif_out_bak = "$prefix"."abc_bak.blif";
-  $abc_log = "$prefix"."abc.log";
- 
-  # RUN ABC 
-  &run_abc_mccl_fpgamap($abc_bm,$abc_blif_out_bak,$abc_log);
-
-  `perl pro_blif.pl -i $abc_blif_out_bak -o $abc_blif_out`;
-
-  if (!(-e $abc_blif_out)) {
-    die "ERROR: Fail pro_blif.pl for benchmark $abc_blif_out.\n";
-  }
-
-  my ($act_file,$ace_new_blif,$ace_log) = ("$prefix"."ace.act","$prefix"."ace.blif","$prefix"."ace.log");
-  if ("on" eq $opt_ptr->{power}) {
-    if ("on" eq $opt_ptr->{black_box_ace}) {
-      &black_box_blif($abc_blif_out,$ace_new_blif); 
-      &run_ace($ace_new_blif,$act_file,$prefix."ace_new.blif",$ace_log);
-    } else {
-      &run_ace($abc_blif_out,$act_file,$ace_new_blif,$ace_log);
-      $abc_blif_out = $ace_new_blif;
-    }
-  }
-
-  if (!(-e $act_file)) {
-    die "ERROR: Fail ACE2 for benchmark $act_file.\n";
-  }
-
-  $vpr_net = "$prefix"."vpr.net";
-  $vpr_place = "$prefix"."vpr.place";
-  $vpr_route = "$prefix"."vpr.route";
-  $vpr_log = "$prefix"."vpr.log";
-  $vpr_reroute_log = "$prefix"."vpr_reroute.log";
-
-  if ("on" eq $opt_ptr->{min_route_chan_width}) {
-    &run_std_vpr($abc_blif_out,$benchmark,$vpr_arch,$vpr_net,$vpr_place,$vpr_route,-1,$vpr_log.".min_chan_width",$act_file);
-    # Get the Minimum channel width
-    my ($min_chan_width) = (&extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_log.".min_chan_width",$opt_ptr->{K_val}, $opt_ptr->{min_route_chan_width}, $parse_results));
-    $min_chan_width = int($min_chan_width*$opt_ptr->{min_route_chan_width_val});
-    if (0 != $min_chan_width%2) {
-      $min_chan_width += 1;
-    }
-    # Remove previous route results
-    if (-e $vpr_route) {
-      `rm $vpr_route`;
-    }
-    # Keep increase min_chan_width until route success 
-    # Extract data from VPR stats
-    #&run_std_vpr($abc_blif_out,$benchmark,$vpr_arch,$vpr_net,$vpr_place,$vpr_route,$min_chan_width,$vpr_log,$act_file);
-    while (1) {
-      &run_vpr_route($abc_blif_out,$benchmark,$vpr_arch,$vpr_net,$vpr_place,$vpr_route,$min_chan_width,$vpr_reroute_log,$act_file);
-      # TODO: Only run the routing stage
-      if (-e $vpr_route) {
-        print "INFO: try route_chan_width($min_chan_width) success!\n";
-        last; #Jump out
-      } else {
-        print "INFO: try route_chan_width($min_chan_width) failed! Retry with +2...\n";
-        $min_chan_width += 2;
-      }
-    }
-    if (1 == $parse_results) {
-      &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val}, "off", $parse_results);
-      &extract_vpr_stats($tag,$benchmark,$vpr_log.".min_chan_width",$opt_ptr->{K_val});
-      &extract_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val});
-    }
-  } elsif ("on" eq $opt_ptr->{fix_route_chan_width}) {
-    my ($fix_chan_width) = ($benchmarks_ptr->{$benchmark_file}->{fix_route_chan_width});
-    # Remove previous route results
-    if (-e $vpr_route) {
-      `rm $vpr_route`;
-    }
-    # Keep increase min_chan_width until route success 
-    &run_std_vpr($abc_blif_out,$benchmark,$vpr_arch,$vpr_net,$vpr_place,$vpr_route,$fix_chan_width,$vpr_log,$act_file);
-    while (1) {
-      # TODO: Only run the routing stage
-      if (-e $vpr_route) {
-        print "INFO: try route_chan_width($fix_chan_width) success!\n";
-        last; #Jump out
-      } else {
-        print "INFO: try route_chan_width($fix_chan_width) failed! Retry with +2...\n";
-        $fix_chan_width += 2;
-        &run_vpr_route($abc_blif_out,$benchmark,$vpr_arch,$vpr_net,$vpr_place,$vpr_route,$fix_chan_width,$vpr_reroute_log,$act_file);
-      }
-    }
-    # Extract data from VPR stats
-    if (1 == $parse_results) {
-      &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val}, "off", $parse_results);
-      &extract_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val});
-      if (-e $vpr_reroute_log) {
-        &extract_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val});
-      }
-    }
-  } else {
-    &run_std_vpr($abc_blif_out,$benchmark,$vpr_arch,$vpr_net,$vpr_place,$vpr_route,-1,$vpr_log,$act_file);
-    if (!(-e $vpr_route)) {
-      die "ERROR: Route Fail for $abc_blif_out!\n";
-    }
-    # Get the Minimum channel width
-    my ($min_chan_width) = (&extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val},"on",$parse_results));
-    if (1 == $parse_results) {
-      &extract_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val});
-    }
-  }
-
-  # Extract data from VPR Power stats
-  if (("on" eq $opt_ptr->{power})
-     &&(1 == $parse_results)) {
-    &extract_vpr_power_esti($tag,$abc_blif_out,$benchmark,$opt_ptr->{K_val});
-  }
-
-  return;
-}
-
-sub run_mig_mccl_flow($ $ $ $ $) 
-{
-  my ($tag,$benchmark_file,$vpr_arch,$flow_enhance, $parse_results) = @_;
-  my ($benchmark, $rpt_dir,$prefix);
-  my ($abc_bm,$abc_blif_out,$abc_log,$abc_blif_out_bak);
-  my ($mpack_blif_out,$mpack_stats,$mpack_log);
-  my ($vpr_net,$vpr_place,$vpr_route,$vpr_reroute_log,$vpr_log);
-
-  $benchmark = $benchmark_file; 
-  $benchmark =~ s/\.blif$//g;     
-  # Run Standard flow
-  $rpt_dir = "$conf_ptr->{dir_path}->{rpt_dir}->{val}"."/$benchmark/$tag";
-  &generate_path($rpt_dir);
-  $abc_bm = "$conf_ptr->{dir_path}->{benchmark_dir}->{val}"."/$benchmark".".blif";
   $prefix = "$rpt_dir/$benchmark\_"."K$opt_ptr->{K_val}\_"."N$opt_ptr->{N_val}\_";
   $abc_blif_out = "$prefix"."abc.blif";
   $abc_blif_out_bak = "$prefix"."abc_bak.blif";

@@ -81,6 +81,10 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
                                     t_pb_graph_node* cur_pb_graph_node,
                                     int pb_type_index);
 
+void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
+                                        char* subckt_prefix,
+                                        t_pb_graph_node* cur_pb_graph_node,
+                                        int pb_type_index);
 
 void dump_verilog_block(FILE* fp,
                         char* subckt_name, 
@@ -89,6 +93,13 @@ void dump_verilog_block(FILE* fp,
                         int z,
                         t_type_ptr type_descriptor,
                         t_block* mapped_block);
+
+void dump_verilog_physical_block(FILE* fp,
+                                 char* subckt_name, 
+                                 int x,
+                                 int y,
+                                 int z,
+                                 t_type_ptr type_descriptor);
 
 void dump_verilog_grid_pins(FILE* fp,
                             int x, int y,
@@ -121,6 +132,11 @@ void dump_verilog_io_grid_block_subckt_pins(FILE* fp,
 void dump_verilog_grid_blocks(FILE* fp,
                         int ix,
                         int iy);
+
+void dump_verilog_physical_grid_blocks(FILE* fp,
+                                       int ix,
+                                       int iy,
+                                       t_arch* arch);
 
 void dump_verilog_idle_block(FILE* fp,
                              char* subckt_name, 

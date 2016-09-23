@@ -82,7 +82,9 @@ enum e_pb_type_class {
 enum e_pin_to_pin_annotation_type {
 	E_ANNOT_PIN_TO_PIN_DELAY = 0,
 	E_ANNOT_PIN_TO_PIN_CAPACITANCE,
-	E_ANNOT_PIN_TO_PIN_PACK_PATTERN
+	E_ANNOT_PIN_TO_PIN_PACK_PATTERN,
+/* Xifan TANG: FPGA-SPICE: mode selector */
+	E_ANNOT_PIN_TO_PIN_MODE_SELECT
 };
 enum e_pin_to_pin_annotation_format {
 	E_ANNOT_PIN_TO_PIN_MATRIX = 0, E_ANNOT_PIN_TO_PIN_CONSTANT
@@ -101,6 +103,12 @@ enum e_pin_to_pin_capacitance_annotations {
 enum e_pin_to_pin_pack_pattern_annotations {
 	E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME = 0
 };
+
+/* Xifan TANG: FPGA-SPICE, mode select description */
+enum e_pin_to_pin_mode_select_annotations {
+	E_ANNOT_PIN_TO_PIN_MODE_SELECT_MODE_NAME = 0
+};
+
 
 /* Power Estimation type for a PB */
 enum e_power_estimation_method_ {
@@ -363,6 +371,8 @@ struct s_mode {
     /* Spice Model Support: Xifan TANG
      */
     int define_idle_mode;   
+    int define_physical_mode;   
+    int available_in_packing;
  
 	/* Power releated members */
 	t_mode_power * mode_power;
@@ -605,16 +615,25 @@ struct s_pb_type {
 
     /* Spice model Support: Xifan TANG*/
     char* idle_mode_name;
+    char* physical_mode_name;
     char* spice_model_name;
     t_spice_model* spice_model;
+    char* mode_bits; /* Mode bits to select */
 
 	/* Power related members */
 	t_pb_type_power * pb_type_power;
 
     /* Xifan TANG: FPGA-SPICE and SynVerilog */
+    int physical_mode_num_conf_bits;
+    int physical_mode_num_inpads;
+    int physical_mode_num_outpads;
+    int physical_mode_num_iopads;
+
     int default_mode_num_conf_bits;
+    int default_mode_num_mode_bits;
     int default_mode_num_inpads;
     int default_mode_num_outpads;
+    int default_mode_num_iopads;
 };
 typedef struct s_pb_type t_pb_type;
 

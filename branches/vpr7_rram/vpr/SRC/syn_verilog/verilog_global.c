@@ -12,6 +12,7 @@ char* logic_block_verilog_file_name = "logic_blocks.v";
 char* luts_verilog_file_name = "luts.v";
 char* routing_verilog_file_name = "routing.v";
 char* muxes_verilog_file_name = "muxes.v";
+char* wires_verilog_file_name = "wires.v";
 char* decoders_verilog_file_name = "decoders.v";
 
 char* verilog_mux_basis_posfix = "_basis";
@@ -31,5 +32,11 @@ int** num_conf_bits_cby = NULL;
 /* Input and Output Pad spice model. should be set as global */
 t_spice_model* inpad_verilog_model = NULL;
 t_spice_model* outpad_verilog_model = NULL;
+t_spice_model* iopad_verilog_model = NULL;
 /* Linked-list that stores all the configuration bits */
 t_llist* conf_bits_head = NULL;
+
+/* Prefix of global input, output and inout of a I/O pad */
+char* gio_input_prefix = "gfpga_input_";
+char* gio_output_prefix = "gfpga_output_";
+char* gio_inout_prefix = "gfpga_pad_";

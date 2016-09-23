@@ -1121,6 +1121,25 @@ t_spice_model* find_outpad_spice_model(int num_spice_model,
   return ret;
 }
 
+t_spice_model* find_iopad_spice_model(int num_spice_model,
+                                      t_spice_model* spice_models) {
+  t_spice_model* ret = NULL;
+  int imodel;
+  int num_found = 0;
+
+  for (imodel = 0; imodel < num_spice_model; imodel++) {
+    if (SPICE_MODEL_IOPAD == spice_models[imodel].type) {
+      ret = &(spice_models[imodel]);
+      num_found++;
+    }
+  }
+
+  assert(1 == num_found);
+
+  return ret;
+}
+
+
 char* generate_string_spice_model_type(enum e_spice_model_type spice_model_type) {
   char* ret = NULL;
 
@@ -1839,6 +1858,36 @@ int find_pb_type_idle_mode_index(t_pb_type cur_pb_type) {
   return idle_mode_index;
 }
 
+/* Find the physical mode index */
+int find_pb_type_physical_mode_index(t_pb_type cur_pb_type) {
+  int phy_mode_index = 0;
+  int imode = 0;
+  int num_phy_mode = 0;
+
+  /* if we touch the leaf node */
+  if (NULL != cur_pb_type.blif_model) {
+    return 0;
+  }
+
+  if (0 == cur_pb_type.num_modes) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Intend to find the idle mode while cur_pb_type has 0 modes!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+ 
+  /* Normal Condition: */ 
+  for (imode = 0; imode < cur_pb_type.num_modes; imode++) {
+    if (1 == cur_pb_type.modes[imode].define_physical_mode) {
+      phy_mode_index = imode;
+      num_phy_mode++;
+    }
+  } 
+  assert(1 == num_phy_mode); 
+
+  return phy_mode_index;
+}
+
+
 
 void mark_grid_type_pb_graph_node_pins_temp_net_num(int x, int y) {
   int iport, ipin, type_pin_index, class_id, pin_global_rr_node_id; 
@@ -2312,7 +2361,7 @@ int is_sb_interc_between_segments(int switch_box_x,
 int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
                                         int mux_size) {
   int num_conf_bits = 0;
-
+  int iport;
   int lut_size;
   int num_input_port = 0;
   t_spice_model_port** input_ports = NULL;
@@ -2385,13 +2434,30 @@ int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
       exit(1);
     }
     break;
-  case SPICE_MODEL_WIRE:
-  case SPICE_MODEL_FF:
   case SPICE_MODEL_INPAD:
   case SPICE_MODEL_OUTPAD:
+    /* We assume it has 1 conf bit by default 
+     * TODO: to be more smart   
+     */
+    num_conf_bits = 1;
+    break;
+  case SPICE_MODEL_WIRE:
+  case SPICE_MODEL_FF:
   case SPICE_MODEL_SRAM:
   case SPICE_MODEL_HARDLOGIC:
   case SPICE_MODEL_SCFF:
+  case SPICE_MODEL_VDD:
+  case SPICE_MODEL_GND:
+  case SPICE_MODEL_IOPAD:
+    /* Other block, we just count the number SRAM ports defined by user */
+    num_conf_bits = 0;
+    sram_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port);
+    if (0 < num_sram_port) {
+      assert(NULL != sram_ports);
+      for (iport = 0; iport < num_sram_port; iport++) {
+        num_conf_bits += sram_ports[iport]->size;
+      }
+    }
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid spice_model_type!\n", __FILE__, __LINE__);
@@ -2553,6 +2619,49 @@ int rec_count_num_conf_bits_pb_type_default_mode(t_pb_type* cur_pb_type) {
   return sum_num_conf_bits;
 }
 
+/* Count the number of configuration bits of a grid (type_descriptor) in default mode */
+int rec_count_num_conf_bits_pb_type_physical_mode(t_pb_type* cur_pb_type) {
+  int mode_index, ipb, jpb;
+  int sum_num_conf_bits = 0;
+
+  cur_pb_type->physical_mode_num_conf_bits = 0;
+
+  /* Recursively finish all the child pb_types*/
+  if (NULL == cur_pb_type->spice_model) { 
+    /* Find the mode that define_idle_mode*/
+    mode_index = find_pb_type_physical_mode_index((*cur_pb_type));
+    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) { 
+        rec_count_num_conf_bits_pb_type_physical_mode(&(cur_pb_type->modes[mode_index].pb_type_children[ipb]));
+      }
+    }
+  }
+
+  /* Check if this has defined a spice_model*/
+  if (NULL != cur_pb_type->spice_model) {
+    sum_num_conf_bits = count_num_conf_bits_one_spice_model(cur_pb_type->spice_model, 0);
+    cur_pb_type->physical_mode_num_conf_bits = sum_num_conf_bits;
+  } else { /* Count the sum of configuration bits of all the children pb_types */
+    /* Find the mode that define_idle_mode*/
+    mode_index = find_pb_type_physical_mode_index((*cur_pb_type));
+    /* Quote all child pb_types */
+    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+      /* Each child may exist multiple times in the hierarchy*/
+      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+        /* Count in the number of configuration bits of on child pb_type */
+        sum_num_conf_bits += cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_conf_bits;
+      }
+    }
+    /* Count the number of configuration bits of interconnection */
+    sum_num_conf_bits += count_num_conf_bits_pb_type_mode_interc(&(cur_pb_type->modes[mode_index])); 
+    /* Update the info in pb_type */
+    cur_pb_type->physical_mode_num_conf_bits = sum_num_conf_bits;
+  }
+
+  return sum_num_conf_bits;
+}
+
+
 /* Count the number of configuration bits of a pb_graph_node */
 int rec_count_num_conf_bits_pb(t_pb* cur_pb) {
   int mode_index, ipb, jpb;
@@ -2641,6 +2750,7 @@ void init_one_grid_num_conf_bits(int ix, int iy) {
   for (iz = 0; iz < capacity; iz++) {
     /* Check in all the blocks(clustered logic block), there is a match x,y,z*/
     mapped_block = search_mapped_block(ix, iy, iz); 
+    rec_count_num_conf_bits_pb_type_physical_mode(grid[ix][iy].type->pb_type);
     /* Comments: Grid [x][y]*/
     if (NULL == mapped_block) {
       /* Print a consider a idle pb_type ...*/
@@ -2878,13 +2988,74 @@ void update_spice_models_routing_index_low(int x, int y,
 }
 
 /* Count the number of inpad and outpad of a grid (type_descriptor) in default mode */
+void rec_count_num_iopads_pb_type_physical_mode(t_pb_type* cur_pb_type) {
+  int mode_index, ipb, jpb;
+  int sum_num_inpads = 0;
+  int sum_num_outpads = 0;
+  int sum_num_iopads = 0;
+
+  cur_pb_type->physical_mode_num_inpads = 0;
+  cur_pb_type->physical_mode_num_outpads = 0;
+  cur_pb_type->physical_mode_num_iopads = 0;
+
+  /* Recursively finish all the child pb_types*/
+  if (NULL == cur_pb_type->spice_model) { 
+    /* Find the mode that define_idle_mode*/
+    mode_index = find_pb_type_physical_mode_index((*cur_pb_type));
+    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) { 
+        rec_count_num_iopads_pb_type_physical_mode(&(cur_pb_type->modes[mode_index].pb_type_children[ipb]));
+      }
+    }
+  }
+
+  /* Check if this has defined a spice_model*/
+  if (NULL != cur_pb_type->spice_model) {
+    if (SPICE_MODEL_INPAD == cur_pb_type->spice_model->type) {
+      sum_num_inpads = 1;
+      cur_pb_type->physical_mode_num_inpads = sum_num_inpads;
+    }
+    if (SPICE_MODEL_OUTPAD == cur_pb_type->spice_model->type) {
+      sum_num_outpads = 1;
+      cur_pb_type->physical_mode_num_outpads = sum_num_outpads;
+    }
+    if (SPICE_MODEL_IOPAD == cur_pb_type->spice_model->type) {
+      sum_num_iopads = 1;
+      cur_pb_type->physical_mode_num_iopads = sum_num_iopads;
+    }
+  } else { /* Count the sum of configuration bits of all the children pb_types */
+    /* Find the mode that define_idle_mode*/
+    mode_index = find_pb_type_physical_mode_index((*cur_pb_type));
+    /* Quote all child pb_types */
+    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+      /* Each child may exist multiple times in the hierarchy*/
+      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+        /* Count in the number of configuration bits of on child pb_type */
+        sum_num_inpads += cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_inpads;
+        sum_num_outpads += cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_outpads;
+        sum_num_iopads += cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_iopads;
+      }
+    }
+    /* Count the number of configuration bits of interconnection */
+    /* Update the info in pb_type */
+    cur_pb_type->physical_mode_num_inpads = sum_num_inpads;
+    cur_pb_type->physical_mode_num_outpads = sum_num_outpads;
+    cur_pb_type->physical_mode_num_iopads = sum_num_iopads;
+  }
+
+  return;
+}
+
+/* Count the number of inpad and outpad of a grid (type_descriptor) in default mode */
 void rec_count_num_iopads_pb_type_default_mode(t_pb_type* cur_pb_type) {
   int mode_index, ipb, jpb;
   int sum_num_inpads = 0;
   int sum_num_outpads = 0;
+  int sum_num_iopads = 0;
 
   cur_pb_type->default_mode_num_inpads = 0;
   cur_pb_type->default_mode_num_outpads = 0;
+  cur_pb_type->default_mode_num_iopads = 0;
 
   /* Recursively finish all the child pb_types*/
   if (NULL == cur_pb_type->spice_model) { 
@@ -2907,6 +3078,10 @@ void rec_count_num_iopads_pb_type_default_mode(t_pb_type* cur_pb_type) {
       sum_num_outpads = 1;
       cur_pb_type->default_mode_num_outpads = sum_num_outpads;
     }
+    if (SPICE_MODEL_IOPAD == cur_pb_type->spice_model->type) {
+      sum_num_iopads = 1;
+      cur_pb_type->default_mode_num_iopads = sum_num_iopads;
+    }
   } else { /* Count the sum of configuration bits of all the children pb_types */
     /* Find the mode that define_idle_mode*/
     mode_index = find_pb_type_idle_mode_index((*cur_pb_type));
@@ -2917,12 +3092,14 @@ void rec_count_num_iopads_pb_type_default_mode(t_pb_type* cur_pb_type) {
         /* Count in the number of configuration bits of on child pb_type */
         sum_num_inpads += cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_inpads;
         sum_num_outpads += cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_outpads;
+        sum_num_iopads += cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_iopads;
       }
     }
     /* Count the number of configuration bits of interconnection */
     /* Update the info in pb_type */
     cur_pb_type->default_mode_num_inpads = sum_num_inpads;
     cur_pb_type->default_mode_num_outpads = sum_num_outpads;
+    cur_pb_type->default_mode_num_iopads = sum_num_iopads;
   }
 
   return;
@@ -2936,6 +3113,7 @@ void rec_count_num_iopads_pb(t_pb* cur_pb) {
 
   int sum_num_inpads = 0;
   int sum_num_outpads = 0;
+  int sum_num_iopads = 0;
 
   /* Check cur_pb_graph_node*/
   if (NULL == cur_pb) {
@@ -2949,6 +3127,7 @@ void rec_count_num_iopads_pb(t_pb* cur_pb) {
 
   cur_pb->num_inpads = 0;
   cur_pb->num_outpads = 0;
+  cur_pb->num_iopads = 0;
 
   /* Recursively finish all the child pb_types*/
   if (NULL == cur_pb_type->spice_model) { 
@@ -2977,6 +3156,10 @@ void rec_count_num_iopads_pb(t_pb* cur_pb) {
       sum_num_outpads = 1;
       cur_pb->num_outpads = sum_num_outpads;
     }
+    if (SPICE_MODEL_IOPAD == cur_pb_type->spice_model->type) {
+      sum_num_iopads = 1;
+      cur_pb->num_iopads = sum_num_iopads;
+    }
   } else {
     /* Definition ends*/
     /* Quote all child pb_types */
@@ -2989,10 +3172,12 @@ void rec_count_num_iopads_pb(t_pb* cur_pb) {
           /* Count in the number of configuration bits of on child pb */
           sum_num_inpads += cur_pb->child_pbs[ipb][jpb].num_inpads;
           sum_num_outpads += cur_pb->child_pbs[ipb][jpb].num_outpads;
+          sum_num_iopads += cur_pb->child_pbs[ipb][jpb].num_iopads;
         } else {
           /* Count in the number of configuration bits of on child pb_type */
           sum_num_inpads += cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_inpads;
           sum_num_outpads += cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_outpads;
+          sum_num_iopads += cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_iopads;
         }
       }
     }
@@ -3000,6 +3185,7 @@ void rec_count_num_iopads_pb(t_pb* cur_pb) {
     /* Update the info in pb_type */
     cur_pb->num_inpads = sum_num_inpads;
     cur_pb->num_outpads = sum_num_outpads;
+    cur_pb->num_iopads = sum_num_iopads;
   }
 
   return;
@@ -3027,6 +3213,7 @@ void init_one_grid_num_iopads(int ix, int iy) {
   for (iz = 0; iz < capacity; iz++) {
     /* Check in all the blocks(clustered logic block), there is a match x,y,z*/
     mapped_block = search_mapped_block(ix, iy, iz); 
+    rec_count_num_iopads_pb_type_physical_mode(grid[ix][iy].type->pb_type);
     /* Comments: Grid [x][y]*/
     if (NULL == mapped_block) {
       /* Print a consider a idle pb_type ...*/
@@ -3050,7 +3237,7 @@ void init_grids_num_iopads() {
   int ix, iy; 
 
   /* Core grid */
-  vpr_printf(TIO_MESSAGE_INFO, "INFO: Initializing number of configuration bits of Core grids...\n");
+  vpr_printf(TIO_MESSAGE_INFO, "INFO: Initializing number of I/O pads of Core grids...\n");
   for (ix = 1; ix < (nx + 1); ix++) {
     for (iy = 1; iy < (ny + 1); iy++) {
       init_one_grid_num_iopads(ix, iy);
@@ -3058,7 +3245,7 @@ void init_grids_num_iopads() {
   }
   
   /* Consider the IO pads */
-  vpr_printf(TIO_MESSAGE_INFO, "INFO: Initializing number of configuration bits of I/O grids...\n");
+  vpr_printf(TIO_MESSAGE_INFO, "INFO: Initializing number of I/O pads of I/O grids...\n");
   /* Left side: x = 0, y = 1 .. ny*/
   ix = 0;
   for (iy = 1; iy < (ny + 1); iy++) {
@@ -3090,6 +3277,212 @@ void init_grids_num_iopads() {
  
   return;
 }
+
+/* Count the number of mode configuration bits of a grid (type_descriptor) in default mode */
+void rec_count_num_mode_bits_pb_type_default_mode(t_pb_type* cur_pb_type) {
+  int mode_index, ipb, jpb;
+  int sum_num_mode_bits = 0;
+
+  cur_pb_type->default_mode_num_mode_bits = 0;
+
+  /* Recursively finish all the child pb_types*/
+  if (NULL == cur_pb_type->spice_model) { 
+    /* Find the mode that define_idle_mode*/
+    mode_index = find_pb_type_idle_mode_index((*cur_pb_type));
+    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) { 
+        rec_count_num_mode_bits_pb_type_default_mode(&(cur_pb_type->modes[mode_index].pb_type_children[ipb]));
+      }
+    }
+  }
+
+  /* Check if this has defined a spice_model*/
+  if (NULL != cur_pb_type->spice_model) {
+    if (SPICE_MODEL_INPAD == cur_pb_type->spice_model->type) {
+      sum_num_mode_bits = 1;
+      cur_pb_type->default_mode_num_mode_bits = sum_num_mode_bits;
+    }
+    if (SPICE_MODEL_OUTPAD == cur_pb_type->spice_model->type) {
+      sum_num_mode_bits = 1;
+      cur_pb_type->default_mode_num_mode_bits = sum_num_mode_bits;
+    }
+  } else { /* Count the sum of configuration bits of all the children pb_types */
+    /* Find the mode that define_idle_mode*/
+    mode_index = find_pb_type_idle_mode_index((*cur_pb_type));
+    /* Quote all child pb_types */
+    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+      /* Each child may exist multiple times in the hierarchy*/
+      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+        /* Count in the number of configuration bits of on child pb_type */
+        sum_num_mode_bits += cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_mode_bits;
+      }
+    }
+    /* Count the number of configuration bits of interconnection */
+    /* Update the info in pb_type */
+    cur_pb_type->default_mode_num_mode_bits = sum_num_mode_bits;
+  }
+
+  return;
+}
+
+/* Count the number of configuration bits of a pb_graph_node */
+void rec_count_num_mode_bits_pb(t_pb* cur_pb) {
+  int mode_index, ipb, jpb;
+  t_pb_type* cur_pb_type = NULL;
+  t_pb_graph_node* cur_pb_graph_node = NULL;
+
+  int sum_num_mode_bits = 0;
+
+  /* Check cur_pb_graph_node*/
+  if (NULL == cur_pb) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid cur_pb.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+  cur_pb_graph_node = cur_pb->pb_graph_node;
+  cur_pb_type = cur_pb_graph_node->pb_type;
+  mode_index = cur_pb->mode; 
+
+  cur_pb->num_mode_bits = 0;
+
+  /* Recursively finish all the child pb_types*/
+  if (NULL == cur_pb_type->spice_model) { 
+    /* recursive for the child_pbs*/
+    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) { 
+        /* Recursive*/
+        /* Refer to pack/output_clustering.c [LINE 392] */
+        if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
+          rec_count_num_mode_bits_pb(&(cur_pb->child_pbs[ipb][jpb]));
+        } else {
+          /* Check if this pb has no children, no children mean idle*/
+          rec_count_num_mode_bits_pb_type_default_mode(cur_pb->child_pbs[ipb][jpb].pb_graph_node->pb_type);
+        }
+      } 
+    }
+  }
+
+  /* Check if this has defined a spice_model*/
+  if (NULL != cur_pb_type->spice_model) {
+    if (SPICE_MODEL_INPAD == cur_pb_type->spice_model->type) {
+      sum_num_mode_bits = 1;
+      cur_pb->num_mode_bits = sum_num_mode_bits;
+    }
+    if (SPICE_MODEL_OUTPAD == cur_pb_type->spice_model->type) {
+      sum_num_mode_bits = 1;
+      cur_pb->num_mode_bits = sum_num_mode_bits;
+    }
+  } else {
+    /* Definition ends*/
+    /* Quote all child pb_types */
+    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+      /* Each child may exist multiple times in the hierarchy*/
+      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+        /* we should make sure this placement index == child_pb_type[jpb]*/
+        assert(jpb == cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb].placement_index);
+        if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
+          /* Count in the number of configuration bits of on child pb */
+          sum_num_mode_bits += cur_pb->child_pbs[ipb][jpb].num_mode_bits;
+        } else {
+          /* Count in the number of configuration bits of on child pb_type */
+          sum_num_mode_bits += cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_mode_bits;
+        }
+      }
+    }
+    /* Count the number of configuration bits of interconnection */
+    /* Update the info in pb_type */
+    cur_pb->num_mode_bits = sum_num_mode_bits;
+  }
+
+  return;
+}
+
+/* Initialize the number of configuraion bits for one grid */
+void init_one_grid_num_mode_bits(int ix, int iy) {
+  t_block* mapped_block = NULL;
+  int iz;
+  int cur_block_index = 0;
+  int capacity; 
+
+  /* Check */
+  assert((!(0 > ix))&&(!(ix > (nx + 1)))); 
+  assert((!(0 > iy))&&(!(iy > (ny + 1)))); 
+ 
+  if ((NULL == grid[ix][iy].type)||(0 != grid[ix][iy].offset)) {
+    /* Empty grid, directly return */
+    return; 
+  }
+  capacity= grid[ix][iy].type->capacity;
+  assert(0 < capacity);
+
+  /* check capacity and if this has been mapped */
+  for (iz = 0; iz < capacity; iz++) {
+    /* Check in all the blocks(clustered logic block), there is a match x,y,z*/
+    mapped_block = search_mapped_block(ix, iy, iz); 
+    /* Comments: Grid [x][y]*/
+    if (NULL == mapped_block) {
+      /* Print a consider a idle pb_type ...*/
+      rec_count_num_mode_bits_pb_type_default_mode(grid[ix][iy].type->pb_type);
+    } else {
+      if (iz == mapped_block->z) {
+        // assert(mapped_block == &(block[grid[ix][iy].blocks[cur_block_index]]));
+        cur_block_index++;
+      }
+      rec_count_num_mode_bits_pb(mapped_block->pb);
+    }
+  } 
+
+  assert(cur_block_index == grid[ix][iy].usage);
+
+  return;
+}
+
+/* Initialize the number of configuraion bits for all grids */
+void init_grids_num_mode_bits() {
+  int ix, iy; 
+
+  /* Core grid */
+  vpr_printf(TIO_MESSAGE_INFO, "INFO: Initializing number of mode configuraiton bits of Core grids...\n");
+  for (ix = 1; ix < (nx + 1); ix++) {
+    for (iy = 1; iy < (ny + 1); iy++) {
+      init_one_grid_num_mode_bits(ix, iy);
+    }
+  }
+  
+  /* Consider the IO pads */
+  vpr_printf(TIO_MESSAGE_INFO, "INFO: Initializing number of mode configuration bits of I/O grids...\n");
+  /* Left side: x = 0, y = 1 .. ny*/
+  ix = 0;
+  for (iy = 1; iy < (ny + 1); iy++) {
+    /* Ensure this is a io */
+    assert(IO_TYPE == grid[ix][iy].type);
+    init_one_grid_num_mode_bits(ix, iy);
+  }
+  /* Right side : x = nx + 1, y = 1 .. ny*/
+  ix = nx + 1;
+  for (iy = 1; iy < (ny + 1); iy++) {
+    /* Ensure this is a io */
+    assert(IO_TYPE == grid[ix][iy].type);
+    init_one_grid_num_mode_bits(ix, iy);
+  }
+  /* Bottom  side : x = 1 .. nx + 1, y = 0 */
+  iy = 0;
+  for (ix = 1; ix < (nx + 1); ix++) {
+    /* Ensure this is a io */
+    assert(IO_TYPE == grid[ix][iy].type);
+    init_one_grid_num_mode_bits(ix, iy);
+  }
+  /* Top side : x = 1 .. nx + 1, y = nx + 1  */
+  iy = ny + 1;
+  for (ix = 1; ix < (nx + 1); ix++) {
+    /* Ensure this is a io */
+    assert(IO_TYPE == grid[ix][iy].type);
+    init_one_grid_num_mode_bits(ix, iy);
+  }
+ 
+  return;
+}
+
 
 /* Check if this SPICE model defined as SRAM 
  * contain necessary ports for its functionality 

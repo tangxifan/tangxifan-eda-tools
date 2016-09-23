@@ -291,7 +291,7 @@ void init_list_include_netlists(t_spice* spice) {
   spice->num_include_netlist = 0;
 
   /* Generate include netlist list */
-  vpr_printf(TIO_MESSAGE_INFO, "Listing Netlist Names to be included...\n");
+  vpr_printf(TIO_MESSAGE_INFO, "Listing Verilog Netlist Names to be included...\n");
   for (i = 0; i < spice->num_spice_model; i++) {
     if (NULL != spice->spice_models[i].model_netlist) {
       /* Check if this netlist name has already existed in the list */
@@ -655,6 +655,9 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
 
   /*Process the circuit name*/
   split_path_prog_name(circuit_name,'/',&chomped_spice_dir ,&chomped_circuit_name);
+   
+  /* FPGA-SPICE formally starts*/
+  vpr_printf(TIO_MESSAGE_INFO, "\nFPGA-SPICE starts...\n");
   
   /* Start Clocking*/
   t_start = clock();

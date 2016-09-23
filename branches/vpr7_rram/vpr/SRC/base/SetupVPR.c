@@ -274,7 +274,8 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 		PlacerOpts->seed = Options->Seed;
 	}
 	my_srandom(PlacerOpts->seed);
-
+    
+    /* Build the complex block graph */
 	vpr_printf(TIO_MESSAGE_INFO, "Building complex block graph.\n");
 	alloc_and_load_all_pb_graphs(PowerOpts->do_power);
 

@@ -401,6 +401,8 @@ static void ProcessSpiceModelPort(ezxml_t Node,
     port->type = SPICE_MODEL_PORT_BL;
   } else if (0 == strcmp(FindProperty(Node,"type",TRUE),"wl")) {
     port->type = SPICE_MODEL_PORT_WL;
+  } else if (0 == strcmp(FindProperty(Node,"type",TRUE),"inout")) {
+    port->type = SPICE_MODEL_PORT_INOUT;
   } else {
     vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] Invalid type of port. Should be [input|output|clock|sram|bl|wl].\n",
                Node->line);
@@ -412,6 +414,15 @@ static void ProcessSpiceModelPort(ezxml_t Node,
   ezxml_set_attr(Node, "prefix", NULL);
   port->size = GetIntProperty(Node,"size",TRUE,1);
   ezxml_set_attr(Node, "size", NULL);
+  
+  /* See if this is a mode selec.
+   * Currently, we only allow a SRAM port to be a mode selector */
+  if (SPICE_MODEL_PORT_SRAM == port->type) {
+    port->mode_select = GetBooleanProperty(Node, "mode_select", FALSE, FALSE);
+    ezxml_set_attr(Node, "mode_select", NULL);
+    port->default_val = GetIntProperty(Node, "default_val", FALSE, 0);
+    ezxml_set_attr(Node, "default_val", NULL);
+  }
  
   return;
 }
@@ -474,6 +485,12 @@ static void ProcessSpiceModel(ezxml_t Parent,
     spice_model->type = SPICE_MODEL_HARDLOGIC;
   } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"sff")) {
     spice_model->type = SPICE_MODEL_SCFF;
+  } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"iopad")) {
+    spice_model->type = SPICE_MODEL_IOPAD;
+  } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"wire_vdd")) {
+    spice_model->type = SPICE_MODEL_VDD;
+  } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"wire_gnd")) {
+    spice_model->type = SPICE_MODEL_GND;
   } else {
     vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] Invalid type of spice model(%s). Should be [mux|lut|ff|io|sram|hard_logic|sff].\n",
                Parent->line, FindProperty(Parent, "type", TRUE));
@@ -485,10 +502,16 @@ static void ProcessSpiceModel(ezxml_t Parent,
   spice_model->prefix = my_strdup(FindProperty(Parent,"prefix",TRUE));
   ezxml_set_attr(Parent, "prefix", NULL);
  
-  /* Find a netlist path if we can*/
-  spice_model->model_netlist = my_strdup(FindProperty(Parent,"netlist",FALSE));
+  /* Find a spice_netlist path if we can*/
+  spice_model->model_netlist = my_strdup(FindProperty(Parent,"spice_netlist",FALSE));
   if (spice_model->model_netlist) {
-    ezxml_set_attr(Parent, "netlist", NULL);
+    ezxml_set_attr(Parent, "spice_netlist", NULL);
+  }
+
+  /* Find a verilog_netlist path if we can*/
+  spice_model->verilog_netlist = my_strdup(FindProperty(Parent,"verilog_netlist",FALSE));
+  if (spice_model->verilog_netlist) {
+    ezxml_set_attr(Parent, "verilog_netlist", NULL);
   }
 
   /* Find the is_default if we can*/
@@ -594,7 +617,14 @@ static void ProcessSpiceModel(ezxml_t Parent,
   if (Node) {
     ProcessSpiceModelPassGateLogic(Node,spice_model->pass_gate_logic);
     FreeNode(Node);
-  } else if ((SPICE_MODEL_FF != spice_model->type)&&(SPICE_MODEL_SRAM != spice_model->type)&(SPICE_MODEL_HARDLOGIC != spice_model->type)&&(SPICE_MODEL_WIRE != spice_model->type)&&(SPICE_MODEL_CHAN_WIRE != spice_model->type)) { /* We have some exceptions: dff, sram and hard_logic*/
+  } else if ((SPICE_MODEL_FF != spice_model->type)
+           &&(SPICE_MODEL_SRAM != spice_model->type)
+           &&(SPICE_MODEL_HARDLOGIC != spice_model->type)
+           &&(SPICE_MODEL_WIRE != spice_model->type)
+           &&(SPICE_MODEL_VDD != spice_model->type)
+           &&(SPICE_MODEL_GND != spice_model->type)
+           &&(SPICE_MODEL_CHAN_WIRE != spice_model->type)) { 
+    /* We have some exceptions: VDD, GND, dff, sram and hard_logic*/
     vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] pass_gate_logic is expected in spice_model(%s).\n",
                Node->line,spice_model->name);
     exit(1);
@@ -698,7 +728,9 @@ static void check_spice_models(int num_spice_model,
       }
     }
     /* Check io has been defined and has input and output ports*/
-    if ((SPICE_MODEL_INPAD == spice_models[i].type)||(SPICE_MODEL_OUTPAD == spice_models[i].type)) {
+    if ((SPICE_MODEL_INPAD == spice_models[i].type)
+      ||(SPICE_MODEL_OUTPAD == spice_models[i].type)
+      ||(SPICE_MODEL_IOPAD == spice_models[i].type)) {
       has_io = 1;
       has_in_port = 0;
       has_out_port = 0;
@@ -965,3 +997,5 @@ void ProcessSpiceSettings(ezxml_t Parent,
 
   return;
 }
+
+

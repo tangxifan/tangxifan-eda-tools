@@ -254,14 +254,26 @@ void dump_verilog_cmos_mux_tree_structure(FILE* fp,
     nextlevel = spice_mux_arch.num_level - i - 1; 
     /* Check */
     assert(nextlevel > -1);
+    fprintf(fp, "wire [%d:%d] mux2_l%d_in; \n", 
+            0, spice_mux_arch.num_input_per_level[nextlevel] -1, /* input0 input1 */
+            level);
+  }
+  fprintf(fp, "wire [%d:%d] mux2_l%d_in; \n",
+          0, 0, 0);
+
+  for (i = 0; i < spice_mux_arch.num_level; i++) {
+    level = spice_mux_arch.num_level - i;
+    nextlevel = spice_mux_arch.num_level - i - 1; 
+    /* Check */
+    assert(nextlevel > -1);
     /* Print basis mux2to1 for each level*/
     for (j = 0; j < spice_mux_arch.num_input_per_level[nextlevel]; j++) {
       nextj = j + 1;
       out_idx = j/2; 
       /* Each basis mux2to1: <given_name> <input0> <input1> <output> <sram> <sram_inv> svdd sgnd <subckt_name> */
       fprintf(fp, "%s mux_basis_no%d (", mux_basis_subckt_name, mux_basis_cnt); /* given_name */
-      fprintf(fp, "mux2_l%d_in%d, mux2_l%d_in%d, ", level, j, level, nextj); /* input0 input1 */
-      fprintf(fp, "mux2_l%d_in%d, ", nextlevel, out_idx); /* output */
+      fprintf(fp, "mux2_l%d_in[%d:%d], ", level, j, nextj); /* input0 input1 */
+      fprintf(fp, "mux2_l%d_in[%d], ", nextlevel, out_idx); /* output */
       fprintf(fp, "%s[%d], %s_inv[%d]);\n", sram_port[0]->prefix, nextlevel, sram_port[0]->prefix, nextlevel); /* sram sram_inv */
       /* Update the counter */
       j = nextj;
@@ -309,6 +321,19 @@ void dump_verilog_cmos_mux_multilevel_structure(FILE* fp,
     sram_idx = nextlevel * spice_mux_arch.num_input_basis;
     /* Check */
     assert(nextlevel > -1);
+    fprintf(fp, "wire [%d:%d] mux2_l%d_in; \n", 
+            0, spice_mux_arch.num_input_per_level[nextlevel] -1, /* input0 input1 */
+            level);
+  }
+  fprintf(fp, "wire [%d:%d] mux2_l%d_in; \n",
+          0, 0, 0);
+ 
+  for (i = 0; i < spice_mux_arch.num_level; i++) {
+    level = spice_mux_arch.num_level - i;
+    nextlevel = spice_mux_arch.num_level - i - 1; 
+    sram_idx = nextlevel * spice_mux_arch.num_input_basis;
+    /* Check */
+    assert(nextlevel > -1);
     /* Print basis muxQto1 for each level*/
     for (j = 0; j < spice_mux_arch.num_input_per_level[nextlevel]; j = j+cur_num_input_basis) {
       /* output index */
@@ -318,14 +343,12 @@ void dump_verilog_cmos_mux_multilevel_structure(FILE* fp,
       if ((j + cur_num_input_basis) > spice_mux_arch.num_input_per_level[nextlevel]) {
         cur_num_input_basis = spice_mux_arch.num_input_per_level[nextlevel] - j;
         /* Print the special basis */
-        fprintf(fp, "%s special_basis(\n", special_basis_subckt_name);
-        for (k = 0; k < cur_num_input_basis; k++) {
-          fprintf(fp, "mux2_l%d_in%d,  ", level, j + k);
-          fprintf(fp, "mux2_l%d_in%d, ", nextlevel, out_idx); /* output */
-        }
-        for (k = 0; k < cur_num_input_basis; k++) {
-          fprintf(fp, "%s[%d], %s_inv[%d], ", sram_port[0]->prefix, sram_idx+k, sram_port[0]->prefix, sram_idx+k); /* sram sram_inv */
-        }
+        fprintf(fp, "%s special_basis(", special_basis_subckt_name);
+        fprintf(fp, "mux2_l%d_in[%d:%d], ", level, j, j + cur_num_input_basis); /* input0 input1 */
+        fprintf(fp, "mux2_l%d_in[%d], ", nextlevel, out_idx); /* output */
+        fprintf(fp, "%s[%d:%d], %s_inv[%d:%d] ", 
+        sram_port[0]->prefix, sram_idx, sram_idx + cur_num_input_basis -1,
+        sram_port[0]->prefix, sram_idx, sram_idx + cur_num_input_basis -1);
         fprintf(fp, ");\n");
         special_basis_cnt++;
         continue;
@@ -333,14 +356,15 @@ void dump_verilog_cmos_mux_multilevel_structure(FILE* fp,
       /* Each basis muxQto1: <given_name> <input0> <input1> <output> <sram> <sram_inv> svdd sgnd <subckt_name> */
       fprintf(fp, "%s ", mux_basis_subckt_name); /* subckt_name */
       fprintf(fp, "mux_basis_no%d (", mux_basis_cnt); /* given_name */
-      for (k = 0; k < cur_num_input_basis; k++) {
-        fprintf(fp, "mux2_l%d_in%d, ", level, j + k); /* input0 input1 */
-      }
-      fprintf(fp, "mux2_l%d_in%d, ", nextlevel, out_idx); /* output */
+      fprintf(fp, "mux2_l%d_in[%d:%d], ", level, j, j + cur_num_input_basis - 1); /* input0 input1 */
+      fprintf(fp, "mux2_l%d_in[%d], ", nextlevel, out_idx); /* output */
       /* Print number of sram bits for this basis */
       for (k = sram_idx; k < (sram_idx + cur_num_input_basis); k++) {
-        fprintf(fp, "%s[%d], %s_inv[%d], ", sram_port[0]->prefix, k, sram_port[0]->prefix, k); /* sram sram_inv */
       }
+      /* sram sram_inv */
+      fprintf(fp, "%s[%d:%d], %s_inv[%d:%d] ", 
+      sram_port[0]->prefix, sram_idx, sram_idx + cur_num_input_basis -1,
+      sram_port[0]->prefix, sram_idx, sram_idx + cur_num_input_basis -1);
       fprintf(fp, ");\n");
       /* Update the counter */
       mux_basis_cnt++;
@@ -371,17 +395,18 @@ void dump_verilog_cmos_mux_onelevel_structure(FILE* fp,
 
   assert(SPICE_MODEL_DESIGN_CMOS == spice_model.design_tech);
 
+  fprintf(fp, "wire [0:%d] mux2_l%d_in; \n", spice_mux_arch.num_input - 1, 1); /* input0  */
+  fprintf(fp, "wire [0:%d] mux2_l%d_in; \n", 0, 0); /* output */
+
   fprintf(fp, "%s mux_basis (\n", mux_basis_subckt_name); /* given_name */
   fprintf(fp, "//----- MUX inputs -----\n");
-  for (i = 0; i < spice_mux_arch.num_input; i++) {
-    fprintf(fp, "mux2_l%d_in%d, ", 1, i); /* input0  */
-    fprintf(fp, "mux2_l%d_in%d, ", 0, 0); /* output */
-  }
+  fprintf(fp, "mux2_l%d_in[0:%d], ", 1, spice_mux_arch.num_input - 1); /* input0  */
+  fprintf(fp, "mux2_l%d_in[%d], ", 0, 0); /* output */
   fprintf(fp, "\n");
   fprintf(fp, "//----- SRAM ports -----\n");
-  for (i = 0; i < spice_mux_arch.num_input; i++) {
-    fprintf(fp, "%s[%d], %s_inv[%d], ", sram_port[0]->prefix, i, sram_port[0]->prefix, i); /* sram sram_inv */
-  }
+  fprintf(fp, "%s[0:%d], %s_inv[0:%d] ", 
+  sram_port[0]->prefix, spice_mux_arch.num_input - 1, 
+  sram_port[0]->prefix, spice_mux_arch.num_input - 1); /* sram sram_inv */
   fprintf(fp, "\n");
   fprintf(fp, ");\n");
  
@@ -494,16 +519,16 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
       case SPICE_MODEL_BUF_INV:
         /* Each inv: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
         fprintf(fp, "not inv%d (", i); /* Given name*/
-        fprintf(fp, "%s%d, ", input_port[0]->prefix, i); /* input port */ 
-        fprintf(fp, "mux2_l%d_in%d); ", spice_mux_arch.input_level[i], spice_mux_arch.input_offset[i]); /* output port*/
+        fprintf(fp, "%s[%d], ", input_port[0]->prefix, i); /* input port */ 
+        fprintf(fp, "mux2_l%d_in[%d]); ", spice_mux_arch.input_level[i], spice_mux_arch.input_offset[i]); /* output port*/
         fprintf(fp, "\n");
         break;
       case SPICE_MODEL_BUF_BUF:
         /* TODO: what about tapered buffer, can we support? */
         /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
         fprintf(fp, "buf buf%d (", i); /* Given name*/
-        fprintf(fp, "%s%d, ", input_port[0]->prefix, i); /* input port */ 
-        fprintf(fp, "mux2_l%d_in%d); ", spice_mux_arch.input_level[i], spice_mux_arch.input_offset[i]); /* output port*/
+        fprintf(fp, "%s[%d], ", input_port[0]->prefix, i); /* input port */ 
+        fprintf(fp, "mux2_l%d_in[%d]); ", spice_mux_arch.input_level[i], spice_mux_arch.input_offset[i]); /* output port*/
         fprintf(fp, "\n");
         break;
       default:
@@ -514,7 +539,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
     } else {
       /* There is no buffer, I create a zero resisitance between*/
       /* Resistance R<given_name> <input> <output> 0*/
-      fprintf(fp, "assign %s%d = mux2_l%d_in%d;\n", 
+      fprintf(fp, "assign %s[%d] = mux2_l%d_in[%d];\n", 
               input_port[0]->prefix, i, spice_mux_arch.input_level[i], 
               spice_mux_arch.input_offset[i]);
     }
@@ -1112,10 +1137,193 @@ void dump_verilog_submodule_muxes(char* submodule_dir,
   fclose(fp);
 
   return;
+}
 
+void dump_verilog_wire_module(FILE* fp,
+                              char* wire_subckt_name,
+                              t_spice_model verilog_model) {
+  int num_input_port = 0;
+  int num_output_port = 0;
+  t_spice_model_port** input_port = NULL;
+  t_spice_model_port** output_port = NULL;
+ 
+  /* Ensure a valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File handler.\n",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+  /* Check the wire model*/
+  assert(NULL != verilog_model.wire_param);
+  assert(0 < verilog_model.wire_param->level);
+  /* Find the input port, output port*/
+  input_port = find_spice_model_ports(&verilog_model, SPICE_MODEL_PORT_INPUT, &num_input_port);
+  output_port = find_spice_model_ports(&verilog_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port);
+
+  /* Asserts*/
+  assert(1 == num_input_port);
+  assert(1 == num_output_port);
+  assert(1 == input_port[0]->size);
+  assert(1 == output_port[0]->size);
+  /* print the spice model*/
+  fprintf(fp, "//-----Wire module, verilog_model_name=%s -----\n", verilog_model.name);  
+  switch (verilog_model.type) {
+  case SPICE_MODEL_CHAN_WIRE: 
+    /* Add an output at middle point for connecting CB inputs */
+    fprintf(fp, "module %s (input wire %s, output wire %s, output wire mid_out);\n",
+            wire_subckt_name, input_port[0]->prefix, output_port[0]->prefix);
+    fprintf(fp, "\tassign %s = %s;\n", output_port[0]->prefix, input_port[0]->prefix);
+    fprintf(fp, "\tassign mid_out = %s;\n", input_port[0]->prefix);
+    break;
+  case SPICE_MODEL_WIRE: 
+    /* Add an output at middle point for connecting CB inputs */
+    fprintf(fp, "module %s (input wire %s, output wire %s);\n",
+            wire_subckt_name, input_port[0]->prefix, output_port[0]->prefix);
+    /* Direct shortcut */
+    fprintf(fp, "\t\tassign %s = %s;\n", output_port[0]->prefix, input_port[0]->prefix);
+    break;
+  default: 
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid type of spice_model! Expect [chan_wire|wire].\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+  
+  /* Finish*/ 
+  fprintf(fp, "endmodule\n");
+  fprintf(fp, "//-----END Wire module, verilog_model_name=%s -----\n", verilog_model.name);  
+  fprintf(fp, "\n");
 
   return;
 }
+
+/* Dump a submodule which is a constant vdd */
+void dump_verilog_hard_wired_vdd(FILE* fp, 
+                                 t_spice_model verilog_model) {
+  int num_output_port = 0;
+  t_spice_model_port** output_port = NULL;
+
+  /* Find the input port, output port*/
+  output_port = find_spice_model_ports(&verilog_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port);
+
+  /* Asserts*/
+  assert(1 == num_output_port);
+  assert(1 == output_port[0]->size);
+
+  /* Ensure a valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File handler.\n",
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  /* print the spice model*/
+  fprintf(fp, "//-----Hard-wired VDD module, verilog_model_name=%s -----\n", verilog_model.name);  
+  fprintf(fp, "module %s(output wire %s);\n", verilog_model.name, output_port[0]->prefix);
+  /* Constant logic 1*/
+  fprintf(fp, "assign %s = 1\'b1;\n", output_port[0]->prefix);
+  /* Finish*/ 
+  fprintf(fp, "endmodule\n");
+  fprintf(fp, "//-----END VDD module, verilog_model_name=%s -----\n", verilog_model.name);  
+  fprintf(fp, "\n");
+  return;
+}
+
+/* Dump a submodule which is a constant vdd */
+void dump_verilog_hard_wired_gnd(FILE* fp, 
+                                 t_spice_model verilog_model) {
+  int num_output_port = 0;
+  t_spice_model_port** output_port = NULL;
+
+  /* Find the input port, output port*/
+  output_port = find_spice_model_ports(&verilog_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port);
+
+  /* Asserts*/
+  assert(1 == num_output_port);
+  assert(1 == output_port[0]->size);
+
+  /* Ensure a valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File handler.\n",
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  /* print the spice model*/
+  fprintf(fp, "//-----Hard-wired GND module, verilog_model_name=%s -----\n", verilog_model.name);  
+  fprintf(fp, "module %s(output wire %s);\n", verilog_model.name, output_port[0]->prefix);
+  /* Constant logic 1*/
+  fprintf(fp, "assign %s = 1\'b0;\n", output_port[0]->prefix);
+  /* Finish*/ 
+  fprintf(fp, "endmodule\n");
+  fprintf(fp, "//-----END GND module, verilog_model_name=%s -----\n", verilog_model.name);  
+  fprintf(fp, "\n");
+  return;
+}
+
+void dump_verilog_submodule_wires(char* subckt_dir,
+                                  int num_segments,
+                                  t_segment_inf* segments,
+                                  int num_spice_model,
+                                  t_spice_model* spice_models) {
+  FILE* fp = NULL;
+  char* verilog_name = my_strcat(subckt_dir, wires_verilog_file_name);
+  char* seg_wire_subckt_name = NULL;
+  char* seg_index_str = NULL;
+  int iseg, imodel, len_seg_subckt_name;
+ 
+  fp = fopen(verilog_name, "w");
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in create Verilog netlist %s",__FILE__, __LINE__, wires_verilog_file_name); 
+    exit(1);
+  } 
+  dump_verilog_file_header(fp,"Wires");
+  /* Output wire models*/
+  for (imodel = 0; imodel < num_spice_model; imodel++) {
+    if (SPICE_MODEL_WIRE == spice_models[imodel].type) {
+      assert(NULL != spice_models[imodel].wire_param);
+      dump_verilog_wire_module(fp, spice_models[imodel].name,
+                              spice_models[imodel]);
+    }
+  }
+ 
+  /* Create wire models for routing segments*/
+  fprintf(fp,"//----- Wire models for segments in routing -----\n");
+  for (iseg = 0; iseg < num_segments; iseg++) {
+    assert(NULL != segments[iseg].spice_model);
+    assert(SPICE_MODEL_CHAN_WIRE == segments[iseg].spice_model->type);
+    assert(NULL != segments[iseg].spice_model->wire_param);
+    /* Give a unique name for subckt of wire_model of segment, 
+     * spice_model name is unique, and segment name is unique as well
+     */
+    seg_index_str = my_itoa(iseg);
+    len_seg_subckt_name = strlen(segments[iseg].spice_model->name)
+                        + 4 + strlen(seg_index_str) + 1; /* '\0'*/
+    seg_wire_subckt_name = (char*)my_malloc(sizeof(char)*len_seg_subckt_name);
+    sprintf(seg_wire_subckt_name,"%s_seg%s",
+            segments[iseg].spice_model->name, seg_index_str);
+    dump_verilog_wire_module(fp, seg_wire_subckt_name,
+                            *(segments[iseg].spice_model));
+  }
+
+  /* Create module for hard-wired VDD and GND */
+  for (imodel = 0; imodel < num_spice_model; imodel++) {
+    if (SPICE_MODEL_VDD == spice_models[imodel].type) {
+      dump_verilog_hard_wired_vdd(fp, spice_models[imodel]);
+    } else if (SPICE_MODEL_GND == spice_models[imodel].type) {
+      dump_verilog_hard_wired_gnd(fp, spice_models[imodel]);
+    }
+  }
+  
+  /* Close the file handler */
+  fclose(fp);
+
+  /*Free*/
+  my_free(seg_index_str);
+  my_free(seg_wire_subckt_name);
+
+  return;
+}
+
 
 /* Dump verilog files of submodules to be used in FPGA components :
  * 1. MUXes
@@ -1128,6 +1336,11 @@ void dump_verilog_submodules(char* submodule_dir,
   vpr_printf(TIO_MESSAGE_INFO, "Generating modules of multiplexers...\n");
   dump_verilog_submodule_muxes(submodule_dir, routing_arch->num_switch, 
                                switch_inf, Arch.spice, routing_arch);
+
+  /* 2. Hardwires */
+  vpr_printf(TIO_MESSAGE_INFO, "Generating modules of hardwires...\n");
+  dump_verilog_submodule_wires(submodule_dir, Arch.num_segments, Arch.Segments,
+                               Arch.spice->num_spice_model, Arch.spice->spice_models);
 
   return;
 }

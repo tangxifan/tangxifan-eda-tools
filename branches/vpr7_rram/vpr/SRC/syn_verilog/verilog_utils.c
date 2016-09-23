@@ -24,12 +24,120 @@
 #include "vpr_utils.h"
 
 /* FPGA-SPICE utils */
+#include "read_xml_spice_util.h"
 #include "linkedlist.h"
 #include "spice_utils.h"
 
 /* syn_verilog globals */
 
 /****** Subroutines *******/
+void init_list_include_verilog_netlists(t_spice* spice) { 
+  int i, j, cur;
+  int to_include = 0;
+  int num_to_include = 0;
+
+  /* Initialize */
+  for (i = 0; i < spice->num_include_netlist; i++) { 
+    FreeSpiceModelNetlist(&(spice->include_netlists[i]));
+  }
+  my_free(spice->include_netlists);
+  spice->include_netlists = NULL;
+  spice->num_include_netlist = 0;
+
+  /* Generate include netlist list */
+  vpr_printf(TIO_MESSAGE_INFO, "Listing Verilog Netlist Names to be included...\n");
+  for (i = 0; i < spice->num_spice_model; i++) {
+    if (NULL != spice->spice_models[i].verilog_netlist) {
+      /* Check if this netlist name has already existed in the list */
+      to_include = 1;
+      for (j = 0; j < i; j++) {
+        if (NULL == spice->spice_models[j].verilog_netlist) {
+          continue;
+        }
+        if (0 == strcmp(spice->spice_models[j].verilog_netlist, spice->spice_models[i].verilog_netlist)) {
+          to_include = 0;
+          break;
+        }
+      }
+      /* Increamental */
+      if (1 == to_include) {
+        num_to_include++;
+      }
+    }
+  }
+
+  /* realloc */
+  spice->include_netlists = (t_spice_model_netlist*)my_realloc(spice->include_netlists, 
+                              sizeof(t_spice_model_netlist)*(num_to_include + spice->num_include_netlist));
+
+  /* Fill the new included netlists */
+  cur = spice->num_include_netlist;
+  for (i = 0; i < spice->num_spice_model; i++) {
+    if (NULL != spice->spice_models[i].verilog_netlist) {
+      /* Check if this netlist name has already existed in the list */
+      to_include = 1;
+      for (j = 0; j < i; j++) {
+        if (NULL == spice->spice_models[j].verilog_netlist) {
+          continue;
+        }
+        if (0 == strcmp(spice->spice_models[j].verilog_netlist, spice->spice_models[i].verilog_netlist)) {
+          to_include = 0;
+          break;
+        }
+      }
+      /* Increamental */
+      if (1 == to_include) {
+        spice->include_netlists[cur].path = my_strdup(spice->spice_models[i].verilog_netlist); 
+        spice->include_netlists[cur].included = 0;
+        vpr_printf(TIO_MESSAGE_INFO, "[%d] %s\n", cur+1, spice->include_netlists[cur].path);
+        cur++;
+      }
+    }
+  }
+  /* Check */
+  assert(cur == (num_to_include + spice->num_include_netlist));
+  /* Update */
+  spice->num_include_netlist += num_to_include;
+  
+  return;
+}
+
+
+void init_include_user_defined_verilog_netlists(t_spice spice) {
+  int i;
+
+  /* Include user-defined sub-circuit netlist */
+  for (i = 0; i < spice.num_include_netlist; i++) {
+    spice.include_netlists[i].included = 0;
+  }
+
+  return;
+}
+
+void dump_include_user_defined_verilog_netlists(FILE* fp,
+                                                t_spice spice) {
+  int i;
+
+  /* A valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /* Include user-defined sub-circuit netlist */
+  for (i = 0; i < spice.num_include_netlist; i++) {
+    if (0 == spice.include_netlists[i].included) {
+      assert(NULL != spice.include_netlists[i].path);
+      fprintf(fp, "// `include \"%s\"\n", spice.include_netlists[i].path);
+      spice.include_netlists[i].included = 1;
+    } else {
+      assert(1 == spice.include_netlists[i].included);
+    }
+  } 
+
+  return;
+}
+
 void dump_verilog_file_header(FILE* fp,
                               char* usage) {
   if (NULL == fp) {

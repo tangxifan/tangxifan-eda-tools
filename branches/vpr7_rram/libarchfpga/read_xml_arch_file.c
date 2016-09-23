@@ -475,6 +475,11 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 			|| 0 == strcmp(Parent->name, "pack_pattern")) {
 		i = 1;
 	}
+    /* Xifan TANG: FPGA-SPICE, mode select description */
+	if (0 == strcmp(Parent->name, "mode_select")) {
+      i = 1;
+    }
+    /* END FPGA-SPICE, mode select description */
 
 	annotation->num_value_prop_pairs = i;
 	annotation->prop = (int*) my_calloc(i, sizeof(int));
@@ -626,6 +631,23 @@ static void ProcessPinToPinAnnotations(ezxml_t Parent,
 		Prop = FindProperty(Parent, "out_port", TRUE);
 		annotation->output_pins = my_strdup(Prop);
 		ezxml_set_attr(Parent, "out_port", NULL);
+    /* Xifan TANG: FPGA-SPICE, mode select description */
+	} else if (0 == strcmp(Parent->name, "mode_select")) {
+		annotation->type = E_ANNOT_PIN_TO_PIN_MODE_SELECT;
+		annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
+		Prop = FindProperty(Parent, "mode_name", TRUE);
+		annotation->prop[i] = (int)	E_ANNOT_PIN_TO_PIN_MODE_SELECT_MODE_NAME;
+		annotation->value[i] = my_strdup(Prop);
+		ezxml_set_attr(Parent, "mode_name", NULL);
+		i++;
+        /* Normal process for in_port and out_port */
+		Prop = FindProperty(Parent, "in_port", TRUE);
+		annotation->input_pins = my_strdup(Prop);
+		ezxml_set_attr(Parent, "in_port", NULL);
+		Prop = FindProperty(Parent, "out_port", TRUE);
+		annotation->output_pins = my_strdup(Prop);
+		ezxml_set_attr(Parent, "out_port", NULL);
+    /* END FPGA-SPICE, mode select description */
 	} else {
 		vpr_printf(TIO_MESSAGE_ERROR,
 				"[LINE %d] Unknown port type %s in %s in %s", Parent->line,
@@ -985,6 +1007,11 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
     pb_type->spice_model_name = my_strdup(FindProperty(Parent, "spice_model_name", FALSE));
     pb_type->spice_model = NULL;
     ezxml_set_attr(Parent,"spice_model_name",NULL);
+    /* We can read the mode configuration bits if they are defined */
+    if (NULL != pb_type->spice_model_name) {
+      pb_type->mode_bits = my_strdup(FindProperty(Parent, "mode_bits", FALSE));
+      ezxml_set_attr(Parent,"mode_bits",NULL);
+    }
     /* End Spice Model Support*/
 
 	/* Determine if this is a leaf or container pb_type */
@@ -1065,6 +1092,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
             */
             if (do_spice) {
               pb_type->idle_mode_name = my_strdup(pb_type->name); 
+              pb_type->physical_mode_name = my_strdup(pb_type->name); 
             }
             /*END*/
 			ProcessMode(Parent, &pb_type->modes[i], &default_leakage_mode, do_spice);
@@ -1081,6 +1109,14 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
               exit(1);
             }
             ezxml_set_attr(Parent,"idle_mode_name",NULL);
+            /* We need to identify the physical mode that refers to physical design interests */
+            if (FindProperty(Parent,"physical_mode_name", do_spice)) {
+              pb_type->physical_mode_name = my_strdup(FindProperty(Parent,"physical_mode_name",TRUE)); 
+            } else if (do_spice) {
+              vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d]Pb_Type has more than 1 mode, should define a physical_mode_name.\n",Parent->line);
+              exit(1);
+            }
+            ezxml_set_attr(Parent,"physical_mode_name",NULL);
             /*END*/
 			pb_type->modes = (t_mode*) my_calloc(pb_type->num_modes,
 					sizeof(t_mode));
@@ -1330,6 +1366,9 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 			num_annotations += CountChildren(Cur, "C_constant", 0);
 			num_annotations += CountChildren(Cur, "C_matrix", 0);
 			num_annotations += CountChildren(Cur, "pack_pattern", 0);
+            /* Xifan TANG: FPGA-SPICE, mode select description */
+			num_annotations += CountChildren(Cur, "mode_select", 0);
+            /* END FPGA-SPICE, mode select description */
 
 			mode->interconnect[i].annotations =
 					(t_pin_to_pin_annotation*) my_calloc(num_annotations,
@@ -1338,7 +1377,10 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 
 			k = 0;
 			Cur2 = NULL;
-			for (j = 0; j < 5; j++) {
+            /* Xifan TANG: FPGA-SPICE, mode select description */
+			/* for (j = 0; j < 5; j++) { */
+			for (j = 0; j < 6; j++) {
+            /* END FPGA-SPICE, mode select description */
 				if (j == 0) {
 					Cur2 = FindFirstElement(Cur, "delay_constant", FALSE);
 				} else if (j == 1) {
@@ -1349,6 +1391,10 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 					Cur2 = FindFirstElement(Cur, "C_matrix", FALSE);
 				} else if (j == 4) {
 					Cur2 = FindFirstElement(Cur, "pack_pattern", FALSE);
+                /* Xifan TANG: FPGA-SPICE, mode select description */
+				} else if (j == 5) {
+					Cur2 = FindFirstElement(Cur, "mode_select", FALSE);
+                /* END FPGA-SPICE, mode select description */
 				}
 				while (Cur2 != NULL) {
 					ProcessPinToPinAnnotations(Cur2,
@@ -1411,7 +1457,19 @@ static void ProcessMode(INOUTP ezxml_t Parent, t_mode * mode,
       } else {
         mode->define_idle_mode = 0;
       }
+      /* For physical design mode */
+      if (0 == strcmp(mode->name, mode->parent_pb_type->physical_mode_name)) {
+        if (NULL == mode->parent_pb_type->parent_mode) {
+          mode->define_physical_mode = 1;
+        } else {
+          mode->define_physical_mode = mode->parent_pb_type->parent_mode->define_physical_mode;
+        }
+      } else {
+        mode->define_physical_mode = 0;
+      }
     }
+    /* More option: specify if this mode is available during packing */
+    mode->available_in_packing = GetBooleanProperty(Parent, "available_in_packing", FALSE, TRUE);
     /* END */
 
 	mode->num_pb_type_children = CountChildren(Parent, "pb_type", 0);
@@ -3310,7 +3368,7 @@ static void ProcessSwitches(INOUTP ezxml_t Parent,
           (*Switches)[i].switch_num_level = GetIntProperty(Node, "num_level", TRUE, 1);
           if (1 == (*Switches)[i].switch_num_level) {
             (*Switches)[i].structure = SPICE_MODEL_STRUCTURE_ONELEVEL;
-            vpr_printf(TIO_MESSAGE_INFO, "[LINE%d] Automatically convert switch structure from multi-level to one-level!\nReasone: Switch structure is defined to be multi-level but num of level is set to 1.\n");
+            vpr_printf(TIO_MESSAGE_INFO, "[LINE%d] Automatically convert switch structure from multi-level to one-level!\nReason: Switch structure is defined to be multi-level but num of level is set to 1.\n", Node->line);
           }
         }
 	    ezxml_set_attr(Node, "num_level", NULL);
@@ -3413,6 +3471,8 @@ static void CreateModelLibrary(OUTP struct s_arch *arch) {
 	t_model* model_library;
 
 	model_library = (t_model*) my_calloc(4, sizeof(t_model));
+
+    /* Origin input pads */
 	model_library[0].name = my_strdup("input");
 	model_library[0].index = 0;
 	model_library[0].inputs = NULL;
@@ -3427,7 +3487,9 @@ static void CreateModelLibrary(OUTP struct s_arch *arch) {
 	model_library[0].outputs->min_size = 1;
 	model_library[0].outputs->index = 0;
 	model_library[0].outputs->is_clock = FALSE;
-
+    /* END Origin input pads */
+ 
+    /* Origin output pads */
 	model_library[1].name = my_strdup("output");
 	model_library[1].index = 1;
 	model_library[1].inputs = (t_model_ports*) my_calloc(1,
@@ -3442,7 +3504,8 @@ static void CreateModelLibrary(OUTP struct s_arch *arch) {
 	model_library[1].instances = NULL;
 	model_library[1].next = &model_library[2];
 	model_library[1].outputs = NULL;
-
+    /* END Origin output pads */
+  
 	model_library[2].name = my_strdup("latch");
 	model_library[2].index = 2;
 	model_library[2].inputs = (t_model_ports*) my_calloc(2,

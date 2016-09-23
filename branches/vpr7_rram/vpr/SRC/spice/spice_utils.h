@@ -102,6 +102,9 @@ t_spice_model* find_inpad_spice_model(int num_spice_model,
 t_spice_model* find_outpad_spice_model(int num_spice_model,
                                        t_spice_model* spice_models);
 
+t_spice_model* find_iopad_spice_model(int num_spice_model,
+                                      t_spice_model* spice_models);
+
 char* generate_string_spice_model_type(enum e_spice_model_type spice_model_type);
 
 int determine_io_grid_side(int x,
@@ -209,6 +212,8 @@ boolean check_spice_model_structure_match_switch_inf(t_switch_inf target_switch_
 
 int find_pb_type_idle_mode_index(t_pb_type cur_pb_type);
 
+int find_pb_type_physical_mode_index(t_pb_type cur_pb_type);
+
 void mark_grid_type_pb_graph_node_pins_temp_net_num(int x, int y);
 
 void rec_mark_pb_graph_node_temp_net_num(t_pb_graph_node* cur_pb_graph_node);
@@ -241,9 +246,9 @@ int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
 
 int count_num_conf_bit_one_interc(t_interconnect* cur_interc);
 
-int count_num_conf_bits_pb_type_default_mode_interc(t_mode* cur_pb_type_default_mode);
-
 int rec_count_num_conf_bits_pb_type_default_mode(t_pb_type* cur_pb_type);
+
+int rec_count_num_conf_bits_pb_type_physical_mode(t_pb_type* cur_pb_type);
 
 int rec_count_num_conf_bits_pb(t_pb* cur_pb);
 
@@ -279,6 +284,8 @@ void update_spice_models_routing_index_low(int x, int y,
                                            int num_spice_models, 
                                            t_spice_model* spice_model);
 
+void rec_count_num_iopads_pb_type_physical_mode(t_pb_type* cur_pb_type);
+
 void rec_count_num_iopads_pb_type_default_mode(t_pb_type* cur_pb_type);
 
 void rec_count_num_iopads_pb(t_pb* cur_pb);
@@ -286,6 +293,14 @@ void rec_count_num_iopads_pb(t_pb* cur_pb);
 void init_one_grid_num_iopads(int ix, int iy);
 
 void init_grids_num_iopads();
+
+void rec_count_num_mode_bits_pb_type_default_mode(t_pb_type* cur_pb_type);
+
+void rec_count_num_mode_bits_pb(t_pb* cur_pb);
+
+void init_one_grid_num_mode_bits(int ix, int iy);
+
+void init_grids_num_mode_bits();
 
 void check_sram_spice_model_ports(t_spice_model* cur_spice_model,
                                   boolean include_bl_wl);
