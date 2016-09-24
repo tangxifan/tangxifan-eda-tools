@@ -655,7 +655,7 @@ void dump_verilog_switch_box_mux(FILE* fp,
                            int mux_size,
                            t_rr_node** drive_rr_nodes,
                            int switch_index) {
-  int inode, side;
+  int inode, side, input_cnt = 0;
   int track_index;
   int grid_x, grid_y, pin_index, height, class_id, pin_written_times;
   t_type_ptr type = NULL;
@@ -685,12 +685,13 @@ void dump_verilog_switch_box_mux(FILE* fp,
 
   /* Get verilog model*/
   verilog_model = switch_inf[switch_index].spice_model;
-  /* Now it is the time print the SPICE netlist of MUX*/
-  fprintf(fp, "%s_size%d %s_size%d_%d_ (", 
-          verilog_model->prefix, mux_size,
+  /* Specify the input bus */
+  fprintf(fp, "wire [%d:0] %s_size%d_%d_inbus;\n",
+          mux_size - 1,
           verilog_model->prefix, mux_size, verilog_model->cnt);
-  verilog_model->cnt++;
+
   /* Input ports*/
+  /* Connect input ports to bus */
   for (inode = 0; inode < mux_size; inode++) {
     switch (drive_rr_nodes[inode]->type) {
     /* case SOURCE: */
@@ -738,7 +739,10 @@ void dump_verilog_switch_box_mux(FILE* fp,
       }
       /* Find the pin to be printed*/
       if (1 == type->pinloc[height][side][pin_index]) {
-        fprintf(fp, "grid_%d__%d__pin_%d__%d__%d_, ", grid_x, grid_y, height, side, pin_index);
+        fprintf(fp, "assign %s_size%d_%d_inbus[%d] = ",
+                verilog_model->prefix, mux_size, verilog_model->cnt, input_cnt);
+        input_cnt++;
+        fprintf(fp, "grid_%d__%d__pin_%d__%d__%d_ ;\n ", grid_x, grid_y, height, side, pin_index);
         pin_written_times++;
       }
       /* Make sure this pin is printed only once!!! (TODO: make sure for IO PAD, this remains ok)*/
@@ -749,7 +753,10 @@ void dump_verilog_switch_box_mux(FILE* fp,
                                                switch_box_x, switch_box_y, &src_chan_x, &src_chan_y, &src_chan_port_name);
       /* For channels, ptc_num is the track_index*/
       track_index = drive_rr_nodes[inode]->ptc_num; 
-      fprintf(fp, "chanx_%d__%d__%s_%d_, ", src_chan_x, src_chan_y, src_chan_port_name, track_index);
+      fprintf(fp, "assign %s_size%d_%d_inbus[%d] = ",
+              verilog_model->prefix, mux_size, verilog_model->cnt, input_cnt);
+      input_cnt++;
+      fprintf(fp, "chanx_%d__%d__%s_%d_;\n", src_chan_x, src_chan_y, src_chan_port_name, track_index);
       //my_free(src_chan_port_name);
       break;
     case CHANY:
@@ -757,7 +764,10 @@ void dump_verilog_switch_box_mux(FILE* fp,
                                                switch_box_x, switch_box_y, &src_chan_x, &src_chan_y, &src_chan_port_name);
       /* For channels, ptc_num is the track_index*/
       track_index = drive_rr_nodes[inode]->ptc_num; 
-      fprintf(fp, "chany_%d__%d__%s_%d_, ", src_chan_x, src_chan_y, src_chan_port_name, track_index);
+      fprintf(fp, "assign %s_size%d_%d_inbus[%d] = ",
+              verilog_model->prefix, mux_size, verilog_model->cnt, input_cnt);
+      input_cnt++;
+      fprintf(fp, "chany_%d__%d__%s_%d_;\n", src_chan_x, src_chan_y, src_chan_port_name, track_index);
       //my_free(src_chan_port_name);
       break;
     default: /* IPIN, SINK are invalid*/
@@ -766,6 +776,15 @@ void dump_verilog_switch_box_mux(FILE* fp,
       exit(1);
     }
   }
+  assert(input_cnt == mux_size);
+
+  /* Now it is the time print the SPICE netlist of MUX*/
+  fprintf(fp, "%s_size%d %s_size%d_%d_ (", 
+          verilog_model->prefix, mux_size,
+          verilog_model->prefix, mux_size, verilog_model->cnt);
+
+  fprintf(fp, "%s_size%d_%d_inbus, ",
+          verilog_model->prefix, mux_size, verilog_model->cnt);
 
   /* Output port */
   dump_verilog_switch_box_chan_port(fp, switch_box_x, switch_box_y, chan_side, cur_rr_node);
@@ -802,15 +821,11 @@ void dump_verilog_switch_box_mux(FILE* fp,
   /* Print SRAMs that configure this MUX */
   /* TODO: What about RRAM-based MUX? */
   cur_num_sram = sram_verilog_model->cnt;
-  for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
-    fprintf(fp,"%s_out_%d_, ", sram_verilog_model->prefix, cur_num_sram);
-    cur_num_sram++;
-  }
-  cur_num_sram = sram_verilog_model->cnt;
-  for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
-    fprintf(fp,"%s_outb_%d_, ", sram_verilog_model->prefix, cur_num_sram);
-    cur_num_sram++;
-  }
+  fprintf(fp,"%s_out[%d:%d], ", 
+          sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits - 1, cur_num_sram);
+  fprintf(fp,"%s_outb[%d:%d] ", 
+          sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits - 1, cur_num_sram);
+  cur_num_sram += num_mux_sram_bits;
   /* End */
   fprintf(fp, ");\n");
   
@@ -859,6 +874,7 @@ void dump_verilog_switch_box_mux(FILE* fp,
   }
   
   /* update sram counter */
+  verilog_model->cnt++;
   sram_verilog_model->cnt = cur_num_sram;
 
   /* Free */
@@ -1555,7 +1571,7 @@ void dump_verilog_connection_box_mux(FILE* fp,
                                int cb_x,
                                int cb_y,
                                t_rr_node* src_rr_node) {
-  int mux_size, cur_num_sram, ilevel;
+  int mux_size, cur_num_sram, ilevel, input_cnt = 0;
   t_rr_node** drive_rr_nodes = NULL;
   int inode, mux_level, path_id, switch_index;
   t_spice_model* mux_verilog_model = NULL;
@@ -1592,11 +1608,11 @@ void dump_verilog_connection_box_mux(FILE* fp,
 
   mux_verilog_model = switch_inf[switch_index].spice_model;
 
-  /* Call the MUX SPICE model */
-  fprintf(fp, "%s_size%d %s_size%d_%d_ (", 
-          mux_verilog_model->name, mux_size, 
+  /* Specify the input bus */
+  fprintf(fp, "wire [%d:0] %s_size%d_%d_inbus;\n",
+          mux_size - 1,
           mux_verilog_model->prefix, mux_size, mux_verilog_model->cnt);
-  mux_verilog_model->cnt++;
+
   /* Check drive_rr_nodes type, should be the same*/
   for (inode = 0; inode < mux_size; inode++) {
     if (NUM_RR_TYPES == drive_rr_node_type) { 
@@ -1610,16 +1626,32 @@ void dump_verilog_connection_box_mux(FILE* fp,
   for (inode = 0; inode < mux_size; inode++) {
     switch(drive_rr_nodes[inode]->type) {
     case CHANX:
-      fprintf(fp, "chanx_%d__%d__midout_%d_, ", cb_x, cb_y, drive_rr_nodes[inode]->ptc_num);
+      fprintf(fp, "assign %s_size%d_%d_inbus[%d] = ",
+                  mux_verilog_model->prefix, mux_size, mux_verilog_model->cnt, input_cnt);
+      input_cnt++;
+      fprintf(fp, "chanx_%d__%d__midout_%d_;\n", cb_x, cb_y, drive_rr_nodes[inode]->ptc_num);
       break;
     case CHANY:
-      fprintf(fp, "chany_%d__%d__midout_%d_, ", cb_x, cb_y, drive_rr_nodes[inode]->ptc_num);
+      fprintf(fp, "assign %s_size%d_%d_inbus[%d] = ",
+                  mux_verilog_model->prefix, mux_size, mux_verilog_model->cnt, input_cnt);
+      input_cnt++;
+      fprintf(fp, "chany_%d__%d__midout_%d_;\n", cb_x, cb_y, drive_rr_nodes[inode]->ptc_num);
       break;
     default: 
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of drive_rr_node!\n", __FILE__, __LINE__);
       exit(1);
     }
   }
+  assert(input_cnt == mux_size);
+
+  /* Call the MUX SPICE model */
+  fprintf(fp, "%s_size%d %s_size%d_%d_ (", 
+          mux_verilog_model->name, mux_size, 
+          mux_verilog_model->prefix, mux_size, mux_verilog_model->cnt);
+  /* connect to input bus*/
+  fprintf(fp, "%s_size%d_%d_inbus,",
+               mux_verilog_model->prefix, mux_size, mux_verilog_model->cnt);
+
   /* output port*/
   xlow = src_rr_node->xlow;
   ylow = src_rr_node->ylow;
@@ -1680,15 +1712,11 @@ void dump_verilog_connection_box_mux(FILE* fp,
   /* Print SRAMs that configure this MUX */
   /* TODO: What about RRAM-based MUX? */
   cur_num_sram = sram_verilog_model->cnt;
-  for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
-    fprintf(fp,"%s_out[%d], ", sram_verilog_model->prefix, cur_num_sram);
-    cur_num_sram++;
-  }
-  cur_num_sram = sram_verilog_model->cnt;
-  for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
-    fprintf(fp,"%s_outb[%d], ", sram_verilog_model->prefix, cur_num_sram);
-    cur_num_sram++;
-  }
+  fprintf(fp, "%s_out[%d:%d], ", 
+              sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits - 1, cur_num_sram);
+  fprintf(fp, "%s_outb[%d:%d] ", 
+              sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits - 1, cur_num_sram);
+  cur_num_sram += num_mux_sram_bits;
 
   /* End with svdd and sgnd, subckt name*/
   fprintf(fp, ");\n");
@@ -1738,6 +1766,7 @@ void dump_verilog_connection_box_mux(FILE* fp,
   }
 
   /* update SRAM counters */
+  mux_verilog_model->cnt++;
   sram_verilog_model->cnt = cur_num_sram;
 
   /* Free */

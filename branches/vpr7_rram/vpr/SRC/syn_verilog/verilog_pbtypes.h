@@ -17,6 +17,14 @@ void stats_mux_verilog_model_pb_type_rec(t_llist** muxes_head,
 void stats_mux_verilog_model_pb_node_rec(t_llist** muxes_head,
                                        t_pb_graph_node* cur_pb_node);
 
+
+void dump_verilog_pb_type_bus_ports(FILE* fp,
+                                    char* port_prefix,
+                                    int use_global_clock,
+                                    t_pb_type* cur_pb_type,
+                                    boolean dump_port_type,
+                                    boolean dump_last_comma);
+
 void dump_verilog_pb_type_ports(FILE* fp,
                           char* port_prefix,
                           int use_global_clock,

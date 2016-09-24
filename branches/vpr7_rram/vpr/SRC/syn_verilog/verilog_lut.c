@@ -51,6 +51,12 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   int num_sram_port = 0;
   t_spice_model_port** sram_ports = NULL;
 
+  int num_pb_type_input_port = 0;
+  t_port** pb_type_input_ports = NULL;
+
+  int num_pb_type_output_port = 0;
+  t_port** pb_type_output_ports = NULL;
+
   char* formatted_subckt_prefix = format_spice_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
   t_pb_type* cur_pb_type = NULL;
   char* port_prefix = NULL;
@@ -96,11 +102,21 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
 
   /* Print the subckts*/ 
   cur_pb_type = cur_pb_graph_node->pb_type;
+
   /* Comment lines */
   fprintf(fp, "//----- LUT Verilog module: %s%s_%d_ -----\n",
           formatted_subckt_prefix, cur_pb_type->name, index);
+
+  /* Simplify the prefix, make the SPICE netlist readable*/
+  port_prefix = (char*)my_malloc(sizeof(char)*
+                (strlen(cur_pb_type->name) + 1 +
+                 strlen(my_itoa(index)) + 1 + 1));
+  sprintf(port_prefix, "%s_%d_", cur_pb_type->name, index);
+
+
   /* Subckt definition*/
-  fprintf(fp, "module %s%s_%d_ (", formatted_subckt_prefix, cur_pb_type->name, index);
+  fprintf(fp, "module %s%s_%d_ (", 
+          formatted_subckt_prefix, cur_pb_type->name, index);
   /* Print inputs, outputs, inouts, clocks, NO SRAMs*/
   /*
   port_prefix = (char*)my_malloc(sizeof(char)*
@@ -108,12 +124,6 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
                  strlen(my_itoa(index)) + 1 + 1));
   sprintf(port_prefix, "%s%s[%d]", formatted_subckt_prefix, cur_pb_type->name, index);
   */
-  /* Simplify the prefix, make the SPICE netlist readable*/
-  port_prefix = (char*)my_malloc(sizeof(char)*
-                (strlen(cur_pb_type->name) + 1 +
-                 strlen(my_itoa(index)) + 1 + 1));
-  sprintf(port_prefix, "%s_%d_", cur_pb_type->name, index);
-  
   dump_verilog_pb_type_ports(fp, port_prefix, 0, cur_pb_type, TRUE, TRUE); 
   /* Print SRAM ports */
   switch (sram_verilog_orgz_type) {
@@ -141,6 +151,27 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   /* Local Vdd and gnd*/ 
   fprintf(fp, ");\n");
   /* Definition ends*/
+
+  /* Specify inputs are wires */
+  pb_type_input_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_INPUT, &num_pb_type_input_port); 
+  assert(1 == num_pb_type_input_port);
+  fprintf(fp, "wire [0:%d] %s_%s;\n",
+          input_ports[0]->size - 1, port_prefix, pb_type_input_ports[0]->name);
+  for (i = 0; i < input_ports[0]->size; i++) {
+    fprintf(fp, "assign %s_%s[%d] = %s_%s_%d_;\n",
+                port_prefix, pb_type_input_ports[0]->name, i,
+                port_prefix, pb_type_input_ports[0]->name, i);
+  }
+  /* Specify outputs are wires */
+  pb_type_output_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_OUTPUT, &num_pb_type_output_port); 
+  assert(1 == num_pb_type_output_port);
+  fprintf(fp, "wire [0:%d] %s_%s;\n",
+          output_ports[0]->size - 1, port_prefix, pb_type_output_ports[0]->name);
+  for (i = 0; i < output_ports[0]->size; i++) {
+    fprintf(fp, "assign %s_%s[%d] = %s_%s_%d_;\n",
+                port_prefix, pb_type_output_ports[0]->name, i,
+                port_prefix, pb_type_output_ports[0]->name, i);
+  }
 
   /* Specify SRAM output are wires */
   fprintf(fp, "wire [%d:%d] %s_out;\n",
@@ -208,19 +239,15 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   /* Connect outputs*/
   fprintf(fp, "\n");
   fprintf(fp, "//----- Input and output ports -----\n");
-  dump_verilog_pb_type_ports(fp, port_prefix, 0, cur_pb_type, FALSE, TRUE); 
+  dump_verilog_pb_type_bus_ports(fp, port_prefix, 0, cur_pb_type, FALSE, TRUE); 
   fprintf(fp, "//----- SRAM ports -----\n");
   /* Connect srams*/
   cur_sram = sram_verilog_model->cnt;
-  for (i = 0; i < num_sram; i++) {
-    fprintf(fp, "%s_out[%d], ", sram_verilog_model->prefix, cur_sram); 
-    cur_sram++;
-  }
-  cur_sram = sram_verilog_model->cnt;
-  for (i = 0; i < num_sram; i++) {
-    fprintf(fp, "%s_outb[%d], ", sram_verilog_model->prefix, cur_sram); 
-    cur_sram++;
-  }
+  fprintf(fp, "%s_out[%d:%d], ", sram_verilog_model->prefix, 
+          cur_sram + num_sram - 1, cur_sram); 
+  fprintf(fp, "%s_outb[%d:%d]", sram_verilog_model->prefix,
+          cur_sram + num_sram - 1, cur_sram); 
+  cur_sram += num_sram;
   /* vdd should be connected to special global wire gvdd_lut and gnd,
    * Every LUT has a special VDD for statistics
    */

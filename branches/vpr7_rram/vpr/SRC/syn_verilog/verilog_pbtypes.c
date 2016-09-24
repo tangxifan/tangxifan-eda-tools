@@ -387,6 +387,166 @@ void stats_mux_verilog_model_pb_node_rec(t_llist** muxes_head,
  * Important feature: manage the comma between ports
  * Make sure there is no redundant comma and there is no comma after the last element if specified
  */
+void dump_verilog_pb_type_bus_ports(FILE* fp,
+                                    char* port_prefix,
+                                    int use_global_clock,
+                                    t_pb_type* cur_pb_type,
+                                    boolean dump_port_type,
+                                    boolean dump_last_comma) {
+  int iport, ipin;
+  int num_pb_type_input_port = 0;
+  t_port** pb_type_input_ports = NULL;
+
+  int num_pb_type_output_port = 0;
+  t_port** pb_type_output_ports = NULL;
+
+  int num_pb_type_inout_port = 0;
+  t_port** pb_type_inout_ports = NULL;
+
+  int num_pb_type_clk_port = 0;
+  t_port** pb_type_clk_ports = NULL;
+
+  char* formatted_port_prefix = chomp_spice_node_prefix(port_prefix);
+  /* A counter to stats the number of dumped ports and pins */
+  int num_dumped_port = 0;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+  }
+
+  /* INOUT ports */
+  num_dumped_port = 0;
+  /* Find pb_type inout ports */
+  pb_type_inout_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_INOUT, &num_pb_type_inout_port); 
+
+  /* Print all the inout ports  */
+  for (iport = 0; iport < num_pb_type_inout_port; iport++) {
+    if (0 < num_dumped_port) { 
+      if (TRUE == dump_port_type) {
+        fprintf(fp, ",\n");
+      } else {
+        fprintf(fp, ", ");
+      }
+    }
+    if (TRUE == dump_port_type) {
+      fprintf(fp, "inout ");
+      fprintf(fp, "[0:%d] %s__%s ", 
+                  pb_type_inout_ports[iport]->num_pins - 1,
+                  formatted_port_prefix, pb_type_inout_ports[iport]->name);
+    } else {
+      fprintf(fp, "%s__%s[0:%d] ", 
+                  formatted_port_prefix, pb_type_inout_ports[iport]->name, 
+                  pb_type_inout_ports[iport]->num_pins - 1);
+    }
+    /* Update the counter */
+    num_dumped_port++;
+  }
+
+  /* Inputs */
+  /* Find pb_type input ports */
+  pb_type_input_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_INPUT, &num_pb_type_input_port); 
+  /* Print all the input ports  */
+  for (iport = 0; iport < num_pb_type_input_port; iport++) {
+    if (0 < num_dumped_port) { 
+      if (TRUE == dump_port_type) {
+        fprintf(fp, ",\n");
+      } else {
+        fprintf(fp, ", ");
+      }
+    }
+    if (TRUE == dump_port_type) {
+      fprintf(fp, "input ");
+      fprintf(fp, " [0:%d] %s__%s ", 
+                    pb_type_input_ports[iport]->num_pins - 1,
+                    formatted_port_prefix, pb_type_input_ports[iport]->name);
+    } else {
+      fprintf(fp, " %s__%s[0:%d] ", 
+                    formatted_port_prefix, pb_type_input_ports[iport]->name,
+                    pb_type_input_ports[iport]->num_pins - 1);
+    } 
+    /* Update the counter */
+    num_dumped_port++;
+  }
+  /* Outputs */
+  /* Find pb_type output ports */
+  pb_type_output_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_OUTPUT, &num_pb_type_output_port); 
+
+  /* Print all the output ports  */
+  for (iport = 0; iport < num_pb_type_output_port; iport++) {
+    if (0 < num_dumped_port) { 
+      if (TRUE == dump_port_type) {
+        fprintf(fp, ",\n");
+      } else {
+        fprintf(fp, ", ");
+      }
+    }
+    if (TRUE == dump_port_type) {
+      fprintf(fp, "output ");
+      fprintf(fp, " %s__%s[0:%d]", 
+                  pb_type_output_ports[iport]->num_pins - 1,
+                  formatted_port_prefix, pb_type_output_ports[iport]->name); 
+    } else {
+       fprintf(fp, " %s__%s[0:%d]", 
+                  formatted_port_prefix, pb_type_output_ports[iport]->name, 
+                  pb_type_output_ports[iport]->num_pins - 1);
+    }
+    /* Update the counter */
+    num_dumped_port++;
+  }
+  
+  /* Clocks */
+  /* Find pb_type clock ports */
+  pb_type_clk_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_CLOCK, &num_pb_type_clk_port); 
+  /* Print all the clk ports  */
+  for (iport = 0; iport < num_pb_type_clk_port; iport++) {
+    if (0 < num_dumped_port) { 
+      if (TRUE == dump_port_type) {
+        fprintf(fp, ",\n");
+      } else {
+        fprintf(fp, ", ");
+      }
+    }
+    if (TRUE == dump_port_type) {
+      fprintf(fp, "input");
+      fprintf(fp, " %s__%s[0:%d]",
+                  pb_type_output_ports[iport]->num_pins - 1,
+                  formatted_port_prefix, pb_type_clk_ports[iport]->name);
+    } else {
+      fprintf(fp, " %s__%s[0:%d]",
+                  formatted_port_prefix, pb_type_clk_ports[iport]->name,
+                  pb_type_output_ports[iport]->num_pins - 1);
+    }
+    /* Update the counter */
+    num_dumped_port++;
+  }
+
+  /* Dump the last comma, when the option is enabled and there is something dumped */
+  if ((0 < num_dumped_port)&&(TRUE == dump_last_comma)) {
+    if (TRUE == dump_port_type) {
+      fprintf(fp, ",\n");
+    } else {
+      fprintf(fp, ",");
+    }
+  }
+
+  /* Free */
+  free(formatted_port_prefix);
+  my_free(pb_type_input_ports);
+  my_free(pb_type_output_ports);
+  my_free(pb_type_inout_ports);
+  my_free(pb_type_clk_ports);
+
+  return;
+}
+
+
+/* Print ports of pb_types,
+ * SRAM ports are not printed here!!! 
+ * Important feature: manage the comma between ports
+ * Make sure there is no redundant comma and there is no comma after the last element if specified
+ */
 void dump_verilog_pb_type_ports(FILE* fp,
                           char* port_prefix,
                           int use_global_clock,
@@ -424,128 +584,85 @@ void dump_verilog_pb_type_ports(FILE* fp,
   /* Print all the inout ports  */
   for (iport = 0; iport < num_pb_type_inout_port; iport++) {
     for (ipin = 0; ipin < pb_type_inout_ports[iport]->num_pins; ipin++) {
+      if (0 < num_dumped_port) { 
+        if (TRUE == dump_port_type) {
+          fprintf(fp, ",\n");
+        } else {
+          fprintf(fp, ", ");
+        }
+      }
       if (TRUE == dump_port_type) {
         fprintf(fp, "inout");
       }
-      fprintf(fp, "%s__%s_%d_, ", formatted_port_prefix, pb_type_inout_ports[iport]->name, ipin);
+      fprintf(fp, "%s__%s_%d_ ", formatted_port_prefix, pb_type_inout_ports[iport]->name, ipin);
       /* Update the counter */
       num_dumped_port++;
-      /* We do not put a comma at the last element to be dumped */
-      if ((iport == num_pb_type_inout_port - 1)&&(ipin == pb_type_inout_ports[iport]->num_pins - 1)) {
-        break;
-      }
-      /* We can put a comma since this is not the last element to be dumped */
-      if (TRUE == dump_port_type) {
-        fprintf(fp, ",\n");
-      } else {
-        fprintf(fp, ",");
-      }
     }
   }
 
   /* Inputs */
   /* Find pb_type input ports */
   pb_type_input_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_INPUT, &num_pb_type_input_port); 
-  /* Need a comma if this is not the last elemet */
-  if ((0 < num_dumped_port)&&(0 < num_pb_type_input_port)) {
-    if (TRUE == dump_port_type) {
-      fprintf(fp, ",\n");
-    } else {
-      fprintf(fp, ", ");
-    }
-  } else if (0 < num_pb_type_input_port) { /* We keep on dumping, reset the counter */
-    num_dumped_port = 0;
-  }
   /* Print all the input ports  */
   for (iport = 0; iport < num_pb_type_input_port; iport++) {
     for (ipin = 0; ipin < pb_type_input_ports[iport]->num_pins; ipin++) {
+      if (0 < num_dumped_port) { 
+        if (TRUE == dump_port_type) {
+          fprintf(fp, ",\n");
+        } else {
+          fprintf(fp, ", ");
+        }
+      }
       if (TRUE == dump_port_type) {
         fprintf(fp, "input");
       }
       fprintf(fp, " %s__%s_%d_", formatted_port_prefix, pb_type_input_ports[iport]->name, ipin);
       /* Update the counter */
       num_dumped_port++;
-      /* We do not put a comma at the last element to be dumped */
-      if ((iport == num_pb_type_input_port - 1)&&(ipin == pb_type_input_ports[iport]->num_pins - 1)) {
-        break;
-      }
-      /* We can put a comma since this is not the last element to be dumped */
-      if (TRUE == dump_port_type) {
-        fprintf(fp, ",\n");
-      } else {
-        fprintf(fp, ", ");
-      }
     }
   }
   /* Outputs */
   /* Find pb_type output ports */
   pb_type_output_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_OUTPUT, &num_pb_type_output_port); 
-
-  /* Need a comma if this is not the last elemet */
-  if ((0 < num_dumped_port)&&(0 < num_pb_type_output_port)) {
-    if (TRUE == dump_port_type) {
-      fprintf(fp, ",\n");
-    } else {
-      fprintf(fp, ", ");
-    }
-  } else if (0 < num_pb_type_output_port) { /* We keep on dumping, reset the counter */
-    num_dumped_port = 0;
-  }
-
   /* Print all the output ports  */
   for (iport = 0; iport < num_pb_type_output_port; iport++) {
     for (ipin = 0; ipin < pb_type_output_ports[iport]->num_pins; ipin++) {
+      if (0 < num_dumped_port) { 
+        if (TRUE == dump_port_type) {
+          fprintf(fp, ",\n");
+        } else {
+          fprintf(fp, ", ");
+        }
+      }
       if (TRUE == dump_port_type) {
         fprintf(fp, "output");
       }
       fprintf(fp, " %s__%s_%d_", formatted_port_prefix, pb_type_output_ports[iport]->name, ipin);
       /* Update the counter */
       num_dumped_port++;
-      /* We do not put a comma at the last element to be dumped */
-      if ((iport == num_pb_type_output_port - 1)&&(ipin == pb_type_output_ports[iport]->num_pins - 1)) {
-        break;
-      }
-      /* We can put a comma since this is not the last element to be dumped */
-      if (TRUE == dump_port_type) {
-        fprintf(fp, ",\n");
-      } else {
-        fprintf(fp, ",");
-      }
     }
   }
   
   /* Clocks */
   /* Find pb_type clock ports */
   pb_type_clk_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_CLOCK, &num_pb_type_clk_port); 
-  /* Need a comma if this is not the last elemet */
-  if ((0 < num_dumped_port)&&(0 < num_pb_type_clk_port)) {
-    if (TRUE == dump_port_type) {
-      fprintf(fp, ",\n");
-    } else {
-      fprintf(fp, ", ");
-    }
-  } else if (0 < num_pb_type_clk_port) { /* We keep on dumping, reset the counter */
-    num_dumped_port = 0;
-  }
+  
   /* Print all the clk ports  */
   for (iport = 0; iport < num_pb_type_clk_port; iport++) {
     for (ipin = 0; ipin < pb_type_clk_ports[iport]->num_pins; ipin++) {
+      if (0 < num_dumped_port) { 
+        if (TRUE == dump_port_type) {
+          fprintf(fp, ",\n");
+        } else {
+          fprintf(fp, ", ");
+        }
+      }
       if (TRUE == dump_port_type) {
         fprintf(fp, "input");
       }
       fprintf(fp, " %s__%s_%d_", formatted_port_prefix, pb_type_clk_ports[iport]->name, ipin);
       /* Update the counter */
       num_dumped_port++;
-      /* We do not put a comma at the last element to be dumped */
-      if ((iport == num_pb_type_clk_port - 1)&&(ipin == pb_type_clk_ports[iport]->num_pins - 1)) {
-        break;
-      }
-      /* We can put a comma since this is not the last element to be dumped */
-      if (TRUE == dump_port_type) {
-        fprintf(fp, ",\n");
-      } else {
-        fprintf(fp, ",");
-      }
     }
   }
 

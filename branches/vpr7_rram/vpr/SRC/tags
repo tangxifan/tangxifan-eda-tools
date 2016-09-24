@@ -1707,6 +1707,7 @@ dump_verilog_defined_channels	syn_verilog/verilog_top_netlist.c	/^void dump_veri
 dump_verilog_defined_connection_box	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_defined_connection_box(FILE* fp,$/;"	f
 dump_verilog_defined_connection_boxes	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_defined_connection_boxes(FILE* fp,$/;"	f
 dump_verilog_defined_grids	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_defined_grids(FILE* fp) {$/;"	f
+dump_verilog_defined_one_grid	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_defined_one_grid(FILE* fp,$/;"	f	file:
 dump_verilog_defined_switch_box	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_defined_switch_box(FILE* fp,$/;"	f
 dump_verilog_defined_switch_boxes	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_defined_switch_boxes(FILE* fp) {$/;"	f
 dump_verilog_file_header	syn_verilog/verilog_utils.c	/^void dump_verilog_file_header(FILE* fp,$/;"	f
@@ -1734,6 +1735,7 @@ dump_verilog_pb_primitive_hardlogic	syn_verilog/verilog_primitives.c	/^void dump
 dump_verilog_pb_primitive_io	syn_verilog/verilog_primitives.c	/^void dump_verilog_pb_primitive_io(FILE* fp,$/;"	f
 dump_verilog_pb_primitive_lut	syn_verilog/verilog_lut.c	/^void dump_verilog_pb_primitive_lut(FILE* fp,$/;"	f
 dump_verilog_pb_primitive_verilog_model	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_pb_primitive_verilog_model(FILE* fp,$/;"	f
+dump_verilog_pb_type_bus_ports	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_pb_type_bus_ports(FILE* fp,$/;"	f
 dump_verilog_pb_type_ports	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_pb_type_ports(FILE* fp,$/;"	f
 dump_verilog_phy_pb_graph_node_rec	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_phy_pb_graph_node_rec(FILE* fp,$/;"	f
 dump_verilog_physical_block	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_physical_block(FILE* fp,$/;"	f
@@ -2009,6 +2011,7 @@ find_pb_type_ports_match_spice_model_port_type	spice/spice_utils.c	/^t_port** fi
 find_prev_rr_nodes_with_src	spice/spice_utils.c	/^void find_prev_rr_nodes_with_src(t_rr_node* src_rr_node,$/;"	f
 find_rr_nodes_ipin_driver_switch	route/rr_graph_opincb.c	/^void find_rr_nodes_ipin_driver_switch() {$/;"	f	file:
 find_spice_model_ports	spice/spice_utils.c	/^t_spice_model_port** find_spice_model_ports(t_spice_model* spice_model,$/;"	f
+find_spice_mux_arch_special_basis_size	spice/spice_mux.c	/^int find_spice_mux_arch_special_basis_size(t_spice_mux_arch spice_mux_arch) {$/;"	f
 find_spice_mux_testbench_pb_pin_mux_load_inv_size	spice/spice_mux_testbench.c	/^float find_spice_mux_testbench_pb_pin_mux_load_inv_size(t_spice_model* fan_out_spice_model) {$/;"	f
 find_spice_mux_testbench_rr_mux_load_inv_size	spice/spice_mux_testbench.c	/^float find_spice_mux_testbench_rr_mux_load_inv_size(t_rr_node* load_rr_node,$/;"	f
 find_src_pb_pin_to_rr_nodes	clb_pin_remap/clb_pin_remap_util.c	/^void find_src_pb_pin_to_rr_nodes(t_pb* src_pb,$/;"	f
@@ -4064,6 +4067,7 @@ store_char_in_data	timing/slre.c	/^static void store_char_in_data(struct slre *r
 strength_inf	power/power.h	/^	t_power_buffer_strength_inf * strength_inf;$/;"	m	struct:s_power_buffer_size_inf
 structure	../../libarchfpga/include/physical_types.h	/^    enum e_spice_model_structure structure;$/;"	m	struct:s_switch_inf	typeref:enum:s_switch_inf::e_spice_model_structure
 structure	../../libarchfpga/include/spice_types.h	/^  enum e_spice_model_structure structure;$/;"	m	struct:s_spice_model	typeref:enum:s_spice_model::e_spice_model_structure
+structure	../../libarchfpga/include/spice_types.h	/^  enum e_spice_model_structure structure;$/;"	m	struct:s_spice_mux_arch	typeref:enum:s_spice_mux_arch::e_spice_model_structure
 subckt_dir	base/vpr_types.h	/^  char* subckt_dir;$/;"	m	struct:s_spice_opts
 sum_pin_class	pack/cluster_feasibility_filter.c	/^static void sum_pin_class(INOUTP t_pb_graph_node *pb_graph_node) {$/;"	f	file:
 swap_blk_same_class_2pins	clb_pin_remap/clb_pin_remap_util.c	/^void swap_blk_same_class_2pins(t_block* target_blk, int n_nets, t_net* nets,$/;"	f
@@ -4466,6 +4470,7 @@ verilog_find_interc_fan_in_des_pb_graph_pin	syn_verilog/verilog_pbtypes.c	/^void
 verilog_find_path_id_between_pb_rr_nodes	syn_verilog/verilog_pbtypes.c	/^int verilog_find_path_id_between_pb_rr_nodes(t_rr_node* local_rr_graph,$/;"	f
 verilog_find_pb_graph_pin_in_edges_interc_type	syn_verilog/verilog_pbtypes.c	/^enum e_interconnect verilog_find_pb_graph_pin_in_edges_interc_type(t_pb_graph_pin pb_graph_pin) {$/;"	f
 verilog_get_grid_block_subckt_name	syn_verilog/verilog_pbtypes.c	/^char* verilog_get_grid_block_subckt_name(int x, int y, int z,$/;"	f
+verilog_get_grid_phy_block_subckt_name	syn_verilog/verilog_pbtypes.c	/^char* verilog_get_grid_phy_block_subckt_name(int x, int y, int z,$/;"	f
 verilog_get_grid_side_pin_rr_nodes	syn_verilog/verilog_routing.c	/^t_rr_node** verilog_get_grid_side_pin_rr_nodes(int* num_pin_rr_nodes,$/;"	f
 verilog_mux_basis_posfix	syn_verilog/verilog_global.c	/^char* verilog_mux_basis_posfix = "_basis";$/;"	v
 verilog_mux_special_basis_posfix	syn_verilog/verilog_global.c	/^char* verilog_mux_special_basis_posfix = "_special_basis";$/;"	v

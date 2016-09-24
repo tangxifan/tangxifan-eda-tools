@@ -129,19 +129,28 @@ void dump_verilog_top_netlist_ports(FILE* fp,
 static 
 void dump_verilog_defined_one_grid(FILE* fp,
                                    int ix, int iy) {
+  int dumped_pads = 0;
+
   /* Comment lines */
   fprintf(fp, "//----- BEGIN Call Grid[%d][%d] module -----\n", ix, iy);
   /* Print the Grid module */
   fprintf(fp, "grid_%d__%d_  ", ix, iy); /* Call the name of subckt */ 
-  fprintf(fp, "grid_%d__%d_ ", ix, iy);
+  fprintf(fp, "grid_%d__%d__0_ ", ix, iy);
   fprintf(fp, "(");
   /* global set and reset */
   fprintf(fp, "reset, set,\n");
-  dump_verilog_grid_pins(fp, ix, iy, 1, FALSE, FALSE);
+  if (IO_TYPE == grid[ix][iy].type) {
+    dump_verilog_io_grid_pins(fp, ix, iy, 1, FALSE, TRUE);
+  } else {
+    dump_verilog_grid_pins(fp, ix, iy, 1, FALSE, TRUE);
+  }
   /* Print Input Pad and Output Pad */
   assert(!(0 > (inpad_verilog_model->grid_index_high[ix][iy] - inpad_verilog_model->grid_index_low[ix][iy])));
   if (0 < (inpad_verilog_model->grid_index_high[ix][iy] - inpad_verilog_model->grid_index_low[ix][iy])) {
-    fprintf(fp, ",\n");
+    if (0 < dumped_pads) {
+      fprintf(fp, ",\n");
+    }
+    dumped_pads++;
     fprintf(fp, "  %s%s[%d:%d] \n", 
             gio_input_prefix,
             inpad_verilog_model->prefix, 
@@ -150,8 +159,11 @@ void dump_verilog_defined_one_grid(FILE* fp,
   }
   assert(!(0 > (outpad_verilog_model->grid_index_high[ix][iy] - outpad_verilog_model->grid_index_low[ix][iy])));
   if (0 < (outpad_verilog_model->grid_index_high[ix][iy] - outpad_verilog_model->grid_index_low[ix][iy])) {
-    fprintf(fp, ",\n");
-    fprintf(fp, " %s%s[%d:%d] \n", 
+    if (0 < dumped_pads) {
+      fprintf(fp, ",\n");
+    }
+    dumped_pads++;
+    fprintf(fp, " %s%s[%d:%d] ", 
             gio_output_prefix,
             outpad_verilog_model->prefix, 
             outpad_verilog_model->grid_index_high[ix][iy] - 1, 
@@ -159,8 +171,11 @@ void dump_verilog_defined_one_grid(FILE* fp,
   }
   assert(!(0 > (iopad_verilog_model->grid_index_high[ix][iy] - iopad_verilog_model->grid_index_low[ix][iy])));
   if (0 < (iopad_verilog_model->grid_index_high[ix][iy] - iopad_verilog_model->grid_index_low[ix][iy])) {
-    fprintf(fp, ",\n");
-    fprintf(fp, " %s%s[%d:%d] \n", 
+    if (0 < dumped_pads) {
+      fprintf(fp, ",\n");
+    }
+    dumped_pads++;
+    fprintf(fp, " %s%s[%d:%d] ", 
             gio_inout_prefix,
             iopad_verilog_model->prefix, 
             iopad_verilog_model->grid_index_high[ix][iy] - 1, 
@@ -169,7 +184,10 @@ void dump_verilog_defined_one_grid(FILE* fp,
   /* Configuration ports */
   assert(!(0 > sram_verilog_model->grid_index_high[ix][iy] - sram_verilog_model->grid_index_low[ix][iy]));
   if (0 < sram_verilog_model->grid_index_high[ix][iy] - sram_verilog_model->grid_index_low[ix][iy]) {
-    fprintf(fp, ",\n");
+    if (0 < dumped_pads) {
+      fprintf(fp, ",\n");
+    }
+    dumped_pads++;
     fprintf(fp, "  %s_out[%d:%d], \n", 
             sram_verilog_model->prefix, 
             sram_verilog_model->grid_index_high[ix][iy] - 1,
@@ -263,7 +281,7 @@ void dump_verilog_defined_chan(FILE* fp,
     fprintf(fp, "//----- BEGIN Call Channel-X [%d][%d] module -----\n", x, y);
     /* Call the define sub-circuit */
     fprintf(fp, "chanx_%d__%d_ ", x, y);
-    fprintf(fp, "chanx_%d__%d_ ", x, y);
+    fprintf(fp, "chanx_%d__%d__0_ ", x, y);
     fprintf(fp, "(");
     for (itrack = 0; itrack < chan_width; itrack++) {
       fprintf(fp, "chanx_%d__%d__in_%d_, ", x, y, itrack);
@@ -275,7 +293,10 @@ void dump_verilog_defined_chan(FILE* fp,
     }
     /* output at middle point */
     for (itrack = 0; itrack < chan_width; itrack++) {
-      fprintf(fp, "chanx_%d__%d__midout_%d_, ", x, y, itrack);
+      fprintf(fp, "chanx_%d__%d__midout_%d_ ", x, y, itrack);
+      if (itrack < chan_width - 1) {
+        fprintf(fp, ",");
+      }
       fprintf(fp, "\n");
     }
     fprintf(fp, ");\n");
@@ -291,7 +312,7 @@ void dump_verilog_defined_chan(FILE* fp,
     fprintf(fp, "//----- BEGIN call Call Channel-Y [%d][%d] module -----\n", x, y);
     /* Call the define sub-circuit */
     fprintf(fp, "chany_%d__%d_ ", x, y);
-    fprintf(fp, "chany_%d__%d_ ", x, y);
+    fprintf(fp, "chany_%d__%d__0_ ", x, y);
     fprintf(fp, "(");
     for (itrack = 0; itrack < chan_width; itrack++) {
       fprintf(fp, "chany_%d__%d__in_%d_, ", x, y, itrack);
@@ -303,7 +324,10 @@ void dump_verilog_defined_chan(FILE* fp,
     }
     /* output at middle point */
     for (itrack = 0; itrack < chan_width; itrack++) {
-      fprintf(fp, "chany_%d__%d__midout_%d_, ", x, y, itrack);
+      fprintf(fp, "chany_%d__%d__midout_%d_ ", x, y, itrack);
+      if (itrack < chan_width - 1) {
+        fprintf(fp, ",");
+      }
       fprintf(fp, "\n");
     }
     fprintf(fp, ");\n");
@@ -377,14 +401,14 @@ void dump_verilog_defined_connection_box(FILE* fp,
     fprintf(fp, "//----- BEGIN Call Connection Box-X direction [%d][%d] module -----\n", x, y);
     /* Print module */
     fprintf(fp, "cbx_%d__%d_ ", x, y);
-    fprintf(fp, "cbx_%d__%d_ ", x, y);
+    fprintf(fp, "cbx_%d__%d__0_ ", x, y);
     break;
   case CHANY:
     /* Comment lines */
     fprintf(fp, "//----- BEGIN Call Connection Box-Y direction [%d][%d] module -----\n", x, y);
     /* Print module */
     fprintf(fp, "cby_%d__%d_ ", x, y);
-    fprintf(fp, "cby_%d__%d_ ", x, y);
+    fprintf(fp, "cby_%d__%d__0_ ", x, y);
     break;
   default: 
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
@@ -662,7 +686,7 @@ void dump_verilog_defined_switch_box(FILE* fp,
   fprintf(fp, "//----- BEGIN call module Switch blocks [%d][%d] -----\n", x, y);
   /* Print module*/
   fprintf(fp, "sb_%d__%d_ ", x, y);
-  fprintf(fp, "sb_%d__%d_ ", x, y);
+  fprintf(fp, "sb_%d__%d__0_ ", x, y);
   fprintf(fp, "(");
   /* 1. Channel Y [x][y+1] inputs */
   for (itrack = 0; itrack < chan_width[0]; itrack++) {

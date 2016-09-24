@@ -68,6 +68,7 @@ void init_spice_mux_arch(t_spice_model* spice_model,
   } 
 
   /* Basic info*/
+  spice_mux_arch->structure = spice_model->structure;
   spice_mux_arch->num_input = mux_size;
   /* For different structure */
   switch (spice_model->structure) {
@@ -130,6 +131,39 @@ void init_spice_mux_arch(t_spice_model* spice_model,
   }
   
   return; 
+}
+
+/* Determine if we need a speical basis.
+ * If we need one, we give the MUX size of this special basis 
+ */
+int find_spice_mux_arch_special_basis_size(t_spice_mux_arch spice_mux_arch) {
+  int im;
+  int mux_size = spice_mux_arch.num_input;
+  int num_input_basis = spice_mux_arch.num_input_basis;
+  int num_input_special_basis = 0;
+  int special_basis_start = 0;
+   
+  /* For different structure */
+  switch (spice_mux_arch.structure) {
+  case SPICE_MODEL_STRUCTURE_TREE:
+    break;
+  case SPICE_MODEL_STRUCTURE_ONELEVEL:
+    break;
+  case SPICE_MODEL_STRUCTURE_MULTILEVEL:
+    special_basis_start = mux_size - mux_size % num_input_basis;
+    for (im = special_basis_start; im < mux_size; im++) {
+      if (spice_mux_arch.num_level == spice_mux_arch.input_level[im]) {
+        num_input_special_basis++;
+      }
+    } 
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice_mux_arch!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  return num_input_special_basis;
 }
 
 /* Search the linked list, if we have the same mux size and spice_model

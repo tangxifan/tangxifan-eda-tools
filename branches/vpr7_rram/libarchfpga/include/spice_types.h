@@ -249,6 +249,7 @@ struct s_spice {
 /* Information needed to build a Multiplexer architecture*/
 typedef struct s_spice_mux_arch t_spice_mux_arch;
 struct s_spice_mux_arch {
+  enum e_spice_model_structure structure;
   int num_input;
   int num_level;
   int num_input_basis;

@@ -738,7 +738,7 @@ int multilevel_mux_last_level_input_num(int num_level, int num_input_per_unit,
     /* should be smaller than the num_input_per_unit */
     assert((!(0 > differ))&&(differ < num_input_per_unit));
     /* We need a speical basis */
-    num_input_special_basis = differ + 1;
+    num_input_special_basis = differ;
     ret = num_input_special_basis + num_basis_last_level * num_input_per_unit;
   } else {
     ret = mux_size;
