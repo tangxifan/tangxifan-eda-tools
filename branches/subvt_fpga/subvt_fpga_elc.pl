@@ -145,6 +145,8 @@ my @sctgy;
                 "worst_delay",
                 "w_cpt",
                 "w_cpt_step",
+                "cap_in_wire",
+                "cap_out_wire",
                );
 
 # refer to the keywords of inv_settings
@@ -996,7 +998,7 @@ sub run_hspice($ $ $)
     my ($process_dir,$process_file) = &split_prog_path("$conf_ptr->{general_settings}->{process_tech}->{val}");
     chdir $process_dir;
     print "Enter directory($process_dir)...\n";
-    `csh -x 'source /softs/synopsys/hspice/2013.12/hspice/bin/cshrc.meta'`;
+    `csh -x 'source /softs/synopsys/hspice/2015.06/hspice/bin/cshrc.meta'`;
     #system("tcsh -x 'source /softs/synopsys/hspice/I-2013.12/hspice/bin/cshrc.meta'");
     #system("printenv");
   }
@@ -1021,7 +1023,7 @@ sub run_hspice($ $ $)
   #`csh -cx 'cd ./process'`;
   # Use Cshell to run hspice
   if ("on" eq $verilogA_sim) {
-    `csh -cx '$hspice_path -i $fspice -o $flis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include'`;
+    `csh -cx '$hspice_path -i $fspice -o $flis -hdlpath /softs/synopsys/hspice/2015.06/hspice/include'`;
     #system("$hspice_path -i $fspice -o $flis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include");
     chdir $cwd;
     print "Return directory($cwd)...\n";
@@ -1493,9 +1495,9 @@ sub gen_lut_sp_measure($ $ $ $ $ $ $)
 
 }
 
-sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $) 
+sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $) 
 {
-  my ($spfh,$usage,$cload,$input_pwl,$input_pwh,$input_slew,$vsp,$mux_size,$inv_size_in,$inv_size_out,$w_cpt, $rram_enhance,$ron,$wprog, $roff,$gap_on, $gap_off) = @_;
+  my ($spfh,$usage,$cload,$input_pwl,$input_pwh,$input_slew,$vsp,$mux_size,$inv_size_in,$inv_size_out,$w_cpt, $rram_enhance,$ron,$wprog, $roff,$gap_on, $gap_off, $cap_in_wire, $cap_out_wire) = @_;
 
   # Print Header
   &tab_print($spfh,"Sub-Vt MUX HSPICE Bench\n",0);
@@ -1516,6 +1518,8 @@ sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
   &tab_print($spfh,".param input_slew=$input_slew\n",0);
   #&tab_print($spfh,".param inv_size_in=$inv_size_in\n",0);
   #&tab_print($spfh,".param inv_size_out=$inv_size_out\n",0);
+  &tab_print($spfh,".param cap_in_wire=$cap_in_wire\n",0);
+  &tab_print($spfh,".param cap_out_wire=$cap_out_wire\n",0);
   &tab_print($spfh,"* Only for SRAM MUX:\n",0);
   &tab_print($spfh,".param w_cpt=$w_cpt\n",0);
  
@@ -2811,9 +2815,13 @@ sub gen_1level_rram_mux_dvd_subckt($ $ $ $ $ $ $) {
       &tab_print($spfh,"Xinv$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux1level_in$i ",0); 
       &tab_print($spfh,"prog_vdd0 prog_gnd0 op_mode_enb0 op_mode_en0 input_inv_pg\n",0);
     } else {
-      &tab_print($spfh,"V$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i muxlevel_in$i 0\n",0); 
+      &tab_print($spfh,"V$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux1level_in$i 0\n",0); 
     }
+    # add parasitic capacitances
+    &tab_print($spfh,"Cwire_in$i mux1level_in$i sgnd cap_in_wire\n",0);  
   }
+  # add parasitic capacitances
+  &tab_print($spfh, "Cwire_out mux1level_out sgnd cap_out_wire\n", 0);
 
   if ("on" eq $opt_ptr->{auto_out_tapered_buffer}) {
     my ($tapbuf_size) = (4**$opt_ptr->{auto_out_tapered_buffer_val});
@@ -2926,9 +2934,13 @@ sub gen_1level_rram_mux_basic_subckt($ $ $ $ $ $ $) {
       &tab_print($spfh,"Xinv$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux1level_in$i ",0); 
       &tab_print($spfh,"svdd sgnd op_mode_enb op_mode_en input_inv_pg\n",0);
     } else {
-      &tab_print($spfh,"V$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i muxlevel_in$i 0\n",0); 
+      &tab_print($spfh,"V$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux1level_in$i 0\n",0); 
     }
+    # add parasitic capacitances
+    &tab_print($spfh,"Cwire_in$i mux1level_in$i sgnd cap_in_wire\n",0);  
   }
+  # add parasitic capacitances
+  &tab_print($spfh, "Cwire_out mux1level_out sgnd cap_out_wire\n", 0);
 
   if ("on" eq $opt_ptr->{auto_out_tapered_buffer}) {
     my ($tapbuf_size) = (4**$opt_ptr->{auto_out_tapered_buffer_val});
@@ -2954,8 +2966,10 @@ sub gen_1level_mux_subckt($ $ $ $ $ $ $) {
 
   if ("on" eq $rram_enhance) {
     if ("on" eq $opt_ptr->{rram_mux_isolate}) {
+       # TO BE DEPRECATED 
       &gen_1level_rram_mux_isolate_subckt($spfh,$mux_size,$subckt_name,$mux1level_subckt,$buffered,$rram_enhance,$wprog);
     } elsif ("on" eq $opt_ptr->{rram_mux_dvc}) {
+       # TO BE DEPRECATED 
       &gen_1level_rram_mux_dvc_subckt($spfh,$mux_size,$subckt_name,$mux1level_subckt,$buffered,$rram_enhance,$wprog);
     } elsif ("on" eq $opt_ptr->{rram_mux_dvd}) {
       &gen_1level_rram_mux_dvd_subckt($spfh,$mux_size,$subckt_name,$mux1level_subckt,$buffered,$rram_enhance,$wprog);
@@ -3007,9 +3021,13 @@ sub gen_1level_mux_subckt($ $ $ $ $ $ $) {
       &tab_print($spfh,"svdd sgnd input_inv\n",0);
       #&tab_print($spfh,"$conf_ptr->{general_settings}->{VDD_port_name}->{val} $conf_ptr->{general_settings}->{GND_port_name}->{val} $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'inv_size_in\'\n",0);
     } else {
-      &tab_print($spfh,"V$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i muxlevel_in$i 0\n",0); 
+      &tab_print($spfh,"V$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux1level_in$i 0\n",0); 
     }
+    # add parasitic capacitances
+    &tab_print($spfh,"Cwire_in$i mux1level_in$i sgnd cap_in_wire\n",0);  
   }
+  # add parasitic capacitances
+  &tab_print($spfh, "Cwire_out mux1level_out sgnd cap_out_wire\n", 0);
 
   if ("on" eq $opt_ptr->{auto_out_tapered_buffer}) {
     my ($tapbuf_size) = (4**$opt_ptr->{auto_out_tapered_buffer_val});
@@ -3513,7 +3531,11 @@ sub gen_multilevel_rram_mux_dvd_subckt($ $ $ $ $ $ $ $) {
     } else {
       &tab_print($spfh,"V$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux2lvl_lvl0_in$i 0\n",0); 
     }
+    # add parasitic capacitances
+    &tab_print($spfh,"Cwire_in$i mux2lvl_lvl0_in$i sgnd cap_in_wire\n",0);  
   }
+  # add parasitic capacitances
+  &tab_print($spfh, "Cwire_out mux2lvl_lvl$num_lvls\_in0 sgnd cap_out_wire\n", 0);
 
   if (0 == $num_lvls % 2) {
     ($prog_vdd, $prog_gnd) = ("prog_vdd0", "prog_gnd0");
@@ -3702,7 +3724,11 @@ sub gen_multilevel_rram_mux_basic_subckt($ $ $ $ $ $ $ $) {
     } else {
       &tab_print($spfh,"V$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux2lvl_lvl0_in$i 0\n",0); 
     }
+    # add parasitic capacitances
+    &tab_print($spfh,"Cwire_in$i mux2lvl_lvl0_in$i sgnd cap_in_wire\n",0);  
   }
+  # add parasitic capacitances
+  &tab_print($spfh, "Cwire_out mux2lvl_lvl$num_lvls\_in0 sgnd cap_out_wire\n", 0);
 
   if (0 == $num_lvls % 2) {
     ($prog_vdd, $prog_gnd) = ("prog_vdd", "prog_gnd");
@@ -3740,7 +3766,7 @@ sub gen_2level_mux_subckt($ $ $ $ $ $ $) {
     } elsif ("on" eq $opt_ptr->{rram_mux_dvd}) {
       &gen_multilevel_rram_mux_dvd_subckt($spfh,$mux_size,2,$subckt_name,$mux2level_subckt,$buffered,$rram_enhance,$wprog);
     } else {
-      &gen_multilevel_rram_mux_subckt($spfh,$mux_size,2,$subckt_name,$mux2level_subckt,$buffered,$rram_enhance,$wprog);
+      &gen_multilevel_rram_mux_basic_subckt($spfh,$mux_size,2,$subckt_name,$mux2level_subckt,$buffered,$rram_enhance,$wprog);
     }
     return;
   }
@@ -3790,7 +3816,11 @@ sub gen_2level_mux_subckt($ $ $ $ $ $ $) {
     } else {
       &tab_print($spfh,"R$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i muxlevel_in$i 0\n",0); 
     }
+    # add parasitic capacitances
+    &tab_print($spfh,"Cwire_in$i mux2_l2_in$i sgnd cap_in_wire\n",0);  
   }
+  # add parasitic capacitances
+  &tab_print($spfh, "Cwire_out mux2_l0_in0 sgnd cap_out_wire\n", 0);
 
   if ("on" eq $opt_ptr->{auto_out_tapered_buffer}) {
     my ($tapbuf_size) = (4**$opt_ptr->{auto_out_tapered_buffer_val});
@@ -3913,7 +3943,11 @@ sub gen_multilevel_mux_subckt($ $ $ $ $ $ $)
     } else {
       &tab_print($spfh,"V$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux2_l$mux_inputs_ports_ref->{$i}->{level}\_in$mux_inputs_ports_ref->{$i}->{offset} 0\n",0); 
     }
+    # add parasitic capacitances
+    &tab_print($spfh,"Cwire_in$i mux2_l$mux_inputs_ports_ref->{$i}->{level}\_in$mux_inputs_ports_ref->{$i}->{offset} sgnd cap_in_wire\n",0); 
   }
+  # add parasitic capacitances
+  &tab_print($spfh, "Cwire_out mux2_l0_in0 sgnd cap_out_wire\n", 0);
 
   if ("on" eq $opt_ptr->{auto_out_tapered_buffer}) {
     my ($tapbuf_size) = (4**$opt_ptr->{auto_out_tapered_buffer_val});
@@ -4190,9 +4224,9 @@ sub run_lut_sim($ $ $ $ $ $ $ $)
 
 }
 
-sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
+sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
 {
-  my ($mux_size,$SRAM_bits,$input_vectors,$vsp,$input_slew,$input_pwl,$input_pwh,$cload,$w_cpt,$tran_step,$tran_stop,$results,$inv_size_in,$inv_size_out,$rram_enhance,$ron,$wprog,$roff,$on_gap, $off_gap) = @_;
+  my ($mux_size,$SRAM_bits,$input_vectors,$vsp,$input_slew,$input_pwl,$input_pwh,$cload,$w_cpt,$tran_step,$tran_stop,$results,$inv_size_in,$inv_size_out,$rram_enhance,$ron,$wprog,$roff,$on_gap, $off_gap, $cap_in_wire, $cap_out_wire) = @_;
 
   my ($delay_measure,$delay_measure_input,$output_vector,$input_vector_type,$output_vector_type);
 
@@ -4215,7 +4249,7 @@ sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
   # Create a SPICE file
   my $spfh = FileHandle->new;
   if ($spfh->open("> $mux_file")) {
-    &gen_mux_sp_common($spfh,"mux$mux_size\_delay_power",$cload,$input_pwl,$input_pwh,$input_slew,$vsp,$mux_size,$inv_size_in,$inv_size_out,$w_cpt,$rram_enhance,$ron,$wprog,$roff, $off_gap, $off_gap);
+    &gen_mux_sp_common($spfh,"mux$mux_size\_delay_power",$cload,$input_pwl,$input_pwh,$input_slew,$vsp,$mux_size,$inv_size_in,$inv_size_out,$w_cpt,$rram_enhance,$ron,$wprog,$roff, $off_gap, $off_gap, $cap_in_wire, $cap_out_wire);
     # FOR RRAM MUX: we need special stimulates for programming phase!
     if ("on" eq $rram_enhance) {
       $delay_measure_input = 0;
@@ -4244,7 +4278,7 @@ sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
     # Update the source file with found gap.
     if ($spfh->open("> $mux_file")) {
       print "INFO: updating gaps in $mux_file...\n";
-      &gen_mux_sp_common($spfh,"mux$mux_size\_delay_power",$cload,$input_pwl,$input_pwh,$input_slew,$vsp,$mux_size,$inv_size_in,$inv_size_out,$w_cpt, $rram_enhance,$ron,$wprog,$roff,$on_gap, $off_gap);
+      &gen_mux_sp_common($spfh,"mux$mux_size\_delay_power",$cload,$input_pwl,$input_pwh,$input_slew,$vsp,$mux_size,$inv_size_in,$inv_size_out,$w_cpt, $rram_enhance,$ron,$wprog,$roff,$on_gap, $off_gap, $cap_in_wire, $cap_out_wire);
       # FOR RRAM MUX: we need special stimulates for programming phase!
       &gen_rram_mux_sp_stimulates($spfh,$mux_size); 
       $delay_measure_input = 0;
@@ -4711,9 +4745,9 @@ sub measure_mux_leakage($ $ $ $ $ $ $ $ $ $ $ $)
 }
 
 
-sub run_mux_once($ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
+sub run_mux_once($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
 {
-  my ($tag,$vsp,$mux_size,$SRAM_bits,$input_vectors,$input_slew,$cload, $w_cpt, $tran_step,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap) = @_;
+  my ($tag,$vsp,$mux_size,$SRAM_bits,$input_vectors,$input_slew,$cload, $w_cpt, $tran_step,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap, $cap_in_wire, $cap_out_wire) = @_;
 
   my (%sim_results);
   my ($sim_results_ref) = \%sim_results;
@@ -4724,7 +4758,7 @@ sub run_mux_once($ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
   $input_pwh = 10*$slew_clk*$input_slew;
   $tran_stop = $input_pwl+$input_slew+$input_pwh;
 
-  if (0 == &run_mux_sim($mux_size,$SRAM_bits,$input_vectors,$vsp,$input_slew,$input_pwl,$input_pwh,$cload,$w_cpt, $tran_step,$tran_stop,\%sim_results,$conf_ptr->{mux_settings}->{inv_size_in}->{val},$conf_ptr->{mux_settings}->{inv_size_out}->{val},$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap)) {
+  if (0 == &run_mux_sim($mux_size,$SRAM_bits,$input_vectors,$vsp,$input_slew,$input_pwl,$input_pwh,$cload,$w_cpt, $tran_step,$tran_stop,\%sim_results,$conf_ptr->{mux_settings}->{inv_size_in}->{val},$conf_ptr->{mux_settings}->{inv_size_out}->{val},$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap, $cap_in_wire, $cap_out_wire)) {
     die "ERROR: functionality of Multiplexer maybe wrong!\n";
   }
 
@@ -5088,9 +5122,9 @@ sub run_dff_elc($ $ $ $ $ $ $) {
   }
 }
 
-sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
+sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $ $ $) {
   my ($rptfh,$clk_slew,$d_slew,$mux_size,$inv_size_in,$inv_size_out,$load_cap, $w_cpt_sweep,
-      $rram_enhance,$wprog_sweep,$vsp_lowbound,$vsp_upbound,$vsp_sweepstep) = @_;
+      $rram_enhance,$wprog_sweep,$vsp_lowbound,$vsp_upbound,$vsp_sweepstep, $cap_in_wire, $cap_out_wire) = @_;
 
   &tab_print($rptfh,"* MUX size = $mux_size, inv_size_in = $inv_size_in, inv_size_out = $inv_size_out,Load_cap = $load_cap",0);
   if ("on" eq $opt_ptr->{auto_out_tapered_buffer}) {
@@ -5199,7 +5233,11 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
 
         # Test rising delay
         $rise_tag = $tag."_rise_wprog$wprog\_vprog$vprog";
-        &run_mux_once($rise_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"), 0, 1e-13,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap);
+        &run_mux_once($rise_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,
+                      &process_unit($load_cap,"capacitance"), 
+                      0, 1e-13,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap,
+                      &process_unit($cap_in_wire,"capacitance"), 
+                      &process_unit($cap_out_wire,"capacitance"));
 
         # Test falling delay
         $fall_tag = $tag."_fall_wprog$wprog\_vprog$vprog";
@@ -5214,7 +5252,11 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
           } 
         }  
         $input_vectors =~ s/,$//;
-        &run_mux_once($fall_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"), 0, 1e-13,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap);
+        &run_mux_once($fall_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,
+                      &process_unit($load_cap,"capacitance"), 
+                      0, 1e-13,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap,
+                      &process_unit($cap_in_wire,"capacitance"), 
+                      &process_unit($cap_out_wire,"capacitance"));
   
         # Average rise and fall
         $avg_tag = $tag."_avg_wprog$wprog\_vprog$vprog";
@@ -5322,7 +5364,12 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
       for (my $iwcpt = $w_cpt_lowbound; $iwcpt <= $w_cpt_upbound; $iwcpt = $iwcpt + $w_cpt_step) {
         # Test rising delay
         $rise_tag = $tag."_rise_wcpt$iwcpt\_wprog$wprog\_vprog$vprog";
-        &run_mux_once($rise_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"), $iwcpt, 1e-13, $rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap);
+        &run_mux_once($rise_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,
+                      &process_unit($load_cap,"capacitance"), 
+                      $iwcpt, 1e-13, $rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap,
+                      &process_unit($cap_in_wire,"capacitance"), 
+                      &process_unit($cap_out_wire,"capacitance"));
+
 
         # Test falling delay
         $fall_tag = $tag."_fall_wcpt$iwcpt\_wprog$wprog\_vprog$vprog";
@@ -5337,7 +5384,11 @@ sub run_mux_elc($ $ $ $ $ $ $ $ $ $ $ $) {
           } 
         }  
         $input_vectors =~ s/,$//;
-        &run_mux_once($fall_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,&process_unit($load_cap,"capacitance"), $iwcpt, 1e-13,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap);
+        &run_mux_once($fall_tag,$ivsp,$mux_size,$sram_bits,$input_vectors,$d_slew,
+                      &process_unit($load_cap,"capacitance"), 
+                      $iwcpt, 1e-13,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap,
+                      &process_unit($cap_in_wire,"capacitance"), 
+                      &process_unit($cap_out_wire,"capacitance"));
   
         # Average rise and fall
         $avg_tag = $tag."_avg_wprog$wprog\_vprog$vprog";
@@ -5692,7 +5743,10 @@ sub sweep_components_vsp()  {
                  $opt_ptr->{rram_enhance},$opt_ptr->{wprog_sweep},
                  $conf_ptr->{general_settings}->{vsp_sweep}->{low_bound},
                  $conf_ptr->{general_settings}->{vsp_sweep}->{high_bound}, 
-                 $conf_ptr->{general_settings}->{vsp_sweep}->{step});
+                 $conf_ptr->{general_settings}->{vsp_sweep}->{step},
+                 $conf_ptr->{mux_settings}->{cap_in_wire}->{val},
+                 $conf_ptr->{mux_settings}->{cap_out_wire}->{val}
+                 );
   }
 
   if ("on" eq $opt_ptr->{rram2t1r}) {

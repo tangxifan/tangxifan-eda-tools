@@ -49,7 +49,7 @@ Model name: rram_random_v_1_0_0.va
 * https://nano.stanford.edu/stanford-rram-model
 *******************************************************************/
 
-//`include "constants.vams"
+`include "constants.vams"
 `include "disciplines.vams"
 
 module rram_v_1_0_0(TE, BE);//  electrical properties, top electrode, TE, bottom electrode BE
@@ -59,7 +59,7 @@ electrical      gap_out, R_out;
 //  Version Parameter
 parameter real		version		= 1.00 from(0:inf);
 // Switch to select Standard Model (0) or Dynamic Model (1)
-parameter integer	model_switch		= 0    from[0, 1];
+parameter integer	model_switch		= 0    from[0: 1];
 
 //  The following constants have been pre-defined in the constants.vams
 //  Boltzmann's constant in joules/kelvin, 'parameter real kb =  1.3806503e-23'
@@ -71,19 +71,19 @@ parameter real		q		= 1.6e-19;
   //  average switching fitting parameters g0, V0, I0, beta, gamma0
 parameter real		g0		= 0.25e-9 from(0:2e-9);
 parameter real		V0		= 0.8    from(0:10);
-parameter real		Vel0		= 0.7   from(0:20);
+parameter real		Vel0		= 0.7  from(0:20);
 parameter real		I0		= 570e-6 from(0:1e-2);
 parameter real		beta		= 1e-2    from(0:inf);
 parameter real		gamma0		= 17  from(0:inf); 
 //  threshold temperature for significant random variations
-parameter real		T_crit		= 450		from(390, 460);
+parameter real		T_crit		= 450		from(390: 460);
 //  variations fitting parameters
-parameter real          deltaGap0	= 0.02		from[0, 0.1);
+parameter real          deltaGap0	= 0.02		from[0: 0.1);
 
-parameter real		T_smth		= 500		from(400, 600);//  activation energy for vacancy generation
-parameter real		Ea		= 0.1 from(0:1);
+parameter real		T_smth		= 500		from(400: 600);//  activation energy for vacancy generation
+parameter real		Ea		= 0.165 from(0:1);
 //  atom spacing, a0
-parameter real		a0		= 0.25e-10 from(0:inf);
+parameter real		a0		= 0.268e-10 from(0:inf);
 //  initial room temperature in devices
 parameter real		T_ini		= 273 + 25 from(0:inf);
 //  minimum field requirement to enhance gap formation, F_min
@@ -99,9 +99,9 @@ parameter real		Rth		= 2.1e3 from(0:inf);
 //  oxide thickness, thickness
 parameter real		tox		= 10e-9 from(0:100e-9);
 // initial random seed
-parameter integer	rand_seed_ini	= 0 from(-1.6e9, 1.6e9);
+parameter integer	rand_seed_ini	= 0 from(-1.6e9: 1.6e9);
 // time step boundary
-parameter real		time_step	= 1e-9 from(1e-15, 1);
+parameter real		time_step	= 1e-9 from(1e-15: 1);
 //  voltage V(TE, BE), Vtb; current I(TE, BE), Itb
 real			Vtb, Itb;  
 //  present temperature in devices, temp
@@ -117,13 +117,13 @@ real			gamma_ini;
 integer			rand_seed;
 real			deltaGap;
 // Xifan TANG: debugging
-parameter real Vread = 0.9 from(0,inf); // [V] read out voltage
+parameter real Vread = 0.9 from(0:inf); // [V] read out voltage
 // Xifan TANG: for print gap changing
 real			cur_gap;
-parameter real Vset = 1.2 from (0, inf);
-parameter real Vrst = -1.2 from (-inf, 0);
+parameter real Vset = 1.2 from (0: inf);
+parameter real Vrst = -1.2 from (-inf: 0);
 real			act_gap;
-parameter integer	print_gap		= 0    from[0, 1];
+parameter integer	print_gap		= 0    from[0: 1];
 
 parameter real		pulse_width = 20n;
 	analog begin
@@ -143,7 +143,7 @@ parameter real		pulse_width = 20n;
 		gamma_ini = gamma0;
 //added		
 		if(Vtb < 0) begin
-			gamma_ini = gamma0;
+			gamma_ini = 16;
 		end	
 		gamma = gamma_ini - beta * pow((( gap )/1e-9), 3);
 
