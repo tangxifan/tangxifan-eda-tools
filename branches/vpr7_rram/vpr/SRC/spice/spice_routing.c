@@ -1983,9 +1983,9 @@ void generate_spice_routing_resources(char* subckt_dir,
   vpr_printf(TIO_MESSAGE_INFO, "Writing Switch Boxes...\n");
   for (ix = 0; ix < (nx + 1); ix++) {
     for (iy = 0; iy < (ny + 1); iy++) {
-      update_spice_models_routing_index_low(ix, iy, arch.spice->num_spice_model, arch.spice->spice_models);
+      update_spice_models_routing_index_low(ix, iy, SOURCE, arch.spice->num_spice_model, arch.spice->spice_models);
       fprint_routing_switch_box_subckt(fp, ix, iy, LL_rr_node_indices);
-      update_spice_models_routing_index_high(ix, iy, arch.spice->num_spice_model, arch.spice->spice_models);
+      update_spice_models_routing_index_high(ix, iy, SOURCE, arch.spice->num_spice_model, arch.spice->spice_models);
     }
   }
 
@@ -1995,18 +1995,18 @@ void generate_spice_routing_resources(char* subckt_dir,
   for (iy = 0; iy < (ny + 1); iy++) {
     for (ix = 1; ix < (nx + 1); ix++) {
       chan_width = chan_width_x[iy];
-      update_spice_models_routing_index_low(ix, iy, arch.spice->num_spice_model, arch.spice->spice_models);
+      update_spice_models_routing_index_low(ix, iy, CHANX, arch.spice->num_spice_model, arch.spice->spice_models);
       fprint_routing_connection_box_subckt(fp, CHANX, ix, iy, chan_width, LL_rr_node_indices);
-      update_spice_models_routing_index_high(ix, iy, arch.spice->num_spice_model, arch.spice->spice_models);
+      update_spice_models_routing_index_high(ix, iy, CHANX, arch.spice->num_spice_model, arch.spice->spice_models);
     }
   }
   /* Y - channels [1...ny][0..nx]*/
   for (ix = 0; ix < (nx + 1); ix++) {
     for (iy = 1; iy < (ny + 1); iy++) {
       chan_width = chan_width_y[ix];
-      update_spice_models_routing_index_low(ix, iy, arch.spice->num_spice_model, arch.spice->spice_models);
+      update_spice_models_routing_index_low(ix, iy, CHANY, arch.spice->num_spice_model, arch.spice->spice_models);
       fprint_routing_connection_box_subckt(fp, CHANY, ix, iy, chan_width, LL_rr_node_indices);
-      update_spice_models_routing_index_high(ix, iy, arch.spice->num_spice_model, arch.spice->spice_models);
+      update_spice_models_routing_index_high(ix, iy, CHANY, arch.spice->num_spice_model, arch.spice->spice_models);
     }
   }
   

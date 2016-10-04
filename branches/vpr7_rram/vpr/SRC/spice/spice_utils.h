@@ -270,17 +270,17 @@ void free_one_spice_model_routing_index_low_high(t_spice_model* cur_spice_model)
 void free_spice_model_routing_index_low_high(int num_spice_models, 
                                              t_spice_model* spice_model);
 
-void update_one_spice_model_routing_index_high(int x, int y, 
+void update_one_spice_model_routing_index_high(int x, int y, t_rr_type chan_type,
                                                t_spice_model* cur_spice_model);
 
-void update_spice_models_routing_index_high(int x, int y, 
+void update_spice_models_routing_index_high(int x, int y, t_rr_type chan_type, 
                                             int num_spice_models, 
                                             t_spice_model* spice_model);
 
-void update_one_spice_model_routing_index_low(int x, int y, 
+void update_one_spice_model_routing_index_low(int x, int y, t_rr_type chan_type,
                                                t_spice_model* cur_spice_model);
 
-void update_spice_models_routing_index_low(int x, int y, 
+void update_spice_models_routing_index_low(int x, int y, t_rr_type chan_type,
                                            int num_spice_models, 
                                            t_spice_model* spice_model);
 

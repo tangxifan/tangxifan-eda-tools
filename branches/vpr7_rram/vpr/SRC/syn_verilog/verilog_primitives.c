@@ -53,7 +53,7 @@ void dump_verilog_pb_primitive_ff(FILE* fp,
   int num_clock_port = 0;
   t_spice_model_port** clock_ports = NULL;
 
-  char* formatted_subckt_prefix = format_spice_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
+  char* formatted_subckt_prefix = format_verilog_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
   t_pb_type* prim_pb_type = NULL;
   char* port_prefix = NULL;
 
@@ -187,7 +187,7 @@ void dump_verilog_pb_primitive_hardlogic(FILE* fp,
   int num_clock_port = 0;
   t_spice_model_port** clock_ports = NULL;
 
-  char* formatted_subckt_prefix = format_spice_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
+  char* formatted_subckt_prefix = format_verilog_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
   t_pb_type* prim_pb_type = NULL;
   char* port_prefix = NULL;
 
@@ -233,6 +233,9 @@ void dump_verilog_pb_primitive_hardlogic(FILE* fp,
           formatted_subckt_prefix, port_prefix);
   /* Definition line */
   fprintf(fp, "module %s%s (", formatted_subckt_prefix, port_prefix);
+  /* print global set and reset */
+  fprintf(fp, "input greset,\n");
+  fprintf(fp, "input gset,\n");
   /* print ports*/
   dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, TRUE, FALSE); 
   /* Local vdd and gnd*/
@@ -291,7 +294,7 @@ void dump_verilog_pb_primitive_io(FILE* fp,
   int num_sram = 0;
   int sram_bit = 0;
 
-  char* formatted_subckt_prefix = format_spice_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
+  char* formatted_subckt_prefix = format_verilog_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
   t_pb_type* prim_pb_type = NULL;
   char* port_prefix = NULL;
 
@@ -341,6 +344,9 @@ void dump_verilog_pb_primitive_io(FILE* fp,
           formatted_subckt_prefix, port_prefix);
   /* Definition line */
   fprintf(fp, "module %s%s (", formatted_subckt_prefix, port_prefix);
+  /* print global set and reset */
+  fprintf(fp, "input greset,\n");
+  fprintf(fp, "input gset,\n");
   /* print ports*/
   switch (verilog_model->type) {
   case SPICE_MODEL_INPAD:

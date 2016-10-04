@@ -2921,7 +2921,7 @@ void free_spice_model_routing_index_low_high(int num_spice_models,
   return;
 }
 
-void update_one_spice_model_routing_index_high(int x, int y, 
+void update_one_spice_model_routing_index_high(int x, int y, t_rr_type chan_type,
                                                t_spice_model* cur_spice_model) {
   /* Check */
   assert((!(0 > x))&&(!(x > (nx + 1))));
@@ -2935,26 +2935,30 @@ void update_one_spice_model_routing_index_high(int x, int y,
   assert(NULL != cur_spice_model->cby_index_high[x]); 
 
   /* Assigne the low */ 
-  cur_spice_model->cbx_index_high[x][y] = cur_spice_model->cnt;
-  cur_spice_model->cby_index_high[x][y] = cur_spice_model->cnt;
-  cur_spice_model->sb_index_high[x][y] = cur_spice_model->cnt;
+  if (CHANX == chan_type) {
+    cur_spice_model->cbx_index_high[x][y] = cur_spice_model->cnt;
+  } else if (CHANY == chan_type) {
+    cur_spice_model->cby_index_high[x][y] = cur_spice_model->cnt;
+  } else if (SOURCE == chan_type) {
+    cur_spice_model->sb_index_high[x][y] = cur_spice_model->cnt;
+  } 
 
   return;
 }
 
-void update_spice_models_routing_index_high(int x, int y, 
+void update_spice_models_routing_index_high(int x, int y, t_rr_type chan_type,
                                             int num_spice_models, 
                                             t_spice_model* spice_model) {
   int i;
 
   for (i = 0; i < num_spice_models; i++) {
-    update_one_spice_model_routing_index_high(x, y, &(spice_model[i]));
+    update_one_spice_model_routing_index_high(x, y, chan_type, &(spice_model[i]));
   }
 
   return;
 }
 
-void update_one_spice_model_routing_index_low(int x, int y, 
+void update_one_spice_model_routing_index_low(int x, int y, t_rr_type chan_type,
                                              t_spice_model* cur_spice_model) {
   /* Check */
   assert((!(0 > x))&&(!(x > (nx + 1))));
@@ -2968,20 +2972,24 @@ void update_one_spice_model_routing_index_low(int x, int y,
   assert(NULL != cur_spice_model->cby_index_low[x]); 
 
   /* Assigne the low */ 
-  cur_spice_model->cbx_index_low[x][y] = cur_spice_model->cnt;
-  cur_spice_model->cby_index_low[x][y] = cur_spice_model->cnt;
-  cur_spice_model->sb_index_low[x][y] = cur_spice_model->cnt;
+  if (CHANX == chan_type) {
+    cur_spice_model->cbx_index_low[x][y] = cur_spice_model->cnt;
+  } else if (CHANY == chan_type) {
+    cur_spice_model->cby_index_low[x][y] = cur_spice_model->cnt;
+  } else if (SOURCE == chan_type) {
+    cur_spice_model->sb_index_low[x][y] = cur_spice_model->cnt;
+  }
 
   return;
 }
 
-void update_spice_models_routing_index_low(int x, int y, 
+void update_spice_models_routing_index_low(int x, int y, t_rr_type chan_type, 
                                            int num_spice_models, 
                                            t_spice_model* spice_model) {
   int i;
 
   for (i = 0; i < num_spice_models; i++) {
-    update_one_spice_model_routing_index_low(x, y, &(spice_model[i]));
+    update_one_spice_model_routing_index_low(x, y, chan_type, &(spice_model[i]));
   }
 
   return;

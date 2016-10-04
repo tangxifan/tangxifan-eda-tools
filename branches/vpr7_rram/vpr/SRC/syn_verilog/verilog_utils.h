@@ -15,3 +15,7 @@ void decode_verilog_rram_mux(t_spice_model* mux_spice_model,
                              int* bit_len, int** conf_bits, int* mux_level);
 
 int determine_decoder_size(int num_addr_out);
+
+char* chomp_verilog_node_prefix(char* verilog_node_prefix);
+
+char* format_verilog_node_prefix(char* verilog_node_prefix);

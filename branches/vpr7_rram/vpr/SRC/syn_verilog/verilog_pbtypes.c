@@ -406,7 +406,7 @@ void dump_verilog_pb_type_bus_ports(FILE* fp,
   int num_pb_type_clk_port = 0;
   t_port** pb_type_clk_ports = NULL;
 
-  char* formatted_port_prefix = chomp_spice_node_prefix(port_prefix);
+  char* formatted_port_prefix = chomp_verilog_node_prefix(port_prefix);
   /* A counter to stats the number of dumped ports and pins */
   int num_dumped_port = 0;
 
@@ -566,7 +566,7 @@ void dump_verilog_pb_type_ports(FILE* fp,
   int num_pb_type_clk_port = 0;
   t_port** pb_type_clk_ports = NULL;
 
-  char* formatted_port_prefix = chomp_spice_node_prefix(port_prefix);
+  char* formatted_port_prefix = chomp_verilog_node_prefix(port_prefix);
   /* A counter to stats the number of dumped ports and pins */
   int num_dumped_port = 0;
 
@@ -592,7 +592,7 @@ void dump_verilog_pb_type_ports(FILE* fp,
         }
       }
       if (TRUE == dump_port_type) {
-        fprintf(fp, "inout");
+        fprintf(fp, "inout wire");
       }
       fprintf(fp, "%s__%s_%d_ ", formatted_port_prefix, pb_type_inout_ports[iport]->name, ipin);
       /* Update the counter */
@@ -614,7 +614,7 @@ void dump_verilog_pb_type_ports(FILE* fp,
         }
       }
       if (TRUE == dump_port_type) {
-        fprintf(fp, "input");
+        fprintf(fp, "input wire");
       }
       fprintf(fp, " %s__%s_%d_", formatted_port_prefix, pb_type_input_ports[iport]->name, ipin);
       /* Update the counter */
@@ -635,7 +635,7 @@ void dump_verilog_pb_type_ports(FILE* fp,
         }
       }
       if (TRUE == dump_port_type) {
-        fprintf(fp, "output");
+        fprintf(fp, "output wire");
       }
       fprintf(fp, " %s__%s_%d_", formatted_port_prefix, pb_type_output_ports[iport]->name, ipin);
       /* Update the counter */
@@ -658,7 +658,7 @@ void dump_verilog_pb_type_ports(FILE* fp,
         }
       }
       if (TRUE == dump_port_type) {
-        fprintf(fp, "input");
+        fprintf(fp, "input wire");
       }
       fprintf(fp, " %s__%s_%d_", formatted_port_prefix, pb_type_clk_ports[iport]->name, ipin);
       /* Update the counter */
@@ -700,7 +700,7 @@ void dump_verilog_dangling_des_pb_graph_pin_interc(FILE* fp,
   t_interconnect* cur_interc = NULL;
   char* des_pin_prefix = NULL;
   
-  /* char* formatted_parent_pin_prefix = format_spice_node_prefix(parent_pin_prefix);*/  /* Complete a "_" at the end if needed*/
+  /* char* formatted_parent_pin_prefix = format_verilog_node_prefix(parent_pin_prefix);*/  /* Complete a "_" at the end if needed*/
   //char* chomped_parent_pin_prefix = chomp_verilog_node_prefix(parent_pin_prefix); /* Remove a "_" at the end if needed*/
 
   /* Check the file handler*/ 
@@ -806,7 +806,7 @@ void generate_verilog_src_des_pb_graph_pin_prefix(t_pb_graph_node* src_pb_graph_
   t_pb_type* des_pb_type = NULL;
   int des_pb_type_index = -1;
   
-  //char* formatted_parent_pin_prefix = format_spice_node_prefix(parent_pin_prefix); /* Complete a "_" at the end if needed*/
+  //char* formatted_parent_pin_prefix = format_verilog_node_prefix(parent_pin_prefix); /* Complete a "_" at the end if needed*/
   //char* chomped_parent_pin_prefix = chomp_verilog_node_prefix(parent_pin_prefix); /* Remove a "_" at the end if needed*/
   
   t_mode* pin2pin_interc_parent_mode = NULL; 
@@ -991,7 +991,7 @@ void dump_verilog_pb_graph_pin_interc(FILE* fp,
   t_pb_type* des_pb_type = NULL; 
   int des_pb_type_index = -1; 
 
-  char* formatted_parent_pin_prefix = chomp_spice_node_prefix(parent_pin_prefix); /* Complete a "_" at the end if needed*/
+  char* formatted_parent_pin_prefix = chomp_verilog_node_prefix(parent_pin_prefix); /* Complete a "_" at the end if needed*/
   char* src_pin_prefix = NULL;
   char* des_pin_prefix = NULL;
 
@@ -1143,7 +1143,7 @@ void dump_verilog_pb_graph_pin_interc(FILE* fp,
       /* Print */
       fprintf(fp, "assign in_bus_%s_size%d_%d_[%d] = ",
             cur_interc->spice_model->name, fan_in, cur_interc->spice_model->cnt, ipin);
-      fprintf(fp, "%s_%s_%d_ ; \n", 
+      fprintf(fp, "%s__%s_%d_ ; \n", 
               src_pin_prefix, src_pb_graph_pin->port->name, src_pb_graph_pin->pin_number);
       ipin++;
       /* Free */
@@ -1280,7 +1280,7 @@ void dump_verilog_pb_graph_interc(FILE* fp,
   t_pb* child_pb = NULL;
   int is_child_pb_idle = 0;
   
-  char* formatted_pin_prefix = format_spice_node_prefix(pin_prefix); /* Complete a "_" at the end if needed*/
+  char* formatted_pin_prefix = format_verilog_node_prefix(pin_prefix); /* Complete a "_" at the end if needed*/
 
   int node_index = -1;
   int prev_node = -1; 
@@ -1463,7 +1463,7 @@ void dump_verilog_pb_graph_primitive_node(FILE* fp,
                                           t_pb_graph_node* cur_pb_graph_node,
                                           int pb_type_index) {
   t_pb_type* cur_pb_type = NULL;
-  char* formatted_subckt_prefix = format_spice_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
+  char* formatted_subckt_prefix = format_verilog_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
   t_spice_model* verilog_model = NULL;
   char* subckt_name = NULL;
   char* subckt_port_name = NULL; 
@@ -1508,7 +1508,7 @@ void dump_verilog_pb_graph_primitive_node(FILE* fp,
    * IMPORTANT: NO SRAMs ports are created here, they are fixed when quoting spice_models
    */
   fprintf(fp, "module %s (", subckt_name);
-  subckt_port_name = format_spice_node_prefix(subckt_name); 
+  /* subckt_port_name = format_verilog_node_prefix(subckt_name); */
   /* Inputs, outputs, inouts, clocks */
   dump_verilog_pb_type_ports(fp, subckt_name, 0, cur_pb_type, TRUE, FALSE);
   /* SRAM ports */
@@ -1624,7 +1624,7 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
   int mode_index, ipb, jpb, child_mode_index;
   t_pb_type* cur_pb_type = NULL;
   char* subckt_name = NULL;
-  char* formatted_subckt_prefix = format_spice_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
+  char* formatted_subckt_prefix = format_verilog_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
   char* pass_on_prefix = NULL;
   char* child_pb_type_prefix = NULL;
   char* subckt_port_prefix = NULL;
@@ -1809,6 +1809,8 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
         /* <formatted_subckt_prefix>mode[<mode_name>]_<child_pb_type_name>[<ipb>]
          */
         fprintf(fp, "%s_%d_ (", cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
+        /* Global set and reset */
+        fprintf(fp, "greset, gset,\n");
         /* Pass the SPICE mode prefix on, 
          * <subckt_name>mode[<mode_name>]_<child_pb_type_name>[<jpb>]
          * <child_pb_type_name>[<jpb>]
@@ -1911,7 +1913,7 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
   int mode_index, ipb, jpb, child_mode_index;
   t_pb_type* cur_pb_type = NULL;
   char* subckt_name = NULL;
-  char* formatted_subckt_prefix = format_spice_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
+  char* formatted_subckt_prefix = format_verilog_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
   char* pass_on_prefix = NULL;
   char* child_pb_type_prefix = NULL;
 
@@ -2126,6 +2128,8 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
                   subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb); 
         }
         fprintf(fp, "%s_%d_ (", cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
+        /* Global set and reset */
+        fprintf(fp, "greset, gset,\n");
         /* Pass the SPICE mode prefix on, 
          * <subckt_name>mode[<mode_name>]_<child_pb_type_name>[<jpb>]
          */
@@ -2224,7 +2228,7 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
   int mode_index, ipb, jpb, child_mode_index;
   t_pb_type* cur_pb_type = NULL;
   char* subckt_name = NULL;
-  char* formatted_subckt_prefix = format_spice_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
+  char* formatted_subckt_prefix = format_verilog_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
   char* pass_on_prefix = NULL;
   char* child_pb_type_prefix = NULL;
   char* subckt_port_prefix = NULL;
@@ -2356,24 +2360,24 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
     dump_verilog_pb_type_ports(fp, subckt_port_prefix, 0, cur_pb_type, TRUE, FALSE);
     /* Print Input Pad and Output Pad */
     if (0 < (inpad_verilog_model->cnt - stamped_inpad_cnt)) {
-      fprintf(fp, ",");
-      fprintf(fp, "  input [%d:%d] %s%s \n", 
+      fprintf(fp, ",\n");
+      fprintf(fp, "  input [%d:%d] %s%s ", 
               inpad_verilog_model->cnt - 1, 
               stamped_inpad_cnt,
               gio_input_prefix,
               inpad_verilog_model->prefix); 
     }
     if (0 < (outpad_verilog_model->cnt - stamped_outpad_cnt)) {
-      fprintf(fp, ",");
-      fprintf(fp, "  output [%d:%d] %s%s \n", 
+      fprintf(fp, ",\n");
+      fprintf(fp, "  output [%d:%d] %s%s ", 
               outpad_verilog_model->cnt - 1, 
               stamped_outpad_cnt,
               gio_output_prefix,
               outpad_verilog_model->prefix);
     }
     if (0 < (iopad_verilog_model->cnt - stamped_iopad_cnt)) {
-      fprintf(fp, ",");
-      fprintf(fp, "  inout [%d:%d] %s%s \n", 
+      fprintf(fp, ",\n");
+      fprintf(fp, "  inout [%d:%d] %s%s ", 
               iopad_verilog_model->cnt - 1, 
               stamped_iopad_cnt,
               gio_inout_prefix,
@@ -2388,7 +2392,7 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
      */
     num_conf_bits = cur_pb_type->physical_mode_num_conf_bits;
     if (0 < num_conf_bits) {
-      fprintf(fp, ",");
+      fprintf(fp, ",\n");
       fprintf(fp, "  input [%d:%d] %s_out, \n", 
               stamped_sram_cnt + num_conf_bits - 1, 
               stamped_sram_cnt,
@@ -2424,6 +2428,9 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
         /* <formatted_subckt_prefix>mode[<mode_name>]_<child_pb_type_name>[<ipb>]
          */
         fprintf(fp, "%s_%d_ (", cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
+        /* Print global set and reset */
+        fprintf(fp, "greset, ");
+        fprintf(fp, "gset, ");
         /* Pass the SPICE mode prefix on, 
          * <subckt_name>mode[<mode_name>]_<child_pb_type_name>[<jpb>]
          * <child_pb_type_name>[<jpb>]
@@ -2460,7 +2467,7 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
         }
         assert(!(0 > cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_outpads));
         if (0 < cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_outpads) {
-          fprintf(fp, ",");
+          fprintf(fp, ",\n");
           fprintf(fp, "  %s%s[%d:%d] \n", 
                   gio_output_prefix,
                   outpad_verilog_model->prefix, 
@@ -2471,7 +2478,7 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
         }
         assert(!(0 > cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_iopads));
         if (0 < cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_iopads) {
-          fprintf(fp, ",");
+          fprintf(fp, ",\n");
           fprintf(fp, "  %s%s[%d:%d] \n", 
                   gio_inout_prefix,
                   iopad_verilog_model->prefix, 
@@ -2483,7 +2490,7 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
         /* Print configuration ports */
         assert(!(0 > cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_conf_bits));
         if (0 < cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_conf_bits) {
-          fprintf(fp, ",");
+          fprintf(fp, ",\n");
           fprintf(fp, "  %s_out[%d:%d], \n", 
                   sram_verilog_model->prefix, 
                   stamped_sram_cnt + cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_conf_bits - 1,
@@ -2828,7 +2835,7 @@ char* verilog_get_grid_block_subckt_name(int x, int y, int z,
   char* ret = NULL;
   int imode; 
   t_type_ptr type_descriptor = NULL;
-  char* formatted_subckt_prefix = format_spice_node_prefix(subckt_prefix);
+  char* formatted_subckt_prefix = format_verilog_node_prefix(subckt_prefix);
   int num_idle_mode = 0;
 
   /* Check */
@@ -2877,7 +2884,7 @@ char* verilog_get_grid_phy_block_subckt_name(int x, int y, int z,
   char* ret = NULL;
   int imode; 
   t_type_ptr type_descriptor = NULL;
-  char* formatted_subckt_prefix = format_spice_node_prefix(subckt_prefix);
+  char* formatted_subckt_prefix = format_verilog_node_prefix(subckt_prefix);
   int num_physical_mode = 0;
 
   /* Check */

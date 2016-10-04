@@ -1330,7 +1330,7 @@ void fprint_spice_pb_graph_primitive_node(FILE* fp,
   fprintf(fp, ".subckt %s ", subckt_name);
   subckt_port_name = format_spice_node_prefix(subckt_name); 
   /* Inputs, outputs, inouts, clocks */
-  fprint_pb_type_ports(fp, subckt_name, 0, cur_pb_type);
+  fprint_pb_type_ports(fp, subckt_port_name, 0, cur_pb_type);
   /* Finish with local vdd and gnd */
   fprintf(fp, "svdd sgnd\n");
   /* Include the spice_model*/

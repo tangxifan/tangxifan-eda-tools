@@ -131,7 +131,7 @@ set(gca,'XTick',mux_size_list);
 %set(gca,'XTickLabel',fc_in);
 %set(gca,'ylim',[10 22],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca, 'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
-hleg = legend([{'Basic 4T1R MUX'}, {'Improved 4T1R MUX (x=0)'}, {'Improved 4T1R (x=1)'}]);
+hleg = legend([{'Basic 4T1R MUX'}, {'Improved 4T1R MUX (x=0)'}, {'Improved 4T1R MUX (x=L)'}]);
 set(fig_handle1, 'Position', [1 1 650 500]);
 grid on
 
@@ -157,7 +157,7 @@ set(gca,'XTick',mux_size_list);
 %set(gca,'XTickLabel',fc_in);
 %set(gca,'ylim',[10 22],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca, 'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
-hleg = legend([{'Basic 4T1R MUX'}, {'Improved 4T1R MUX (x=0)'}, {'Improved 4T1R (x=1)'}]);
+hleg = legend([{'Basic 4T1R MUX'}, {'Improved 4T1R MUX (x=0)'}, {'Improved 4T1R MUX (x=L)'}]);
 set(fig_handle1, 'Position', [1 1 650 500]);
 grid on
 

@@ -57,7 +57,7 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   int num_pb_type_output_port = 0;
   t_port** pb_type_output_ports = NULL;
 
-  char* formatted_subckt_prefix = format_spice_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
+  char* formatted_subckt_prefix = format_verilog_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
   t_pb_type* cur_pb_type = NULL;
   char* port_prefix = NULL;
   int cur_sram = 0;
@@ -117,6 +117,9 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   /* Subckt definition*/
   fprintf(fp, "module %s%s_%d_ (", 
           formatted_subckt_prefix, cur_pb_type->name, index);
+  /* global set and reset */
+  fprintf(fp, "input greset,\n");
+  fprintf(fp, "input gset,\n");
   /* Print inputs, outputs, inouts, clocks, NO SRAMs*/
   /*
   port_prefix = (char*)my_malloc(sizeof(char)*
@@ -155,20 +158,20 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   /* Specify inputs are wires */
   pb_type_input_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_INPUT, &num_pb_type_input_port); 
   assert(1 == num_pb_type_input_port);
-  fprintf(fp, "wire [0:%d] %s_%s;\n",
+  fprintf(fp, "wire [0:%d] %s__%s;\n",
           input_ports[0]->size - 1, port_prefix, pb_type_input_ports[0]->name);
   for (i = 0; i < input_ports[0]->size; i++) {
-    fprintf(fp, "assign %s_%s[%d] = %s_%s_%d_;\n",
+    fprintf(fp, "assign %s__%s[%d] = %s__%s_%d_;\n",
                 port_prefix, pb_type_input_ports[0]->name, i,
                 port_prefix, pb_type_input_ports[0]->name, i);
   }
   /* Specify outputs are wires */
   pb_type_output_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_OUTPUT, &num_pb_type_output_port); 
   assert(1 == num_pb_type_output_port);
-  fprintf(fp, "wire [0:%d] %s_%s;\n",
+  fprintf(fp, "wire [0:%d] %s__%s;\n",
           output_ports[0]->size - 1, port_prefix, pb_type_output_ports[0]->name);
   for (i = 0; i < output_ports[0]->size; i++) {
-    fprintf(fp, "assign %s_%s[%d] = %s_%s_%d_;\n",
+    fprintf(fp, "assign %s__%s[%d] = %s__%s_%d_;\n",
                 port_prefix, pb_type_output_ports[0]->name, i,
                 port_prefix, pb_type_output_ports[0]->name, i);
   }

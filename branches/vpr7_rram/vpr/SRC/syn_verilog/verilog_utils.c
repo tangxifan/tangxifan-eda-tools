@@ -277,3 +277,52 @@ void decode_verilog_rram_mux(t_spice_model* mux_spice_model,
 int determine_decoder_size(int num_addr_out) {
   return ceil(log(num_addr_out)/log(2.));
 }
+
+char* chomp_verilog_node_prefix(char* verilog_node_prefix) {
+  int len = 0;
+  char* ret = NULL;
+
+  if (NULL == verilog_node_prefix) {
+    return NULL;
+  }
+
+  len = strlen(verilog_node_prefix); /* String length without the last "\0"*/
+  ret = (char*)my_malloc(sizeof(char)*(len+1));
+  
+  /* Don't do anything when input is NULL*/
+  if (NULL == verilog_node_prefix) {
+    my_free(ret);
+    return NULL;
+  }
+
+  strcpy(ret,verilog_node_prefix);
+  /* If the path end up with "_" we should remove it*/
+  /*
+  if ('_' == ret[len-1]) {
+    ret[len-1] = ret[len];
+  }
+  */
+
+  return ret;
+}
+
+char* format_verilog_node_prefix(char* verilog_node_prefix) {
+  int len = strlen(verilog_node_prefix); /* String length without the last "\0"*/
+  char* ret = (char*)my_malloc(sizeof(char)*(len+1));
+ 
+  /* Don't do anything when input is NULL*/ 
+  if (NULL == verilog_node_prefix) {
+    my_free(ret);
+    return NULL;
+  }
+
+  strcpy(ret,verilog_node_prefix);
+  /* If the path does not end up with "_" we should complete it*/
+  /*
+  if (ret[len-1] != '_') {
+    strcat(ret, "_");
+  }
+  */
+  return ret;
+}
+
