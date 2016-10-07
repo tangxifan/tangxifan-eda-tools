@@ -1,5 +1,6 @@
 /* global parameters for dumping synthesizable verilog */
 extern char* verilog_top_postfix;
+extern char* bitstream_file_postfix;
 extern char* logic_block_verilog_file_name;
 extern char* luts_verilog_file_name;
 extern char* routing_verilog_file_name;

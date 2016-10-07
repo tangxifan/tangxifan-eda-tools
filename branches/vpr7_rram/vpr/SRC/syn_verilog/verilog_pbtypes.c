@@ -1272,6 +1272,7 @@ void dump_verilog_pb_graph_pin_interc(FILE* fp,
                __FILE__, __LINE__, cur_interc->name, cur_interc->line_num);
     exit(1);
   }
+
   return;
 }
 
@@ -1906,9 +1907,7 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
     my_free(subckt_name);
   }
 
-  if (stamped_sram_cnt != sram_verilog_model->cnt) {
   assert(stamped_sram_cnt == sram_verilog_model->cnt);
-  }
   assert(stamped_inpad_cnt == inpad_verilog_model->cnt); 
   assert(stamped_outpad_cnt == outpad_verilog_model->cnt);
 

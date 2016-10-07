@@ -56,6 +56,19 @@ t_llist* insert_llist_node(t_llist* cur) {
 }
 
 /**
+ * Insert a node inside the linked list
+ * The inserted node will be before the old head, becoming the new head
+ */
+t_llist* insert_llist_node_before_head(t_llist* old_head) {
+  /* Allocate new node*/
+  t_llist* new_head = (t_llist*)my_malloc(sizeof(t_llist));
+  /* Store the current next*/  
+  new_head->next = old_head;
+
+  return new_head;
+}
+
+/**
  * Romove a node from linked list
  * cur is the node whose next node is to be removed
  */

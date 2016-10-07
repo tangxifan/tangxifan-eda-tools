@@ -11,6 +11,8 @@ t_llist* create_llist(int len);
 
 t_llist* insert_llist_node(t_llist* cur);
 
+t_llist* insert_llist_node_before_head(t_llist* old_head);
+
 void remove_llist_node(t_llist* cur);
 
 t_llist* cat_llists(t_llist* head1,

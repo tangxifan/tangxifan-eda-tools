@@ -222,25 +222,24 @@ void decode_verilog_rram_mux(t_spice_model* mux_spice_model,
   (*mux_level) = 0;
   (*bit_len) = 0;
   (*conf_bits) = NULL;
+
+  (*bit_len) = 2* count_num_conf_bits_one_spice_model(mux_spice_model, mux_size);
   
   /* Switch cases: MUX structure */
   switch (mux_spice_model->structure) {
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
     /* Number of configuration bits is 2*(input_size+1) */
     num_level = 1;
-    (*bit_len) = 2 * (mux_size + 1);
     break;
   case SPICE_MODEL_STRUCTURE_TREE:
     /* Number of configuration bits is num_level* 2*(basis+1) */
     num_level = determine_tree_mux_level(mux_size); 
     num_input_basis = 2;
-    (*bit_len) = num_level * 2 * (num_input_basis + 1);
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
     /* Number of configuration bits is num_level* 2*(basis+1) */
     num_level = mux_spice_model->mux_num_level; 
     num_input_basis = determine_num_input_basis_multilevel_mux(mux_size, num_level);
-    (*bit_len) = num_level * 2 * (num_input_basis + 1);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid MUX structure!\n", 
