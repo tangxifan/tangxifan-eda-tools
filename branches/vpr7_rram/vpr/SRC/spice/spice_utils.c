@@ -2418,6 +2418,9 @@ int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
       if (SPICE_MODEL_STRUCTURE_TREE == cur_spice_model->structure) {
       /* For tree-structure: we need 3 times more config. bits */
         num_conf_bits = 3 * num_conf_bits;
+      } else if (SPICE_MODEL_STRUCTURE_MULTILEVEL == cur_spice_model->structure) {
+      /* For multi-level structure: we need 1 more config. bits for each level */
+        num_conf_bits += cur_spice_model->mux_num_level;
       } else {
         num_conf_bits = (num_conf_bits + 1);
       }
@@ -2472,7 +2475,6 @@ int count_num_conf_bit_one_interc(t_interconnect* cur_interc) {
   enum e_interconnect spice_interc_type = DIRECT_INTERC;
 
   int num_conf_bits = 0;
-  int mux_level = 0;
 
   /* 1. identify pin interconnection type, 
    * 2. Identify the number of fan-in (Consider interconnection edges of only selected mode)
@@ -2528,32 +2530,7 @@ int count_num_conf_bit_one_interc(t_interconnect* cur_interc) {
     /* 2. spice_model is a wire */ 
     assert(NULL != cur_interc->spice_model);
     assert(SPICE_MODEL_MUX == cur_interc->spice_model->type);
-    /* Note: 2-input MUX has only 1 conf_bit */
-    if (2 == fan_in) {
-      num_conf_bits = 1;
-      /* FOR COMPLETE_INTERC: we should consider fan_out number ! */
-      num_conf_bits = num_conf_bits * cur_interc->fan_out;
-      break;
-    }
-    switch (cur_interc->spice_model->structure) {
-    case SPICE_MODEL_STRUCTURE_TREE:
-      /* 1. Get the mux level*/
-      mux_level = determine_tree_mux_level(fan_in);
-      num_conf_bits = mux_level;
-      break;
-    case SPICE_MODEL_STRUCTURE_ONELEVEL:
-      mux_level = 1;
-      num_conf_bits = fan_in;
-      break;
-    case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-      mux_level = cur_interc->spice_model->mux_num_level;
-      num_conf_bits = determine_num_input_basis_multilevel_mux(fan_in, mux_level) * mux_level;
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
-                 __FILE__, __LINE__, cur_interc->spice_model->name);
-      exit(1);
-    } 
+    num_conf_bits = count_num_conf_bits_one_spice_model(cur_interc->spice_model, fan_in);
     /* FOR COMPLETE_INTERC: we should consider fan_out number ! */
     num_conf_bits = num_conf_bits * cur_interc->fan_out;
     break;

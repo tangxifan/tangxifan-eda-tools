@@ -819,14 +819,28 @@ void dump_verilog_switch_box_mux(FILE* fp,
   }
 
   /* Print SRAMs that configure this MUX */
-  /* TODO: What about RRAM-based MUX? */
-  cur_num_sram = sram_verilog_model->cnt;
-  fprintf(fp,"%s_out[%d:%d], ", 
-          sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits - 1, cur_num_sram);
-  fprintf(fp,"%s_outb[%d:%d] ", 
-          sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits - 1, cur_num_sram);
-  cur_num_sram += num_mux_sram_bits;
-  /* End */
+  switch (verilog_model->design_tech) {
+  case SPICE_MODEL_DESIGN_CMOS:
+    cur_num_sram = sram_verilog_model->cnt;
+    fprintf(fp,"%s_out[%d:%d], ", 
+            sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits - 1, cur_num_sram);
+    fprintf(fp,"%s_outb[%d:%d] ", 
+            sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits - 1, cur_num_sram);
+    cur_num_sram += num_mux_sram_bits;
+    /* End */
+    break;
+  case SPICE_MODEL_DESIGN_RRAM:
+    cur_num_sram = sram_verilog_model->cnt;
+    fprintf(fp,"%s_out[%d:%d], ", 
+            sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits/2 - 1, cur_num_sram);
+    fprintf(fp,"%s_outb[%d:%d] ", 
+            sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits/2 - 1, cur_num_sram);
+    cur_num_sram += num_mux_sram_bits/2;
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",
+               __FILE__, __LINE__, verilog_model->name);
+  }
   fprintf(fp, ");\n");
   
   /* Print the encoding in SPICE netlist for debugging */
@@ -866,7 +880,6 @@ void dump_verilog_switch_box_mux(FILE* fp,
                                                   verilog_model);
       cur_num_sram++;
     }
-    fprintf(fp, "-----\n");
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",
@@ -1710,13 +1723,28 @@ void dump_verilog_connection_box_mux(FILE* fp,
   }
  
   /* Print SRAMs that configure this MUX */
-  /* TODO: What about RRAM-based MUX? */
-  cur_num_sram = sram_verilog_model->cnt;
-  fprintf(fp, "%s_out[%d:%d], ", 
-              sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits - 1, cur_num_sram);
-  fprintf(fp, "%s_outb[%d:%d] ", 
-              sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits - 1, cur_num_sram);
-  cur_num_sram += num_mux_sram_bits;
+  switch (mux_verilog_model->design_tech) {
+  case SPICE_MODEL_DESIGN_CMOS:
+    cur_num_sram = sram_verilog_model->cnt;
+    fprintf(fp, "%s_out[%d:%d], ", 
+                sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits - 1, cur_num_sram);
+    fprintf(fp, "%s_outb[%d:%d] ", 
+                sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits - 1, cur_num_sram);
+    cur_num_sram += num_mux_sram_bits;
+    /* End */
+    break;
+  case SPICE_MODEL_DESIGN_RRAM:
+    cur_num_sram = sram_verilog_model->cnt;
+    fprintf(fp,"%s_out[%d:%d], ", 
+            sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits/2 - 1, cur_num_sram);
+    fprintf(fp,"%s_outb[%d:%d] ", 
+            sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits/2 - 1, cur_num_sram);
+    cur_num_sram += num_mux_sram_bits/2;
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",
+               __FILE__, __LINE__, mux_verilog_model->name);
+  }
 
   /* End with svdd and sgnd, subckt name*/
   fprintf(fp, ");\n");
@@ -1758,7 +1786,6 @@ void dump_verilog_connection_box_mux(FILE* fp,
                                                   mux_verilog_model);
       cur_num_sram++;
     }
-    fprintf(fp, "-----\n");
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",

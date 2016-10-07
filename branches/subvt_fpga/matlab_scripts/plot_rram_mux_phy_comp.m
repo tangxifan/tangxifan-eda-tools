@@ -20,11 +20,19 @@ sram_mux_parasitic_fig_data
 % Basic design
 
 %% improved design 
+rram_mux_naive_1level_parasitic_fig_data
 rram_mux_basic_1level_parasitic_fig_data
 rram_mux_improv_1level_parasitic_x0_fig_data
 rram_mux_improv_1level_parasitic_x1_fig_data
 
 %% Classify the data into different array
+% Naive design
+% VDD= 0.5V
+rram_mux_naive_1level_parasitic_0p5V_3fin = rram_mux_naive_1level_parasitic_0p5V;
+% VDD= 0.6V
+rram_mux_naive_1level_parasitic_0p6V_3fin = rram_mux_naive_1level_parasitic_0p6V;
+% VDD= 0.7V
+rram_mux_naive_1level_parasitic_0p7V_3fin = rram_mux_naive_1level_parasitic_0p7V;
 % Basic design 
 % VDD= 0.5V
 rram_mux_basic_1level_parasitic_0p5V_1fin = rram_mux_basic_1level_parasitic_0p5V(1:3:end,:);
@@ -114,9 +122,12 @@ fig_handle1 = figure;
 % SRAM MUX delay VDD=0.7V
 %plot(sram_mux_parasitic_0p7V(:,1), sram_mux_parasitic_0p7V(:,2)/1e-12,'k-o','LineWidth', 2, 'MarkerSize',10);
 %hold on
-% Basic 4T1R MUX
-plot(rram_mux_basic_1level_parasitic_0p7V_3fin(:,1), rram_mux_basic_1level_parasitic_0p7V_3fin(:,3)/1e-12,'m-^','LineWidth', 2, 'MarkerSize',10);
+% Naive 4T1R MUX
+plot(rram_mux_naive_1level_parasitic_0p7V_3fin(:,1), rram_mux_naive_1level_parasitic_0p7V_3fin(:,3)/1e-12,'m-^','LineWidth', 2, 'MarkerSize',10);
 hold on
+% Basic 4T1R MUX
+%plot(rram_mux_basic_1level_parasitic_0p7V_3fin(:,1), rram_mux_basic_1level_parasitic_0p7V_3fin(:,3)/1e-12,'m-^','LineWidth', 2, 'MarkerSize',10);
+%hold on
 % Improved 4T1R MUX x=0 delay, RRAM is close to input inverters
 plot(rram_mux_improv_1level_parasitic_x0_0p7V_3fin(:,1), rram_mux_improv_1level_parasitic_x0_0p7V_3fin(:,3)/1e-12,'r-*','LineWidth', 2, 'MarkerSize',10);
 hold on
@@ -129,9 +140,9 @@ ylabel('Delay (ps)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
 %set(gca,'xlim',[0.1 1],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'XTick',mux_size_list);
 %set(gca,'XTickLabel',fc_in);
-%set(gca,'ylim',[10 22],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+set(gca,'ylim',[8 23],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca, 'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
-hleg = legend([{'Basic 4T1R MUX'}, {'Improved 4T1R MUX (x=0)'}, {'Improved 4T1R MUX (x=L)'}]);
+hleg = legend([{'Naive 4T1R MUX'}, {'Improved 4T1R MUX (x=0)'}, {'Improved 4T1R MUX (x=L)'}]);
 set(fig_handle1, 'Position', [1 1 650 500]);
 grid on
 
@@ -140,9 +151,12 @@ fig_handle1_1 = figure;
 % SRAM MUX delay VDD=0.7V
 %plot(sram_mux_parasitic_0p7V(:,1), sram_mux_parasitic_0p7V(:,4)/1e-6,'k-o','LineWidth', 2, 'MarkerSize',10);
 %hold on
-% Basic 4T1R MUX
-plot(rram_mux_basic_1level_parasitic_0p7V_3fin(:,1), rram_mux_basic_1level_parasitic_0p7V_3fin(:,5)/1e-6,'m-^','LineWidth', 2, 'MarkerSize',10);
+% Naive 4T1R MUX
+plot(rram_mux_naive_1level_parasitic_0p7V_3fin(:,1), rram_mux_naive_1level_parasitic_0p7V_3fin(:,5)/1e-6,'m-^','LineWidth', 2, 'MarkerSize',10);
 hold on
+% Basic 4T1R MUX
+%plot(rram_mux_basic_1level_parasitic_0p7V_3fin(:,1), rram_mux_basic_1level_parasitic_0p7V_3fin(:,5)/1e-6,'m-^','LineWidth', 2, 'MarkerSize',10);
+%hold on
 % Improved 4T1R MUX x=0 delay, RRAM is close to input inverters
 plot(rram_mux_improv_1level_parasitic_x0_0p7V_3fin(:,1), rram_mux_improv_1level_parasitic_x0_0p7V_3fin(:,5)/1e-6,'r-*','LineWidth', 2, 'MarkerSize',10);
 hold on
@@ -157,7 +171,7 @@ set(gca,'XTick',mux_size_list);
 %set(gca,'XTickLabel',fc_in);
 %set(gca,'ylim',[10 22],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca, 'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
-hleg = legend([{'Basic 4T1R MUX'}, {'Improved 4T1R MUX (x=0)'}, {'Improved 4T1R MUX (x=L)'}]);
+hleg = legend([{'Naive 4T1R MUX'}, {'Improved 4T1R MUX (x=0)'}, {'Improved 4T1R MUX (x=L)'}]);
 set(fig_handle1, 'Position', [1 1 650 500]);
 grid on
 

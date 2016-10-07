@@ -268,7 +268,8 @@ sub print_usage()
   # Two hidden cmd-line options: RRAM MUX design that are not efficient.
   #print "      -rram_mux_isolate <int>: RRAM-based multiplexer design with isolating transistors, specify the size of isolating transistors in terms of number of minimum sized transistors.\n";
   #print "      -rram_mux_dvc: RRAM-based multiplexer design with dynamic voltage control technique.\n";
-  print "      -rram_mux_dvd: RRAM-based multiplexer design with a dynamic voltage domain.\n";
+  print "      -advance_rram_mux: Advanced RRAM-based multiplexer design with a dynamic voltage domain.\n";
+  print "      -naive_rram_mux: Naive RRAM-based multiplexer design\n";
   print "      -wprog_sweep <max_wprog>: sweep the wprog when turn on enhancements for RRAM (Valid for MUX only)\n";
   print "      -enum_mux_leakage: test all cases for multiplexer leakages\n";
   print "      -auto_out_tapered_buffer <level>: automatically add a tapered buffer at output port for high-fan-out nets(equivalent fanout = 4^<level>).\n";
@@ -402,7 +403,8 @@ sub opts_read() {
     if ("on" eq $opt_ptr->{rram_enhance}) {
       &read_opt_into_hash("rram_mux_isolate","on","off");  # Check -rram_mux_isolate
       &read_opt_into_hash("rram_mux_dvc","off","off");  # Check -rram_mux_isolate
-      &read_opt_into_hash("rram_mux_dvd","off","off");  # Check -rram_mux_isolate
+      &read_opt_into_hash("naive_rram_mux","on","off");  # Check -rram_mux_isolate
+      &read_opt_into_hash("advance_rram_mux","off","off");  # Check -rram_mux_isolate
       &read_opt_into_hash("wprog_sweep","on","off");  # Check -wprog_sweep
     }
   }
@@ -2128,7 +2130,7 @@ sub gen_rram_mux_sp_stimulates($ $) {
     &gen_rram_mux_isolate_sp_stimulates($spfh, $num_mux_levels, $mux_size);
   } elsif ("on" eq $opt_ptr->{rram_mux_dvc}) {
     &gen_rram_mux_dvc_sp_stimulates($spfh, $num_mux_levels, $mux_size);
-  } elsif ("on" eq $opt_ptr->{rram_mux_dvd}) {
+  } elsif ("on" eq $opt_ptr->{advance_rram_mux}) {
     &gen_rram_mux_dvd_sp_stimulates($spfh, $num_mux_levels, $mux_size);
   } else {
     &gen_rram_mux_basic_design_sp_stimulates($spfh, $num_mux_levels, $mux_size);
@@ -2454,7 +2456,7 @@ sub gen_rram_mux_sp_measure($ $ $ $ $ $ $) {
     &gen_rram_mux_isolate_sp_measure($spfh,$tran_step,$tran_time,$delay_measure,$delay_measure_input,$input_vector_type,$output_vector_type);
   } elsif ("on" eq $opt_ptr->{rram_mux_dvc}) {
     &gen_rram_mux_dvc_sp_measure($spfh,$tran_step,$tran_time,$delay_measure,$delay_measure_input,$input_vector_type,$output_vector_type);
-  } elsif ("on" eq $opt_ptr->{rram_mux_dvd}) {
+  } elsif ("on" eq $opt_ptr->{advance_rram_mux}) {
     &gen_rram_mux_dvd_sp_measure($spfh,$tran_step,$tran_time,$delay_measure,$delay_measure_input,$input_vector_type,$output_vector_type);
   } else {
     &gen_rram_mux_basic_design_sp_measure($spfh,$tran_step,$tran_time,$delay_measure,$delay_measure_input,$input_vector_type,$output_vector_type);
@@ -2856,7 +2858,11 @@ sub gen_1level_rram_mux_basic_subckt($ $ $ $ $ $ $) {
     die "ERROR: RRAM MUX would not be generated because rram_enhance is off!\n";
   }
 
-  print "INFO: generating 1-level RRAM mux structure - basic design...\n";
+  if ("on" eq $opt_ptr->{naive_rram_mux}) {
+    print "INFO: generating 1-level RRAM mux structure - naive design...\n";
+  } else {
+    print "INFO: generating 1-level RRAM mux structure - basic design...\n";
+  }
 
   &tab_print($spfh,".param N_RRAM_TO_SET=1\n",0);
   &tab_print($spfh,".param N_RRAM_TO_RST=1\n",0);
@@ -2931,8 +2937,15 @@ sub gen_1level_rram_mux_basic_subckt($ $ $ $ $ $ $) {
   # Add buffers
   for (my $i=0; $i < $mux_size; $i++) {
     if ("buffered" eq $buffered) {
-      &tab_print($spfh,"Xinv$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux1level_in$i ",0); 
-      &tab_print($spfh,"svdd sgnd op_mode_enb op_mode_en input_inv_pg\n",0);
+      # Naive design uses the simple input inverters 
+      if ("on" eq $opt_ptr->{naive_rram_mux}) {
+        &tab_print($spfh,"Xinv$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux1level_in$i ",0); 
+        &tab_print($spfh,"svdd sgnd input_inv\n",0);
+      } else {
+      # Basic design employs tri-state input inverters
+        &tab_print($spfh,"Xinv$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux1level_in$i ",0); 
+        &tab_print($spfh,"svdd sgnd op_mode_enb op_mode_en input_inv_pg\n",0);
+      }
     } else {
       &tab_print($spfh,"V$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux1level_in$i 0\n",0); 
     }
@@ -2971,7 +2984,7 @@ sub gen_1level_mux_subckt($ $ $ $ $ $ $) {
     } elsif ("on" eq $opt_ptr->{rram_mux_dvc}) {
        # TO BE DEPRECATED 
       &gen_1level_rram_mux_dvc_subckt($spfh,$mux_size,$subckt_name,$mux1level_subckt,$buffered,$rram_enhance,$wprog);
-    } elsif ("on" eq $opt_ptr->{rram_mux_dvd}) {
+    } elsif ("on" eq $opt_ptr->{advance_rram_mux}) {
       &gen_1level_rram_mux_dvd_subckt($spfh,$mux_size,$subckt_name,$mux1level_subckt,$buffered,$rram_enhance,$wprog);
     } else {
       &gen_1level_rram_mux_basic_subckt($spfh,$mux_size,$subckt_name,$mux1level_subckt,$buffered,$rram_enhance,$wprog);
@@ -3588,7 +3601,11 @@ sub gen_multilevel_rram_mux_basic_subckt($ $ $ $ $ $ $ $) {
   print "$num_lvls-level MUX: number of a basis is auto-set to $basis.\n";
   print "$num_lvls-level MUX: number of configurable bits is auto-set to $num_sram.\n";
 
-  print "INFO: generating $num_lvls-level RRAM mux structure: basic version...\n";
+  if ("on" eq $opt_ptr->{naive_rram_mux}) {
+    print "INFO: generating $num_lvls-level RRAM mux structure: naive version...\n";
+  } else {
+    print "INFO: generating $num_lvls-level RRAM mux structure: basic version...\n";
+  }
 
   &tab_print($spfh,".param N_RRAM_TO_SET=$num_lvls\n",0);
   &tab_print($spfh,".param N_RRAM_TO_RST=$num_lvls\n",0);
@@ -3719,8 +3736,15 @@ sub gen_multilevel_rram_mux_basic_subckt($ $ $ $ $ $ $ $) {
   # Add buffers
   for (my $i=0; $i < $mux_size; $i++) {
     if ("buffered" eq $buffered) {
-      &tab_print($spfh,"Xinv$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux2lvl_lvl0_in$i ",0); 
-      &tab_print($spfh,"op_vdd op_gnd op_mode_enb op_mode_en input_inv_pg\n",0);
+      # Naive version employ simple input inverters
+      if ("on" eq $opt_ptr->{naive_rram_mux}) { 
+        &tab_print($spfh,"Xinv$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux2lvl_lvl0_in$i ",0); 
+        &tab_print($spfh,"op_vdd op_gnd input_inv\n",0);
+      } else {
+      # Baisc version employ tri-state input inverters
+        &tab_print($spfh,"Xinv$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux2lvl_lvl0_in$i ",0); 
+        &tab_print($spfh,"op_vdd op_gnd op_mode_enb op_mode_en input_inv_pg\n",0);
+      }
     } else {
       &tab_print($spfh,"V$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux2lvl_lvl0_in$i 0\n",0); 
     }
@@ -3763,7 +3787,7 @@ sub gen_2level_mux_subckt($ $ $ $ $ $ $) {
       &gen_multilevel_rram_mux_isolate_subckt($spfh,$mux_size,2,$subckt_name,$mux2level_subckt,$buffered,$rram_enhance,$wprog);
     } elsif ("on" eq $opt_ptr->{rram_mux_dvc}) {
       &gen_multilevel_rram_mux_dvc_subckt($spfh,$mux_size,2,$subckt_name,$mux2level_subckt,$buffered,$rram_enhance,$wprog);
-    } elsif ("on" eq $opt_ptr->{rram_mux_dvd}) {
+    } elsif ("on" eq $opt_ptr->{advance_rram_mux}) {
       &gen_multilevel_rram_mux_dvd_subckt($spfh,$mux_size,2,$subckt_name,$mux2level_subckt,$buffered,$rram_enhance,$wprog);
     } else {
       &gen_multilevel_rram_mux_basic_subckt($spfh,$mux_size,2,$subckt_name,$mux2level_subckt,$buffered,$rram_enhance,$wprog);
@@ -3858,7 +3882,7 @@ sub gen_multilevel_mux_subckt($ $ $ $ $ $ $)
       &gen_multilevel_rram_mux_isolate_subckt($spfh,$mux_size,$num_sram,$subckt_name,$mux2_subckt,$buffered,$rram_enhance,$wprog);
     } elsif ("on" eq $opt_ptr->{rram_mux_dvc}) {
       &gen_multilevel_rram_mux_dvc_subckt($spfh,$mux_size,$num_sram,$subckt_name,$mux2_subckt,$buffered,$rram_enhance,$wprog);
-    } elsif ("on" eq $opt_ptr->{rram_mux_dvd}) {
+    } elsif ("on" eq $opt_ptr->{advance_rram_mux}) {
       &gen_multilevel_rram_mux_dvd_subckt($spfh,$mux_size,$num_sram,$subckt_name,$mux2_subckt,$buffered,$rram_enhance,$wprog);
     } else {
       &gen_multilevel_rram_mux_subckt($spfh,$mux_size,$num_sram,$subckt_name,$mux2_subckt,$buffered,$rram_enhance,$wprog);

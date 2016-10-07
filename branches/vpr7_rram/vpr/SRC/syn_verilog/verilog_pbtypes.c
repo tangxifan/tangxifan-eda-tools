@@ -1184,13 +1184,25 @@ void dump_verilog_pb_graph_pin_interc(FILE* fp,
     }
     
     /* Create wires to sram outputs*/
-    num_sram = sram_verilog_model->cnt;
-    fprintf(fp,"%s_out[%d:%d], ", sram_verilog_model->prefix, num_sram + num_sram_bits - 1, num_sram);
-    fprintf(fp,"%s_outb[%d:%d] ", sram_verilog_model->prefix, num_sram + num_sram_bits - 1, num_sram);
-    num_sram = sram_verilog_model->cnt + num_sram_bits;
-    
-    /* Local vdd and gnd, TODO: we should have an independent VDD for all local interconnections*/
+    switch (cur_interc->spice_model->design_tech) {
+    case SPICE_MODEL_DESIGN_CMOS:
+      num_sram = sram_verilog_model->cnt;
+      fprintf(fp,"%s_out[%d:%d], ", sram_verilog_model->prefix, num_sram + num_sram_bits - 1, num_sram);
+      fprintf(fp,"%s_outb[%d:%d] ", sram_verilog_model->prefix, num_sram + num_sram_bits - 1, num_sram);
+      num_sram = sram_verilog_model->cnt + num_sram_bits;
+      break;
+    case SPICE_MODEL_DESIGN_RRAM:
+      num_sram = sram_verilog_model->cnt;
+      fprintf(fp,"%s_out[%d:%d], ", sram_verilog_model->prefix, num_sram + num_sram_bits/2 - 1, num_sram);
+      fprintf(fp,"%s_outb[%d:%d] ", sram_verilog_model->prefix, num_sram + num_sram_bits/2 - 1, num_sram);
+      num_sram = sram_verilog_model->cnt + num_sram_bits/2;
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",
+                 __FILE__, __LINE__, cur_interc->spice_model->name);
+    }
     fprintf(fp, ");\n");
+
     /* Print the encoding in SPICE netlist for debugging */
     switch (cur_interc->spice_model->design_tech) {
     case SPICE_MODEL_DESIGN_CMOS:
@@ -1228,7 +1240,6 @@ void dump_verilog_pb_graph_pin_interc(FILE* fp,
                                                     cur_interc->spice_model);
         num_sram++;
       }
-      fprintf(fp, "-----\n");
       break;
     default:
       vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",
