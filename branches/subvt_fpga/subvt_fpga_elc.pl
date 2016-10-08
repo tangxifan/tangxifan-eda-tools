@@ -269,6 +269,7 @@ sub print_usage()
   #print "      -rram_mux_isolate <int>: RRAM-based multiplexer design with isolating transistors, specify the size of isolating transistors in terms of number of minimum sized transistors.\n";
   #print "      -rram_mux_dvc: RRAM-based multiplexer design with dynamic voltage control technique.\n";
   print "      -advance_rram_mux: Advanced RRAM-based multiplexer design with a dynamic voltage domain.\n";
+  print "      -rram_2n1r: use two n-type transistors in advance rram mux\n";
   print "      -naive_rram_mux: Naive RRAM-based multiplexer design\n";
   print "      -wprog_sweep <max_wprog>: sweep the wprog when turn on enhancements for RRAM (Valid for MUX only)\n";
   print "      -enum_mux_leakage: test all cases for multiplexer leakages\n";
@@ -406,6 +407,7 @@ sub opts_read() {
       &read_opt_into_hash("naive_rram_mux","on","off");  # Check -rram_mux_isolate
       &read_opt_into_hash("advance_rram_mux","off","off");  # Check -rram_mux_isolate
       &read_opt_into_hash("wprog_sweep","on","off");  # Check -wprog_sweep
+      &read_opt_into_hash("rram_2n1r","off","off");  # Check -rram2n1r
     }
   }
 
@@ -1835,29 +1837,58 @@ sub gen_rram_mux_dvd_sp_stimulates($ $ $) {
   &tab_print($spfh, "Vload_vdd $conf_ptr->{general_settings}->{LOAD_VDD_port_name}->{val} 0 \'vsp\'\n",0);
 
   # VDDs and GNDs
-  &tab_print($spfh,"* Dynamic power rails: prog_vdd0 \n",0);
-  &tab_print($spfh,"Vprog_vdd0 prog_vdd0 0 pwl(0 \'+vsp\' \n",0);
-  &tab_print($spfh,"+ \'(1.5)*tprog-input_slew\' \'+vsp\'\n",0);
-  &tab_print($spfh,"+ \'(1.5)*tprog\' \'+vsp_prog\'\n",0);
-  &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST)*tprog-input_slew\' \'+vsp_prog\'\n",0);
-  &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST)*tprog\' \'+vsp_prog\'\n",0);
-  &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog-input_slew\' \'+vsp_prog'\n",0);
-  &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog\' \'+vsp\'\n",0);
-  &tab_print($spfh,"+ \'(2+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog+N*op_clk_period\' \'+vsp\')\n",0);
+  # 2N1R structure: prog_vdd should be 0 during operation period
+  if ("on" eq $opt_ptr->{rram_2n1r}) {
+    &tab_print($spfh,"* Dynamic power rails: prog_vdd0 \n",0);
+    &tab_print($spfh,"Vprog_vdd0 prog_vdd0 0 pwl(0 \'vsp\' \n",0);
+    &tab_print($spfh,"+ \'(1.5)*tprog-input_slew\' \'vsp\'\n",0);
+    &tab_print($spfh,"+ \'(1.5)*tprog\' \'+vsp_prog\'\n",0);
+    &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST)*tprog-input_slew\' \'+vsp_prog\'\n",0);
+    &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST)*tprog\' \'+vsp_prog\'\n",0);
+    &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog-input_slew\' \'+vsp_prog'\n",0);
+    &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog\' \'vsp\'\n",0);
+    &tab_print($spfh,"+ \'(2+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog+N*op_clk_period\' \'vsp\')\n",0);
+  } else {
+  # Classical 4T1R 
+    &tab_print($spfh,"* Dynamic power rails: prog_vdd0 \n",0);
+    &tab_print($spfh,"Vprog_vdd0 prog_vdd0 0 pwl(0 \'+vsp\' \n",0);
+    &tab_print($spfh,"+ \'(1.5)*tprog-input_slew\' \'+vsp\'\n",0);
+    &tab_print($spfh,"+ \'(1.5)*tprog\' \'+vsp_prog\'\n",0);
+    &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST)*tprog-input_slew\' \'+vsp_prog\'\n",0);
+    &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST)*tprog\' \'+vsp_prog\'\n",0);
+    &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog-input_slew\' \'+vsp_prog'\n",0);
+    &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog\' \'+vsp\'\n",0);
+    &tab_print($spfh,"+ \'(2+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog+N*op_clk_period\' \'+vsp\')\n",0);
+  }
+
 
   &tab_print($spfh,"* Constant power rails: prog_gnd0 \n",0);
   &tab_print($spfh,"Vprog_gnd0 prog_gnd0 0 0\n",0);
 
   # Add Stimulates: Programming Vdd
-  &tab_print($spfh,"* Dynamic power rails: prog_vdd1 \n",0);
-  &tab_print($spfh,"Vprog_vdd1 prog_vdd1 0 pwl(0 \'+vsp\' \n",0);
-  &tab_print($spfh,"+ \'(1.5)*tprog-input_slew\' \'+vsp\'\n",0);
-  &tab_print($spfh,"+ \'(1.5)*tprog\' \'+vprog\'\n",0);
-  &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST)*tprog-input_slew\' \'+vprog\'\n",0);
-  &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST)*tprog\' \'-vprog+2*vsp_prog\'\n",0);
-  &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog-input_slew\' \'-vprog+2*vsp_prog'\n",0);
-  &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog\' \'+vsp\'\n",0);
-  &tab_print($spfh,"+ \'(2+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog+N*op_clk_period\' \'+vsp\')\n",0);
+  # 2N1R structure: prog_vdd should be 0 during operation period
+  if ("on" eq $opt_ptr->{rram_2n1r}) {
+    &tab_print($spfh,"* Dynamic power rails: prog_vdd1 \n",0);
+    &tab_print($spfh,"Vprog_vdd1 prog_vdd1 0 pwl(0 \'vsp\' \n",0);
+    &tab_print($spfh,"+ \'(1.5)*tprog-input_slew\' \'vsp\'\n",0);
+    &tab_print($spfh,"+ \'(1.5)*tprog\' \'+vprog\'\n",0);
+    &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST)*tprog-input_slew\' \'+vprog\'\n",0);
+    &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST)*tprog\' \'-vprog+2*vsp_prog\'\n",0);
+    &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog-input_slew\' \'-vprog+2*vsp_prog'\n",0);
+    &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog\' \'vsp\'\n",0);
+    &tab_print($spfh,"+ \'(2+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog+N*op_clk_period\' \'vsp\')\n",0);
+  } else {
+  # Classical 4T1R 
+    &tab_print($spfh,"* Dynamic power rails: prog_vdd1 \n",0);
+    &tab_print($spfh,"Vprog_vdd1 prog_vdd1 0 pwl(0 \'+vsp\' \n",0);
+    &tab_print($spfh,"+ \'(1.5)*tprog-input_slew\' \'+vsp\'\n",0);
+    &tab_print($spfh,"+ \'(1.5)*tprog\' \'+vprog\'\n",0);
+    &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST)*tprog-input_slew\' \'+vprog\'\n",0);
+    &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST)*tprog\' \'-vprog+2*vsp_prog\'\n",0);
+    &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog-input_slew\' \'-vprog+2*vsp_prog'\n",0);
+    &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog\' \'+vsp\'\n",0);
+    &tab_print($spfh,"+ \'(2+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog+N*op_clk_period\' \'+vsp\')\n",0);
+  }
 
   &tab_print($spfh,"* Dynamic power rails: prog_gnd1 \n",0);
   &tab_print($spfh,"Vprog_gnd1 prog_gnd1 0 pwl(0 \'0\' \n",0);
@@ -1904,6 +1935,26 @@ sub gen_rram_mux_dvd_sp_stimulates($ $ $) {
     &tab_print($spfh,"+ \'(1.5+ 2*N_RRAM_TO_SET + 2*N_RRAM_TO_RST)*tprog-input_slew\' \'-vprog+2*vsp_prog\'\n",0);
     &tab_print($spfh,"+ \'(1.5+ 2*N_RRAM_TO_SET + 2*N_RRAM_TO_RST)*tprog\' \'vsp\')\n",0);
 
+    # For 2N1R programming structure 
+    if ("on" eq $opt_ptr->{rram_2n1r}) {
+      &tab_print($spfh,"Vbl[$rst_bl_b] bl[$rst_bl_b] 0 pwl(0 \'0\'\n",0);
+      if (0 != $prog_cycle) {
+        &tab_print($spfh,"+ \'(1.5)*tprog-input_slew\' \'0\'\n",0);
+        &tab_print($spfh,"+ \'(1.5)*tprog\' \'vprog-vsp_prog\'\n",0);
+        &tab_print($spfh,"+ \'(1.5+2*$prog_cycle)*tprog-input_slew\' \'vprog-vsp_prog\'\n",0);
+        &tab_print($spfh,"+ \'(1.5+2*$prog_cycle)*tprog\' \'vprog\'\n",0);
+      } else {
+        &tab_print($spfh,"+ \'(1.5+2*$prog_cycle)*tprog-input_slew\' \'0\'\n",0);
+        &tab_print($spfh,"+ \'(1.5+2*$prog_cycle)*tprog\' \'vprog\'\n",0);
+      }
+      &tab_print($spfh,"+ \'(2.5+2*$prog_cycle)*tprog-2*input_slew\' \'vprog\'\n",0);
+      &tab_print($spfh,"+ \'(2.5+2*$prog_cycle)*tprog - input_slew\' \'vprog-vsp_prog\'\n",0);
+      &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST)*tprog-input_slew\' \'vprog-vsp_prog\'\n",0);
+      &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST)*tprog\' \'-vprog+vsp_prog\'\n",0);
+      &tab_print($spfh,"+ \'(1.5+ 2*N_RRAM_TO_SET + 2*N_RRAM_TO_RST)*tprog-input_slew\' \'-vprog+vsp_prog\'\n",0);
+      &tab_print($spfh,"+ \'(1.5+ 2*N_RRAM_TO_SET + 2*N_RRAM_TO_RST)*tprog\' \'0\')\n",0);
+    }
+
     &tab_print($spfh,"Vwl[$rst_wl] wl[$rst_wl] 0 pwl(0 \'0\'\n",0);
     &tab_print($spfh,"+ \'(1.5+2*$prog_cycle)*tprog-input_slew\' \'0\'\n",0);
     &tab_print($spfh,"+ \'(1.5+2*$prog_cycle)*tprog\' \'vsp_prog\'\n",0);
@@ -1927,6 +1978,24 @@ sub gen_rram_mux_dvd_sp_stimulates($ $ $) {
     &tab_print($spfh,"+ \'(2.5+2*$prog_cycle +2*N_RRAM_TO_RST)*tprog - input_slew\' \'+vsp_prog\'\n",0);
     &tab_print($spfh,"+ \'(1.5+ 2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog-input_slew\' \'+vsp_prog\'\n",0);
     &tab_print($spfh,"+ \'(1.5+ 2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog\' \'vsp\')\n",0);
+
+    # For 2N1R programming structure 
+    if ("on" eq $opt_ptr->{rram_2n1r}) {
+      &tab_print($spfh,"Vbl[$set_bl_b] bl[$set_bl_b] 0 pwl(0 \'0\'\n",0);
+      &tab_print($spfh,"+ \'(1.5)*tprog-input_slew\' \'0\'\n",0);
+      &tab_print($spfh,"+ \'(1.5)*tprog\' \'0\'\n",0);
+      if (0 != $prog_cycle) {
+        &tab_print($spfh,"+ \'(1.5+2*$prog_cycle +2*N_RRAM_TO_RST)*tprog-input_slew\' \'0\'\n",0);
+        &tab_print($spfh,"+ \'(1.5+2*$prog_cycle +2*N_RRAM_TO_RST)*tprog\' \'vsp_prog\'\n",0);
+      } else {
+        &tab_print($spfh,"+ \'(1.5+2*$prog_cycle +2*N_RRAM_TO_RST)*tprog-input_slew\' \'0\'\n",0);
+        &tab_print($spfh,"+ \'(1.5+2*$prog_cycle +2*N_RRAM_TO_RST)*tprog\' \'vsp_prog\'\n",0);
+      }
+      &tab_print($spfh,"+ \'(2.5+2*$prog_cycle +2*N_RRAM_TO_RST)*tprog-2*input_slew\' \'vsp_prog\'\n",0);
+      &tab_print($spfh,"+ \'(2.5+2*$prog_cycle +2*N_RRAM_TO_RST)*tprog - input_slew\' \'0\'\n",0);
+      &tab_print($spfh,"+ \'(1.5+ 2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog-input_slew\' \'0\'\n",0);
+      &tab_print($spfh,"+ \'(1.5+ 2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog\' \'0\')\n",0);
+    }
 
     &tab_print($spfh,"Vwl[$set_wl] wl[$set_wl] 0 pwl(0 \'0\'\n",0);
     &tab_print($spfh,"+ \'(1.5)*tprog-input_slew\' \'0\'\n",0);
@@ -1963,6 +2032,18 @@ sub gen_rram_mux_dvd_sp_stimulates($ $ $) {
         &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog-input_slew\' \'vsp_prog\'\n",0);
         &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog\' \'+vsp\'\n",0);
         &tab_print($spfh,"+ \'(2+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog+N*op_clk_period\' \'+vsp\')\n",0);
+
+        # For 2N1R programming structure 
+        if ("on" eq $opt_ptr->{rram_2n1r}) {
+          &tab_print($spfh,"Vbl[$i] bl[$i] 0 pwl(0 \'0\' \n",0);
+          &tab_print($spfh,"+ \'(1.5)*tprog-input_slew\' \'0\'\n",0);
+          &tab_print($spfh,"+ \'(1.5)*tprog\' \'0\'\n",0);
+          &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST)*tprog-input_slew\' \'0\'\n",0);
+          &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST)*tprog\' \'0\'\n",0);
+          &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog-input_slew\' \'0\'\n",0);
+          &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog\' \'0\'\n",0);
+          &tab_print($spfh,"+ \'(2+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog+N*op_clk_period\' \'0\')\n",0);
+        }
       } else {
         &tab_print($spfh,"Vbl[$i]_b bl[$i]_b 0 pwl(0 \'+vsp\' \n",0);
         &tab_print($spfh,"+ \'(1.5)*tprog-input_slew\' \'+vsp\'\n",0);
@@ -1971,6 +2052,17 @@ sub gen_rram_mux_dvd_sp_stimulates($ $ $) {
         &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST)*tprog\' \'-vprog+2*vsp_prog\'\n",0);
         &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog-input_slew\' \'-vprog+2*vsp_prog\'\n",0);
         &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog\' \'+vsp\'\n",0);
+
+        # For 2N1R programming structure 
+        if ("on" eq $opt_ptr->{rram_2n1r}) {
+          &tab_print($spfh,"Vbl[$i] bl[$i] 0 pwl(0 \'0\' \n",0);
+          &tab_print($spfh,"+ \'(1.5)*tprog-input_slew\' \'0\'\n",0);
+          &tab_print($spfh,"+ \'(1.5)*tprog\' \'+vprog-vsp_prog\'\n",0);
+          &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST)*tprog-input_slew\' \'+vprog-vsp_prog\'\n",0);
+          &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST)*tprog\' \'-vprog+vsp_prog\'\n",0);
+          &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog-input_slew\' \'-vprog+vsp_prog\'\n",0);
+          &tab_print($spfh,"+ \'(1.5+2*N_RRAM_TO_RST + 2*N_RRAM_TO_SET)*tprog\' \'0\'\n",0);
+        }
       }
     }
     &tab_print($spfh,"\n",0);
@@ -2757,6 +2849,10 @@ sub gen_1level_rram_mux_dvd_subckt($ $ $ $ $ $ $) {
   &tab_print($spfh,"+ prog_clk op_clk\n", 0);
   for (my $i = 0; $i < ($mux_size+1); $i++) {
     &tab_print($spfh,"+ bl[$i]_b wl[$i] \n",0);
+    # 2N1R structure use bl instead of bl_b
+    if ("on" eq $opt_ptr->{rram_2n1r}) {
+      &tab_print($spfh,"+ bl[$i]\n",0);
+    }
   }
   &tab_print($spfh,"\n",0);
 
@@ -2777,11 +2873,23 @@ sub gen_1level_rram_mux_dvd_subckt($ $ $ $ $ $ $) {
     #  Program Pair 
     if ("on" eq $finfet_tech) {
       for (my $jfin = 0; $jfin < $wprog; $jfin++) {
-        &tab_print($spfh, "Xprog_pmos$i\_$jfin mux1level_in$i bl[$i]_b prog_vdd0 prog_vdd0 $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
+        # RRAM 2N1R: Use two nmos transistors to build programming structures 
+        if ("on" eq $opt_ptr->{rram_2n1r}) {
+          &tab_print($spfh, "Xprog_2n1r_nmos$i\_$jfin mux1level_in$i bl[$i] prog_vdd0 prog_vdd0 $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
+        } else {
+        # Classical 4T1R structure
+          &tab_print($spfh, "Xprog_pmos$i\_$jfin mux1level_in$i bl[$i]_b prog_vdd0 prog_vdd0 $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
+        }
         &tab_print($spfh, "Xprog_nmos$i\_$jfin mux1level_in$i wl[$i] prog_gnd0 prog_gnd0 $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
       }
     } else {
-      &tab_print($spfh, "Xprog_pmos$i mux1level_in$i bl[$i]_b prog_vdd0 prog_vdd0 $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+      # RRAM 2N1R: Use two nmos transistors to build programming structures 
+      if ("on" eq $opt_ptr->{rram_2n1r}) {
+        &tab_print($spfh, "Xprog_2n1r_nmos$i mux1level_in$i bl[$i] prog_vdd0 prog_vdd0 $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
+      } else {
+        # Classical 4T1R structure
+        &tab_print($spfh, "Xprog_pmos$i mux1level_in$i bl[$i]_b prog_vdd0 prog_vdd0 $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+      }
       &tab_print($spfh, "Xprog_nmos$i mux1level_in$i wl[$i] prog_gnd0 prog_gnd0 $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
     }
     # Initilization: RRAM0 (in0) is off, rest of RRAMs are on. Programming will switch RRAM0 to on and the rest to off.
@@ -2803,11 +2911,23 @@ sub gen_1level_rram_mux_dvd_subckt($ $ $ $ $ $ $) {
   # Add output program pair 
   if ("on" eq $finfet_tech) {
     for (my $jfin = 0; $jfin < $wprog; $jfin++) {
-      &tab_print($spfh, "Xprog_pmos$mux_size\_$jfin mux1level_out bl[$mux_size]_b prog_vdd1 prog_vdd1 $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
+      # RRAM 2N1R: Use two nmos transistors to build programming structures 
+      if ("on" eq $opt_ptr->{rram_2n1r}) {
+        &tab_print($spfh, "Xprog_2n1r_nmos$mux_size\_$jfin mux1level_out bl[$mux_size] prog_vdd1 prog_vdd1 $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
+      } else {
+        # Classical 4T1R structure
+        &tab_print($spfh, "Xprog_pmos$mux_size\_$jfin mux1level_out bl[$mux_size]_b prog_vdd1 prog_vdd1 $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
+      }
       &tab_print($spfh, "Xprog_nmos$mux_size\_$jfin mux1level_out wl[$mux_size] prog_gnd1 prog_gnd1 $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
     }
   } else {
-    &tab_print($spfh, "Xprog_pmos$mux_size mux1level_out bl[$mux_size]_b prog_vdd1 prog_vdd1 $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+    # RRAM 2N1R: Use two nmos transistors to build programming structures 
+    if ("on" eq $opt_ptr->{rram_2n1r}) {
+      &tab_print($spfh, "Xprog_2n1r_nmos$mux_size mux1level_out bl[$mux_size] prog_vdd1 prog_vdd1 $elc_prog_nmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wn\'\n",0);
+    } else {
+    # Classical 4T1R structure
+      &tab_print($spfh, "Xprog_pmos$mux_size mux1level_out bl[$mux_size]_b prog_vdd1 prog_vdd1 $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+    }
     &tab_print($spfh, "Xprog_nmos$mux_size mux1level_out wl[$mux_size] prog_gnd1 prog_gnd1 $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
   }
 
@@ -3425,6 +3545,10 @@ sub gen_multilevel_rram_mux_dvd_subckt($ $ $ $ $ $ $ $) {
   &tab_print($spfh,"+ prog_clk op_clk\n", 0);
   for (my $i = 0; $i < $num_blwl; $i++) {
     &tab_print($spfh,"+ bl[$i]_b wl[$i] \n",0);
+    # 2N1R structure use bl instead of bl_b
+    if ("on" eq $opt_ptr->{rram_2n1r}) {
+      &tab_print($spfh,"+ bl[$i]\n",0);
+    }
   }
   &tab_print($spfh,"\n",0);
 
@@ -3470,11 +3594,23 @@ sub gen_multilevel_rram_mux_dvd_subckt($ $ $ $ $ $ $ $) {
       &tab_print($spfh, "* Input $i \n",0);
       if ("on" eq $finfet_tech) {
         for (my $j = 0; $j < $wprog; $j++) {
-          &tab_print($spfh, "Xprog_pmos_in_lvl$lvl\_in$i\_$j mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
+          # 2N1R structure: use NMOS instead of PMOS in 4T1R structure
+          if ("on" eq $opt_ptr->{rram_2n1r}) {
+            &tab_print($spfh, "Xprog_2n1r_nmos_in_lvl$lvl\_in$i\_$j mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx] $prog_vdd $prog_vdd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
+          } else {
+          # Classical 4T1R structure 
+            &tab_print($spfh, "Xprog_pmos_in_lvl$lvl\_in$i\_$j mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
+          }
           &tab_print($spfh, "Xprog_nmos_in_lvl$lvl\_in$i\_$j mux2lvl_lvl$lvl\_in$i wl[$in_blwl_idx] $prog_gnd $prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
         }
       } else {
-        &tab_print($spfh, "Xprog_pmos_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+        # 2N1R structure: use NMOS instead of PMOS in 4T1R structure
+        if ("on" eq $opt_ptr->{rram_2n1r}) {
+          &tab_print($spfh, "Xprog_2n1r_nmos_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx] $prog_vdd $prog_vdd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
+        } else {
+        # Classical 4T1R structure 
+          &tab_print($spfh, "Xprog_pmos_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+        }
         &tab_print($spfh, "Xprog_nmos_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i wl[$in_blwl_idx] $prog_gnd $prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
       }
       # RRAMs' TEs and BEs: level 0 (first level) RRAM is organized as (TE, BE).
@@ -3526,11 +3662,23 @@ sub gen_multilevel_rram_mux_dvd_subckt($ $ $ $ $ $ $ $) {
       &tab_print($spfh, "* Output $j\n",0);
       if ("on" eq $finfet_tech) {
         for (my $jfin = 0; $jfin < $wprog; $jfin++) {
-          &tab_print($spfh, "Xprog_pmos_out_lvl$next_lvl\_in$j\_$jfin mux2lvl_lvl$next_lvl\_in$j bl[$out_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
+          # 2N1R structure: use NMOS instead of PMOS in 4T1R structure
+          if ("on" eq $opt_ptr->{rram_2n1r}) {
+            &tab_print($spfh, "Xprog_2n1r_nmos_out_lvl$next_lvl\_in$j\_$jfin mux2lvl_lvl$next_lvl\_in$j bl[$out_blwl_idx] $prog_vdd $prog_vdd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
+          } else {
+          # Classical 4T1R structure 
+            &tab_print($spfh, "Xprog_pmos_out_lvl$next_lvl\_in$j\_$jfin mux2lvl_lvl$next_lvl\_in$j bl[$out_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
+          }
           &tab_print($spfh, "Xprog_nmos_out_lvl$next_lvl\_in$j\_$jfin mux2lvl_lvl$next_lvl\_in$j wl[$out_blwl_idx] $prog_gnd $prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
         }
       } else {
-        &tab_print($spfh, "Xprog_pmos_out_lvl$next_lvl\_in$j mux2lvl_lvl$next_lvl\_in$j bl[$out_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+        # 2N1R structure: use NMOS instead of PMOS in 4T1R structure
+        if ("on" eq $opt_ptr->{rram_2n1r}) {
+          &tab_print($spfh, "Xprog_2n1r_nmos_out_lvl$next_lvl\_in$j mux2lvl_lvl$next_lvl\_in$j bl[$out_blwl_idx] $prog_vdd $prog_vdd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
+        } else {
+        # Classical 4T1R structure 
+          &tab_print($spfh, "Xprog_pmos_out_lvl$next_lvl\_in$j mux2lvl_lvl$next_lvl\_in$j bl[$out_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+        }
         &tab_print($spfh, "Xprog_nmos_out_lvl$next_lvl\_in$j mux2lvl_lvl$next_lvl\_in$j wl[$out_blwl_idx] $prog_gnd $prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
       }
     }
