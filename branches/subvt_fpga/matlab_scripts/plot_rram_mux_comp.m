@@ -17,9 +17,43 @@ sram_mux_fig_data
 %rram_mux_isolate_multi_level_fig_data
 
 %% non-isolate design
-rram_mux_nonisolate_one_level_fig_data
-rram_mux_nonisolate_two_level_fig_data
-rram_mux_nonisolate_multi_level_fig_data
+rram_mux_improv_1level_fig_data
+rram_mux_improv_2level_fig_data
+rram_mux_improv_tree_fig_data
+
+%% Improved design with 2N1R structure  
+rram_mux_improv_2n1r_1level_fig_data
+rram_mux_improv_2n1r_1level_0p5V_1fin = rram_mux_improv_2n1r_1level_0p5V(1:3:end,:); 
+rram_mux_improv_2n1r_1level_0p5V_2fin = rram_mux_improv_2n1r_1level_0p5V(2:3:end,:); 
+rram_mux_improv_2n1r_1level_0p5V_3fin = rram_mux_improv_2n1r_1level_0p5V(3:3:end,:); 
+rram_mux_improv_2n1r_1level_0p6V_1fin = rram_mux_improv_2n1r_1level_0p6V(1:3:end,:); 
+rram_mux_improv_2n1r_1level_0p6V_2fin = rram_mux_improv_2n1r_1level_0p6V(2:3:end,:); 
+rram_mux_improv_2n1r_1level_0p6V_3fin = rram_mux_improv_2n1r_1level_0p6V(3:3:end,:); 
+rram_mux_improv_2n1r_1level_0p7V_1fin = rram_mux_improv_2n1r_1level_0p7V(1:3:end,:); 
+rram_mux_improv_2n1r_1level_0p7V_2fin = rram_mux_improv_2n1r_1level_0p7V(2:3:end,:); 
+rram_mux_improv_2n1r_1level_0p7V_3fin = rram_mux_improv_2n1r_1level_0p7V(3:3:end,:); 
+% 2-level structure 
+rram_mux_improv_2n1r_2level_fig_data
+rram_mux_improv_2n1r_2level_0p5V_1fin = rram_mux_improv_2n1r_2level_0p5V(1:3:end,:); 
+rram_mux_improv_2n1r_2level_0p5V_2fin = rram_mux_improv_2n1r_2level_0p5V(2:3:end,:); 
+rram_mux_improv_2n1r_2level_0p5V_3fin = rram_mux_improv_2n1r_2level_0p5V(3:3:end,:); 
+rram_mux_improv_2n1r_2level_0p6V_1fin = rram_mux_improv_2n1r_2level_0p6V(1:3:end,:); 
+rram_mux_improv_2n1r_2level_0p6V_2fin = rram_mux_improv_2n1r_2level_0p6V(2:3:end,:); 
+rram_mux_improv_2n1r_2level_0p6V_3fin = rram_mux_improv_2n1r_2level_0p6V(3:3:end,:); 
+rram_mux_improv_2n1r_2level_0p7V_1fin = rram_mux_improv_2n1r_2level_0p7V(1:3:end,:); 
+rram_mux_improv_2n1r_2level_0p7V_2fin = rram_mux_improv_2n1r_2level_0p7V(2:3:end,:); 
+rram_mux_improv_2n1r_2level_0p7V_3fin = rram_mux_improv_2n1r_2level_0p7V(3:3:end,:); 
+% tree-like structure
+rram_mux_improv_2n1r_tree_fig_data
+rram_mux_improv_2n1r_tree_0p5V_1fin = rram_mux_improv_2n1r_tree_0p5V(1:3:end,:); 
+rram_mux_improv_2n1r_tree_0p5V_2fin = rram_mux_improv_2n1r_tree_0p5V(2:3:end,:); 
+rram_mux_improv_2n1r_tree_0p5V_3fin = rram_mux_improv_2n1r_tree_0p5V(3:3:end,:); 
+rram_mux_improv_2n1r_tree_0p6V_1fin = rram_mux_improv_2n1r_tree_0p6V(1:3:end,:); 
+rram_mux_improv_2n1r_tree_0p6V_2fin = rram_mux_improv_2n1r_tree_0p6V(2:3:end,:); 
+rram_mux_improv_2n1r_tree_0p6V_3fin = rram_mux_improv_2n1r_tree_0p6V(3:3:end,:); 
+rram_mux_improv_2n1r_tree_0p7V_1fin = rram_mux_improv_2n1r_tree_0p7V(1:3:end,:); 
+rram_mux_improv_2n1r_tree_0p7V_2fin = rram_mux_improv_2n1r_tree_0p7V(2:3:end,:); 
+rram_mux_improv_2n1r_tree_0p7V_3fin = rram_mux_improv_2n1r_tree_0p7V(3:3:end,:); 
 
 % Fig. 1, Area Comparison - SRAM MUX vs. RRAM MUX
 %fig_handle1 = figure;
@@ -211,6 +245,12 @@ plot(rram_mux_nonisolate_two_level_0p7V(:,1), rram_mux_nonisolate_two_level_0p7V
 hold on
 plot(rram_mux_nonisolate_multi_level_0p7V(:,1), rram_mux_nonisolate_multi_level_0p7V(:,2)/1e-12,'g-s','LineWidth', 2, 'MarkerSize',10);
 hold on
+plot(rram_mux_improv_2n1r_1level_0p7V_1fin(:,1), rram_mux_improv_2n1r_1level_0p7V_1fin(:,3)/1e-12,'m-^','LineWidth', 2, 'MarkerSize',10);
+hold on
+plot(rram_mux_improv_2n1r_2level_0p7V_1fin(:,1), rram_mux_improv_2n1r_2level_0p7V_1fin(:,3)/1e-12,'c-<','LineWidth', 2, 'MarkerSize',10);
+hold on
+plot(rram_mux_improv_2n1r_tree_0p7V_1fin(:,1), rram_mux_improv_2n1r_tree_0p7V_1fin(:,3)/1e-12,'y->','LineWidth', 2, 'MarkerSize',10);
+hold on
 %title('Delay (ps) and MUX size N','FontSize',18)
 xlabel('MUX size','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
 ylabel('Delay (ps)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
@@ -219,7 +259,7 @@ set(gca,'XTick',mux_size_list);
 %set(gca,'XTickLabel',fc_in);
 %set(gca,'ylim',[10 22],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca, 'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
-hleg = legend([{'CMOS MUX'}, {'1-level 4T1R MUX '}, {'2-level 4T1R MUX '}, {'tree-like 4T1R MUX '}]);
+hleg = legend([{'CMOS MUX'}, {'1-level 4T1R MUX'}, {'2-level 4T1R MUX'}, {'tree-like 4T1R MUX'}, {'1-level 2T1R MUX'}]);
 set(fig_handle6_1, 'Position', [1 1 650 500]);
 grid on
 
@@ -258,6 +298,8 @@ plot(rram_mux_nonisolate_two_level_0p7V(:,1), rram_mux_nonisolate_two_level_0p7V
 hold on
 plot(rram_mux_nonisolate_multi_level_0p7V(:,1), rram_mux_nonisolate_multi_level_0p7V(:,2).*rram_mux_nonisolate_multi_level_0p7V(:,4)/1e-15,'g-s','LineWidth', 2, 'MarkerSize',10);
 hold on
+plot(rram_mux_improv_2n1r_1level_0p7V_1fin(:,1), rram_mux_improv_2n1r_1level_0p7V_1fin(:,6)/1e-15,'m-^','LineWidth', 2, 'MarkerSize',10);
+hold on
 %title('Energy (fJ) and MUX size N','FontSize',18)
 xlabel('MUX size','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
 ylabel('Energy (Power-Delay Product) (fJ)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
@@ -266,7 +308,7 @@ set(gca,'XTick',mux_size_list);
 %set(gca,'XTickLabel',fc_in);
 %set(gca,'ylim',[10 22],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca, 'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
-hleg = legend([{'CMOS MUX'}, {'1-level 4T1R MUX '}, {'2-level 4T1R MUX '}, {'tree-like 4T1R MUX'}]);
+hleg = legend([{'CMOS MUX'}, {'1-level 4T1R MUX'}, {'2-level 4T1R MUX'}, {'tree-like 4T1R MUX'},{'1-level 2T1R MUX'}]);
 set(fig_handle7_1, 'Position', [1 1 650 500]);
 grid on
 

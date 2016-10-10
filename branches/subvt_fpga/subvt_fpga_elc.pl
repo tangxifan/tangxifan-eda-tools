@@ -1643,6 +1643,10 @@ sub gen_rram_mux_sp_basic_stimulates($ $ $ $) {
     ($op_prog_vdd, $op_prog_gnd) = ("+vsp", "0");
     #($op_prog_vdd, $op_prog_gnd) = ("+vprog/2+vsp/2", "-vprog/2+vsp/2");
   }
+  # 2T1R design: force to ground both prog_vdd and prog_gnd!!!
+  if ("on" eq $opt_ptr->{rram_2n1r}) {
+    ($op_prog_vdd, $op_prog_gnd) = ("0", "0");
+  }
 
   # Add Stimulates: Standard VDD
   &tab_print($spfh,"* PUSLE(V1 V2 TDELAY TRISE TFALL PW PERIOD)\n",0);
@@ -1694,6 +1698,16 @@ sub gen_rram_mux_sp_basic_stimulates($ $ $ $) {
     &tab_print($spfh,"+ \'(1.5+ 2*N_RRAM_TO_SET + 2*N_RRAM_TO_RST)*tprog-input_slew\' \'+vprog/2+vsp/2\'\n",0);
     &tab_print($spfh,"+ \'(1.5+ 2*N_RRAM_TO_SET + 2*N_RRAM_TO_RST)*tprog\' \'$op_prog_vdd\')\n",0);
 
+    if ("on" eq $opt_ptr->{rram_2n1r}) {
+      &tab_print($spfh,"Vbl[$rst_bl_b] bl[$rst_bl_b] 0 pwl(0 \'-vprog/2+vsp/2\'\n",0);
+      &tab_print($spfh,"+ \'(1.5+2*$prog_cycle)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
+      &tab_print($spfh,"+ \'(1.5+2*$prog_cycle)*tprog\' \'+vprog/2+vsp/2\'\n",0);
+      &tab_print($spfh,"+ \'(2.5+2*$prog_cycle)*tprog-2*input_slew\' \'+vprog/2+vsp/2\'\n",0);
+      &tab_print($spfh,"+ \'(2.5+2*$prog_cycle)*tprog - input_slew\' \'-vprog/2+vsp/2\'\n",0);
+      &tab_print($spfh,"+ \'(1.5+ 2*N_RRAM_TO_SET + 2*N_RRAM_TO_RST)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
+      &tab_print($spfh,"+ \'(1.5+ 2*N_RRAM_TO_SET + 2*N_RRAM_TO_RST)*tprog\' \'$op_prog_vdd\')\n",0);
+    }
+
     &tab_print($spfh,"Vwl[$rst_wl] wl[$rst_wl] 0 pwl(0 \'-vprog/2+vsp/2\'\n",0);
     &tab_print($spfh,"+ \'(1.5+2*$prog_cycle)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
     &tab_print($spfh,"+ \'(1.5+2*$prog_cycle)*tprog\' \'+vprog/2+vsp/2\'\n",0);
@@ -1710,6 +1724,16 @@ sub gen_rram_mux_sp_basic_stimulates($ $ $ $) {
     &tab_print($spfh,"+ \'(2.5+2*$prog_cycle +2*N_RRAM_TO_RST)*tprog - input_slew\' \'+vprog/2+vsp/2\'\n",0);
     &tab_print($spfh,"+ \'(1.5+ 2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog-input_slew\' \'+vprog/2+vsp/2\'\n",0);
     &tab_print($spfh,"+ \'(1.5+ 2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog\' \'$op_prog_vdd\')\n",0);
+
+    if ("on" eq $opt_ptr->{rram_2n1r}) {
+      &tab_print($spfh,"Vbl[$set_bl_b] bl[$set_bl_b] 0 pwl(0 \'-vprog/2+vsp/2\'\n",0);
+      &tab_print($spfh,"+ \'(1.5+2*$prog_cycle +2*N_RRAM_TO_RST)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
+      &tab_print($spfh,"+ \'(1.5+2*$prog_cycle +2*N_RRAM_TO_RST)*tprog\' \'+vprog/2+vsp/2\'\n",0);
+      &tab_print($spfh,"+ \'(2.5+2*$prog_cycle +2*N_RRAM_TO_RST)*tprog-2*input_slew\' \'+vprog/2+vsp/2\'\n",0);
+      &tab_print($spfh,"+ \'(2.5+2*$prog_cycle +2*N_RRAM_TO_RST)*tprog - input_slew\' \'-vprog/2+vsp/2\'\n",0);
+      &tab_print($spfh,"+ \'(1.5+ 2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
+      &tab_print($spfh,"+ \'(1.5+ 2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog\' \'$op_prog_vdd\')\n",0);
+    }
 
     &tab_print($spfh,"Vwl[$set_wl] wl[$set_wl] 0 pwl(0 \'-vprog/2+vsp/2\'\n",0);
     &tab_print($spfh,"+ \'(1.5+2*$prog_cycle +2*N_RRAM_TO_RST)*tprog-input_slew\' \'-vprog/2+vsp/2\'\n",0);
@@ -1729,6 +1753,9 @@ sub gen_rram_mux_sp_basic_stimulates($ $ $ $) {
         next;
       }
       &tab_print($spfh,"Vbl[$i]_b bl[$i]_b 0 pulse(\'+vprog/2+vsp/2\' \'$op_prog_vdd\' \'(1.5+ 2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ 2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+N*op_clk_period\')\n",0);
+      if ("on" eq $opt_ptr->{rram_2n1r}) {
+        &tab_print($spfh,"Vbl[$i] bl[$i] 0 pulse(\'-vprog/2+vsp/2\' \'$op_prog_vdd\' \'(1.5+ 2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog - input_slew\' input_slew input_slew \'0.5*tprog + N*op_clk_period - input_slew\' \'(2+ 2*N_RRAM_TO_SET +2*N_RRAM_TO_RST)*tprog+N*op_clk_period\')\n",0);
+      }
     }
     &tab_print($spfh,"\n",0);
 
@@ -2830,6 +2857,10 @@ sub gen_1level_rram_mux_dvd_subckt($ $ $ $ $ $ $) {
 
   print "INFO: generating 1-level RRAM mux structure with Dynamic Voltage Domain...\n";
 
+  if ("on" eq $opt_ptr->{rram_2n1r}) {
+    print "INFO: apply 2T1R programming structure...\n";
+  }
+
   &tab_print($spfh,".param N_RRAM_TO_SET=1\n",0);
   &tab_print($spfh,".param N_RRAM_TO_RST=1\n",0);
   &tab_print($spfh,".param vsp_prog=$conf_ptr->{rram_settings}->{Vdd_prog}->{val}\n",0);
@@ -2984,6 +3015,10 @@ sub gen_1level_rram_mux_basic_subckt($ $ $ $ $ $ $) {
     print "INFO: generating 1-level RRAM mux structure - basic design...\n";
   }
 
+  if ("on" eq $opt_ptr->{rram_2n1r}) {
+    print "INFO: apply 2T1R programming structure...\n";
+  }
+
   &tab_print($spfh,".param N_RRAM_TO_SET=1\n",0);
   &tab_print($spfh,".param N_RRAM_TO_RST=1\n",0);
   &tab_print($spfh,".param vsp_prog=$conf_ptr->{rram_settings}->{Vdd_prog}->{val}\n",0);
@@ -3000,6 +3035,9 @@ sub gen_1level_rram_mux_basic_subckt($ $ $ $ $ $ $) {
   &tab_print($spfh,"+ prog_clk op_clk\n", 0);
   for (my $i = 0; $i < ($mux_size+1); $i++) {
     &tab_print($spfh,"+ bl[$i]_b wl[$i] \n",0);
+    if ("on" eq $opt_ptr->{rram_2n1r}) {
+      &tab_print($spfh,"+ bl[$i] \n",0);
+    }
   }
   &tab_print($spfh,"\n",0);
 
@@ -3020,11 +3058,23 @@ sub gen_1level_rram_mux_basic_subckt($ $ $ $ $ $ $) {
     #  Program Pair 
     if ("on" eq $finfet_tech) {
       for (my $jfin = 0; $jfin < $wprog; $jfin++) {
-        &tab_print($spfh, "Xprog_pmos$i\_$jfin mux1level_in$i bl[$i]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
+        # 2N1R implementation: use two n-type transistor for programming a RRAM
+        if ("on" eq $opt_ptr->{rram_2n1r}) {
+          &tab_print($spfh, "Xprog_2n1r_nmos$i\_$jfin mux1level_in$i bl[$i] prog_vdd prog_vdd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
+        } else {
+        # Classical 4T1R programming structure 
+          &tab_print($spfh, "Xprog_pmos$i\_$jfin mux1level_in$i bl[$i]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
+        }
         &tab_print($spfh, "Xprog_nmos$i\_$jfin mux1level_in$i wl[$i] prog_gnd prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
       }
     } else {
-      &tab_print($spfh, "Xprog_pmos$i mux1level_in$i bl[$i]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+      # 2N1R implementation: use two n-type transistor for programming a RRAM
+      if ("on" eq $opt_ptr->{rram_2n1r}) {
+        &tab_print($spfh, "Xprog_2n1r_nmos$i mux1level_in$i bl[$i] prog_vdd prog_vdd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
+      } else {
+      # Classical 4T1R programming structure 
+        &tab_print($spfh, "Xprog_pmos$i mux1level_in$i bl[$i]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+      }
       &tab_print($spfh, "Xprog_nmos$i mux1level_in$i wl[$i] prog_gnd prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
     }
     # Initilization: RRAM0 (in0) is off, rest of RRAMs are on. Programming will switch RRAM0 to on and the rest to off.
@@ -3046,11 +3096,23 @@ sub gen_1level_rram_mux_basic_subckt($ $ $ $ $ $ $) {
   # Add output program pair 
   if ("on" eq $finfet_tech) {
     for (my $jfin = 0; $jfin < $wprog; $jfin++) {
-      &tab_print($spfh, "Xprog_pmos$mux_size\_$jfin mux1level_out bl[$mux_size]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
+      # 2N1R implementation: use two n-type transistor for programming a RRAM
+      if ("on" eq $opt_ptr->{rram_2n1r}) {
+        &tab_print($spfh, "Xprog_2n1r_nmos$mux_size\_$jfin mux1level_out bl[$mux_size] prog_vdd prog_vdd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
+      } else {
+        # Classical 4T1R programming structure 
+        &tab_print($spfh, "Xprog_pmos$mux_size\_$jfin mux1level_out bl[$mux_size]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
+      }
       &tab_print($spfh, "Xprog_nmos$mux_size\_$jfin mux1level_out wl[$mux_size] prog_gnd prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
     }
   } else {
-    &tab_print($spfh, "Xprog_pmos$mux_size mux1level_out bl[$mux_size]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+    # 2N1R implementation: use two n-type transistor for programming a RRAM
+    if ("on" eq $opt_ptr->{rram_2n1r}) {
+      &tab_print($spfh, "Xprog_2n1r_nmos$mux_size mux1level_out bl[$mux_size] prog_vdd prog_vdd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
+    } else {
+    # Classical 4T1R programming structure 
+      &tab_print($spfh, "Xprog_pmos$mux_size mux1level_out bl[$mux_size]_b prog_vdd prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+    }
     &tab_print($spfh, "Xprog_nmos$mux_size mux1level_out wl[$mux_size] prog_gnd prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
   }
 
@@ -3526,6 +3588,10 @@ sub gen_multilevel_rram_mux_dvd_subckt($ $ $ $ $ $ $ $) {
 
   print "INFO: generating $num_lvls-level RRAM mux structure - high-integrated version...\n";
 
+  if ("on" eq $opt_ptr->{rram_2n1r}) {
+    print "INFO: apply 2T1R programming structure...\n";
+  }
+
   &tab_print($spfh,".param N_RRAM_TO_SET=$num_lvls\n",0);
   &tab_print($spfh,".param N_RRAM_TO_RST=$num_lvls\n",0);
   &tab_print($spfh,".param vsp_prog=$conf_ptr->{rram_settings}->{Vdd_prog}->{val}\n",0);
@@ -3755,6 +3821,10 @@ sub gen_multilevel_rram_mux_basic_subckt($ $ $ $ $ $ $ $) {
     print "INFO: generating $num_lvls-level RRAM mux structure: basic version...\n";
   }
 
+  if ("on" eq $opt_ptr->{rram_2n1r}) {
+    print "INFO: apply 2T1R programming structure...\n";
+  }
+
   &tab_print($spfh,".param N_RRAM_TO_SET=$num_lvls\n",0);
   &tab_print($spfh,".param N_RRAM_TO_RST=$num_lvls\n",0);
   &tab_print($spfh,".param vsp_prog=$conf_ptr->{rram_settings}->{Vdd_prog}->{val}\n",0);
@@ -3770,6 +3840,9 @@ sub gen_multilevel_rram_mux_basic_subckt($ $ $ $ $ $ $ $) {
   &tab_print($spfh,"+ prog_clk op_clk\n", 0);
   for (my $i = 0; $i < $num_blwl; $i++) {
     &tab_print($spfh,"+ bl[$i]_b wl[$i] \n",0);
+    if ("on" eq $opt_ptr->{rram_2n1r}) {
+      &tab_print($spfh,"+ bl[$i] \n",0);
+    }
   }
   &tab_print($spfh,"\n",0);
 
@@ -3815,11 +3888,23 @@ sub gen_multilevel_rram_mux_basic_subckt($ $ $ $ $ $ $ $) {
       &tab_print($spfh, "* Input $i \n",0);
       if ("on" eq $finfet_tech) {
         for (my $j = 0; $j < $wprog; $j++) {
-          &tab_print($spfh, "Xprog_pmos_in_lvl$lvl\_in$i\_$j mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
+          # 2N1R implementation: use two n-type transistor for programming a RRAM
+          if ("on" eq $opt_ptr->{rram_2n1r}) {
+            &tab_print($spfh, "Xprog_2n1r_nmos_in_lvl$lvl\_in$i\_$j mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx] $prog_vdd $prog_vdd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
+          } else {
+          # Classical 4T1R structure 
+            &tab_print($spfh, "Xprog_pmos_in_lvl$lvl\_in$i\_$j mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
+          }
           &tab_print($spfh, "Xprog_nmos_in_lvl$lvl\_in$i\_$j mux2lvl_lvl$lvl\_in$i wl[$in_blwl_idx] $prog_gnd $prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
         }
       } else {
-        &tab_print($spfh, "Xprog_pmos_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+        # 2N1R implementation: use two n-type transistor for programming a RRAM
+        if ("on" eq $opt_ptr->{rram_2n1r}) {
+          &tab_print($spfh, "Xprog_2n1r_nmos_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx] $prog_vdd $prog_vdd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
+        } else {
+        # Classical 4T1R structure 
+          &tab_print($spfh, "Xprog_pmos_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+        }
         &tab_print($spfh, "Xprog_nmos_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i wl[$in_blwl_idx] $prog_gnd $prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
       }
       # RRAMs' TEs and BEs: level 0 (first level) RRAM is organized as (TE, BE).
@@ -3871,11 +3956,23 @@ sub gen_multilevel_rram_mux_basic_subckt($ $ $ $ $ $ $ $) {
       &tab_print($spfh, "* Output $j\n",0);
       if ("on" eq $finfet_tech) {
         for (my $jfin = 0; $jfin < $wprog; $jfin++) {
-          &tab_print($spfh, "Xprog_pmos_out_lvl$next_lvl\_in$j\_$jfin mux2lvl_lvl$next_lvl\_in$j bl[$out_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
+          # 2N1R implementation: use two n-type transistor for programming a RRAM
+          if ("on" eq $opt_ptr->{rram_2n1r}) {
+            &tab_print($spfh, "Xprog_2n1r_nmos_out_lvl$next_lvl\_in$j\_$jfin mux2lvl_lvl$next_lvl\_in$j bl[$out_blwl_idx] $prog_vdd $prog_vdd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
+          } else {
+          # Classical 4T1R structure
+            &tab_print($spfh, "Xprog_pmos_out_lvl$next_lvl\_in$j\_$jfin mux2lvl_lvl$next_lvl\_in$j bl[$out_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
+          }
           &tab_print($spfh, "Xprog_nmos_out_lvl$next_lvl\_in$j\_$jfin mux2lvl_lvl$next_lvl\_in$j wl[$out_blwl_idx] $prog_gnd $prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
         }
       } else {
-        &tab_print($spfh, "Xprog_pmos_out_lvl$next_lvl\_in$j mux2lvl_lvl$next_lvl\_in$j bl[$out_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+        # 2N1R implementation: use two n-type transistor for programming a RRAM
+        if ("on" eq $opt_ptr->{rram_2n1r}) {
+          &tab_print($spfh, "Xprog_2n1r_nmos_out_lvl$next_lvl\_in$j mux2lvl_lvl$next_lvl\_in$j bl[$out_blwl_idx] $prog_vdd $prog_vdd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
+        } else {
+        # Classical 4T1R structure
+          &tab_print($spfh, "Xprog_pmos_out_lvl$next_lvl\_in$j mux2lvl_lvl$next_lvl\_in$j bl[$out_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+        }
         &tab_print($spfh, "Xprog_nmos_out_lvl$next_lvl\_in$j mux2lvl_lvl$next_lvl\_in$j wl[$out_blwl_idx] $prog_gnd $prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
       }
     }
@@ -4033,7 +4130,7 @@ sub gen_multilevel_mux_subckt($ $ $ $ $ $ $)
     } elsif ("on" eq $opt_ptr->{advance_rram_mux}) {
       &gen_multilevel_rram_mux_dvd_subckt($spfh,$mux_size,$num_sram,$subckt_name,$mux2_subckt,$buffered,$rram_enhance,$wprog);
     } else {
-      &gen_multilevel_rram_mux_subckt($spfh,$mux_size,$num_sram,$subckt_name,$mux2_subckt,$buffered,$rram_enhance,$wprog);
+      &gen_multilevel_rram_mux_basic_subckt($spfh,$mux_size,$num_sram,$subckt_name,$mux2_subckt,$buffered,$rram_enhance,$wprog);
     }
     return;
   }
