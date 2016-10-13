@@ -185,7 +185,7 @@ void decode_verilog_multilevel_4t1r_mux(int num_level, int num_input_basis,
   /* Check */
   assert(0 < bit_len);
   assert(NULL != conf_bits);
-  assert((-1 < path_id)&&(path_id < bit_len/2 - 1));
+  /* assert((-1 < path_id)&&(path_id < bit_len/2 - 1)); */
   /* Start from first level to the last level */
   active_basis_path_id = path_id;
   for (i = 0; i < num_level; i++) {

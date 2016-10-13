@@ -69,7 +69,7 @@ void dump_verilog_bitstream(char* bitstream_file_name,
   /* close file */
   fclose(fp);
 
-  vpr_printf(TIO_MESSAGE_INFO, "Dumped %d configuration bits into  bitstream file...\n", 
+  vpr_printf(TIO_MESSAGE_INFO, "Dumped %d configuration bits into bitstream file...\n", 
              dumped_num_conf_bits);
 
   /* Free the linked-list contain configuration bits ? */

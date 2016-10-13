@@ -370,9 +370,6 @@ void dump_verilog_cmos_mux_multilevel_structure(FILE* fp,
       fprintf(fp, "mux2_l%d_in[%d:%d], ", level, j, j + cur_num_input_basis - 1); /* input0 input1 */
       fprintf(fp, "mux2_l%d_in[%d], ", nextlevel, out_idx); /* output */
       /* Print number of sram bits for this basis */
-      for (k = sram_idx; k < (sram_idx + cur_num_input_basis); k++) {
-      }
-      /* sram sram_inv */
       fprintf(fp, "%s[%d:%d], %s_inv[%d:%d] ", 
       sram_port[0]->prefix, sram_idx, sram_idx + cur_num_input_basis -1,
       sram_port[0]->prefix, sram_idx, sram_idx + cur_num_input_basis -1);
@@ -726,6 +723,7 @@ void dump_verilog_rram_mux_multilevel_structure(FILE* fp,
       out_idx = j/spice_mux_arch.num_input_basis; 
       /* Determine the number of input of this basis */
       cur_num_input_basis = spice_mux_arch.num_input_basis;
+      cur_mem_msb = cur_mem_lsb + (cur_num_input_basis + 1);
       if ((j + cur_num_input_basis) > spice_mux_arch.num_input_per_level[nextlevel]) {
         cur_num_input_basis = find_spice_mux_arch_special_basis_size(spice_mux_arch);
         if (0 < cur_num_input_basis) {
@@ -733,8 +731,8 @@ void dump_verilog_rram_mux_multilevel_structure(FILE* fp,
           fprintf(fp, "%s special_basis(\n", special_basis_subckt_name);
           fprintf(fp, "mux2_l%d_in[%d:%d], ", level, j, j + cur_num_input_basis - 1); /* inputs */
           fprintf(fp, "mux2_l%d_in[%d], ", nextlevel, out_idx); /* output */
-          cur_mem_msb += 2 * (cur_num_input_basis + 1);
-          fprintf(fp, "%s[%d:%d], %s_inv[%d,%d], ", 
+          cur_mem_msb = cur_mem_lsb + (cur_num_input_basis + 1);
+          fprintf(fp, "%s[%d:%d], %s_inv[%d,%d]", 
                   sram_port[0]->prefix, cur_mem_lsb, cur_mem_msb - 1,  
                   sram_port[0]->prefix, cur_mem_lsb, cur_mem_msb - 1); /* sram sram_inv */
           fprintf(fp, ");\n");
@@ -748,8 +746,7 @@ void dump_verilog_rram_mux_multilevel_structure(FILE* fp,
       fprintf(fp, "mux2_l%d_in[%d:%d], ", level, j, j + cur_num_input_basis - 1); /* input0 input1 */
       fprintf(fp, "mux2_l%d_in[%d], ", nextlevel, out_idx); /* output */
       /* Print number of sram bits for this basis */
-      cur_mem_msb += 2 * (cur_num_input_basis + 1);
-      fprintf(fp, "%s[%d:%d], %s_inv[%d:%d], ", 
+      fprintf(fp, "%s[%d:%d], %s_inv[%d:%d]", 
                   sram_port[0]->prefix, cur_mem_lsb, cur_mem_msb - 1,  
                   sram_port[0]->prefix, cur_mem_lsb, cur_mem_msb - 1); /* sram sram_inv */
       fprintf(fp, ");\n");
@@ -760,8 +757,8 @@ void dump_verilog_rram_mux_multilevel_structure(FILE* fp,
   /* Assert */
   assert(0 == nextlevel);
   assert(0 == out_idx);
-  assert(1 == special_basis_cnt);
-  assert((mux_basis_cnt + special_basis_cnt) == (int)((spice_mux_arch.num_input - 1)/(spice_mux_arch.num_input_basis - 1)) + 1);
+  assert((1 == special_basis_cnt)||(0 == special_basis_cnt));
+  /* assert((mux_basis_cnt + special_basis_cnt) == (int)((spice_mux_arch.num_input - 1)/(spice_mux_arch.num_input_basis - 1)) + 1); */
  
   /* Free */
   my_free(special_basis_subckt_name);
