@@ -68,10 +68,10 @@ void init_spice_mux_arch(t_spice_model* spice_model,
   } 
 
   /* Basic info*/
-  spice_mux_arch->structure = spice_model->structure;
+  spice_mux_arch->structure = spice_model->design_tech_info.structure;
   spice_mux_arch->num_input = mux_size;
   /* For different structure */
-  switch (spice_model->structure) {
+  switch (spice_model->design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     spice_mux_arch->num_level = determine_tree_mux_level(spice_mux_arch->num_input);
     spice_mux_arch->num_input_basis = 2;
@@ -85,7 +85,7 @@ void init_spice_mux_arch(t_spice_model* spice_model,
     spice_mux_arch->num_input_last_level = mux_size;
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-    spice_mux_arch->num_level = spice_model->mux_num_level;
+    spice_mux_arch->num_level = spice_model->design_tech_info.mux_num_level;
     spice_mux_arch->num_input_basis = determine_num_input_basis_multilevel_mux(mux_size, spice_mux_arch->num_level);
     /* Determine the level and index of per MUX inputs*/
     spice_mux_arch->num_input_last_level = multilevel_mux_last_level_input_num(spice_mux_arch->num_level, spice_mux_arch->num_input_basis, mux_size);
@@ -271,7 +271,7 @@ void fprint_spice_mux_model_basis_cmos_subckt(FILE* fp, char* subckt_name,
   }
   fprintf(fp, "out ");
   /* General cases */
-  switch (spice_model.structure) {
+  switch (spice_model.design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     num_sram_bits = 1;
     break;
@@ -297,7 +297,7 @@ void fprint_spice_mux_model_basis_cmos_subckt(FILE* fp, char* subckt_name,
   switch (spice_model.pass_gate_logic->type) {
   case SPICE_MODEL_PASS_GATE_TRANSMISSION:
     pgl_name = cpt_subckt_name;
-    switch (spice_model.structure) {
+    switch (spice_model.design_tech_info.structure) {
     case SPICE_MODEL_STRUCTURE_TREE:
       fprintf(fp,"X%s_0 in0 out sel0 sel_inv0 svdd sgnd %s nmos_size=%g pmos_size=%g\n",
               pgl_name, pgl_name, 
@@ -322,7 +322,7 @@ void fprint_spice_mux_model_basis_cmos_subckt(FILE* fp, char* subckt_name,
     break;
   case SPICE_MODEL_PASS_GATE_TRANSISTOR:
     pgl_name = nmos_subckt_name;
-    switch (spice_model.structure) {
+    switch (spice_model.design_tech_info.structure) {
     case SPICE_MODEL_STRUCTURE_TREE:
       fprintf(fp,"X%s_0 in0 sel0 out sgnd %s W=\'%g*wn\'\n",
                   pgl_name, pgl_name, spice_model.pass_gate_logic->nmos_size);
@@ -370,7 +370,7 @@ void fprint_spice_mux_model_basis_rram_subckt(FILE* fp, char* subckt_name,
   assert((SPICE_MODEL_MUX == spice_model.type)||(SPICE_MODEL_LUT == spice_model.type)); 
   assert(SPICE_MODEL_DESIGN_RRAM == spice_model.design_tech);
 
-  switch(spice_model.structure) {
+  switch(spice_model.design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
     fprintf(fp, ".subckt %s ", subckt_name);
@@ -382,9 +382,9 @@ void fprint_spice_mux_model_basis_rram_subckt(FILE* fp, char* subckt_name,
       fprintf(fp, "sel%d sel_inv%d ", i, i);
     }
     fprintf(fp, "svdd sgnd ron=\'%g\' roff=\'%g\' wprog_set_nmos=\'%g*io_wn\' wprog_reset_nmos=\'%g*io_wn\' wprog_set_pmos=\'%g*io_wp\' wprog_reset_pmos=\'%g*io_wp\' \n",
-            spice_model.ron, spice_model.roff, 
-            spice_model.wprog_set_nmos, spice_model.wprog_reset_nmos,
-            spice_model.wprog_set_pmos, spice_model.wprog_reset_pmos);
+            spice_model.design_tech_info.ron, spice_model.design_tech_info.roff, 
+            spice_model.design_tech_info.wprog_set_nmos, spice_model.design_tech_info.wprog_reset_nmos,
+            spice_model.design_tech_info.wprog_set_pmos, spice_model.design_tech_info.wprog_reset_pmos);
     /* Print the new 2T1R structure */ 
     for (i = 0; i < num_input_per_level; i++) {
       /* RRAMs */
@@ -440,7 +440,7 @@ void fprint_spice_mux_model_basis_subckt(FILE* fp,
   init_spice_mux_arch(spice_mux_model->spice_model, spice_mux_model->spice_mux_arch, spice_mux_model->size);
 
   /* Corner case: Error out  MUX_SIZE = 2, automatcially give a one-level structure */
-  if ((2 == spice_mux_model->size)&&(SPICE_MODEL_STRUCTURE_ONELEVEL != spice_mux_model->spice_model->structure)) {
+  if ((2 == spice_mux_model->size)&&(SPICE_MODEL_STRUCTURE_ONELEVEL != spice_mux_model->spice_model->design_tech_info.structure)) {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Structure of SPICE model (%s) should be one-level because it is linked to a 2:1 MUX!\n",
                __FILE__, __LINE__, spice_mux_model->spice_model->name);
     exit(1);
@@ -743,10 +743,10 @@ void fprint_spice_rram_mux_multilevel_structure(FILE* fp, char* mux_basis_subckt
   mux_basis_cnt = 0;
   assert((2 == spice_mux_arch.num_input_basis)||(2 < spice_mux_arch.num_input_basis));
 
-  assert(0. < spice_model.wprog_set_pmos);
-  assert(0. < spice_model.wprog_reset_pmos);
-  assert(0. < spice_model.wprog_set_nmos);
-  assert(0. < spice_model.wprog_reset_nmos);
+  assert(0. < spice_model.design_tech_info.wprog_set_pmos);
+  assert(0. < spice_model.design_tech_info.wprog_reset_pmos);
+  assert(0. < spice_model.design_tech_info.wprog_set_nmos);
+  assert(0. < spice_model.design_tech_info.wprog_reset_nmos);
 
   for (i = 0; i < spice_mux_arch.num_level; i++) {
     level = spice_mux_arch.num_level - i;
@@ -842,10 +842,10 @@ void fprint_spice_rram_mux_onelevel_structure(FILE* fp, t_spice_model spice_mode
 
   assert(SPICE_MODEL_DESIGN_RRAM == spice_model.design_tech);
   /* assert(SPICE_MODEL_PASS_GATE_TRANSMISSION == spice_model.pass_gate_logic->type); */
-  assert(0. < spice_model.wprog_set_pmos);
-  assert(0. < spice_model.wprog_reset_pmos);
-  assert(0. < spice_model.wprog_set_nmos);
-  assert(0. < spice_model.wprog_reset_nmos);
+  assert(0. < spice_model.design_tech_info.wprog_set_pmos);
+  assert(0. < spice_model.design_tech_info.wprog_reset_pmos);
+  assert(0. < spice_model.design_tech_info.wprog_set_nmos);
+  assert(0. < spice_model.design_tech_info.wprog_reset_nmos);
 
   for (i = 0; i < spice_mux_arch.num_input; i++) {
     /* Print a RRAM */
@@ -930,7 +930,7 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
     fprintf(fp, ".subckt %s_mux_size%d ", spice_model.name, mux_size);
   } else {
     fprintf(fp, "***** CMOS MUX info: spice_model_name=%s, size=%d, structure: %s *****\n", 
-            spice_model.name, mux_size, gen_str_spice_model_structure(spice_model.structure));
+            spice_model.name, mux_size, gen_str_spice_model_structure(spice_model.design_tech_info.structure));
     fprintf(fp, ".subckt %s_size%d ", spice_model.name, mux_size);
   }
   /* Print input ports*/
@@ -939,7 +939,7 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
   } 
   /* Print output ports*/
   fprintf(fp, "%s ", output_port[0]->prefix);
-  switch (spice_model.structure) {
+  switch (spice_model.design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     /* Print sram ports*/
     for (i = 0; i < spice_mux_arch.num_level; i++) {
@@ -979,7 +979,7 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
   fprintf(fp, "\n");
   
   /* Print internal architecture*/ 
-  switch (spice_model.structure) {
+  switch (spice_model.design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     fprint_spice_cmos_mux_tree_structure(fp, mux_basis_subckt_name, spice_model, spice_mux_arch, num_sram_port, sram_port);
     break;
@@ -1148,7 +1148,7 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
     */
   } else {
     fprintf(fp, "***** RRAM MUX info: spice_model_name=%s, size=%d, structure: %s *****\n", 
-            spice_model.name, mux_size, gen_str_spice_model_structure(spice_model.structure));
+            spice_model.name, mux_size, gen_str_spice_model_structure(spice_model.design_tech_info.structure));
     fprintf(fp, ".subckt %s_size%d ", spice_model.name, mux_size);
   }
   /* Print input ports*/
@@ -1157,7 +1157,7 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
   } 
   /* Print output ports*/
   fprintf(fp, "%s ", output_port[0]->prefix);
-  switch (spice_model.structure) {
+  switch (spice_model.design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     /* Print sram ports*/
     for (i = 0; i < spice_mux_arch.num_level; i++) {
@@ -1188,16 +1188,16 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
   }
   /* Print local vdd and gnd*/
   fprintf(fp, "svdd sgnd ron=\'%g\' roff=\'%g\' wprog_set_nmos=\'%g*io_wn\' wprog_set_pmos=\'%g*io_wp\' wprog_reset_nmos=\'%g*io_wn\' wprog_reset_pmos=\'%g*io_wp\'", 
-          spice_model.ron, spice_model.roff, 
-          spice_model.wprog_set_nmos, spice_model.wprog_set_pmos, 
-          spice_model.wprog_reset_nmos, spice_model.wprog_reset_pmos);
+          spice_model.design_tech_info.ron, spice_model.design_tech_info.roff, 
+          spice_model.design_tech_info.wprog_set_nmos, spice_model.design_tech_info.wprog_set_pmos, 
+          spice_model.design_tech_info.wprog_reset_nmos, spice_model.design_tech_info.wprog_reset_pmos);
   fprintf(fp, "\n");
   
   /* Print internal architecture*/ 
   /* RRAM MUX is optimal in terms of area, delay and power for one-level structure.
    * Hence, we do not support the multi-level or tree-like RRAM MUX.
    */
-  switch (spice_model.structure) {
+  switch (spice_model.design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     /*
     fprint_spice_rram_mux_tree_structure(fp, mux_basis_subckt_name, spice_model, spice_mux_arch, num_sram_port, sram_port);
@@ -1342,7 +1342,7 @@ void fprint_spice_mux_model_subckt(FILE* fp,
   }
 
   /* Corner case: Error out  MUX_SIZE = 2, automatcially give a one-level structure */
-  if ((2 == spice_mux_model->size)&&(SPICE_MODEL_STRUCTURE_ONELEVEL != spice_mux_model->spice_model->structure)) {
+  if ((2 == spice_mux_model->size)&&(SPICE_MODEL_STRUCTURE_ONELEVEL != spice_mux_model->spice_model->design_tech_info.structure)) {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Structure of SPICE model (%s) should be one-level because it is linked to a 2:1 MUX!\n",
                __FILE__, __LINE__, spice_mux_model->spice_model->name);
     exit(1);
@@ -1550,11 +1550,11 @@ void generate_spice_muxes(char* subckt_dir,
       }
       /* Check the SRAM port size */
       num_input_basis = determine_num_input_basis_multilevel_mux(cur_spice_mux_model->size, 
-                                                                 cur_spice_mux_model->spice_model->mux_num_level);
-      if ((num_input_basis * cur_spice_mux_model->spice_model->mux_num_level) != sram_ports[0]->size) {
+                                                                 cur_spice_mux_model->spice_model->design_tech_info.mux_num_level);
+      if ((num_input_basis * cur_spice_mux_model->spice_model->design_tech_info.mux_num_level) != sram_ports[0]->size) {
         vpr_printf(TIO_MESSAGE_ERROR, 
                    "(File:%s,[LINE%d])User-defined MUX SPICE MODEL(%s) SRAM size(%d) unmatch with the num of level(%d)!\n",
-                   __FILE__, __LINE__, cur_spice_mux_model->spice_model->name, sram_ports[0]->size, cur_spice_mux_model->spice_model->mux_num_level*num_input_basis);
+                   __FILE__, __LINE__, cur_spice_mux_model->spice_model->name, sram_ports[0]->size, cur_spice_mux_model->spice_model->design_tech_info.mux_num_level*num_input_basis);
         exit(1);
       }
       /* Move on to the next*/

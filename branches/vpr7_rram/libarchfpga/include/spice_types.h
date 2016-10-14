@@ -47,7 +47,9 @@ enum e_spice_model_type {
   SPICE_MODEL_SCFF,
   SPICE_MODEL_IOPAD, 
   SPICE_MODEL_VDD, 
-  SPICE_MODEL_GND 
+  SPICE_MODEL_GND, 
+  SPICE_MODEL_INVBUF, 
+  SPICE_MODEL_PASSGATE 
 };
 
 enum e_spice_model_design_tech {
@@ -74,6 +76,7 @@ struct s_spice_model_buffer {
   int tapered_buf; /*Valid only when this is a buffer*/
   int tap_buf_level;
   int f_per_stage;
+  char* spice_model_name;
 };
 
 enum e_spice_model_pass_gate_logic_type {
@@ -85,6 +88,7 @@ struct s_spice_model_pass_gate_logic {
   enum e_spice_model_pass_gate_logic_type type;
   float nmos_size;
   float pmos_size;
+  char* spice_model_name;
 };
 
 enum e_spice_model_port_type {
@@ -125,6 +129,24 @@ struct s_spice_model_netlist {
   int included;
 };
 
+/* Information about design technology */
+typedef struct s_spice_model_design_tech_info t_spice_model_design_tech_info;
+struct s_spice_model_design_tech_info {
+  /* Valid for SRAM technology */
+  t_spice_model_buffer* buffer_info;
+  t_spice_model_pass_gate_logic* pass_gate_info;
+  /* Vaild for RRAM technology only, and this is a mux*/
+  float ron;
+  float roff;
+  float wprog_set_nmos;
+  float wprog_set_pmos;
+  float wprog_reset_nmos;
+  float wprog_reset_pmos;
+  /* Mux information only */
+  enum e_spice_model_structure structure;
+  int mux_num_level;
+};
+
 typedef struct s_spice_model t_spice_model;
 struct s_spice_model {
   enum e_spice_model_type type;
@@ -135,21 +157,17 @@ struct s_spice_model {
   t_spice_model_netlist* include_netlist;
   int is_default;
 
+  /* type */
   enum e_spice_model_design_tech design_tech;
-  enum e_spice_model_structure structure;
-  int mux_num_level;
-  /* Vaild for RRAM technology only, and this is a mux*/
-  float ron;
-  float roff;
-  float wprog_set_nmos;
-  float wprog_set_pmos;
-  float wprog_reset_nmos;
-  float wprog_reset_pmos;
+  t_spice_model_design_tech_info design_tech_info;
   /* END*/
+
+  /* buffering information */
   t_spice_model_buffer* lut_input_buffer;
   t_spice_model_buffer* input_buffer;
   t_spice_model_buffer* output_buffer;
   t_spice_model_pass_gate_logic* pass_gate_logic;
+
   /* Ports*/
   int num_port;
   t_spice_model_port* ports;

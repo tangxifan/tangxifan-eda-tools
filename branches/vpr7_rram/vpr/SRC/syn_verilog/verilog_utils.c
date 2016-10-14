@@ -226,7 +226,7 @@ void decode_verilog_rram_mux(t_spice_model* mux_spice_model,
   (*bit_len) = 2* count_num_conf_bits_one_spice_model(mux_spice_model, mux_size);
   
   /* Switch cases: MUX structure */
-  switch (mux_spice_model->structure) {
+  switch (mux_spice_model->design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
     /* Number of configuration bits is 2*(input_size+1) */
     num_level = 1;
@@ -238,7 +238,7 @@ void decode_verilog_rram_mux(t_spice_model* mux_spice_model,
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
     /* Number of configuration bits is num_level* 2*(basis+1) */
-    num_level = mux_spice_model->mux_num_level; 
+    num_level = mux_spice_model->design_tech_info.mux_num_level; 
     num_input_basis = determine_num_input_basis_multilevel_mux(mux_size, num_level);
     break;
   default:
@@ -252,7 +252,7 @@ void decode_verilog_rram_mux(t_spice_model* mux_spice_model,
 
   /* Decode configuration bits : BL & WL*/
   /* Switch cases: MUX structure */
-  switch (mux_spice_model->structure) {
+  switch (mux_spice_model->design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
     decode_verilog_one_level_4t1r_mux(path_id, (*bit_len), (*conf_bits)); 
     break;

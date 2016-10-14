@@ -270,6 +270,96 @@ t_spice_model* get_default_spice_model(enum e_spice_model_type default_spice_mod
   return ret;
 }
 
+/* Tasks: 
+ * 1. Search the spice_model_name of input and output buffer and link to the spice_model
+ * 2. Copy the information from input/output buffer spice model to higher level spice_models 
+ */
+void config_spice_model_input_output_buffers_pass_gate(int num_spice_models, 
+                                                       t_spice_model* spice_model) {
+  int i;
+  t_spice_model* buf_spice_model = NULL;
+  t_spice_model* pgl_spice_model = NULL;
+
+  for (i = 0; i < num_spice_models; i++) {
+    /* By pass inverters and buffers  */
+    if (SPICE_MODEL_INVBUF == spice_model[i].type) {
+      continue;
+    }
+
+    /* Check if this spice model has input buffers */
+    if (1 == spice_model[i].input_buffer->exist) {
+      buf_spice_model = find_name_matched_spice_model(spice_model[i].input_buffer->spice_model_name,
+                                                      num_spice_models, spice_model);
+      /* We should find a buffer spice_model*/
+      if (NULL == buf_spice_model) {
+        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Fail to find inv/buffer spice_model to the input buffer of spice_model(name=%s)!\n",
+                   __FILE__, __LINE__, spice_model[i].name);
+        exit(1);
+      }
+      /* Copy the information from found spice model to current spice model*/
+      memcpy(spice_model[i].input_buffer, buf_spice_model->design_tech_info.buffer_info, sizeof(t_spice_model_buffer));
+      /* Recover the spice_model_name and exist */
+      spice_model[i].input_buffer->exist = 1;
+      spice_model[i].input_buffer->spice_model_name = strdup(buf_spice_model->name);
+    }
+
+    /* Check if this spice model has output buffers */
+    if (1 == spice_model[i].output_buffer->exist) {
+      buf_spice_model = find_name_matched_spice_model(spice_model[i].output_buffer->spice_model_name,
+                                                      num_spice_models, spice_model);
+      /* We should find a buffer spice_model*/
+      if (NULL == buf_spice_model) {
+        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Fail to find inv/buffer spice_model to the output buffer of spice_model(name=%s)!\n",
+                   __FILE__, __LINE__, spice_model[i].name);
+        exit(1);
+      }
+      /* Copy the information from found spice model to current spice model*/
+      memcpy(spice_model[i].output_buffer, buf_spice_model->design_tech_info.buffer_info, sizeof(t_spice_model_buffer));
+      /* Recover the spice_model_name and exist */
+      spice_model[i].output_buffer->exist = 1;
+      spice_model[i].output_buffer->spice_model_name = strdup(buf_spice_model->name);
+    }
+ 
+    /* If this spice_model is a LUT, check the lut_input_buffer */
+    if (SPICE_MODEL_LUT == spice_model[i].type) {
+      assert(1 == spice_model[i].lut_input_buffer->exist);
+
+      buf_spice_model = find_name_matched_spice_model(spice_model[i].lut_input_buffer->spice_model_name,
+                                                      num_spice_models, spice_model);
+      /* We should find a buffer spice_model*/
+      if (NULL == buf_spice_model) {
+        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Fail to find inv/buffer spice_model to the lut_input buffer of spice_model(name=%s)!\n",
+                   __FILE__, __LINE__, spice_model[i].name);
+        exit(1);
+      }
+      /* Copy the information from found spice model to current spice model*/
+      memcpy(spice_model[i].lut_input_buffer, buf_spice_model->design_tech_info.buffer_info, sizeof(t_spice_model_buffer));
+      /* Recover the spice_model_name and exist */
+      spice_model[i].lut_input_buffer->exist = 1;
+      spice_model[i].lut_input_buffer->spice_model_name = strdup(buf_spice_model->name);
+    }
+    
+    /* Check pass_gate logic only for LUT and MUX */
+    if ((SPICE_MODEL_LUT == spice_model[i].type)
+       ||(SPICE_MODEL_MUX == spice_model[i].type)) {
+      pgl_spice_model = find_name_matched_spice_model(spice_model[i].pass_gate_logic->spice_model_name,
+                                                      num_spice_models, spice_model);
+      /* We should find a buffer spice_model*/
+      if (NULL == pgl_spice_model) {
+        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Fail to find pass_gate spice_model to the pass_gate_logic of spice_model(name=%s)!\n",
+                   __FILE__, __LINE__, spice_model[i].name);
+        exit(1);
+      }
+      /* Copy the information from found spice model to current spice model*/
+      memcpy(spice_model[i].pass_gate_logic, pgl_spice_model->design_tech_info.pass_gate_info, sizeof(t_spice_model_pass_gate_logic));
+      /* Recover the spice_model_name */
+      spice_model[i].pass_gate_logic->spice_model_name = strdup(pgl_spice_model->name);
+    }
+  }
+  
+  return;
+}
+
 /* Return the SPICE model ports wanted
  * ATTENTION: we use the pointer of spice model here although we don't modify anything of spice_model 
  *            but we have return input ports, whose pointer will be lost if the input is not the pointor of spice_model
@@ -935,7 +1025,7 @@ void decode_cmos_mux_sram_bits(t_spice_model* mux_spice_model,
     return;
   }
   /* Other general cases */ 
-  switch (mux_spice_model->structure) {
+  switch (mux_spice_model->design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     (*mux_level) = determine_tree_mux_level(mux_size);
     (*bit_len) = (*mux_level);
@@ -947,7 +1037,7 @@ void decode_cmos_mux_sram_bits(t_spice_model* mux_spice_model,
     (*conf_bits) = decode_onelevel_mux_sram_bits(mux_size, (*mux_level), path_id); 
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-    (*mux_level) = mux_spice_model->mux_num_level;
+    (*mux_level) = mux_spice_model->design_tech_info.mux_num_level;
     (*bit_len) = determine_num_input_basis_multilevel_mux(mux_size, (*mux_level)) * (*mux_level);
     (*conf_bits) = decode_multilevel_mux_sram_bits(mux_size, (*mux_level), path_id); 
     break;
@@ -1822,7 +1912,7 @@ char* gen_str_spice_model_structure(enum e_spice_model_structure spice_model_str
 /* Check if the spice model structure is the same with the switch_inf structure */
 boolean check_spice_model_structure_match_switch_inf(t_switch_inf target_switch_inf) {
   assert(NULL != target_switch_inf.spice_model);
-  if (target_switch_inf.structure != target_switch_inf.spice_model->structure) {
+  if (target_switch_inf.structure != target_switch_inf.spice_model->design_tech_info.structure) {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Structure in spice_model(%s) is different from switch_inf[%s]!\n",
                __FILE__, __LINE__, target_switch_inf.spice_model->name, target_switch_inf.name);
     return FALSE;
@@ -2390,7 +2480,7 @@ int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
   case SPICE_MODEL_MUX:
     assert((2 == mux_size)||(2 < mux_size));
     /* Number of configuration bits depends on the MUX structure */
-    switch (cur_spice_model->structure) {
+    switch (cur_spice_model->design_tech_info.structure) {
     case SPICE_MODEL_STRUCTURE_TREE:
       num_conf_bits = determine_tree_mux_level(mux_size);
       break;
@@ -2398,9 +2488,9 @@ int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
       num_conf_bits = mux_size;
       break;
     case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-      num_conf_bits = cur_spice_model->mux_num_level
+      num_conf_bits = cur_spice_model->design_tech_info.mux_num_level
                       * determine_num_input_basis_multilevel_mux(mux_size, 
-                        cur_spice_model->mux_num_level);
+                        cur_spice_model->design_tech_info.mux_num_level);
       break;
     default:
       vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
@@ -2415,12 +2505,12 @@ int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
     switch (cur_spice_model->design_tech) {
     case SPICE_MODEL_DESIGN_RRAM:
       /* 4T1R MUX requires more configuration bits */
-      if (SPICE_MODEL_STRUCTURE_TREE == cur_spice_model->structure) {
+      if (SPICE_MODEL_STRUCTURE_TREE == cur_spice_model->design_tech_info.structure) {
       /* For tree-structure: we need 3 times more config. bits */
         num_conf_bits = 3 * num_conf_bits;
-      } else if (SPICE_MODEL_STRUCTURE_MULTILEVEL == cur_spice_model->structure) {
+      } else if (SPICE_MODEL_STRUCTURE_MULTILEVEL == cur_spice_model->design_tech_info.structure) {
       /* For multi-level structure: we need 1 more config. bits for each level */
-        num_conf_bits += cur_spice_model->mux_num_level;
+        num_conf_bits += cur_spice_model->design_tech_info.mux_num_level;
       } else {
         num_conf_bits = (num_conf_bits + 1);
       }

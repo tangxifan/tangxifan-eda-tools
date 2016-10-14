@@ -115,6 +115,10 @@ void init_check_arch_spice_models(t_arch* arch,
     exit(1);
   }
 
+  /* Link the input/output buffer spice models to higher level spice models 
+   * Configure (fill information) the input/output buffers of high level spice models */
+  config_spice_model_input_output_buffers_pass_gate(arch->spice->num_spice_model, arch->spice->spice_models);
+
   /* 1. Link the spice model defined in pb_types and routing switches */
   /* Step A:  Check routing switches, connection blocks*/
   if ((0 == arch->num_cb_switch)||(0 > arch->num_cb_switch)) {

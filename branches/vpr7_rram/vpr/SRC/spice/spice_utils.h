@@ -28,6 +28,9 @@ t_spice_model* get_default_spice_model(enum e_spice_model_type default_spice_mod
                                        int num_spice_model,
                                        t_spice_model* spice_models);
 
+void config_spice_model_input_output_buffers_pass_gate(int num_spice_models, 
+                                                       t_spice_model* spice_model);
+
 t_spice_model_port** find_spice_model_ports(t_spice_model* spice_model,
                                             enum e_spice_model_port_type port_type,
                                             int* port_num);

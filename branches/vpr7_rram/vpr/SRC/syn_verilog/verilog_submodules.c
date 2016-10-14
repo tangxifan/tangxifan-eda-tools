@@ -194,7 +194,7 @@ void dump_verilog_mux_basis_module(FILE* fp,
   init_spice_mux_arch(spice_mux_model->spice_model, spice_mux_model->spice_mux_arch, spice_mux_model->size);
 
   /* Corner case: Error out  MUX_SIZE = 2, automatcially give a one-level structure */
-  if ((2 == spice_mux_model->size)&&(SPICE_MODEL_STRUCTURE_ONELEVEL != spice_mux_model->spice_model->structure)) {
+  if ((2 == spice_mux_model->size)&&(SPICE_MODEL_STRUCTURE_ONELEVEL != spice_mux_model->spice_model->design_tech_info.structure)) {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Structure of SPICE model (%s) should be one-level because it is linked to a 2:1 MUX!\n",
                __FILE__, __LINE__, spice_mux_model->spice_model->name);
     exit(1);
@@ -218,7 +218,7 @@ void dump_verilog_mux_basis_module(FILE* fp,
   dump_verilog_mux_one_basis_module(fp, mux_basis_subckt_name, 
                                 num_input_basis_subckt, spice_mux_model->spice_model);
   /* See if we need a special basis */
-  switch (spice_mux_model->spice_model->structure) {
+  switch (spice_mux_model->spice_model->design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
     break;
@@ -477,7 +477,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
     fprintf(fp, "module %s_mux_size%d (", spice_model.name, mux_size);
   } else {
     fprintf(fp, "//----- CMOS MUX info: spice_model_name=%s, size=%d, structure: %s -----\n", 
-            spice_model.name, mux_size, gen_str_spice_model_structure(spice_model.structure));
+            spice_model.name, mux_size, gen_str_spice_model_structure(spice_model.design_tech_info.structure));
     fprintf(fp, "module %s_size%d (", spice_model.name, mux_size);
   }
   /* Print input ports*/
@@ -492,7 +492,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
   fprintf(fp, "\n");
   
   /* Print internal architecture*/ 
-  switch (spice_model.structure) {
+  switch (spice_model.design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     dump_verilog_cmos_mux_tree_structure(fp, mux_basis_subckt_name, spice_model, spice_mux_arch, num_sram_port, sram_port);
     break;
@@ -852,7 +852,7 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
     */
   } else {
     fprintf(fp, "//----- RRAM MUX info: spice_model_name=%s, size=%d, structure: %s -----\n", 
-            spice_model.name, mux_size, gen_str_spice_model_structure(spice_model.structure));
+            spice_model.name, mux_size, gen_str_spice_model_structure(spice_model.design_tech_info.structure));
     fprintf(fp, "module %s_size%d( ", spice_model.name, mux_size);
   }
   /* Print input ports*/
@@ -869,7 +869,7 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
   /* Print internal architecture*/ 
   /* RRAM MUX is optimal in terms of area, delay and power for one-level structure.
    */
-  switch (spice_model.structure) {
+  switch (spice_model.design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     dump_verilog_rram_mux_tree_structure(fp, mux_basis_subckt_name, spice_model, spice_mux_arch, num_sram_port, sram_port);
     break;
@@ -1004,7 +1004,7 @@ void dump_verilog_mux_module(FILE* fp,
   }
 
   /* Corner case: Error out  MUX_SIZE = 2, automatcially give a one-level structure */
-  if ((2 == spice_mux_model->size)&&(SPICE_MODEL_STRUCTURE_ONELEVEL != spice_mux_model->spice_model->structure)) {
+  if ((2 == spice_mux_model->size)&&(SPICE_MODEL_STRUCTURE_ONELEVEL != spice_mux_model->spice_model->design_tech_info.structure)) {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Structure of SPICE model (%s) should be one-level because it is linked to a 2:1 MUX!\n",
                __FILE__, __LINE__, spice_mux_model->spice_model->name);
     exit(1);
@@ -1095,11 +1095,11 @@ void dump_verilog_submodule_muxes(char* submodule_dir,
       }
       /* Check the SRAM port size */
       num_input_basis = determine_num_input_basis_multilevel_mux(cur_spice_mux_model->size, 
-                                                                 cur_spice_mux_model->spice_model->mux_num_level);
-      if ((num_input_basis * cur_spice_mux_model->spice_model->mux_num_level) != sram_ports[0]->size) {
+                                                                 cur_spice_mux_model->spice_model->design_tech_info.mux_num_level);
+      if ((num_input_basis * cur_spice_mux_model->spice_model->design_tech_info.mux_num_level) != sram_ports[0]->size) {
         vpr_printf(TIO_MESSAGE_ERROR, 
                    "(File:%s,[LINE%d])User-defined MUX SPICE MODEL(%s) SRAM size(%d) unmatch with the num of level(%d)!\n",
-                   __FILE__, __LINE__, cur_spice_mux_model->spice_model->name, sram_ports[0]->size, cur_spice_mux_model->spice_model->mux_num_level*num_input_basis);
+                   __FILE__, __LINE__, cur_spice_mux_model->spice_model->name, sram_ports[0]->size, cur_spice_mux_model->spice_model->design_tech_info.mux_num_level*num_input_basis);
         exit(1);
       }
       /* Move on to the next*/

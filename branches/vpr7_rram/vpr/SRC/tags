@@ -848,19 +848,22 @@ SPICE_LIB_ACADEMIA	../../libarchfpga/include/spice_types.h	/^  SPICE_LIB_INDUSTR
 SPICE_LIB_INDUSTRY	../../libarchfpga/include/spice_types.h	/^  SPICE_LIB_INDUSTRY,SPICE_LIB_ACADEMIA$/;"	e	enum:e_spice_tech_lib_type
 SPICE_MEASURE_DYNAMIC_POWER	spice/spice_netlist_utils.h	/^ SPICE_MEASURE_LEAKAGE_POWER, SPICE_MEASURE_DYNAMIC_POWER$/;"	e	enum:e_measure_type
 SPICE_MEASURE_LEAKAGE_POWER	spice/spice_netlist_utils.h	/^ SPICE_MEASURE_LEAKAGE_POWER, SPICE_MEASURE_DYNAMIC_POWER$/;"	e	enum:e_measure_type
+SPICE_MODEL_BUF	../../libarchfpga/include/spice_types.h	/^  SPICE_MODEL_BUF, $/;"	e	enum:e_spice_model_type
 SPICE_MODEL_BUF_BUF	../../libarchfpga/include/spice_types.h	/^  SPICE_MODEL_BUF_BUF$/;"	e	enum:e_spice_model_buffer_type
 SPICE_MODEL_BUF_INV	../../libarchfpga/include/spice_types.h	/^  SPICE_MODEL_BUF_INV, $/;"	e	enum:e_spice_model_buffer_type
 SPICE_MODEL_CHAN_WIRE	../../libarchfpga/include/spice_types.h	/^  SPICE_MODEL_CHAN_WIRE, $/;"	e	enum:e_spice_model_type
 SPICE_MODEL_DESIGN_CMOS	../../libarchfpga/include/spice_types.h	/^  SPICE_MODEL_DESIGN_CMOS, $/;"	e	enum:e_spice_model_design_tech
 SPICE_MODEL_DESIGN_RRAM	../../libarchfpga/include/spice_types.h	/^  SPICE_MODEL_DESIGN_RRAM$/;"	e	enum:e_spice_model_design_tech
 SPICE_MODEL_FF	../../libarchfpga/include/spice_types.h	/^  SPICE_MODEL_FF, $/;"	e	enum:e_spice_model_type
-SPICE_MODEL_GND	../../libarchfpga/include/spice_types.h	/^  SPICE_MODEL_GND $/;"	e	enum:e_spice_model_type
+SPICE_MODEL_GND	../../libarchfpga/include/spice_types.h	/^  SPICE_MODEL_GND, $/;"	e	enum:e_spice_model_type
 SPICE_MODEL_HARDLOGIC	../../libarchfpga/include/spice_types.h	/^  SPICE_MODEL_HARDLOGIC,$/;"	e	enum:e_spice_model_type
 SPICE_MODEL_INPAD	../../libarchfpga/include/spice_types.h	/^  SPICE_MODEL_INPAD, $/;"	e	enum:e_spice_model_type
+SPICE_MODEL_INV	../../libarchfpga/include/spice_types.h	/^  SPICE_MODEL_INV, $/;"	e	enum:e_spice_model_type
 SPICE_MODEL_IOPAD	../../libarchfpga/include/spice_types.h	/^  SPICE_MODEL_IOPAD, $/;"	e	enum:e_spice_model_type
 SPICE_MODEL_LUT	../../libarchfpga/include/spice_types.h	/^  SPICE_MODEL_LUT, $/;"	e	enum:e_spice_model_type
 SPICE_MODEL_MUX	../../libarchfpga/include/spice_types.h	/^  SPICE_MODEL_MUX, $/;"	e	enum:e_spice_model_type
 SPICE_MODEL_OUTPAD	../../libarchfpga/include/spice_types.h	/^  SPICE_MODEL_OUTPAD, $/;"	e	enum:e_spice_model_type
+SPICE_MODEL_PASSGATE	../../libarchfpga/include/spice_types.h	/^  SPICE_MODEL_PASSGATE $/;"	e	enum:e_spice_model_type
 SPICE_MODEL_PASS_GATE_TRANSISTOR	../../libarchfpga/include/spice_types.h	/^  SPICE_MODEL_PASS_GATE_TRANSMISSION, SPICE_MODEL_PASS_GATE_TRANSISTOR$/;"	e	enum:e_spice_model_pass_gate_logic_type
 SPICE_MODEL_PASS_GATE_TRANSMISSION	../../libarchfpga/include/spice_types.h	/^  SPICE_MODEL_PASS_GATE_TRANSMISSION, SPICE_MODEL_PASS_GATE_TRANSISTOR$/;"	e	enum:e_spice_model_pass_gate_logic_type
 SPICE_MODEL_PORT_BL	../../libarchfpga/include/spice_types.h	/^  SPICE_MODEL_PORT_BL,$/;"	e	enum:e_spice_model_port_type
@@ -1257,6 +1260,7 @@ binary_not	power/power_callibrate.c	/^static char binary_not(char c) {$/;"	f	fil
 binary_search	base/globals.c	/^int binary_search = -1;$/;"	v
 binary_search_place_and_route	base/place_and_route.c	/^static int binary_search_place_and_route(struct s_placer_opts placer_opts,$/;"	f	file:
 bitfield	base/vpr_types.h	/^typedef size_t bitfield;$/;"	t
+bitstream_file_postfix	syn_verilog/verilog_global.c	/^char* bitstream_file_postfix = ".bitstream";$/;"	v
 bl_val	../../libarchfpga/include/spice_types.h	/^  int bl_val;$/;"	m	struct:s_conf_bit_info
 blif	base/read_blif.c	/^static FILE *blif;$/;"	v	file:
 blif_circuit_name	base/globals.c	/^char *blif_circuit_name = NULL;$/;"	v
@@ -1288,6 +1292,7 @@ breadth_first_expand_trace_segment_cluster	pack/cluster_legality.c	/^static void
 breadth_first_route_net	route/route_breadth_first.c	/^static boolean breadth_first_route_net(int inet, float bend_cost) {$/;"	f	file:
 breadth_first_route_net_cluster	pack/cluster_legality.c	/^static boolean breadth_first_route_net_cluster(int inet) {$/;"	f	file:
 buf_size	../../libarchfpga/include/physical_types.h	/^	float buf_size;$/;"	m	struct:s_switch_inf
+buffer_info	../../libarchfpga/include/spice_types.h	/^  t_spice_model_buffer* buffer_info;$/;"	m	struct:s_spice_model_design_tech_info
 buffer_net	place/timing_place_lookup.c	/^static void buffer_net( float* cur_net_delay )$/;"	f	file:
 buffer_size	../../libarchfpga/include/physical_types.h	/^	float buffer_size; \/* if not autosized, the clock buffer size *\/$/;"	m	struct:s_clock_network
 buffer_size	../../libarchfpga/include/physical_types.h	/^	float buffer_size;$/;"	m	struct:s_pb_graph_pin_power
@@ -1406,6 +1411,7 @@ child_pbs	base/vpr_types.h	/^	struct s_pb **child_pbs; \/* children pbs attached
 children	power/power.h	/^	t_mux_node * children; \/* Multiplexers that drive the inputs [0..num_inputs-1] *\/$/;"	m	struct:s_mux_node
 chomp_file_name_postfix	spice/spice_utils.c	/^char* chomp_file_name_postfix(char* file_name) {$/;"	f
 chomp_spice_node_prefix	spice/spice_utils.c	/^char* chomp_spice_node_prefix(char* spice_node_prefix) {$/;"	f
+chomp_verilog_node_prefix	syn_verilog/verilog_utils.c	/^char* chomp_verilog_node_prefix(char* verilog_node_prefix) {$/;"	f
 chunk_ptr_head	../../libarchfpga/include/util.h	/^	struct s_linked_vptr *chunk_ptr_head; $/;"	m	struct:s_chunk	typeref:struct:s_chunk::s_linked_vptr
 circuit_p_io_removed	base/globals.c	/^struct s_linked_vptr *circuit_p_io_removed = NULL;$/;"	v	typeref:struct:s_linked_vptr
 class_inf	../../libarchfpga/include/physical_types.h	/^	struct s_class *class_inf; \/* [0..num_class-1] *\/$/;"	m	struct:s_type_descriptor	typeref:struct:s_type_descriptor::s_class
@@ -1482,6 +1488,7 @@ compute_delta_io_to_clb	place/timing_place_lookup.c	/^static void compute_delta_
 compute_delta_io_to_io	place/timing_place_lookup.c	/^static void compute_delta_io_to_io(struct s_router_opts router_opts,$/;"	f	file:
 compute_primitive_base_cost	util/vpr_utils.c	/^float compute_primitive_base_cost(INP t_pb_graph_node *primitive) {$/;"	f
 conf_bits_head	syn_verilog/verilog_global.c	/^t_llist* conf_bits_head = NULL;$/;"	v
+config_spice_model_input_output_buffers_pass_gate	spice/spice_utils.c	/^void config_spice_model_input_output_buffers_pass_gate(int num_spice_models, $/;"	f
 configure_lut_sram_bits_per_line_rec	spice/spice_lut.c	/^void configure_lut_sram_bits_per_line_rec(int** sram_bits, $/;"	f
 conn_list	base/verilog_writer.h	/^}conn_list;$/;"	t	typeref:struct:found_connectivity
 connect_pb_des_pin_to_src_pin	clb_pin_remap/clb_pin_remap_util.c	/^void connect_pb_des_pin_to_src_pin(t_pb* src_pb,$/;"	f
@@ -1591,6 +1598,7 @@ density	base/vpr_types.h	/^	float density;$/;"	m	struct:s_net_power
 depth	../../libarchfpga/include/physical_types.h	/^	int depth; \/* depth of pb_type *\/$/;"	m	struct:s_pb_type
 deselect_all	base/draw.c	/^static void deselect_all(void) {$/;"	f	file:
 design_tech	../../libarchfpga/include/spice_types.h	/^  enum e_spice_model_design_tech design_tech;$/;"	m	struct:s_spice_model	typeref:enum:s_spice_model::e_spice_model_design_tech
+design_tech_info	../../libarchfpga/include/spice_types.h	/^  t_spice_model_design_tech_info design_tech_info;$/;"	m	struct:s_spice_model
 destroy_button	base/graphics.c	/^destroy_button (const char *button_text) $/;"	f
 destroy_button	base/graphics.c	/^void destroy_button (const char *button_text) { }$/;"	f
 determine_decoder_size	syn_verilog/verilog_utils.c	/^int determine_decoder_size(int num_addr_out) {$/;"	f
@@ -1687,6 +1695,7 @@ dump_include_user_defined_verilog_netlists	syn_verilog/verilog_utils.c	/^void du
 dump_rr_graph	route/rr_graph.c	/^void dump_rr_graph(INP const char *file_name) {$/;"	f
 dump_seg_details	route/rr_graph2.c	/^void dump_seg_details(t_seg_details * seg_details, int nodes_per_chan,$/;"	f
 dump_syn_verilog	base/vpr_types.h	/^  boolean dump_syn_verilog;$/;"	m	struct:s_syn_verilog_opts
+dump_verilog_bitstream	syn_verilog/verilog_bitstream.c	/^void dump_verilog_bitstream(char* bitstream_file_name, $/;"	f
 dump_verilog_block	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_block(FILE* fp,$/;"	f
 dump_verilog_cmos_mux_multilevel_structure	syn_verilog/verilog_submodules.c	/^void dump_verilog_cmos_mux_multilevel_structure(FILE* fp, $/;"	f
 dump_verilog_cmos_mux_one_basis_module	syn_verilog/verilog_submodules.c	/^void dump_verilog_cmos_mux_one_basis_module(FILE* fp, $/;"	f
@@ -1759,6 +1768,7 @@ dump_verilog_switch_box_short_interc	syn_verilog/verilog_routing.c	/^void dump_v
 dump_verilog_top_netlist	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_top_netlist(char* circuit_name,$/;"	f
 dump_verilog_top_netlist_ports	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_top_netlist_ports(FILE* fp,$/;"	f	file:
 dump_verilog_wire_module	syn_verilog/verilog_submodules.c	/^void dump_verilog_wire_module(FILE* fp,$/;"	f
+dumped_num_conf_bits	syn_verilog/verilog_bitstream.c	/^static int dumped_num_conf_bits = 0;$/;"	v	file:
 dynamic	../../libarchfpga/include/physical_types.h	/^	float dynamic;$/;"	m	struct:s_power_usage
 e	../../libarchfpga/include/ezxml.h	/^	char *e; \/* end of work area *\/$/;"	m	struct:ezxml_root
 e_Fc_type	../../libarchfpga/include/physical_types.h	/^enum e_Fc_type {$/;"	g
@@ -1854,6 +1864,7 @@ enable_or_disable_button	base/graphics.c	/^void enable_or_disable_button (int ib
 enable_or_disable_button	base/graphics.c	/^void enable_or_disable_button(int ibutton, bool enabled) { }$/;"	f
 enable_timing_computations	base/vpr_types.h	/^	boolean enable_timing_computations;$/;"	m	struct:s_placer_opts
 enabled	base/graphics.c	/^   bool enabled;$/;"	m	struct:__anon4	file:
+encode_decoder_addr	syn_verilog/verilog_bitstream.c	/^void encode_decoder_addr(int input,$/;"	f	file:
 endlines	base/read_blif.c	/^static int ilines, olines, model_lines, endlines;$/;"	v	file:
 energy_per_toggle	../../libarchfpga/include/physical_types.h	/^	float energy_per_toggle;$/;"	m	struct:s_port_power
 ent	../../libarchfpga/include/ezxml.h	/^	char **ent; \/* general entities (ampersand sequences) *\/$/;"	m	struct:ezxml_root
@@ -2040,6 +2051,7 @@ force_setlinewidth	base/graphics.c	/^static void force_setlinewidth (int linewid
 format	../../libarchfpga/include/physical_types.h	/^	enum e_pin_to_pin_annotation_format format;$/;"	m	struct:s_pin_to_pin_annotation	typeref:enum:s_pin_to_pin_annotation::e_pin_to_pin_annotation_format
 format_dir_path	spice/spice_utils.c	/^char* format_dir_path(char* dir_path) {$/;"	f
 format_spice_node_prefix	spice/spice_utils.c	/^char* format_spice_node_prefix(char* spice_node_prefix) {$/;"	f
+format_verilog_node_prefix	syn_verilog/verilog_utils.c	/^char* format_verilog_node_prefix(char* verilog_node_prefix) {$/;"	f
 forward_expand_pack_pattern_from_edge	pack/prepack.c	/^static void forward_expand_pack_pattern_from_edge($/;"	f	file:
 forward_infer_pattern	pack/prepack.c	/^static void forward_infer_pattern(INOUTP t_pb_graph_pin *pb_graph_pin) {$/;"	f	file:
 forward_weight	base/vpr_types.h	/^	float forward_weight, backward_weight; \/* Weightings of the importance of paths $/;"	m	struct:s_tnode
@@ -2606,6 +2618,7 @@ insert_in_int_list	../../libarchfpga/util.c	/^insert_in_int_list(t_linked_int * 
 insert_in_int_list2	mrfpga/mrfpga_util.c	/^t_linked_int* insert_in_int_list2 (t_linked_int *head, int data )$/;"	f
 insert_in_vptr_list	../../libarchfpga/util.c	/^insert_in_vptr_list(struct s_linked_vptr *head, void *vptr_to_add) {$/;"	f
 insert_llist_node	spice/linkedlist.c	/^t_llist* insert_llist_node(t_llist* cur) {$/;"	f
+insert_llist_node_before_head	spice/linkedlist.c	/^t_llist* insert_llist_node_before_head(t_llist* old_head) {$/;"	f
 insert_node_to_int_list	../../libarchfpga/util.c	/^insert_node_to_int_list(struct s_linked_int *head, int int_to_add) {$/;"	f
 insert_switch_to_buffer_list	mrfpga/buffer_insertion.c	/^static void insert_switch_to_buffer_list( t_buffer_plan_list list, struct s_switch_inf switch_inf_local)$/;"	f	file:
 insert_switch_to_buffer_plan	mrfpga/buffer_insertion.c	/^static t_buffer_plan insert_switch_to_buffer_plan( t_buffer_plan plan, struct s_switch_inf switch_inf_local)$/;"	f	file:
@@ -2898,7 +2911,7 @@ mux_count	route/rr_graph.c	/^	int mux_count;$/;"	m	struct:s_mux_size_distributio
 mux_find_selector_values	power/power_util.c	/^boolean mux_find_selector_values(int * selector_values, t_mux_node * mux_node,$/;"	f
 mux_graph_head	power/power.h	/^	t_mux_node * mux_graph_head;$/;"	m	struct:s_mux_arch
 mux_info	power/power.h	/^	std::map<float, t_power_mux_info*> mux_info;$/;"	m	struct:s_power_commonly_used
-mux_num_level	../../libarchfpga/include/spice_types.h	/^  int mux_num_level;$/;"	m	struct:s_spice_model
+mux_num_level	../../libarchfpga/include/spice_types.h	/^  int mux_num_level;$/;"	m	struct:s_spice_model_design_tech_info
 mux_size	power/power.h	/^	int mux_size;$/;"	m	struct:s_power_buffer_sc_levr_inf
 mux_trans_size	../../libarchfpga/include/physical_types.h	/^	float mux_trans_size;$/;"	m	struct:s_switch_inf
 mux_transistor_size	../../libarchfpga/include/physical_types.h	/^	float mux_transistor_size;$/;"	m	struct:s_power_arch
@@ -3259,6 +3272,7 @@ parent_switch	route/route_tree_timing.h	/^	short parent_switch;$/;"	m	struct:s_r
 parse_direct_pin_name	util/vpr_utils.c	/^void parse_direct_pin_name(char * src_string, int line, int * start_pin_index, $/;"	f
 partition	spice/quicksort.c	/^int partition(int len, float* sort_value, int pivot_index) {$/;"	f	file:
 partition_index	spice/quicksort.c	/^int partition_index(int len, int* sort_index, $/;"	f	file:
+pass_gate_info	../../libarchfpga/include/spice_types.h	/^  t_spice_model_pass_gate_logic* pass_gate_info;$/;"	m	struct:s_spice_model_design_tech_info
 pass_gate_logic	../../libarchfpga/include/spice_types.h	/^  t_spice_model_pass_gate_logic* pass_gate_logic;$/;"	m	struct:s_spice_model
 path	../../libarchfpga/include/spice_types.h	/^  char* path;$/;"	m	struct:s_spice_model_netlist
 path	../../libarchfpga/include/spice_types.h	/^  char* path;$/;"	m	struct:s_spice_tech_lib
@@ -3613,6 +3627,7 @@ rec_count_num_iopads_pb_type_default_mode	spice/spice_utils.c	/^void rec_count_n
 rec_count_num_iopads_pb_type_physical_mode	spice/spice_utils.c	/^void rec_count_num_iopads_pb_type_physical_mode(t_pb_type* cur_pb_type) {$/;"	f
 rec_count_num_mode_bits_pb	spice/spice_utils.c	/^void rec_count_num_mode_bits_pb(t_pb* cur_pb) {$/;"	f
 rec_count_num_mode_bits_pb_type_default_mode	spice/spice_utils.c	/^void rec_count_num_mode_bits_pb_type_default_mode(t_pb_type* cur_pb_type) {$/;"	f
+rec_dump_conf_bits_to_bitstream_file	syn_verilog/verilog_bitstream.c	/^void rec_dump_conf_bits_to_bitstream_file(FILE* fp, $/;"	f	file:
 rec_mark_pb_graph_node_temp_net_num	spice/spice_utils.c	/^void rec_mark_pb_graph_node_temp_net_num(t_pb_graph_node* cur_pb_graph_node) {$/;"	f
 rec_stat_pb_type_keywords	spice/spice_api.c	/^void rec_stat_pb_type_keywords(t_pb_type* cur_pb_type,$/;"	f	file:
 rec_update_net_info_local_rr_node_tree	clb_pin_remap/clb_pin_remap_util.c	/^void rec_update_net_info_local_rr_node_tree(t_pb* src_pb,$/;"	f
@@ -3660,8 +3675,8 @@ ret_track_swseg_pattern	route/rr_graph_swseg.c	/^enum ret_track_swseg_pattern {$
 reverse_scaled	../../libarchfpga/include/physical_types.h	/^	boolean reverse_scaled;  \/* Scale by (1-prob) *\/$/;"	m	struct:s_port_power
 revert_place_logical_block	pack/cluster.c	/^static void revert_place_logical_block(INP int iblock, INP int max_models) {$/;"	f	file:
 rising_edge	timing/read_sdc.c	/^	float rising_edge;$/;"	m	struct:s_sdc_clock	file:
-roff	../../libarchfpga/include/spice_types.h	/^  float roff;$/;"	m	struct:s_spice_model
-ron	../../libarchfpga/include/spice_types.h	/^  float ron;$/;"	m	struct:s_spice_model
+roff	../../libarchfpga/include/spice_types.h	/^  float roff;$/;"	m	struct:s_spice_model_design_tech_info
+ron	../../libarchfpga/include/spice_types.h	/^  float ron;$/;"	m	struct:s_spice_model_design_tech_info
 root	base/vpr_types.h	/^	int root; \/* root index of molecule, logical_block_ptrs[root] is ptr to root logical block *\/$/;"	m	struct:s_pack_molecule
 root_block	../../libarchfpga/include/cad_types.h	/^	t_pack_pattern_block *root_block; \/* root block used by this pattern *\/$/;"	m	struct:s_pack_patterns
 root_passes_early_filter	pack/cluster_placement.c	/^static boolean root_passes_early_filter(INP t_pb_graph_node *root, INP t_pack_molecule *molecule, INP int clb_index) {$/;"	f	file:
@@ -3822,6 +3837,7 @@ s_spice	../../libarchfpga/include/spice_types.h	/^struct s_spice {$/;"	s
 s_spice_meas_params	../../libarchfpga/include/spice_types.h	/^struct s_spice_meas_params {$/;"	s
 s_spice_model	../../libarchfpga/include/spice_types.h	/^struct s_spice_model {$/;"	s
 s_spice_model_buffer	../../libarchfpga/include/spice_types.h	/^struct s_spice_model_buffer {$/;"	s
+s_spice_model_design_tech_info	../../libarchfpga/include/spice_types.h	/^struct s_spice_model_design_tech_info {$/;"	s
 s_spice_model_netlist	../../libarchfpga/include/spice_types.h	/^struct s_spice_model_netlist {$/;"	s
 s_spice_model_pass_gate_logic	../../libarchfpga/include/spice_types.h	/^struct s_spice_model_pass_gate_logic {$/;"	s
 s_spice_model_port	../../libarchfpga/include/spice_types.h	/^struct s_spice_model_port {$/;"	s
@@ -4014,6 +4030,8 @@ spice_model_name	../../libarchfpga/include/physical_types.h	/^    char* spice_mo
 spice_model_name	../../libarchfpga/include/physical_types.h	/^    char* spice_model_name;$/;"	m	struct:s_segment_inf
 spice_model_name	../../libarchfpga/include/physical_types.h	/^    char* spice_model_name;$/;"	m	struct:s_switch_inf
 spice_model_name	../../libarchfpga/include/spice_types.h	/^  char* spice_model_name; \/\/ Xifan TANG: Spice Support$/;"	m	struct:s_sram_inf
+spice_model_name	../../libarchfpga/include/spice_types.h	/^  char* spice_model_name;$/;"	m	struct:s_spice_model_buffer
+spice_model_name	../../libarchfpga/include/spice_types.h	/^  char* spice_model_name;$/;"	m	struct:s_spice_model_pass_gate_logic
 spice_models	../../libarchfpga/include/spice_types.h	/^  t_spice_model* spice_models;$/;"	m	struct:s_spice
 spice_mux_arch	../../libarchfpga/include/spice_types.h	/^  t_spice_mux_arch* spice_mux_arch;$/;"	m	struct:s_spice_mux_model
 spice_name_tag	base/vpr_types.h	/^    char* spice_name_tag;$/;"	m	struct:s_pb
@@ -4066,7 +4084,7 @@ stimulate_params	../../libarchfpga/include/spice_types.h	/^  t_spice_stimulate_p
 store_char_in_data	timing/slre.c	/^static void store_char_in_data(struct slre *r, int ch) {$/;"	f	file:
 strength_inf	power/power.h	/^	t_power_buffer_strength_inf * strength_inf;$/;"	m	struct:s_power_buffer_size_inf
 structure	../../libarchfpga/include/physical_types.h	/^    enum e_spice_model_structure structure;$/;"	m	struct:s_switch_inf	typeref:enum:s_switch_inf::e_spice_model_structure
-structure	../../libarchfpga/include/spice_types.h	/^  enum e_spice_model_structure structure;$/;"	m	struct:s_spice_model	typeref:enum:s_spice_model::e_spice_model_structure
+structure	../../libarchfpga/include/spice_types.h	/^  enum e_spice_model_structure structure;$/;"	m	struct:s_spice_model_design_tech_info	typeref:enum:s_spice_model_design_tech_info::e_spice_model_structure
 structure	../../libarchfpga/include/spice_types.h	/^  enum e_spice_model_structure structure;$/;"	m	struct:s_spice_mux_arch	typeref:enum:s_spice_mux_arch::e_spice_model_structure
 subckt_dir	base/vpr_types.h	/^  char* subckt_dir;$/;"	m	struct:s_spice_opts
 sum_pin_class	pack/cluster_feasibility_filter.c	/^static void sum_pin_class(INOUTP t_pb_graph_node *pb_graph_node) {$/;"	f	file:
@@ -4209,6 +4227,7 @@ t_spice	../../libarchfpga/include/spice_types.h	/^typedef struct s_spice t_spice
 t_spice_meas_params	../../libarchfpga/include/spice_types.h	/^typedef struct s_spice_meas_params t_spice_meas_params;$/;"	t	typeref:struct:s_spice_meas_params
 t_spice_model	../../libarchfpga/include/spice_types.h	/^typedef struct s_spice_model t_spice_model;$/;"	t	typeref:struct:s_spice_model
 t_spice_model_buffer	../../libarchfpga/include/spice_types.h	/^typedef struct s_spice_model_buffer t_spice_model_buffer;$/;"	t	typeref:struct:s_spice_model_buffer
+t_spice_model_design_tech_info	../../libarchfpga/include/spice_types.h	/^typedef struct s_spice_model_design_tech_info t_spice_model_design_tech_info;$/;"	t	typeref:struct:s_spice_model_design_tech_info
 t_spice_model_netlist	../../libarchfpga/include/spice_types.h	/^typedef struct s_spice_model_netlist t_spice_model_netlist;$/;"	t	typeref:struct:s_spice_model_netlist
 t_spice_model_pass_gate_logic	../../libarchfpga/include/spice_types.h	/^typedef struct s_spice_model_pass_gate_logic t_spice_model_pass_gate_logic;$/;"	t	typeref:struct:s_spice_model_pass_gate_logic
 t_spice_model_port	../../libarchfpga/include/spice_types.h	/^typedef struct s_spice_model_port t_spice_model_port;$/;"	t	typeref:struct:s_spice_model_port
@@ -4428,8 +4447,8 @@ update_one_grid_pack_prev_node_edge	spice/spice_backannotate_utils.c	/^void upda
 update_one_grid_pb_pins_parasitic_nets	spice/spice_backannotate_utils.c	/^void update_one_grid_pb_pins_parasitic_nets(int x, int y) {$/;"	f
 update_one_spice_model_grid_index_high	spice/spice_utils.c	/^void update_one_spice_model_grid_index_high(int x, int y, $/;"	f
 update_one_spice_model_grid_index_low	spice/spice_utils.c	/^void update_one_spice_model_grid_index_low(int x, int y, $/;"	f
-update_one_spice_model_routing_index_high	spice/spice_utils.c	/^void update_one_spice_model_routing_index_high(int x, int y, $/;"	f
-update_one_spice_model_routing_index_low	spice/spice_utils.c	/^void update_one_spice_model_routing_index_low(int x, int y, $/;"	f
+update_one_spice_model_routing_index_high	spice/spice_utils.c	/^void update_one_spice_model_routing_index_high(int x, int y, t_rr_type chan_type,$/;"	f
+update_one_spice_model_routing_index_low	spice/spice_utils.c	/^void update_one_spice_model_routing_index_low(int x, int y, t_rr_type chan_type,$/;"	f
 update_primitive_cost_or_status	pack/cluster_placement.c	/^static void update_primitive_cost_or_status(INP t_pb_graph_node *pb_graph_node,$/;"	f	file:
 update_ps_transform	base/graphics.c	/^update_ps_transform (void) $/;"	f	file:
 update_rlim	place/place.c	/^static void update_rlim(float *rlim, float success_rat) {$/;"	f	file:
@@ -4440,8 +4459,8 @@ update_screen	base/draw.c	/^void update_screen(int priority, char *msg, enum pic
 update_slacks	timing/path_delay.c	/^static void update_slacks(t_slack * slacks, int source_clock_domain, int sink_clock_domain, float criticality_denom,$/;"	f	file:
 update_spice_models_grid_index_high	spice/spice_utils.c	/^void update_spice_models_grid_index_high(int x, int y, $/;"	f
 update_spice_models_grid_index_low	spice/spice_utils.c	/^void update_spice_models_grid_index_low(int x, int y, $/;"	f
-update_spice_models_routing_index_high	spice/spice_utils.c	/^void update_spice_models_routing_index_high(int x, int y, $/;"	f
-update_spice_models_routing_index_low	spice/spice_utils.c	/^void update_spice_models_routing_index_low(int x, int y, $/;"	f
+update_spice_models_routing_index_high	spice/spice_utils.c	/^void update_spice_models_routing_index_high(int x, int y, t_rr_type chan_type,$/;"	f
+update_spice_models_routing_index_low	spice/spice_utils.c	/^void update_spice_models_routing_index_low(int x, int y, t_rr_type chan_type, $/;"	f
 update_t	place/place.c	/^static void update_t(float *t, float std_dev, float rlim, float success_rat,$/;"	f	file:
 update_td_cost	place/place.c	/^static void update_td_cost(void) {$/;"	f	file:
 update_timing_gain_values	pack/cluster.c	/^static void update_timing_gain_values(int inet, int clustered_block,$/;"	f	file:
@@ -4528,10 +4547,10 @@ wires_spice_file_name	spice/spice_globals.c	/^char* wires_spice_file_name = "wir
 wires_verilog_file_name	syn_verilog/verilog_global.c	/^char* wires_verilog_file_name = "wires.v";$/;"	v
 wl_val	../../libarchfpga/include/spice_types.h	/^  int wl_val;$/;"	m	struct:s_conf_bit_info
 wneed	base/place_and_route.h	/^	int wneed; \/* need wneed to route *\/$/;"	m	struct:s_fmap_cell
-wprog_reset_nmos	../../libarchfpga/include/spice_types.h	/^  float wprog_reset_nmos;$/;"	m	struct:s_spice_model
-wprog_reset_pmos	../../libarchfpga/include/spice_types.h	/^  float wprog_reset_pmos;$/;"	m	struct:s_spice_model
-wprog_set_nmos	../../libarchfpga/include/spice_types.h	/^  float wprog_set_nmos;$/;"	m	struct:s_spice_model
-wprog_set_pmos	../../libarchfpga/include/spice_types.h	/^  float wprog_set_pmos;$/;"	m	struct:s_spice_model
+wprog_reset_nmos	../../libarchfpga/include/spice_types.h	/^  float wprog_reset_nmos;$/;"	m	struct:s_spice_model_design_tech_info
+wprog_reset_pmos	../../libarchfpga/include/spice_types.h	/^  float wprog_reset_pmos;$/;"	m	struct:s_spice_model_design_tech_info
+wprog_set_nmos	../../libarchfpga/include/spice_types.h	/^  float wprog_set_nmos;$/;"	m	struct:s_spice_model_design_tech_info
+wprog_set_pmos	../../libarchfpga/include/spice_types.h	/^  float wprog_set_pmos;$/;"	m	struct:s_spice_model_design_tech_info
 write	../../libarchfpga/ezxml.c	60;"	d	file:
 x	base/easygl_constants.h	/^	float x; $/;"	m	struct:__anon1
 x	base/vpr_types.h	/^	int x;$/;"	m	struct:s_block
