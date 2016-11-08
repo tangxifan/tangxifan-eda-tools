@@ -325,3 +325,91 @@ char* format_verilog_node_prefix(char* verilog_node_prefix) {
   return ret;
 }
 
+/* Find the matched BL = 0 && WL == 1 according to the given BL=1 && WL = 0
+ */
+t_conf_bit_info* dump_verilog_find_paired_conf_bit(t_llist* conf_bits_llist_head,
+                                                   t_conf_bit_info* src_conf_bit_info) {
+  t_llist* temp_llist = conf_bits_llist_head;
+  t_conf_bit_info* temp_conf_bit_info = NULL;
+
+  /* return directly when source is NULL */
+  if (NULL == src_conf_bit_info) {
+    return NULL;
+  }
+
+  /* Check */
+  assert((1 == src_conf_bit_info->bl_val)&&(0 == src_conf_bit_info->wl_val));
+
+  /* Traverse the linked list, find a paired element 
+   * with same parent_spice_model, parent_spice_model_index and BL = 0, WL = 1
+   */  
+  while (NULL != temp_llist) {
+    /* Fetch the information of a configuration bit */
+    temp_conf_bit_info = (t_conf_bit_info*)(temp_llist->dptr);
+    if ((temp_conf_bit_info->parent_spice_model == src_conf_bit_info->parent_spice_model)
+      &&(temp_conf_bit_info->parent_spice_model_index == src_conf_bit_info->parent_spice_model_index)
+      &&(0 == temp_conf_bit_info->bl_val) 
+      &&(1 == temp_conf_bit_info->wl_val)) {
+      return temp_conf_bit_info; 
+    }
+    /* Go to the next element */
+    temp_llist = temp_llist->next;
+  }
+
+  /* Reach here means we find nothing! */
+  return NULL;
+}
+
+/** Generate the pairs for two configuration bits, which should be enabled at the same programming cycle
+ * These pair are only created between two configuration bits of RRAM MUX:
+ * 1. A conf_bit with BL=1, WL=0 is paired to a conf_bit BL=0, WL=1.
+ * 2. A conf_bit with BL=1, WL=1 should not have a pair.
+ */
+void dump_verilog_gen_pairs_conf_bits(t_llist* conf_bits_llist_head) {
+  t_llist* temp_llist = conf_bits_llist_head;
+  t_conf_bit_info* temp_conf_bit_info = NULL;
+
+  t_llist* temp_compnt_llist_head = NULL; /* Store the head of linked list of current component */
+  t_conf_bit_info* temp_compnt_head_conf_bit_info = NULL;
+  
+  /* Paired conf_conf_bit_info*/
+  t_conf_bit_info* paired_conf_bit_info = NULL;
+
+  /* Traverse the linked list, find any element with BL=1, WL=0 */
+  while (NULL != temp_llist) {
+    /* Fetch the information of a configuration bit */
+    temp_conf_bit_info = (t_conf_bit_info*)(temp_llist->dptr);
+    /* Check and update the head of current component */
+    if (NULL == temp_compnt_llist_head) {
+    /* If it is NULL, just give the value */
+      temp_compnt_llist_head = temp_llist;
+      temp_compnt_head_conf_bit_info = (t_conf_bit_info*)(temp_compnt_llist_head->dptr);
+    } else {
+    /* If it is not NULL, we need to check if current component matches the existed one. */
+      if ((temp_conf_bit_info->parent_spice_model != temp_compnt_head_conf_bit_info->parent_spice_model)
+        ||(temp_conf_bit_info->parent_spice_model_index != temp_compnt_head_conf_bit_info->parent_spice_model_index)) {
+        temp_compnt_llist_head = temp_llist;
+        temp_compnt_head_conf_bit_info = (t_conf_bit_info*)(temp_compnt_llist_head->dptr);
+      }
+    }
+    /* Check only for conf_bit belonging to a RRAM MUX, with  BL = 1 and WL = 0; */
+    if ((SPICE_MODEL_MUX == temp_conf_bit_info->parent_spice_model->type) 
+      &&(SPICE_MODEL_DESIGN_RRAM == temp_conf_bit_info->parent_spice_model->design_tech) 
+      &&(1 == temp_conf_bit_info->bl_val) 
+      &&(0 == temp_conf_bit_info->wl_val)) {
+      /* Find its paired element with BL = 0 and WL = 1 */
+      /* Start from the found component linked-list head */
+      paired_conf_bit_info = dump_verilog_find_paired_conf_bit(temp_compnt_llist_head, temp_conf_bit_info);
+      /* Should not be NULL ! */
+      assert(NULL != paired_conf_bit_info);
+      /* Establish mutual link */
+      temp_conf_bit_info->pair_conf_bit = paired_conf_bit_info;
+      paired_conf_bit_info->pair_conf_bit = temp_conf_bit_info;
+    }
+    /* Go to the next element */
+    temp_llist = temp_llist->next;
+  }
+
+  return;
+}
+

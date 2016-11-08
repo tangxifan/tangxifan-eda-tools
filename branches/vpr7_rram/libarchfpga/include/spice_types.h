@@ -60,7 +60,8 @@ enum e_spice_model_design_tech {
 enum e_spice_model_structure {
   SPICE_MODEL_STRUCTURE_TREE, 
   SPICE_MODEL_STRUCTURE_ONELEVEL, 
-  SPICE_MODEL_STRUCTURE_MULTILEVEL 
+  SPICE_MODEL_STRUCTURE_MULTILEVEL, 
+  SPICE_MODEL_STRUCTURE_CROSSBAR 
 };
 
 enum e_spice_model_buffer_type {
@@ -235,6 +236,8 @@ struct s_spice_stimulate_params {
   enum e_spice_accuracy_type input_slew_fall_type;
   
   /* clock freqency: could be custimized or following the estimated critical path */
+  int num_clocks;
+  float vpr_crit_path_delay;
   float clock_freq;
   /* Simulation Clock frequency slack: In this case, we follow the estimated critical path. 
    * For simulation, usually we use a slack that make sure the circuit can run... */
@@ -334,6 +337,12 @@ struct s_conf_bit_info {
   /* Which spice model this conf. bit belongs to */
   t_spice_model* parent_spice_model;
   int parent_spice_model_index;
+  /* Paired configuration bit, ONLY valid for RRAM MUX.
+   * indicate that a BL should be enabled at the same time as WL  
+   */
+  t_conf_bit_info* pair_conf_bit;
+  /* index of this conf_bit in a top-level testbench */
+  int index_in_top_tb;
   /* TODO: add location information?
    * i.e. grid location? sb/cb location? 
    */

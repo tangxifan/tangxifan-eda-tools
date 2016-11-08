@@ -19,3 +19,8 @@ int determine_decoder_size(int num_addr_out);
 char* chomp_verilog_node_prefix(char* verilog_node_prefix);
 
 char* format_verilog_node_prefix(char* verilog_node_prefix);
+
+t_conf_bit_info* dump_verilog_find_paired_conf_bit(t_llist* conf_bits_llist_head,
+                                                   t_conf_bit_info* src_conf_bit_info);
+
+void dump_verilog_gen_pairs_conf_bits(t_llist* conf_bits_llist_head);

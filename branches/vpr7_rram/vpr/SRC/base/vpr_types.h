@@ -1082,6 +1082,68 @@ enum e_cost_indices {
 /* Gives the index of the SOURCE, SINK, OPIN, IPIN, etc. member of           *
  * rr_indexed_data.                                                          */
 
+/* Xifan TANG: For better modeling of global routing architecture */
+/* Information for each switch block */
+typedef struct s_sb t_sb;
+struct s_sb {
+  /* Coordinators */
+  int x;
+  int y;
+  /* Directionality */ 
+  enum e_directionality directionality; /* UDSD by AY */
+  /* Connectivity parameter */
+  int fs;
+  int fc_out;
+  /* chan_width at each side */
+  int num_sides; /* Should be fixed to 4 */
+  /* Input/output rr_nodes at each side, according to chan_width
+   * Each element is a pointer to a rr_node   
+   */ 
+  /* A list of all the rr_nodes at each side, whatever their directionality */
+  int* chan_width;
+  enum PORTS** chan_rr_node_direction;
+  t_rr_node*** chan_rr_node;
+  /* LB inputs/outputs */
+  int* num_ipin_rr_nodes; /* Switch block has some inputs that are CLB IPIN*/
+  t_rr_node*** ipin_rr_node;
+  int** ipin_rr_node_grid_side; /* We need to record the side of a IPIN, because a IPIN may locate on more than one sides */
+  int* num_opin_rr_nodes; /* Connection block has some outputs that are CLB OPIN */
+  t_rr_node*** opin_rr_node;
+  int** opin_rr_node_grid_side; /* We need to record the side of a OPIN, because a OPIN may locate on more than one sides */
+};
+
+/* Information for each conneciton block */
+typedef struct s_cb t_cb;
+struct s_cb {
+  /* Type of Connection block, can only be either CHANX or CHANY,
+   * Corresponding to CB connected CHANX/CHANY to a CLB 
+   */
+  t_rr_type type;
+  /* Coordinators */
+  int x;
+  int y;
+  /* Directionality */ 
+  enum e_directionality directionality; /* UDSD by AY */
+  /* Connectivity parameter */
+  int fc_in;
+  /* chan_width at each side */
+  int num_sides; /* Should be fixed to 4 */
+  /* Input/output rr_nodes at each side, according to chan_width
+   * Each element is a pointer to a rr_node   
+   */ 
+  /* A list of all the rr_nodes at each side, whatever their directionality */
+  int* chan_width;
+  enum PORTS** chan_rr_node_direction;
+  t_rr_node*** chan_rr_node;
+  /* LB inputs/outputs */
+  int* num_ipin_rr_nodes; /* Switch block has some inputs that are CLB IPIN*/
+  t_rr_node*** ipin_rr_node;
+  int** ipin_rr_node_grid_side; /* We need to record the side of a IPIN, because a IPIN may locate on more than one sides */
+  int* num_opin_rr_nodes; /* Connection block has some outputs that are CLB OPIN */
+  t_rr_node*** opin_rr_node;
+  int** opin_rr_node_grid_side; /* We need to record the side of a OPIN, because a OPIN may locate on more than one sides */
+};
+
 /* Xifan TANG: SPICE Support*/
 typedef struct s_spice_opts t_spice_opts;
 struct s_spice_opts {
@@ -1097,7 +1159,7 @@ struct s_spice_opts {
   boolean print_spice_dff_testbench; 
   boolean fpga_spice_leakage_only;
   boolean fpga_spice_parasitic_net_estimation_off;
-
+ 
   /*Xifan TANG: FPGA SPICE Model Support*/
   char* spice_dir;
   char* include_dir;
@@ -1109,6 +1171,7 @@ typedef struct s_syn_verilog_opts t_syn_verilog_opts;
 struct s_syn_verilog_opts {
   boolean dump_syn_verilog;
   char* syn_verilog_dump_dir;
+  boolean tb_serial_config_mode;
 };
 
 /* Power estimation options */

@@ -112,6 +112,26 @@ t_llist* search_llist_tail(t_llist* head) {
   return temp;
 }
 
+int find_length_llist(t_llist* head) {
+  int length = 0;
+  t_llist* temp = head;
+
+  if (NULL == temp) {
+  /* A NULL head means zero length */
+    return length;
+  } else {
+  /* Otherwise, we have already one element */ 
+    length++;
+  }
+
+  while (temp->next != NULL) {
+    length++;
+    temp = temp->next;
+  }
+
+  return length;
+}
+
 /* Free a linked list, Make sure before this function,
  * the dptr has been freed! I cannot free them here!!!
  */

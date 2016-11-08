@@ -127,6 +127,12 @@ extern const t_pb_type *pbtype_max_internal_delay; /* block type with highest in
  ********************************************************************/
 extern t_clock_arch * g_clock_arch;
 
+/* Xifan TANG: FPGA-SPICE and Verilog Generator */
+/* Detailed routing information for each SB and CB */
+extern t_sb** sb_info;
+extern t_cb** cbx_info;
+extern t_cb** cby_info;
+
 /* Xifan TANG: detailed runtime statistics */
 extern float pack_route_time;
 

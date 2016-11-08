@@ -74,6 +74,7 @@ struct s_TokenPair OptionBaseTokenList[] = {
         /* Xifan TANG: Synthsizable Verilog */
         { "fpga_syn_verilog", OT_FPGA_VERILOG_SYN },
         { "fpga_syn_verilog_dir", OT_FPGA_VERILOG_SYN_DIR },
+        { "fpga_syn_verilog_tb_serial_config_mode", OT_FPGA_VERILOG_SYN_TB_SERIAL_CONFIG_MODE },
         /* mrFPGA: Xifan TANG */
         {"show_sram", OT_SHOW_SRAM},
         {"show_pass_trans", OT_SHOW_PASS_TRANS},

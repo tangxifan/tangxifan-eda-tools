@@ -1137,6 +1137,34 @@ char* convert_side_index_to_string(int side) {
   }
 }
 
+char* convert_chan_type_to_string(t_rr_type chan_type) {
+  switch(chan_type) {
+  case CHANX:
+    return "chanx";
+    break;
+  case CHANY:
+    return "chany";
+    break;
+  default: 
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+}
+
+char* convert_chan_rr_node_direction_to_string(enum PORTS chan_rr_node_direction) {
+  switch(chan_rr_node_direction) {
+  case IN_PORT:
+    return "in";
+    break;
+  case OUT_PORT:
+    return "out";
+    break;
+  default: 
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of port!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+}
+
 void fprint_spice_head(FILE* fp,
                        char* usage) {
   if (NULL == fp) {
@@ -3745,6 +3773,9 @@ alloc_one_conf_bit_info(int index, int sram_val, int bl_val, int wl_val,
   new_conf_bit_info->wl_val = wl_val;
   new_conf_bit_info->parent_spice_model = parent_spice_model;
   new_conf_bit_info->parent_spice_model_index = parent_spice_model->cnt;
+
+  /* Leave NULL for the pair conf_bit, it is supposed to be filled by another function */
+  new_conf_bit_info->pair_conf_bit = NULL;
 
   return new_conf_bit_info; 
 }

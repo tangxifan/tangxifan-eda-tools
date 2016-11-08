@@ -1368,19 +1368,13 @@ void fprint_spice_mux_model_subckt(FILE* fp,
   return;
 }
 
-
-
-t_llist* stats_spice_muxes(int num_switch,
-                           t_switch_inf* switches,
-                           t_spice* spice,
-                           t_det_routing_arch* routing_arch) {
-  /* Linked-list to store the information of Multiplexers*/
-  t_llist* muxes_head = NULL; 
-  //t_llist* temp = NULL;
+/* Stats the multiplexer sizes and structure in the global routing architecture*/
+void stats_spice_muxes_routing_arch(t_llist** muxes_head,
+                                    int num_switch,
+                                    t_switch_inf* switches,
+                                    t_spice* spice,
+                                    t_det_routing_arch* routing_arch) {
   int inode;
-  int iedge;
-  int itype;
-  int imodel;
   t_rr_node* node;
   t_spice_model* sb_switch_spice_model = NULL;
   t_spice_model* cb_switch_spice_model = NULL;
@@ -1391,29 +1385,11 @@ t_llist* stats_spice_muxes(int num_switch,
     exit(1);
   }
 
-  /* Step 1: We should check the multiplexer spice models defined in routing architecture.*/
   /* The routing path is. 
    *  OPIN ----> CHAN ----> ... ----> CHAN ----> IPIN
    *  Each edge is a switch, for IPIN, the switch is a connection block,
    *  for the rest is a switch box
    */
-  /* Update the driver switch for each rr_node*/
-  /* I can do a simple job here: 
-   * just assign driver_switch from drive_switches[0]
-   * which has been done in backannotation_vpr_post_route_info
-   */
-  /* update_rr_nodes_driver_switch(routing_arch->directionality); */
-  for (inode = 0; inode < num_rr_nodes; inode++) {
-    if (0 == rr_node[inode].fan_in) {
-      assert(0 == rr_node[inode].num_drive_rr_nodes);
-      assert(NULL == rr_node[inode].drive_switches);
-      continue;
-    }
-    rr_node[inode].driver_switch = rr_node[inode].drive_switches[0];
-    for (iedge = 0; iedge < rr_node[inode].num_drive_rr_nodes; iedge++) {
-      assert (rr_node[inode].driver_switch == rr_node[inode].drive_switches[iedge]);
-    }
-  }
   /* Count the sizes of muliplexers in routing architecture */  
   /* Visit the global variable : num_rr_nodes, rr_node */
   for (inode = 0; inode < num_rr_nodes; inode++) {
@@ -1429,7 +1405,7 @@ t_llist* stats_spice_muxes(int num_switch,
       cb_switch_spice_model = switches[node->driver_switch].spice_model;
       /* we should select a spice model for the connection box*/
       assert(NULL != cb_switch_spice_model);
-      check_and_add_mux_to_linked_list(&muxes_head, node->fan_in,cb_switch_spice_model);
+      check_and_add_mux_to_linked_list(muxes_head, node->fan_in,cb_switch_spice_model);
       break;
     case CHANX:
     case CHANY: 
@@ -1445,7 +1421,7 @@ t_llist* stats_spice_muxes(int num_switch,
       sb_switch_spice_model = switches[node->driver_switch].spice_model;
       /* we should select a spice model for the Switch box*/
       assert(NULL != sb_switch_spice_model);
-      check_and_add_mux_to_linked_list(&muxes_head, node->fan_in,sb_switch_spice_model);
+      check_and_add_mux_to_linked_list(muxes_head, node->fan_in,sb_switch_spice_model);
       break;
     case OPIN: 
       /* Actually, in single driver routing architecture, the OPIN, source of a routing path,
@@ -1456,6 +1432,28 @@ t_llist* stats_spice_muxes(int num_switch,
       break;
     }
   }
+
+  return;
+}
+
+/* Statistic for all the multiplexers in FPGA
+ * We determine the sizes and its structure (according to spice_model) for each type of multiplexers
+ * We search multiplexers in Switch Blocks, Connection blocks and Configurable Logic Blocks
+ * In additional to multiplexers, this function also consider crossbars.
+ * All the statistics are stored in a linked list, as a return value
+ */
+t_llist* stats_spice_muxes(int num_switches,
+                           t_switch_inf* switches,
+                           t_spice* spice,
+                           t_det_routing_arch* routing_arch) {
+  int iedge;
+  int itype;
+  int imodel;
+  /* Linked-list to store the information of Multiplexers*/
+  t_llist* muxes_head = NULL; 
+
+  /* Step 1: We should check the multiplexer spice models defined in routing architecture.*/
+  stats_spice_muxes_routing_arch(&muxes_head, num_switches, switches, spice, routing_arch);
 
   /* Statistics after search routing resources */
   /*

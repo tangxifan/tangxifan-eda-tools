@@ -78,7 +78,6 @@ void dump_verilog_bitstream(char* bitstream_file_name,
 }
 
 /* Encode the given input to the address for a decode*/
-static 
 void encode_decoder_addr(int input,
                          int decoder_size, char* addr) {
   int temp = input; 

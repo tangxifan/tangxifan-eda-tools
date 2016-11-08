@@ -49,31 +49,25 @@ void fprint_measure_grid_vdds_spice_model(FILE* fp, int grid_x, int grid_y,
 
 void fprint_call_defined_grids(FILE* fp);
 
-void fprint_call_defined_chan(FILE* fp,
-                             t_rr_type chan_type,
-                             int x,
-                             int y,
-                             int chan_width);
+void fprint_call_defined_one_channel(FILE* fp,
+                                     t_rr_type chan_type,
+                                     int x, int y,
+                                     int LL_num_rr_nodes, t_rr_node* LL_rr_node,
+                                     t_ivec*** LL_rr_node_indices);
 
-void fprint_call_defined_channels(FILE* fp);
+void fprint_call_defined_channels(FILE* fp,
+                                  int LL_num_rr_nodes, t_rr_node* LL_rr_node,
+                                  t_ivec*** LL_rr_node_indices);
 
-void fprint_call_defined_connection_box(FILE* fp,
-                                        t_rr_type chan_type,
-                                        int x,
-                                        int y,
-                                        int chan_width,
-                                        t_ivec*** LL_rr_node_indices);
+void fprint_call_defined_one_connection_box(FILE* fp,
+                                            t_cb cur_cb_info);
 
-void fprint_call_defined_connection_boxes(FILE* fp,
-                                          t_ivec*** LL_rr_node_indices);
+void fprint_call_defined_connection_boxes(FILE* fp);
 
-void fprint_call_defined_switch_box(FILE* fp,
-                                    int x, 
-                                    int y,
-                                    t_ivec*** LL_rr_node_indices);
+void fprint_call_defined_one_switch_box(FILE* fp,
+                                        t_sb cur_sb_info);
 
-void fprint_call_defined_switch_boxes(FILE* fp,
-                                      t_ivec*** LL_rr_node_indices);
+void fprint_call_defined_switch_boxes(FILE* fp);
 
 void fprint_tech_lib(FILE* fp,
                      t_spice_tech_lib tech_lib);

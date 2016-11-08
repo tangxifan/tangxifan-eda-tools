@@ -183,6 +183,7 @@ void vpr_print_usage(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "Dump synthesizable verilog files Options:\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_syn_verilog\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_syn_verilog_dir <directory_path_of_dumped_verilog_files>\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_syn_verilog_tb_serial_config_mode\n");
 }
 
 /* Initialize VPR 
@@ -1570,3 +1571,4 @@ void vpr_power_estimation(t_vpr_setup vpr_setup, t_arch Arch) {
 	}
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
 }
+

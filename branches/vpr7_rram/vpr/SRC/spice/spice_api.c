@@ -68,8 +68,6 @@ void rec_add_pb_type_keywords_to_list(t_pb_type* cur_pb_type,
                                       char** keywords,
                                       char* prefix);
 
-void check_keywords_conflict(t_arch Arch);
-
 /***** Subroutines *****/
 /* Initialize and check spice models in architecture
  * Tasks:
@@ -605,9 +603,8 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   clock_t t_end;
   float run_time_sec;
 
-  int num_clocks = 0;
-  float vpr_crit_path_delay = 0.; 
-  float vpr_clock_freq = 0.; 
+  int num_clocks = Arch.spice->spice_params.stimulate_params.num_clocks;
+  int vpr_crit_path_delay = Arch.spice->spice_params.stimulate_params.vpr_crit_path_delay;
 
   char* spice_dir_formatted = NULL;
   char* include_dir_path = NULL;
@@ -643,7 +640,8 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
 #endif  
 
   /* Initial Arch SPICE MODELS*/
-  init_check_arch_spice_models(&Arch, &vpr_setup.RoutingArch);
+  /* Move to the top-level function: vpr_fpga_spice_tool_suits */
+  /* init_check_arch_spice_models(&Arch, &vpr_setup.RoutingArch); */
   init_list_include_netlists(Arch.spice); 
 
   /* assign the global variable of SRAM model */
@@ -655,7 +653,8 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   init_grids_num_iopads();
 
   /* Add keyword checking */
-  check_keywords_conflict(Arch);
+  /* Move to the top-level function: vpr_fpga_spice_tool_suits */
+  /* check_keywords_conflict(Arch); */
 
   /*Process the circuit name*/
   split_path_prog_name(circuit_name,'/',&chomped_spice_dir ,&chomped_circuit_name);
@@ -685,9 +684,13 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   create_dir_path(subckt_dir_path);
 
   /* determine the VPR clock frequency */
+  /* Move to the top-level function: vpr_fpga_spice_tool_suits */
+  /* 
   vpr_crit_path_delay = get_critical_path_delay()/1e9;
   assert(vpr_crit_path_delay > 0.);
+  */
   /* if we don't have global clock, clock_freqency should be set to 0.*/
+  /*
   num_clocks = count_netlist_clocks();
   if (0 == num_clocks) {
      vpr_clock_freq = 0.;
@@ -695,12 +698,18 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
     assert(1 == num_clocks);
     vpr_clock_freq = 1. / vpr_crit_path_delay; 
   }
+  */
 
   /* backannotation */  
-  spice_backannotate_vpr_post_route_info(vpr_setup.SpiceOpts.fpga_spice_parasitic_net_estimation_off);
+  /* Move to the top-level function: vpr_fpga_spice_tool_suits */
+  /*
+  spice_backannotate_vpr_post_route_info(vpr_setup.RoutingArch,
+                                         vpr_setup.SpiceOpts.fpga_spice_parasitic_net_estimation_off);
+  */
 
   /* Auto check the density and recommend sim_num_clock_cylce */
-  auto_select_num_sim_clock_cycle(Arch.spice);
+  /* Move to the top-level function: vpr_fpga_spice_tool_suits */
+  /* auto_select_num_sim_clock_cycle(Arch.spice); */
 
   /* Generate Header files */
   fprint_spice_headers(include_dir_path, vpr_crit_path_delay, num_clocks, *(Arch.spice));
@@ -789,7 +798,7 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
     top_netlist_path = my_strcat(top_testbench_dir_path, top_testbench_file); 
     fprint_spice_top_netlist(chomped_circuit_name, top_netlist_path, 
                              include_dir_path, subckt_dir_path, 
-                             rr_node_indices, num_clocks, *(Arch.spice), 
+                             num_rr_nodes, rr_node, rr_node_indices, num_clocks, *(Arch.spice), 
                              vpr_setup.SpiceOpts.fpga_spice_leakage_only);
   }
 
@@ -805,9 +814,7 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   /* Free index low and high */
   free_spice_model_grid_index_low_high(Arch.spice->num_spice_model, Arch.spice->spice_models);
   free_spice_model_routing_index_low_high(Arch.spice->num_spice_model, Arch.spice->spice_models);
-  /* Free spice_net_info */
-  free_clb_nets_spice_net_info();
-  /* TODO: Free tb_llist */
+  /* Free tb_llist */
   free_spice_tb_llist(); 
   /* Free */
   my_free(spice_dir_formatted);

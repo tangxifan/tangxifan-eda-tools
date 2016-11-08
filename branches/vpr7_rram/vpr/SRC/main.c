@@ -62,16 +62,9 @@ int main(int argc, char **argv) {
 	if (vpr_setup.PowerOpts.do_power) {
 		vpr_power_estimation(vpr_setup, Arch);
 	}
-  
-    /* Xifan TANG: SPICE Modeling, SPICE Netlist Output  */ 
-    if (vpr_setup.SpiceOpts.do_spice) {
-      vpr_print_spice_netlists(vpr_setup, Arch,vpr_setup.FileNameOpts.CircuitName);
-    }
 
-    /* Xifan TANG: Synthesizable verilog dumping */
-    if (vpr_setup.SynVerilogOpts.dump_syn_verilog) {
-      vpr_dump_syn_verilog(vpr_setup, Arch, vpr_setup.FileNameOpts.CircuitName);
-    }	
+    /* Run FPGA-SPICE tool suites*/
+    vpr_fpga_spice_tool_suites(vpr_setup, Arch);
 
 	entire_flow_end = clock();
 	

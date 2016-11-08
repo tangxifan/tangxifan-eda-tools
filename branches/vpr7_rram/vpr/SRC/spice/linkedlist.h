@@ -20,4 +20,6 @@ t_llist* cat_llists(t_llist* head1,
 
 t_llist* search_llist_tail(t_llist* head);
 
+int find_length_llist(t_llist* head);
+
 void free_llist(t_llist* head);

@@ -467,12 +467,6 @@ void dump_verilog_pb_primitive_io(FILE* fp,
     exit(1);
   } 
   
-  /* Back-annotate to logical block */
-  if (NULL != mapped_logical_block) {
-    mapped_logical_block->mapped_spice_model = verilog_model;
-    mapped_logical_block->mapped_spice_model_index = verilog_model->cnt;
-  }
-
   /* Local vdd and gnd, verilog_model name, 
    * TODO: Global vdd for i/o pad to split?
    */
@@ -542,6 +536,12 @@ void dump_verilog_pb_primitive_io(FILE* fp,
   /* Comment lines */
   fprintf(fp, "//----- END IO Verilog module: %s%s -----\n\n", 
           formatted_subckt_prefix, port_prefix);
+
+  /* Back-annotate to logical block */
+  if (NULL != mapped_logical_block) {
+    mapped_logical_block->mapped_spice_model = verilog_model;
+    mapped_logical_block->mapped_spice_model_index = verilog_model->cnt;
+  }
 
   /* Update the verilog_model counter */
   verilog_model->cnt++;

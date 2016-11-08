@@ -95,5 +95,12 @@ const t_pb_type *pbtype_max_internal_delay = NULL; /* physical block type with h
 
 /********** Structures representing the global clock network */
 t_clock_arch * g_clock_arch;
+
+/* Xifan TANG: FPGA-SPICE and Verilog Generator */
+/* Detailed routing information for each SB and CB */
+t_sb** sb_info = NULL;
+t_cb** cbx_info = NULL;
+t_cb** cby_info = NULL;
+
 /* Xifan TANG: detailed runtime statistics */
 float pack_route_time = 0.;

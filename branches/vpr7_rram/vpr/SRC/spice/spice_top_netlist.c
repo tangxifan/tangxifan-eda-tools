@@ -618,6 +618,8 @@ void fprint_spice_top_netlist(char* circuit_name,
                               char* top_netlist_name,
                               char* include_dir_path,
                               char* subckt_dir_path,
+                              int LL_num_rr_nodes,
+                              t_rr_node* LL_rr_node,
                               t_ivec*** LL_rr_node_indices,
                               int num_clock,
                               t_spice spice,
@@ -681,13 +683,13 @@ void fprint_spice_top_netlist(char* circuit_name,
   fprint_stimulate_dangling_grid_pins(fp); 
 
   /* Quote Routing structures: Channels */
-  fprint_call_defined_channels(fp);
+  fprint_call_defined_channels(fp, LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
 
   /* Quote Routing structures: Conneciton Boxes */
-  fprint_call_defined_connection_boxes(fp, LL_rr_node_indices);
+  fprint_call_defined_connection_boxes(fp);
   
   /* Quote Routing structures: Switch Boxes */
-  fprint_call_defined_switch_boxes(fp, LL_rr_node_indices); 
+  fprint_call_defined_switch_boxes(fp); 
 
   /* Add stimulations */
   fprint_top_netlist_stimulations(fp, num_clock, spice);

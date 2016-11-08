@@ -8,7 +8,8 @@
 #include "verilog_global.h"
 
 char* verilog_top_postfix = "_top.v";
-char* bitstream_file_postfix = ".bitstream";
+char* bitstream_verilog_file_postfix = ".bitstream";
+char* top_testbench_verilog_file_postfix = "_top_tb.v";
 char* logic_block_verilog_file_name = "logic_blocks.v";
 char* luts_verilog_file_name = "luts.v";
 char* routing_verilog_file_name = "routing.v";
@@ -41,3 +42,5 @@ t_llist* conf_bits_head = NULL;
 char* gio_input_prefix = "gfpga_input_";
 char* gio_output_prefix = "gfpga_output_";
 char* gio_inout_prefix = "gfpga_pad_";
+
+int verilog_default_signal_init_value = 0;

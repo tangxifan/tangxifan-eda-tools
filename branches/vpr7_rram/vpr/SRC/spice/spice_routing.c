@@ -27,20 +27,19 @@
 #include "spice_mux.h"
 #include "spice_lut.h"
 #include "spice_primitives.h"
+#include "spice_backannotate_utils.h"
 #include "spice_routing.h"
 
 
 void fprint_routing_chan_subckt(FILE* fp,
-                                int x,
-                                int y,
-                                t_rr_type chan_type, 
-                                int chan_width,
+                                int x, int y, t_rr_type chan_type, 
+                                int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                 t_ivec*** LL_rr_node_indices,
-                                int num_segment,
-                                t_segment_inf* segments) {
+                                int num_segment, t_segment_inf* segments) {
   int itrack, inode, iseg, cost_index;
   char* chan_prefix = NULL;
-  t_rr_node** chan_rr_nodes = (t_rr_node**)my_malloc(sizeof(t_rr_node*)*chan_width);
+  int chan_width = 0;
+  t_rr_node** chan_rr_nodes = NULL;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -70,10 +69,8 @@ void fprint_routing_chan_subckt(FILE* fp,
   }
   
   /* Collect rr_nodes for Tracks for chanx[ix][iy] */
-  for (itrack = 0; itrack < chan_width; itrack++) {
-    inode = get_rr_node_index(x, y, chan_type, itrack, LL_rr_node_indices);
-    chan_rr_nodes[itrack] = &(rr_node[inode]);
-  }
+  chan_rr_nodes = get_chan_rr_nodes(&chan_width, chan_type, x, y, 
+                                    LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
 
   /* Chan subckt definition */
   fprintf(fp, ".subckt %s[%d][%d] \n", chan_prefix, x, y);
@@ -84,6 +81,7 @@ void fprint_routing_chan_subckt(FILE* fp,
    * print bottom ports(in) first, then top ports(out)
    */
   fprintf(fp, "+ ");
+  /* LEFT/BOTTOM side port of CHANX/CHANY */
   for (itrack = 0; itrack < chan_width; itrack++) {
     switch (chan_rr_nodes[itrack]->direction) {
     case INC_DIRECTION:
@@ -101,6 +99,7 @@ void fprint_routing_chan_subckt(FILE* fp,
   }
   fprintf(fp, "\n");
   fprintf(fp, "+ ");
+  /* RIGHT/TOP side port of CHANX/CHANY */
   for (itrack = 0; itrack < chan_width; itrack++) {
     switch (chan_rr_nodes[itrack]->direction) {
     case INC_DIRECTION:
@@ -151,72 +150,9 @@ void fprint_routing_chan_subckt(FILE* fp,
   return;
 }
 
-t_rr_node** get_grid_side_pin_rr_nodes(int* num_pin_rr_nodes,
-                                       t_rr_type pin_type,
-                                       int x,
-                                       int y,
-                                       int side,
-                                       t_ivec*** LL_rr_node_indices) {
-  int height, ipin, class_id, inode;
-  t_type_ptr type = NULL;
-  t_rr_node** ret = NULL;
-  enum e_pin_type pin_class_type;
-  int cur;
-  
-  /* Check */
-  assert((!(0 > x))&&(!(x > (nx + 1)))); 
-  assert((!(0 > y))&&(!(y > (ny + 1)))); 
-  type = grid[x][y].type;
-  assert(NULL != type);
-  /* Assign the type of PIN*/ 
-  switch (pin_type) {
-  case IPIN:
-  /* case SINK: */
-    pin_class_type = RECEIVER; /* This is the end of a route path*/ 
-    break;
-  /*case SOURCE:*/
-  case OPIN:
-    pin_class_type = DRIVER; /* This is the start of a route path */ 
-    break;
-  /* SINK and SOURCE are hypothesis nodes */
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid pin_type!\n", __FILE__, __LINE__);
-    exit(1); 
-  }
-
-  /* Output the pins on the side*/
-  (*num_pin_rr_nodes) = 0;
-  height = grid[x][y].offset;
-  for (ipin = 0; ipin < type->num_pins; ipin++) {
-    class_id = type->pin_class[ipin];
-    if ((1 == type->pinloc[height][side][ipin])&&(pin_class_type == type->class_inf[class_id].type)) {
-      (*num_pin_rr_nodes)++;
-    }
-  } 
-  /* Malloc */
-  ret = (t_rr_node**)my_malloc(sizeof(t_rr_node*)*(*num_pin_rr_nodes)); 
-
-  /* Fill the return array*/
-  cur = 0;
-  height = grid[x][y].offset;
-  for (ipin = 0; ipin < type->num_pins; ipin++) {
-    class_id = type->pin_class[ipin];
-    if ((1 == type->pinloc[height][side][ipin])&&(pin_class_type == type->class_inf[class_id].type)) {
-      inode = get_rr_node_index(x, y, pin_type, ipin, LL_rr_node_indices);
-      ret[cur] = &(rr_node[inode]); 
-      cur++;
-    }
-  } 
-  assert(cur == (*num_pin_rr_nodes));
-  
-  return ret;
-}
-
-void fprint_grid_side_in_with_given_index(FILE* fp,
-                                          int pin_index,
-                                          int side,
-                                          int x,
-                                          int y) {
+void fprint_grid_side_pin_with_given_index(FILE* fp,
+                                           int pin_index, int side,
+                                           int x, int y) {
   int height, class_id;
   t_type_ptr type = NULL;
 
@@ -239,7 +175,9 @@ void fprint_grid_side_in_with_given_index(FILE* fp,
   height = grid[x][y].offset;
   class_id = type->pin_class[pin_index];
   if ((1 == type->pinloc[height][side][pin_index])) {
-    fprintf(fp, "grid[%d][%d]_pin[%d][%d][%d] ", x, y, height, side, pin_index);
+    /* Not sure if we need to plus a height */
+    /* fprintf(fp, "grid[%d][%d]_pin[%d][%d][%d] ", x, y, height, side, pin_index); */
+    fprintf(fp, "grid[%d][%d]_pin[%d][%d][%d] ", x, y + height, height, side, pin_index);
   } else {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Fail to print a grid pin (x=%d, y=%d, height=%d, side=%d, index=%d)",
               __FILE__, __LINE__, x, y, height, side, pin_index);
@@ -286,159 +224,27 @@ void fprint_grid_side_pins(FILE* fp,
     exit(1); 
   }
 
-
   /* Output the pins on the side*/ 
   height = grid[x][y].offset;
   for (ipin = 0; ipin < type->num_pins; ipin++) {
     class_id = type->pin_class[ipin];
     if ((1 == type->pinloc[height][side][ipin])&&(pin_class_type == type->class_inf[class_id].type)) {
-      fprintf(fp, "grid[%d][%d]_pin[%d][%d][%d] ", x, y, height, side, ipin);
+      /* Not sure if we need to plus a height */
+      fprintf(fp, "grid[%d][%d]_pin[%d][%d][%d] ", x, y + height, height, side, ipin);
     }
   } 
   
   return;
 }
 
-/* Determine the channel coordinates in switch box subckt */
-void determine_src_chan_coordinate_switch_box(t_rr_node* src_rr_node,
-                                              t_rr_node* des_rr_node,
-                                              int side,
-                                              int switch_box_x,
-                                              int switch_box_y,
-                                              int* src_chan_x,
-                                              int* src_chan_y,
-                                              char** src_chan_port_name) {
-  /* Check */ 
-  assert((!(0 > side))&&(side < 4));
-  assert((CHANX == src_rr_node->type)||(CHANY == src_rr_node->type));
-  assert((CHANX == des_rr_node->type)||(CHANY == des_rr_node->type));
-  assert((!(0 > switch_box_x))&&(!(switch_box_x > (nx + 1)))); 
-  assert((!(0 > switch_box_y))&&(!(switch_box_y > (ny + 1)))); 
- 
-  /* Initialize*/
-  (*src_chan_x) = 0;
-  (*src_chan_y) = 0;
-  (*src_chan_port_name) = NULL;
-
-  switch (side) {
-  case 0: /*TOP*/
-    /* The destination rr_node only have one condition!!! */
-    assert((INC_DIRECTION == des_rr_node->direction)&&(CHANY == des_rr_node->type));
-    /* Following cases:
-     *               |
-     *             / | \
-     */
-    if ((INC_DIRECTION == src_rr_node->direction)&&(CHANY == src_rr_node->type)) {
-      (*src_chan_x) = switch_box_x;
-      (*src_chan_y) = switch_box_y;
-      (*src_chan_port_name) = "in";
-    } else if ((INC_DIRECTION == src_rr_node->direction)&&(CHANX == src_rr_node->type)) {
-      (*src_chan_x) = switch_box_x;
-      (*src_chan_y) = switch_box_y;
-      (*src_chan_port_name) = "in";
-    } else if ((DEC_DIRECTION == src_rr_node->direction)&&(CHANX == src_rr_node->type)) {
-      (*src_chan_x) = switch_box_x + 1;
-      (*src_chan_y) = switch_box_y;
-      (*src_chan_port_name) = "in";
-    } else {
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid source channel!\n", __FILE__, __LINE__);
-      exit(1);
-    }
-    break; 
-  case 1: /*RIGHT*/
-    /* The destination rr_node only have one condition!!! */
-    assert((INC_DIRECTION == des_rr_node->direction)&&(CHANX == des_rr_node->type));
-    /* Following cases:
-     *          \               
-     *       ---  ----  
-     *          /
-     */
-    if ((DEC_DIRECTION == src_rr_node->direction)&&(CHANY == src_rr_node->type)) {
-      (*src_chan_x) = switch_box_x;
-      (*src_chan_y) = switch_box_y + 1;
-      (*src_chan_port_name) = "in";
-    } else if ((INC_DIRECTION == src_rr_node->direction)&&(CHANX == src_rr_node->type)) {
-      (*src_chan_x) = switch_box_x;
-      (*src_chan_y) = switch_box_y;
-      (*src_chan_port_name) = "in";
-    } else if ((INC_DIRECTION == src_rr_node->direction)&&(CHANY == src_rr_node->type)) {
-      (*src_chan_x) = switch_box_x;
-      (*src_chan_y) = switch_box_y;
-      (*src_chan_port_name) = "in";
-    } else {
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid source channel!\n", __FILE__, __LINE__);
-      exit(1);
-    }
-    break; 
-  case 2: /*BOTTOM*/
-    /* The destination rr_node only have one condition!!! */
-    assert((DEC_DIRECTION == des_rr_node->direction)&&(CHANY == des_rr_node->type));
-    /* Following cases:
-     *          |               
-     *        \   /  
-     *          |
-     */
-    if ((DEC_DIRECTION == src_rr_node->direction)&&(CHANY == src_rr_node->type)) {
-      (*src_chan_x) = switch_box_x;
-      (*src_chan_y) = switch_box_y + 1;
-      (*src_chan_port_name) = "in";
-    } else if ((INC_DIRECTION == src_rr_node->direction)&&(CHANX == src_rr_node->type)) {
-      (*src_chan_x) = switch_box_x;
-      (*src_chan_y) = switch_box_y;
-      (*src_chan_port_name) = "in";
-    } else if ((DEC_DIRECTION == src_rr_node->direction)&&(CHANX == src_rr_node->type)) {
-      (*src_chan_x) = switch_box_x + 1;
-      (*src_chan_y) = switch_box_y;
-      (*src_chan_port_name) = "in";
-    } else {
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid source channel!\n", __FILE__, __LINE__);
-      exit(1);
-    }
-    break; 
-  case 3: /*LEFT*/
-    /* The destination rr_node only have one condition!!! */
-    assert((DEC_DIRECTION == des_rr_node->direction)&&(CHANX == des_rr_node->type));
-    /* Following cases:
-     *           /               
-     *       ---  ----  
-     *           \
-     */
-    if ((DEC_DIRECTION == src_rr_node->direction)&&(CHANX == src_rr_node->type)) {
-      (*src_chan_x) = switch_box_x + 1;
-      (*src_chan_y) = switch_box_y;
-      (*src_chan_port_name) = "in";
-    } else if ((INC_DIRECTION == src_rr_node->direction)&&(CHANY == src_rr_node->type)) {
-      (*src_chan_x) = switch_box_x;
-      (*src_chan_y) = switch_box_y;
-      (*src_chan_port_name) = "in";
-    } else if ((DEC_DIRECTION == src_rr_node->direction)&&(CHANY == src_rr_node->type)) {
-      (*src_chan_x) = switch_box_x;
-      (*src_chan_y) = switch_box_y + 1;
-      (*src_chan_port_name) = "in";
-    } else {
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid source channel!\n", __FILE__, __LINE__);
-      exit(1);
-    }
-    break; 
-  default: 
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s, [LINE%d])Invalid side!\n", __FILE__, __LINE__);
-    exit(1);
-  }
-
-  /* Make sure the source rr_node (channel) is in the range*/
-  assert((!((*src_chan_x) < src_rr_node->xlow))&&(!((*src_chan_x) > src_rr_node->xhigh)));
-  if (!((!((*src_chan_y) < src_rr_node->ylow))&&(!((*src_chan_y) > src_rr_node->yhigh)))) {
-  assert((!((*src_chan_y) < src_rr_node->ylow))&&(!((*src_chan_y) > src_rr_node->yhigh)));
-  }
-
-  return; 
-}
-
 void fprint_switch_box_chan_port(FILE* fp,
-                                 int switch_box_x, 
-                                 int switch_box_y, 
+                                 t_sb cur_sb_info, 
                                  int chan_side,
                                  t_rr_node* cur_rr_node) {
+  int index = -1;
+  t_rr_type chan_rr_node_type;
+  int chan_rr_node_x, chan_rr_node_y;
+
   /* Check the file handler*/ 
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
@@ -446,31 +252,22 @@ void fprint_switch_box_chan_port(FILE* fp,
     exit(1);
   }
 
-  switch (chan_side) {
-  case 0: /*TOP*/
-    /* The destination rr_node only have one condition!!! */
-    assert((INC_DIRECTION == cur_rr_node->direction)&&(CHANY == cur_rr_node->type));
-    fprintf(fp, "chany[%d][%d]_out[%d] ", switch_box_x, switch_box_y + 1, cur_rr_node->ptc_num);
-    break;
-  case 1: /*RIGHT*/
-    /* The destination rr_node only have one condition!!! */
-    assert((INC_DIRECTION == cur_rr_node->direction)&&(CHANX == cur_rr_node->type));
-    fprintf(fp, "chanx[%d][%d]_out[%d] ", switch_box_x + 1, switch_box_y, cur_rr_node->ptc_num);
-    break;
-  case 2: /*BOTTOM*/
-    /* The destination rr_node only have one condition!!! */
-    assert((DEC_DIRECTION == cur_rr_node->direction)&&(CHANY == cur_rr_node->type));
-    fprintf(fp, "chany[%d][%d]_out[%d] ", switch_box_x, switch_box_y, cur_rr_node->ptc_num);
-    break;
-  case 3: /*LEFT*/
-    /* The destination rr_node only have one condition!!! */
-    assert((DEC_DIRECTION == cur_rr_node->direction)&&(CHANX == cur_rr_node->type));
-    fprintf(fp, "chanx[%d][%d]_out[%d] ", switch_box_x, switch_box_y, cur_rr_node->ptc_num);
-    break;
-  default: 
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s, [LINE%d])Invalid side!\n", __FILE__, __LINE__);
-    exit(1);
-  }
+  /* Get the index in sb_info of cur_rr_node */
+  index = get_rr_node_index_in_sb_info(cur_rr_node, cur_sb_info, chan_side);
+  /* Make sure this node is included in this sb_info */
+  assert((-1 != index)&&(-1 != chan_side));
+
+  get_chan_rr_node_coorindate_in_sb_info(cur_sb_info, chan_side, 
+                                         &chan_rr_node_type, &chan_rr_node_x, &chan_rr_node_y);
+
+  assert(cur_rr_node->type == chan_rr_node_type);
+     
+  fprintf(fp, "%s[%d][%d]_%s[%d] ", 
+          convert_chan_type_to_string(chan_rr_node_type),
+          chan_rr_node_x, chan_rr_node_y, 
+          convert_chan_rr_node_direction_to_string(cur_sb_info.chan_rr_node_direction[chan_side][index]),
+          cur_rr_node->ptc_num);
+
   return;
 }
 
@@ -482,18 +279,13 @@ void fprint_switch_box_chan_port(FILE* fp,
  *    The cur_rr_node need to connected to the drive_rr_node
  */
 void fprint_switch_box_short_interc(FILE* fp, 
-                                    int switch_box_x, 
-                                    int switch_box_y, 
+                                    t_sb cur_sb_info,
                                     int chan_side,
                                     t_rr_node* cur_rr_node,
                                     int actual_fan_in,
                                     t_rr_node* drive_rr_node) {
-  int side; 
-  int track_index;
-  int grid_x, grid_y, pin_index, height, class_id, pin_written_times;
-  t_type_ptr type = NULL;
-  int src_chan_x, src_chan_y;
-  char* src_chan_port_name = NULL;
+  int side, index; 
+  int grid_x, grid_y, height;
   char* chan_name = NULL;
   char* des_chan_port_name = NULL;
 
@@ -505,88 +297,53 @@ void fprint_switch_box_short_interc(FILE* fp,
   }
 
   /* Check */
-  assert((!(0 > switch_box_x))&&(!(switch_box_x > (nx + 1)))); 
-  assert((!(0 > switch_box_y))&&(!(switch_box_y > (ny + 1)))); 
+  assert((!(0 > cur_sb_info.x))&&(!(cur_sb_info.x > (nx + 1)))); 
+  assert((!(0 > cur_sb_info.y))&&(!(cur_sb_info.y > (ny + 1)))); 
   assert((0 == actual_fan_in)||(1 == actual_fan_in));
 
-  switch(cur_rr_node->type) {
-  case CHANX:
-    chan_name = "chanx";
-    break;
-  case CHANY:
-    chan_name = "chany";
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid cur_rr_node_type!\n", __FILE__, __LINE__);
-    exit(1);
-  }
-
-  switch (cur_rr_node->direction) {
-  case INC_DIRECTION:
-    des_chan_port_name = "in"; 
-    break;
-  case DEC_DIRECTION:
-    des_chan_port_name = "out"; 
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid cur_rr_node directionality!\n", __FILE__, __LINE__);
-    exit(1);
-  }
-
+  chan_name = convert_chan_type_to_string(cur_rr_node->type);
+  
+  /* Get the index in sb_info of cur_rr_node */
+  index = get_rr_node_index_in_sb_info(cur_rr_node, cur_sb_info, chan_side);
+  assert(OUT_PORT == cur_sb_info.chan_rr_node_direction[chan_side][index]);
+  des_chan_port_name = "out"; 
+  
   fprintf(fp, "R%s[%d][%d]_%s[%d] ", 
-          chan_name, switch_box_x, switch_box_y, des_chan_port_name, cur_rr_node->ptc_num);
+          chan_name, cur_sb_info.x, cur_sb_info.y, des_chan_port_name, cur_rr_node->ptc_num);
 
   /* Check the driver*/
   if (0 == actual_fan_in) {
     assert(drive_rr_node == cur_rr_node);
   } else {
     /* drive_rr_node = &(rr_node[cur_rr_node->prev_node]); */
-    assert(1 == rr_node_drive_switch_box(drive_rr_node, cur_rr_node, switch_box_x, switch_box_y, chan_side));
+    assert(1 == rr_node_drive_switch_box(drive_rr_node, cur_rr_node, cur_sb_info.x, cur_sb_info.y, chan_side));
   }
   switch (drive_rr_node->type) {
   /* case SOURCE: */
   case OPIN:
     /* Indicate a CLB Outpin*/
-    /* Get grid information*/
+    /* Search all the sides of a SB, see this drive_rr_node is an INPUT of this SB */
+    get_rr_node_side_and_index_in_sb_info(drive_rr_node, cur_sb_info, &side, &index);
+    /* We need to be sure that drive_rr_node is part of the SB */
+    assert((-1 != index)&&(-1 != side));
+    /* Find grid_x and grid_y */
     grid_x = drive_rr_node->xlow; 
-    grid_y = drive_rr_node->ylow; /*Plus the offset*/
-    assert((switch_box_x == grid_x)||((switch_box_x+1) == grid_x));
-    assert((switch_box_y == grid_y)||((switch_box_y+1) == grid_y));
+    grid_y = drive_rr_node->ylow; /*Plus the offset in function fprint_grid_side_pin_with_given_index */
     height = grid[grid_x][grid_y].offset;
-    grid_y = grid_y + height; /* May Cause Prob.*/
-    type = grid[grid_x][grid_y].type;
-    assert(NULL != type);
-    /* Get pin information*/
-    pin_index = drive_rr_node->ptc_num;
-    class_id = type->pin_class[pin_index];
-    assert(DRIVER == type->class_inf[class_id].type);
-    pin_written_times = 0;
-    side = determine_io_grid_side(grid_x, grid_y);
-    if (1 == type->pinloc[height][side][pin_index]) {
-      fprintf(fp, "grid[%d][%d]_pin[%d][%d][%d] ", 
-              grid_x, grid_y, height, side, pin_index);
-      pin_written_times++;
-    }
-    /* Make sure this pin is printed only once!!! (TODO: make sure for IO PAD, this remains ok)*/
-    assert(1 == pin_written_times);
+    /* Print a grid pin */
+    fprint_grid_side_pin_with_given_index(fp, drive_rr_node->ptc_num, 
+                                          cur_sb_info.opin_rr_node_grid_side[side][index],
+                                          grid_x, grid_y);
     break;
   case CHANX:
-    determine_src_chan_coordinate_switch_box(drive_rr_node, cur_rr_node, chan_side,
-                                             switch_box_x, switch_box_y, &src_chan_x, &src_chan_y, &src_chan_port_name);
-    /* For channels, ptc_num is the track_index*/
-    track_index = drive_rr_node->ptc_num; 
-    fprintf(fp, "chanx[%d][%d]_%s[%d] ", src_chan_x, src_chan_y, src_chan_port_name, track_index);
-    //my_free(src_chan_port_name);
-    break;
   case CHANY:
-    determine_src_chan_coordinate_switch_box(drive_rr_node, cur_rr_node, chan_side,
-                                             switch_box_x, switch_box_y, &src_chan_x, &src_chan_y, &src_chan_port_name);
-    /* For channels, ptc_num is the track_index*/
-    track_index = drive_rr_node->ptc_num; 
-    fprintf(fp, "chany[%d][%d]_%s[%d] ", src_chan_x, src_chan_y, src_chan_port_name, track_index);
-    //my_free(src_chan_port_name);
+    get_rr_node_side_and_index_in_sb_info(drive_rr_node, cur_sb_info, &side, &index);
+    /* We need to be sure that drive_rr_node is part of the SB */
+    assert((-1 != index)&&(-1 != side));
+    /* Should be an input ! */
+    assert(IN_PORT == cur_sb_info.chan_rr_node_direction[side][index]);
+    fprint_switch_box_chan_port(fp, cur_sb_info, side, drive_rr_node);
     break;
-  /* SOURCE is invalid as well */
   default: /* IPIN, SINK are invalid*/
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid rr_node type! Should be [OPIN|CHANX|CHANY].\n",
                __FILE__, __LINE__);
@@ -594,7 +351,8 @@ void fprint_switch_box_short_interc(FILE* fp,
   }
 
   /* Output port */
-  fprint_switch_box_chan_port(fp, switch_box_x, switch_box_y, chan_side, cur_rr_node);
+  /* fprint_switch_box_chan_port(fp, switch_box_x, switch_box_y, chan_side, cur_rr_node); */
+  fprint_switch_box_chan_port(fp, cur_sb_info, chan_side, cur_rr_node);
 
   /* END */
   fprintf(fp, "0\n");
@@ -604,20 +362,15 @@ void fprint_switch_box_short_interc(FILE* fp,
 
 /* Print the SPICE netlist of multiplexer that drive this rr_node */
 void fprint_switch_box_mux(FILE* fp, 
-                           int switch_box_x, 
-                           int switch_box_y, 
+                           t_sb cur_sb_info, 
                            int chan_side,
                            t_rr_node* cur_rr_node,
                            int mux_size,
                            t_rr_node** drive_rr_nodes,
                            int switch_index) {
-  int inode, side;
-  int track_index;
-  int grid_x, grid_y, pin_index, height, class_id, pin_written_times;
-  t_type_ptr type = NULL;
+  int inode, side, index;
+  int grid_x, grid_y, height;
   t_spice_model* spice_model = NULL;
-  int src_chan_x, src_chan_y;
-  char* src_chan_port_name = NULL;
   int mux_level, path_id, cur_num_sram, ilevel;
   int num_mux_sram_bits = 0;
   int* mux_sram_bits = NULL;
@@ -630,8 +383,8 @@ void fprint_switch_box_mux(FILE* fp,
   }
 
   /* Check */
-  assert((!(0 > switch_box_x))&&(!(switch_box_x > (nx + 1)))); 
-  assert((!(0 > switch_box_y))&&(!(switch_box_y > (ny + 1)))); 
+  assert((!(0 > cur_sb_info.x))&&(!(cur_sb_info.x > (nx + 1)))); 
+  assert((!(0 > cur_sb_info.y))&&(!(cur_sb_info.y > (ny + 1)))); 
 
   /* Check current rr_node is CHANX or CHANY*/
   assert((CHANX == cur_rr_node->type)||(CHANY == cur_rr_node->type));
@@ -650,69 +403,27 @@ void fprint_switch_box_mux(FILE* fp,
     /* case SOURCE: */
     case OPIN:
       /* Indicate a CLB Outpin*/
-      /* Get grid information*/
+      /* Search all the sides of a SB, see this drive_rr_node is an INPUT of this SB */
+      get_rr_node_side_and_index_in_sb_info(drive_rr_nodes[inode], cur_sb_info, &side, &index);
+      /* We need to be sure that drive_rr_node is part of the SB */
+      assert((-1 != index)&&(-1 != side));
+      /* Find grid_x and grid_y */
       grid_x = drive_rr_nodes[inode]->xlow; 
-      grid_y = drive_rr_nodes[inode]->ylow; /*Plus the offset*/
-      assert((switch_box_x == grid_x)||((switch_box_x+1) == grid_x));
-      assert((switch_box_y == grid_y)||((switch_box_y+1) == grid_y));
+      grid_y = drive_rr_nodes[inode]->ylow; /*Plus the offset in function fprint_grid_side_pin_with_given_index */
       height = grid[grid_x][grid_y].offset;
-      grid_y = grid_y + height; /* May Cause Prob.*/
-      type = grid[grid_x][grid_y].type;
-      assert(NULL != type);
-      /* Get pin information*/
-      pin_index = drive_rr_nodes[inode]->ptc_num;
-      class_id = type->pin_class[pin_index];
-      assert(DRIVER == type->class_inf[class_id].type);
-      pin_written_times = 0;
-      /* See the channel type and then determine the side*/
-      switch (cur_rr_node->type) {
-      case CHANX:
-        if (switch_box_y == grid_y) {
-          side = TOP;
-        } else if ((switch_box_y+1) == grid_y) {
-          side = BOTTOM;
-        } else {
-          vpr_printf(TIO_MESSAGE_ERROR,"(File:%s, [LINE%d])Invalid grid_y!\n", __FILE__, __LINE__);
-          exit(1);
-        }
-        break;
-      case CHANY:
-        if (switch_box_x == grid_x) {
-          side = RIGHT;
-        } else if ((switch_box_x+1) == grid_x) {
-          side = LEFT;
-        } else {
-          vpr_printf(TIO_MESSAGE_ERROR,"(File:%s, [LINE%d])Invalid grid_y!\n", __FILE__, __LINE__);
-          exit(1);
-        }
-        break;
-      default:
-        vpr_printf(TIO_MESSAGE_ERROR,"(File:%s, [LINE%d])Invalid cur_rr_node type!\n", __FILE__, __LINE__);
-        exit(1);
-      }
-      /* Find the pin to be printed*/
-      if (1 == type->pinloc[height][side][pin_index]) {
-        fprintf(fp, "grid[%d][%d]_pin[%d][%d][%d] ", grid_x, grid_y, height, side, pin_index);
-        pin_written_times++;
-      }
-      /* Make sure this pin is printed only once!!! (TODO: make sure for IO PAD, this remains ok)*/
-      assert(1 == pin_written_times);
+      /* Print a grid pin */
+      fprint_grid_side_pin_with_given_index(fp, drive_rr_nodes[inode]->ptc_num, 
+                                           cur_sb_info.opin_rr_node_grid_side[side][index],
+                                           grid_x, grid_y);
       break;
     case CHANX:
-      determine_src_chan_coordinate_switch_box(drive_rr_nodes[inode], cur_rr_node, chan_side,
-                                               switch_box_x, switch_box_y, &src_chan_x, &src_chan_y, &src_chan_port_name);
-      /* For channels, ptc_num is the track_index*/
-      track_index = drive_rr_nodes[inode]->ptc_num; 
-      fprintf(fp, "chanx[%d][%d]_%s[%d] ", src_chan_x, src_chan_y, src_chan_port_name, track_index);
-      //my_free(src_chan_port_name);
-      break;
     case CHANY:
-      determine_src_chan_coordinate_switch_box(drive_rr_nodes[inode], cur_rr_node, chan_side,
-                                               switch_box_x, switch_box_y, &src_chan_x, &src_chan_y, &src_chan_port_name);
-      /* For channels, ptc_num is the track_index*/
-      track_index = drive_rr_nodes[inode]->ptc_num; 
-      fprintf(fp, "chany[%d][%d]_%s[%d] ", src_chan_x, src_chan_y, src_chan_port_name, track_index);
-      //my_free(src_chan_port_name);
+      get_rr_node_side_and_index_in_sb_info(drive_rr_nodes[inode], cur_sb_info, &side, &index);
+      /* We need to be sure that drive_rr_node is part of the SB */
+      assert((-1 != index)&&(-1 != side));
+      /* Should be an input ! */
+      assert(IN_PORT == cur_sb_info.chan_rr_node_direction[side][index]);
+      fprint_switch_box_chan_port(fp, cur_sb_info, side, drive_rr_nodes[inode]);
       break;
     default: /* IPIN, SINK are invalid*/
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid rr_node type! Should be [OPIN|CHANX|CHANY].\n",
@@ -722,7 +433,7 @@ void fprint_switch_box_mux(FILE* fp,
   }
 
   /* Output port */
-  fprint_switch_box_chan_port(fp, switch_box_x, switch_box_y, chan_side, cur_rr_node);
+  fprint_switch_box_chan_port(fp, cur_sb_info, chan_side, cur_rr_node);
 
   /* Configuration bits for this MUX*/
   path_id = -1;
@@ -860,10 +571,10 @@ void fprint_switch_box_mux(FILE* fp,
 }
 
 void fprint_switch_box_interc(FILE* fp, 
-                              int switch_box_x, 
-                              int switch_box_y, 
+                              t_sb cur_sb_info,
                               int chan_side,
                               t_rr_node* cur_rr_node) {
+  int sb_x, sb_y;
   int num_drive_rr_nodes = 0;  
   t_rr_node** drive_rr_nodes = NULL;
 
@@ -874,16 +585,19 @@ void fprint_switch_box_interc(FILE* fp,
     exit(1);
   }
 
+  sb_x = cur_sb_info.x;
+  sb_y = cur_sb_info.y;
+
   /* Check */
-  assert((!(0 > switch_box_x))&&(!(switch_box_x > (nx + 1)))); 
-  assert((!(0 > switch_box_y))&&(!(switch_box_y > (ny + 1)))); 
+  assert((!(0 > sb_x))&&(!(sb_x > (nx + 1)))); 
+  assert((!(0 > sb_y))&&(!(sb_y > (ny + 1)))); 
   /*
   find_drive_rr_nodes_switch_box(switch_box_x, switch_box_y, cur_rr_node, chan_side, 0, 
                                  &num_drive_rr_nodes, &drive_rr_nodes, &switch_index);
   */
 
   /* Determine if the interc lies inside a channel wire, that is interc between segments */
-  if (1 == is_sb_interc_between_segments(switch_box_x, switch_box_y, cur_rr_node, chan_side)) {
+  if (1 == is_sb_interc_between_segments(sb_x, sb_y, cur_rr_node, chan_side)) {
     num_drive_rr_nodes = 0;
     drive_rr_nodes = NULL;
   } else {
@@ -893,15 +607,15 @@ void fprint_switch_box_interc(FILE* fp,
 
   if (0 == num_drive_rr_nodes) {
     /* Print a special direct connection*/
-    fprint_switch_box_short_interc(fp, switch_box_x, switch_box_y, chan_side, cur_rr_node, 
+    fprint_switch_box_short_interc(fp, cur_sb_info, chan_side, cur_rr_node, 
                                    num_drive_rr_nodes, cur_rr_node);
   } else if (1 == num_drive_rr_nodes) {
     /* Print a direct connection*/
-    fprint_switch_box_short_interc(fp, switch_box_x, switch_box_y, chan_side, cur_rr_node, 
+    fprint_switch_box_short_interc(fp, cur_sb_info, chan_side, cur_rr_node, 
                                    num_drive_rr_nodes, drive_rr_nodes[0]);
   } else if (1 < num_drive_rr_nodes) {
     /* Print the multiplexer, fan_in >= 2 */
-    fprint_switch_box_mux(fp, switch_box_x, switch_box_y, chan_side, cur_rr_node, 
+    fprint_switch_box_mux(fp, cur_sb_info, chan_side, cur_rr_node, 
                           num_drive_rr_nodes, drive_rr_nodes, 
                           cur_rr_node->drive_switches[0]);
   } /*Nothing should be done else*/ 
@@ -952,19 +666,10 @@ void fprint_switch_box_interc(FILE* fp,
  * For channels chanX with INC_DIRECTION on the right side, they should be marked as outputs
  * For channels chanX with DEC_DIRECTION on the right side, they should be marked as inputs
  */
-void fprint_routing_switch_box_subckt(FILE* fp, 
-                                      int x, 
-                                      int y, 
+void fprint_routing_switch_box_subckt(FILE* fp, t_sb cur_sb_info,
+                                      int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                       t_ivec*** LL_rr_node_indices) {
-  int itrack, inode, side, ix, iy;
-  t_rr_node*** chan_rr_nodes = (t_rr_node***)my_malloc(sizeof(t_rr_node**)*4); /* 4 sides*/
-  int* chan_width = (int*)my_malloc(sizeof(int)*4); /* 4 sides */
-  /*
-  t_rr_node** top_chan_rr_nodes = (t_rr_node**)my_malloc(sizeof(t_rr_node*)*chan_width);
-  t_rr_node** right_chan_rr_nodes = (t_rr_node**)my_malloc(sizeof(t_rr_node*)*chan_width);
-  t_rr_node** bottom_chan_rr_nodes = (t_rr_node**)my_malloc(sizeof(t_rr_node*)*chan_width);
-  t_rr_node** left_chan_rr_nodes = (t_rr_node**)my_malloc(sizeof(t_rr_node*)*chan_width);
-  */
+  int itrack, inode, side, ix, iy, x, y;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -972,228 +677,68 @@ void fprint_routing_switch_box_subckt(FILE* fp,
                __FILE__, __LINE__); 
     exit(1);
   }
-  /* Check */
-  assert((!(0 > x))&&(!(x > (nx + 1)))); 
-  assert((!(0 > y))&&(!(y > (ny + 1)))); 
 
-  /* Find all rr_nodes of channels */
-  for (side = 0; side < 4; side++) {
-    switch (side) {
-    case 0:
-      /* For the bording, we should take special care */
-      if (y == ny) {
-        chan_width[side] = 0;
-        chan_rr_nodes[side] = NULL;
-        break;
-      }
-      /* Routing channels*/
-      ix = x; 
-      iy = y + 1;
-      /* Channel width */
-      chan_width[side] = chan_width_y[ix];
-      /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
-      chan_rr_nodes[side] = (t_rr_node**)my_malloc(sizeof(t_rr_node*)*chan_width[side]);
-      /* Collect rr_nodes for Tracks for top: chany[x][y+1] */
-      for (itrack = 0; itrack < chan_width[side]; itrack++) {
-        inode = get_rr_node_index(ix, iy, CHANY, itrack, LL_rr_node_indices);
-        chan_rr_nodes[0][itrack] = &(rr_node[inode]);
-      }
-      break;
-    case 1:
-      /* For the bording, we should take speical care */
-      if (x == nx) {
-        chan_width[side] = 0;
-        chan_rr_nodes[side] = NULL;
-        break;
-      }
-      /* Routing channels*/
-      ix = x + 1; 
-      iy = y;
-      /* Channel width */
-      chan_width[side] = chan_width_x[iy];
-      /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
-      chan_rr_nodes[side] = (t_rr_node**)my_malloc(sizeof(t_rr_node*)*chan_width[side]);
-      /* Collect rr_nodes for Tracks for right: chanX[x+1][y] */
-      for (itrack = 0; itrack < chan_width[side]; itrack++) {
-        inode = get_rr_node_index(ix, iy, CHANX, itrack, LL_rr_node_indices);
-        chan_rr_nodes[1][itrack] = &(rr_node[inode]);
-      }
-      break;
-    case 2:
-      /* For the bording, we should take speical care */
-      if (y == 0) {
-        chan_width[side] = 0;
-        chan_rr_nodes[side] = NULL;
-        break;
-      }
-      /* Routing channels*/
-      ix = x; 
-      iy = y;
-      /* Channel width */
-      chan_width[side] = chan_width_y[ix];
-      /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
-      chan_rr_nodes[side] = (t_rr_node**)my_malloc(sizeof(t_rr_node*)*chan_width[side]);
-      /* Collect rr_nodes for Tracks for bottom: chany[x][y] */
-      for (itrack = 0; itrack < chan_width[side]; itrack++) {
-        inode = get_rr_node_index(ix, iy, CHANY, itrack, LL_rr_node_indices);
-        chan_rr_nodes[2][itrack] = &(rr_node[inode]);
-      }
-      break;
-    case 3:
-      /* For the bording, we should take speical care */
-      if (x == 0) {
-        chan_width[side] = 0;
-        chan_rr_nodes[side] = NULL;
-        break;
-      }
-      /* Routing channels*/
-      ix = x; 
-      iy = y;
-      /* Channel width */
-      chan_width[side] = chan_width_x[iy];
-      /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
-      chan_rr_nodes[side] = (t_rr_node**)my_malloc(sizeof(t_rr_node*)*chan_width[side]);
-      /* Collect rr_nodes for Tracks for left: chanx[x][y] */
-      for (itrack = 0; itrack < chan_width[side]; itrack++) {
-        inode = get_rr_node_index(ix, iy, CHANX, itrack, LL_rr_node_indices);
-        chan_rr_nodes[3][itrack] = &(rr_node[inode]);
-      }
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid side index!\n", __FILE__, __LINE__);
-      exit(1);
-    }
-  }
+  /* Check */
+  assert((!(0 > cur_sb_info.x))&&(!(cur_sb_info.x > (nx + 1)))); 
+  assert((!(0 > cur_sb_info.y))&&(!(cur_sb_info.y > (ny + 1)))); 
+
+  x = cur_sb_info.x;
+  y = cur_sb_info.y;
 
   /* Print the definition of subckt*/
-  fprintf(fp, "***** Switch Box[%d][%d] Sub-Circuit *****\n", x, y);
-  fprintf(fp, ".subckt sb[%d][%d] ", x, y);
+  fprintf(fp, "***** Switch Box[%d][%d] Sub-Circuit *****\n", cur_sb_info.x, cur_sb_info.y);
+  fprintf(fp, ".subckt sb[%d][%d] ", cur_sb_info.x, cur_sb_info.y);
   fprintf(fp, "\n");
   fprintf(fp, "+ ");
-  /* 1. Channel Y [x][y+1] inputs */
-  for (itrack = 0; itrack < chan_width[0]; itrack++) {
-    switch (chan_rr_nodes[0][itrack]->direction) {
-    case INC_DIRECTION:
-      fprintf(fp, "chany[%d][%d]_out[%d] ", x, y + 1, itrack); /* For SB: this is an output */
-      break;
-    case DEC_DIRECTION:
-      fprintf(fp, "chany[%d][%d]_in[%d] ", x, y + 1, itrack); /* For SB: this is an input */
-      break;
-    case BI_DIRECTION:
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of chany[%d][%d]_track[%d]!\n",
-                 __FILE__, __LINE__, x, y + 1, itrack);
-      exit(1);
+  for (side = 0; side < cur_sb_info.num_sides; side++) {
+    if (0 == side) {
+      /* 1. Channel Y [x][y+1] inputs */
+      ix = cur_sb_info.x;
+      iy = cur_sb_info.y + 1;
+    } else if (1 == side) {
+      /* 2. Channel X [x+1][y] inputs */
+      ix = cur_sb_info.x + 1;
+      iy = cur_sb_info.y;
+    } else if (2 == side) {
+      /* 3. Channel Y [x][y] inputs */
+      ix = cur_sb_info.x;
+      iy = cur_sb_info.y;
+    } else if (3 == side) {
+      /* 4. Channel X [x][y] inputs */
+      ix = cur_sb_info.x;
+      iy = cur_sb_info.y;
     }
-  }
-  fprintf(fp, "\n");
-  fprintf(fp, "+ ");
-  /* 2. Channel X [x+1][y] inputs */
-  for (itrack = 0; itrack < chan_width[1]; itrack++) {
-    switch (chan_rr_nodes[1][itrack]->direction) {
-    case INC_DIRECTION:
-      fprintf(fp, "chanx[%d][%d]_out[%d] ", x + 1, y, itrack); /* For SB: this is an output */
-      break;
-    case DEC_DIRECTION:
-      fprintf(fp, "chanx[%d][%d]_in[%d] ", x + 1, y, itrack); /* For SB: this is an input */
-      break;
-    case BI_DIRECTION:
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of chanx[%d][%d]_track[%d]!\n",
-                 __FILE__, __LINE__, x + 1, y, itrack);
-      exit(1);
+    for (itrack = 0; itrack < cur_sb_info.chan_width[side]; itrack++) {
+      switch (cur_sb_info.chan_rr_node_direction[side][itrack]) {
+      case OUT_PORT:
+        fprintf(fp, "%s[%d][%d]_out[%d] ", 
+                convert_chan_type_to_string(cur_sb_info.chan_rr_node[side][itrack]->type), 
+                ix, iy, itrack); 
+        break;
+      case IN_PORT:
+        fprintf(fp, "%s[%d][%d]_in[%d] ",
+                convert_chan_type_to_string(cur_sb_info.chan_rr_node[side][itrack]->type), 
+                ix, iy, itrack); 
+        break;
+      default:
+        vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of port sb[%d][%d] Channel node[%d] track[%d]!\n",
+                   __FILE__, __LINE__, cur_sb_info.x, cur_sb_info.y, side, itrack);
+        exit(1);
+      }
     }
-  }
-  fprintf(fp, "\n");
-  fprintf(fp, "+ ");
-  /* 3. Channel Y [x][y] outputs */
-  for (itrack = 0; itrack < chan_width[2]; itrack++) {
-    switch (chan_rr_nodes[2][itrack]->direction) {
-    case INC_DIRECTION:
-      fprintf(fp, "chany[%d][%d]_in[%d] ", x, y, itrack); /* For SB: this is an input */
-      break;
-    case DEC_DIRECTION:
-      fprintf(fp, "chany[%d][%d]_out[%d] ", x, y, itrack); /* For SB: this is an output */
-      break;
-    case BI_DIRECTION:
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of chany[%d][%d]_track[%d]!\n",
-                 __FILE__, __LINE__, x, y, itrack);
-      exit(1);
-    }
-  }
-  fprintf(fp, "\n");
-  fprintf(fp, "+ ");
-  /* 4. Channel X [x][y] outputs */
-  for (itrack = 0; itrack < chan_width[3]; itrack++) {
-    switch (chan_rr_nodes[3][itrack]->direction) {
-    case INC_DIRECTION:
-      fprintf(fp, "chanx[%d][%d]_in[%d] ", x, y, itrack); /* For SB: this is an input */
-      break;
-    case DEC_DIRECTION:
-      fprintf(fp, "chanx[%d][%d]_out[%d] ", x, y, itrack); /* For SB: this is an output */
-      break;
-    case BI_DIRECTION:
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of chanx[%d][%d]_track[%d]!\n",
-                 __FILE__, __LINE__, x, y, itrack);
-      exit(1);
-    }
-  }
-  fprintf(fp, "\n");
-  fprintf(fp, "+ ");
-
-  /* Considering the border */
-  if (ny != y) {
-    /* 5. Grid[x][y+1] Right side outputs pins */
-    fprint_grid_side_pins(fp, OPIN, x, y+1, 1);
+    fprintf(fp, "\n");
+    fprintf(fp, "+ ");
+    /* Dump OPINs of adjacent CLBs */
+    for (inode = 0; inode < cur_sb_info.num_opin_rr_nodes[side]; inode++) {
+      fprint_grid_side_pin_with_given_index(fp, cur_sb_info.opin_rr_node[side][inode]->ptc_num,
+                                            cur_sb_info.opin_rr_node_grid_side[side][inode],
+                                            cur_sb_info.opin_rr_node[side][inode]->xlow,
+                                            cur_sb_info.opin_rr_node[side][inode]->ylow); 
+    } 
     fprintf(fp, "\n");
     fprintf(fp, "+ ");
   }
-  if (0 != x) {
-    /* 6. Grid[x][y+1] Bottom side outputs pins */
-    fprint_grid_side_pins(fp, OPIN, x, y+1, 2);
-    fprintf(fp, "\n");
-    fprintf(fp, "+ ");
-  }
-
-  if (ny != y) {
-    /* 7. Grid[x+1][y+1] Left side output pins */
-    fprint_grid_side_pins(fp, OPIN, x+1, y+1, 3);
-    fprintf(fp, "\n");
-    fprintf(fp, "+ ");
-  }
-  if (nx != x) {
-    /* 8. Grid[x+1][y+1] Bottom side output pins */
-    fprint_grid_side_pins(fp, OPIN, x+1, y+1, 2);
-    fprintf(fp, "\n");
-    fprintf(fp, "+ ");
-  }
-
-  if (nx != x) {
-    /* 9. Grid[x+1][y] Top side output pins */
-    fprint_grid_side_pins(fp, OPIN, x+1, y, 0);
-    fprintf(fp, "\n");
-    fprintf(fp, "+ ");
-  }
-  if (0 != y) {
-    /* 10. Grid[x+1][y] Left side output pins */
-    fprint_grid_side_pins(fp, OPIN, x+1, y, 3);
-    fprintf(fp, "\n");
-    fprintf(fp, "+ ");
-  }
-
-  if (0 != y) {
-    /* 11. Grid[x][y] Right side output pins */
-    fprint_grid_side_pins(fp, OPIN, x, y, 1);
-  } 
-  if (0 != x) {
-    /* 12. Grid[x][y] Top side output pins */
-    fprint_grid_side_pins(fp, OPIN, x, y, 0);
-    fprintf(fp, "\n");
-    fprintf(fp, "+ ");
-  }
-
+  
   /* Local Vdd and Gnd */
   fprintf(fp, "svdd sgnd\n");
 
@@ -1205,71 +750,15 @@ void fprint_routing_switch_box_subckt(FILE* fp,
   }
 
   /* Put down all the multiplexers */
-  for (side = 0; side < 4; side++) {
-    switch (side) {
-    case 0:
-      /* For the bording, we should take speical care */
-      if (y == ny) {
-        break;
-      }
-      /* Start from the TOP side*/
-      fprintf(fp, "***** TOP side Multiplexers *****\n");
-      for (itrack = 0; itrack < chan_width[side]; itrack++) {
-        assert(CHANY == chan_rr_nodes[side][itrack]->type);
-        /* We care INC_DIRECTION tracks at this side*/
-        if (INC_DIRECTION == chan_rr_nodes[side][itrack]->direction) {
-          fprint_switch_box_interc(fp, x, y, side, chan_rr_nodes[side][itrack]);
-        } 
-      }
-      break;
-    case 1:
-      /* For the bording, we should take speical care */
-      if (x == nx) {
-        break;
-      }
-      /* RIGHT side*/
-      fprintf(fp, "***** RIGHT side Multiplexers *****\n");
-      for (itrack = 0; itrack < chan_width[side]; itrack++) {
-        assert(CHANX == chan_rr_nodes[side][itrack]->type);
-        /* We care INC_DIRECTION tracks at this side*/
-        if (INC_DIRECTION == chan_rr_nodes[side][itrack]->direction) {
-          fprint_switch_box_interc(fp, x, y, side, chan_rr_nodes[side][itrack]);
-        } 
-      }
-      break;
-    case 2:
-      /* For the bording, we should take speical care */
-      if (y == 0) {
-        break;
-      }
-      /* BOTTOM side*/
-      fprintf(fp, "***** BOTTOM side Multiplexers *****\n");
-      for (itrack = 0; itrack < chan_width[side]; itrack++) {
-        assert(CHANY == chan_rr_nodes[side][itrack]->type);
-        /* We care DEC_DIRECTION tracks at this side*/
-        if (DEC_DIRECTION == chan_rr_nodes[side][itrack]->direction) {
-          fprint_switch_box_interc(fp, x, y, side, chan_rr_nodes[side][itrack]);
-        } 
-      }
-      break;
-    case 3:
-      /* For the bording, we should take speical care */
-      if (x == 0) {
-        break;
-      }
-      /* LEFT side*/
-      fprintf(fp, "***** LEFT side Multiplexers *****\n");
-      for (itrack = 0; itrack < chan_width[side]; itrack++) {
-        assert(CHANX == chan_rr_nodes[side][itrack]->type);
-        /* We care DEC_DIRECTION tracks at this side*/
-        if (DEC_DIRECTION == chan_rr_nodes[side][itrack]->direction) {
-          fprint_switch_box_interc(fp, x, y, side, chan_rr_nodes[side][itrack]);
-        } 
-      }
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid side index!\n", __FILE__, __LINE__);
-      exit(1);
+  for (side = 0; side < cur_sb_info.num_sides; side++) {
+    fprintf(fp, "***** %s side Multiplexers *****\n", 
+            convert_side_index_to_string(side));
+    for (itrack = 0; itrack < cur_sb_info.chan_width[side]; itrack++) {
+      assert(CHANY == cur_sb_info.chan_rr_node[side][itrack]->type);
+      /* We care INC_DIRECTION tracks at this side*/
+      if (OUT_PORT == cur_sb_info.chan_rr_node_direction[side][itrack]) {
+        fprint_switch_box_interc(fp, cur_sb_info, side, cur_sb_info.chan_rr_node[side][itrack]);
+      } 
     }
   }
 
@@ -1282,25 +771,18 @@ void fprint_routing_switch_box_subckt(FILE* fp,
  
   fprintf(fp, ".eom\n");
 
-  /* Free chan_rr_nodes */
-  my_free(chan_width);
-  for (side = 0; side < 4; side++) {
-    my_free(chan_rr_nodes[side]);
-  }
-  my_free(chan_rr_nodes);
+  /* Free */
 
   return;
 }
 
 /* SRC rr_node is the IPIN of a grid.*/
 void fprint_connection_box_short_interc(FILE* fp,
-                                        t_rr_type chan_type,
-                                        int cb_x,
-                                        int cb_y,
+                                        t_cb cur_cb_info,
                                         t_rr_node* src_rr_node) {
   t_rr_node* drive_rr_node = NULL;
   int iedge, check_flag;
-  int xlow, ylow, height, side;
+  int xlow, ylow, height, side, index;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -1310,8 +792,8 @@ void fprint_connection_box_short_interc(FILE* fp,
   }
 
   /* Check */
-  assert((!(0 > cb_x))&&(!(cb_x > (nx + 1)))); 
-  assert((!(0 > cb_y))&&(!(cb_y > (ny + 1)))); 
+  assert((!(0 > cur_cb_info.x))&&(!(cur_cb_info.x > (nx + 1)))); 
+  assert((!(0 > cur_cb_info.y))&&(!(cur_cb_info.y > (ny + 1)))); 
   assert(1 == src_rr_node->fan_in);
 
   /* Check the driver*/
@@ -1330,70 +812,33 @@ void fprint_connection_box_short_interc(FILE* fp,
   height = grid[xlow][ylow].offset;
 
   /* Call the zero-resistance model */
-  switch(chan_type) {
+  switch(cur_cb_info.type) {
   case CHANX:
-    fprintf(fp, "Rcbx[%d][%d]_grid[%d][%d]_pin[%d] ", cb_x, cb_y, xlow, ylow + height, src_rr_node->ptc_num);
+    fprintf(fp, "Rcbx[%d][%d]_grid[%d][%d]_pin[%d] ", 
+            cur_cb_info.x, cur_cb_info.y, 
+            xlow, ylow + height, src_rr_node->ptc_num);
     break;
   case CHANY:
-    fprintf(fp, "Rcby[%d][%d]_grid[%d][%d]_pin[%d] ", cb_x, cb_y, xlow, ylow + height, src_rr_node->ptc_num);
+    fprintf(fp, "Rcby[%d][%d]_grid[%d][%d]_pin[%d] ", 
+            cur_cb_info.x, cur_cb_info.y, 
+            xlow, ylow + height, src_rr_node->ptc_num);
     break;
   default: 
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
     exit(1);
   }
   /* Input port*/
-  switch(src_rr_node->type) {
-  case IPIN:
-  /* case SINK: */
-    switch (drive_rr_node->type) {
-    case CHANX: 
-      assert(cb_x == xlow);
-      if (cb_y == (ylow + height)) {
-        side  = TOP;
-        fprint_grid_side_in_with_given_index(fp, src_rr_node->ptc_num, side, cb_x, cb_y);
-      } else if ((cb_y + 1) == (ylow + height)) {
-        side  = BOTTOM;
-        fprint_grid_side_in_with_given_index(fp, src_rr_node->ptc_num, side, cb_x, cb_y);
-      } else {
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid coordinator of cb_y(=%d) and ylow+offset(=%d)!\n", __FILE__, __LINE__, cb_y, ylow+height);
-        exit(1);
-      }
-      break;
-    case CHANY: 
-      assert(cb_y == (ylow + height));
-      if (cb_x == xlow) {
-        side  = RIGHT;
-        fprint_grid_side_in_with_given_index(fp, src_rr_node->ptc_num, side, cb_x, cb_y);
-      } else if ((cb_x + 1) == xlow) {
-        side  = LEFT;
-        fprint_grid_side_in_with_given_index(fp, src_rr_node->ptc_num, side, cb_x, cb_y);
-      } else {
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid coordinator of cb_x(=%d) and xlow(=%d)!\n", __FILE__, __LINE__, cb_x, xlow);
-        exit(1);
-      }
-      break;
-    default: 
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of drive_rr_node!\n", __FILE__, __LINE__);
-      exit(1);
-    }
-    break;
-  /* SINK is a hypothesis node */
-  default: 
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of src_rr_node!\n", __FILE__, __LINE__);
-    exit(1);
-  }
-  /* output porti -- > connect to the output at middle point of a channel */
-  switch(drive_rr_node->type) {
-  case CHANX:
-    fprintf(fp, "chanx[%d][%d]_midout[%d] ", cb_x, cb_y, drive_rr_node->ptc_num);
-    break;
-  case CHANY:
-    fprintf(fp, "chany[%d][%d]_midout[%d] ", cb_x, cb_y, drive_rr_node->ptc_num);
-    break;
-  default: 
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of drive_rr_node!\n", __FILE__, __LINE__);
-    exit(1);
-  }
+  assert(IPIN == src_rr_node->type);
+  /* Search all the sides of a SB, see this drive_rr_node is an INPUT of this SB */
+  get_rr_node_side_and_index_in_cb_info(src_rr_node, cur_cb_info, &side, &index);
+  /* We need to be sure that drive_rr_node is part of the SB */
+  assert((-1 != index)&&(-1 != side));
+  fprint_grid_side_pin_with_given_index(fp, src_rr_node->ptc_num, side, cur_cb_info.x, cur_cb_info.y);
+  
+  /* output port -- > connect to the output at middle point of a channel */
+  fprintf(fp, "%s[%d][%d]_midout[%d] ", 
+          convert_chan_type_to_string(drive_rr_node->type),
+          cur_cb_info.x, cur_cb_info.y, drive_rr_node->ptc_num);
 
   /* End */
   fprintf(fp, "0\n");
@@ -1403,9 +848,7 @@ void fprint_connection_box_short_interc(FILE* fp,
 }
 
 void fprint_connection_box_mux(FILE* fp,
-                               t_rr_type chan_type,
-                               int cb_x,
-                               int cb_y,
+                               t_cb cur_cb_info,
                                t_rr_node* src_rr_node) {
   int mux_size, cur_num_sram, ilevel;
   t_rr_node** drive_rr_nodes = NULL;
@@ -1414,7 +857,7 @@ void fprint_connection_box_mux(FILE* fp,
   int num_mux_sram_bits = 0;
   int* mux_sram_bits = NULL;
   t_rr_type drive_rr_node_type = NUM_RR_TYPES;
-  int xlow, ylow, offset, side;
+  int xlow, ylow, offset, side, index;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -1422,9 +865,10 @@ void fprint_connection_box_mux(FILE* fp,
                __FILE__, __LINE__); 
     exit(1);
   }
+
   /* Check */
-  assert((!(0 > cb_x))&&(!(cb_x > (nx + 1)))); 
-  assert((!(0 > cb_y))&&(!(cb_y > (ny + 1)))); 
+  assert((!(0 > cur_cb_info.x))&&(!(cur_cb_info.x > (nx + 1)))); 
+  assert((!(0 > cur_cb_info.y))&&(!(cur_cb_info.y > (ny + 1)))); 
 
   /* Find drive_rr_nodes*/
   mux_size = src_rr_node->num_drive_rr_nodes;
@@ -1456,63 +900,24 @@ void fprint_connection_box_mux(FILE* fp,
       assert((CHANX == drive_rr_nodes[inode]->type)||(CHANY == drive_rr_nodes[inode]->type));
     }
   } 
+
   /* input port*/
   for (inode = 0; inode < mux_size; inode++) {
-    switch(drive_rr_nodes[inode]->type) {
-    case CHANX:
-      fprintf(fp, "chanx[%d][%d]_midout[%d] ", cb_x, cb_y, drive_rr_nodes[inode]->ptc_num);
-      break;
-    case CHANY:
-      fprintf(fp, "chany[%d][%d]_midout[%d] ", cb_x, cb_y, drive_rr_nodes[inode]->ptc_num);
-      break;
-    default: 
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of drive_rr_node!\n", __FILE__, __LINE__);
-      exit(1);
-    }
+    fprintf(fp, "%s[%d][%d]_midout[%d] ", 
+            convert_chan_type_to_string(drive_rr_nodes[inode]->type),
+            cur_cb_info.x, cur_cb_info.y, drive_rr_nodes[inode]->ptc_num);
   }
   /* output port*/
   xlow = src_rr_node->xlow;
   ylow = src_rr_node->ylow;
   offset = grid[xlow][ylow].offset;
-  switch(src_rr_node->type) {
-  case IPIN:
-  /* case SINK: */
-    switch (drive_rr_node_type) {
-    case CHANX:  
-      assert(cb_x == xlow);
-      if (cb_y == (ylow + offset)) { /* CHANX is on the TOP side of grid */
-        side  = TOP;
-        fprint_grid_side_in_with_given_index(fp, src_rr_node->ptc_num, side, cb_x, cb_y);
-      } else if ((cb_y + 1) == (ylow + offset)) {
-        side  = BOTTOM;
-        fprint_grid_side_in_with_given_index(fp, src_rr_node->ptc_num, side, cb_x, cb_y + 1);
-      } else {
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid coordinator of cb_y(=%d) and ylow+offset(=%d)!\n", __FILE__, __LINE__, cb_y, ylow+offset);
-        exit(1);
-      }
-      break;
-    case CHANY: 
-      assert(cb_y == (ylow + offset));
-      if (cb_x == xlow) {
-        side  = RIGHT;
-        fprint_grid_side_in_with_given_index(fp, src_rr_node->ptc_num, side, cb_x, cb_y);
-      } else if ((cb_x + 1) == xlow) {
-        side  = LEFT;
-        fprint_grid_side_in_with_given_index(fp, src_rr_node->ptc_num, side, cb_x + 1, cb_y);
-      } else {
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid coordinator of cb_x(=%d) and xlow(=%d)!\n", __FILE__, __LINE__, cb_x, xlow);
-        exit(1);
-      }
-      break;
-    default: 
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of drive_rr_node!\n", __FILE__, __LINE__);
-      exit(1);
-    }
-    break;
-  default: 
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of src_rr_node!\n", __FILE__, __LINE__);
-    exit(1);
-  }
+
+  assert(IPIN == src_rr_node->type);
+  /* Search all the sides of a CB, see this drive_rr_node is an INPUT of this SB */
+  get_rr_node_side_and_index_in_cb_info(src_rr_node, cur_cb_info, &side, &index);
+  /* We need to be sure that drive_rr_node is part of the CB */
+  assert((-1 != index)&&(-1 != side));
+  fprint_grid_side_pin_with_given_index(fp, src_rr_node->ptc_num, side, cur_cb_info.x, cur_cb_info.y);
 
   switch (mux_spice_model->design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
@@ -1642,9 +1047,7 @@ void fprint_connection_box_mux(FILE* fp,
 }
 
 void fprint_connection_box_interc(FILE* fp,
-                                  t_rr_type chan_type,
-                                  int cb_x,
-                                  int cb_y,
+                                  t_cb cur_cb_info,
                                   t_rr_node* src_rr_node) {
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -1654,15 +1057,15 @@ void fprint_connection_box_interc(FILE* fp,
   }
 
   /* Check */
-  assert((!(0 > cb_x))&&(!(cb_x > (nx + 1)))); 
-  assert((!(0 > cb_y))&&(!(cb_y > (ny + 1)))); 
+  assert((!(0 > cur_cb_info.x))&&(!(cur_cb_info.x > (nx + 1)))); 
+  assert((!(0 > cur_cb_info.y))&&(!(cur_cb_info.y > (ny + 1)))); 
 
   if (1 == src_rr_node->fan_in) {
     /* Print a direct connection*/
-    fprint_connection_box_short_interc(fp, chan_type, cb_x, cb_y, src_rr_node);
+    fprint_connection_box_short_interc(fp, cur_cb_info, src_rr_node);
   } else if (1 < src_rr_node->fan_in) {
     /* Print the multiplexer, fan_in >= 2 */
-    fprint_connection_box_mux(fp, chan_type, cb_x, cb_y, src_rr_node);
+    fprint_connection_box_mux(fp, cur_cb_info, src_rr_node);
   } /*Nothing should be done else*/ 
    
   return;
@@ -1691,18 +1094,11 @@ void fprint_connection_box_interc(FILE* fp,
  *    |            | Connection  |            |
  *    --------------Box_Y[x][y-1]--------------
  */
-void fprint_routing_connection_box_subckt(FILE* fp,
-                                          t_rr_type chan_type,
-                                          int x,
-                                          int y,
-                                          int chan_width,
+void fprint_routing_connection_box_subckt(FILE* fp, t_cb cur_cb_info,
+                                          int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                           t_ivec*** LL_rr_node_indices) {
-  int itrack, inode, side;
+  int itrack, inode, side, x, y;
   int side_cnt = 0;
-  int num_ipin_rr_node = 0;
-  t_rr_node** ipin_rr_nodes = NULL;
-  int num_temp_rr_node = 0;
-  t_rr_node** temp_rr_nodes = NULL;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -1711,171 +1107,82 @@ void fprint_routing_connection_box_subckt(FILE* fp,
     exit(1);
   }
   /* Check */
-  assert((!(0 > x))&&(!(x > (nx + 1)))); 
-  assert((!(0 > y))&&(!(y > (ny + 1)))); 
+  assert((!(0 > cur_cb_info.x))&&(!(cur_cb_info.x > (nx + 1)))); 
+  assert((!(0 > cur_cb_info.y))&&(!(cur_cb_info.y > (ny + 1)))); 
+
+  x = cur_cb_info.x;
+  y = cur_cb_info.y;
   
   /* Print the definition of subckt*/
   fprintf(fp, ".subckt ");
   /* Identify the type of connection box */
-  switch(chan_type) {
+  switch(cur_cb_info.type) {
   case CHANX:
-    fprintf(fp, "cbx[%d][%d] ", x, y);
+    fprintf(fp, "cbx[%d][%d] ", cur_cb_info.x, cur_cb_info.y);
     break;
   case CHANY:
-    fprintf(fp, "cby[%d][%d] ", x, y);
+    fprintf(fp, "cby[%d][%d] ", cur_cb_info.x, cur_cb_info.y);
     break;
   default: 
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of connection box!\n", 
+               __FILE__, __LINE__);
     exit(1);
   }
- 
   fprintf(fp, "\n");
   fprintf(fp, "+ ");
+
   /* Print the ports of channels*/
   /*connect to the mid point of a track*/
-  for (itrack = 0; itrack < chan_width; itrack++) {
-    switch(chan_type) { 
-    case CHANX:
-      fprintf(fp, "chanx[%d][%d]_midout[%d] ", x, y, itrack);
-      break;
-    case CHANY:
-      fprintf(fp, "chany[%d][%d]_midout[%d] ", x, y, itrack);
-      break;
-    default: 
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
-      exit(1);
-    }
-    fprintf(fp, "\n");
-    fprintf(fp, "+ ");
-  }
-  /* Print the ports of grids*/
+  /* Get the chan_rr_nodes: Only one side of a cb_info has chan_rr_nodes*/
   side_cnt = 0;
-  num_ipin_rr_node = 0;  
-  for (side = 0; side < 4; side++) {
-    switch (side) {
-    case 0: /* TOP */
-      switch(chan_type) { 
-      case CHANX:
-        /* BOTTOM INPUT Pins of Grid[x][y+1] */
-        fprint_grid_side_pins(fp, IPIN, x, y + 1, 2);
-        /* Collect IPIN rr_nodes*/ 
-        temp_rr_nodes = get_grid_side_pin_rr_nodes(&num_temp_rr_node, IPIN, x, y + 1, 2, LL_rr_node_indices);
-        /* Update the ipin_rr_nodes, if ipin_rr_nodes is NULL, realloc will do a pure malloc */
-        ipin_rr_nodes = (t_rr_node**)realloc(ipin_rr_nodes, sizeof(t_rr_node*)*(num_ipin_rr_node + num_temp_rr_node));
-        for (inode = num_ipin_rr_node; inode < (num_ipin_rr_node + num_temp_rr_node); inode++) {
-          ipin_rr_nodes[inode] = temp_rr_nodes[inode - num_ipin_rr_node];
-        } 
-        /* Count in the new members*/
-        num_ipin_rr_node += num_temp_rr_node; 
-        /* Free the temp_ipin_rr_node */
-        my_free(temp_rr_nodes);
-        num_temp_rr_node = 0;
-        side_cnt++;
-        break; 
-      case CHANY:
-        /* Nothing should be done */
-        break;
-      default: 
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
-        exit(1);
-      }
-      break;
-    case 1: /* RIGHT */
-      switch(chan_type) { 
-      case CHANX:
-        /* Nothing should be done */
-        break; 
-      case CHANY:
-        /* LEFT INPUT Pins of Grid[x+1][y] */
-        fprint_grid_side_pins(fp, IPIN, x + 1, y, 3);
-        /* Collect IPIN rr_nodes*/ 
-        temp_rr_nodes = get_grid_side_pin_rr_nodes(&num_temp_rr_node, IPIN, x + 1, y, 3, LL_rr_node_indices);
-        /* Update the ipin_rr_nodes, if ipin_rr_nodes is NULL, realloc will do a pure malloc */
-        ipin_rr_nodes = (t_rr_node**)realloc(ipin_rr_nodes, sizeof(t_rr_node*)*(num_ipin_rr_node + num_temp_rr_node));
-        for (inode = num_ipin_rr_node; inode < (num_ipin_rr_node + num_temp_rr_node); inode++) {
-          ipin_rr_nodes[inode] = temp_rr_nodes[inode - num_ipin_rr_node];
-        } 
-        /* Count in the new members*/
-        num_ipin_rr_node += num_temp_rr_node; 
-        /* Free the temp_ipin_rr_node */
-        my_free(temp_rr_nodes);
-        num_temp_rr_node = 0;
-        side_cnt++;
-        break;
-      default: 
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
-        exit(1);
-      }
-      break;
-    case 2: /* BOTTOM */
-      switch(chan_type) { 
-      case CHANX:
-        /* TOP INPUT Pins of Grid[x][y] */
-        fprint_grid_side_pins(fp, IPIN, x, y, 0);
-        /* Collect IPIN rr_nodes*/ 
-        temp_rr_nodes = get_grid_side_pin_rr_nodes(&num_temp_rr_node, IPIN, x, y, 0, LL_rr_node_indices);
-        /* Update the ipin_rr_nodes, if ipin_rr_nodes is NULL, realloc will do a pure malloc */
-        ipin_rr_nodes = (t_rr_node**)realloc(ipin_rr_nodes, sizeof(t_rr_node*)*(num_ipin_rr_node + num_temp_rr_node));
-        for (inode = num_ipin_rr_node; inode < (num_ipin_rr_node + num_temp_rr_node); inode++) {
-          ipin_rr_nodes[inode] = temp_rr_nodes[inode - num_ipin_rr_node];
-        } 
-        /* Count in the new members*/
-        num_ipin_rr_node += num_temp_rr_node; 
-        /* Free the temp_ipin_rr_node */
-        my_free(temp_rr_nodes);
-        num_temp_rr_node = 0;
-        side_cnt++;
-        break; 
-      case CHANY:
-        /* Nothing should be done */
-        break;
-      default: 
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
-        exit(1);
-      }
-      break;
-    case 3: /* LEFT */
-      switch(chan_type) { 
-      case CHANX:
-        /* Nothing should be done */
-        break; 
-      case CHANY:
-        /* RIGHT INPUT Pins of Grid[x][y] */
-        fprint_grid_side_pins(fp, IPIN, x, y, 1);
-        /* Collect IPIN rr_nodes*/ 
-        temp_rr_nodes = get_grid_side_pin_rr_nodes(&num_temp_rr_node, IPIN, x, y, 1, LL_rr_node_indices);
-        /* Update the ipin_rr_nodes, if ipin_rr_nodes is NULL, realloc will do a pure malloc */
-        ipin_rr_nodes = (t_rr_node**)realloc(ipin_rr_nodes, sizeof(t_rr_node*)*(num_ipin_rr_node + num_temp_rr_node));
-        for (inode = num_ipin_rr_node; inode < (num_ipin_rr_node + num_temp_rr_node); inode++) {
-          ipin_rr_nodes[inode] = temp_rr_nodes[inode - num_ipin_rr_node];
-        } 
-        /* Count in the new members*/
-        num_ipin_rr_node += num_temp_rr_node; 
-        /* Free the temp_ipin_rr_node */
-        my_free(temp_rr_nodes);
-        num_temp_rr_node = 0;
-        side_cnt++;
-        break;
-      default: 
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
-        exit(1);
-      }
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid side index!\n", __FILE__, __LINE__);
-      exit(1);
+  for (side = 0; side < cur_cb_info.num_sides; side++) {
+    /* Bypass side with zero channel width */
+    if (0 == cur_cb_info.chan_width[side]) {
+      continue;
     }
-    fprintf(fp, "\n");
-    fprintf(fp, "+ ");
+    assert (0 < cur_cb_info.chan_width[side]);
+    side_cnt++;
+    for (itrack = 0; itrack < cur_cb_info.chan_width[side]; itrack++) {
+      fprintf(fp, "+ ");
+      fprintf(fp, "%s[%d][%d]_midout[%d] ", 
+              convert_chan_type_to_string(cur_cb_info.type),
+              cur_cb_info.x, cur_cb_info.y, itrack);
+      fprintf(fp, "\n");
+    }
   }
-  /* Check */
+  /*check side_cnt */
+  assert(1 == side_cnt);
+
+  side_cnt = 0;
+  /* Print the ports of grids*/
+  /* only check ipin_rr_nodes of cur_cb_info */
+  for (side = 0; side < cur_cb_info.num_sides; side++) {
+    /* Bypass side with zero IPINs*/
+    if (0 == cur_cb_info.num_ipin_rr_nodes[side]) {
+      continue;
+    }
+    side_cnt++;
+    assert(0 < cur_cb_info.num_ipin_rr_nodes[side]);
+    assert(NULL == cur_cb_info.ipin_rr_node[side]);
+    for (inode = 0; inode < cur_cb_info.num_ipin_rr_nodes[side]; inode++) {
+      fprintf(fp, "+ ");
+      /* Print each INPUT Pins of a grid */
+      fprint_grid_side_pin_with_given_index(fp, cur_cb_info.ipin_rr_node[side][inode]->ptc_num,
+                                            cur_cb_info.ipin_rr_node_grid_side[side][inode],
+                                            cur_cb_info.ipin_rr_node[side][inode]->xlow,
+                                            cur_cb_info.ipin_rr_node[side][inode]->ylow); 
+      fprintf(fp, "\n");
+    }
+  }
+  /* Make sure only 2 sides of IPINs are printed */
   assert(2 == side_cnt);
+
   /* subckt definition ends with svdd and sgnd*/
   fprintf(fp, "svdd sgnd\n");
 
   /* Specify the head of scan-chain */
   if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
-    switch(chan_type) {
+    switch(cur_cb_info.type) {
     case CHANX:
       fprintf(fp, "***** Head of scan-chain *****\n");
       fprintf(fp, "Rcbx[%d][%d]_sc_head cbx[%d][%d]_sc_head %s[%d]->in 0\n",
@@ -1891,14 +1198,28 @@ void fprint_routing_connection_box_subckt(FILE* fp,
     }
   }
 
-  /* Print multiplexers or direct interconnect*/
-  for (inode = 0; inode < num_ipin_rr_node; inode++) {
-    fprint_connection_box_interc(fp, ipin_rr_nodes[inode]->type, x, y, ipin_rr_nodes[inode]);
-  } 
+  /* Print multiplexers or direct interconnect,
+   * According to the rr_node lists in cbx_info or cby_info 
+   */
+  side_cnt = 0;
+  for (side = 0; side < cur_cb_info.num_sides; side++) {
+    /* Bypass side with zero IPINs*/
+    if (0 == cur_cb_info.num_ipin_rr_nodes[side]) {
+      continue;
+    }
+    side_cnt++;
+    assert(0 < cur_cb_info.num_ipin_rr_nodes[side]);
+    assert(NULL == cur_cb_info.ipin_rr_node[side]);
+    for (inode = 0; inode < cur_cb_info.num_ipin_rr_nodes[side]; inode++) { 
+      fprint_connection_box_interc(fp, cur_cb_info, cur_cb_info.ipin_rr_node[side][inode]);
+    }
+  }
+  /* Make sure only 2 sides of IPINs are printed */
+  assert(2 == side_cnt);
 
   /* Specify the tail of scan-chain */
   if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
-    switch(chan_type) {
+    switch(cur_cb_info.type) {
     case CHANX:
       fprintf(fp, "***** Tail of scan-chain *****\n");
       fprintf(fp, "Rcbx[%d][%d]_sc_tail cbx[%d][%d]_sc_tail %s[%d]->in 0\n",
@@ -1916,9 +1237,6 @@ void fprint_routing_connection_box_subckt(FILE* fp,
 
   fprintf(fp, ".eom\n");
 
-  /* Free */
-  my_free(ipin_rr_nodes);
- 
   return;
 }
 
@@ -1928,11 +1246,11 @@ void fprint_routing_connection_box_subckt(FILE* fp,
 void generate_spice_routing_resources(char* subckt_dir,
                                       t_arch arch,
                                       t_det_routing_arch* routing_arch,
+                                      int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                       t_ivec*** LL_rr_node_indices) {
   FILE* fp = NULL;
   char* sp_name = my_strcat(subckt_dir, routing_spice_file_name);
   int ix, iy; 
-  int chan_width;
  
   assert(UNI_DIRECTIONAL == routing_arch->directionality);
 
@@ -1966,16 +1284,18 @@ void generate_spice_routing_resources(char* subckt_dir,
   vpr_printf(TIO_MESSAGE_INFO, "Writing X-direction Channels...\n");
   for (iy = 0; iy < (ny + 1); iy++) {
     for (ix = 1; ix < (nx + 1); ix++) {
-      chan_width = chan_width_x[iy];
-      fprint_routing_chan_subckt(fp, ix, iy, CHANX, chan_width, LL_rr_node_indices, arch.num_segments, arch.Segments);
+      fprint_routing_chan_subckt(fp, ix, iy, CHANX, 
+                                 LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices, 
+                                 arch.num_segments, arch.Segments);
     }
   }
   /* Y - channels [1...ny][0..nx]*/
   vpr_printf(TIO_MESSAGE_INFO, "Writing Y-direction Channels...\n");
   for (ix = 0; ix < (nx + 1); ix++) {
     for (iy = 1; iy < (ny + 1); iy++) {
-      chan_width = chan_width_y[ix];
-      fprint_routing_chan_subckt(fp, ix, iy, CHANY, chan_width, LL_rr_node_indices, arch.num_segments, arch.Segments);
+      fprint_routing_chan_subckt(fp, ix, iy, CHANY, 
+                                 LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices, 
+                                 arch.num_segments, arch.Segments);
     }
   }
 
@@ -1984,7 +1304,8 @@ void generate_spice_routing_resources(char* subckt_dir,
   for (ix = 0; ix < (nx + 1); ix++) {
     for (iy = 0; iy < (ny + 1); iy++) {
       update_spice_models_routing_index_low(ix, iy, SOURCE, arch.spice->num_spice_model, arch.spice->spice_models);
-      fprint_routing_switch_box_subckt(fp, ix, iy, LL_rr_node_indices);
+      fprint_routing_switch_box_subckt(fp, sb_info[ix][iy],
+                                       LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices); 
       update_spice_models_routing_index_high(ix, iy, SOURCE, arch.spice->num_spice_model, arch.spice->spice_models);
     }
   }
@@ -1994,18 +1315,18 @@ void generate_spice_routing_resources(char* subckt_dir,
   /* X - channels [1...nx][0..ny]*/
   for (iy = 0; iy < (ny + 1); iy++) {
     for (ix = 1; ix < (nx + 1); ix++) {
-      chan_width = chan_width_x[iy];
       update_spice_models_routing_index_low(ix, iy, CHANX, arch.spice->num_spice_model, arch.spice->spice_models);
-      fprint_routing_connection_box_subckt(fp, CHANX, ix, iy, chan_width, LL_rr_node_indices);
+      fprint_routing_connection_box_subckt(fp, cbx_info[ix][iy],
+                                           LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices); 
       update_spice_models_routing_index_high(ix, iy, CHANX, arch.spice->num_spice_model, arch.spice->spice_models);
     }
   }
   /* Y - channels [1...ny][0..nx]*/
   for (ix = 0; ix < (nx + 1); ix++) {
     for (iy = 1; iy < (ny + 1); iy++) {
-      chan_width = chan_width_y[ix];
       update_spice_models_routing_index_low(ix, iy, CHANY, arch.spice->num_spice_model, arch.spice->spice_models);
-      fprint_routing_connection_box_subckt(fp, CHANY, ix, iy, chan_width, LL_rr_node_indices);
+      fprint_routing_connection_box_subckt(fp, cby_info[ix][iy],
+                                           LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices); 
       update_spice_models_routing_index_high(ix, iy, CHANY, arch.spice->num_spice_model, arch.spice->spice_models);
     }
   }

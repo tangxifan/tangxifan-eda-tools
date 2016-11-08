@@ -91,6 +91,7 @@ enum e_OptionBaseToken {
     /* Xifan TANG: Verilog Generation */
     OT_FPGA_VERILOG_SYN, /* Xifan TANG: Synthesizable Verilog Dump */
     OT_FPGA_VERILOG_SYN_DIR, /* Xifan TANG: Synthesizable Verilog Dump */
+    OT_FPGA_VERILOG_SYN_TB_SERIAL_CONFIG_MODE, /* Xifan TANG: Synthesizable Verilog Dump */
     /* mrFPGA: Xifan TANG */
     OT_SHOW_SRAM,
     OT_SHOW_PASS_TRANS,

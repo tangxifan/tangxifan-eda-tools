@@ -96,6 +96,9 @@ char** my_strtok(char* str,
 
 char* convert_side_index_to_string(int side);
 
+char* convert_chan_type_to_string(t_rr_type chan_type);
+
+char* convert_chan_rr_node_direction_to_string(enum PORTS chan_rr_node_direction);
 
 void init_spice_net_info(t_spice_net_info* spice_net_info);
 

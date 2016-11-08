@@ -653,7 +653,8 @@ void generate_spice_subckts(char* subckt_dir,
 
   /* 7. Generate Routing architecture*/
   vpr_printf(TIO_MESSAGE_INFO, "Writing Routing Resources....\n");
-  generate_spice_routing_resources(subckt_dir, (*arch), routing_arch, rr_node_indices);
+  generate_spice_routing_resources(subckt_dir, (*arch), routing_arch, 
+                                   num_rr_nodes, rr_node, rr_node_indices);
 
   return;
 }
