@@ -483,7 +483,8 @@ void verilog_determine_src_chan_coordinate_switch_box(t_rr_node* src_rr_node,
 void dump_verilog_switch_box_chan_port(FILE* fp,
                                        t_sb cur_sb_info, 
                                        int chan_side,
-                                       t_rr_node* cur_rr_node) {
+                                       t_rr_node* cur_rr_node,
+                                       enum PORTS cur_rr_node_direction) {
   int index = -1;
   t_rr_type chan_rr_node_type;
   int chan_rr_node_x, chan_rr_node_y;
@@ -496,7 +497,7 @@ void dump_verilog_switch_box_chan_port(FILE* fp,
   }
 
   /* Get the index in sb_info of cur_rr_node */
-  index = get_rr_node_index_in_sb_info(cur_rr_node, cur_sb_info, chan_side);
+  index = get_rr_node_index_in_sb_info(cur_rr_node, cur_sb_info, chan_side, cur_rr_node_direction);
   /* Make sure this node is included in this sb_info */
   assert((-1 != index)&&(-1 != chan_side));
 
@@ -529,8 +530,6 @@ void dump_verilog_switch_box_short_interc(FILE* fp,
                                           t_rr_node* drive_rr_node) {
   int side, index; 
   int grid_x, grid_y, height;
-  t_type_ptr type = NULL;
-  t_rr_type src_chan_type;
   char* chan_name = NULL;
   char* des_chan_port_name = NULL;
 
@@ -549,8 +548,7 @@ void dump_verilog_switch_box_short_interc(FILE* fp,
   chan_name = convert_chan_type_to_string(cur_rr_node->type);
 
   /* Get the index in sb_info of cur_rr_node */
-  index = get_rr_node_index_in_sb_info(cur_rr_node, cur_sb_info, chan_side);
-  assert(OUT_PORT == cur_sb_info.chan_rr_node_direction[chan_side][index]);
+  index = get_rr_node_index_in_sb_info(cur_rr_node, cur_sb_info, chan_side, OUT_PORT);
   des_chan_port_name = "out"; 
   
   fprintf(fp, "//----- Short connection %s[%d][%d]_%s[%d] -----\n", 
@@ -569,7 +567,7 @@ void dump_verilog_switch_box_short_interc(FILE* fp,
   case OPIN:
     /* Indicate a CLB Outpin*/
     /* Search all the sides of a SB, see this drive_rr_node is an INPUT of this SB */
-    get_rr_node_side_and_index_in_sb_info(drive_rr_node, cur_sb_info, &side, &index);
+    get_rr_node_side_and_index_in_sb_info(drive_rr_node, cur_sb_info, IN_PORT, &side, &index);
     /* We need to be sure that drive_rr_node is part of the SB */
     assert((-1 != index)&&(-1 != side));
     /* Find grid_x and grid_y */
@@ -585,12 +583,11 @@ void dump_verilog_switch_box_short_interc(FILE* fp,
     break;
   case CHANX:
   case CHANY:
-    get_rr_node_side_and_index_in_sb_info(drive_rr_node, cur_sb_info, &side, &index);
+    /* Should an input */
+    get_rr_node_side_and_index_in_sb_info(drive_rr_node, cur_sb_info, IN_PORT, &side, &index);
     /* We need to be sure that drive_rr_node is part of the SB */
     assert((-1 != index)&&(-1 != side));
-    /* Should be an input ! */
-    assert(IN_PORT == cur_sb_info.chan_rr_node_direction[side][index]);
-    dump_verilog_switch_box_chan_port(fp, cur_sb_info, side, drive_rr_node);
+    dump_verilog_switch_box_chan_port(fp, cur_sb_info, side, drive_rr_node, IN_PORT);
     break;
   /* SOURCE is invalid as well */
   default: /* IPIN, SINK are invalid*/
@@ -601,7 +598,7 @@ void dump_verilog_switch_box_short_interc(FILE* fp,
 
   /* Output port */
   fprintf(fp, " = "); 
-  dump_verilog_switch_box_chan_port(fp, cur_sb_info, chan_side, cur_rr_node);
+  dump_verilog_switch_box_chan_port(fp, cur_sb_info, chan_side, cur_rr_node, OUT_PORT);
 
   /* END */
   fprintf(fp, ";\n");
@@ -656,9 +653,11 @@ void dump_verilog_switch_box_mux(FILE* fp,
     case OPIN:
       /* Indicate a CLB Outpin*/
       /* Search all the sides of a SB, see this drive_rr_node is an INPUT of this SB */
-      get_rr_node_side_and_index_in_sb_info(drive_rr_nodes[inode], cur_sb_info, &side, &index);
+      get_rr_node_side_and_index_in_sb_info(drive_rr_nodes[inode], cur_sb_info, IN_PORT, &side, &index);
       /* We need to be sure that drive_rr_node is part of the SB */
+      if (!((-1 != index)&&(-1 != side))) {
       assert((-1 != index)&&(-1 != side));
+      }
       /* Find grid_x and grid_y */
       grid_x = drive_rr_nodes[inode]->xlow; 
       grid_y = drive_rr_nodes[inode]->ylow; /*Plus the offset in function fprint_grid_side_pin_with_given_index */
@@ -674,14 +673,13 @@ void dump_verilog_switch_box_mux(FILE* fp,
       break;
     case CHANX:
     case CHANY:
-      get_rr_node_side_and_index_in_sb_info(drive_rr_nodes[inode], cur_sb_info, &side, &index);
+      /* Should be an input ! */
+      get_rr_node_side_and_index_in_sb_info(drive_rr_nodes[inode], cur_sb_info, IN_PORT, &side, &index);
       /* We need to be sure that drive_rr_node is part of the SB */
       assert((-1 != index)&&(-1 != side));
-      /* Should be an input ! */
-      assert(IN_PORT == cur_sb_info.chan_rr_node_direction[side][index]);
       fprintf(fp, "assign %s_size%d_%d_inbus[%d] = ",
               verilog_model->prefix, mux_size, verilog_model->cnt, input_cnt);
-      dump_verilog_switch_box_chan_port(fp, cur_sb_info, side, drive_rr_nodes[inode]);
+      dump_verilog_switch_box_chan_port(fp, cur_sb_info, side, drive_rr_nodes[inode], IN_PORT);
       fprintf(fp, ";\n");
       input_cnt++;
       break;
@@ -702,7 +700,7 @@ void dump_verilog_switch_box_mux(FILE* fp,
           verilog_model->prefix, mux_size, verilog_model->cnt);
 
   /* Output port */
-  dump_verilog_switch_box_chan_port(fp, cur_sb_info, chan_side, cur_rr_node);
+  dump_verilog_switch_box_chan_port(fp, cur_sb_info, chan_side, cur_rr_node, OUT_PORT);
   /* Add a comma because dump_verilog_switch_box_chan_port does not add so  */
   fprintf(fp, ", ");
 
@@ -1019,7 +1017,7 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp, t_sb cur_sb_info,
     }
     /* Dump OPINs of adjacent CLBs */
     for (inode = 0; inode < cur_sb_info.num_opin_rr_nodes[side]; inode++) {
-      dump_verilog_grid_side_pin_with_given_index(fp, IPIN, /* This is an input of a SB */
+      dump_verilog_grid_side_pin_with_given_index(fp, OPIN, /* This is an input of a SB */
                                                   cur_sb_info.opin_rr_node[side][inode]->ptc_num,
                                                   cur_sb_info.opin_rr_node_grid_side[side][inode],
                                                   cur_sb_info.opin_rr_node[side][inode]->xlow,
@@ -1068,7 +1066,8 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp, t_sb cur_sb_info,
     fprintf(fp, "***** %s side Multiplexers *****\n", 
             convert_side_index_to_string(side));
     for (itrack = 0; itrack < cur_sb_info.chan_width[side]; itrack++) {
-      assert(CHANY == cur_sb_info.chan_rr_node[side][itrack]->type);
+      assert((CHANX == cur_sb_info.chan_rr_node[side][itrack]->type)
+           ||(CHANY == cur_sb_info.chan_rr_node[side][itrack]->type));
       /* We care INC_DIRECTION tracks at this side*/
       if (OUT_PORT == cur_sb_info.chan_rr_node_direction[side][itrack]) {
         dump_verilog_switch_box_interc(fp, cur_sb_info, side, cur_sb_info.chan_rr_node[side][itrack]);
@@ -1192,12 +1191,13 @@ void dump_verilog_connection_box_short_interc(FILE* fp,
   /* Input port*/
   assert(IPIN == src_rr_node->type);
   /* Search all the sides of a SB, see this drive_rr_node is an INPUT of this SB */
-  get_rr_node_side_and_index_in_cb_info(src_rr_node, cur_cb_info, &side, &index);
+  get_rr_node_side_and_index_in_cb_info(src_rr_node, cur_cb_info, OUT_PORT, &side, &index);
   /* We need to be sure that drive_rr_node is part of the SB */
   assert((-1 != index)&&(-1 != side));
   dump_verilog_grid_side_pin_with_given_index(fp, OPIN, /* This is an output of a Connection Box */
-                                              src_rr_node->ptc_num, side, 
-                                              cur_cb_info.x, cur_cb_info.y, 
+                                              cur_cb_info.ipin_rr_node[side][index]->ptc_num, 
+                                              cur_cb_info.ipin_rr_node_grid_side[side][index], 
+                                              xlow, ylow, /* Coordinator of Grid */ 
                                               FALSE); /* Do not specify the direction of this pin */
 
   /* End */
@@ -1286,12 +1286,13 @@ void dump_verilog_connection_box_mux(FILE* fp,
 
   assert(IPIN == src_rr_node->type);
   /* Search all the sides of a CB, see this drive_rr_node is an INPUT of this SB */
-  get_rr_node_side_and_index_in_cb_info(src_rr_node, cur_cb_info, &side, &index);
+  get_rr_node_side_and_index_in_cb_info(src_rr_node, cur_cb_info, OUT_PORT, &side, &index);
   /* We need to be sure that drive_rr_node is part of the CB */
   assert((-1 != index)&&(-1 != side));
   dump_verilog_grid_side_pin_with_given_index(fp, OPIN, /* This is an output of a connection box */
-                                              src_rr_node->ptc_num, side, 
-                                              cur_cb_info.x, cur_cb_info.y, 
+                                              cur_cb_info.ipin_rr_node[side][index]->ptc_num, 
+                                              cur_cb_info.ipin_rr_node_grid_side[side][index], 
+                                              xlow, ylow, /* Coordinator of Grid */ 
                                               FALSE); /* Do not specify the direction of port */
   fprintf(fp, ", "); 
 
@@ -1509,7 +1510,7 @@ void dump_verilog_routing_connection_box_subckt(FILE* fp, t_cb cur_cb_info,
     }
     side_cnt++;
     assert(0 < cur_cb_info.num_ipin_rr_nodes[side]);
-    assert(NULL == cur_cb_info.ipin_rr_node[side]);
+    assert(NULL != cur_cb_info.ipin_rr_node[side]);
     for (inode = 0; inode < cur_cb_info.num_ipin_rr_nodes[side]; inode++) {
       /* Print each INPUT Pins of a grid */
       dump_verilog_grid_side_pin_with_given_index(fp, OPIN, /* This is an output of a connection box */
@@ -1620,7 +1621,7 @@ void dump_verilog_routing_connection_box_subckt(FILE* fp, t_cb cur_cb_info,
     }
     side_cnt++;
     assert(0 < cur_cb_info.num_ipin_rr_nodes[side]);
-    assert(NULL == cur_cb_info.ipin_rr_node[side]);
+    assert(NULL != cur_cb_info.ipin_rr_node[side]);
     for (inode = 0; inode < cur_cb_info.num_ipin_rr_nodes[side]; inode++) { 
       dump_verilog_connection_box_interc(fp, cur_cb_info, cur_cb_info.ipin_rr_node[side][inode]);
     }

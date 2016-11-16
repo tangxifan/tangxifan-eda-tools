@@ -45,6 +45,10 @@ static void SetupSpiceOpts(t_options Options,
 static void SetupSynVerilogOpts(t_options Options, 
                                 t_syn_verilog_opts* syn_verilog_opts,
                                 t_arch* arch);
+/* Xifan TANG: FPGA-SPICE Tool suites Options Setup */
+static void SetupFpgaSpiceOpts(t_options Options, 
+                               t_fpga_spice_opts* fpga_spice_opts,
+                               t_arch* arch);
 /* end */
 
 /* mrFPGA */
@@ -73,7 +77,7 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 		t_power_opts * PowerOpts,
         /*Xifan TANG: Switch Segment Pattern Support*/
         t_swseg_pattern_inf** swseg_patterns,
-        t_spice_opts* SpiceOpts, t_syn_verilog_opts* SynVerilogOpts) {
+        t_fpga_spice_opts* fpga_spice_opts) {
 	int i, j, len;
 
 	len = strlen(Options->CircuitName) + 6; /* circuit_name.blif/0*/
@@ -190,11 +194,9 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 	SetupAnnealSched(*Options, AnnealSched);
 	SetupRouterOpts(*Options, TimingEnabled, RouterOpts);
 	SetupPowerOpts(*Options, PowerOpts, Arch);
-    /* Xifan TANG: SPICE Support*/
-    SetupSpiceOpts(*Options, SpiceOpts, Arch);   
-    /* END */
-    /* Xifan TANG: Synthesizable Verilog Dumping*/
-    SetupSynVerilogOpts(*Options, SynVerilogOpts, Arch);   
+  
+    /* Xifan TANG: FPGA-SPICE Tool suites Options Setup */
+    SetupFpgaSpiceOpts(*Options, fpga_spice_opts, Arch);
     /* END */
 
 	if (readArchFile == TRUE) {
@@ -1056,6 +1058,28 @@ static void SetupSynVerilogOpts(t_options Options,
   if (FALSE == arch->read_xml_spice) {
     arch->read_xml_spice = syn_verilog_opts->dump_syn_verilog;
     arch->spice = (t_spice*)my_malloc(sizeof(t_spice));
+  }
+
+  return;
+}
+
+static void SetupFpgaSpiceOpts(t_options Options, 
+                               t_fpga_spice_opts* fpga_spice_opts,
+                               t_arch* Arch) {
+  /* Xifan TANG: SPICE Support*/
+  SetupSpiceOpts(Options, &(fpga_spice_opts->SpiceOpts), Arch);   
+
+  /* Xifan TANG: Synthesizable Verilog Dumping*/
+  SetupSynVerilogOpts(Options, &(fpga_spice_opts->SynVerilogOpts), Arch);   
+
+  /* Decide if we need to read activity file */
+  fpga_spice_opts->read_act_file = FALSE;
+  /* Decide if we need to do FPGA-SPICE */
+  fpga_spice_opts->do_fpga_spice = FALSE;
+  if (( TRUE == fpga_spice_opts->SpiceOpts.do_spice)
+     ||(TRUE == fpga_spice_opts->SynVerilogOpts.dump_syn_verilog)) {
+    fpga_spice_opts->read_act_file = TRUE;
+    fpga_spice_opts->do_fpga_spice = TRUE;
   }
 
   return;

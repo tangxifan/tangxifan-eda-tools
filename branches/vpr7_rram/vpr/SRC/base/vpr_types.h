@@ -1174,6 +1174,14 @@ struct s_syn_verilog_opts {
   boolean tb_serial_config_mode;
 };
 
+typedef struct s_fpga_spice_opts t_fpga_spice_opts;
+struct s_fpga_spice_opts {
+  boolean do_fpga_spice;
+  boolean read_act_file;
+  t_spice_opts SpiceOpts; /* Xifan TANG: SPICE Support*/
+  t_syn_verilog_opts SynVerilogOpts; /* Xifan TANG: Synthesizable verilog dumping*/
+};
+
 /* Power estimation options */
 struct s_power_opts {
 	boolean do_power; /* Perform power estimation? */
@@ -1204,8 +1212,7 @@ typedef struct s_vpr_setup {
 	boolean ShowGraphics; /* option to show graphics */
 	int GraphPause; /* user interactiveness graphics option */
 	t_power_opts PowerOpts;
-    t_spice_opts SpiceOpts; /* Xifan TANG: SPICE Support*/
-    t_syn_verilog_opts SynVerilogOpts; /* Xifan TANG: Synthesizable verilog dumping*/
+    t_fpga_spice_opts FPGA_SPICE_Opts; /* Xifan TANG: FPGA-SPICE support */
 } t_vpr_setup;
 
 #endif

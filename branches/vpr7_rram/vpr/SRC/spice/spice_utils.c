@@ -83,7 +83,7 @@ int try_access_file(char* file_path) {
    */
   int ret = access(file_path,F_OK); 
   if (0 == ret)  {
-    vpr_printf(TIO_MESSAGE_WARNING,"File(%s) exists! Will overwrite it!\n",file_path);
+    vpr_printf(TIO_MESSAGE_WARNING,"Try access File(%s): exists!\n",file_path);
   }
   return ret;
 }

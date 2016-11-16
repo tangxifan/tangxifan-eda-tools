@@ -240,7 +240,8 @@ void fprint_grid_side_pins(FILE* fp,
 void fprint_switch_box_chan_port(FILE* fp,
                                  t_sb cur_sb_info, 
                                  int chan_side,
-                                 t_rr_node* cur_rr_node) {
+                                 t_rr_node* cur_rr_node,
+                                 enum PORTS cur_rr_node_direction) {
   int index = -1;
   t_rr_type chan_rr_node_type;
   int chan_rr_node_x, chan_rr_node_y;
@@ -253,7 +254,7 @@ void fprint_switch_box_chan_port(FILE* fp,
   }
 
   /* Get the index in sb_info of cur_rr_node */
-  index = get_rr_node_index_in_sb_info(cur_rr_node, cur_sb_info, chan_side);
+  index = get_rr_node_index_in_sb_info(cur_rr_node, cur_sb_info, chan_side, cur_rr_node_direction);
   /* Make sure this node is included in this sb_info */
   assert((-1 != index)&&(-1 != chan_side));
 
@@ -304,8 +305,7 @@ void fprint_switch_box_short_interc(FILE* fp,
   chan_name = convert_chan_type_to_string(cur_rr_node->type);
   
   /* Get the index in sb_info of cur_rr_node */
-  index = get_rr_node_index_in_sb_info(cur_rr_node, cur_sb_info, chan_side);
-  assert(OUT_PORT == cur_sb_info.chan_rr_node_direction[chan_side][index]);
+  index = get_rr_node_index_in_sb_info(cur_rr_node, cur_sb_info, chan_side, OUT_PORT);
   des_chan_port_name = "out"; 
   
   fprintf(fp, "R%s[%d][%d]_%s[%d] ", 
@@ -323,7 +323,7 @@ void fprint_switch_box_short_interc(FILE* fp,
   case OPIN:
     /* Indicate a CLB Outpin*/
     /* Search all the sides of a SB, see this drive_rr_node is an INPUT of this SB */
-    get_rr_node_side_and_index_in_sb_info(drive_rr_node, cur_sb_info, &side, &index);
+    get_rr_node_side_and_index_in_sb_info(drive_rr_node, cur_sb_info, IN_PORT, &side, &index);
     /* We need to be sure that drive_rr_node is part of the SB */
     assert((-1 != index)&&(-1 != side));
     /* Find grid_x and grid_y */
@@ -337,12 +337,11 @@ void fprint_switch_box_short_interc(FILE* fp,
     break;
   case CHANX:
   case CHANY:
-    get_rr_node_side_and_index_in_sb_info(drive_rr_node, cur_sb_info, &side, &index);
+    /* Should be an input */
+    get_rr_node_side_and_index_in_sb_info(drive_rr_node, cur_sb_info, IN_PORT, &side, &index);
     /* We need to be sure that drive_rr_node is part of the SB */
     assert((-1 != index)&&(-1 != side));
-    /* Should be an input ! */
-    assert(IN_PORT == cur_sb_info.chan_rr_node_direction[side][index]);
-    fprint_switch_box_chan_port(fp, cur_sb_info, side, drive_rr_node);
+    fprint_switch_box_chan_port(fp, cur_sb_info, side, drive_rr_node, IN_PORT);
     break;
   default: /* IPIN, SINK are invalid*/
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid rr_node type! Should be [OPIN|CHANX|CHANY].\n",
@@ -352,7 +351,7 @@ void fprint_switch_box_short_interc(FILE* fp,
 
   /* Output port */
   /* fprint_switch_box_chan_port(fp, switch_box_x, switch_box_y, chan_side, cur_rr_node); */
-  fprint_switch_box_chan_port(fp, cur_sb_info, chan_side, cur_rr_node);
+  fprint_switch_box_chan_port(fp, cur_sb_info, chan_side, cur_rr_node, OUT_PORT);
 
   /* END */
   fprintf(fp, "0\n");
@@ -404,7 +403,7 @@ void fprint_switch_box_mux(FILE* fp,
     case OPIN:
       /* Indicate a CLB Outpin*/
       /* Search all the sides of a SB, see this drive_rr_node is an INPUT of this SB */
-      get_rr_node_side_and_index_in_sb_info(drive_rr_nodes[inode], cur_sb_info, &side, &index);
+      get_rr_node_side_and_index_in_sb_info(drive_rr_nodes[inode], cur_sb_info, IN_PORT, &side, &index);
       /* We need to be sure that drive_rr_node is part of the SB */
       assert((-1 != index)&&(-1 != side));
       /* Find grid_x and grid_y */
@@ -418,12 +417,11 @@ void fprint_switch_box_mux(FILE* fp,
       break;
     case CHANX:
     case CHANY:
-      get_rr_node_side_and_index_in_sb_info(drive_rr_nodes[inode], cur_sb_info, &side, &index);
+      /* Should be an input ! */
+      get_rr_node_side_and_index_in_sb_info(drive_rr_nodes[inode], cur_sb_info, IN_PORT, &side, &index);
       /* We need to be sure that drive_rr_node is part of the SB */
       assert((-1 != index)&&(-1 != side));
-      /* Should be an input ! */
-      assert(IN_PORT == cur_sb_info.chan_rr_node_direction[side][index]);
-      fprint_switch_box_chan_port(fp, cur_sb_info, side, drive_rr_nodes[inode]);
+      fprint_switch_box_chan_port(fp, cur_sb_info, side, drive_rr_nodes[inode], IN_PORT);
       break;
     default: /* IPIN, SINK are invalid*/
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid rr_node type! Should be [OPIN|CHANX|CHANY].\n",
@@ -433,7 +431,7 @@ void fprint_switch_box_mux(FILE* fp,
   }
 
   /* Output port */
-  fprint_switch_box_chan_port(fp, cur_sb_info, chan_side, cur_rr_node);
+  fprint_switch_box_chan_port(fp, cur_sb_info, chan_side, cur_rr_node, OUT_PORT);
 
   /* Configuration bits for this MUX*/
   path_id = -1;
@@ -830,10 +828,12 @@ void fprint_connection_box_short_interc(FILE* fp,
   /* Input port*/
   assert(IPIN == src_rr_node->type);
   /* Search all the sides of a SB, see this drive_rr_node is an INPUT of this SB */
-  get_rr_node_side_and_index_in_cb_info(src_rr_node, cur_cb_info, &side, &index);
+  get_rr_node_side_and_index_in_cb_info(src_rr_node, cur_cb_info, OUT_PORT, &side, &index);
   /* We need to be sure that drive_rr_node is part of the SB */
   assert((-1 != index)&&(-1 != side));
-  fprint_grid_side_pin_with_given_index(fp, src_rr_node->ptc_num, side, cur_cb_info.x, cur_cb_info.y);
+  fprint_grid_side_pin_with_given_index(fp, cur_cb_info.ipin_rr_node[side][index]->ptc_num, 
+                                        cur_cb_info.ipin_rr_node_grid_side[side][index], 
+                                        xlow, ylow);
   
   /* output port -- > connect to the output at middle point of a channel */
   fprintf(fp, "%s[%d][%d]_midout[%d] ", 
@@ -914,10 +914,12 @@ void fprint_connection_box_mux(FILE* fp,
 
   assert(IPIN == src_rr_node->type);
   /* Search all the sides of a CB, see this drive_rr_node is an INPUT of this SB */
-  get_rr_node_side_and_index_in_cb_info(src_rr_node, cur_cb_info, &side, &index);
+  get_rr_node_side_and_index_in_cb_info(src_rr_node, cur_cb_info, OUT_PORT, &side, &index);
   /* We need to be sure that drive_rr_node is part of the CB */
   assert((-1 != index)&&(-1 != side));
-  fprint_grid_side_pin_with_given_index(fp, src_rr_node->ptc_num, side, cur_cb_info.x, cur_cb_info.y);
+  fprint_grid_side_pin_with_given_index(fp, cur_cb_info.ipin_rr_node[side][index]->ptc_num, 
+                                        cur_cb_info.ipin_rr_node_grid_side[side][index], 
+                                        xlow, ylow);
 
   switch (mux_spice_model->design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
@@ -1163,7 +1165,7 @@ void fprint_routing_connection_box_subckt(FILE* fp, t_cb cur_cb_info,
     }
     side_cnt++;
     assert(0 < cur_cb_info.num_ipin_rr_nodes[side]);
-    assert(NULL == cur_cb_info.ipin_rr_node[side]);
+    assert(NULL != cur_cb_info.ipin_rr_node[side]);
     for (inode = 0; inode < cur_cb_info.num_ipin_rr_nodes[side]; inode++) {
       fprintf(fp, "+ ");
       /* Print each INPUT Pins of a grid */
@@ -1209,7 +1211,7 @@ void fprint_routing_connection_box_subckt(FILE* fp, t_cb cur_cb_info,
     }
     side_cnt++;
     assert(0 < cur_cb_info.num_ipin_rr_nodes[side]);
-    assert(NULL == cur_cb_info.ipin_rr_node[side]);
+    assert(NULL != cur_cb_info.ipin_rr_node[side]);
     for (inode = 0; inode < cur_cb_info.num_ipin_rr_nodes[side]; inode++) { 
       fprint_connection_box_interc(fp, cur_cb_info, cur_cb_info.ipin_rr_node[side][inode]);
     }

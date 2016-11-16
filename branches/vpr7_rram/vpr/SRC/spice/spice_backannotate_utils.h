@@ -19,10 +19,11 @@ void free_clb_nets_spice_net_info();
 
 int get_rr_node_index_in_sb_info(t_rr_node* cur_rr_node,
                                  t_sb cur_sb_info, 
-                                 int chan_side);
+                                 int chan_side, enum PORTS rr_node_direction);
 
 void get_rr_node_side_and_index_in_sb_info(t_rr_node* cur_rr_node,
                                           t_sb cur_sb_info,
+                                          enum PORTS rr_node_direction,
                                           OUTP int* cur_rr_node_side, 
                                           OUTP int* cur_rr_node_index);
 
@@ -33,12 +34,13 @@ void get_chan_rr_node_coorindate_in_sb_info(t_sb cur_sb_info,
 
 int get_rr_node_index_in_cb_info(t_rr_node* cur_rr_node,
                                  t_cb cur_cb_info, 
-                                 int chan_side);
+                                 int chan_side, enum PORTS rr_node_direction);
 
 void get_rr_node_side_and_index_in_cb_info(t_rr_node* cur_rr_node,
-                                          t_cb cur_cb_info,
-                                          OUTP int* cur_rr_node_side, 
-                                          OUTP int* cur_rr_node_index);
+                                           t_cb cur_cb_info,
+                                           enum PORTS rr_node_direction,
+                                           OUTP int* cur_rr_node_side, 
+                                           OUTP int* cur_rr_node_index);
 
 t_rr_node** get_chan_rr_nodes(int* num_chan_rr_nodes,
                               t_rr_type chan_type,

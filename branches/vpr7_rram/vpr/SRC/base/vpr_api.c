@@ -240,7 +240,7 @@ void vpr_init(INP int argc, INP char **argv, OUTP t_options *options,
 			&vpr_setup->Segments, &vpr_setup->Timing, &vpr_setup->ShowGraphics,
 			&vpr_setup->GraphPause, &vpr_setup->PowerOpts,
             /*Xifan TANG: Switch Segment Pattern Support*/
-            &vpr_setup->swseg_patterns, &vpr_setup->SpiceOpts, &vpr_setup->SynVerilogOpts);
+            &vpr_setup->swseg_patterns, &vpr_setup->FPGA_SPICE_Opts);
 
 	/* Check inputs are reasonable */
 	CheckOptions(*options, vpr_setup->TimingEnabled);
@@ -260,7 +260,8 @@ void vpr_init(INP int argc, INP char **argv, OUTP t_options *options,
 			vpr_setup->PackerOpts.sweep_hanging_nets_and_inputs,
 			vpr_setup->user_models, vpr_setup->library_models,
             /* Xifan TANG: we need activity in spice modeling */
-			(boolean)(vpr_setup->PowerOpts.do_power | vpr_setup->SpiceOpts.do_spice), 
+			(boolean)(vpr_setup->PowerOpts.do_power
+                      | vpr_setup->FPGA_SPICE_Opts.read_act_file), 
             vpr_setup->FileNameOpts.ActFile); 
 	fflush(stdout);
 
@@ -902,14 +903,12 @@ void vpr_setup_vpr(INP t_options *Options, INP boolean TimingEnabled,
 		t_power_opts * PowerOpts,
         /*Xifan TANG: Switch Segment Pattern Support*/
         OUTP t_swseg_pattern_inf** swseg_patterns,
-        /* Xifan TANG: SPICE Support*/
-        OUTP t_spice_opts* SpiceOpts,
-        /* Xifan TANG: Synthesizable verilog dumping Support*/
-        OUTP t_syn_verilog_opts* SynVerilogOpts) {
+        /* Xifan TANG: FPGA-SPICE Tool Suites Support*/
+        OUTP t_fpga_spice_opts* FPGA_SPICE_Opts) {
 	SetupVPR(Options, TimingEnabled, readArchFile, FileNameOpts, Arch,
 			Operation, user_models, library_models, PackerOpts, PlacerOpts,
 			AnnealSched, RouterOpts, RoutingArch, Segments, Timing,
-			ShowGraphics, GraphPause, PowerOpts, swseg_patterns, SpiceOpts, SynVerilogOpts);
+			ShowGraphics, GraphPause, PowerOpts, swseg_patterns, FPGA_SPICE_Opts);
 }
 /* Check inputs are reasonable */
 void vpr_check_options(INP t_options Options, INP boolean TimingEnabled) {

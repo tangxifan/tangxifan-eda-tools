@@ -281,7 +281,7 @@ void dump_verilog_defined_one_channel(FILE* fp,
   /* Check */
   assert((CHANX == chan_type)||(CHANY == chan_type));
   /* check x*/
-  assert((0 < x)&&(x < (nx + 1))); 
+  assert((!(0 > x))&&(x < (nx + 1))); 
   /* check y*/
   assert((!(0 > y))&&(y < (ny + 1))); 
 
@@ -495,6 +495,7 @@ void dump_verilog_defined_one_connection_box(FILE* fp,
   /*check side_cnt */
   assert(1 == side_cnt);
  
+  side_cnt = 0;
   /* Print the ports of grids*/
   for (side = 0; side < cur_cb_info.num_sides; side++) {
     /* Bypass side with zero IPINs*/
@@ -503,7 +504,7 @@ void dump_verilog_defined_one_connection_box(FILE* fp,
     }
     side_cnt++;
     assert(0 < cur_cb_info.num_ipin_rr_nodes[side]);
-    assert(NULL == cur_cb_info.ipin_rr_node[side]);
+    assert(NULL != cur_cb_info.ipin_rr_node[side]);
     for (inode = 0; inode < cur_cb_info.num_ipin_rr_nodes[side]; inode++) {
       /* Print each INPUT Pins of a grid */
       dump_verilog_grid_side_pin_with_given_index(fp, OPIN,

@@ -37,8 +37,7 @@ void vpr_fpga_spice_tool_suites(t_vpr_setup vpr_setup,
 
   /* Common initializations and malloc operations */
   /* If FPGA-SPICE is not called, we should initialize the spice_models */
-  if ((TRUE == vpr_setup.SpiceOpts.do_spice)||
-     (TRUE == vpr_setup.SynVerilogOpts.dump_syn_verilog)) {
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.do_fpga_spice) {
 
     /* Initialize Arch SPICE MODELS*/
     init_check_arch_spice_models(&Arch, &vpr_setup.RoutingArch);
@@ -47,9 +46,21 @@ void vpr_fpga_spice_tool_suites(t_vpr_setup vpr_setup,
     /* Add keyword checking */
     check_keywords_conflict(Arch);
 
+    /* Check Activity file is valid */
+    if (TRUE == vpr_setup.FPGA_SPICE_Opts.read_act_file) {
+      if (1 == try_access_file(vpr_setup.FileNameOpts.ActFile)) {
+        vpr_printf(TIO_MESSAGE_ERROR,"Activity file (%s) does not exists! Please provide a valid file path!\n",
+                   vpr_setup.FileNameOpts.ActFile);
+        exit(1);
+      } else {
+        vpr_printf(TIO_MESSAGE_INFO,"Check Activity file (%s) is a valid file path!\n",
+                   vpr_setup.FileNameOpts.ActFile);
+      }
+    }
+
     /* Backannotation for post routing information */
     spice_backannotate_vpr_post_route_info(vpr_setup.RoutingArch,
-                                           vpr_setup.SpiceOpts.fpga_spice_parasitic_net_estimation_off);
+                                           vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_parasitic_net_estimation_off);
 
     /* Auto check the density and recommend sim_num_clock_cylce */
     vpr_crit_path_delay = get_critical_path_delay()/1e9;
@@ -69,18 +80,17 @@ void vpr_fpga_spice_tool_suites(t_vpr_setup vpr_setup,
   
 
   /* Xifan TANG: SPICE Modeling, SPICE Netlist Output  */ 
-  if (vpr_setup.SpiceOpts.do_spice) {
+  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.do_spice) {
     vpr_print_spice_netlists(vpr_setup, Arch, vpr_setup.FileNameOpts.CircuitName);
   }
 
   /* Xifan TANG: Synthesizable verilog dumping */
-  if (vpr_setup.SynVerilogOpts.dump_syn_verilog) {
+  if (vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.dump_syn_verilog) {
     vpr_dump_syn_verilog(vpr_setup, Arch, vpr_setup.FileNameOpts.CircuitName);
   }	
 
   /* Free */
-  if ((TRUE == vpr_setup.SpiceOpts.do_spice)||
-     (TRUE == vpr_setup.SynVerilogOpts.dump_syn_verilog)) {
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.do_fpga_spice) {
     /* Free all the backannotation containing post routing information */
     free_backannotate_vpr_post_route_info();
   }

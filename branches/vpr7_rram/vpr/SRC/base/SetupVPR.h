@@ -23,10 +23,8 @@ void SetupVPR(INP t_options *Options,
 		OUTP t_power_opts * power_opts,
         /*Xifan TANG: Switch Segment Pattern Support*/
         OUTP t_swseg_pattern_inf** swseg_patterns,
-        /* Xifan TANG: SPICE Support*/
-        OUTP t_spice_opts* SpiceOpts,
-        /* Xifan TANG: Synthesizable verilog dumping Support*/
-        OUTP t_syn_verilog_opts* SynVerilogOpts);
+        /* Xifan TANG: FPGA-SPICE Support*/
+        OUTP t_fpga_spice_opts* fpga_spice_opts);
 
 void CheckSetup(INP enum e_operation Operation,
 		INP struct s_placer_opts PlacerOpts,

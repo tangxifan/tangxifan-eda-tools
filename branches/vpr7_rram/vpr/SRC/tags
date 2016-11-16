@@ -264,6 +264,7 @@ FILL_TYPE_BACKUP	place/timing_place_lookup.c	/^static t_type_ptr FILL_TYPE_BACKU
 FINAL_DISCOUNT_FUNCTION_BASE	timing/path_delay.h	28;"	d
 FIRST_ITER_WIRELENTH_LIMIT	base/vpr_types.h	88;"	d
 FONTMAG	base/graphics.c	229;"	d	file:
+FPGA_SPICE_Opts	base/vpr_types.h	/^    t_fpga_spice_opts FPGA_SPICE_Opts; \/* Xifan TANG: FPGA-SPICE support *\/$/;"	m	struct:s_vpr_setup
 FRACTIONAL	../../libarchfpga/include/physical_types.h	/^	ABSOLUTE, FRACTIONAL$/;"	e	enum:e_Fc_type
 FRAGMENT_THRESHOLD	../../libarchfpga/util.c	209;"	d	file:
 FREE	base/vpr_types.h	/^	FREE, RANDOM, USER$/;"	e	enum:e_pad_loc_type
@@ -904,6 +905,7 @@ SetPostSynthesisOption	base/ReadOptions.c	/^void SetPostSynthesisOption(boolean 
 SettingsFile	base/ReadOptions.h	/^	char *SettingsFile;$/;"	m	struct:s_options
 SetupAnnealSched	base/SetupVPR.c	/^static void SetupAnnealSched(INP t_options Options,$/;"	f	file:
 SetupEmptyType	../../libarchfpga/read_xml_arch_file.c	/^static void SetupEmptyType(void) {$/;"	f	file:
+SetupFpgaSpiceOpts	base/SetupVPR.c	/^static void SetupFpgaSpiceOpts(t_options Options, $/;"	f	file:
 SetupGridLocations	../../libarchfpga/read_xml_arch_file.c	/^static void SetupGridLocations(ezxml_t Locations, t_type_descriptor * Type) {$/;"	f	file:
 SetupOperation	base/SetupVPR.c	/^static void SetupOperation(INP t_options Options,$/;"	f	file:
 SetupPackerOpts	base/SetupVPR.c	/^void SetupPackerOpts(INP t_options Options, INP boolean TimingEnabled,$/;"	f
@@ -928,11 +930,11 @@ ShowPlacerOpts	base/ShowSetup.c	/^static void ShowPlacerOpts(INP t_options Optio
 ShowRouterOpts	base/ShowSetup.c	/^static void ShowRouterOpts(INP struct s_router_opts RouterOpts) {$/;"	f	file:
 ShowRoutingArch	base/ShowSetup.c	/^static void ShowRoutingArch(INP struct s_det_routing_arch RoutingArch) {$/;"	f	file:
 ShowSetup	base/ShowSetup.c	/^void ShowSetup(INP t_options options, INP t_vpr_setup vpr_setup) {$/;"	f
-SpiceOpts	base/vpr_types.h	/^    t_spice_opts SpiceOpts; \/* Xifan TANG: SPICE Support*\/$/;"	m	struct:s_vpr_setup
+SpiceOpts	base/vpr_types.h	/^  t_spice_opts SpiceOpts; \/* Xifan TANG: SPICE Support*\/$/;"	m	struct:s_fpga_spice_opts
 StatusWND	base/graphics.c	/^StatusWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)$/;"	f	file:
 Str	base/vpr_types.h	/^	const char *Str;$/;"	m	struct:s_TokenPair
 Switches	../../libarchfpga/include/physical_types.h	/^	struct s_switch_inf *Switches;$/;"	m	struct:s_arch	typeref:struct:s_arch::s_switch_inf
-SynVerilogOpts	base/vpr_types.h	/^    t_syn_verilog_opts SynVerilogOpts; \/* Xifan TANG: Synthesizable verilog dumping*\/$/;"	m	struct:s_vpr_setup
+SynVerilogOpts	base/vpr_types.h	/^  t_syn_verilog_opts SynVerilogOpts; \/* Xifan TANG: Synthesizable verilog dumping*\/$/;"	m	struct:s_fpga_spice_opts
 SyncModelsPbTypes	../../libarchfpga/read_xml_arch_file.c	/^static void SyncModelsPbTypes(INOUTP struct s_arch *arch,$/;"	f	file:
 SyncModelsPbTypes_rec	../../libarchfpga/read_xml_arch_file.c	/^static void SyncModelsPbTypes_rec(INOUTP struct s_arch *arch,$/;"	f	file:
 TABLENGTH	pack/output_blif.c	19;"	d	file:
@@ -1023,7 +1025,7 @@ WHITE	base/easygl_constants.h	/^enum color_types {WHITE, BLACK, DARKGREY, LIGHTG
 WILTON	../../libarchfpga/include/physical_types.h	/^	SUBSET, WILTON, UNIVERSAL, FULL$/;"	e	enum:e_switch_block_type
 WIRE_MODEL_PIE	../../libarchfpga/include/spice_types.h	/^  WIRE_MODEL_PIE,$/;"	e	enum:e_wire_model_type
 WIRE_MODEL_T	../../libarchfpga/include/spice_types.h	/^  WIRE_MODEL_T$/;"	e	enum:e_wire_model_type
-WIRE_SEGMENT_LENGTH	base/vpr_api.c	484;"	d	file:
+WIRE_SEGMENT_LENGTH	base/vpr_api.c	485;"	d	file:
 WL	base/place_and_route.h	5;"	d
 WNEED	base/place_and_route.h	4;"	d
 W_seed	base/globals.c	/^int W_seed = -1;$/;"	v
@@ -1236,7 +1238,7 @@ backannotate_clb_nets_init_val	spice/spice_backannotate_utils.c	/^void backannot
 backannotate_one_pb_rr_nodes_net_info_rec	spice/spice_backannotate_utils.c	/^void backannotate_one_pb_rr_nodes_net_info_rec(t_pb* cur_pb) {$/;"	f	file:
 backannotate_pb_rr_nodes_net_info	spice/spice_backannotate_utils.c	/^void backannotate_pb_rr_nodes_net_info() {$/;"	f	file:
 backannotate_rr_nodes_net_info	spice/spice_backannotate_utils.c	/^void backannotate_rr_nodes_net_info() {$/;"	f	file:
-backannotate_vpr_post_route_info	spice/spice_backannotate_utils.c	/^void backannotate_vpr_post_route_info() {$/;"	f
+backannotate_vpr_post_route_info	spice/spice_backannotate_utils.c	/^void backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch) { $/;"	f
 background_cindex	base/graphics.c	/^   int background_cindex;$/;"	m	struct:__anon5	file:
 backup_one_pb_rr_node_pack_prev_node_edge	spice/spice_backannotate_utils.c	/^void backup_one_pb_rr_node_pack_prev_node_edge(t_rr_node* pb_rr_node) {$/;"	f
 backward_expand_pack_pattern_from_edge	pack/prepack.c	/^static void backward_expand_pack_pattern_from_edge($/;"	f	file:
@@ -1622,7 +1624,6 @@ determine_decoder_size	syn_verilog/verilog_utils.c	/^int determine_decoder_size(
 determine_io_grid_side	spice/spice_utils.c	/^int determine_io_grid_side(int x,$/;"	f
 determine_lut_path_id	spice/spice_utils.c	/^int determine_lut_path_id(int lut_size,$/;"	f
 determine_num_input_basis_multilevel_mux	spice/spice_utils.c	/^int determine_num_input_basis_multilevel_mux(int mux_size,$/;"	f
-determine_src_chan_coordinate_switch_box	spice/spice_routing.c	/^void determine_src_chan_coordinate_switch_box(t_rr_node* src_rr_node,$/;"	f	file:
 determine_tree_mux_level	spice/spice_utils.c	/^int determine_tree_mux_level(int mux_size) {$/;"	f
 dir	../../libarchfpga/include/logic_types.h	/^	enum PORTS dir; \/* port direction *\/$/;"	m	struct:s_model_ports	typeref:enum:s_model_ports::PORTS
 direction	base/vpr_types.h	/^	enum e_direction direction; \/* UDSD by AY *\/$/;"	m	struct:s_rr_node	typeref:enum:s_rr_node::e_direction
@@ -1730,7 +1731,7 @@ dump_verilog_connection_box_mux	syn_verilog/verilog_routing.c	/^void dump_verilo
 dump_verilog_connection_box_short_interc	syn_verilog/verilog_routing.c	/^void dump_verilog_connection_box_short_interc(FILE* fp,$/;"	f
 dump_verilog_dangling_des_pb_graph_pin_interc	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_dangling_des_pb_graph_pin_interc(FILE* fp,$/;"	f
 dump_verilog_decoder	syn_verilog/verilog_decoder.c	/^void dump_verilog_decoder(char* submodule_dir) {$/;"	f
-dump_verilog_defined_channels	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_defined_channels(FILE* fp) {$/;"	f
+dump_verilog_defined_channels	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_defined_channels(FILE* fp,$/;"	f
 dump_verilog_defined_connection_boxes	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_defined_connection_boxes(FILE* fp) {$/;"	f
 dump_verilog_defined_grids	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_defined_grids(FILE* fp) {$/;"	f
 dump_verilog_defined_one_channel	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_defined_one_channel(FILE* fp,$/;"	f
@@ -2091,7 +2092,7 @@ found_connectivity	base/verilog_writer.h	/^typedef struct found_connectivity{$/;
 found_pins	base/verilog_writer.h	/^typedef struct found_pins{$/;"	s
 fpga_spice_leakage_only	base/vpr_types.h	/^  boolean fpga_spice_leakage_only;$/;"	m	struct:s_spice_opts
 fpga_spice_parasitic_net_estimation_off	base/vpr_types.h	/^  boolean fpga_spice_parasitic_net_estimation_off;$/;"	m	struct:s_spice_opts
-fprint_call_defined_channels	spice/spice_netlist_utils.c	/^void fprint_call_defined_channels(FILE* fp) {$/;"	f
+fprint_call_defined_channels	spice/spice_netlist_utils.c	/^void fprint_call_defined_channels(FILE* fp,$/;"	f
 fprint_call_defined_connection_boxes	spice/spice_netlist_utils.c	/^void fprint_call_defined_connection_boxes(FILE* fp) {$/;"	f
 fprint_call_defined_grids	spice/spice_netlist_utils.c	/^void fprint_call_defined_grids(FILE* fp) {$/;"	f
 fprint_call_defined_one_channel	spice/spice_netlist_utils.c	/^void fprint_call_defined_one_channel(FILE* fp,$/;"	f
@@ -2184,6 +2185,7 @@ fprint_spice_mux_model_rram_subckt	spice/spice_mux.c	/^void fprint_spice_mux_mod
 fprint_spice_mux_model_subckt	spice/spice_mux.c	/^void fprint_spice_mux_model_subckt(FILE* fp,$/;"	f
 fprint_spice_mux_testbench	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench(char* formatted_spice_dir,$/;"	f
 fprint_spice_mux_testbench_call_one_cb_tb	spice/spice_mux_testbench.c	/^int fprint_spice_mux_testbench_call_one_cb_tb(FILE* fp,$/;"	f	file:
+fprint_spice_mux_testbench_call_one_grid_cb_muxes	spice/spice_mux_testbench.c	/^int fprint_spice_mux_testbench_call_one_grid_cb_muxes(FILE* fp, $/;"	f	file:
 fprint_spice_mux_testbench_call_one_grid_pb_muxes	spice/spice_mux_testbench.c	/^int fprint_spice_mux_testbench_call_one_grid_pb_muxes(FILE* fp, int ix, int iy,$/;"	f	file:
 fprint_spice_mux_testbench_call_one_grid_sb_muxes	spice/spice_mux_testbench.c	/^int fprint_spice_mux_testbench_call_one_grid_sb_muxes(FILE* fp, $/;"	f	file:
 fprint_spice_mux_testbench_call_one_sb_tb	spice/spice_mux_testbench.c	/^int fprint_spice_mux_testbench_call_one_sb_tb(FILE* fp, $/;"	f	file:
@@ -2194,7 +2196,6 @@ fprint_spice_mux_testbench_global_ports	spice/spice_mux_testbench.c	/^void fprin
 fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec(FILE* fp, $/;"	f
 fprint_spice_mux_testbench_measurements	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_measurements(FILE* fp, $/;"	f	file:
 fprint_spice_mux_testbench_one_cb_mux_loads	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_one_cb_mux_loads(FILE* fp,$/;"	f	file:
-fprint_spice_mux_testbench_one_grid_cb_muxes	spice/spice_mux_testbench.c	/^int fprint_spice_mux_testbench_one_grid_cb_muxes(FILE* fp, $/;"	f	file:
 fprint_spice_mux_testbench_one_mux	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_one_mux(FILE* fp,$/;"	f	file:
 fprint_spice_mux_testbench_pb_graph_node_interc	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_pb_graph_node_interc(FILE* fp,$/;"	f	file:
 fprint_spice_mux_testbench_pb_graph_node_pin_interc	spice/spice_mux_testbench.c	/^void fprint_spice_mux_testbench_pb_graph_node_pin_interc(FILE* fp,$/;"	f	file:
@@ -2707,8 +2708,8 @@ ipin_mux_trans_size	../../libarchfpga/include/physical_types.h	/^	float ipin_mux
 ipin_mux_trans_size	base/globals.c	/^float ipin_mux_trans_size = 0;$/;"	v
 ipin_rr_node	base/vpr_types.h	/^  t_rr_node*** ipin_rr_node;$/;"	m	struct:s_cb
 ipin_rr_node	base/vpr_types.h	/^  t_rr_node*** ipin_rr_node;$/;"	m	struct:s_sb
-ipin_rr_node_grid_side	base/vpr_types.h	/^  t_rr_node*** ipin_rr_node_grid_side; \/* We need to record the side of a IPIN, because a IPIN may locate on more than one sides *\/$/;"	m	struct:s_cb
-ipin_rr_node_grid_side	base/vpr_types.h	/^  t_rr_node*** ipin_rr_node_grid_side; \/* We need to record the side of a IPIN, because a IPIN may locate on more than one sides *\/$/;"	m	struct:s_sb
+ipin_rr_node_grid_side	base/vpr_types.h	/^  int** ipin_rr_node_grid_side; \/* We need to record the side of a IPIN, because a IPIN may locate on more than one sides *\/$/;"	m	struct:s_cb
+ipin_rr_node_grid_side	base/vpr_types.h	/^  int** ipin_rr_node_grid_side; \/* We need to record the side of a IPIN, because a IPIN may locate on more than one sides *\/$/;"	m	struct:s_sb
 ipow	../../libarchfpga/util.c	/^int ipow(int base, int exp) {$/;"	f
 isEchoFileEnabled	base/ReadOptions.c	/^boolean isEchoFileEnabled(enum e_echo_files echo_option) {$/;"	f
 isFixed	base/vpr_types.h	/^	boolean isFixed;$/;"	m	struct:s_block
@@ -3268,8 +3269,8 @@ open	../../libarchfpga/ezxml.c	58;"	d	file:
 operator <	power/PowerSpicedComponent.h	/^	const bool operator<(const PowerCallibSize & rhs) {$/;"	f	class:PowerCallibSize
 opin_rr_node	base/vpr_types.h	/^  t_rr_node*** opin_rr_node;$/;"	m	struct:s_cb
 opin_rr_node	base/vpr_types.h	/^  t_rr_node*** opin_rr_node;$/;"	m	struct:s_sb
-opin_rr_node_grid_side	base/vpr_types.h	/^  t_rr_node*** opin_rr_node_grid_side; \/* We need to record the side of a OPIN, because a OPIN may locate on more than one sides *\/$/;"	m	struct:s_cb
-opin_rr_node_grid_side	base/vpr_types.h	/^  t_rr_node*** opin_rr_node_grid_side; \/* We need to record the side of a OPIN, because a OPIN may locate on more than one sides *\/$/;"	m	struct:s_sb
+opin_rr_node_grid_side	base/vpr_types.h	/^  int** opin_rr_node_grid_side; \/* We need to record the side of a OPIN, because a OPIN may locate on more than one sides *\/$/;"	m	struct:s_cb
+opin_rr_node_grid_side	base/vpr_types.h	/^  int** opin_rr_node_grid_side; \/* We need to record the side of a OPIN, because a OPIN may locate on more than one sides *\/$/;"	m	struct:s_sb
 opin_switch	../../libarchfpga/include/physical_types.h	/^	short opin_switch;$/;"	m	struct:s_segment_inf
 opin_switch	base/vpr_types.h	/^	short opin_switch;$/;"	m	struct:s_seg_details
 opin_to_cb	../../libarchfpga/include/physical_types.h	/^    boolean opin_to_cb;$/;"	m	struct:s_type_descriptor
@@ -3812,6 +3813,7 @@ s_det_routing_arch	base/vpr_types.h	/^struct s_det_routing_arch {$/;"	s
 s_direct_inf	../../libarchfpga/include/physical_types.h	/^typedef struct s_direct_inf {$/;"	s
 s_file_name_opts	base/vpr_types.h	/^struct s_file_name_opts {$/;"	s
 s_fmap_cell	base/place_and_route.h	/^typedef struct s_fmap_cell {$/;"	s
+s_fpga_spice_opts	base/vpr_types.h	/^struct s_fpga_spice_opts {$/;"	s
 s_grid_loc_def	../../libarchfpga/include/physical_types.h	/^typedef struct s_grid_loc_def {$/;"	s
 s_grid_tile	base/vpr_types.h	/^typedef struct s_grid_tile {$/;"	s
 s_hash	util/hash.h	/^struct s_hash {$/;"	s
@@ -4140,8 +4142,8 @@ stats_mux_spice_model_pb_type_rec	spice/spice_pbtypes.c	/^void stats_mux_spice_m
 stats_mux_verilog_model_pb_node_rec	syn_verilog/verilog_pbtypes.c	/^void stats_mux_verilog_model_pb_node_rec(t_llist** muxes_head,$/;"	f
 stats_mux_verilog_model_pb_type_rec	syn_verilog/verilog_pbtypes.c	/^void stats_mux_verilog_model_pb_type_rec(t_llist** muxes_head,$/;"	f
 stats_pb_graph_node_port_pin_numbers	spice/spice_utils.c	/^void stats_pb_graph_node_port_pin_numbers(t_pb_graph_node* cur_pb_graph_node,$/;"	f
-stats_spice_muxes	spice/spice_mux.c	/^t_llist* stats_spice_muxes(int num_switch,$/;"	f
-stats_spice_muxes_routing_arch	spice/spice_mux.c	/^void stats_spice_muxes_routing_arch(t_llist** muxes_head.$/;"	f
+stats_spice_muxes	spice/spice_mux.c	/^t_llist* stats_spice_muxes(int num_switches,$/;"	f
+stats_spice_muxes_routing_arch	spice/spice_mux.c	/^void stats_spice_muxes_routing_arch(t_llist** muxes_head,$/;"	f
 statusMessage	base/graphics.c	/^static char statusMessage[BUFSIZE] = ""; \/* User message to display *\/$/;"	v	file:
 std	base/graphics.c	/^using namespace std;$/;"	v
 std	power/PowerSpicedComponent.c	/^using namespace std;$/;"	v
@@ -4207,6 +4209,7 @@ t_det_routing_arch	base/vpr_types.h	/^typedef struct s_det_routing_arch t_det_ro
 t_direct_inf	../../libarchfpga/include/physical_types.h	/^} t_direct_inf;$/;"	t	typeref:struct:s_direct_inf
 t_display_type	base/graphics.c	/^} t_display_type;$/;"	t	typeref:enum:__anon2	file:
 t_fmap_cell	base/place_and_route.h	/^} t_fmap_cell;$/;"	t	typeref:struct:s_fmap_cell
+t_fpga_spice_opts	base/vpr_types.h	/^typedef struct s_fpga_spice_opts t_fpga_spice_opts;$/;"	t	typeref:struct:s_fpga_spice_opts
 t_gl_state	base/graphics.c	/^} t_gl_state;$/;"	t	typeref:struct:__anon5	file:
 t_graph_type	route/rr_graph.h	/^typedef enum e_graph_type t_graph_type;$/;"	t	typeref:enum:e_graph_type
 t_grid_loc_def	../../libarchfpga/include/physical_types.h	/^} t_grid_loc_def;$/;"	t	typeref:struct:s_grid_loc_def
@@ -4584,7 +4587,7 @@ vpr_check_options	base/vpr_api.c	/^void vpr_check_options(INP t_options Options,
 vpr_check_setup	base/vpr_api.c	/^void vpr_check_setup(INP enum e_operation Operation,$/;"	f
 vpr_crit_path_delay	../../libarchfpga/include/spice_types.h	/^  float vpr_crit_path_delay;$/;"	m	struct:s_spice_stimulate_params
 vpr_dump_syn_verilog	syn_verilog/syn_verilog_api.c	/^void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,$/;"	f
-vpr_fpga_spice_tool_suites	base/vpr_api.c	/^void vpr_fpga_spice_tool_suites(t_vpr_setup vpr_setup,$/;"	f
+vpr_fpga_spice_tool_suites	spice/fpga_spice_api.c	/^void vpr_fpga_spice_tool_suites(t_vpr_setup vpr_setup,$/;"	f
 vpr_free_all	base/vpr_api.c	/^void vpr_free_all(INOUTP t_arch Arch, INOUTP t_options options,$/;"	f
 vpr_free_vpr_data_structures	base/vpr_api.c	/^void vpr_free_vpr_data_structures(INOUTP t_arch Arch, INOUTP t_options options,$/;"	f
 vpr_get_output_file_name	base/vpr_api.c	/^char *vpr_get_output_file_name(enum e_output_files ename) {$/;"	f

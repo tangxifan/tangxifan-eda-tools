@@ -610,8 +610,8 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   char* include_dir_path = NULL;
   char* subckt_dir_path = NULL;
   char* top_netlist_path = NULL;
-  char* include_dir_name = vpr_setup.SpiceOpts.include_dir;
-  char* subckt_dir_name = vpr_setup.SpiceOpts.subckt_dir;
+  char* include_dir_name = vpr_setup.FPGA_SPICE_Opts.SpiceOpts.include_dir;
+  char* subckt_dir_name = vpr_setup.FPGA_SPICE_Opts.SpiceOpts.subckt_dir;
   char* chomped_circuit_name = NULL;
   char* chomped_spice_dir = NULL;
   char* top_testbench_dir_path = NULL;
@@ -666,10 +666,11 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   t_start = clock();
 
   /* Format the directory path */
-  if (NULL != vpr_setup.SpiceOpts.spice_dir) {
-    spice_dir_formatted = format_dir_path(vpr_setup.SpiceOpts.spice_dir);
+  if (NULL != vpr_setup.FPGA_SPICE_Opts.SpiceOpts.spice_dir) {
+    spice_dir_formatted = format_dir_path(vpr_setup.FPGA_SPICE_Opts.SpiceOpts.spice_dir);
   } else {
-    spice_dir_formatted = format_dir_path(my_strcat(format_dir_path(chomped_spice_dir),default_spice_dir_path));
+    spice_dir_formatted = format_dir_path(my_strcat(format_dir_path(chomped_spice_dir),
+                                                    default_spice_dir_path));
   }
 
   /*Initial directory organization*/
@@ -718,79 +719,79 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   generate_spice_subckts(subckt_dir_path, &Arch ,&vpr_setup.RoutingArch);
 
   /* Print MUX testbench if needed */
-  if (vpr_setup.SpiceOpts.print_spice_pb_mux_testbench) {
+  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.print_spice_pb_mux_testbench) {
     pb_mux_testbench_dir_path = my_strcat(spice_dir_formatted, spice_pb_mux_tb_dir_name);
     create_dir_path(pb_mux_testbench_dir_path);
     fprint_spice_mux_testbench(pb_mux_testbench_dir_path, chomped_circuit_name, 
                                include_dir_path, subckt_dir_path,
                                rr_node_indices, num_clocks, Arch, 
                                SPICE_PB_MUX_TB, 
-                               vpr_setup.SpiceOpts.fpga_spice_leakage_only);
+                               vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_leakage_only);
   }
 
-  if (vpr_setup.SpiceOpts.print_spice_cb_mux_testbench) {
+  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.print_spice_cb_mux_testbench) {
     cb_mux_testbench_dir_path = my_strcat(spice_dir_formatted, spice_cb_mux_tb_dir_name);
     create_dir_path(cb_mux_testbench_dir_path);
     fprint_spice_mux_testbench(cb_mux_testbench_dir_path, chomped_circuit_name,
                                include_dir_path, subckt_dir_path,
                                rr_node_indices, num_clocks, Arch, SPICE_CB_MUX_TB, 
-                               vpr_setup.SpiceOpts.fpga_spice_leakage_only);
+                               vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_leakage_only);
   }
 
-  if (vpr_setup.SpiceOpts.print_spice_sb_mux_testbench) {
+  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.print_spice_sb_mux_testbench) {
     sb_mux_testbench_dir_path = my_strcat(spice_dir_formatted, spice_sb_mux_tb_dir_name);
     create_dir_path(sb_mux_testbench_dir_path);
     fprint_spice_mux_testbench(sb_mux_testbench_dir_path, chomped_circuit_name, 
                                include_dir_path, subckt_dir_path,
                                rr_node_indices, num_clocks, Arch, SPICE_SB_MUX_TB, 
-                               vpr_setup.SpiceOpts.fpga_spice_leakage_only);
+                               vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_leakage_only);
   }
 
-  if (vpr_setup.SpiceOpts.print_spice_cb_testbench) {
+  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.print_spice_cb_testbench) {
     cb_testbench_dir_path = my_strcat(spice_dir_formatted, spice_cb_tb_dir_name);
     create_dir_path(cb_testbench_dir_path);
     fprint_spice_mux_testbench(cb_testbench_dir_path, chomped_circuit_name,
                                include_dir_path, subckt_dir_path,
                                rr_node_indices, num_clocks, Arch, SPICE_CB_TB, 
-                               vpr_setup.SpiceOpts.fpga_spice_leakage_only);
+                               vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_leakage_only);
   }
 
-  if (vpr_setup.SpiceOpts.print_spice_sb_testbench) {
+  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.print_spice_sb_testbench) {
     sb_testbench_dir_path = my_strcat(spice_dir_formatted, spice_sb_tb_dir_name);
     create_dir_path(sb_testbench_dir_path);
     fprint_spice_mux_testbench(sb_testbench_dir_path, chomped_circuit_name, 
                                include_dir_path, subckt_dir_path,
                                rr_node_indices, num_clocks, Arch, SPICE_SB_TB, 
-                               vpr_setup.SpiceOpts.fpga_spice_leakage_only);
+                               vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_leakage_only);
   }
 
-  if (vpr_setup.SpiceOpts.print_spice_lut_testbench) {
+  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.print_spice_lut_testbench) {
     lut_testbench_dir_path = my_strcat(spice_dir_formatted, spice_lut_tb_dir_name); 
     create_dir_path(lut_testbench_dir_path);
     fprint_spice_lut_testbench(lut_testbench_dir_path, chomped_circuit_name, include_dir_path, subckt_dir_path,
-                               rr_node_indices, num_clocks, Arch, vpr_setup.SpiceOpts.fpga_spice_leakage_only);
+                               rr_node_indices, num_clocks, Arch, vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_leakage_only);
   }
 
   /* By pass dff testbench file if there is no clock */
-  if (vpr_setup.SpiceOpts.print_spice_dff_testbench) {
+  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.print_spice_dff_testbench) {
     dff_testbench_dir_path = my_strcat(spice_dir_formatted, spice_dff_tb_dir_name); 
     create_dir_path(dff_testbench_dir_path);
     fprint_spice_dff_testbench(dff_testbench_dir_path, chomped_circuit_name, include_dir_path, subckt_dir_path,
-                               rr_node_indices, num_clocks, Arch, vpr_setup.SpiceOpts.fpga_spice_leakage_only);
+                               rr_node_indices, num_clocks, Arch, vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_leakage_only);
   }
 
   /* Print Grid testbench if needed */
-  if (vpr_setup.SpiceOpts.print_spice_grid_testbench) {
+  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.print_spice_grid_testbench) {
     grid_testbench_dir_path = my_strcat(spice_dir_formatted, spice_grid_tb_dir_name);
     create_dir_path(grid_testbench_dir_path);
     fprint_spice_grid_testbench(grid_testbench_dir_path, chomped_circuit_name, 
                                 include_dir_path, subckt_dir_path,
                                 rr_node_indices, num_clocks, Arch, 
-                                vpr_setup.SpiceOpts.fpga_spice_leakage_only);
+                                vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_leakage_only);
   }
 
   /* Print Netlists of the given FPGA*/
-  if (vpr_setup.SpiceOpts.print_spice_top_testbench) {
+  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.print_spice_top_testbench) {
     top_testbench_file = my_strcat(chomped_circuit_name, spice_top_testbench_postfix);
     /* Process top_netlist_path */
     top_testbench_dir_path = my_strcat(spice_dir_formatted, spice_top_tb_dir_name); 
@@ -799,7 +800,7 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
     fprint_spice_top_netlist(chomped_circuit_name, top_netlist_path, 
                              include_dir_path, subckt_dir_path, 
                              num_rr_nodes, rr_node, rr_node_indices, num_clocks, *(Arch.spice), 
-                             vpr_setup.SpiceOpts.fpga_spice_leakage_only);
+                             vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_leakage_only);
   }
 
   /* Generate a shell script for running HSPICE simulations */

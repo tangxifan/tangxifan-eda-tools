@@ -18,7 +18,8 @@ void fprint_grid_side_pins(FILE* fp,
 void fprint_switch_box_chan_port(FILE* fp,
                                  t_sb cur_sb_info, 
                                  int chan_side,
-                                 t_rr_node* cur_rr_node);
+                                 t_rr_node* cur_rr_node,
+                                 enum PORTS cur_rr_node_direction);
 
 void fprint_switch_box_short_interc(FILE* fp, 
                                     t_sb cur_sb_info,

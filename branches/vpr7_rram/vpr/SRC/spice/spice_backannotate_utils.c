@@ -56,6 +56,11 @@ void init_one_sb_info(t_sb* cur_sb) {
 void free_one_sb_info(t_sb* cur_sb) {
   int i;
 
+  if ((-1 == cur_sb->x)||(-1 == cur_sb->y)) {
+    /*NULL struct: bypass free */
+    return;
+  }
+
   /* Free chan_width, input/output_rr_nodes, rr_nodes */
   my_free(cur_sb->chan_width);
   for (i = 0; i < cur_sb->num_sides; i++) {
@@ -70,7 +75,9 @@ void free_one_sb_info(t_sb* cur_sb) {
   my_free(cur_sb->num_opin_rr_nodes);
   my_free(cur_sb->chan_rr_node_direction);
   my_free(cur_sb->chan_rr_node);
+  my_free(cur_sb->ipin_rr_node);
   my_free(cur_sb->ipin_rr_node_grid_side);
+  my_free(cur_sb->opin_rr_node);
   my_free(cur_sb->opin_rr_node_grid_side);
 
   return;
@@ -139,11 +146,16 @@ void init_one_cb_info(t_cb* cur_cb) {
 void free_one_cb_info(t_cb* cur_cb) {
   int i;
 
+  if ((-1 == cur_cb->x)||(-1 == cur_cb->y)) {
+    /*NULL struct: bypass free */
+    return;
+  }
+
   /* Free chan_width, input/output_rr_nodes, rr_nodes */
   my_free(cur_cb->chan_width);
   for (i = 0; i < cur_cb->num_sides; i++) {
-    my_free(cur_cb->chan_rr_node_direction[i]);
     my_free(cur_cb->chan_rr_node[i]);
+    my_free(cur_cb->chan_rr_node_direction[i]);
     my_free(cur_cb->ipin_rr_node[i]);
     my_free(cur_cb->ipin_rr_node_grid_side[i]);
     my_free(cur_cb->opin_rr_node[i]);
@@ -153,8 +165,10 @@ void free_one_cb_info(t_cb* cur_cb) {
   my_free(cur_cb->num_ipin_rr_nodes);
   my_free(cur_cb->num_opin_rr_nodes);
   my_free(cur_cb->chan_rr_node_direction);
+  my_free(cur_cb->ipin_rr_node);
   my_free(cur_cb->ipin_rr_node_grid_side);
-  my_free(cur_cb->ipin_rr_node_grid_side);
+  my_free(cur_cb->opin_rr_node);
+  my_free(cur_cb->opin_rr_node_grid_side);
 
   return;
 }
@@ -200,30 +214,38 @@ void free_cb_info_array(t_cb*** LL_cb_info, int LL_nx, int LL_ny) {
 /* Get the index of a given rr_node in a SB_info */
 int get_rr_node_index_in_sb_info(t_rr_node* cur_rr_node,
                                  t_sb cur_sb_info, 
-                                 int chan_side) {
-  int inode; 
+                                 int chan_side, enum PORTS rr_node_direction) {
+  int inode, cnt, ret; 
+
+  cnt = 0;
+  ret = -1;
 
   /* Depending on the type of rr_node, we search different arrays */
   switch (cur_rr_node->type) {
   case CHANX:
   case CHANY:
     for (inode = 0; inode < cur_sb_info.chan_width[chan_side]; inode++) {
-      if (cur_rr_node == cur_sb_info.chan_rr_node[chan_side][inode]) {
-        return inode;
+      if ((cur_rr_node == cur_sb_info.chan_rr_node[chan_side][inode])
+        /* Check if direction meets specification */
+        &&(rr_node_direction == cur_sb_info.chan_rr_node_direction[chan_side][inode])) {
+        cnt++;
+        ret = inode;
       }
     }
     break;
   case IPIN:
     for (inode = 0; inode < cur_sb_info.num_ipin_rr_nodes[chan_side]; inode++) {
       if (cur_rr_node == cur_sb_info.ipin_rr_node[chan_side][inode]) {
-        return inode;
+        cnt++;
+        ret = inode;
       }
     }
     break;
   case OPIN:
     for (inode = 0; inode < cur_sb_info.num_opin_rr_nodes[chan_side]; inode++) {
       if (cur_rr_node == cur_sb_info.opin_rr_node[chan_side][inode]) {
-        return inode;
+        cnt++;
+        ret = inode;
       }
     }
     break;
@@ -232,7 +254,9 @@ int get_rr_node_index_in_sb_info(t_rr_node* cur_rr_node,
     exit(1);
   }
 
-  return -1; /* Return an invalid value: nonthing is found*/
+  assert((0 == cnt)||(1 == cnt));
+
+  return ret; /* Return an invalid value: nonthing is found*/
 }
 
 /* Get the side and index of a given rr_node in a SB_info 
@@ -240,14 +264,24 @@ int get_rr_node_index_in_sb_info(t_rr_node* cur_rr_node,
  */
 void get_rr_node_side_and_index_in_sb_info(t_rr_node* cur_rr_node,
                                           t_sb cur_sb_info,
+                                          enum PORTS rr_node_direction,
                                           OUTP int* cur_rr_node_side, 
                                           OUTP int* cur_rr_node_index) {
-  int index, side;
+  int index, side, cnt;
+  
+  /* Count the number of existence of cur_rr_node in cur_sb_info
+   * It could happen that same cur_rr_node appears on different sides of a SB
+   * For example, a routing track go vertically across the SB.
+   * Then its corresponding rr_node appears on both TOP and BOTTOM sides of this SB. 
+   * We need to ensure that the found rr_node has the same direction as user want.
+   * By specifying the direction of rr_node, There should be only one rr_node can satisfy!
+   */
+  cnt = 0;
   
   index = -1;
 
   for (side = 0; side < cur_sb_info.num_sides; side++) {
-    index = get_rr_node_index_in_sb_info(cur_rr_node, cur_sb_info, side);
+    index = get_rr_node_index_in_sb_info(cur_rr_node, cur_sb_info, side, rr_node_direction);
     if (-1 != index) {
       break;
     }
@@ -267,30 +301,38 @@ void get_rr_node_side_and_index_in_sb_info(t_rr_node* cur_rr_node,
 /* Get the index of a given rr_node in a CB_info */
 int get_rr_node_index_in_cb_info(t_rr_node* cur_rr_node,
                                  t_cb cur_cb_info, 
-                                 int chan_side) {
-  int inode; 
+                                 int chan_side, enum PORTS rr_node_direction) {
+  int inode, cnt, ret; 
+
+  cnt = 0;
+  ret = -1;
 
   /* Depending on the type of rr_node, we search different arrays */
   switch (cur_rr_node->type) {
   case CHANX:
   case CHANY:
     for (inode = 0; inode < cur_cb_info.chan_width[chan_side]; inode++) {
-      if (cur_rr_node == cur_cb_info.chan_rr_node[chan_side][inode]) {
-        return inode;
+      if ((cur_rr_node == cur_cb_info.chan_rr_node[chan_side][inode])
+        /* Check if direction meets specification */
+        &&(rr_node_direction == cur_cb_info.chan_rr_node_direction[chan_side][inode])) {
+        cnt++;
+        ret = inode;
       }
     }
     break;
   case IPIN:
     for (inode = 0; inode < cur_cb_info.num_ipin_rr_nodes[chan_side]; inode++) {
       if (cur_rr_node == cur_cb_info.ipin_rr_node[chan_side][inode]) {
-        return inode;
+        cnt++;
+        ret = inode;
       }
     }
     break;
   case OPIN:
     for (inode = 0; inode < cur_cb_info.num_opin_rr_nodes[chan_side]; inode++) {
       if (cur_rr_node == cur_cb_info.opin_rr_node[chan_side][inode]) {
-        return inode;
+        cnt++;
+        ret = inode;
       }
     }
     break;
@@ -299,7 +341,9 @@ int get_rr_node_index_in_cb_info(t_rr_node* cur_rr_node,
     exit(1);
   }
 
-  return -1; /* Return an invalid value: nonthing is found*/
+  assert((0 == cnt)||(1 == cnt));
+
+  return ret; /* Return an invalid value: nonthing is found*/
 }
 
 /* Determine the coordinate of a chan_rr_node in a SB_info 
@@ -345,15 +389,16 @@ void get_chan_rr_node_coorindate_in_sb_info(t_sb cur_sb_info,
  * Return cur_rr_node_side & cur_rr_node_index
  */
 void get_rr_node_side_and_index_in_cb_info(t_rr_node* cur_rr_node,
-                                          t_cb cur_cb_info,
-                                          OUTP int* cur_rr_node_side, 
-                                          OUTP int* cur_rr_node_index) {
+                                           t_cb cur_cb_info,
+                                           enum PORTS rr_node_direction,
+                                           OUTP int* cur_rr_node_side, 
+                                           OUTP int* cur_rr_node_index) {
   int index, side;
   
   index = -1;
 
   for (side = 0; side < cur_cb_info.num_sides; side++) {
-    index = get_rr_node_index_in_cb_info(cur_rr_node, cur_cb_info, side);
+    index = get_rr_node_index_in_cb_info(cur_rr_node, cur_cb_info, side, rr_node_direction);
     if (-1 != index) {
       break;
     }
@@ -1612,6 +1657,7 @@ void build_one_switch_block_info(t_sb* cur_sb, int sb_x, int sb_y,
       if (sb_y == ny) {
         cur_sb->chan_width[side] = 0;
         cur_sb->chan_rr_node[side] = NULL;
+        cur_sb->chan_rr_node_direction[side] = NULL;
         cur_sb->num_ipin_rr_nodes[side] = 0;
         cur_sb->ipin_rr_node[side] = NULL;
         cur_sb->ipin_rr_node_grid_side[side] = NULL;
@@ -1640,13 +1686,13 @@ void build_one_switch_block_info(t_sb* cur_sb, int sb_x, int sb_y,
           cur_sb->chan_rr_node_direction[side][itrack] = IN_PORT;
         }
       }
-      /* TODO: Include Grid[x][y+1] Bottom side outputs pins */
+      /* TODO: Include Grid[x][y+1] RIGHT side outputs pins */
       temp_opin_rr_node[0] = get_grid_side_pin_rr_nodes(&temp_num_opin_rr_nodes[0], 
-                                                        IPIN, sb_x, sb_y + 1, 2,
+                                                        OPIN, sb_x, sb_y + 1, 1,
                                                         LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
       /* TODO: Include Grid[x+1][y+1] Left side output pins */
       temp_opin_rr_node[1] = get_grid_side_pin_rr_nodes(&temp_num_opin_rr_nodes[1], 
-                                                        IPIN, sb_x + 1, sb_y + 1, 3,
+                                                        OPIN, sb_x + 1, sb_y + 1, 3,
                                                         LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
       /* Allocate opin_rr_node */
       cur_sb->num_opin_rr_nodes[side] = temp_num_opin_rr_nodes[0] + temp_num_opin_rr_nodes[1];
@@ -1655,7 +1701,7 @@ void build_one_switch_block_info(t_sb* cur_sb, int sb_x, int sb_y,
       /* Copy from temp_opin_rr_node to opin_rr_node */
       for (inode = 0; inode < temp_num_opin_rr_nodes[0]; inode++) {
         cur_sb->opin_rr_node[side][inode] = temp_opin_rr_node[0][inode];
-        cur_sb->opin_rr_node_grid_side[side][inode] = 2; /* Grid[x][y+1] Bottom side outputs pins */
+        cur_sb->opin_rr_node_grid_side[side][inode] = 1; /* Grid[x][y+1] RIGHT side outputs pins */
       }
       for (inode = 0; inode < temp_num_opin_rr_nodes[1]; inode++) {
         cur_sb->opin_rr_node[side][inode + temp_num_opin_rr_nodes[0]] = temp_opin_rr_node[1][inode];
@@ -1667,10 +1713,11 @@ void build_one_switch_block_info(t_sb* cur_sb, int sb_x, int sb_y,
       cur_sb->ipin_rr_node_grid_side[side] = NULL;
       break;
     case 1:
-      /* For the bording, we should take speical care */
+      /* For the bording, we should take special care */
       if (sb_x == nx) {
         cur_sb->chan_width[side] = 0;
         cur_sb->chan_rr_node[side] = NULL;
+        cur_sb->chan_rr_node_direction[side] = NULL;
         cur_sb->num_ipin_rr_nodes[side] = 0;
         cur_sb->ipin_rr_node[side] = NULL;
         cur_sb->ipin_rr_node_grid_side[side] = NULL;
@@ -1701,11 +1748,11 @@ void build_one_switch_block_info(t_sb* cur_sb, int sb_x, int sb_y,
       }
       /* TODO: include Grid[x+1][y+1] Bottom side output pins */
       temp_opin_rr_node[0] = get_grid_side_pin_rr_nodes(&temp_num_opin_rr_nodes[0], 
-                                                        IPIN, sb_x + 1, sb_y + 1, 2,
+                                                        OPIN, sb_x + 1, sb_y + 1, 2,
                                                         LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
       /* TODO: include Grid[x+1][y] Top side output pins */
       temp_opin_rr_node[1] = get_grid_side_pin_rr_nodes(&temp_num_opin_rr_nodes[1], 
-                                                        IPIN, sb_x + 1, sb_y, 0,
+                                                        OPIN, sb_x + 1, sb_y, 0,
                                                         LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
       /* Allocate opin_rr_node */
       cur_sb->num_opin_rr_nodes[side] = temp_num_opin_rr_nodes[0] + temp_num_opin_rr_nodes[1];
@@ -1726,10 +1773,11 @@ void build_one_switch_block_info(t_sb* cur_sb, int sb_x, int sb_y,
       cur_sb->ipin_rr_node_grid_side[side] = NULL;
       break;
     case 2:
-      /* For the bording, we should take speical care */
+      /* For the bording, we should take special care */
       if (sb_y == 0) {
         cur_sb->chan_width[side] = 0;
         cur_sb->chan_rr_node[side] = NULL;
+        cur_sb->chan_rr_node_direction[side] = NULL;
         cur_sb->num_ipin_rr_nodes[side] = 0;
         cur_sb->ipin_rr_node[side] = NULL;
         cur_sb->ipin_rr_node_grid_side[side] = NULL;
@@ -1760,11 +1808,11 @@ void build_one_switch_block_info(t_sb* cur_sb, int sb_x, int sb_y,
       }
       /* TODO: include Grid[x+1][y] Left side output pins */
       temp_opin_rr_node[0] = get_grid_side_pin_rr_nodes(&temp_num_opin_rr_nodes[0], 
-                                                        IPIN, sb_x + 1, sb_y, 3,
+                                                        OPIN, sb_x + 1, sb_y, 3,
                                                         LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
       /* TODO: include Grid[x][y] Right side output pins */
       temp_opin_rr_node[1] = get_grid_side_pin_rr_nodes(&temp_num_opin_rr_nodes[1], 
-                                                        IPIN, sb_x, sb_y, 1,
+                                                        OPIN, sb_x, sb_y, 1,
                                                         LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
       /* Allocate opin_rr_node */
       cur_sb->num_opin_rr_nodes[side] = temp_num_opin_rr_nodes[0] + temp_num_opin_rr_nodes[1];
@@ -1785,10 +1833,11 @@ void build_one_switch_block_info(t_sb* cur_sb, int sb_x, int sb_y,
       cur_sb->ipin_rr_node_grid_side[side] = NULL;
       break;
     case 3:
-      /* For the bording, we should take speical care */
+      /* For the bording, we should take special care */
       if (sb_x == 0) {
         cur_sb->chan_width[side] = 0;
         cur_sb->chan_rr_node[side] = NULL;
+        cur_sb->chan_rr_node_direction[side] = NULL;
         cur_sb->num_ipin_rr_nodes[side] = 0;
         cur_sb->ipin_rr_node[side] = NULL;
         cur_sb->ipin_rr_node_grid_side[side] = NULL;
@@ -1819,25 +1868,24 @@ void build_one_switch_block_info(t_sb* cur_sb, int sb_x, int sb_y,
       }
       /* TODO: include Grid[x][y+1] Bottom side outputs pins */
       temp_opin_rr_node[0] = get_grid_side_pin_rr_nodes(&temp_num_opin_rr_nodes[0], 
-                                                        IPIN, sb_x, sb_y + 1, 2,
+                                                        OPIN, sb_x, sb_y + 1, 2,
                                                         LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
       /* TODO: include Grid[x][y] Top side output pins */
       temp_opin_rr_node[1] = get_grid_side_pin_rr_nodes(&temp_num_opin_rr_nodes[1], 
-                                                        IPIN, sb_x, sb_y, 0,
+                                                        OPIN, sb_x, sb_y, 0,
                                                         LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
       /* Allocate opin_rr_node */
       cur_sb->num_opin_rr_nodes[side] = temp_num_opin_rr_nodes[0] + temp_num_opin_rr_nodes[1];
-      cur_sb->opin_rr_node[side] = (t_rr_node**)my_calloc(cur_sb->num_opin_rr_nodes[side], sizeof(t_rr_node*));
       cur_sb->opin_rr_node[side] = (t_rr_node**)my_calloc(cur_sb->num_opin_rr_nodes[side], sizeof(t_rr_node*));
       cur_sb->opin_rr_node_grid_side[side] = (int*)my_calloc(cur_sb->num_opin_rr_nodes[side], sizeof(int));
       /* Copy from temp_opin_rr_node to opin_rr_node */
       for (inode = 0; inode < temp_num_opin_rr_nodes[0]; inode++) {
         cur_sb->opin_rr_node[side][inode] = temp_opin_rr_node[0][inode];
-        cur_sb->opin_rr_node_grid_side[side][inode] = 3; /* Grid[x+1][y] LEFT side outputs pins */
+        cur_sb->opin_rr_node_grid_side[side][inode] = 2; /* Grid[x][y+1] BOTTOM side outputs pins */
       }
       for (inode = 0; inode < temp_num_opin_rr_nodes[1]; inode++) {
         cur_sb->opin_rr_node[side][inode + temp_num_opin_rr_nodes[0]] = temp_opin_rr_node[1][inode];
-        cur_sb->opin_rr_node_grid_side[side][inode + temp_num_opin_rr_nodes[0]] = 1; /* Grid[x][y] RIGHT side outputs pins */
+        cur_sb->opin_rr_node_grid_side[side][inode + temp_num_opin_rr_nodes[0]] = 0; /* Grid[x][y] TOP side outputs pins */
       }
       /* We do not have any IPIN for a Switch Block */
       cur_sb->num_ipin_rr_nodes[side] = 0;
@@ -1848,6 +1896,14 @@ void build_one_switch_block_info(t_sb* cur_sb, int sb_x, int sb_y,
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid side index!\n", __FILE__, __LINE__);
       exit(1);
     }
+    /* Free */
+    temp_num_opin_rr_nodes[0] = 0;
+    my_free(temp_opin_rr_node[0]);
+    temp_num_opin_rr_nodes[1] = 0;
+    my_free(temp_opin_rr_node[1]);
+    /* Set them to NULL, avoid double free errors */
+    temp_opin_rr_node[0] = NULL;
+    temp_opin_rr_node[1] = NULL;
   }
 
   return;
@@ -2142,7 +2198,7 @@ void alloc_and_build_connection_blocks_info(t_det_routing_arch RoutingArch,
   /* Fill information for each CBX*/
   for (ix = 0; ix < (nx + 1); ix++) {
     for (iy = 1; iy < (ny + 1); iy++) {
-      build_one_connection_block_info(&(cbx_info[ix][iy]), ix, iy, CHANY,
+      build_one_connection_block_info(&(cby_info[ix][iy]), ix, iy, CHANY,
                                       LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
     }
   }
@@ -2175,6 +2231,7 @@ void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
   /* Build driver switches for each rr_node*/
   vpr_printf(TIO_MESSAGE_INFO, "Identifying driver switches for all Routing Resource Nodes...\n");
   identify_rr_node_driver_switch(RoutingArch, num_rr_nodes, rr_node);
+
   /* Build Array for each Switch block and Connection block */ 
   vpr_printf(TIO_MESSAGE_INFO, "Collecting detailed information for each Switch block...\n");
   alloc_and_build_switch_blocks_info(RoutingArch, num_rr_nodes, rr_node, rr_node_indices);
