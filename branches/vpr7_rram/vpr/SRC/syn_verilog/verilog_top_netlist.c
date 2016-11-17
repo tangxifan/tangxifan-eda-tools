@@ -485,6 +485,7 @@ void dump_verilog_defined_one_connection_box(FILE* fp,
     }
     assert (0 < cur_cb_info.chan_width[side]);
     side_cnt++;
+    fprintf(fp, "//----- %s side inputs: channel track middle outputs -----\n", convert_side_index_to_string(side));
     for (itrack = 0; itrack < cur_cb_info.chan_width[side]; itrack++) {
       fprintf(fp, "%s_%d__%d__midout_%d_, ",
               convert_chan_type_to_string(cur_cb_info.type),
@@ -505,6 +506,7 @@ void dump_verilog_defined_one_connection_box(FILE* fp,
     side_cnt++;
     assert(0 < cur_cb_info.num_ipin_rr_nodes[side]);
     assert(NULL != cur_cb_info.ipin_rr_node[side]);
+    fprintf(fp, "//----- %s side outputs: CLB input pins -----\n", convert_side_index_to_string(side));
     for (inode = 0; inode < cur_cb_info.num_ipin_rr_nodes[side]; inode++) {
       /* Print each INPUT Pins of a grid */
       dump_verilog_grid_side_pin_with_given_index(fp, OPIN,
@@ -681,15 +683,16 @@ void dump_verilog_defined_one_switch_box(FILE* fp,
       ix = x;
       iy = y;
     }
+    fprintf(fp, "//----- %s side channel ports-----\n", convert_side_index_to_string(side));
     for (itrack = 0; itrack < cur_sb_info.chan_width[side]; itrack++) {
       switch (cur_sb_info.chan_rr_node_direction[side][itrack]) {
       case OUT_PORT:
-        fprintf(fp, "%s[%d][%d]_out[%d], ", 
+        fprintf(fp, "%s_%d__%d__out_%d_, ", 
                 convert_chan_type_to_string(cur_sb_info.chan_rr_node[side][itrack]->type), 
                 ix, iy, itrack); 
         break;
       case IN_PORT:
-        fprintf(fp, "%s[%d][%d]_in[%d], ",
+        fprintf(fp, "%s_%d__%d__in_%d_, ",
                 convert_chan_type_to_string(cur_sb_info.chan_rr_node[side][itrack]->type), 
                 ix, iy, itrack); 
         break;
@@ -700,6 +703,7 @@ void dump_verilog_defined_one_switch_box(FILE* fp,
       }
     }
     fprintf(fp, "\n");
+    fprintf(fp, "//----- %s side inputs: CLB output pins -----\n", convert_side_index_to_string(side));
     /* Dump OPINs of adjacent CLBs */
     for (inode = 0; inode < cur_sb_info.num_opin_rr_nodes[side]; inode++) {
       dump_verilog_grid_side_pin_with_given_index(fp, IPIN,
@@ -708,8 +712,9 @@ void dump_verilog_defined_one_switch_box(FILE* fp,
                                                   cur_sb_info.opin_rr_node[side][inode]->xlow,
                                                   cur_sb_info.opin_rr_node[side][inode]->ylow,
                                                   FALSE); /* Do not specify the direction of port */ 
+      fprintf(fp, ",");
     } 
-    fprintf(fp, ",\n");
+    fprintf(fp, "\n");
   }
 
   /* Print Input Pad and Output Pad */

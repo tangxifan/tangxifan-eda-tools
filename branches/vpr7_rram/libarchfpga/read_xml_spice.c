@@ -592,9 +592,10 @@ static void ProcessSpiceModel(ezxml_t Parent,
         spice_model->design_tech_info.structure = SPICE_MODEL_STRUCTURE_ONELEVEL;
       } else if (0 == strcmp(FindProperty(Node,"structure",TRUE),"multi-level")) {
         spice_model->design_tech_info.structure = SPICE_MODEL_STRUCTURE_MULTILEVEL;
-      /* New Structure: crossbar */
+      /* New Structure: crossbar 
       } else if (0 == strcmp(FindProperty(Node,"structure",TRUE),"crossbar")) {
         spice_model->design_tech_info.structure = SPICE_MODEL_STRUCTURE_CROSSBAR;
+      */
       } else {
          /* Set default to RRAM MUX */
          if (SPICE_MODEL_DESIGN_RRAM == spice_model->design_tech) {

@@ -267,7 +267,7 @@ void get_rr_node_side_and_index_in_sb_info(t_rr_node* cur_rr_node,
                                           enum PORTS rr_node_direction,
                                           OUTP int* cur_rr_node_side, 
                                           OUTP int* cur_rr_node_index) {
-  int index, side, cnt;
+  int index, side;
   
   /* Count the number of existence of cur_rr_node in cur_sb_info
    * It could happen that same cur_rr_node appears on different sides of a SB
@@ -276,8 +276,6 @@ void get_rr_node_side_and_index_in_sb_info(t_rr_node* cur_rr_node,
    * We need to ensure that the found rr_node has the same direction as user want.
    * By specifying the direction of rr_node, There should be only one rr_node can satisfy!
    */
-  cnt = 0;
-  
   index = -1;
 
   for (side = 0; side < cur_sb_info.num_sides; side++) {
@@ -1099,7 +1097,7 @@ void backannotate_pb_rr_nodes_net_info() {
 /* Mark the prev_edge and prev_node of all the rr_nodes in global routing */
 static 
 void back_annotate_rr_node_map_info() {
-  int inode, jnode, inet, xlow, ylow;
+  int inode, jnode, inet;
   int next_node, iedge;
   t_trace* tptr;
   t_rr_type rr_type;
@@ -1138,8 +1136,6 @@ void back_annotate_rr_node_map_info() {
     while (tptr != NULL) {
       inode = tptr->index;
       rr_type = rr_node[inode].type;
-      xlow = rr_node[inode].xlow;
-      ylow = rr_node[inode].ylow;
       /* Net num */
       rr_node[inode].net_num = inet;
       rr_node[inode].vpack_net_num = clb_to_vpack_net_mapping[inet];

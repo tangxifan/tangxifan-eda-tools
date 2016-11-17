@@ -529,7 +529,7 @@ void dump_verilog_switch_box_short_interc(FILE* fp,
                                           int actual_fan_in,
                                           t_rr_node* drive_rr_node) {
   int side, index; 
-  int grid_x, grid_y, height;
+  int grid_x, grid_y;
   char* chan_name = NULL;
   char* des_chan_port_name = NULL;
 
@@ -573,7 +573,6 @@ void dump_verilog_switch_box_short_interc(FILE* fp,
     /* Find grid_x and grid_y */
     grid_x = drive_rr_node->xlow; 
     grid_y = drive_rr_node->ylow; /*Plus the offset in function fprint_grid_side_pin_with_given_index */
-    height = grid[grid_x][grid_y].offset;
     /* Print a grid pin */
     dump_verilog_grid_side_pin_with_given_index(fp, IPIN, /* this is an input of a Switch Box */
                                                 drive_rr_node->ptc_num, 
@@ -615,7 +614,7 @@ void dump_verilog_switch_box_mux(FILE* fp,
                                  t_rr_node** drive_rr_nodes,
                                  int switch_index) {
   int inode, side, index, input_cnt = 0;
-  int grid_x, grid_y, height;
+  int grid_x, grid_y;
   t_spice_model* verilog_model = NULL;
   int mux_level, path_id, cur_num_sram, ilevel;
   int num_mux_sram_bits = 0;
@@ -661,7 +660,6 @@ void dump_verilog_switch_box_mux(FILE* fp,
       /* Find grid_x and grid_y */
       grid_x = drive_rr_nodes[inode]->xlow; 
       grid_y = drive_rr_nodes[inode]->ylow; /*Plus the offset in function fprint_grid_side_pin_with_given_index */
-      height = grid[grid_x][grid_y].offset;
       /* Print a grid pin */
       fprintf(fp, "assign %s_size%d_%d_inbus[%d] = ",
               verilog_model->prefix, mux_size, verilog_model->cnt, input_cnt);
@@ -1063,7 +1061,7 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp, t_sb cur_sb_info,
 
   /* Put down all the multiplexers */
   for (side = 0; side < cur_sb_info.num_sides; side++) {
-    fprintf(fp, "***** %s side Multiplexers *****\n", 
+    fprintf(fp, "//----- %s side Multiplexers -----\n", 
             convert_side_index_to_string(side));
     for (itrack = 0; itrack < cur_sb_info.chan_width[side]; itrack++) {
       assert((CHANX == cur_sb_info.chan_rr_node[side][itrack]->type)
@@ -1216,7 +1214,7 @@ void dump_verilog_connection_box_mux(FILE* fp,
   int num_mux_sram_bits = 0;
   int* mux_sram_bits = NULL;
   t_rr_type drive_rr_node_type = NUM_RR_TYPES;
-  int xlow, ylow, offset, side, index;
+  int xlow, ylow, side, index;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -1282,7 +1280,6 @@ void dump_verilog_connection_box_mux(FILE* fp,
   /* output port*/
   xlow = src_rr_node->xlow;
   ylow = src_rr_node->ylow;
-  offset = grid[xlow][ylow].offset;
 
   assert(IPIN == src_rr_node->type);
   /* Search all the sides of a CB, see this drive_rr_node is an INPUT of this SB */
