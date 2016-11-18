@@ -2,6 +2,8 @@
 //------ Verilog file: sram.v -----//
 //------ Author: Xifan TANG -----//
 module sram6T_blwl(
+input read,
+input nequalize,
 input din, // Data input
 output dout, // Data output
 output doutb, // Data output

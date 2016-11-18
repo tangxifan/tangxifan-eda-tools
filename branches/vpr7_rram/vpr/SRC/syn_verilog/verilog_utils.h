@@ -24,3 +24,12 @@ t_conf_bit_info* dump_verilog_find_paired_conf_bit(t_llist* conf_bits_llist_head
                                                    t_conf_bit_info* src_conf_bit_info);
 
 void dump_verilog_gen_pairs_conf_bits(t_llist* conf_bits_llist_head);
+
+char* verilog_convert_port_type_to_string(enum e_spice_model_port_type port_type);
+
+int rec_dump_verilog_spice_model_global_ports(FILE* fp, 
+                                              t_spice_model* cur_spice_model,
+                                              boolean dump_port_type, boolean recursive);
+
+int dump_verilog_global_ports(FILE* fp, t_llist* head,
+                              boolean dump_port_type);

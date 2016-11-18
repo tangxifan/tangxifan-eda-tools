@@ -23,6 +23,7 @@
 /* Include spice support headers*/
 #include "linkedlist.h"
 #include "spice_utils.h"
+#include "fpga_spice_globals.h"
 
 /* Include verilog support headers*/
 #include "verilog_global.h"
@@ -108,9 +109,10 @@ void dump_verilog_pb_primitive_ff(FILE* fp,
           formatted_subckt_prefix, port_prefix);
   /* Definition line */
   fprintf(fp, "module %s%s (", formatted_subckt_prefix, port_prefix);
-  /* global set and reset */
-  fprintf(fp, "input greset,\n");
-  fprintf(fp, "input gset,\n");
+  /* Only dump the global ports belonging to a spice_model */
+  if (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model, TRUE, TRUE)) {
+    fprintf(fp, ",\n");
+  }
   /* print ports*/
   dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, TRUE, FALSE); 
   /* Local vdd and gnd*/
@@ -121,8 +123,11 @@ void dump_verilog_pb_primitive_ff(FILE* fp,
   fprintf(fp, "%s %s_%d_ (", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
   /* print ports*/
   dump_verilog_pb_type_ports(fp, port_prefix, 1, prim_pb_type, FALSE, TRUE); /* Use global clock for each DFF...*/ 
-  /* print global set and reset */
-  fprintf(fp, "gset, greset ");
+  /* Only dump the global ports belonging to a spice_model */
+  if (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model, FALSE, TRUE)) {
+    fprintf(fp, "\n");
+  }
+
   /* Local vdd and gnd, verilog_model name
    * TODO: global vdd for ff
    */
@@ -233,9 +238,11 @@ void dump_verilog_pb_primitive_hardlogic(FILE* fp,
           formatted_subckt_prefix, port_prefix);
   /* Definition line */
   fprintf(fp, "module %s%s (", formatted_subckt_prefix, port_prefix);
-  /* print global set and reset */
-  fprintf(fp, "input greset,\n");
-  fprintf(fp, "input gset,\n");
+  fprintf(fp, "\n");
+  /* Only dump the global ports belonging to a spice_model */
+  if (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model, TRUE, TRUE)) {
+    fprintf(fp, ",\n");
+  }
   /* print ports*/
   dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, TRUE, FALSE); 
   /* Local vdd and gnd*/
@@ -249,7 +256,12 @@ void dump_verilog_pb_primitive_hardlogic(FILE* fp,
   }
 
   /* Call the hardlogic subckt*/
-  fprintf(fp, "%s %s_%d_ ", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
+  fprintf(fp, "%s %s_%d_ (", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
+  fprintf(fp, "\n");
+  /* Only dump the global ports belonging to a spice_model */
+  if (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model, FALSE, TRUE)) {
+    fprintf(fp, ",\n");
+  }
   /* print ports*/
   dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, FALSE, FALSE); 
   /* Local vdd and gnd, verilog_model name, 
@@ -344,9 +356,12 @@ void dump_verilog_pb_primitive_io(FILE* fp,
           formatted_subckt_prefix, port_prefix);
   /* Definition line */
   fprintf(fp, "module %s%s (", formatted_subckt_prefix, port_prefix);
-  /* print global set and reset */
-  fprintf(fp, "input greset,\n");
-  fprintf(fp, "input gset,\n");
+  fprintf(fp, "\n");
+  /* Only dump the global ports belonging to a spice_model 
+   */
+  if (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model, TRUE, TRUE)) {
+    fprintf(fp, ",\n");
+  }
   /* print ports*/
   switch (verilog_model->type) {
   case SPICE_MODEL_INPAD:
@@ -424,6 +439,13 @@ void dump_verilog_pb_primitive_io(FILE* fp,
 
   /* Call the I/O subckt*/
   fprintf(fp, "%s %s_%d_ (", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
+  fprintf(fp, "\n");
+  /* Only dump the global ports belonging to a spice_model 
+   * Disable recursive here !
+   */
+  if (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model, FALSE, FALSE)) {
+    fprintf(fp, ",\n");
+  }
   switch (verilog_model->type) {
   case SPICE_MODEL_INPAD:
     assert((0 == strcmp(".input", prim_pb_type->blif_model))
@@ -491,6 +513,11 @@ void dump_verilog_pb_primitive_io(FILE* fp,
       cur_sram = sram_verilog_model->cnt;
       for (i = 0; i < num_sram; i++) {
         fprintf(fp, "%s %s_%d_ (", sram_verilog_model->name, sram_verilog_model->prefix, cur_sram); /* SRAM subckts*/
+        fprintf(fp, "\n");
+        /* Only dump the global ports belonging to a spice_model */
+        if (0 < rec_dump_verilog_spice_model_global_ports(fp, sram_verilog_model, FALSE, TRUE)) {
+          fprintf(fp, ",\n");
+        }
         fprintf(fp, "%s_out[%d], ", sram_verilog_model->prefix, cur_sram); /* Input*/
         fprintf(fp, "%s_out[%d], %s_outb[%d], ", 
                 sram_verilog_model->prefix, cur_sram, 

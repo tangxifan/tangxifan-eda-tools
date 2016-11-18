@@ -42,9 +42,12 @@ t_llist* create_llist(int len) {
 /**
  * Insert a node inside the linked list
  * Cur is pointer which a new node will be inserted after.
+ * If Cur is a NULL pointer, we create a linked-list head
+ * If Cur is not NULL, we add a node after the tail of linked-list
  */
 t_llist* insert_llist_node(t_llist* cur) {
   t_llist* cur_next; 
+
   /* Store the current next*/  
   cur_next = cur->next;
   /* Allocate new node*/

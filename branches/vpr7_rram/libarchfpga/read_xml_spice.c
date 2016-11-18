@@ -439,7 +439,7 @@ static void ProcessSpiceModelPort(ezxml_t Node,
   port->size = GetIntProperty(Node,"size",TRUE,1);
   ezxml_set_attr(Node, "size", NULL);
   
-  /* See if this is a mode selec.
+  /* See if this is a mode selector.
    * Currently, we only allow a SRAM port to be a mode selector */
   if (SPICE_MODEL_PORT_SRAM == port->type) {
     port->mode_select = GetBooleanProperty(Node, "mode_select", FALSE, FALSE);
@@ -447,6 +447,17 @@ static void ProcessSpiceModelPort(ezxml_t Node,
     port->default_val = GetIntProperty(Node, "default_val", FALSE, 0);
     ezxml_set_attr(Node, "default_val", NULL);
   }
+
+  /* See if this is a global signal 
+   * We assume that global signals are shared by all the SPICE Model/blocks.
+   * We need to check if other SPICE model has the same port name
+   */
+  port->is_global = GetBooleanProperty(Node, "is_global", FALSE, FALSE);
+  ezxml_set_attr(Node, "is_global", NULL);
+
+  /* Check if this port is linked to another spice_model*/
+  port->spice_model_name = my_strdup(FindProperty(Node,"spice_model_name",FALSE));
+  ezxml_set_attr(Node, "spice_model_name", NULL);
  
   return;
 }

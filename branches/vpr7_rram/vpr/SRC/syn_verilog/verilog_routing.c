@@ -24,6 +24,7 @@
 #include "linkedlist.h"
 #include "spice_utils.h"
 #include "spice_backannotate_utils.h"
+#include "fpga_spice_globals.h"
 
 /* Include Verilog support headers*/
 #include "verilog_global.h"
@@ -79,6 +80,11 @@ void dump_verilog_routing_chan_subckt(FILE* fp,
 
   /* Chan subckt definition */
   fprintf(fp, "module %s_%d__%d_ ( \n", chan_prefix, x, y);
+  fprintf(fp, "\n");
+  /* dump global ports */
+  if (0 < dump_verilog_global_ports(fp, global_ports_head, TRUE)) {
+    fprintf(fp, ",\n");
+  }
   /* Inputs and outputs,
    * Rules for CHANX:
    * print left-hand ports(in) first, then right-hand ports(out)
@@ -973,6 +979,12 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp, t_sb cur_sb_info,
   fprintf(fp, "//----- Verilog Module of Switch Box[%d][%d] -----\n", cur_sb_info.x, cur_sb_info.y);
   /* Print the definition of subckt*/
   fprintf(fp, "module sb_%d__%d_ ( \n", cur_sb_info.x, cur_sb_info.y);
+  fprintf(fp, "\n");
+  /* dump global ports */
+  if (0 < dump_verilog_global_ports(fp, global_ports_head, TRUE)) {
+    fprintf(fp, ",\n");
+  }
+
   for (side = 0; side < cur_sb_info.num_sides; side++) {
     if (0 == side) {
       /* 1. Channel Y [x][y+1] inputs */
@@ -1476,6 +1488,10 @@ void dump_verilog_routing_connection_box_subckt(FILE* fp, t_cb cur_cb_info,
   }
  
   fprintf(fp, "(\n");
+  /* dump global ports */
+  if (0 < dump_verilog_global_ports(fp, global_ports_head, TRUE)) {
+    fprintf(fp, ",\n");
+  }
   /* Print the ports of channels*/
   /*connect to the mid point of a track*/
   /* Get the chan_rr_nodes: Only one side of a cb_info has chan_rr_nodes*/

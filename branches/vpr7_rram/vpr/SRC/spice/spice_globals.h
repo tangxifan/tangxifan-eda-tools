@@ -56,13 +56,5 @@ extern t_llist* tb_head;
 /* Heads of scan-chain */
 extern t_llist* scan_chain_heads;
 
-extern int default_signal_init_value;
-extern int run_parasitic_net_estimation;
- 
-/* Enumeration */
-enum e_pin2pin_interc_type {
- INPUT2INPUT_INTERC, OUTPUT2OUTPUT_INTERC
-};
-
 
 

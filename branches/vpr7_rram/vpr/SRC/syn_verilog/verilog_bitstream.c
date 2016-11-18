@@ -27,6 +27,7 @@
 #include "spice_utils.h"
 #include "spice_backannotate_utils.h"
 #include "spice_api.h"
+#include "fpga_spice_globals.h"
 
 /* Include SynVerilog headers */
 #include "verilog_global.h"

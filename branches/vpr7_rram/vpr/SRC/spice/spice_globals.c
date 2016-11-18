@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "spice_types.h"
 #include "linkedlist.h"
+#include "fpga_spice_globals.h"
 #include "spice_globals.h"
 
 char* nmos_subckt_name = "vpr_nmos";
@@ -49,10 +50,6 @@ int num_used_cb_mux_tb = 0;
 int num_used_sb_mux_tb = 0;
 int num_used_lut_tb = 0;
 int num_used_dff_tb = 0;
-/* Default init_value */
-int default_signal_init_value = 0;
-/* Default do parasitic net estimation !!!*/
-int run_parasitic_net_estimation = 1;
 
 /* linked-list for all the testbenches */
 t_llist* tb_head = NULL;

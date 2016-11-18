@@ -1,8 +1,4 @@
 
-void match_pb_types_spice_model_rec(t_pb_type* cur_pb_type,
-                                    int num_spice_model,
-                                    t_spice_model* spice_models);
-
 int find_path_id_between_pb_rr_nodes(t_rr_node* local_rr_graph,
                                      int src_node,
                                      int des_node);

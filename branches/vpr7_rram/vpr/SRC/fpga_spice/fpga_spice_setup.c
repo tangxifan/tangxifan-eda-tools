@@ -1,0 +1,760 @@
+/***********************************/
+/*      SPICE Modeling for VPR     */
+/*       Xifan TANG, EPFL/LSI      */
+/***********************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <time.h>
+#include <assert.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+/* Include vpr structs*/
+#include "util.h"
+#include "physical_types.h"
+#include "vpr_types.h"
+#include "globals.h"
+#include "rr_graph.h"
+#include "vpr_utils.h"
+#include "path_delay.h"
+#include "stats.h"
+
+/* Include spice support headers*/
+#include "linkedlist.h"
+#include "fpga_spice_globals.h"
+#include "spice_utils.h"
+#include "spice_backannotate_utils.h"
+#include "syn_verilog_api.h"
+#include "fpga_spice_setup.h"
+
+/***** Subroutines Declarations *****/
+static 
+void match_pb_types_spice_model_rec(t_pb_type* cur_pb_type,
+                                    int num_spice_model,
+                                    t_spice_model* spice_models);
+
+static 
+t_llist* check_and_add_one_global_port_to_llist(t_llist* old_head, 
+                                                t_spice_model_port* candidate_port);
+
+static 
+void rec_stat_pb_type_keywords(t_pb_type* cur_pb_type,
+                               int* num_keyword);
+
+static 
+void rec_add_pb_type_keywords_to_list(t_pb_type* cur_pb_type,
+                                      int* cur,
+                                      char** keywords,
+                                      char* prefix);
+
+/***** Subroutines *****/
+
+/* Find spice_model_name definition in pb_types
+ * Try to match the name with defined spice_models
+ */
+static 
+void match_pb_types_spice_model_rec(t_pb_type* cur_pb_type,
+                                    int num_spice_model,
+                                    t_spice_model* spice_models) {
+  int imode, ipb, jinterc;
+  
+  if (NULL == cur_pb_type) {
+    vpr_printf(TIO_MESSAGE_WARNING,"(File:%s,LINE[%d])cur_pb_type is null pointor!\n",__FILE__,__LINE__);
+    return;
+  }
+
+  /* If there is a spice_model_name, this is a leaf node!*/
+  if (NULL != cur_pb_type->spice_model_name) {
+    /* What annoys me is VPR create a sub pb_type for each lut which suppose to be a leaf node
+     * This may bring software convience but ruins SPICE modeling
+     */
+    /* Let's find a matched spice model!*/
+    printf("INFO: matching cur_pb_type=%s with spice_model_name=%s...\n",cur_pb_type->name, cur_pb_type->spice_model_name);
+    assert(NULL == cur_pb_type->spice_model);
+    cur_pb_type->spice_model = find_name_matched_spice_model(cur_pb_type->spice_model_name, num_spice_model, spice_models);
+    if (NULL == cur_pb_type->spice_model) {
+      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,LINE[%d]) Fail to find a defined SPICE model called %s, in pb_type(%s)!\n",__FILE__, __LINE__, cur_pb_type->spice_model_name, cur_pb_type->name);
+      exit(1);
+    }
+    return;
+  }
+  /* Traversal the hierarchy*/
+  for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
+    /* Task 1: Find the interconnections and match the spice_model */
+    for (jinterc = 0; jinterc < cur_pb_type->modes[imode].num_interconnect; jinterc++) {
+      assert(NULL == cur_pb_type->modes[imode].interconnect[jinterc].spice_model);
+      /* If the spice_model_name is not defined, we use the default*/
+      if (NULL == cur_pb_type->modes[imode].interconnect[jinterc].spice_model_name) {
+        switch (cur_pb_type->modes[imode].interconnect[jinterc].type) {
+        case DIRECT_INTERC:
+          cur_pb_type->modes[imode].interconnect[jinterc].spice_model = 
+            get_default_spice_model(SPICE_MODEL_WIRE,num_spice_model,spice_models);
+          break;
+        case COMPLETE_INTERC:
+          /* Special for Completer Interconnection:
+           * 1. The input number is 1, this infers a direct interconnection.
+           * 2. The input number is larger than 1, this infers multplexers
+           * according to interconnect[j].num_mux identify the number of input at this level
+           */
+          if (0 == cur_pb_type->modes[imode].interconnect[jinterc].num_mux) {
+            cur_pb_type->modes[imode].interconnect[jinterc].spice_model = 
+              get_default_spice_model(SPICE_MODEL_WIRE,num_spice_model,spice_models);
+          } else {
+            cur_pb_type->modes[imode].interconnect[jinterc].spice_model = 
+              get_default_spice_model(SPICE_MODEL_MUX,num_spice_model,spice_models);
+          } 
+          break;
+        case MUX_INTERC:
+          cur_pb_type->modes[imode].interconnect[jinterc].spice_model = 
+            get_default_spice_model(SPICE_MODEL_MUX,num_spice_model,spice_models);
+          break;
+        default:
+          break; 
+        }        
+        vpr_printf(TIO_MESSAGE_INFO,"INFO: Link a SPICE model (%s) for Interconnect (%s)!\n",
+                   cur_pb_type->modes[imode].interconnect[jinterc].spice_model->name, cur_pb_type->modes[imode].interconnect[jinterc].name);
+      } else {
+        cur_pb_type->modes[imode].interconnect[jinterc].spice_model = 
+          find_name_matched_spice_model(cur_pb_type->modes[imode].interconnect[jinterc].spice_model_name, num_spice_model, spice_models);
+        vpr_printf(TIO_MESSAGE_INFO,"INFO: Link a SPICE model (%s) for Interconnect (%s)!\n",
+                   cur_pb_type->modes[imode].interconnect[jinterc].spice_model->name, cur_pb_type->modes[imode].interconnect[jinterc].name);
+        if (NULL == cur_pb_type->modes[imode].interconnect[jinterc].spice_model) {
+          vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,LINE[%d]) Fail to find a defined SPICE model called %s, in pb_type(%s)!\n",__FILE__, __LINE__, cur_pb_type->modes[imode].interconnect[jinterc].spice_model_name, cur_pb_type->name);
+          exit(1);
+        } 
+        switch (cur_pb_type->modes[imode].interconnect[jinterc].type) {
+        case DIRECT_INTERC:
+          if (SPICE_MODEL_WIRE != cur_pb_type->modes[imode].interconnect[jinterc].spice_model->type) {
+            vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,LINE[%d]) Invalid type of matched SPICE model called %s, in pb_type(%s)! Sould be wire!\n",__FILE__, __LINE__, cur_pb_type->modes[imode].interconnect[jinterc].spice_model_name, cur_pb_type->name);
+            exit(1);
+          }
+          break;
+        case COMPLETE_INTERC:
+          if (0 == cur_pb_type->modes[imode].interconnect[jinterc].num_mux) {
+            if (SPICE_MODEL_WIRE != cur_pb_type->modes[imode].interconnect[jinterc].spice_model->type) {
+              vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,LINE[%d]) Invalid type of matched SPICE model called %s, in pb_type(%s)! Sould be wire!\n",__FILE__, __LINE__, cur_pb_type->modes[imode].interconnect[jinterc].spice_model_name, cur_pb_type->name);
+              exit(1);
+            }
+          } else {
+            if (SPICE_MODEL_MUX != cur_pb_type->modes[imode].interconnect[jinterc].spice_model->type) {
+              vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,LINE[%d]) Invalid type of matched SPICE model called %s, in pb_type(%s)! Sould be MUX!\n",__FILE__, __LINE__, cur_pb_type->modes[imode].interconnect[jinterc].spice_model_name, cur_pb_type->name);
+              exit(1);
+            }
+          }
+          break;
+        case MUX_INTERC:
+          if (SPICE_MODEL_MUX != cur_pb_type->modes[imode].interconnect[jinterc].spice_model->type) {
+            vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,LINE[%d]) Invalid type of matched SPICE model called %s, in pb_type(%s)! Sould be MUX!\n",__FILE__, __LINE__, cur_pb_type->modes[imode].interconnect[jinterc].spice_model_name, cur_pb_type->name);
+            exit(1);
+          }
+          break;
+        default:
+          break; 
+        }        
+      }
+    }
+    /* Task 2: Find the child pb_type, do matching recursively */
+    //if (1 == cur_pb_type->modes[imode].define_spice_model) {
+    for (ipb = 0; ipb < cur_pb_type->modes[imode].num_pb_type_children; ipb++) {
+      match_pb_types_spice_model_rec(&cur_pb_type->modes[imode].pb_type_children[ipb],
+                                     num_spice_model,
+                                     spice_models);
+    }
+    //}
+  } 
+  return;  
+}
+
+
+/* Initialize and check spice models in architecture
+ * Tasks:
+ * 1. Link the spice model defined in pb_types and routing switches
+ * 2. Add default spice model (MUX) if needed
+ */
+void init_check_arch_spice_models(t_arch* arch,
+                                  t_det_routing_arch* routing_arch) {
+  int i, iport;
+
+  vpr_printf(TIO_MESSAGE_INFO,"Initializing and checking SPICE models...\n");
+  /* Check Spice models first*/
+  assert(NULL != arch);
+  assert(NULL != arch->spice);
+  if ((0 == arch->spice->num_spice_model)||(0 > arch->spice->num_spice_model)) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d])SPICE models are not defined! Miss this part in architecture file.\n",__FILE__,__LINE__);
+    exit(1);
+  }
+  assert(NULL != arch->spice->spice_models);
+  
+  /* Find default spice model*/
+  /* MUX */
+  if (NULL == get_default_spice_model(SPICE_MODEL_MUX,
+                                      arch->spice->num_spice_model, 
+                                      arch->spice->spice_models)) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d])Fail to find the default MUX SPICE Model! Should define it in architecture file\n",__FILE__,__LINE__);
+    exit(1);
+  }
+
+  /* Channel Wire */
+  if (NULL == get_default_spice_model(SPICE_MODEL_CHAN_WIRE,
+                                      arch->spice->num_spice_model, 
+                                      arch->spice->spice_models)) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d])Fail to find the default Channel Wire SPICE Model! Should define it in architecture file\n",__FILE__,__LINE__);
+    exit(1);
+  }
+
+  /* Wire */
+  if (NULL == get_default_spice_model(SPICE_MODEL_WIRE,
+                                      arch->spice->num_spice_model, 
+                                      arch->spice->spice_models)) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d])Fail to find the default Wire SPICE Model! Should define it in architecture file\n",__FILE__,__LINE__);
+    exit(1);
+  }
+
+  /* Link the input/output buffer spice models to higher level spice models 
+   * Configure (fill information) the input/output buffers of high level spice models */
+  config_spice_model_input_output_buffers_pass_gate(arch->spice->num_spice_model, arch->spice->spice_models);
+
+  /* 1. Link the spice model defined in pb_types and routing switches */
+  /* Step A:  Check routing switches, connection blocks*/
+  if ((0 == arch->num_cb_switch)||(0 > arch->num_cb_switch)) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d]) Define Switches for Connection Blocks is mandatory in SPICE model support! Miss this part in architecture file.\n",__FILE__,__LINE__);
+    exit(1);
+  }
+  
+  for (i = 0; i < arch->num_cb_switch; i++) {
+    arch->cb_switches[i].spice_model = 
+      find_name_matched_spice_model(arch->cb_switches[i].spice_model_name,
+                                    arch->spice->num_spice_model, 
+                                    arch->spice->spice_models); 
+    if (NULL == arch->cb_switches[i].spice_model) {
+      vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d])Invalid SPICE model name(%s) of Switch(%s) is undefined in SPICE models!\n",__FILE__ ,__LINE__, arch->cb_switches[i].spice_model_name, arch->cb_switches[i].name);
+      exit(1);
+    }
+    /* Check the spice model structure is matched with the structure in switch_inf */
+    if (FALSE == check_spice_model_structure_match_switch_inf(arch->cb_switches[i])) {
+      exit(1);
+    }
+  } 
+ 
+  /* Step B: Check switch list: Switch Box*/
+  if ((0 == arch->num_switches)||(0 > arch->num_switches)) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d]) Define Switches for Switch Boxes is mandatory in SPICE model support! Miss this part in architecture file.\n",__FILE__,__LINE__);
+    exit(1);
+  }
+  
+  for (i = 0; i < arch->num_switches; i++) {
+    arch->Switches[i].spice_model = 
+      find_name_matched_spice_model(arch->Switches[i].spice_model_name,
+                                    arch->spice->num_spice_model, 
+                                    arch->spice->spice_models); 
+    if (NULL == arch->Switches[i].spice_model) {
+      vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d])Invalid SPICE model name(%s) of Switch(%s) is undefined in SPICE models!\n",__FILE__ ,__LINE__, arch->Switches[i].spice_model_name, arch->Switches[i].name);
+      exit(1);
+    }
+    /* Check the spice model structure is matched with the structure in switch_inf */
+    if (FALSE == check_spice_model_structure_match_switch_inf(arch->cb_switches[i])) {
+      exit(1);
+    }
+  } 
+
+  /* Update the switches in detailed routing architecture settings*/
+  for (i = 0; i < routing_arch->num_switch; i++) {
+    if (NULL == switch_inf[i].spice_model_name) { 
+      switch_inf[i].spice_model = get_default_spice_model(SPICE_MODEL_MUX,
+                                                          arch->spice->num_spice_model, 
+                                                          arch->spice->spice_models);
+      continue;
+    }
+    switch_inf[i].spice_model = 
+      find_name_matched_spice_model(switch_inf[i].spice_model_name,
+                                    arch->spice->num_spice_model, 
+                                    arch->spice->spice_models); 
+    if (NULL == switch_inf[i].spice_model) {
+      vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d])Invalid SPICE model name(%s) of Switch(%s) is undefined in SPICE models!\n",__FILE__ ,__LINE__, switch_inf[i].spice_model_name, switch_inf[i].name);
+      exit(1);
+    }
+  }
+
+  /* Step C: Find SRAM Model*/
+  if (NULL == arch->sram_inf.spice_model_name) { 
+      arch->sram_inf.spice_model = get_default_spice_model(SPICE_MODEL_SRAM,
+                                                           arch->spice->num_spice_model, 
+                                                           arch->spice->spice_models);
+  } else {
+    arch->sram_inf.spice_model = 
+        find_name_matched_spice_model(arch->sram_inf.spice_model_name,
+                                      arch->spice->num_spice_model, 
+                                      arch->spice->spice_models); 
+  }
+  if (NULL == arch->sram_inf.spice_model) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d])Invalid SPICE model name(%s) of SRAM is undefined in SPICE models!\n",
+               __FILE__ ,__LINE__, arch->sram_inf.spice_model->name);
+    exit(1);
+  }
+  /* Check the type of SRAM_SPICE_MODEL */
+  switch (arch->sram_inf.orgz_type) {
+  case SPICE_SRAM_STANDALONE:
+    vpr_printf(TIO_MESSAGE_INFO, "INFO: Checking if SRAM spice model fit standalone organization...\n");
+    if (SPICE_MODEL_SRAM != arch->sram_inf.spice_model->type) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Standalone SRAM organization requires a SPICE model(type=sram)!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+    /* TODO: check SRAM ports */
+    check_sram_spice_model_ports(arch->sram_inf.spice_model, FALSE);
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+    vpr_printf(TIO_MESSAGE_INFO, "INFO: Checking if SRAM spice model fit scan-chain organization...\n");
+    if (SPICE_MODEL_SCFF != arch->sram_inf.spice_model->type) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Scan-chain SRAM organization requires a SPICE model(type=sff)!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+    /* TODO: check Scan-chain Flip-flop ports */
+    check_ff_spice_model_ports(arch->sram_inf.spice_model, TRUE);
+    break;
+  case SPICE_SRAM_MEMORY_BANK:
+    vpr_printf(TIO_MESSAGE_INFO, "INFO: Checking if SRAM spice model fit memory-bank organization...\n");
+    if (SPICE_MODEL_SRAM != arch->sram_inf.spice_model->type) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Memory-bank SRAM organization requires a SPICE model(type=sram)!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+    /* TODO: check if this one has bit lines and word lines */
+    check_sram_spice_model_ports(arch->sram_inf.spice_model, TRUE);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Invalid SRAM organization type!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /* Step D: Find the segment spice_model*/
+  for (i = 0; i < arch->num_segments; i++) {
+    if (NULL == arch->Segments[i].spice_model_name) {
+      arch->Segments[i].spice_model = 
+        get_default_spice_model(SPICE_MODEL_CHAN_WIRE,
+                                arch->spice->num_spice_model, 
+                                arch->spice->spice_models); 
+      continue;
+    } else {
+      arch->Segments[i].spice_model = 
+        find_name_matched_spice_model(arch->Segments[i].spice_model_name,
+                                      arch->spice->num_spice_model, 
+                                      arch->spice->spice_models); 
+    }
+    if (NULL == arch->Segments[i].spice_model) {
+      vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d])Invalid SPICE model name(%s) of Segment(Length:%d) is undefined in SPICE models!\n",__FILE__ ,__LINE__, arch->Segments[i].spice_model_name, arch->Segments[i].length);
+      exit(1);
+    } else if (SPICE_MODEL_CHAN_WIRE != arch->Segments[i].spice_model->type) {
+      vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d])Invalid SPICE model(%s) type of Segment(Length:%d)! Should be chan_wire!\n",__FILE__ ,__LINE__, arch->Segments[i].spice_model_name, arch->Segments[i].length);
+      exit(1);
+    }
+  } 
+
+  /* 2. Search Complex Blocks (Pb_Types), Link spice_model according to the spice_model_name*/
+  for (i = 0; i < num_types; i++) {
+    if (type_descriptors[i].pb_type) {
+       match_pb_types_spice_model_rec(type_descriptors[i].pb_type,
+                                      arch->spice->num_spice_model,
+                                      arch->spice->spice_models);
+    }
+  }
+
+  /* 3. Initial grid_index_low/high for each spice_model */
+  for (i = 0; i < arch->spice->num_spice_model; i++) {
+    alloc_spice_model_grid_index_low_high(&(arch->spice->spice_models[i]));
+    alloc_spice_model_routing_index_low_high(&(arch->spice->spice_models[i]));
+  }
+  /* 4. zero the counter of each spice_model */
+  zero_spice_models_cnt(arch->spice->num_spice_model, arch->spice->spice_models);
+  /* 5. zero all index low high */
+  /*
+  zero_spice_model_grid_index_low_high(arch->spice->num_spice_model, arch->spice->spice_models);
+  zero_spice_models_routing_index_low_high(arch->spice->num_spice_model, arch->spice->spice_models);
+  */
+ 
+  /* 6. Check each port of a spice model and create link to another spice model */
+  for (i = 0; i < arch->spice->num_spice_model; i++) {
+    for (iport = 0; iport < arch->spice->spice_models[i].num_port; iport++) {
+      /* Set to NULL pointor first */
+      arch->spice->spice_models[i].ports[iport].spice_model = NULL;
+      if (NULL != arch->spice->spice_models[i].ports[iport].spice_model_name) {
+        arch->spice->spice_models[i].ports[iport].spice_model = 
+          find_name_matched_spice_model(arch->spice->spice_models[i].ports[iport].spice_model_name,
+                                        arch->spice->num_spice_model, 
+                                        arch->spice->spice_models); 
+      } else {
+        /* If this port is a sram port, we need to find a spice_model ! Use the default one !*/
+        if (SPICE_MODEL_PORT_SRAM == arch->spice->spice_models[i].ports[iport].type) {
+          arch->spice->spice_models[i].ports[iport].spice_model = arch->sram_inf.spice_model;
+        }
+      }
+    }
+  }
+
+  return;
+}
+
+/* Statistics reserved names in pb_types to the list*/
+static 
+void rec_stat_pb_type_keywords(t_pb_type* cur_pb_type,
+                               int* num_keyword) {
+  int imode, ipb, jpb;
+
+  assert((0 == (*num_keyword))||(0 < (*num_keyword)));
+  assert(NULL != num_keyword);
+  assert(NULL != cur_pb_type);
+
+  for (ipb = 0; ipb < cur_pb_type->num_pb; ipb++) {
+    for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
+      /* pb_type_name[num_pb]_mode[mode_name]*/
+      (*num_keyword) += 1;
+      for (jpb = 0; jpb < cur_pb_type->modes[imode].num_pb_type_children; jpb++) {
+        if (NULL == cur_pb_type->modes[imode].pb_type_children[jpb].spice_model) {
+          rec_stat_pb_type_keywords(&(cur_pb_type->modes[imode].pb_type_children[jpb]),
+                                    num_keyword);
+        }
+      }
+    }
+  }
+
+  return;
+}
+
+/* Add reserved names in pb_types to the list*/
+static 
+void rec_add_pb_type_keywords_to_list(t_pb_type* cur_pb_type,
+                                      int* cur,
+                                      char** keywords,
+                                      char* prefix) {
+  int imode, ipb, jpb;
+  char* formatted_prefix = format_spice_node_prefix(prefix);
+  char* pass_on_prefix = NULL;
+
+  assert(NULL != cur);
+  assert((0 == (*cur))||(0 < (*cur)));
+  assert(NULL != keywords);
+  assert(NULL != cur_pb_type);
+
+  /* pb_type_name[num_pb]_mode[mode_name]*/
+  // num_keyword += cur_pb_type->num_pb * cur_pb_type->num_modes;
+  for (ipb = 0; ipb < cur_pb_type->num_pb; ipb++) {
+    for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
+      keywords[(*cur)] = (char*)my_malloc(sizeof(char)*
+                                         (strlen(formatted_prefix) + strlen(cur_pb_type->name) + 1 + strlen(my_itoa(ipb)) + 7 
+                                          + strlen(cur_pb_type->modes[imode].name) + 2));
+      sprintf(keywords[(*cur)], "%s%s[%d]_mode[%s]", formatted_prefix, cur_pb_type->name, ipb, cur_pb_type->modes[imode].name);
+      pass_on_prefix = my_strdup(keywords[(*cur)]);
+      (*cur)++;
+      for (jpb = 0; jpb < cur_pb_type->modes[imode].num_pb_type_children; jpb++) {
+        if (NULL == cur_pb_type->modes[imode].pb_type_children[jpb].spice_model) {
+          rec_add_pb_type_keywords_to_list(&(cur_pb_type->modes[imode].pb_type_children[jpb]),
+                                             cur, keywords, pass_on_prefix);
+          my_free(pass_on_prefix);
+        }
+      }
+    }
+  }
+
+  my_free(formatted_prefix);
+
+  return;
+}
+
+/* This function checks conflicts between
+ * 1. SPICE model names and reserved sub-circuit names
+ */
+void check_keywords_conflict(t_arch Arch) {
+  int num_keyword = 0;
+  char**keywords;
+  int conflict = 0;
+
+  int num_keyword_per_grid = 0;
+  int cur, iseg, imodel, i, iport;
+  int ix, iy, iz;
+  t_pb_type* cur_pb_type = NULL;
+  char* prefix = NULL;
+  t_llist* temp = NULL;
+  t_spice_model_port* cur_global_port = NULL;
+
+  /* Generate the list of reserved names */
+  num_keyword = 0;
+  keywords = NULL;
+
+  /* Reserved names: grid names */
+  /* Reserved names: pb_type names */
+  for (ix = 0; ix < (nx + 2); ix++) { 
+    for (iy = 0; iy < (ny + 2); iy++) { 
+      /* by_pass the empty */
+      if (EMPTY_TYPE != grid[ix][iy].type) {
+        num_keyword += 1; /* plus grid[ix][iy]*/ 
+        for (iz = 0; iz < grid[ix][iy].type->capacity; iz++) {
+          num_keyword_per_grid = 0;
+          /* Per grid, type_descriptor.name[i]*/
+          /* Go recursive pb_graph_node, until the leaf which defines a spice_model */
+          cur_pb_type = grid[ix][iy].type->pb_type;
+          rec_stat_pb_type_keywords(cur_pb_type, &num_keyword_per_grid);
+          num_keyword += num_keyword_per_grid; 
+        }
+      }
+    }
+  }
+
+  /* Reserved names: switch boxes, connection boxes, channels */
+  /* Channels -X */
+  num_keyword += (ny+1) * nx;
+  /* Channels -Y */
+  num_keyword += (nx+1) * ny;
+  /* Switch Boxes */
+  /* sb[ix][iy]*/
+  num_keyword += (nx + 1)*(ny + 1); 
+  /* Connection Boxes */
+  /* cbx[ix][iy] */
+  num_keyword += (ny+1) * nx;
+  /* cby[ix][iy] */
+  num_keyword += (nx+1) * ny;
+
+  /* internal names: inv, buf, cpt, vpr_nmos, vpr_pmos, wire_segments */
+  num_keyword += 5 + Arch.num_segments;
+
+  /* Include keywords of global ports */
+  temp = global_ports_head;
+  while (NULL != temp) {
+    cur_global_port = (t_spice_model_port*)(temp->dptr);
+    num_keyword += cur_global_port->size;
+    temp = temp->next;
+  }
+
+  /* Malloc */
+  keywords = (char**)my_malloc(sizeof(char*)*num_keyword);
+  
+  /* Add reserved names to the list */
+  cur = 0;
+  for (i = 0; i < num_keyword; i++) {
+    keywords[i] = NULL;
+  }
+  /* Include keywords of global ports */
+  temp = global_ports_head;
+  while (NULL != temp) {
+    cur_global_port = (t_spice_model_port*)(temp->dptr);
+    for (iport = 0; iport < cur_global_port->size; iport++) { 
+      keywords[cur] = (char*)my_malloc(sizeof(char)*
+                                      (strlen(cur_global_port->prefix) + 2 + strlen(my_itoa(iport)) + 1));
+      sprintf(keywords[cur], "%s[%d]", cur_global_port->prefix, iport);
+      cur++;
+    }
+    temp = temp->next;
+  }
+  /* internal names: inv, buf, cpt, vpr_nmos, vpr_pmos, wire_segments */
+  keywords[cur] = "inv"; cur++;
+  keywords[cur] = "buf"; cur++;
+  keywords[cur] = "cpt"; cur++;
+  keywords[cur] = "vpr_nmos"; cur++;
+  keywords[cur] = "vpr_pmos"; cur++;
+  for (iseg = 0; iseg < Arch.num_segments; iseg++) {
+    keywords[cur] = (char*)my_malloc(sizeof(char)*
+                                    (strlen(Arch.Segments[iseg].spice_model->name) + 4 + strlen(my_itoa(iseg)) + 1));
+    sprintf(keywords[cur], "%s_seg%d", Arch.Segments[iseg].spice_model->name, iseg);
+    cur++;
+  }
+  /* Reserved names: switch boxes, connection boxes, channels */
+  /* Channels -X */
+  for (iy = 0; iy < (ny + 1); iy++) { 
+    for (ix = 1; ix < (nx + 1); ix++) { 
+      /* chanx[ix][iy]*/
+      keywords[cur] = (char*)my_malloc(sizeof(char)* (6 + strlen(my_itoa(ix)) + 2 + strlen(my_itoa(iy)) + 2));
+      sprintf(keywords[cur], "chanx[%d][%d]", ix, iy);
+      cur++;
+    }
+  }
+  /* Channels -Y */
+  for (ix = 0; ix < (nx + 1); ix++) { 
+    for (iy = 1; iy < (ny + 1); iy++) { 
+      /* chany[ix][iy]*/
+      keywords[cur] = (char*)my_malloc(sizeof(char)* (6 + strlen(my_itoa(ix)) + 2 + strlen(my_itoa(iy)) + 2));
+      sprintf(keywords[cur], "chany[%d][%d]", ix, iy);
+      cur++;
+    }
+  }
+  /* Connection Box */
+  /* cbx[ix][iy]*/
+  for (iy = 0; iy < (ny + 1); iy++) { 
+    for (ix = 1; ix < (nx + 1); ix++) { 
+      /* cbx[ix][iy]*/
+      keywords[cur] = (char*)my_malloc(sizeof(char)* (4 + strlen(my_itoa(ix)) + 2 + strlen(my_itoa(iy)) + 2));
+      sprintf(keywords[cur], "cbx[%d][%d]", ix, iy);
+      cur++;
+    }
+  }
+  /* cby[ix][iy]*/
+  for (ix = 0; ix < (nx + 1); ix++) { 
+    for (iy = 1; iy < (ny + 1); iy++) { 
+      /* cby[ix][iy]*/
+      keywords[cur] = (char*)my_malloc(sizeof(char)* (4 + strlen(my_itoa(ix)) + 2 + strlen(my_itoa(iy)) + 2));
+      sprintf(keywords[cur], "cby[%d][%d]", ix, iy);
+      cur++;
+    }
+  }
+  /* Switch Boxes */
+  for (ix = 0; ix < (nx + 1); ix++) { 
+    for (iy = 0; iy < (ny + 1); iy++) { 
+      /* sb[ix][iy]*/
+      keywords[cur] = (char*)my_malloc(sizeof(char)* (3 + strlen(my_itoa(ix)) + 2 + strlen(my_itoa(iy)) + 2));
+      sprintf(keywords[cur], "sb[%d][%d]", ix, iy);
+      cur++;
+    }
+  }
+  /* Reserved names: grid names */
+  /* Reserved names: pb_type names */
+  for (ix = 0; ix < (nx + 2); ix++) { 
+    for (iy = 0; iy < (ny + 2); iy++) { 
+      /* by_pass the empty */
+      if (EMPTY_TYPE != grid[ix][iy].type) {
+        prefix = (char*)my_malloc(sizeof(char)* (5 + strlen(my_itoa(ix)) + 2 + strlen(my_itoa(iy)) + 2));
+        sprintf(prefix, "grid[%d][%d]", ix, iy);
+        /* plus grid[ix][iy]*/ 
+        keywords[cur] = my_strdup(prefix); 
+        cur++; 
+        for (iz = 0; iz < grid[ix][iy].type->capacity; iz++) {
+          /* Per grid, type_descriptor.name[i]*/
+          /* Go recursive pb_graph_node, until the leaf which defines a spice_model */
+          cur_pb_type = grid[ix][iy].type->pb_type;
+          rec_add_pb_type_keywords_to_list(cur_pb_type, &cur, keywords, prefix);
+        }
+        my_free(prefix);
+      }
+    }
+  }
+  /* assert */
+  assert(cur == num_keyword);
+  
+  /* Check the keywords conflicted with defined spice_model names */
+  for (imodel = 0; imodel < Arch.spice->num_spice_model; imodel++) {
+    for (i = 0; i < num_keyword; i++) {
+      if (0 == strcmp(Arch.spice->spice_models[imodel].name, keywords[i])) {
+        vpr_printf(TIO_MESSAGE_ERROR, "Keyword Conflicted! Spice Model Name: %s\n", keywords[i]);
+        conflict++;
+      }
+    }
+  } 
+
+  assert((0 == conflict)||(0 < conflict));
+  if (0 < conflict) {
+    vpr_printf(TIO_MESSAGE_ERROR, "Found %d conflicted keywords!\n", conflict);
+    exit(1);
+  }
+  
+  return; 
+}
+
+/* Need to check if we already a global port with the same name in the list! 
+ * This could happen where two spice models share the same global port   
+ * If this is a new name in the list, we add this global port.
+ * Otherwise, we do nothing 
+ */
+static 
+t_llist* check_and_add_one_global_port_to_llist(t_llist* old_head, 
+                                                t_spice_model_port* candidate_port) {
+  boolean is_new_global_port = TRUE;
+  t_llist* temp = old_head;
+  t_llist* new_head = NULL;
+
+  while (NULL != temp) {
+    if (0 == strcmp(candidate_port->prefix, 
+                    ((t_spice_model_port*)(temp->dptr))->prefix) ) { 
+      /* Find a same global port name, we do nothing, return directly */
+      is_new_global_port = FALSE;
+      return old_head;
+    }
+    /* Go to the next */
+    temp = temp->next;
+  }
+
+  new_head = insert_llist_node_before_head(old_head);
+  new_head->dptr = (void*)(candidate_port);
+
+  return new_head;
+}
+
+/* Create and Initialize the global ports 
+ * Search all the ports defined under spice_models
+ * if a port is defined to be global, we add its pointer to the linked list
+ */
+static 
+t_llist* init_list_global_ports(t_spice* spice) {
+  int imodel, iport;
+  t_llist* head = NULL;
+
+  /* Traverse all the spice models */
+  for (imodel = 0; imodel < spice->num_spice_model; imodel++) {
+    for (iport = 0; iport < spice->spice_models[imodel].num_port; iport++) {
+      if (TRUE == spice->spice_models[imodel].ports[iport].is_global) {
+        /* Add to linked list, the organization will be first-in last-out 
+         * First element would be the tail of linked list  
+         */
+        head = check_and_add_one_global_port_to_llist(head,&(spice->spice_models[imodel].ports[iport]));
+      }
+    } 
+  }
+
+  return head;
+}
+
+/* Top-level function of FPGA-SPICE setup */
+void fpga_spice_setup(t_vpr_setup vpr_setup,
+                      t_arch* Arch) {
+
+  int num_clocks = 0;
+  float vpr_crit_path_delay = 0.; 
+  float vpr_clock_freq = 0.; 
+
+
+  /* Initialize Arch SPICE MODELS*/
+  init_check_arch_spice_models(Arch, &(vpr_setup.RoutingArch));
+
+  /* Create and initialize a linked list for global ports */
+  global_ports_head = init_list_global_ports(Arch->spice);
+  vpr_printf(TIO_MESSAGE_INFO, "Detect %d global ports...\n", 
+             find_length_llist(global_ports_head) );
+
+  /* Initialize verilog netlist to be included */
+  /* Add keyword checking */
+  check_keywords_conflict(*Arch);
+
+  /* Check Activity file is valid */
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.read_act_file) {
+    if (1 == try_access_file(vpr_setup.FileNameOpts.ActFile)) {
+      vpr_printf(TIO_MESSAGE_ERROR,"Activity file (%s) does not exists! Please provide a valid file path!\n",
+                 vpr_setup.FileNameOpts.ActFile);
+       exit(1);
+    } else {
+      vpr_printf(TIO_MESSAGE_INFO,"Check Activity file (%s) is a valid file path!\n",
+                 vpr_setup.FileNameOpts.ActFile);
+    }
+  }
+
+  /* Backannotation for post routing information */
+  spice_backannotate_vpr_post_route_info(vpr_setup.RoutingArch,
+                                         vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_parasitic_net_estimation_off);
+
+  /* Auto check the density and recommend sim_num_clock_cylce */
+  vpr_crit_path_delay = get_critical_path_delay()/1e9;
+  assert(vpr_crit_path_delay > 0.);
+  /* if we don't have global clock, clock_freqency should be set to 0.*/
+  num_clocks = count_netlist_clocks();
+  if (0 == num_clocks) {
+     vpr_clock_freq = 0.;
+  } else { 
+    assert(1 == num_clocks);
+    vpr_clock_freq = 1. / vpr_crit_path_delay; 
+  }
+  Arch->spice->spice_params.stimulate_params.num_clocks = num_clocks;
+  Arch->spice->spice_params.stimulate_params.vpr_crit_path_delay = vpr_crit_path_delay;
+  auto_select_num_sim_clock_cycle(Arch->spice);
+
+  return;
+}
+ 

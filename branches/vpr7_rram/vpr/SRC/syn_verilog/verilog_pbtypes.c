@@ -23,6 +23,7 @@
 #include "linkedlist.h"
 #include "spice_utils.h"
 #include "spice_mux.h"
+#include "fpga_spice_globals.h"
 
 /* Include Synthesizable Verilog headers */
 #include "verilog_global.h"
@@ -546,6 +547,7 @@ void dump_verilog_pb_type_bus_ports(FILE* fp,
  * SRAM ports are not printed here!!! 
  * Important feature: manage the comma between ports
  * Make sure there is no redundant comma and there is no comma after the last element if specified
+ * Check each ports, if it is defined as a global signal, we should not dump it
  */
 void dump_verilog_pb_type_ports(FILE* fp,
                           char* port_prefix,
@@ -578,6 +580,7 @@ void dump_verilog_pb_type_ports(FILE* fp,
 
   /* INOUT ports */
   num_dumped_port = 0;
+
   /* Find pb_type inout ports */
   pb_type_inout_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_INOUT, &num_pb_type_inout_port); 
 
@@ -645,8 +648,9 @@ void dump_verilog_pb_type_ports(FILE* fp,
   
   /* Clocks */
   /* Find pb_type clock ports */
+  /* Only dump clock ports when global clock is not specified */
   pb_type_clk_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_CLOCK, &num_pb_type_clk_port); 
-  
+
   /* Print all the clk ports  */
   for (iport = 0; iport < num_pb_type_clk_port; iport++) {
     for (ipin = 0; ipin < pb_type_clk_ports[iport]->num_pins; ipin++) {
@@ -1691,7 +1695,8 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
     case LUT_CLASS: 
       /* Consider the num_pb, create all the subckts*/
       dump_verilog_pb_primitive_verilog_model(fp, formatted_subckt_prefix, 
-                                                NULL, cur_pb_graph_node, pb_type_index, cur_pb_type->spice_model, 1);
+                                              NULL, cur_pb_graph_node, pb_type_index, 
+                                              cur_pb_type->spice_model, 1);
       /* update the number of SRAM, I/O pads */
       /* update stamped inpad counter */
       stamped_inpad_cnt += cur_pb_type->default_mode_num_inpads;
@@ -1747,6 +1752,7 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
     /* Comment lines */
     fprintf(fp, "//----- Idle programmable logic block Verilog module %s -----\n", subckt_name);
     fprintf(fp, "module %s (", subckt_name);
+    fprintf(fp, "\n");
     /* Inputs, outputs, inouts, clocks */
     subckt_port_prefix = (char*)my_malloc(sizeof(char)*
                                          (5 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1));
@@ -1754,9 +1760,10 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
     /*
     dump_verilog_pb_type_ports(fp, subckt_name, 0, cur_pb_type);
     */
-    /* Print global set and reset */
-    fprintf(fp, "input wire greset,\n");
-    fprintf(fp, "input wire gset,\n");
+    /* dump global ports */
+    if (0 < dump_verilog_global_ports(fp, global_ports_head, TRUE)) {
+      fprintf(fp, ",\n");
+    }
     /* Simplify the port prefix, make SPICE netlist readable */
     dump_verilog_pb_type_ports(fp, subckt_port_prefix, 0, cur_pb_type, TRUE, FALSE);
     /* Print Input Pad and Output Pad */
@@ -1821,8 +1828,20 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
         /* <formatted_subckt_prefix>mode[<mode_name>]_<child_pb_type_name>[<ipb>]
          */
         fprintf(fp, "%s_%d_ (", cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
-        /* Global set and reset */
-        fprintf(fp, "greset, gset,\n");
+        fprintf(fp, "\n");
+        /* dump global ports */
+        /* If the child node is a primitive, we only dump global ports belonging to this primitive */
+        if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) {
+          if (0 < dump_verilog_global_ports(fp, global_ports_head, FALSE)) {
+            fprintf(fp, ",\n");
+          }
+        } else {
+          if (0 < rec_dump_verilog_spice_model_global_ports(fp, 
+                                                            cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model,
+                                                            FALSE, TRUE)) {
+            fprintf(fp, ",\n");
+          }
+        }
         /* Pass the SPICE mode prefix on, 
          * <subckt_name>mode[<mode_name>]_<child_pb_type_name>[<jpb>]
          * <child_pb_type_name>[<jpb>]
@@ -2059,8 +2078,11 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
     dump_verilog_pb_type_ports(fp, subckt_name, 0, cur_pb_type);
     */
     /* Print global set and reset */
-    fprintf(fp, "input wire greset,\n");
-    fprintf(fp, "input wire gset,\n");
+    fprintf(fp, "\n");
+    /* dump global ports */
+    if (0 < dump_verilog_global_ports(fp, global_ports_head, TRUE)) {
+      fprintf(fp, ",\n");
+    }
     /* Simplify the prefix! Make the SPICE netlist readable*/
     dump_verilog_pb_type_ports(fp, subckt_port_prefix, 0, cur_pb_type, TRUE, FALSE);
     /* Print Input Pad and Output Pad */
@@ -2138,8 +2160,20 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
                   subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb); 
         }
         fprintf(fp, "%s_%d_ (", cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
-        /* Global set and reset */
-        fprintf(fp, "greset, gset,\n");
+        fprintf(fp, "\n");
+        /* dump global ports */
+        /* If the child node is a primitive, we only dump global ports belonging to this primitive */
+        if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) {
+          if (0 < dump_verilog_global_ports(fp, global_ports_head, FALSE)) {
+            fprintf(fp, ",\n");
+          }
+        } else {
+          if (0 < rec_dump_verilog_spice_model_global_ports(fp, 
+                                                            cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model,
+                                                            FALSE, TRUE)) {
+            fprintf(fp, ",\n");
+          }
+        }
         /* Pass the SPICE mode prefix on, 
          * <subckt_name>mode[<mode_name>]_<child_pb_type_name>[<jpb>]
          */
@@ -2363,9 +2397,11 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
     /*
     dump_verilog_pb_type_ports(fp, subckt_name, 0, cur_pb_type);
     */
-    /* Print global set and reset */
-    fprintf(fp, "input wire greset,\n");
-    fprintf(fp, "input wire gset,\n");
+    fprintf(fp, "\n");
+    /* dump global ports */
+    if(0 < dump_verilog_global_ports(fp, global_ports_head, TRUE)) {
+      fprintf(fp, ",\n");
+    }
     /* Simplify the port prefix, make SPICE netlist readable */
     dump_verilog_pb_type_ports(fp, subckt_port_prefix, 0, cur_pb_type, TRUE, FALSE);
     /* Print Input Pad and Output Pad */
@@ -2438,9 +2474,20 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
         /* <formatted_subckt_prefix>mode[<mode_name>]_<child_pb_type_name>[<ipb>]
          */
         fprintf(fp, "%s_%d_ (", cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
-        /* Print global set and reset */
-        fprintf(fp, "greset, ");
-        fprintf(fp, "gset, ");
+        fprintf(fp, "\n");
+        /* dump global ports */
+        /* If the child node is a primitive, we only dump global ports belonging to this primitive */
+        if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) {
+          if (0 < dump_verilog_global_ports(fp, global_ports_head, FALSE)) {
+            fprintf(fp, ",\n");
+          }
+        } else {
+          if (0 < rec_dump_verilog_spice_model_global_ports(fp, 
+                                                            cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model,
+                                                            FALSE, TRUE)) {
+            fprintf(fp, ",\n");
+          }
+        }
         /* Pass the SPICE mode prefix on, 
          * <subckt_name>mode[<mode_name>]_<child_pb_type_name>[<jpb>]
          * <child_pb_type_name>[<jpb>]
@@ -3240,9 +3287,12 @@ void dump_verilog_grid_blocks(FILE* fp,
   fprintf(fp, "//----- Top Protocol -----\n");
   /* Definition */
   fprintf(fp, "module grid_%d__%d_( \n", ix, iy);
-  /* Print global set and reset */
-  fprintf(fp, "input wire greset,\n");
-  fprintf(fp, "input wire gset,\n");
+  fprintf(fp, "\n");
+  /* dump global ports */
+  if (0 < dump_verilog_global_ports(fp, global_ports_head, TRUE)) {
+    fprintf(fp, ",\n");
+  }
+
   /* Pins */
   /* Special Care for I/O grid */
   if (IO_TYPE == grid[ix][iy].type) {
@@ -3298,9 +3348,11 @@ void dump_verilog_grid_blocks(FILE* fp,
     /* Local Vdd and Gnd, subckt name*/
     fprintf(fp, "%s ", verilog_get_grid_block_subckt_name(ix, iy, iz, subckt_name, mapped_block));
     fprintf(fp, " grid_%d__%d__%d_ (", ix, iy, iz);
-    /* Print global set and reset */
-    fprintf(fp, "greset,\n");
-    fprintf(fp, "gset,\n");
+    fprintf(fp, "\n");
+    /* dump global ports */
+    if (0 < dump_verilog_global_ports(fp, global_ports_head, FALSE)) {
+      fprintf(fp, ",\n");
+    }
     /* Print all the pins */
     /* Special Care for I/O grid */
     if (IO_TYPE == grid[ix][iy].type) {
@@ -3434,9 +3486,12 @@ void dump_verilog_physical_grid_blocks(FILE* fp,
   fprintf(fp, "//----- Top Protocol -----\n");
   /* Definition */
   fprintf(fp, "module grid_%d__%d_( \n", ix, iy);
-  /* Print global set and reset */
-  fprintf(fp, "input wire greset,\n");
-  fprintf(fp, "input wire gset,\n");
+  fprintf(fp, "\n");
+  /* dump global ports */
+  if (0 < dump_verilog_global_ports(fp, global_ports_head, TRUE)) {
+    fprintf(fp, ",\n");
+  }
+
   /* Pins */
   /* Special Care for I/O grid */
   if (IO_TYPE == grid[ix][iy].type) {
@@ -3507,9 +3562,11 @@ void dump_verilog_physical_grid_blocks(FILE* fp,
     /* Local Vdd and Gnd, subckt name*/
     fprintf(fp, "%s ", verilog_get_grid_phy_block_subckt_name(ix, iy, iz, subckt_name, NULL));
     fprintf(fp, " grid_%d__%d__%d_ (", ix, iy, iz);
-    /* Print global set and reset */
-    fprintf(fp, "greset,\n");
-    fprintf(fp, "gset,\n");
+    fprintf(fp, "\n");
+    /* dump global ports */
+    if (0 < dump_verilog_global_ports(fp, global_ports_head, FALSE)) {
+      fprintf(fp, ",\n");
+    }
     /* Print all the pins */
     /* Special Care for I/O grid */
     if (IO_TYPE == grid[ix][iy].type) {

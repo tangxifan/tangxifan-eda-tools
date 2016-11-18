@@ -25,6 +25,7 @@
 #include "spice_utils.h"
 #include "spice_netlist_utils.h"
 #include "spice_backannotate_utils.h"
+#include "fpga_spice_globals.h"
 
 /* Include verilog support headers*/
 #include "verilog_global.h"
@@ -58,10 +59,11 @@ void dump_verilog_top_netlist_ports(FILE* fp,
 
   fprintf(fp, "//----- Top-level Verilog Module -----\n");
   fprintf(fp, "module %s_top (\n", circuit_name);
-  /* set and reset signals */
-  fprintf(fp, "input wire reset,\n");
-  fprintf(fp, "input wire set,\n");
-
+  fprintf(fp, "\n");
+  /* dump global ports */
+  if (0 < dump_verilog_global_ports(fp, global_ports_head, TRUE)) {
+    fprintf(fp, ",\n");
+  }
   /* Inputs and outputs of I/O pads */
   /* Input Pads */
   assert(NULL != inpad_verilog_model);
@@ -144,8 +146,12 @@ void dump_verilog_defined_one_grid(FILE* fp,
   fprintf(fp, "grid_%d__%d_  ", ix, iy); /* Call the name of subckt */ 
   fprintf(fp, "grid_%d__%d__0_ ", ix, iy);
   fprintf(fp, "(");
-  /* global set and reset */
-  fprintf(fp, "reset, set,\n");
+  fprintf(fp, "\n");
+  /* dump global ports */
+  if (0 < dump_verilog_global_ports(fp, global_ports_head, FALSE)) {
+    fprintf(fp, ",\n");
+  }
+
   if (IO_TYPE == grid[ix][iy].type) {
     dump_verilog_io_grid_pins(fp, ix, iy, 1, FALSE, TRUE);
   } else {
@@ -310,6 +316,11 @@ void dump_verilog_defined_one_channel(FILE* fp,
           convert_chan_type_to_string(chan_type),
           x, y);
   fprintf(fp, "(");
+  fprintf(fp, "\n");
+  /* dump global ports */
+  if (0 < dump_verilog_global_ports(fp, global_ports_head, FALSE)) {
+    fprintf(fp, ",\n");
+  }
 
   /* LEFT/BOTTOM side port of CHANX/CHANY */
   /* We apply an opposite port naming rule than function: fprint_routing_chan_subckt 
@@ -475,6 +486,12 @@ void dump_verilog_defined_one_connection_box(FILE* fp,
   }
  
   fprintf(fp, "(");
+  fprintf(fp, "\n");
+  /* dump global ports */
+  if (0 < dump_verilog_global_ports(fp, global_ports_head, FALSE)) {
+    fprintf(fp, ",\n");
+  }
+
   /* Print the ports of channels*/
   /* connect to the mid point of a track*/
   side_cnt = 0;
@@ -664,6 +681,12 @@ void dump_verilog_defined_one_switch_box(FILE* fp,
   fprintf(fp, "sb_%d__%d_ ", cur_sb_info.x, cur_sb_info.y);
   fprintf(fp, "sb_%d__%d__0_ ", cur_sb_info.x, cur_sb_info.y);
   fprintf(fp, "(");
+
+  fprintf(fp, "\n");
+  /* dump global ports */
+  if (0 < dump_verilog_global_ports(fp, global_ports_head, FALSE)) {
+    fprintf(fp, ",\n");
+  }
 
   for (side = 0; side < cur_sb_info.num_sides; side++) {
     if (0 == side) {
@@ -901,6 +924,37 @@ void dump_verilog_configuration_circuits(FILE* fp) {
   return;
 }
 
+/* Dump all the global ports that are stored in the linked list */
+static 
+void dump_verilog_top_testbench_global_ports(FILE* fp, t_llist* head) {
+  t_llist* temp = head;
+  t_spice_model_port* cur_global_port = NULL;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+  }
+
+  fprintf(fp, "//----- BEGIN Global ports -----\n");
+  while(NULL != temp) {
+    cur_global_port = (t_spice_model_port*)(temp->dptr); 
+    fprintf(fp, "reg wire [0:%d] %s", 
+            cur_global_port->size - 1, 
+            cur_global_port->prefix); 
+
+    /* if this is the tail, we do not dump a comma */
+    if (NULL != temp->next) {
+     fprintf(fp, ",\n");
+    }
+    /* Go to the next */
+    temp = temp->next;
+  }
+  fprintf(fp, "//----- END Global ports -----\n");
+
+  return;
+}
+
 static 
 void dump_verilog_top_testbench_ports(FILE* fp,
                                       char* circuit_name) {
@@ -914,8 +968,11 @@ void dump_verilog_top_testbench_ports(FILE* fp,
 
   /* Connect to defined signals */
   /* set and reset signals */
-  fprintf(fp, "reg wire reset;\n");
-  fprintf(fp, "reg wire set;\n");
+  fprintf(fp, "\n");
+  dump_verilog_top_testbench_global_ports(fp, global_ports_head);
+  fprintf(fp, ",\n");
+
+  /* TODO: dump each global signal as reg here */
 
   /* Inputs and outputs of I/O pads */
   /* Input Pads */
@@ -1046,10 +1103,11 @@ void dump_verilog_top_testbench_call_top_module(FILE* fp,
   fprintf(fp, "%s_top U0 (\n", circuit_name);
 
   /* Connect to defined signals */
-  /* set and reset signals */
-  fprintf(fp, "reset,\n");
-  fprintf(fp, "set,\n");
-
+  fprintf(fp, "\n");
+  /* dump global ports */
+  if (0 < dump_verilog_global_ports(fp, global_ports_head, FALSE)) {
+    fprintf(fp, ",\n");
+  }
   /* Inputs and outputs of I/O pads */
   /* Input Pads */
   assert(NULL != inpad_verilog_model);

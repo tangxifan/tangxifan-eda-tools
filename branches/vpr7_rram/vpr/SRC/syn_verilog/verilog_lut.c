@@ -24,6 +24,7 @@
 #include "linkedlist.h"
 #include "spice_utils.h"
 #include "spice_lut.h"
+#include "fpga_spice_globals.h"
 
 /* Include verilog support headers*/
 #include "verilog_global.h"
@@ -117,9 +118,11 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   /* Subckt definition*/
   fprintf(fp, "module %s%s_%d_ (", 
           formatted_subckt_prefix, cur_pb_type->name, index);
-  /* global set and reset */
-  fprintf(fp, "input greset,\n");
-  fprintf(fp, "input gset,\n");
+  fprintf(fp, "\n");
+  /* Only dump the global ports belonging to a spice_model */
+  if (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model, TRUE, TRUE)) {
+    fprintf(fp, ",\n");
+  }
   /* Print inputs, outputs, inouts, clocks, NO SRAMs*/
   /*
   port_prefix = (char*)my_malloc(sizeof(char)*
@@ -205,6 +208,10 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
     cur_sram = sram_verilog_model->cnt;
     for (i = 0; i < num_sram; i++) {
       fprintf(fp, "%s %s_%d_ (", sram_verilog_model->name, sram_verilog_model->prefix, cur_sram); /* SRAM subckts*/
+      /* Only dump the global ports belonging to a spice_model */
+      if (0 < rec_dump_verilog_spice_model_global_ports(fp, sram_verilog_model, FALSE, TRUE)) {
+        fprintf(fp, ",\n");
+      }
       fprintf(fp, "%s_out[%d], ", sram_verilog_model->prefix, cur_sram); /* Input*/
       fprintf(fp, "%s_out[%d], %s_outb[%d], ", 
               sram_verilog_model->prefix, cur_sram, 
@@ -238,9 +245,17 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
 
   /* Call LUT subckt*/
   fprintf(fp, "%s %s_%d_ (", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
+  fprintf(fp, "\n");
+  /* if we have to add global ports when dumping submodules of LUTs
+   * otherwise, the port map here does not match that of submodules 
+   * Only dump the global ports belonging to a spice_model 
+   * DISABLE recursive here !
+   */
+  if (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model, FALSE, FALSE)) {
+    fprintf(fp, ",\n");
+  }
   /* Connect inputs*/ 
   /* Connect outputs*/
-  fprintf(fp, "\n");
   fprintf(fp, "//----- Input and output ports -----\n");
   dump_verilog_pb_type_bus_ports(fp, port_prefix, 0, cur_pb_type, FALSE, TRUE); 
   fprintf(fp, "//----- SRAM ports -----\n");

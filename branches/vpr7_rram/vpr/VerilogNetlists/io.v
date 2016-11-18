@@ -2,6 +2,7 @@
 //------ Verilog file: io.v -----//
 //------ Author: Xifan TANG -----//
 module iopad(
+input zin, // Set output to be Z
 inout pad, // bi-directional pad
 output din, // Data input
 input dout, // Data output

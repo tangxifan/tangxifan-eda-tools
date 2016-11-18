@@ -27,6 +27,7 @@
 #include "read_xml_spice_util.h"
 #include "linkedlist.h"
 #include "spice_utils.h"
+#include "fpga_spice_globals.h"
 
 /* syn_verilog globals */
 
@@ -413,3 +414,141 @@ void dump_verilog_gen_pairs_conf_bits(t_llist* conf_bits_llist_head) {
   return;
 }
 
+/* Return the port_type in a verilog format */
+char* verilog_convert_port_type_to_string(enum e_spice_model_port_type port_type) {
+  switch (port_type) {
+  case SPICE_MODEL_PORT_INPUT: 
+  case SPICE_MODEL_PORT_CLOCK: 
+  case SPICE_MODEL_PORT_SRAM:
+  case SPICE_MODEL_PORT_BL:
+  case SPICE_MODEL_PORT_WL:
+    return "input";
+  case SPICE_MODEL_PORT_OUTPUT: 
+    return "output";
+  case SPICE_MODEL_PORT_INOUT: 
+    return "inout";
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s, [LINE%d])Invalid port type!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  return NULL;
+}
+
+/* Dump all the global ports that are stored in the linked list 
+ * Return the number of ports that have been dumped 
+ */
+int rec_dump_verilog_spice_model_global_ports(FILE* fp, 
+                                              t_spice_model* cur_spice_model,
+                                              boolean dump_port_type, boolean recursive) {
+  int iport, dumped_port_cnt;
+  boolean dump_comma = FALSE;
+
+  dumped_port_cnt = 0;
+
+  /* Check */
+  assert(NULL != cur_spice_model);
+  if (0 < cur_spice_model->num_port) {
+    assert(NULL != cur_spice_model->ports);
+  }
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+  }
+
+  fprintf(fp, "//----- BEGIN Global ports of SPICE_MODEL(%s) -----\n",
+          cur_spice_model->name);
+
+  for (iport = 0; iport < cur_spice_model->num_port; iport++) {
+    /* if this spice model requires customized netlist to be included, we do not go recursively */
+    if (TRUE == recursive) { 
+      /* GO recursively first, and meanwhile count the number of global ports */
+      /* For the port that requires another spice_model, i.e., SRAM
+       * We need include any global port in that spice model
+       */
+      if (NULL != cur_spice_model->ports[iport].spice_model) {
+        /* Check if we need to dump a comma */
+        if (TRUE == dump_comma) {
+          fprintf(fp, ",\n");
+        }
+        dumped_port_cnt += 
+           rec_dump_verilog_spice_model_global_ports(fp, cur_spice_model->ports[iport].spice_model, 
+                                                     dump_port_type, recursive);
+        /* Decide if we need a comma */
+        dump_comma = TRUE; 
+        continue;
+      }
+    }
+    /* By pass non-global ports*/
+    if (FALSE == cur_spice_model->ports[iport].is_global) {
+      continue;
+    }
+    /* Check if we need to dump a comma */
+    if (TRUE == dump_comma) {
+      fprintf(fp, ",\n");
+    }
+    if (TRUE == dump_port_type) {
+      fprintf(fp, "%s [0:%d] %s", 
+              verilog_convert_port_type_to_string(cur_spice_model->ports[iport].type),
+              cur_spice_model->ports[iport].size - 1, 
+              cur_spice_model->ports[iport].prefix);
+    } else {
+      fprintf(fp, "%s[0:%d]", 
+            cur_spice_model->ports[iport].prefix,
+            cur_spice_model->ports[iport].size - 1); 
+    }
+    /* Decide if we need a comma */
+    dump_comma = TRUE; 
+    /* Update counter */
+    dumped_port_cnt++;
+  }
+
+  fprintf(fp, "//----- END Global ports of SPICE_MODEL(%s)-----\n",
+          cur_spice_model->name);
+
+  return dumped_port_cnt;
+}
+
+/* Dump all the global ports that are stored in the linked list */
+int dump_verilog_global_ports(FILE* fp, t_llist* head,
+                               boolean dump_port_type) {
+  t_llist* temp = head;
+  t_spice_model_port* cur_global_port = NULL;
+  int dumped_port_cnt = 0;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+  }
+
+  fprintf(fp, "//----- BEGIN Global ports -----\n");
+  while(NULL != temp) {
+    cur_global_port = (t_spice_model_port*)(temp->dptr); 
+    if (TRUE == dump_port_type) {
+      fprintf(fp, "%s [0:%d] %s", 
+              verilog_convert_port_type_to_string(cur_global_port->type),
+              cur_global_port->size - 1, 
+              cur_global_port->prefix);
+    } else {
+      fprintf(fp, "%s[0:%d]", 
+              cur_global_port->prefix,
+              cur_global_port->size - 1); 
+    }
+    /* if this is the tail, we do not dump a comma */
+    if (NULL != temp->next) {
+     fprintf(fp, ",");
+    }
+    fprintf(fp, "\n");
+    /* Update counter */
+    dumped_port_cnt++;
+    /* Go to the next */
+    temp = temp->next;
+  }
+  fprintf(fp, "//----- END Global ports -----\n");
+
+  return dumped_port_cnt;
+}

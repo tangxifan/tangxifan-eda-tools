@@ -26,6 +26,7 @@
 /* Include SPICE support headers*/
 #include "quicksort.h"
 #include "linkedlist.h"
+#include "fpga_spice_globals.h"
 #include "spice_globals.h"
 #include "spice_utils.h"
 
@@ -3601,15 +3602,23 @@ void check_sram_spice_model_ports(t_spice_model* cur_spice_model,
   int num_wl_ports;
   t_spice_model_port** wl_ports = NULL;
 
+  int iport;
+  int num_global_ports = 0;
   int num_err = 0;
 
   /* Check the type of SPICE model */
   assert(SPICE_MODEL_SRAM == cur_spice_model->type);
 
-  /* Check if we has 1 input */
+  /* Check if we has 1 input other than global ports */
   input_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_INPUT, &num_input_ports);
-  if (1 != num_input_ports) {
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) SRAM SPICE MODEL should have only 1 input port!\n",
+  num_global_ports = 0;
+  for (iport = 0; iport < num_input_ports; iport++) {
+    if (TRUE == input_ports[iport]->is_global) {
+      num_global_ports++;
+    }
+  }
+  if (1 != (num_input_ports - num_global_ports)) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) SRAM SPICE MODEL should have only 1 non-global input port!\n",
                __FILE__, __LINE__);
     num_err++;
     if (1 != input_ports[0]->size) {
@@ -3620,8 +3629,14 @@ void check_sram_spice_model_ports(t_spice_model* cur_spice_model,
   }
   /* Check if we has 1 output with size 2 */
   output_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_ports);
-  if (1 != num_output_ports) {
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) SRAM SPICE MODEL should have only 1 output port!\n",
+  num_global_ports = 0;
+  for (iport = 0; iport < num_output_ports; iport++) {
+    if (TRUE == output_ports[iport]->is_global) {
+      num_global_ports++;
+    }
+  }
+  if (1 != (num_output_ports - num_global_ports)) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) SRAM SPICE MODEL should have only 1 non-global output port!\n",
                __FILE__, __LINE__);
     num_err++;
     if (2 != output_ports[0]->size) {

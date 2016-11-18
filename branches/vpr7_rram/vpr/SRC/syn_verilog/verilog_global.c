@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include "spice_types.h"
 #include "linkedlist.h"
+#include "fpga_spice_globals.h"
 #include "verilog_global.h"
 
 char* verilog_top_postfix = "_top.v";
@@ -24,23 +25,12 @@ char* verilog_mux_special_basis_posfix = "_special_basis";
 t_spice_model* sram_verilog_model = NULL;
 enum e_sram_orgz sram_verilog_orgz_type = SPICE_SRAM_STANDALONE;
 
-/* Number of configuration bits of each switch block */
-int** num_conf_bits_sb = NULL;
-/* Number of configuration bits of each Connection Box CHANX */
-int** num_conf_bits_cbx = NULL;
-/* Number of configuration bits of each Connection Box CHANY */
-int** num_conf_bits_cby = NULL;
-
 /* Input and Output Pad spice model. should be set as global */
 t_spice_model* inpad_verilog_model = NULL;
 t_spice_model* outpad_verilog_model = NULL;
 t_spice_model* iopad_verilog_model = NULL;
+
 /* Linked-list that stores all the configuration bits */
 t_llist* conf_bits_head = NULL;
-
-/* Prefix of global input, output and inout of a I/O pad */
-char* gio_input_prefix = "gfpga_input_";
-char* gio_output_prefix = "gfpga_output_";
-char* gio_inout_prefix = "gfpga_pad_";
 
 int verilog_default_signal_init_value = 0;

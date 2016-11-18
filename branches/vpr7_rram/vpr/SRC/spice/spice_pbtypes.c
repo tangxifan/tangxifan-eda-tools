@@ -21,6 +21,7 @@
 
 /* Include SPICE support headers*/
 #include "linkedlist.h"
+#include "fpga_spice_globals.h"
 #include "spice_globals.h"
 #include "spice_utils.h"
 #include "spice_mux.h"
@@ -29,121 +30,6 @@
 #include "spice_pbtypes.h"
 
 /***** Subroutines *****/
-
-/* Find spice_model_name definition in pb_types
- * Try to match the name with defined spice_models
- */
-void match_pb_types_spice_model_rec(t_pb_type* cur_pb_type,
-                                    int num_spice_model,
-                                    t_spice_model* spice_models) {
-  int imode, ipb, jinterc;
-  
-  if (NULL == cur_pb_type) {
-    vpr_printf(TIO_MESSAGE_WARNING,"(File:%s,LINE[%d])cur_pb_type is null pointor!\n",__FILE__,__LINE__);
-    return;
-  }
-
-  /* If there is a spice_model_name, this is a leaf node!*/
-  if (NULL != cur_pb_type->spice_model_name) {
-    /* What annoys me is VPR create a sub pb_type for each lut which suppose to be a leaf node
-     * This may bring software convience but ruins SPICE modeling
-     */
-    /* Let's find a matched spice model!*/
-    printf("INFO: matching cur_pb_type=%s with spice_model_name=%s...\n",cur_pb_type->name, cur_pb_type->spice_model_name);
-    assert(NULL == cur_pb_type->spice_model);
-    cur_pb_type->spice_model = find_name_matched_spice_model(cur_pb_type->spice_model_name, num_spice_model, spice_models);
-    if (NULL == cur_pb_type->spice_model) {
-      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,LINE[%d]) Fail to find a defined SPICE model called %s, in pb_type(%s)!\n",__FILE__, __LINE__, cur_pb_type->spice_model_name, cur_pb_type->name);
-      exit(1);
-    }
-    return;
-  }
-  /* Traversal the hierarchy*/
-  for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
-    /* Task 1: Find the interconnections and match the spice_model */
-    for (jinterc = 0; jinterc < cur_pb_type->modes[imode].num_interconnect; jinterc++) {
-      assert(NULL == cur_pb_type->modes[imode].interconnect[jinterc].spice_model);
-      /* If the spice_model_name is not defined, we use the default*/
-      if (NULL == cur_pb_type->modes[imode].interconnect[jinterc].spice_model_name) {
-        switch (cur_pb_type->modes[imode].interconnect[jinterc].type) {
-        case DIRECT_INTERC:
-          cur_pb_type->modes[imode].interconnect[jinterc].spice_model = 
-            get_default_spice_model(SPICE_MODEL_WIRE,num_spice_model,spice_models);
-          break;
-        case COMPLETE_INTERC:
-          /* Special for Completer Interconnection:
-           * 1. The input number is 1, this infers a direct interconnection.
-           * 2. The input number is larger than 1, this infers multplexers
-           * according to interconnect[j].num_mux identify the number of input at this level
-           */
-          if (0 == cur_pb_type->modes[imode].interconnect[jinterc].num_mux) {
-            cur_pb_type->modes[imode].interconnect[jinterc].spice_model = 
-              get_default_spice_model(SPICE_MODEL_WIRE,num_spice_model,spice_models);
-          } else {
-            cur_pb_type->modes[imode].interconnect[jinterc].spice_model = 
-              get_default_spice_model(SPICE_MODEL_MUX,num_spice_model,spice_models);
-          } 
-          break;
-        case MUX_INTERC:
-          cur_pb_type->modes[imode].interconnect[jinterc].spice_model = 
-            get_default_spice_model(SPICE_MODEL_MUX,num_spice_model,spice_models);
-          break;
-        default:
-          break; 
-        }        
-        vpr_printf(TIO_MESSAGE_INFO,"INFO: Link a SPICE model (%s) for Interconnect (%s)!\n",
-                   cur_pb_type->modes[imode].interconnect[jinterc].spice_model->name, cur_pb_type->modes[imode].interconnect[jinterc].name);
-      } else {
-        cur_pb_type->modes[imode].interconnect[jinterc].spice_model = 
-          find_name_matched_spice_model(cur_pb_type->modes[imode].interconnect[jinterc].spice_model_name, num_spice_model, spice_models);
-        vpr_printf(TIO_MESSAGE_INFO,"INFO: Link a SPICE model (%s) for Interconnect (%s)!\n",
-                   cur_pb_type->modes[imode].interconnect[jinterc].spice_model->name, cur_pb_type->modes[imode].interconnect[jinterc].name);
-        if (NULL == cur_pb_type->modes[imode].interconnect[jinterc].spice_model) {
-          vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,LINE[%d]) Fail to find a defined SPICE model called %s, in pb_type(%s)!\n",__FILE__, __LINE__, cur_pb_type->modes[imode].interconnect[jinterc].spice_model_name, cur_pb_type->name);
-          exit(1);
-        } 
-        switch (cur_pb_type->modes[imode].interconnect[jinterc].type) {
-        case DIRECT_INTERC:
-          if (SPICE_MODEL_WIRE != cur_pb_type->modes[imode].interconnect[jinterc].spice_model->type) {
-            vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,LINE[%d]) Invalid type of matched SPICE model called %s, in pb_type(%s)! Sould be wire!\n",__FILE__, __LINE__, cur_pb_type->modes[imode].interconnect[jinterc].spice_model_name, cur_pb_type->name);
-            exit(1);
-          }
-          break;
-        case COMPLETE_INTERC:
-          if (0 == cur_pb_type->modes[imode].interconnect[jinterc].num_mux) {
-            if (SPICE_MODEL_WIRE != cur_pb_type->modes[imode].interconnect[jinterc].spice_model->type) {
-              vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,LINE[%d]) Invalid type of matched SPICE model called %s, in pb_type(%s)! Sould be wire!\n",__FILE__, __LINE__, cur_pb_type->modes[imode].interconnect[jinterc].spice_model_name, cur_pb_type->name);
-              exit(1);
-            }
-          } else {
-            if (SPICE_MODEL_MUX != cur_pb_type->modes[imode].interconnect[jinterc].spice_model->type) {
-              vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,LINE[%d]) Invalid type of matched SPICE model called %s, in pb_type(%s)! Sould be MUX!\n",__FILE__, __LINE__, cur_pb_type->modes[imode].interconnect[jinterc].spice_model_name, cur_pb_type->name);
-              exit(1);
-            }
-          }
-          break;
-        case MUX_INTERC:
-          if (SPICE_MODEL_MUX != cur_pb_type->modes[imode].interconnect[jinterc].spice_model->type) {
-            vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,LINE[%d]) Invalid type of matched SPICE model called %s, in pb_type(%s)! Sould be MUX!\n",__FILE__, __LINE__, cur_pb_type->modes[imode].interconnect[jinterc].spice_model_name, cur_pb_type->name);
-            exit(1);
-          }
-          break;
-        default:
-          break; 
-        }        
-      }
-    }
-    /* Task 2: Find the child pb_type, do matching recursively */
-    //if (1 == cur_pb_type->modes[imode].define_spice_model) {
-    for (ipb = 0; ipb < cur_pb_type->modes[imode].num_pb_type_children; ipb++) {
-      match_pb_types_spice_model_rec(&cur_pb_type->modes[imode].pb_type_children[ipb],
-                                     num_spice_model,
-                                     spice_models);
-    }
-    //}
-  } 
-  return;  
-}
 
 int find_path_id_between_pb_rr_nodes(t_rr_node* local_rr_graph,
                                      int src_node,

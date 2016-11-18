@@ -6,33 +6,6 @@ enum e_spice_tech_lib_type {
   SPICE_LIB_INDUSTRY,SPICE_LIB_ACADEMIA
 };
 
-/* Transistor-level basic informations*/
-enum e_spice_trans_type {
-  SPICE_TRANS_NMOS, SPICE_TRANS_PMOS, SPICE_TRANS_IO_NMOS, SPICE_TRANS_IO_PMOS
-};
-
-typedef struct s_spice_transistor_type t_spice_transistor_type;
-struct s_spice_transistor_type {
-  enum e_spice_trans_type type;
-  char* model_name;
-  float chan_length;
-  float min_width;
-};
-
-/* Properites for technology library*/
-typedef struct s_spice_tech_lib t_spice_tech_lib;
-struct s_spice_tech_lib {
-  enum e_spice_tech_lib_type type;
-  char* transistor_type;
-  char* path;
-  float nominal_vdd;
-  float io_vdd;
-  float pn_ratio;
-  char* model_ref;
-  int num_transistor_type;
-  t_spice_transistor_type* transistor_types;
-};
-
 /*Struct for a SPICE model of a module*/
 enum e_spice_model_type {
   SPICE_MODEL_CHAN_WIRE, 
@@ -69,27 +42,19 @@ enum e_spice_model_buffer_type {
   SPICE_MODEL_BUF_BUF
 };
 
-typedef struct s_spice_model_buffer t_spice_model_buffer;
-struct s_spice_model_buffer {
-  int exist;
-  enum e_spice_model_buffer_type type;
-  float size;
-  int tapered_buf; /*Valid only when this is a buffer*/
-  int tap_buf_level;
-  int f_per_stage;
-  char* spice_model_name;
-};
-
 enum e_spice_model_pass_gate_logic_type {
   SPICE_MODEL_PASS_GATE_TRANSMISSION, SPICE_MODEL_PASS_GATE_TRANSISTOR
 };
 
-typedef struct s_spice_model_pass_gate_logic t_spice_model_pass_gate_logic;
-struct s_spice_model_pass_gate_logic {
-  enum e_spice_model_pass_gate_logic_type type;
-  float nmos_size;
-  float pmos_size;
-  char* spice_model_name;
+
+/* Transistor-level basic informations*/
+enum e_spice_trans_type {
+  SPICE_TRANS_NMOS, SPICE_TRANS_PMOS, SPICE_TRANS_IO_NMOS, SPICE_TRANS_IO_PMOS
+};
+
+enum e_wire_model_type {
+  WIRE_MODEL_PIE,
+  WIRE_MODEL_T
 };
 
 enum e_spice_model_port_type {
@@ -102,21 +67,88 @@ enum e_spice_model_port_type {
   SPICE_MODEL_PORT_WL
 };
 
+/* For SRAM */
+enum e_sram_orgz {
+  SPICE_SRAM_STANDALONE,
+  SPICE_SRAM_SCAN_CHAIN,
+  SPICE_SRAM_MEMORY_BANK
+};
+
+enum e_spice_accuracy_type {
+  SPICE_FRAC, SPICE_ABS
+};
+
+
+/* typedef of structs */
+typedef struct s_spice_transistor_type t_spice_transistor_type;
+typedef struct s_spice_tech_lib t_spice_tech_lib;
+typedef struct s_spice_model_buffer t_spice_model_buffer;
+typedef struct s_spice_model_pass_gate_logic t_spice_model_pass_gate_logic;
 typedef struct s_spice_model_port t_spice_model_port;
+typedef struct s_spice_model_wire_param t_spice_model_wire_param;
+typedef struct s_spice_model_netlist t_spice_model_netlist;
+typedef struct s_spice_model_design_tech_info t_spice_model_design_tech_info;
+typedef struct s_spice_model t_spice_model;
+typedef struct s_spice_meas_params t_spice_meas_params;
+typedef struct s_spice_stimulate_params t_spice_stimulate_params;
+typedef struct s_spice_params t_spice_params;
+typedef struct s_spice t_spice;
+typedef struct s_spice_mux_arch t_spice_mux_arch;
+typedef struct s_spice_mux_model t_spice_mux_model;
+typedef struct s_sram_inf t_sram_inf;
+typedef struct s_spice_net_info t_spice_net_info;
+typedef struct s_spicetb_info t_spicetb_info;
+typedef struct s_conf_bit_info t_conf_bit_info;
+
+/* Struct defintions */
+struct s_spice_transistor_type {
+  enum e_spice_trans_type type;
+  char* model_name;
+  float chan_length;
+  float min_width;
+};
+
+/* Properites for technology library*/
+struct s_spice_tech_lib {
+  enum e_spice_tech_lib_type type;
+  char* transistor_type;
+  char* path;
+  float nominal_vdd;
+  float io_vdd;
+  float pn_ratio;
+  char* model_ref;
+  int num_transistor_type;
+  t_spice_transistor_type* transistor_types;
+};
+
+struct s_spice_model_buffer {
+  int exist;
+  enum e_spice_model_buffer_type type;
+  float size;
+  int tapered_buf; /*Valid only when this is a buffer*/
+  int tap_buf_level;
+  int f_per_stage;
+  char* spice_model_name;
+};
+
+struct s_spice_model_pass_gate_logic {
+  enum e_spice_model_pass_gate_logic_type type;
+  float nmos_size;
+  float pmos_size;
+  char* spice_model_name;
+};
+
 struct s_spice_model_port {
   enum e_spice_model_port_type type;
   int size;
   char* prefix; 
   boolean mode_select;
   int default_val;
+  boolean is_global;
+  char* spice_model_name;
+  t_spice_model* spice_model;
 };
 
-enum e_wire_model_type {
-  WIRE_MODEL_PIE,
-  WIRE_MODEL_T
-};
-
-typedef struct s_spice_model_wire_param t_spice_model_wire_param;
 struct s_spice_model_wire_param {
   enum e_wire_model_type type;
   float res_val;
@@ -124,14 +156,12 @@ struct s_spice_model_wire_param {
   int level;
 };
 
-typedef struct s_spice_model_netlist t_spice_model_netlist;
 struct s_spice_model_netlist {
   char* path;
   int included;
 };
 
 /* Information about design technology */
-typedef struct s_spice_model_design_tech_info t_spice_model_design_tech_info;
 struct s_spice_model_design_tech_info {
   /* Valid for SRAM technology */
   t_spice_model_buffer* buffer_info;
@@ -148,7 +178,6 @@ struct s_spice_model_design_tech_info {
   int mux_num_level;
 };
 
-typedef struct s_spice_model t_spice_model;
 struct s_spice_model {
   enum e_spice_model_type type;
   char* name;
@@ -193,11 +222,6 @@ struct s_spice_model {
   int** sb_index_high;
 };
 
-enum e_spice_accuracy_type {
-  SPICE_FRAC, SPICE_ABS
-};
-
-typedef struct s_spice_meas_params t_spice_meas_params;
 struct s_spice_meas_params {
   int auto_select_sim_num_clk_cycle;
   int sim_num_clock_cycle; /* Number of clock cycle in simulation */
@@ -221,7 +245,6 @@ struct s_spice_meas_params {
   float output_thres_pct_fall;
 };
 
-typedef struct s_spice_stimulate_params t_spice_stimulate_params;
 struct s_spice_stimulate_params {
   /* Clock slew (unit: percentage of clock freqency) */
   float clock_slew_rise_time;  
@@ -244,7 +267,6 @@ struct s_spice_stimulate_params {
   float sim_clock_freq_slack;
 };
 
-typedef struct s_spice_params t_spice_params;
 struct s_spice_params {
   int sim_temp; /* Simulation Temperature*/
   int post;
@@ -254,7 +276,6 @@ struct s_spice_params {
   t_spice_stimulate_params stimulate_params;
 };
 
-typedef struct s_spice t_spice;
 struct s_spice {
   /* Parameters */
   t_spice_params spice_params;
@@ -268,7 +289,6 @@ struct s_spice {
 };
 
 /* Information needed to build a Multiplexer architecture*/
-typedef struct s_spice_mux_arch t_spice_mux_arch;
 struct s_spice_mux_arch {
   enum e_spice_model_structure structure;
   int num_input;
@@ -281,7 +301,6 @@ struct s_spice_mux_arch {
 };
 
 /* For Multiplexer size*/
-typedef struct s_spice_mux_model t_spice_mux_model;
 struct s_spice_mux_model {
   int size;
   t_spice_model* spice_model;
@@ -289,14 +308,7 @@ struct s_spice_mux_model {
   int cnt; /* Used in mux_testbench only*/
 };
 
-/* For SRAM */
-enum e_sram_orgz {
-  SPICE_SRAM_STANDALONE,
-  SPICE_SRAM_SCAN_CHAIN,
-  SPICE_SRAM_MEMORY_BANK
-};
 
-typedef struct s_sram_inf t_sram_inf;
 struct s_sram_inf {
   float area; //Xifan TANG
   char* spice_model_name; // Xifan TANG: Spice Support
@@ -305,7 +317,6 @@ struct s_sram_inf {
 };
 
 /* Xifan TANG: SPICE net information */
-typedef struct s_spice_net_info t_spice_net_info;
 struct s_spice_net_info {
   float probability;
   float density;
@@ -318,14 +329,12 @@ struct s_spice_net_info {
   float slew_fall;
 };
 
-typedef struct s_spicetb_info t_spicetb_info;
 struct s_spicetb_info {
   char* tb_name;
   int num_sim_clock_cycles;
 };
 
 /* Data structure for storing configurtion bits*/
-typedef struct s_conf_bit_info t_conf_bit_info;
 struct s_conf_bit_info {
   /* index in all the srams/bit lines/word lines */
   int index;

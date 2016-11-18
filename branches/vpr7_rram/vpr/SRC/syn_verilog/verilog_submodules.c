@@ -25,6 +25,7 @@
 #include "linkedlist.h"
 #include "spice_utils.h"
 #include "spice_mux.h"
+#include "fpga_spice_globals.h"
 
 /* Include verilog utils */
 #include "verilog_utils.h"
