@@ -1540,6 +1540,7 @@ count_netlist_ios_as_constrained_ios	timing/read_sdc.c	/^static void count_netli
 count_num_conf_bit_one_interc	fpga_spice/spice_utils.c	/^int count_num_conf_bit_one_interc(t_interconnect* cur_interc) {$/;"	f
 count_num_conf_bits_one_spice_model	fpga_spice/spice_utils.c	/^int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,$/;"	f
 count_num_conf_bits_pb_type_mode_interc	fpga_spice/spice_utils.c	/^int count_num_conf_bits_pb_type_mode_interc(t_mode* cur_pb_type_mode) {$/;"	f
+count_num_sram_bits_one_spice_model	fpga_spice/spice_utils.c	/^int count_num_sram_bits_one_spice_model(t_spice_model* cur_spice_model,$/;"	f
 count_routing_memristor_buffer	mrfpga/buffer_insertion.c	/^void count_routing_memristor_buffer( int num_per_channel, float buffer_size )$/;"	f
 count_routing_transistors	route/rr_graph_area.c	/^void count_routing_transistors(enum e_directionality directionality,$/;"	f
 count_sinks_internal_cb_rr_graph_net_nums	base/read_netlist.c	/^static int count_sinks_internal_cb_rr_graph_net_nums($/;"	f	file:
@@ -1578,6 +1579,7 @@ dc	../../libarchfpga/include/physical_types.h	/^	float dc;$/;"	m	struct:s_chan
 dealloc_mux_graph	power/power.c	/^static void dealloc_mux_graph(t_mux_node * node) {$/;"	f	file:
 dealloc_mux_graph_rec	power/power.c	/^static void dealloc_mux_graph_rec(t_mux_node * node) {$/;"	f	file:
 decode_cmos_mux_sram_bits	fpga_spice/spice_utils.c	/^void decode_cmos_mux_sram_bits(t_spice_model* mux_spice_model,$/;"	f
+decode_mode_bits	fpga_spice/spice_utils.c	/^int* decode_mode_bits(char* mode_bits, int* num_sram_bits) {$/;"	f
 decode_multilevel_mux_sram_bits	fpga_spice/spice_utils.c	/^int* decode_multilevel_mux_sram_bits(int fan_in,$/;"	f
 decode_onelevel_mux_sram_bits	fpga_spice/spice_utils.c	/^int* decode_onelevel_mux_sram_bits(int fan_in,$/;"	f
 decode_tree_mux_sram_bits	fpga_spice/spice_utils.c	/^int* decode_tree_mux_sram_bits(int fan_in,$/;"	f
@@ -2015,6 +2017,7 @@ findPortByName	../../libarchfpga/read_xml_arch_file.c	/^static t_port * findPort
 find_affected_blocks	place/place.c	/^static int find_affected_blocks(int b_from, int x_to, int y_to, int z_to) {$/;"	f	file:
 find_affected_nets	place/place.c	/^static int find_affected_nets(int *nets_to_update) {$/;"	f	file:
 find_all_the_macro	place/place_macro.c	/^static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_num_of_this_blk, $/;"	f	file:
+find_bl_wl_ports_spice_model	fpga_spice/spice_utils.c	/^void find_bl_wl_ports_spice_model(t_spice_model* cur_spice_model,$/;"	f
 find_blk_net_pin_side	clb_pin_remap/clb_pin_remap_util.c	/^int find_blk_net_pin_side(t_block target_blk,$/;"	f
 find_blk_net_pin_sides	clb_pin_remap/clb_pin_remap_util.c	/^void find_blk_net_pin_sides(t_block target_blk,$/;"	f
 find_blk_net_type_pins	clb_pin_remap/clb_pin_remap_util.c	/^void find_blk_net_type_pins(int n_blks, t_block* blk,$/;"	f
@@ -2883,6 +2886,7 @@ main	main.c	/^int main(int argc, char **argv) {$/;"	f
 main_best_buffer_list	../../libarchfpga/include/arch_types_mrfpga.h	/^  t_linked_int* main_best_buffer_list;$/;"	m	struct:s_arch_mrfpga
 main_best_buffer_list	mrfpga/mrfpga_globals.c	/^t_linked_int* main_best_buffer_list;$/;"	v
 map_button	base/graphics.c	/^static void map_button (int bnum) $/;"	f	file:
+map_pb_type_port_to_spice_model_ports	fpga_spice/fpga_spice_setup.c	/^int map_pb_type_port_to_spice_model_ports(t_pb_type* cur_pb_type,$/;"	f	file:
 mapped_spice_model	base/vpr_types.h	/^    t_spice_model* mapped_spice_model;$/;"	m	struct:s_logical_block
 mapped_spice_model_index	base/vpr_types.h	/^    int mapped_spice_model_index; \/* index of spice_model in completed FPGA netlist *\/$/;"	m	struct:s_logical_block
 mark_and_update_partial_gain	pack/cluster.c	/^static void mark_and_update_partial_gain(int inet, enum e_gain_update gain_flag,$/;"	f	file:
@@ -4118,6 +4122,7 @@ spice_model_name	../../libarchfpga/include/spice_types.h	/^  char* spice_model_n
 spice_model_name	../../libarchfpga/include/spice_types.h	/^  char* spice_model_name;$/;"	m	struct:s_spice_model_buffer
 spice_model_name	../../libarchfpga/include/spice_types.h	/^  char* spice_model_name;$/;"	m	struct:s_spice_model_pass_gate_logic
 spice_model_name	../../libarchfpga/include/spice_types.h	/^  char* spice_model_name;$/;"	m	struct:s_spice_model_port
+spice_model_port	../../libarchfpga/include/physical_types.h	/^    t_spice_model_port* spice_model_port;$/;"	m	struct:s_port
 spice_models	../../libarchfpga/include/spice_types.h	/^  t_spice_model* spice_models;$/;"	m	struct:s_spice
 spice_mux_arch	../../libarchfpga/include/spice_types.h	/^  t_spice_mux_arch* spice_mux_arch;$/;"	m	struct:s_spice_mux_model
 spice_name_tag	base/vpr_types.h	/^    char* spice_name_tag;$/;"	m	struct:s_pb

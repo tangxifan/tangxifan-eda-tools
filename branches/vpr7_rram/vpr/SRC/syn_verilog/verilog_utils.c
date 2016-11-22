@@ -163,10 +163,17 @@ void dump_verilog_file_header(FILE* fp,
  */
 void decode_verilog_one_level_4t1r_mux(int path_id, 
                                        int bit_len, int* conf_bits) { 
+  int i; 
+
   /* Check */
   assert(0 < bit_len);
   assert(NULL != conf_bits);
-  assert((-1 < path_id)&&(path_id < bit_len/2 - 1));
+  assert((-1 < path_id)&&((path_id < bit_len/2 - 1)||(path_id == bit_len/2 - 1)));
+
+  /* All the others should be zero */
+  for (i = 0; i < bit_len; i++) {
+    conf_bits[i] = 0;
+  }
 
   /* Last bit of WL should be 1 */
   conf_bits[bit_len-1] = 1;
@@ -552,3 +559,4 @@ int dump_verilog_global_ports(FILE* fp, t_llist* head,
 
   return dumped_port_cnt;
 }
+

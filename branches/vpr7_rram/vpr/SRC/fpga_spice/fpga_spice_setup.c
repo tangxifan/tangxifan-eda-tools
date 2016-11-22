@@ -31,6 +31,10 @@
 
 /***** Subroutines Declarations *****/
 static 
+int map_pb_type_port_to_spice_model_ports(t_pb_type* cur_pb_type,
+                                          t_spice_model* cur_spice_model);
+
+static 
 void match_pb_types_spice_model_rec(t_pb_type* cur_pb_type,
                                     int num_spice_model,
                                     t_spice_model* spice_models);
@@ -50,6 +54,56 @@ void rec_add_pb_type_keywords_to_list(t_pb_type* cur_pb_type,
                                       char* prefix);
 
 /***** Subroutines *****/
+
+/* Map (synchronize) pb_type ports to SPICE model ports
+ */
+static 
+int map_pb_type_port_to_spice_model_ports(t_pb_type* cur_pb_type,
+                                          t_spice_model* cur_spice_model) {
+  int iport;
+  t_port* cur_pb_type_port = NULL;
+
+  /* Check */
+  assert(NULL != cur_pb_type);
+
+  /* Initialize each port */
+  for (iport = 0; iport < cur_pb_type->num_ports; iport++) {
+    cur_pb_type->ports[iport].spice_model_port = NULL; 
+  } 
+
+  /* Return if SPICE_MODEL is NULL */
+  if (NULL == cur_spice_model) {
+   return 0;
+  }
+
+  /* For each port, find a SPICE model port, which has the same name and port size */
+  for (iport = 0; iport < cur_spice_model->num_port; iport++) {
+    cur_pb_type_port = 
+       find_pb_type_port_match_spice_model_port(cur_pb_type, 
+                                                &(cur_spice_model->ports[iport])); 
+    /* Not every spice_model_port can find a mapped pb_type_port.
+     * Since a pb_type only includes necessary ports in technology mapping.
+     * ports for physical designs may be ignored ! 
+     */
+    if (NULL != cur_pb_type_port) {
+      cur_pb_type_port->spice_model_port = &(cur_spice_model->ports[iport]); 
+    }
+  }
+  /* Although some spice_model_port may not have a corresponding pb_type_port 
+   * but each pb_type_port should be mapped to a spice_model_port
+   */
+  for (iport = 0; iport < cur_pb_type->num_ports; iport++) {
+    if (NULL == cur_pb_type->ports[iport].spice_model_port) {
+      vpr_printf(TIO_MESSAGE_ERROR, 
+                 "(File:%s, [LINE%d])Pb_type(%s) Port(%s) cannot find a corresponding port in SPICE model(%s)",
+                 __FILE__, __LINE__, cur_pb_type->name, cur_pb_type->ports[iport].name, 
+                 cur_spice_model->name);
+      exit(1);
+    }
+  }
+
+  return cur_pb_type->num_ports;
+}
 
 /* Find spice_model_name definition in pb_types
  * Try to match the name with defined spice_models
@@ -78,6 +132,8 @@ void match_pb_types_spice_model_rec(t_pb_type* cur_pb_type,
       vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,LINE[%d]) Fail to find a defined SPICE model called %s, in pb_type(%s)!\n",__FILE__, __LINE__, cur_pb_type->spice_model_name, cur_pb_type->name);
       exit(1);
     }
+    /* Map pb_type ports to SPICE model ports*/
+    map_pb_type_port_to_spice_model_ports(cur_pb_type,cur_pb_type->spice_model);
     return;
   }
   /* Traversal the hierarchy*/
@@ -214,7 +270,8 @@ void init_check_arch_spice_models(t_arch* arch,
 
   /* Link the input/output buffer spice models to higher level spice models 
    * Configure (fill information) the input/output buffers of high level spice models */
-  config_spice_model_input_output_buffers_pass_gate(arch->spice->num_spice_model, arch->spice->spice_models);
+  config_spice_model_input_output_buffers_pass_gate(arch->spice->num_spice_model, 
+                                                    arch->spice->spice_models);
 
   /* 1. Link the spice model defined in pb_types and routing switches */
   /* Step A:  Check routing switches, connection blocks*/

@@ -2477,6 +2477,147 @@ int is_sb_interc_between_segments(int switch_box_x,
 }
 
 /* Count the number of configuration bits of a spice model */
+int count_num_sram_bits_one_spice_model(t_spice_model* cur_spice_model,
+                                        int mux_size) {
+  int num_sram_bits = 0;
+  int iport;
+  int lut_size;
+  int num_input_port = 0;
+  t_spice_model_port** input_ports = NULL;
+  int num_output_port = 0;
+  t_spice_model_port** output_ports = NULL;
+  int num_sram_port = 0;
+  t_spice_model_port** sram_ports = NULL;
+
+  assert(NULL != cur_spice_model);
+
+  /* Only LUT and MUX requires configuration bits*/
+  switch (cur_spice_model->type) {
+  case SPICE_MODEL_LUT:
+    /* Determine size of LUT*/
+    input_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port);
+    output_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port);
+    sram_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port);
+    assert(1 == num_input_port);
+    assert(1 == num_output_port);
+    assert(1 == num_sram_port);
+    lut_size = input_ports[0]->size;
+    num_sram_bits = (int)pow(2.,(double)(lut_size));
+    assert(num_sram_bits == sram_ports[0]->size);
+    assert(1 == output_ports[0]->size);
+    /* TODO: could be more smart! Use mapped spice_model of SRAM ports!  
+     * Support Non-volatile RRAM-based SRAM */
+    switch (cur_spice_model->design_tech) {
+    case SPICE_MODEL_DESIGN_RRAM:
+    /* Non-volatile SRAM requires 2 BLs and 2 WLs for each 1 memory bit, 
+     * Number of memory bits is still same as CMOS SRAM
+     */
+      break;
+    case SPICE_MODEL_DESIGN_CMOS:
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of LUT(name: %s)\n",
+                 __FILE__, __LINE__, cur_spice_model->name); 
+      exit(1);
+    }
+    break;
+  case SPICE_MODEL_MUX:
+    assert((2 == mux_size)||(2 < mux_size));
+    /* Number of configuration bits depends on the MUX structure */
+    switch (cur_spice_model->design_tech_info.structure) {
+    case SPICE_MODEL_STRUCTURE_TREE:
+      num_sram_bits = determine_tree_mux_level(mux_size);
+      break;
+    case SPICE_MODEL_STRUCTURE_ONELEVEL:
+      num_sram_bits = mux_size;
+      break;
+    case SPICE_MODEL_STRUCTURE_MULTILEVEL:
+      num_sram_bits = cur_spice_model->design_tech_info.mux_num_level
+                      * determine_num_input_basis_multilevel_mux(mux_size, 
+                        cur_spice_model->design_tech_info.mux_num_level);
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
+                 __FILE__, __LINE__, cur_spice_model->name);
+      exit(1);
+    }
+    /* For 2:1 MUX, whatever structure, there is only one level */
+    if (2 == mux_size) {
+      num_sram_bits = 1;
+    }
+    /* Also the number of configuration bits depends on the technology*/
+    switch (cur_spice_model->design_tech) {
+    case SPICE_MODEL_DESIGN_RRAM:
+      /* 4T1R MUX requires more configuration bits */
+      if (SPICE_MODEL_STRUCTURE_TREE == cur_spice_model->design_tech_info.structure) {
+      /* For tree-structure: we need 3 times more config. bits */
+        num_sram_bits = 3 * num_sram_bits;
+      } else if (SPICE_MODEL_STRUCTURE_MULTILEVEL == cur_spice_model->design_tech_info.structure) {
+      /* For multi-level structure: we need 1 more config. bits for each level */
+        num_sram_bits += cur_spice_model->design_tech_info.mux_num_level;
+      } else {
+        num_sram_bits = (num_sram_bits + 1);
+      }
+      /* For 2:1 MUX, whatever structure, there is only one level */
+      if (2 == mux_size) {
+        num_sram_bits = 3;
+      } 
+      break;
+    case SPICE_MODEL_DESIGN_CMOS:
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of MUX(name: %s)\n",
+                 __FILE__, __LINE__, cur_spice_model->name); 
+      exit(1);
+    }
+    break;
+  case SPICE_MODEL_INPAD:
+  case SPICE_MODEL_OUTPAD:
+  case SPICE_MODEL_WIRE:
+  case SPICE_MODEL_FF:
+  case SPICE_MODEL_SRAM:
+  case SPICE_MODEL_HARDLOGIC:
+  case SPICE_MODEL_SCFF:
+  case SPICE_MODEL_VDD:
+  case SPICE_MODEL_GND:
+  case SPICE_MODEL_IOPAD:
+    /* Other block, we just count the number SRAM ports defined by user */
+    num_sram_bits = 0;
+    sram_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port);
+    /* TODO: could be more smart! 
+     * Support Non-volatile RRAM-based SRAM */
+    if (0 < num_sram_port) {
+      assert(NULL != sram_ports);
+      for (iport = 0; iport < num_sram_port; iport++) {
+        assert(NULL != sram_ports[iport]->spice_model);
+        num_sram_bits += sram_ports[iport]->size;
+        /* TODO: could be more smart! 
+         * Support Non-volatile RRAM-based SRAM */
+        switch (cur_spice_model->design_tech) {
+        case SPICE_MODEL_DESIGN_RRAM:
+        /* Non-volatile SRAM requires 2 BLs and 2 WLs for each 1 memory bit, 
+         * Number of memory bits is still same as CMOS SRAM
+         */
+        case SPICE_MODEL_DESIGN_CMOS:
+          break;
+        default:
+          vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of LUT(name: %s)\n",
+                     __FILE__, __LINE__, cur_spice_model->name); 
+          exit(1);
+        }
+      }
+    }
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid spice_model_type!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+
+  return num_sram_bits;
+}
+
+
+/* Count the number of configuration bits of a spice model */
 int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
                                         int mux_size) {
   int num_conf_bits = 0;
@@ -2505,6 +2646,22 @@ int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
     num_conf_bits = (int)pow(2.,(double)(lut_size));
     assert(num_conf_bits == sram_ports[0]->size);
     assert(1 == output_ports[0]->size);
+    /* TODO: could be more smart! Use mapped spice_model of SRAM ports!  
+     * Support Non-volatile RRAM-based SRAM */
+    switch (sram_ports[0]->spice_model->design_tech) {
+    case SPICE_MODEL_DESIGN_RRAM:
+    /* Non-volatile SRAM requires 2 BLs and 2 WLs for each 1 memory bit, 
+     * Number of memory bits is still same as CMOS SRAM
+     */
+      num_conf_bits = 2 * num_conf_bits;
+      break;
+    case SPICE_MODEL_DESIGN_CMOS:
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of LUT(name: %s)\n",
+                 __FILE__, __LINE__, cur_spice_model->name); 
+      exit(1);
+    }
     break;
   case SPICE_MODEL_MUX:
     assert((2 == mux_size)||(2 < mux_size));
@@ -2558,10 +2715,22 @@ int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
     break;
   case SPICE_MODEL_INPAD:
   case SPICE_MODEL_OUTPAD:
-    /* We assume it has 1 conf bit by default 
-     * TODO: to be more smart   
+    /* TODO: could be more smart! 
+     * Support Non-volatile RRAM-based SRAM */
+    switch (cur_spice_model->design_tech) {
+    case SPICE_MODEL_DESIGN_RRAM:
+    /* Non-volatile SRAM requires 2 BLs and 2 WLs for each 1 memory bit, 
+     * Number of memory bits is still same as CMOS SRAM
      */
-    num_conf_bits = 1;
+      num_conf_bits = 2;
+    case SPICE_MODEL_DESIGN_CMOS:
+      num_conf_bits = 1;
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of LUT(name: %s)\n",
+                 __FILE__, __LINE__, cur_spice_model->name); 
+      exit(1);
+    }
     break;
   case SPICE_MODEL_WIRE:
   case SPICE_MODEL_FF:
@@ -2574,10 +2743,29 @@ int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
     /* Other block, we just count the number SRAM ports defined by user */
     num_conf_bits = 0;
     sram_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port);
+    /* TODO: could be more smart! 
+     * Support Non-volatile RRAM-based SRAM */
     if (0 < num_sram_port) {
       assert(NULL != sram_ports);
       for (iport = 0; iport < num_sram_port; iport++) {
+        assert(NULL != sram_ports[iport]->spice_model);
         num_conf_bits += sram_ports[iport]->size;
+        /* TODO: could be more smart! 
+         * Support Non-volatile RRAM-based SRAM */
+        switch (sram_ports[iport]->spice_model->design_tech) {
+        case SPICE_MODEL_DESIGN_RRAM:
+        /* Non-volatile SRAM requires 2 BLs and 2 WLs for each 1 memory bit, 
+         * Number of memory bits is still same as CMOS SRAM
+         */
+          num_conf_bits = 2 * num_conf_bits;
+          break;
+        case SPICE_MODEL_DESIGN_CMOS:
+          break;
+        default:
+          vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of LUT(name: %s)\n",
+                     __FILE__, __LINE__, cur_spice_model->name); 
+          exit(1);
+        }
       }
     }
     break;
@@ -3819,3 +4007,74 @@ add_conf_bit_info_to_llist(t_llist* head,
     return temp; 
   }
 }
+
+/* Find BL and WL ports for a SRAM model.
+ * And check if the number of BL/WL satisfy the technology needs
+ */
+void find_bl_wl_ports_spice_model(t_spice_model* cur_spice_model,
+                                  int* num_bl_ports, t_spice_model_port*** bl_ports,
+                                  int* num_wl_ports, t_spice_model_port*** wl_ports) {
+  assert(NULL != cur_spice_model); 
+
+  /* Find BL ports */
+  (*bl_ports) = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_BL, num_bl_ports);
+  /* Find WL ports */
+  (*wl_ports) = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_WL, num_wl_ports);
+
+  /* port size of BL/WL should be at least 1 !*/
+  assert(1 == (*num_bl_ports));
+  assert(0 < (*bl_ports)[0]->size);
+  assert(1 == (*num_wl_ports));
+  assert(0 < (*wl_ports)[0]->size);
+
+  /* Check the size of BL/WL ports */
+  switch (cur_spice_model->design_tech) {
+  case SPICE_MODEL_DESIGN_RRAM:
+    /* This check may be too tight */
+    assert((*bl_ports)[0]->size == (*wl_ports)[0]->size);
+    assert(2 == (*bl_ports)[0]->size);
+    assert(2 == (*wl_ports)[0]->size);
+    break;
+  case SPICE_MODEL_DESIGN_CMOS:
+    assert((*bl_ports)[0]->size == (*wl_ports)[0]->size);
+    assert(1 == (*bl_ports)[0]->size);
+    assert(1 == (*wl_ports)[0]->size);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of MUX(name: %s)\n",
+               __FILE__, __LINE__, cur_spice_model->name); 
+    exit(1);
+  }
+  
+  return;
+}
+
+/* Decode mode bits "01..." to a SRAM bits array */
+int* decode_mode_bits(char* mode_bits, int* num_sram_bits) {
+  int* sram_bits = NULL;
+  int i;
+  
+  assert(NULL == mode_bits);
+  (*num_sram_bits) = strlen(mode_bits);
+ 
+  sram_bits = (int*)my_calloc((*num_sram_bits), sizeof(int));
+
+  for (i = 0; i < (*num_sram_bits); i++) {
+    switch(mode_bits[i]) {
+    case '1':
+      sram_bits[i] = 1;
+      break;
+    case '0':
+      sram_bits[i] = 0;
+      break;
+    default: 
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid mode_bits(%s)!\n",
+                 __FILE__, __LINE__, mode_bits);
+      exit(1);
+    }
+  }
+
+  return sram_bits;
+}
+
+

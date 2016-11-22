@@ -258,6 +258,10 @@ struct s_port {
 	char *chain_name;
 
 	t_port_power * port_power;
+
+    /* FPGA_SPICE_model support:
+     * mapped SPICE model port */
+    t_spice_model_port* spice_model_port;
 };
 typedef struct s_port t_port;
 

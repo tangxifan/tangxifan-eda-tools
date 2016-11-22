@@ -10,6 +10,9 @@ void dump_include_user_defined_verilog_netlists(FILE* fp,
 void dump_verilog_file_header(FILE* fp,
                               char* usage);
 
+void decode_verilog_one_level_4t1r_mux(int path_id, 
+                                       int bit_len, int* conf_bits); 
+
 void decode_verilog_rram_mux(t_spice_model* mux_spice_model,
                              int mux_size, int path_id,
                              int* bit_len, int** conf_bits, int* mux_level);

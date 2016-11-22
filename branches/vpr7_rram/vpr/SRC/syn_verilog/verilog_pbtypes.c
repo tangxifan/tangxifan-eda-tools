@@ -586,6 +586,15 @@ void dump_verilog_pb_type_ports(FILE* fp,
 
   /* Print all the inout ports  */
   for (iport = 0; iport < num_pb_type_inout_port; iport++) {
+    /* only search mapped ports for primitive node */
+    if (NULL != cur_pb_type->spice_model) {
+      /* We need to bypass global ports */
+      assert(NULL != pb_type_inout_ports[iport]->spice_model_port);
+      if (TRUE == pb_type_inout_ports[iport]->spice_model_port->is_global) {
+        continue;
+      }
+    }
+    /* Dump non-global ports */
     for (ipin = 0; ipin < pb_type_inout_ports[iport]->num_pins; ipin++) {
       if (0 < num_dumped_port) { 
         if (TRUE == dump_port_type) {
@@ -608,6 +617,15 @@ void dump_verilog_pb_type_ports(FILE* fp,
   pb_type_input_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_INPUT, &num_pb_type_input_port); 
   /* Print all the input ports  */
   for (iport = 0; iport < num_pb_type_input_port; iport++) {
+    /* only search mapped ports for primitive node */
+    if (NULL != cur_pb_type->spice_model) {
+      /* We need to bypass global ports */
+      assert(NULL != pb_type_input_ports[iport]->spice_model_port);
+      if (TRUE == pb_type_input_ports[iport]->spice_model_port->is_global) {
+        continue;
+      }
+    }
+    /* Dump non-global ports */
     for (ipin = 0; ipin < pb_type_input_ports[iport]->num_pins; ipin++) {
       if (0 < num_dumped_port) { 
         if (TRUE == dump_port_type) {
@@ -629,6 +647,15 @@ void dump_verilog_pb_type_ports(FILE* fp,
   pb_type_output_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_OUTPUT, &num_pb_type_output_port); 
   /* Print all the output ports  */
   for (iport = 0; iport < num_pb_type_output_port; iport++) {
+    /* only search mapped ports for primitive node */
+    if (NULL != cur_pb_type->spice_model) {
+      /* We need to bypass global ports */
+      assert(NULL != pb_type_output_ports[iport]->spice_model_port);
+      if (TRUE == pb_type_output_ports[iport]->spice_model_port->is_global) {
+        continue;
+      }
+    }
+    /* Dump non-global ports */
     for (ipin = 0; ipin < pb_type_output_ports[iport]->num_pins; ipin++) {
       if (0 < num_dumped_port) { 
         if (TRUE == dump_port_type) {
@@ -653,6 +680,15 @@ void dump_verilog_pb_type_ports(FILE* fp,
 
   /* Print all the clk ports  */
   for (iport = 0; iport < num_pb_type_clk_port; iport++) {
+    /* only search mapped ports for primitive node */
+    if (NULL != cur_pb_type->spice_model) {
+      /* We need to bypass global ports */
+      assert(NULL != pb_type_clk_ports[iport]->spice_model_port);
+      if (TRUE == pb_type_clk_ports[iport]->spice_model_port->is_global) {
+        continue;
+      }
+    }
+    /* Dump non-global ports */
     for (ipin = 0; ipin < pb_type_clk_ports[iport]->num_pins; ipin++) {
       if (0 < num_dumped_port) { 
         if (TRUE == dump_port_type) {

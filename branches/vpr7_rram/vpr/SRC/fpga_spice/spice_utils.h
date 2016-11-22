@@ -247,6 +247,9 @@ int is_sb_interc_between_segments(int switch_box_x,
                                   t_rr_node* src_rr_node, 
                                   int chan_side);
 
+int count_num_sram_bits_one_spice_model(t_spice_model* cur_spice_model,
+                                        int mux_size);
+
 int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
                                         int mux_size);
 
@@ -322,3 +325,9 @@ t_llist*
 add_conf_bit_info_to_llist(t_llist* head,
                            int index, int sram_val, int bl_val, int wl_val,
                            t_spice_model* parent_spice_model);
+
+void find_bl_wl_ports_spice_model(t_spice_model* cur_spice_model,
+                                  int* num_bl_ports, t_spice_model_port*** bl_ports,
+                                  int* num_wl_ports, t_spice_model_port*** wl_ports);
+
+int* decode_mode_bits(char* mode_bits, int* num_sram_bits);
