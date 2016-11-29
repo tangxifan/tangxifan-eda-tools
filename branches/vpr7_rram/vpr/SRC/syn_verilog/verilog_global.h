@@ -13,6 +13,7 @@ extern char* verilog_mux_special_basis_posfix;
 
 extern t_spice_model* sram_verilog_model;
 extern enum e_sram_orgz sram_verilog_orgz_type;
+extern t_sram_orgz_info* sram_verilog_orgz_info;
 
 /* Input and Output Pad spice model. should be set as global */
 extern t_spice_model* inpad_verilog_model;

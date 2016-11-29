@@ -23,11 +23,6 @@ char* chomp_verilog_node_prefix(char* verilog_node_prefix);
 
 char* format_verilog_node_prefix(char* verilog_node_prefix);
 
-t_conf_bit_info* dump_verilog_find_paired_conf_bit(t_llist* conf_bits_llist_head,
-                                                   t_conf_bit_info* src_conf_bit_info);
-
-void dump_verilog_gen_pairs_conf_bits(t_llist* conf_bits_llist_head);
-
 char* verilog_convert_port_type_to_string(enum e_spice_model_port_type port_type);
 
 int rec_dump_verilog_spice_model_global_ports(FILE* fp, 
@@ -36,3 +31,25 @@ int rec_dump_verilog_spice_model_global_ports(FILE* fp,
 
 int dump_verilog_global_ports(FILE* fp, t_llist* head,
                               boolean dump_port_type);
+
+void dump_verilog_sram_ports(FILE* fp, t_sram_orgz_info* cur_sram_orgz_info,
+                             int sram_lsb, int sram_msb,
+                             boolean dump_port_type);
+
+void dump_verilog_reserved_sram_ports(FILE* fp, 
+                                      t_sram_orgz_info* cur_sram_orgz_info,
+                                      int sram_lsb, int sram_msb,
+                                      boolean dump_port_type);
+
+void dump_verilog_sram_submodule(FILE* fp, t_sram_orgz_info* cur_sram_orgz_info,
+                                 t_spice_model* sram_verilog_model);
+
+void dump_verilog_mux_config_bus(FILE* fp, t_spice_model* mux_spice_model, 
+                                 t_sram_orgz_info* cur_sram_orgz_info,
+                                 int mux_size, int cur_num_sram,
+                                 int num_mux_reserved_conf_bits,
+                                 int num_mux_conf_bits); 
+
+void dump_verilog_grid_common_port(FILE* fp, t_spice_model* cur_verilog_model,
+                                   char* general_port_prefix, int lsb, int msb,
+                                   boolean dump_port_type);

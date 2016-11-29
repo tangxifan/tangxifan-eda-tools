@@ -39,6 +39,7 @@ static int dumped_num_conf_bits = 0;
 /* Local Subroutines */
 static 
 void rec_dump_conf_bits_to_bitstream_file(FILE* fp, 
+                                          t_sram_orgz_info* cur_sram_orgz_info,
                                           t_llist* cur_conf_bit);
 
 
@@ -48,7 +49,8 @@ void rec_dump_conf_bits_to_bitstream_file(FILE* fp,
  * which is easy for developers to debug
  */
 void dump_verilog_bitstream(char* bitstream_file_name, 
-                            char* circuit_name) {
+                            char* circuit_name,
+                            t_sram_orgz_info* cur_sram_orgz_info) {
   FILE* fp;
 
   /* Check if the path exists*/
@@ -65,7 +67,7 @@ void dump_verilog_bitstream(char* bitstream_file_name,
   dumped_num_conf_bits = 0;
 
   /* Find the head of bitstream: which is the tail of linked list */ 
-  rec_dump_conf_bits_to_bitstream_file(fp, conf_bits_head);
+  rec_dump_conf_bits_to_bitstream_file(fp, cur_sram_orgz_info, cur_sram_orgz_info->conf_bit_head);
 
   /* close file */
   fclose(fp);
@@ -83,7 +85,6 @@ void encode_decoder_addr(int input,
                          int decoder_size, char* addr) {
   int temp = input; 
   int i;
-  int len_addr = sizeof(addr)/sizeof(char);
 
   assert(NULL != addr);
   /* Check the length of addr !*/
@@ -122,31 +123,36 @@ void encode_decoder_addr(int input,
  */
 static 
 void rec_dump_conf_bits_to_bitstream_file(FILE* fp, 
+                                          t_sram_orgz_info* cur_sram_orgz_info,
                                           t_llist* cur_conf_bit) {
   t_llist* temp = cur_conf_bit->next; 
   t_conf_bit_info* cur_conf_bit_info = (t_conf_bit_info*)(cur_conf_bit->dptr);
-  int decoder_size = determine_decoder_size(sram_verilog_model->cnt);
-  char* wl_addr = NULL;
-  char* bl_addr = NULL; 
+  int num_bl, num_wl, bl_decoder_size, wl_decoder_size;
+  char* bl_addr = NULL;
+  char* wl_addr = NULL; 
 
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!",__FILE__, __LINE__); 
     exit(1);
   } 
+  
+  get_sram_orgz_info_num_blwl(cur_sram_orgz_info, &num_bl, &num_wl);
+  bl_decoder_size = determine_decoder_size(num_bl);
+  wl_decoder_size = determine_decoder_size(num_wl);
 
   if (NULL != temp) {
     /* This is not the tail, keep going */
-    rec_dump_conf_bits_to_bitstream_file(fp, temp);
+    rec_dump_conf_bits_to_bitstream_file(fp, cur_sram_orgz_info, temp);
   }
 
   /* We alraedy touch the tail, start dump */
-  switch (sram_verilog_orgz_type) {
+  switch (cur_sram_orgz_info->type) {
   case SPICE_SRAM_STANDALONE:
   case SPICE_SRAM_SCAN_CHAIN:
     /* Scan-chain only loads the SRAM values */
-    fprintf(fp, "%d, ", cur_conf_bit_info->sram_val),
+    fprintf(fp, "%d, ", cur_conf_bit_info->sram_bit->val),
     fprintf(fp, "// Configuration bit No.: %d, ", cur_conf_bit_info->index);
-    fprintf(fp, " SRAM value: %d, ", cur_conf_bit_info->sram_val);
+    fprintf(fp, " SRAM value: %d, ", cur_conf_bit_info->sram_bit->val);
     fprintf(fp, " SPICE model name: %s, ", cur_conf_bit_info->parent_spice_model->name);
     fprintf(fp, " SPICE model index: %d ", cur_conf_bit_info->parent_spice_model_index);
     fprintf(fp, "\n");
@@ -156,34 +162,29 @@ void rec_dump_conf_bits_to_bitstream_file(FILE* fp,
   case SPICE_SRAM_MEMORY_BANK:
     /* Memory bank requires the address to be given to the decoder*/
     /* Word line address */
-    wl_addr = (char*)my_calloc(decoder_size + 1, sizeof(char));
+    bl_addr = (char*)my_calloc(bl_decoder_size + 1, sizeof(char));
     /* If this WL is selected , we decode its index to address */
-    if (1 == cur_conf_bit_info->wl_val) {
-      encode_decoder_addr(cur_conf_bit_info->index, decoder_size, wl_addr);
-      fprintf(fp, "wl'%s, ", wl_addr),
-      fprintf(fp, "// Configuration bit No.: %d, ", cur_conf_bit_info->index);
-      fprintf(fp, " Word Line: %d, ", cur_conf_bit_info->wl_val);
-      fprintf(fp, " SPICE model name: %s, ", cur_conf_bit_info->parent_spice_model->name);
-      fprintf(fp, " SPICE model index: %d ", cur_conf_bit_info->parent_spice_model_index);
-      fprintf(fp, "\n");
-    }
+    assert(NULL != cur_conf_bit_info->bl);
+    encode_decoder_addr(cur_conf_bit_info->bl->addr, bl_decoder_size, bl_addr);
+    fprintf(fp, "bl'%s = %d, ", bl_addr, cur_conf_bit_info->bl->val);
+    fprintf(fp, "// Configuration bit No.: %d, ", cur_conf_bit_info->index);
+    fprintf(fp, " Bit Line: %d, ", cur_conf_bit_info->bl->val);
+    fprintf(fp, " SPICE model name: %s, ", cur_conf_bit_info->parent_spice_model->name);
+    fprintf(fp, " SPICE model index: %d ", cur_conf_bit_info->parent_spice_model_index);
+    fprintf(fp, "\n");
     /* Bit line address */
     /* If this WL is selected , we decode its index to address */
-    bl_addr = (char*)my_calloc(decoder_size + 1, sizeof(char));
-    if (1 == cur_conf_bit_info->bl_val) {
-      encode_decoder_addr(cur_conf_bit_info->index, decoder_size, bl_addr);
-      fprintf(fp, "bl'%s, ", bl_addr),
-      fprintf(fp, "// Configuration bit No.: %d, ", cur_conf_bit_info->index);
-      fprintf(fp, " Bit Line: %d, ", cur_conf_bit_info->bl_val);
-      fprintf(fp, " SPICE model name: %s, ", cur_conf_bit_info->parent_spice_model->name);
-      fprintf(fp, " SPICE model index: %d ", cur_conf_bit_info->parent_spice_model_index);
-      fprintf(fp, "\n");
-    }
+    wl_addr = (char*)my_calloc(wl_decoder_size + 1, sizeof(char));
+    assert(NULL != cur_conf_bit_info->bl);
+    encode_decoder_addr(cur_conf_bit_info->wl->addr, wl_decoder_size, wl_addr);
+    fprintf(fp, "wl'%s = %d, ", wl_addr, cur_conf_bit_info->wl->val);
+    fprintf(fp, "// Configuration bit No.: %d, ", cur_conf_bit_info->index);
+    fprintf(fp, " Word Line: %d, ", cur_conf_bit_info->wl->val);
+    fprintf(fp, " SPICE model name: %s, ", cur_conf_bit_info->parent_spice_model->name);
+    fprintf(fp, " SPICE model index: %d ", cur_conf_bit_info->parent_spice_model_index);
+    fprintf(fp, "\n");
     /* Update the counter */
-    if ((1 == cur_conf_bit_info->wl_val)
-      ||(1 == cur_conf_bit_info->bl_val)) {
-      dumped_num_conf_bits++;
-    }
+    dumped_num_conf_bits++;
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",

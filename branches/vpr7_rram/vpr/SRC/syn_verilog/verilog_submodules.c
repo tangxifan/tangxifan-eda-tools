@@ -58,7 +58,9 @@ void dump_verilog_cmos_mux_one_basis_module(FILE* fp,
   /* Port list */
   fprintf(fp, "input [0:%d] in,\n", num_input_basis_subckt - 1);
   fprintf(fp, "output out,\n");
-  fprintf(fp, "input [0:%d] mem, mem_inv);\n",
+  fprintf(fp, "input [0:%d] mem,\n",
+          num_mem - 1);
+  fprintf(fp, "input [0:%d] mem_inv);\n",
           num_mem - 1);
   /* Verilog Behavior description for a MUX */
   fprintf(fp, "//---- Behavior-level description -----\n");
@@ -303,7 +305,7 @@ void dump_verilog_cmos_mux_multilevel_structure(FILE* fp,
                                                 t_spice_model spice_model,
                                                 t_spice_mux_arch spice_mux_arch,
                                                 int num_sram_port, t_spice_model_port** sram_port) {
-  int i, j, k, level, nextlevel, sram_idx;
+  int i, j, level, nextlevel, sram_idx;
   int out_idx;
   int mux_basis_cnt = 0;
   int special_basis_cnt = 0;
@@ -394,8 +396,6 @@ void dump_verilog_cmos_mux_onelevel_structure(FILE* fp,
                                               t_spice_model spice_model,
                                               t_spice_mux_arch spice_mux_arch,
                                               int num_sram_port, t_spice_model_port** sram_port) {
-  int i;
-
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
@@ -485,9 +485,11 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
   fprintf(fp, "input wire [0:%d] %s,\n", mux_size - 1,  input_port[0]->prefix);
   /* Print output ports*/
   fprintf(fp, "output wire %s,\n", output_port[0]->prefix);
-  num_conf_bits = count_num_conf_bits_one_spice_model(&spice_model, mux_size);
-  fprintf(fp, "input wire [0:%d] %s, %s_inv\n", 
-          num_conf_bits - 1, sram_port[0]->prefix, sram_port[0]->prefix);
+  num_conf_bits = count_num_conf_bits_one_spice_model(&spice_model, sram_verilog_orgz_info->type, mux_size);
+  fprintf(fp, "input wire [0:%d] %s,\n", 
+          num_conf_bits - 1, sram_port[0]->prefix);
+  fprintf(fp, "input wire [0:%d] %s_inv\n", 
+          num_conf_bits - 1, sram_port[0]->prefix);
   /* Print local vdd and gnd*/
   fprintf(fp, ");");
   fprintf(fp, "\n");
@@ -673,7 +675,7 @@ void dump_verilog_rram_mux_multilevel_structure(FILE* fp,
                                                 t_spice_model spice_model,
                                                 t_spice_mux_arch spice_mux_arch,
                                                 int num_sram_port, t_spice_model_port** sram_port) {
-  int i, j, k, level, nextlevel, sram_idx;
+  int i, j, level, nextlevel, sram_idx;
   int out_idx;
   int mux_basis_cnt = 0;
   int special_basis_cnt = 0;
@@ -790,7 +792,9 @@ void dump_verilog_rram_mux_onelevel_structure(FILE* fp,
   fprintf(fp, "mux2_l%d_in[0:%d],\n ", 1, spice_mux_arch.num_input - 1); /* inputs  */
   fprintf(fp, "mux2_l%d_in[%d],\n", 0, 0); /* output */
   fprintf(fp, "//----- SRAM ports -----\n");
-  num_conf_bits = count_num_conf_bits_one_spice_model(&spice_model, spice_mux_arch.num_input);
+  num_conf_bits = count_num_conf_bits_one_spice_model(&spice_model, 
+                                                      sram_verilog_orgz_info->type, 
+                                                      spice_mux_arch.num_input);
   fprintf(fp, "%s[0:%d], %s_inv[0:%d]", 
             sram_port[0]->prefix, num_conf_bits - 1, 
             sram_port[0]->prefix, num_conf_bits - 1); /* sram sram_inv */
@@ -861,9 +865,13 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
   /* Print output ports*/
   fprintf(fp, "output wire %s,\n ", output_port[0]->prefix);
   /* Print configuration ports */
-  num_conf_bits = count_num_conf_bits_one_spice_model(&spice_model, mux_size);
-  fprintf(fp, "input wire [0:%d] %s, %s_inv\n", 
-          num_conf_bits - 1, sram_port[0]->prefix, sram_port[0]->prefix);
+  num_conf_bits = count_num_conf_bits_one_spice_model(&spice_model, 
+                                                      sram_verilog_orgz_info->type, 
+                                                      mux_size);
+  fprintf(fp, "input wire [0:%d] %s,\n", 
+          num_conf_bits - 1, sram_port[0]->prefix);
+  fprintf(fp, "input wire [0:%d] %s_inv\n", 
+          num_conf_bits - 1, sram_port[0]->prefix);
   /* Print local vdd and gnd*/
   fprintf(fp, ");\n");
   
@@ -1063,6 +1071,8 @@ void dump_verilog_submodule_muxes(char* submodule_dir,
 
   int num_input_basis = 0;
   t_spice_mux_model* cur_spice_mux_model = NULL;
+  
+  int cur_bl, cur_wl;
 
   /* Alloc the muxes*/
   muxes_head = stats_spice_muxes(num_switch, switches, spice, routing_arch);
@@ -1121,6 +1131,17 @@ void dump_verilog_submodule_muxes(char* submodule_dir,
     }
     /* Move on to the next*/
     temp = temp->next;
+  }
+
+  /* Determine reserved Bit/Word Lines if a memory bank is specified,
+   * At least 1 BL/WL should be reserved! 
+   */
+  update_sram_orgz_info_reserved_blwl(sram_verilog_orgz_info, max_mux_size, max_mux_size);
+  /* Reserve memory bit for reserved bl/wls, if required */
+  get_sram_orgz_info_num_blwl(sram_verilog_orgz_info, &cur_bl, &cur_wl);
+  if ((0 < cur_bl)||(0 < cur_wl)) {
+    assert((max_mux_size == cur_bl)&&(max_mux_size == cur_wl));
+    update_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info, max_mux_size);
   }
 
   vpr_printf(TIO_MESSAGE_INFO,"Generated %d Multiplexer submodules.\n",

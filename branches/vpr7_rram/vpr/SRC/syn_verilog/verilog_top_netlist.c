@@ -39,6 +39,10 @@
 /* Global varaiable only accessible in this source file*/
 static int prog_clock_cycle_delay_unit = 2;
 static int op_clock_cycle_delay_unit = 2;
+static char* top_netlist_addr_bl_port_name = "addr_bl";
+static char* top_netlist_addr_wl_port_name = "addr_wl";
+static char* top_netlist_bl_port_name = "bl_bus";
+static char* top_netlist_wl_port_name = "wl_bus";
 
 /* Local Subroutines declaration */
 
@@ -48,8 +52,9 @@ void dump_verilog_top_netlist_ports(FILE* fp,
                                     int num_clocks,
                                     char* circuit_name,
                                     t_spice verilog) {
-
-  int decoder_size = determine_decoder_size(sram_verilog_model->cnt);
+  int num_bl, num_wl, num_reserved_bl, num_reserved_wl;
+  int bl_decoder_size, wl_decoder_size, num_mem_bit;
+  t_spice_model* mem_model = NULL;
 
   /* A valid file handler */
   if (NULL == fp) {
@@ -96,11 +101,13 @@ void dump_verilog_top_netlist_ports(FILE* fp,
   }
 
   /* Configuration ports depend on the organization of SRAMs */
-  switch(sram_verilog_orgz_type) {
+  switch(sram_verilog_orgz_info->type) {
   case SPICE_SRAM_STANDALONE:
     fprintf(fp, "  input wire [%d:0] %s //---- SRAM outputs \n", 
             sram_verilog_model->cnt - 1,
             sram_verilog_model->prefix); 
+    fprintf(fp, ");\n");
+    /* Definition ends */
     break;
   case SPICE_SRAM_SCAN_CHAIN:
     /* TODO: currently, I use the same number of inputs as SRAM_STANDALONE
@@ -109,18 +116,51 @@ void dump_verilog_top_netlist_ports(FILE* fp,
     fprintf(fp, "  input wire [%d:0] %s //---- Scan-chain outputs \n", 
             sram_verilog_model->cnt - 1,
             sram_verilog_model->prefix); 
+    fprintf(fp, ");\n");
+    /* Definition ends */
     break;
   case SPICE_SRAM_MEMORY_BANK:
+    num_mem_bit = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info);
+    get_sram_orgz_info_num_blwl(sram_verilog_orgz_info, &num_bl, &num_wl);
+    get_sram_orgz_info_reserved_blwl(sram_verilog_orgz_info, &num_reserved_bl, &num_reserved_wl);
+    bl_decoder_size = determine_decoder_size(num_bl);
+    wl_decoder_size = determine_decoder_size(num_wl);
     fprintf(fp, "  input en_bl, en_wl,\n");
-    fprintf(fp, "  input wire [%d:0] addr_bl, //--- Address of bit lines \n", 
-                   decoder_size - 1);
-    fprintf(fp, "  input wire [%d:0] addr_wl, //--- Address of word lines \n", 
-                   decoder_size - 1);
+    fprintf(fp, "  input wire [%d:0] %s, //--- Address of bit lines \n", 
+                   bl_decoder_size - 1, top_netlist_addr_bl_port_name);
+    fprintf(fp, "  input wire [%d:0] %s //--- Address of word lines \n", 
+                   wl_decoder_size - 1, top_netlist_addr_wl_port_name);
+    fprintf(fp, ");\n");
+    /* Definition ends */
     /* I add all the Bit lines and Word lines here just for testbench usage */
-    fprintf(fp, "  input wire [%d:0] %s_out, //--- Bit lines \n", 
-                   sram_verilog_model->cnt - 1, sram_verilog_model->prefix);
-    fprintf(fp, "  input wire [%d:0] %s_outb //--- Word lines \n", 
-                   sram_verilog_model->cnt - 1, sram_verilog_model->prefix);
+    fprintf(fp, "  wire [%d:0] %s; //--- Bit lines bus \n", 
+                   num_bl - 1, top_netlist_bl_port_name);
+    fprintf(fp, "  wire [%d:0] %s; //--- Word lines bus \n", 
+                   num_wl - 1, top_netlist_wl_port_name);
+    fprintf(fp, "\n");
+    /* Declare reserved and normal conf_bits ports  */
+    mem_model = sram_verilog_orgz_info->mem_bank_info->mem_model;
+    fprintf(fp, "  wire [%d:0] %s_%s; //---- Reserved Bit lines \n",
+            num_reserved_bl - 1, mem_model->prefix, "reserved_bl");
+    fprintf(fp, "  wire [%d:0] %s_%s; //---- Reserved Word lines \n",
+            num_reserved_wl - 1, mem_model->prefix, "reserved_wl");
+    fprintf(fp, "  wire [%d:%d] %s_%s; //---- Normal Bit lines \n",
+            num_bl - 1, num_reserved_bl, mem_model->prefix, "bl");
+    fprintf(fp, "  wire [%d:%d] %s_%s; //---- Normal Word lines \n",
+            num_wl - 1, num_reserved_wl, mem_model->prefix, "wl");
+    /* Connect reserved conf_bits and normal conf_bits to the bus */
+    fprintf(fp, "  assign %s[%d:0] = %s_%s[%d:0];\n",
+            top_netlist_bl_port_name, num_reserved_bl - 1,
+            mem_model->prefix, "reserved_bl", num_reserved_bl - 1);
+    fprintf(fp, "  assign %s[%d:0] = %s_%s[%d:0];\n",
+            top_netlist_wl_port_name, num_reserved_wl - 1,
+            mem_model->prefix, "reserved_wl", num_reserved_wl - 1);
+    fprintf(fp, "  assign %s[%d:%d] = %s_%s[%d:%d];\n",
+            top_netlist_bl_port_name, num_mem_bit - 1, num_reserved_bl,
+            mem_model->prefix, "bl", num_mem_bit - 1, num_reserved_bl);
+    fprintf(fp, "  assign %s[%d:%d] = %s_%s[%d:%d];\n",
+            top_netlist_wl_port_name, num_mem_bit - 1, num_reserved_wl,
+            mem_model->prefix, "wl", num_mem_bit - 1, num_reserved_wl);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
@@ -128,18 +168,12 @@ void dump_verilog_top_netlist_ports(FILE* fp,
     exit(1);
   }
 
-  fprintf(fp, ");\n");
-
-  /* Print wires of SRAM outputs */
-
   return; 
 }
 
 static 
 void dump_verilog_defined_one_grid(FILE* fp,
                                    int ix, int iy) {
-  int dumped_pads = 0;
-
   /* Comment lines */
   fprintf(fp, "//----- BEGIN Call Grid[%d][%d] module -----\n", ix, iy);
   /* Print the Grid module */
@@ -158,59 +192,31 @@ void dump_verilog_defined_one_grid(FILE* fp,
     dump_verilog_grid_pins(fp, ix, iy, 1, FALSE, TRUE);
   }
   /* Print Input Pad and Output Pad */
-  assert(!(0 > (inpad_verilog_model->grid_index_high[ix][iy] - inpad_verilog_model->grid_index_low[ix][iy])));
-  if (0 < (inpad_verilog_model->grid_index_high[ix][iy] - inpad_verilog_model->grid_index_low[ix][iy])) {
-    if (0 < dumped_pads) {
-      fprintf(fp, ",\n");
-    }
-    dumped_pads++;
-    fprintf(fp, "  %s%s[%d:%d] \n", 
-            gio_input_prefix,
-            inpad_verilog_model->prefix, 
-            inpad_verilog_model->grid_index_high[ix][iy] - 1, 
-            inpad_verilog_model->grid_index_low[ix][iy]);
-  }
-  assert(!(0 > (outpad_verilog_model->grid_index_high[ix][iy] - outpad_verilog_model->grid_index_low[ix][iy])));
-  if (0 < (outpad_verilog_model->grid_index_high[ix][iy] - outpad_verilog_model->grid_index_low[ix][iy])) {
-    if (0 < dumped_pads) {
-      fprintf(fp, ",\n");
-    }
-    dumped_pads++;
-    fprintf(fp, " %s%s[%d:%d] ", 
-            gio_output_prefix,
-            outpad_verilog_model->prefix, 
-            outpad_verilog_model->grid_index_high[ix][iy] - 1, 
-            outpad_verilog_model->grid_index_low[ix][iy]);
-  }
-  assert(!(0 > (iopad_verilog_model->grid_index_high[ix][iy] - iopad_verilog_model->grid_index_low[ix][iy])));
-  if (0 < (iopad_verilog_model->grid_index_high[ix][iy] - iopad_verilog_model->grid_index_low[ix][iy])) {
-    if (0 < dumped_pads) {
-      fprintf(fp, ",\n");
-    }
-    dumped_pads++;
-    fprintf(fp, " %s%s[%d:%d] ", 
-            gio_inout_prefix,
-            iopad_verilog_model->prefix, 
-            iopad_verilog_model->grid_index_high[ix][iy] - 1, 
-            iopad_verilog_model->grid_index_low[ix][iy]);
-  }
-  /* Configuration ports */
-  assert(!(0 > sram_verilog_model->grid_index_high[ix][iy] - sram_verilog_model->grid_index_low[ix][iy]));
-  if (0 < sram_verilog_model->grid_index_high[ix][iy] - sram_verilog_model->grid_index_low[ix][iy]) {
-    if (0 < dumped_pads) {
-      fprintf(fp, ",\n");
-    }
-    dumped_pads++;
-    fprintf(fp, "  %s_out[%d:%d], \n", 
-            sram_verilog_model->prefix, 
-            sram_verilog_model->grid_index_high[ix][iy] - 1,
-            sram_verilog_model->grid_index_low[ix][iy]);
-    /* inverted output of each configuration bit */
-    fprintf(fp, "  %s_outb[%d:%d] \n", 
-            sram_verilog_model->prefix, 
-            sram_verilog_model->grid_index_high[ix][iy] - 1,
-            sram_verilog_model->grid_index_low[ix][iy]);
-  }
+  dump_verilog_grid_common_port(fp, inpad_verilog_model, gio_input_prefix,
+                                inpad_verilog_model->grid_index_low[ix][iy],
+                                inpad_verilog_model->grid_index_high[ix][iy] - 1,
+                                FALSE); 
+  dump_verilog_grid_common_port(fp, outpad_verilog_model, gio_output_prefix, 
+                                outpad_verilog_model->grid_index_low[ix][iy],
+                                outpad_verilog_model->grid_index_high[ix][iy] - 1,
+                                FALSE); 
+  /* IO PAD */
+  dump_verilog_grid_common_port(fp, iopad_verilog_model, gio_inout_prefix, 
+                                iopad_verilog_model->grid_index_low[ix][iy],
+                                iopad_verilog_model->grid_index_high[ix][iy] - 1,
+                                FALSE); 
+
+  /* Print configuration ports */
+  /* Reserved configuration ports */
+  dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info,
+                                   0, 
+                                   sram_verilog_orgz_info->grid_reserved_conf_bits[ix][iy] - 1,
+                                   FALSE);
+  /* Normal configuration ports */
+  dump_verilog_sram_ports(fp, sram_verilog_orgz_info,
+                          sram_verilog_orgz_info->grid_conf_bits_lsb[ix][iy],
+                          sram_verilog_orgz_info->grid_conf_bits_msb[ix][iy] - 1,
+                          FALSE);
   fprintf(fp, ");\n");
   /* Comment lines */
   fprintf(fp, "//----- END call Grid[%d][%d] module -----\n\n", ix, iy);
@@ -539,71 +545,15 @@ void dump_verilog_defined_one_connection_box(FILE* fp,
   assert(2 == side_cnt);
  
   /* Configuration ports */
-  switch(cur_cb_info.type) { 
-  case CHANX:
-    /* Print Input Pad and Output Pad */
-    assert(!(0 > (inpad_verilog_model->cbx_index_high[x][y] - inpad_verilog_model->cbx_index_low[x][y])));
-    if (0 < (inpad_verilog_model->cbx_index_high[x][y] - inpad_verilog_model->cbx_index_low[x][y])) {
-      fprintf(fp, "  gfpga_input_%s[%d:%d], \n", 
-              inpad_verilog_model->prefix, 
-              inpad_verilog_model->cbx_index_high[x][y] - 1, 
-              inpad_verilog_model->cbx_index_low[x][y]);
-    }
-    assert(!(0 > (outpad_verilog_model->cbx_index_high[x][y] - outpad_verilog_model->cbx_index_low[x][y])));
-    if (0 < (outpad_verilog_model->cbx_index_high[x][y] - outpad_verilog_model->cbx_index_low[x][y])) {
-      fprintf(fp, " gfpga_output_%s[%d:%d], \n", 
-              outpad_verilog_model->prefix, 
-              outpad_verilog_model->cbx_index_high[x][y] - 1, 
-              outpad_verilog_model->cbx_index_low[x][y]);
-    }
-    assert(!(0 > sram_verilog_model->cbx_index_high[x][y] - sram_verilog_model->cbx_index_low[x][y]));
-    if (0 < sram_verilog_model->cbx_index_high[x][y] - sram_verilog_model->cbx_index_low[x][y]) {
-      fprintf(fp, "  %s_out[%d:%d], \n", 
-              sram_verilog_model->prefix, 
-              sram_verilog_model->cbx_index_high[x][y] - 1,
-              sram_verilog_model->cbx_index_low[x][y]);
-      /* inverted output of each configuration bit */
-      fprintf(fp, "  %s_outb[%d:%d] \n", 
-              sram_verilog_model->prefix, 
-              sram_verilog_model->cbx_index_high[x][y] - 1,
-              sram_verilog_model->cbx_index_low[x][y]);
-        
-    }
-    break;
-  case CHANY:
-    /* Print Input Pad and Output Pad */
-    assert(!(0 > (inpad_verilog_model->cby_index_high[x][y] - inpad_verilog_model->cby_index_low[x][y])));
-    if (0 < (inpad_verilog_model->cby_index_high[x][y] - inpad_verilog_model->cby_index_low[x][y])) {
-      fprintf(fp, "  gfpga_input_%s[%d:%d], \n", 
-              inpad_verilog_model->prefix, 
-              inpad_verilog_model->cby_index_high[x][y] - 1, 
-              inpad_verilog_model->cby_index_low[x][y]);
-    }
-    assert(!(0 > (outpad_verilog_model->cby_index_high[x][y] - outpad_verilog_model->cby_index_low[x][y])));
-    if (0 < (outpad_verilog_model->cby_index_high[x][y] - outpad_verilog_model->cby_index_low[x][y])) {
-      fprintf(fp, " gfpga_output_%s[%d:%d], \n", 
-              outpad_verilog_model->prefix, 
-              outpad_verilog_model->cby_index_high[x][y] - 1, 
-              outpad_verilog_model->cby_index_low[x][y]);
-    }
-    assert(!(0 > sram_verilog_model->cby_index_high[x][y] - sram_verilog_model->cby_index_low[x][y]));
-    if (0 < sram_verilog_model->cby_index_high[x][y] - sram_verilog_model->cby_index_low[x][y]) {
-      fprintf(fp, "  %s_out[%d:%d], \n", 
-              sram_verilog_model->prefix, 
-              sram_verilog_model->cby_index_high[x][y] - 1,
-              sram_verilog_model->cby_index_low[x][y]);
-      /* inverted output of each configuration bit */
-      fprintf(fp, "  %s_outb[%d:%d] \n", 
-              sram_verilog_model->prefix, 
-              sram_verilog_model->cby_index_high[x][y] - 1,
-              sram_verilog_model->cby_index_low[x][y]);
-        
-    }
-    break;
-  default: 
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
-    exit(1);
-  }
+  /* Reserved sram ports */
+  dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info, 
+                                   0, cur_cb_info.num_reserved_conf_bits - 1,
+                                   TRUE);
+  /* Normal sram ports */
+  dump_verilog_sram_ports(fp, sram_verilog_orgz_info, 
+                          cur_cb_info.conf_bits_lsb, cur_cb_info.conf_bits_msb - 1,
+                          TRUE);
+ 
   fprintf(fp, ");\n");
 
   /* Comment lines */
@@ -740,34 +690,17 @@ void dump_verilog_defined_one_switch_box(FILE* fp,
     fprintf(fp, "\n");
   }
 
-  /* Print Input Pad and Output Pad */
-  assert(!(0 > (inpad_verilog_model->sb_index_high[x][y] - inpad_verilog_model->sb_index_low[x][y])));
-  if (0 < (inpad_verilog_model->sb_index_high[x][y] - inpad_verilog_model->sb_index_low[x][y])) {
-    fprintf(fp, "  gfpga_input_%s[%d:%d], \n", 
-            inpad_verilog_model->prefix, 
-            inpad_verilog_model->sb_index_high[x][y] - 1, 
-            inpad_verilog_model->sb_index_low[x][y]);
-  }
-  assert(!(0 > (outpad_verilog_model->sb_index_high[x][y] - outpad_verilog_model->sb_index_low[x][y])));
-  if (0 < (outpad_verilog_model->sb_index_high[x][y] - outpad_verilog_model->sb_index_low[x][y])) {
-    fprintf(fp, " gfpga_output_%s[%d:%d], \n", 
-            outpad_verilog_model->prefix, 
-            outpad_verilog_model->sb_index_high[x][y] - 1, 
-            outpad_verilog_model->sb_index_low[x][y]);
-  }
   /* Configuration ports */
-  assert(!(0 > sram_verilog_model->sb_index_high[x][y] - sram_verilog_model->sb_index_low[x][y]));
-  if (0 < sram_verilog_model->sb_index_high[x][y] - sram_verilog_model->sb_index_low[x][y]) {
-    fprintf(fp, "  %s_out[%d:%d], \n", 
-            sram_verilog_model->prefix, 
-            sram_verilog_model->sb_index_high[x][y] - 1,
-            sram_verilog_model->sb_index_low[x][y]);
-    /* inverted output of each configuration bit */
-    fprintf(fp, "  %s_outb[%d:%d] \n", 
-            sram_verilog_model->prefix, 
-            sram_verilog_model->sb_index_high[x][y] - 1,
-            sram_verilog_model->sb_index_low[x][y]);
-  }
+  /* output of each configuration bit */
+  /* Reserved sram ports */
+  dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info, 
+                                   0, cur_sb_info.num_reserved_conf_bits - 1,
+                                   FALSE);
+  /* Normal sram ports */
+  dump_verilog_sram_ports(fp, sram_verilog_orgz_info, 
+                          cur_sb_info.conf_bits_lsb, 
+                          cur_sb_info.conf_bits_msb - 1,
+                          FALSE);
 
   fprintf(fp, ");\n");
 
@@ -862,15 +795,23 @@ void dump_verilog_configuration_circuits_scan_chains(FILE* fp) {
 }
 
 /* Dump a memory bank to configure all the Bit lines and Word lines */
-void dump_verilog_configuration_circuits_memory_bank(FILE* fp) {
-  int decoder_size = determine_decoder_size(sram_verilog_model->cnt);
+void dump_verilog_configuration_circuits_memory_bank(FILE* fp, 
+                                                     t_sram_orgz_info* cur_sram_orgz_info) {
+  int bl_decoder_size, wl_decoder_size;
+  int num_bl, num_wl;
+
   /* Check */
-  assert(SPICE_SRAM_MEMORY_BANK == sram_verilog_orgz_type);
+  assert(SPICE_SRAM_MEMORY_BANK == cur_sram_orgz_info->type);
+  assert(NULL != cur_sram_orgz_info->mem_bank_info);
 
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!",__FILE__, __LINE__); 
     exit(1);
   } 
+
+  get_sram_orgz_info_num_blwl(cur_sram_orgz_info, &num_bl, &num_wl);
+  bl_decoder_size = determine_decoder_size(num_bl);
+  wl_decoder_size = determine_decoder_size(num_wl);
 
   /* Comment lines */
   fprintf(fp, "//----- BEGIN call decoders for memory bank controller -----\n");
@@ -881,16 +822,19 @@ void dump_verilog_configuration_circuits_memory_bank(FILE* fp) {
    */
   /* Bit lines decoder */
   fprintf(fp, "decoder%dto%d mem_bank_bl_decoder (",
-          decoder_size, sram_verilog_model->cnt);
-  fprintf(fp, "en_bl, addr_bl[%d:0], %s_out[%d:0] ",
-          decoder_size - 1, sram_verilog_model->prefix, sram_verilog_model->cnt - 1);
+          bl_decoder_size, num_bl);
+  /* Prefix of BL & WL is fixed, in order to simplify grouping nets */
+  fprintf(fp, "en_bl, %s[%d:0], %s[%d:0]", 
+          top_netlist_addr_bl_port_name, bl_decoder_size - 1, 
+          top_netlist_bl_port_name, num_bl - 1);
   fprintf(fp, ");\n");
 
   /* Word lines decoder */
   fprintf(fp, "decoder%dto%d mem_bank_wl_decoder (",
-          decoder_size, sram_verilog_model->cnt);
-  fprintf(fp, "en_wl, addr_wl[%d:0], %s_outb[%d:0] ",
-          decoder_size - 1, sram_verilog_model->prefix, sram_verilog_model->cnt - 1);
+          wl_decoder_size, num_wl);
+  fprintf(fp, "en_wl, %s[%d:0], %s[%d:0] ",
+          top_netlist_addr_wl_port_name, wl_decoder_size - 1, 
+          top_netlist_wl_port_name, num_wl - 1);
   fprintf(fp, ");\n");
 
   /* Comment lines */
@@ -906,7 +850,7 @@ void dump_verilog_configuration_circuits_memory_bank(FILE* fp) {
  * 3. Standalone SRAMs
  */
 void dump_verilog_configuration_circuits(FILE* fp) {
-  switch(sram_verilog_orgz_type) {
+  switch(sram_verilog_orgz_info->type) {
   case SPICE_SRAM_STANDALONE:
     dump_verilog_configuration_circuits_standalone_srams(fp);
     break;
@@ -914,7 +858,7 @@ void dump_verilog_configuration_circuits(FILE* fp) {
     dump_verilog_configuration_circuits_scan_chains(fp);
     break;
   case SPICE_SRAM_MEMORY_BANK:
-    dump_verilog_configuration_circuits_memory_bank(fp);
+    dump_verilog_configuration_circuits_memory_bank(fp, sram_verilog_orgz_info);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
@@ -1196,18 +1140,18 @@ int dump_verilog_top_testbench_find_num_config_clock_cycles(t_llist* head) {
     switch (sram_verilog_orgz_type) {
     case SPICE_SRAM_STANDALONE:
     case SPICE_SRAM_SCAN_CHAIN:
-      if (1 == temp_conf_bit_info->sram_val) {
+      if (1 == temp_conf_bit_info->sram_bit->val) {
         cnt++;
         temp_conf_bit_info->index_in_top_tb = cnt;
       }
       break;
     case SPICE_SRAM_MEMORY_BANK:
-      if ((1 == temp_conf_bit_info->bl_val)
-         &&(1 == temp_conf_bit_info->wl_val)) {
+      if ((1 == temp_conf_bit_info->bl->val)
+         &&(1 == temp_conf_bit_info->wl->val)) {
         cnt++;
         temp_conf_bit_info->index_in_top_tb = cnt;
-      } else if ((1 == temp_conf_bit_info->bl_val)
-               &&(0 == temp_conf_bit_info->wl_val)
+      } else if ((1 == temp_conf_bit_info->bl->val)
+               &&(0 == temp_conf_bit_info->wl->val)
                &&(NULL != temp_conf_bit_info->pair_conf_bit)) {
         cnt++;
         temp_conf_bit_info->index_in_top_tb = cnt;
@@ -1254,13 +1198,13 @@ void dump_verilog_top_testbench_conf_bits_parallel(FILE* fp,
       */
       fprintf(fp, "Initial\n");
       fprintf(fp, "  begin: CONF_BIT_%d\n", cur_conf_bit_info->index);
-      assert((0 == cur_conf_bit_info->sram_val)||(1 == cur_conf_bit_info->sram_val));
+      assert((0 == cur_conf_bit_info->sram_bit->val)||(1 == cur_conf_bit_info->sram_bit->val));
       fprintf(fp, "    %s[%d] = %d, ", 
               sram_verilog_model->prefix, cur_conf_bit_info->index, 
-              cur_conf_bit_info->sram_val),
+              cur_conf_bit_info->sram_bit->val),
       fprintf(fp, "  end\n");
       fprintf(fp, "//---- Configuration bit No.: %d, ", cur_conf_bit_info->index);
-      fprintf(fp, " SRAM value: %d, ", cur_conf_bit_info->sram_val);
+      fprintf(fp, " SRAM value: %d, ", cur_conf_bit_info->sram_bit->val);
       fprintf(fp, " SPICE model name: %s, ", cur_conf_bit_info->parent_spice_model->name);
       fprintf(fp, " SPICE model index: %d ", cur_conf_bit_info->parent_spice_model_index);
       fprintf(fp, "\n");
@@ -1278,14 +1222,14 @@ void dump_verilog_top_testbench_conf_bits_parallel(FILE* fp,
       /* If this WL is selected , we decode its index to address */
       bl_index = cur_conf_bit_info->index;
       wl_index = cur_conf_bit_info->index;
-      assert((0 == cur_conf_bit_info->bl_val)||(1 == cur_conf_bit_info->bl_val));
-      assert((0 == cur_conf_bit_info->wl_val)||(1 == cur_conf_bit_info->wl_val));
+      assert((0 == cur_conf_bit_info->bl->val)||(1 == cur_conf_bit_info->bl->val));
+      assert((0 == cur_conf_bit_info->wl->val)||(1 == cur_conf_bit_info->wl->val));
       /* The BL and WL will be keep its value since the first cycle */
       /* If this WL is selected, directly force its value for its signal*/
       fprintf(fp, "Initial\n");
       fprintf(fp, "  begin: BL_%d\n", bl_index);
       fprintf(fp, "    %s_out[%d] = 1'b%d;",
-              sram_verilog_model->prefix, bl_index, cur_conf_bit_info->bl_val);
+              sram_verilog_model->prefix, bl_index, cur_conf_bit_info->bl->val);
       /*
       fprintf(fp, "  input wire [%d:0] %s_out, //--- Bit lines \n", 
                      sram_verilog_model->cnt - 1, sram_verilog_model->prefix);
@@ -1295,7 +1239,7 @@ void dump_verilog_top_testbench_conf_bits_parallel(FILE* fp,
       /* Enable ADDR BL */
       fprintf(fp, "  end\n");
       fprintf(fp, "// Configuration bit No.: %d, ", cur_conf_bit_info->index);
-      fprintf(fp, " Bit Line: %d, ", cur_conf_bit_info->bl_val);
+      fprintf(fp, " Bit Line: %d, ", cur_conf_bit_info->bl->val);
       fprintf(fp, " SPICE model name: %s, ", cur_conf_bit_info->parent_spice_model->name);
       fprintf(fp, " SPICE model index: %d ", cur_conf_bit_info->parent_spice_model_index);
       fprintf(fp, "\n");
@@ -1303,10 +1247,10 @@ void dump_verilog_top_testbench_conf_bits_parallel(FILE* fp,
       fprintf(fp, "Initial\n");
       fprintf(fp, "  begin: WL[%d]\n", wl_index);
       fprintf(fp, "    %s_outb[%d] = 1'b%d;", 
-              sram_verilog_model->prefix, wl_index, cur_conf_bit_info->wl_val);
+              sram_verilog_model->prefix, wl_index, cur_conf_bit_info->wl->val);
       fprintf(fp, "  end\n");
       fprintf(fp, "// Configuration bit No.: %d, ", cur_conf_bit_info->index);
-      fprintf(fp, " Word Line: %d, ", cur_conf_bit_info->wl_val);
+      fprintf(fp, " Word Line: %d, ", cur_conf_bit_info->wl->val);
       fprintf(fp, " SPICE model name: %s, ", cur_conf_bit_info->parent_spice_model->name);
       fprintf(fp, " SPICE model index: %d ", cur_conf_bit_info->parent_spice_model_index);
       fprintf(fp, "\n");
@@ -1380,16 +1324,15 @@ void rec_dump_verilog_top_testbench_conf_bits_serial(FILE* fp,
     }
     /* Memory bank requires the address to be given to the decoder*/
     /* If this WL is selected , we decode its index to address */
-    if ((1 == cur_conf_bit_info->bl_val)
-       &&(1 == cur_conf_bit_info->wl_val)) {
+    if ((1 == cur_conf_bit_info->bl->val)
+       &&(1 == cur_conf_bit_info->wl->val)) {
       bl_index = cur_conf_bit_info->index;
       wl_index = cur_conf_bit_info->index;
       cur_prog_cycle = cur_conf_bit_info->index_in_top_tb;
       /* Specify that we need dump this configuration bit */
       dump_cur_conf_bit = 1;
-    } else if ((1 == cur_conf_bit_info->bl_val)
-             &&(0 == cur_conf_bit_info->wl_val)
-             &&(NULL != cur_conf_bit_info->pair_conf_bit)) {
+    } else if ((1 == cur_conf_bit_info->bl->val)
+             &&(0 == cur_conf_bit_info->wl->val)) {
       /* Find the paired configuration bit */
       bl_index = cur_conf_bit_info->index;
       wl_index = cur_conf_bit_info->pair_conf_bit->index;
@@ -1418,7 +1361,7 @@ void rec_dump_verilog_top_testbench_conf_bits_serial(FILE* fp,
                      cur_prog_cycle + 1*prog_clock_cycle_delay_unit, decoder_size);
       fprintf(fp, "  end\n");
       fprintf(fp, "// Configuration bit No.: %d, ", cur_conf_bit_info->index);
-      fprintf(fp, " Bit Line: %d, ", cur_conf_bit_info->bl_val);
+      fprintf(fp, " Bit Line: %d, ", cur_conf_bit_info->bl->val);
       fprintf(fp, " SPICE model name: %s, ", cur_conf_bit_info->parent_spice_model->name);
       fprintf(fp, " SPICE model index: %d ", cur_conf_bit_info->parent_spice_model_index);
       fprintf(fp, "\n");
@@ -1437,7 +1380,7 @@ void rec_dump_verilog_top_testbench_conf_bits_serial(FILE* fp,
                        cur_prog_cycle + 1*prog_clock_cycle_delay_unit, decoder_size);
       fprintf(fp, "  end\n");
       fprintf(fp, "// Configuration bit No.: %d, ", cur_conf_bit_info->index);
-      fprintf(fp, " Word Line: %d, ", cur_conf_bit_info->wl_val);
+      fprintf(fp, " Word Line: %d, ", cur_conf_bit_info->wl->val);
       fprintf(fp, " SPICE model name: %s, ", cur_conf_bit_info->parent_spice_model->name);
       fprintf(fp, " SPICE model index: %d ", cur_conf_bit_info->parent_spice_model_index);
       fprintf(fp, "\n");

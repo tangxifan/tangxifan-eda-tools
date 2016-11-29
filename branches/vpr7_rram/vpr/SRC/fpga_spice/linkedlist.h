@@ -1,3 +1,6 @@
+#ifndef LINKEDLIST_H
+#define LINKEDLIST_H
+
 /*General Purpose Linked List*/
 typedef struct s_llist t_llist;
 struct s_llist
@@ -23,3 +26,5 @@ t_llist* search_llist_tail(t_llist* head);
 int find_length_llist(t_llist* head);
 
 void free_llist(t_llist* head);
+
+#endif

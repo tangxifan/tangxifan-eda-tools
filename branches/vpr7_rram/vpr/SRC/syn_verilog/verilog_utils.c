@@ -231,7 +231,7 @@ void decode_verilog_rram_mux(t_spice_model* mux_spice_model,
   (*bit_len) = 0;
   (*conf_bits) = NULL;
 
-  (*bit_len) = 2* count_num_conf_bits_one_spice_model(mux_spice_model, mux_size);
+  (*bit_len) = 2 * count_num_sram_bits_one_spice_model(mux_spice_model, mux_size);
   
   /* Switch cases: MUX structure */
   switch (mux_spice_model->design_tech_info.structure) {
@@ -331,94 +331,6 @@ char* format_verilog_node_prefix(char* verilog_node_prefix) {
   }
   */
   return ret;
-}
-
-/* Find the matched BL = 0 && WL == 1 according to the given BL=1 && WL = 0
- */
-t_conf_bit_info* dump_verilog_find_paired_conf_bit(t_llist* conf_bits_llist_head,
-                                                   t_conf_bit_info* src_conf_bit_info) {
-  t_llist* temp_llist = conf_bits_llist_head;
-  t_conf_bit_info* temp_conf_bit_info = NULL;
-
-  /* return directly when source is NULL */
-  if (NULL == src_conf_bit_info) {
-    return NULL;
-  }
-
-  /* Check */
-  assert((1 == src_conf_bit_info->bl_val)&&(0 == src_conf_bit_info->wl_val));
-
-  /* Traverse the linked list, find a paired element 
-   * with same parent_spice_model, parent_spice_model_index and BL = 0, WL = 1
-   */  
-  while (NULL != temp_llist) {
-    /* Fetch the information of a configuration bit */
-    temp_conf_bit_info = (t_conf_bit_info*)(temp_llist->dptr);
-    if ((temp_conf_bit_info->parent_spice_model == src_conf_bit_info->parent_spice_model)
-      &&(temp_conf_bit_info->parent_spice_model_index == src_conf_bit_info->parent_spice_model_index)
-      &&(0 == temp_conf_bit_info->bl_val) 
-      &&(1 == temp_conf_bit_info->wl_val)) {
-      return temp_conf_bit_info; 
-    }
-    /* Go to the next element */
-    temp_llist = temp_llist->next;
-  }
-
-  /* Reach here means we find nothing! */
-  return NULL;
-}
-
-/** Generate the pairs for two configuration bits, which should be enabled at the same programming cycle
- * These pair are only created between two configuration bits of RRAM MUX:
- * 1. A conf_bit with BL=1, WL=0 is paired to a conf_bit BL=0, WL=1.
- * 2. A conf_bit with BL=1, WL=1 should not have a pair.
- */
-void dump_verilog_gen_pairs_conf_bits(t_llist* conf_bits_llist_head) {
-  t_llist* temp_llist = conf_bits_llist_head;
-  t_conf_bit_info* temp_conf_bit_info = NULL;
-
-  t_llist* temp_compnt_llist_head = NULL; /* Store the head of linked list of current component */
-  t_conf_bit_info* temp_compnt_head_conf_bit_info = NULL;
-  
-  /* Paired conf_conf_bit_info*/
-  t_conf_bit_info* paired_conf_bit_info = NULL;
-
-  /* Traverse the linked list, find any element with BL=1, WL=0 */
-  while (NULL != temp_llist) {
-    /* Fetch the information of a configuration bit */
-    temp_conf_bit_info = (t_conf_bit_info*)(temp_llist->dptr);
-    /* Check and update the head of current component */
-    if (NULL == temp_compnt_llist_head) {
-    /* If it is NULL, just give the value */
-      temp_compnt_llist_head = temp_llist;
-      temp_compnt_head_conf_bit_info = (t_conf_bit_info*)(temp_compnt_llist_head->dptr);
-    } else {
-    /* If it is not NULL, we need to check if current component matches the existed one. */
-      if ((temp_conf_bit_info->parent_spice_model != temp_compnt_head_conf_bit_info->parent_spice_model)
-        ||(temp_conf_bit_info->parent_spice_model_index != temp_compnt_head_conf_bit_info->parent_spice_model_index)) {
-        temp_compnt_llist_head = temp_llist;
-        temp_compnt_head_conf_bit_info = (t_conf_bit_info*)(temp_compnt_llist_head->dptr);
-      }
-    }
-    /* Check only for conf_bit belonging to a RRAM MUX, with  BL = 1 and WL = 0; */
-    if ((SPICE_MODEL_MUX == temp_conf_bit_info->parent_spice_model->type) 
-      &&(SPICE_MODEL_DESIGN_RRAM == temp_conf_bit_info->parent_spice_model->design_tech) 
-      &&(1 == temp_conf_bit_info->bl_val) 
-      &&(0 == temp_conf_bit_info->wl_val)) {
-      /* Find its paired element with BL = 0 and WL = 1 */
-      /* Start from the found component linked-list head */
-      paired_conf_bit_info = dump_verilog_find_paired_conf_bit(temp_compnt_llist_head, temp_conf_bit_info);
-      /* Should not be NULL ! */
-      assert(NULL != paired_conf_bit_info);
-      /* Establish mutual link */
-      temp_conf_bit_info->pair_conf_bit = paired_conf_bit_info;
-      paired_conf_bit_info->pair_conf_bit = temp_conf_bit_info;
-    }
-    /* Go to the next element */
-    temp_llist = temp_llist->next;
-  }
-
-  return;
 }
 
 /* Return the port_type in a verilog format */
@@ -560,3 +472,279 @@ int dump_verilog_global_ports(FILE* fp, t_llist* head,
   return dumped_port_cnt;
 }
 
+/* Dump SRAM ports, which is supposed to be the last port in the port list */
+void dump_verilog_sram_ports(FILE* fp, 
+                             t_sram_orgz_info* cur_sram_orgz_info,
+                             int sram_lsb, int sram_msb,
+                             boolean dump_port_type) {
+  t_spice_model* mem_model = NULL;
+  char* port1_name = NULL;
+  char* port2_name = NULL;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+ 
+  switch (cur_sram_orgz_info->type) {
+  case SPICE_SRAM_STANDALONE:
+    mem_model = cur_sram_orgz_info->standalone_sram_info->mem_model;
+    port1_name = "out";
+    port2_name = "outb";
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+    mem_model = cur_sram_orgz_info->scff_info->mem_model;
+    port1_name = "scff_out";
+    port2_name = "scff_outb";
+    break;
+  case SPICE_SRAM_MEMORY_BANK:
+    mem_model = cur_sram_orgz_info->mem_bank_info->mem_model;
+    port1_name = "bl";
+    port2_name = "wl";
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization !\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  if (TRUE == dump_port_type) {
+    fprintf(fp,"input [%d:%d] %s_%s, ", 
+            sram_msb, sram_lsb,
+            mem_model->prefix, port1_name);
+    fprintf(fp,"input [%d:%d] %s_%s ", 
+            sram_msb, sram_lsb,
+            mem_model->prefix, port2_name);
+  } else {
+    fprintf(fp,"%s_%s[%d:%d], ", 
+            mem_model->prefix, port1_name,
+            sram_msb, sram_lsb);
+    fprintf(fp,"%s_%s[%d:%d] ", 
+            mem_model->prefix, port2_name,
+            sram_msb, sram_lsb);
+  }
+
+  /* Free */
+  my_free(port1_name);
+  my_free(port2_name);
+
+  return;
+}
+
+/* Dump SRAM ports, which is supposed to be the last port in the port list */
+void dump_verilog_reserved_sram_ports(FILE* fp, 
+                                      t_sram_orgz_info* cur_sram_orgz_info,
+                                      int sram_lsb, int sram_msb,
+                                      boolean dump_port_type) {
+  t_spice_model* mem_model = NULL;
+  char* port1_name = NULL;
+  char* port2_name = NULL;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+ 
+  switch (cur_sram_orgz_info->type) {
+  case SPICE_SRAM_STANDALONE:
+  case SPICE_SRAM_SCAN_CHAIN:
+    return;
+  case SPICE_SRAM_MEMORY_BANK:
+    mem_model = cur_sram_orgz_info->mem_bank_info->mem_model;
+    port1_name = "reserved_bl";
+    port2_name = "reserved_wl";
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization !\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  if (TRUE == dump_port_type) {
+    fprintf(fp,"input [%d:%d] %s_%s, ", 
+            sram_msb, sram_lsb,
+            mem_model->prefix, port1_name);
+    fprintf(fp,"input [%d:%d] %s_%s ", 
+            sram_msb, sram_lsb,
+            mem_model->prefix, port2_name);
+  } else {
+    fprintf(fp,"%s_%s[%d:%d], ", 
+            mem_model->prefix, port1_name,
+            sram_msb, sram_lsb);
+    fprintf(fp,"%s_%s[%d:%d] ", 
+            mem_model->prefix, port2_name,
+            sram_msb, sram_lsb);
+  }
+
+  /* Free */
+  my_free(port1_name);
+  my_free(port2_name);
+
+  return;
+}
+
+/* Dump a verilog submodule of SRAM, according to SRAM organization type */
+void dump_verilog_sram_submodule(FILE* fp, t_sram_orgz_info* cur_sram_orgz_info,
+                                 t_spice_model* sram_verilog_model) {
+  int cur_bl, cur_wl, num_bl_ports, num_wl_ports;
+  t_spice_model_port** bl_port = NULL;
+  t_spice_model_port** wl_port = NULL;
+  int num_bl_per_sram = 0;
+  int num_wl_per_sram = 0;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  assert(NULL != cur_sram_orgz_info);
+  assert(NULL != sram_verilog_model);
+  assert(SPICE_MODEL_SRAM == sram_verilog_model->type);
+
+  switch (cur_sram_orgz_info->type) {
+  case SPICE_SRAM_MEMORY_BANK:
+    /* Detect the SRAM SPICE model linked to this SRAM port */
+    find_bl_wl_ports_spice_model(sram_verilog_model, 
+                                 &num_bl_ports, &bl_port, &num_wl_ports, &wl_port); 
+    assert(1 == num_bl_ports);
+    assert(1 == num_wl_ports);
+    num_bl_per_sram = bl_port[0]->size; 
+    num_wl_per_sram = wl_port[0]->size; 
+
+    /* SRAM subckts*/
+    fprintf(fp, "%s %s_%d_ (", sram_verilog_model->name, sram_verilog_model->prefix, 
+                               sram_verilog_model->cnt); 
+    /* Only dump the global ports belonging to a spice_model */
+    if (0 < rec_dump_verilog_spice_model_global_ports(fp, sram_verilog_model, FALSE, TRUE)) {
+      fprintf(fp, ",\n");
+    }
+    fprintf(fp, "%s_out[%d], ", sram_verilog_model->prefix, sram_verilog_model->cnt); /* Input*/
+    fprintf(fp, "%s_out[%d], %s_outb[%d], ", 
+            sram_verilog_model->prefix, sram_verilog_model->cnt, 
+            sram_verilog_model->prefix, sram_verilog_model->cnt); /* Outputs */
+    get_sram_orgz_info_num_blwl(cur_sram_orgz_info, &cur_bl, &cur_wl); 
+    /* Connect to Bit lines and Word lines, consider each conf_bit */
+    fprintf(fp, "%s_bl[%d:%d], %s_wl[%d:%d] ", 
+            sram_verilog_model->prefix, cur_bl + num_bl_per_sram - 1, cur_bl, 
+            sram_verilog_model->prefix, cur_wl + num_wl_per_sram - 1, cur_wl); /* Outputs */
+    fprintf(fp, ");\n");  //
+    break;
+  case SPICE_SRAM_STANDALONE:
+    /* SRAM subckts*/
+    fprintf(fp, "%s %s_%d_ (", sram_verilog_model->name, sram_verilog_model->prefix, 
+                               sram_verilog_model->cnt); 
+    /* Only dump the global ports belonging to a spice_model */
+    if (0 < rec_dump_verilog_spice_model_global_ports(fp, sram_verilog_model, FALSE, TRUE)) {
+      fprintf(fp, ",\n");
+    }
+    fprintf(fp, "%s_out[%d], ", sram_verilog_model->prefix, sram_verilog_model->cnt); /* Input*/
+    fprintf(fp, "%s_out[%d], %s_outb[%d], ", 
+            sram_verilog_model->prefix, sram_verilog_model->cnt, 
+            sram_verilog_model->prefix, sram_verilog_model->cnt); /* Outputs */
+    fprintf(fp, ");\n");  //
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+    /* TODO: Add a scan-chain dff module here ! */
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid SRAM organization type!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /* Update the counter */
+  sram_verilog_model->cnt++;
+
+  return;
+}
+
+/* Dump MUX reserved and normal configuration wire bus */
+void dump_verilog_mux_config_bus(FILE* fp, t_spice_model* mux_spice_model, 
+                                 t_sram_orgz_info* cur_sram_orgz_info,
+                                 int mux_size, int cur_num_sram,
+                                 int num_mux_reserved_conf_bits,
+                                 int num_mux_conf_bits) { 
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  /* Check */
+  assert(NULL != mux_spice_model);
+  assert(SPICE_MODEL_MUX == mux_spice_model->type);
+
+  /* configuration wire bus */
+  fprintf(fp, "wire [%d:0] %s_size%d_%d_configbus;\n",
+          num_mux_reserved_conf_bits + num_mux_conf_bits - 1,
+          mux_spice_model->prefix, mux_size, mux_spice_model->cnt);
+  /* Connect wires to config bus */
+  /* reserved configuration bits */
+  if (0 < num_mux_reserved_conf_bits) {
+    fprintf(fp, "assign %s_size%d_%d_configbus[%d:%d] = ",
+            mux_spice_model->prefix, mux_size, mux_spice_model->cnt,
+            num_mux_reserved_conf_bits + num_mux_conf_bits - 1,
+            num_mux_conf_bits);
+    dump_verilog_reserved_sram_ports(fp, cur_sram_orgz_info, 
+                                     0, num_mux_reserved_conf_bits - 1,
+                                     FALSE);
+    fprintf(fp, ";\n");
+  }
+  /* normal configuration bits */
+  if (0 < num_mux_conf_bits) {
+    fprintf(fp, "assign %s_size%d_%d_configbus[%d:%d] = ",
+            mux_spice_model->prefix, mux_size, mux_spice_model->cnt,
+            num_mux_conf_bits - 1,
+            0);
+    dump_verilog_sram_ports(fp, cur_sram_orgz_info, 
+                            cur_num_sram, cur_num_sram + num_mux_conf_bits - 1,
+                            FALSE);
+    fprintf(fp, ";\n");
+  }
+
+  return;
+}
+
+/* Dump common ports of each pb_type in physical mode,
+ * common ports include:
+ * 1. inpad; 2. outpad; 3. iopad; TODO: merge other two to iopad 
+ * 4. SRAMs (standalone)
+ * 5. BL/WLs
+ * 6. Scan-chain FFs 
+ */
+void dump_verilog_grid_common_port(FILE* fp, t_spice_model* cur_verilog_model,
+                                   char* general_port_prefix, int lsb, int msb,
+                                   boolean dump_port_type) {
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  if ((NULL != cur_verilog_model)
+     &&(0 < (msb - lsb))) {
+    if (TRUE == dump_port_type) {
+      fprintf(fp, ",\n");
+      fprintf(fp, "  input [%d:%d] %s%s ", 
+              msb, lsb, general_port_prefix,
+              cur_verilog_model->prefix); 
+    } else {
+      fprintf(fp, ",\n");
+      fprintf(fp, " %s%s [%d:%d] ", 
+              general_port_prefix,
+              cur_verilog_model->prefix, 
+              msb, lsb); 
+    }
+  }
+
+  return;
+}

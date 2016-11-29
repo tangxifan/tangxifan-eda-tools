@@ -35,10 +35,19 @@ void dump_verilog_switch_box_mux(FILE* fp,
                                  t_rr_node** drive_rr_nodes,
                                  int switch_index);
 
+int count_verilog_switch_box_interc_conf_bits(int switch_box_x, int switch_box_y, int chan_side, 
+                                              t_rr_node* cur_rr_node);
+
+int count_verilog_switch_box_interc_reserved_conf_bits(int switch_box_x, int switch_box_y, int chan_side, 
+                                                       t_rr_node* cur_rr_node);
+
 void dump_verilog_switch_box_interc(FILE* fp, 
                                     t_sb cur_sb_info,
                                     int chan_side,
                                     t_rr_node* cur_rr_node);
+
+int count_verilog_switch_box_reserved_conf_bits(t_sb cur_sb_info);
+int count_verilog_switch_box_conf_bits(t_sb cur_sb_info);
 
 void dump_verilog_routing_switch_box_subckt(FILE* fp, t_sb cur_sb_info, 
                                             int LL_num_rr_nodes, t_rr_node* LL_rr_node,
@@ -55,6 +64,9 @@ void dump_verilog_connection_box_mux(FILE* fp,
 void dump_verilog_connection_box_interc(FILE* fp,
                                         t_cb cur_cb_info,
                                         t_rr_node* src_rr_node);
+
+int count_verilog_connection_box_conf_bits(t_cb cur_cb_info);
+int count_verilog_connection_box_reserved_conf_bits(t_cb cur_cb_info);
 
 void dump_verilog_routing_connection_box_subckt(FILE* fp, t_cb cur_cb_info,
                                                 int LL_num_rr_nodes, t_rr_node* LL_rr_node,

@@ -38,6 +38,9 @@ t_spice_model_port** find_spice_model_ports(t_spice_model* spice_model,
 void fprint_spice_head(FILE* fp,
                        char* usage);
 
+void fprint_commented_sram_bits(FILE* fp,
+                                int num_sram_bits, int* sram_bits);
+
 t_spice_transistor_type* find_mosfet_tech_lib(t_spice_tech_lib tech_lib,
                                               e_spice_trans_type trans_type);
 
@@ -251,19 +254,35 @@ int count_num_sram_bits_one_spice_model(t_spice_model* cur_spice_model,
                                         int mux_size);
 
 int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
+                                        enum e_sram_orgz cur_sram_orgz_type,
                                         int mux_size);
 
-int count_num_conf_bit_one_interc(t_interconnect* cur_interc);
+int count_num_reserved_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
+                                                 enum e_sram_orgz cur_sram_orgz_type,
+                                                 int mux_size);
 
-int rec_count_num_conf_bits_pb_type_default_mode(t_pb_type* cur_pb_type);
+int count_num_conf_bit_one_interc(t_interconnect* cur_interc,
+                                  enum e_sram_orgz cur_sram_orgz_type);
 
-int rec_count_num_conf_bits_pb_type_physical_mode(t_pb_type* cur_pb_type);
+int count_num_reserved_conf_bit_one_interc(t_interconnect* cur_interc,
+                                           enum e_sram_orgz cur_sram_orgz_type);
 
-int rec_count_num_conf_bits_pb(t_pb* cur_pb);
+int count_num_conf_bits_pb_type_mode_interc(t_mode* cur_pb_type_mode,
+                                            enum e_sram_orgz cur_sram_orgz_type);
 
-void init_one_grid_num_conf_bits(int ix, int iy);
+int rec_count_num_conf_bits_pb_type_default_mode(t_pb_type* cur_pb_type,
+                                                 enum e_sram_orgz cur_sram_orgz_type);
 
-void init_grids_num_conf_bits();
+int rec_count_num_conf_bits_pb_type_physical_mode(t_pb_type* cur_pb_type,
+                                                  enum e_sram_orgz cur_sram_orgz_type);
+
+int rec_count_num_conf_bits_pb(t_pb* cur_pb,
+                               enum e_sram_orgz cur_sram_orgz_type);
+
+void init_one_grid_num_conf_bits(int ix, int iy,
+                                 enum e_sram_orgz cur_sram_orgz_type);
+
+void init_grids_num_conf_bits(enum e_sram_orgz cur_sram_orgz_type);
 
 void zero_spice_models_cnt(int num_spice_models, t_spice_model* spice_model);
 
@@ -317,17 +336,74 @@ void check_sram_spice_model_ports(t_spice_model* cur_spice_model,
 void check_ff_spice_model_ports(t_spice_model* cur_spice_model,
                                 boolean is_scff);
 
+/* Functions to manipulate t_conf_bit and t_conf_bit_info */
+void free_conf_bit(t_conf_bit* conf_bit);
+void free_conf_bit_info(t_conf_bit_info* conf_bit_info);
+
 t_conf_bit_info*  
-alloc_one_conf_bit_info(int index, int sram_val, int bl_val, int wl_val,
+alloc_one_conf_bit_info(int index,
+                        t_conf_bit* sram_val,
+                        t_conf_bit* bl_val, t_conf_bit* wl_val,
                         t_spice_model* parent_spice_model);
 
 t_llist* 
-add_conf_bit_info_to_llist(t_llist* head,
-                           int index, int sram_val, int bl_val, int wl_val,
+add_conf_bit_info_to_llist(t_llist* head, int index, 
+                           t_conf_bit* sram_val, t_conf_bit* bl_val, t_conf_bit* wl_val,
                            t_spice_model* parent_spice_model);
+
+void  
+add_mux_conf_bits_to_llist(int mux_size,
+                           t_sram_orgz_info* cur_sram_orgz_info, 
+                           int num_mux_sram_bits, int* mux_sram_bits,
+                           t_spice_model* mux_spice_model);
 
 void find_bl_wl_ports_spice_model(t_spice_model* cur_spice_model,
                                   int* num_bl_ports, t_spice_model_port*** bl_ports,
                                   int* num_wl_ports, t_spice_model_port*** wl_ports);
 
 int* decode_mode_bits(char* mode_bits, int* num_sram_bits);
+
+/* Functions to manipulate structs of SRAM orgz */
+t_sram_orgz_info* alloc_one_sram_orgz_info();
+t_mem_bank_info* alloc_one_mem_bank_info();
+void free_one_mem_bank_info(t_mem_bank_info* mem_bank_info);
+t_scff_info* alloc_one_scff_info();
+void free_one_scff_info(t_scff_info* scff_info);
+t_standalone_sram_info* alloc_one_standalone_sram_info();
+void free_one_standalone_sram_info(t_standalone_sram_info* standalone_sram_info);
+void init_mem_bank_info(t_mem_bank_info* cur_mem_bank_info,
+                        t_spice_model* cur_mem_model);
+void update_mem_bank_info_reserved_blwl(t_mem_bank_info* cur_mem_bank_info,
+                                        int updated_reserved_bl, int updated_reserved_wl);
+void get_mem_bank_info_reserved_blwl(t_mem_bank_info* cur_mem_bank_info,
+                                     int* num_reserved_bl, int* num_reserved_wl);
+void update_mem_bank_info_num_blwl(t_mem_bank_info* cur_mem_bank_info,
+                                   int updated_bl, int updated_wl);
+void get_sram_orgz_info_reserved_blwl(t_sram_orgz_info* cur_sram_orgz_info,
+                                      int* num_reserved_bl, int* num_reserved_wl);
+void update_mem_bank_info_num_mem_bit(t_mem_bank_info* cur_mem_bank_info,
+                                      int num_mem_bit);
+void init_scff_info(t_scff_info* cur_scff_info,
+                    t_spice_model* cur_mem_model);
+void update_scff_info_num_mem_bit(t_scff_info* cur_scff_info,
+                                  int num_mem_bit);
+void init_standalone_sram_info(t_standalone_sram_info* cur_standalone_sram_info,
+                               t_spice_model* cur_mem_model);
+void update_standalone_sram_info_num_mem_bit(t_standalone_sram_info* cur_standalone_sram_info,
+                                             int num_mem_bit);
+void init_sram_orgz_info(t_sram_orgz_info* cur_sram_orgz_info,
+                         enum e_sram_orgz cur_sram_orgz_type,
+                         t_spice_model* cur_mem_model, 
+                         int grid_nx, int grid_ny);
+void free_sram_orgz_info(t_sram_orgz_info* cur_sram_orgz_info,
+                         enum e_sram_orgz cur_sram_orgz_type,
+                         int grid_nx, int grid_ny);
+void update_sram_orgz_info_reserved_blwl(t_sram_orgz_info* cur_sram_orgz_info,
+                                         int updated_reserved_bl, int updated_reserved_wl);
+int get_sram_orgz_info_num_mem_bit(t_sram_orgz_info* cur_sram_orgz_info);
+int get_sram_orgz_info_num_blwl(t_sram_orgz_info* cur_sram_orgz_info,
+                                int* cur_bl, int* cur_wl);
+void update_sram_orgz_info_num_mem_bit(t_sram_orgz_info* cur_sram_orgz_info,
+                                       int new_num_mem_bit);
+void update_sram_orgz_info_num_blwl(t_sram_orgz_info* cur_sram_orgz_info,
+                                    int new_bl, int new_wl);

@@ -1,5 +1,6 @@
 
 #include "util.h"
+#include "linkedlist.h"
 
 /* Xifan TANG: Spice support*/
 enum e_spice_tech_lib_type {
@@ -99,6 +100,7 @@ typedef struct s_sram_inf t_sram_inf;
 typedef struct s_spice_net_info t_spice_net_info;
 typedef struct s_spicetb_info t_spicetb_info;
 typedef struct s_conf_bit_info t_conf_bit_info;
+typedef struct s_sram_orgz_info t_sram_orgz_info;
 
 /* Struct defintions */
 struct s_spice_transistor_type {
@@ -334,15 +336,22 @@ struct s_spicetb_info {
   int num_sim_clock_cycles;
 };
 
+/* A struct to contain Address and its value */
+typedef struct s_conf_bit t_conf_bit;
+struct s_conf_bit {
+  int addr; /* Address to write the value */
+  int val; /* binary value to be writtent: either 0 or 1 */
+};
+
 /* Data structure for storing configurtion bits*/
 struct s_conf_bit_info {
   /* index in all the srams/bit lines/word lines */
   int index;
   /* value stored in a SRAM*/
-  int sram_val;
+  t_conf_bit* sram_bit;
   /* If bl and wl is required, this is the value to be stored */
-  int bl_val;
-  int wl_val;
+  t_conf_bit* bl;
+  t_conf_bit* wl;
   /* Which spice model this conf. bit belongs to */
   t_spice_model* parent_spice_model;
   int parent_spice_model_index;
@@ -355,6 +364,56 @@ struct s_conf_bit_info {
   /* TODO: add location information?
    * i.e. grid location? sb/cb location? 
    */
+};
+
+/* Structs including information about SRAM organization:
+ * 1. Memory bank
+ * 2. Scan-chain FFs
+ * 3. Standalone SRAMs */
+/* Memory bank information */
+typedef struct s_mem_bank_info t_mem_bank_info;
+struct s_mem_bank_info {
+  t_spice_model* mem_model; /* SPICE model of a memory bit */
+  int num_mem_bit; /* Number of memory bits in total */
+  int num_bl; /* Number of Bit Lines in total */
+  int num_wl; /* Number of Word Lines in total */
+
+  /* Reserved control lines always starts from index 0*/
+  int reserved_bl; /* Number of reserved BLs shared by overall RRAM circuits */
+  int reserved_wl; /* Number of reserved WLs shared by overall RRAM circuits */
+};
+
+/* Scan-chain Flip-flops information */
+typedef struct s_scff_info t_scff_info;
+struct s_scff_info {
+  t_spice_model* mem_model; /* SPICE model of a memory bit */
+  int num_mem_bit; /* Number of memory bits in total */
+  int num_scff; /* Number of Scan-chain flip-flops */
+  /* TODO:  More to be added, SCFF support is naive now */
+};
+
+/* Standalone SRAMs information */
+typedef struct s_standalone_sram_info t_standalone_sram_info;
+struct s_standalone_sram_info {
+  t_spice_model* mem_model; /* SPICE model of a memory bit */
+  int num_mem_bit; /* Number of memory bits in total */
+  int num_sram; /* Number of SRAMs in total */
+};
+
+struct s_sram_orgz_info {
+  enum e_sram_orgz type;
+  t_mem_bank_info* mem_bank_info; /* Only be allocated when orgz type is memory bank */
+  t_scff_info* scff_info; /* Only be allocated when orgz type is scan-chain */
+  t_standalone_sram_info* standalone_sram_info; /* Only be allocated when orgz type is standalone */
+  
+  /* Head of configuration bits,
+   * which is assigned according to orgz_type */
+  t_llist* conf_bit_head; 
+
+  /* Conf bits information per grid */
+  int** grid_reserved_conf_bits;
+  int** grid_conf_bits_lsb;
+  int** grid_conf_bits_msb;
 };
 
 /* SPICE support end*/

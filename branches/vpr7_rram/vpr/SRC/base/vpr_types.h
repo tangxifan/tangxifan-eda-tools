@@ -203,6 +203,7 @@ typedef struct s_pb {
     char* spice_name_tag;
 
     /* Xifan TANG: FPGA-SPICE and SynVerilog */
+    int num_reserved_conf_bits;
     int num_conf_bits;
     int num_mode_bits;
     int num_inpads;
@@ -1110,6 +1111,9 @@ struct s_sb {
   int* num_opin_rr_nodes; /* Connection block has some outputs that are CLB OPIN */
   t_rr_node*** opin_rr_node;
   int** opin_rr_node_grid_side; /* We need to record the side of a OPIN, because a OPIN may locate on more than one sides */
+  int num_reserved_conf_bits; /* number of reserved configuration bits */
+  int conf_bits_lsb; /* LSB of configuration bits */
+  int conf_bits_msb; /* MSB of configuration bits */
 };
 
 /* Information for each conneciton block */
@@ -1142,6 +1146,9 @@ struct s_cb {
   int* num_opin_rr_nodes; /* Connection block has some outputs that are CLB OPIN */
   t_rr_node*** opin_rr_node;
   int** opin_rr_node_grid_side; /* We need to record the side of a OPIN, because a OPIN may locate on more than one sides */
+  int num_reserved_conf_bits; /* number of reserved configuration bits */
+  int conf_bits_lsb; /* LSB of configuration bits */
+  int conf_bits_msb; /* MSB of configuration bits */
 };
 
 /* Xifan TANG: SPICE Support*/

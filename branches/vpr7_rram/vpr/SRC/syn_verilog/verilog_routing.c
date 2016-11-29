@@ -622,9 +622,11 @@ void dump_verilog_switch_box_mux(FILE* fp,
   int inode, side, index, input_cnt = 0;
   int grid_x, grid_y;
   t_spice_model* verilog_model = NULL;
-  int mux_level, path_id, cur_num_sram, ilevel;
+  int mux_level, path_id, cur_num_sram;
   int num_mux_sram_bits = 0;
   int* mux_sram_bits = NULL;
+  int num_mux_conf_bits = 0;
+  int num_mux_reserved_conf_bits = 0;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -695,6 +697,22 @@ void dump_verilog_switch_box_mux(FILE* fp,
   }
   assert(input_cnt == mux_size);
 
+  /* Print SRAMs that configure this MUX */
+  /* cur_num_sram = sram_verilog_model->cnt; */
+  cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info); 
+  /* connect to reserved BL/WLs ? */
+  num_mux_reserved_conf_bits = count_num_reserved_conf_bits_one_spice_model(verilog_model, 
+                                                                            sram_verilog_orgz_info->type, 
+                                                                            mux_size);
+  /* Get the number of configuration bits required by this MUX */
+  num_mux_conf_bits = count_num_conf_bits_one_spice_model(verilog_model, 
+                                                          sram_verilog_orgz_info->type, 
+                                                          mux_size);
+
+  /* Dump the configuration port bus */
+  dump_verilog_mux_config_bus(fp, verilog_model, sram_verilog_orgz_info,
+                              mux_size, cur_num_sram, num_mux_reserved_conf_bits, num_mux_conf_bits); 
+  
   /* Now it is the time print the SPICE netlist of MUX*/
   fprintf(fp, "%s_size%d %s_size%d_%d_ (", 
           verilog_model->prefix, mux_size,
@@ -707,6 +725,11 @@ void dump_verilog_switch_box_mux(FILE* fp,
   dump_verilog_switch_box_chan_port(fp, cur_sb_info, chan_side, cur_rr_node, OUT_PORT);
   /* Add a comma because dump_verilog_switch_box_chan_port does not add so  */
   fprintf(fp, ", ");
+
+  fprintf(fp, "%s_size%d_%d_configbus, ",
+          verilog_model->prefix, mux_size, verilog_model->cnt);
+
+  fprintf(fp, ");\n");
 
   /* Configuration bits for this MUX*/
   path_id = -1;
@@ -735,30 +758,6 @@ void dump_verilog_switch_box_mux(FILE* fp,
     exit(1);
   }
 
-  /* Print SRAMs that configure this MUX */
-  switch (verilog_model->design_tech) {
-  case SPICE_MODEL_DESIGN_CMOS:
-    cur_num_sram = sram_verilog_model->cnt;
-    fprintf(fp,"%s_out[%d:%d], ", 
-            sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits - 1, cur_num_sram);
-    fprintf(fp,"%s_outb[%d:%d] ", 
-            sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits - 1, cur_num_sram);
-    cur_num_sram += num_mux_sram_bits;
-    /* End */
-    break;
-  case SPICE_MODEL_DESIGN_RRAM:
-    cur_num_sram = sram_verilog_model->cnt;
-    fprintf(fp,"%s_out[%d:%d], ", 
-            sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits/2 - 1, cur_num_sram);
-    fprintf(fp,"%s_outb[%d:%d] ", 
-            sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits/2 - 1, cur_num_sram);
-    cur_num_sram += num_mux_sram_bits/2;
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",
-               __FILE__, __LINE__, verilog_model->name);
-  }
-  fprintf(fp, ");\n");
   
   /* Print the encoding in SPICE netlist for debugging */
   switch (verilog_model->design_tech) {
@@ -766,46 +765,33 @@ void dump_verilog_switch_box_mux(FILE* fp,
     fprintf(fp, "//----- SRAM bits for MUX[%d], level=%d, select_path_id=%d. -----\n", 
             verilog_model->cnt, mux_level, path_id);
     fprintf(fp, "//-----");
-    cur_num_sram = sram_verilog_model->cnt;
-    for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
-      fprintf(fp, "%d", mux_sram_bits[ilevel]);
-      /* Store the configuraion bit to linked-list */
-      conf_bits_head = add_conf_bit_info_to_llist(conf_bits_head, cur_num_sram,
-                                                  mux_sram_bits[ilevel], 0, 0, verilog_model);
-      cur_num_sram++;
-    }
+    fprint_commented_sram_bits(fp, num_mux_sram_bits, mux_sram_bits);
     fprintf(fp, "-----\n");
     break;
   case SPICE_MODEL_DESIGN_RRAM:
     fprintf(fp, "//----- BL/WL bits for 4T1R MUX[%d], level=%d, select_path_id=%d. -----\n", 
             verilog_model->cnt, mux_level, path_id);
     fprintf(fp, "//---- BL: ");
-    for (ilevel = 0; ilevel < num_mux_sram_bits/2; ilevel++) {
-      fprintf(fp, "%d", mux_sram_bits[ilevel]);
-    }
+    fprint_commented_sram_bits(fp, num_mux_sram_bits/2, mux_sram_bits);
     fprintf(fp, "-----\n");
     fprintf(fp, "//---- WL: ");
-    for (ilevel = 0; ilevel < num_mux_sram_bits/2; ilevel++) {
-      fprintf(fp, "%d", mux_sram_bits[ilevel+num_mux_sram_bits/2]);
-    }
+    fprint_commented_sram_bits(fp, num_mux_sram_bits/2, mux_sram_bits + num_mux_sram_bits/2);
     fprintf(fp, "-----\n");
-    /* Store the configuraion bit to linked-list */
-    cur_num_sram = sram_verilog_model->cnt;
-    for (ilevel = 0; ilevel < num_mux_sram_bits/2; ilevel++) {
-      conf_bits_head = add_conf_bit_info_to_llist(conf_bits_head, cur_num_sram,
-                                                  0, mux_sram_bits[ilevel], mux_sram_bits[ilevel+num_mux_sram_bits/2], 
-                                                  verilog_model);
-      cur_num_sram++;
-    }
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",
                __FILE__, __LINE__, verilog_model->name);
   }
+
+  /* Store the configuraion bit to linked-list */
+  add_mux_conf_bits_to_llist(mux_size, sram_verilog_orgz_info, 
+                             num_mux_sram_bits, mux_sram_bits,
+                             verilog_model);
   
   /* update sram counter */
   verilog_model->cnt++;
-  sram_verilog_model->cnt = cur_num_sram;
+  /* Get the number of configuration bits required by this MUX */
+  update_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info, cur_num_sram + num_mux_conf_bits);
 
   /* Free */
   my_free(mux_sram_bits);
@@ -841,10 +827,49 @@ int count_verilog_switch_box_interc_conf_bits(int switch_box_x, int switch_box_y
     switch_idx = cur_rr_node->drive_switches[0];
     assert(-1 < switch_idx);
     assert(SPICE_MODEL_MUX == switch_inf[switch_idx].spice_model->type);
-    num_conf_bits = count_num_conf_bits_one_spice_model(switch_inf[switch_idx].spice_model, num_drive_rr_nodes);
+    num_conf_bits = count_num_conf_bits_one_spice_model(switch_inf[switch_idx].spice_model, 
+                                                        sram_verilog_orgz_info->type, 
+                                                        num_drive_rr_nodes);
     return num_conf_bits;
   }
 }
+
+/* Count the number of reserved configuration bits of a rr_node*/
+int count_verilog_switch_box_interc_reserved_conf_bits(int switch_box_x, int switch_box_y, int chan_side, 
+                                                       t_rr_node* cur_rr_node) {
+  int num_reserved_conf_bits = 0;
+  int switch_idx = 0;
+  int num_drive_rr_nodes = 0;
+  
+  if (NULL == cur_rr_node) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])NULL cur_rr_node!\n",
+               __FILE__, __LINE__);
+    exit(1);    
+    return num_reserved_conf_bits;
+  }
+
+  /* Determine if the interc lies inside a channel wire, that is interc between segments */
+  if (1 == is_sb_interc_between_segments(switch_box_x, switch_box_y, cur_rr_node, chan_side)) {
+    num_drive_rr_nodes = 0;
+  } else {
+    num_drive_rr_nodes = cur_rr_node->num_drive_rr_nodes;
+  }
+
+  /* fan_in >= 2 implies a MUX and requires configuration bits */
+  if (2 > num_drive_rr_nodes) {
+    return num_reserved_conf_bits;
+  } else {
+    switch_idx = cur_rr_node->drive_switches[0];
+    assert(-1 < switch_idx);
+    assert(SPICE_MODEL_MUX == switch_inf[switch_idx].spice_model->type);
+    num_reserved_conf_bits = 
+                    count_num_reserved_conf_bits_one_spice_model(switch_inf[switch_idx].spice_model, 
+                                                                 sram_verilog_orgz_info->type,
+                                                                 num_drive_rr_nodes);
+    return num_reserved_conf_bits;
+  }
+}
+
 
 void dump_verilog_switch_box_interc(FILE* fp, 
                                     t_sb cur_sb_info,
@@ -901,6 +926,62 @@ void dump_verilog_switch_box_interc(FILE* fp,
   return;
 }
 
+/* Count the number of configuration bits of a Switch Box */
+int count_verilog_switch_box_reserved_conf_bits(t_sb cur_sb_info) {
+  int side, itrack;
+  int num_reserved_conf_bits = 0;
+  int temp_num_reserved_conf_bits = 0;
+
+  for (side = 0; side < cur_sb_info.num_sides; side++) {
+    for (itrack = 0; itrack < cur_sb_info.chan_width[side]; itrack++) {
+      switch (cur_sb_info.chan_rr_node_direction[side][itrack]) {
+      case OUT_PORT:
+        temp_num_reserved_conf_bits =
+                         count_verilog_switch_box_interc_conf_bits(cur_sb_info.x, cur_sb_info.y, side, 
+                                                                   cur_sb_info.chan_rr_node[side][itrack]);
+        /* Always select the largest number of reserved conf_bits */
+        if (temp_num_reserved_conf_bits > num_reserved_conf_bits) {
+          num_reserved_conf_bits = temp_num_reserved_conf_bits;
+        }
+        break;
+      case IN_PORT:
+        break;
+      default:
+        vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of port sb[%d][%d] Channel node[%d] track[%d]!\n",
+                   __FILE__, __LINE__, cur_sb_info.x, cur_sb_info.y, side, itrack);
+        exit(1);
+      }
+    }
+  }
+
+  return num_reserved_conf_bits;
+}
+
+/* Count the number of configuration bits of a Switch Box */
+int count_verilog_switch_box_conf_bits(t_sb cur_sb_info) {
+  int side, itrack;
+  int num_conf_bits = 0;
+
+  for (side = 0; side < cur_sb_info.num_sides; side++) {
+    for (itrack = 0; itrack < cur_sb_info.chan_width[side]; itrack++) {
+      switch (cur_sb_info.chan_rr_node_direction[side][itrack]) {
+      case OUT_PORT:
+        num_conf_bits += count_verilog_switch_box_interc_conf_bits(cur_sb_info.x, cur_sb_info.y, side, 
+                                                                   cur_sb_info.chan_rr_node[side][itrack]);
+        break;
+      case IN_PORT:
+        break;
+      default:
+        vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of port sb[%d][%d] Channel node[%d] track[%d]!\n",
+                   __FILE__, __LINE__, cur_sb_info.x, cur_sb_info.y, side, itrack);
+        exit(1);
+      }
+    }
+  }
+
+  return num_conf_bits;
+}
+
 /* Task: Print the subckt of a Switch Box.
  * A Switch Box subckt consists of following ports:
  * 1. Channel Y [x][y] inputs 
@@ -938,8 +1019,7 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp, t_sb cur_sb_info,
                                             int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                             t_ivec*** LL_rr_node_indices) {
   int itrack, inode, side, ix, iy, x, y;
-  int num_conf_bits = 0;
-  int esti_sram_cnt = 0;
+  int cur_num_sram, num_conf_bits, num_reserved_conf_bits, esti_sram_cnt;
  
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -956,24 +1036,16 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp, t_sb cur_sb_info,
   y = cur_sb_info.y;
 
   /* Count the number of configuration bits to be consumed by this Switch block */
-  for (side = 0; side < cur_sb_info.num_sides; side++) {
-    for (itrack = 0; itrack < cur_sb_info.chan_width[side]; itrack++) {
-      switch (cur_sb_info.chan_rr_node_direction[side][itrack]) {
-      case OUT_PORT:
-        num_conf_bits += count_verilog_switch_box_interc_conf_bits(cur_sb_info.x, cur_sb_info.y, side, 
-                                                                   cur_sb_info.chan_rr_node[side][itrack]);
-        break;
-      case IN_PORT:
-        break;
-      default:
-        vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of port sb[%d][%d] Channel node[%d] track[%d]!\n",
-                   __FILE__, __LINE__, cur_sb_info.x, cur_sb_info.y, side, itrack);
-        exit(1);
-      }
-    }
-  }
+  num_conf_bits = count_verilog_switch_box_conf_bits(cur_sb_info);
+  /* Count the number of reserved configuration bits to be consumed by this Switch block */
+  num_reserved_conf_bits = count_verilog_switch_box_reserved_conf_bits(cur_sb_info);
   /* Estimate the sram_verilog_model->cnt */
-  esti_sram_cnt = sram_verilog_model->cnt + num_conf_bits;
+  cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info); 
+  esti_sram_cnt = cur_num_sram + num_conf_bits;
+  /* Record the index */
+  cur_sb_info.num_reserved_conf_bits = num_reserved_conf_bits;
+  cur_sb_info.conf_bits_lsb = cur_num_sram; 
+  cur_sb_info.conf_bits_msb = cur_num_sram+ num_conf_bits;
 
   /* Comment lines */
   fprintf(fp, "//----- Verilog Module of Switch Box[%d][%d] -----\n", cur_sb_info.x, cur_sb_info.y);
@@ -1036,39 +1108,16 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp, t_sb cur_sb_info,
     } 
   }
   
-  /* Put down inpad and outpad ports */
-  assert(!(0 > (inpad_verilog_model->sb_index_high[x][y] - inpad_verilog_model->sb_index_low[x][y])));
-  if (0 < (inpad_verilog_model->sb_index_high[x][y] - inpad_verilog_model->sb_index_low[x][y])) {
-    fprintf(fp, "  input [%d:%d] gfpga_input_%s, \n", 
-            inpad_verilog_model->sb_index_high[x][y] - 1, 
-            inpad_verilog_model->sb_index_low[x][y],
-            inpad_verilog_model->prefix);
-  }
-  assert(!(0 > (outpad_verilog_model->sb_index_high[x][y] - outpad_verilog_model->sb_index_low[x][y])));
-  if (0 < (outpad_verilog_model->sb_index_high[x][y] - outpad_verilog_model->sb_index_low[x][y])) {
-    /* inverted output of each configuration bit */
-    fprintf(fp, "  output [%d:%d] gfpga_output_%s, \n", 
-            outpad_verilog_model->sb_index_high[x][y] - 1, 
-            outpad_verilog_model->sb_index_low[x][y],
-            outpad_verilog_model->prefix);
-  }
   /* Put down configuration port */
   /* output of each configuration bit */
-  /*assert(num_conf_bits == (sram_verilog_model->sb_index_high[x][y] - sram_verilog_model->sb_index_low[x][y])); */
-  sram_verilog_model->sb_index_low[x][y] = sram_verilog_model->cnt;
-  sram_verilog_model->sb_index_high[x][y] = esti_sram_cnt;
-
-  if (0 < num_conf_bits) {
-    fprintf(fp, "  input [%d:%d] %s_out, \n", 
-            sram_verilog_model->sb_index_high[x][y] - 1, 
-            sram_verilog_model->sb_index_low[x][y],
-            sram_verilog_model->prefix); 
-    /* inverted output of each configuration bit */
-    fprintf(fp, "  input [%d:%d] %s_outb \n", 
-            sram_verilog_model->sb_index_high[x][y] - 1, 
-            sram_verilog_model->sb_index_low[x][y],
-            sram_verilog_model->prefix); 
-  }
+  /* Reserved sram ports */
+  dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info, 
+                                   0, num_reserved_conf_bits - 1,
+                                   TRUE);
+  /* Normal sram ports */
+  dump_verilog_sram_ports(fp, sram_verilog_orgz_info, 
+                          cur_num_sram, cur_num_sram + num_conf_bits - 1,
+                          TRUE);
   fprintf(fp, "); \n");
 
   /* Put down all the multiplexers */
@@ -1091,12 +1140,8 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp, t_sb cur_sb_info,
   fprintf(fp, "//----- END Verilog Module of Switch Box[%d][%d] -----\n\n", x, y);
 
   /* Check */
-  if (esti_sram_cnt != sram_verilog_model->cnt) {
   assert(esti_sram_cnt == sram_verilog_model->cnt);
-  }
-
-  /* record number of configuration bits in global array */
-  num_conf_bits_sb[x][y] = num_conf_bits;
+  update_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info, cur_num_sram + num_conf_bits);
 
   /* Free chan_rr_nodes */
 
@@ -1123,7 +1168,9 @@ int count_verilog_connection_box_interc_conf_bits(t_rr_node* cur_rr_node) {
     switch_idx = cur_rr_node->drive_switches[0];
     assert(-1 < switch_idx);
     assert(SPICE_MODEL_MUX == switch_inf[switch_idx].spice_model->type);
-    num_conf_bits = count_num_conf_bits_one_spice_model(switch_inf[switch_idx].spice_model, num_drive_rr_nodes);
+    num_conf_bits = count_num_conf_bits_one_spice_model(switch_inf[switch_idx].spice_model, 
+                                                        sram_verilog_orgz_info->type,
+                                                        num_drive_rr_nodes);
     return num_conf_bits;
   }
 }
@@ -1219,14 +1266,16 @@ void dump_verilog_connection_box_short_interc(FILE* fp,
 void dump_verilog_connection_box_mux(FILE* fp,
                                      t_cb cur_cb_info,
                                      t_rr_node* src_rr_node) {
-  int mux_size, cur_num_sram, ilevel, input_cnt = 0;
+  int mux_size, cur_num_sram, input_cnt = 0;
   t_rr_node** drive_rr_nodes = NULL;
   int inode, mux_level, path_id, switch_index;
-  t_spice_model* mux_verilog_model = NULL;
+  t_spice_model* verilog_model = NULL;
   int num_mux_sram_bits = 0;
   int* mux_sram_bits = NULL;
   t_rr_type drive_rr_node_type = NUM_RR_TYPES;
   int xlow, ylow, side, index;
+  int num_mux_conf_bits = 0;
+  int num_mux_reserved_conf_bits = 0;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -1254,12 +1303,12 @@ void dump_verilog_connection_box_mux(FILE* fp,
 
   switch_index = src_rr_node->drive_switches[path_id];
 
-  mux_verilog_model = switch_inf[switch_index].spice_model;
+  verilog_model = switch_inf[switch_index].spice_model;
 
   /* Specify the input bus */
   fprintf(fp, "wire [%d:0] %s_size%d_%d_inbus;\n",
           mux_size - 1,
-          mux_verilog_model->prefix, mux_size, mux_verilog_model->cnt);
+          verilog_model->prefix, mux_size, verilog_model->cnt);
 
   /* Check drive_rr_nodes type, should be the same*/
   for (inode = 0; inode < mux_size; inode++) {
@@ -1273,7 +1322,7 @@ void dump_verilog_connection_box_mux(FILE* fp,
   /* input port*/
   for (inode = 0; inode < mux_size; inode++) {
     fprintf(fp, "assign %s_size%d_%d_inbus[%d] = ",
-                mux_verilog_model->prefix, mux_size, mux_verilog_model->cnt, input_cnt);
+                verilog_model->prefix, mux_size, verilog_model->cnt, input_cnt);
     fprintf(fp, "%s_%d__%d__midout_%d_;\n",
             convert_chan_type_to_string(drive_rr_nodes[inode]->type),
             cur_cb_info.x, cur_cb_info.y, drive_rr_nodes[inode]->ptc_num);
@@ -1281,13 +1330,29 @@ void dump_verilog_connection_box_mux(FILE* fp,
   }
   assert(input_cnt == mux_size);
 
+  /* Print SRAMs that configure this MUX */
+  /* cur_num_sram = sram_verilog_model->cnt; */
+  cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info); 
+  /* connect to reserved BL/WLs ? */
+  num_mux_reserved_conf_bits = count_num_reserved_conf_bits_one_spice_model(verilog_model, 
+                                                                            sram_verilog_orgz_info->type,
+                                                                            mux_size);
+  /* Get the number of configuration bits required by this MUX */
+  num_mux_conf_bits = count_num_conf_bits_one_spice_model(verilog_model, 
+                                                          sram_verilog_orgz_info->type,
+                                                          mux_size);
+
+  /* Dump the configuration port bus */
+  dump_verilog_mux_config_bus(fp, verilog_model, sram_verilog_orgz_info,
+                              mux_size, cur_num_sram, num_mux_reserved_conf_bits, num_mux_conf_bits); 
+
   /* Call the MUX SPICE model */
   fprintf(fp, "%s_size%d %s_size%d_%d_ (", 
-          mux_verilog_model->name, mux_size, 
-          mux_verilog_model->prefix, mux_size, mux_verilog_model->cnt);
+          verilog_model->name, mux_size, 
+          verilog_model->prefix, mux_size, verilog_model->cnt);
   /* connect to input bus*/
   fprintf(fp, "%s_size%d_%d_inbus,",
-               mux_verilog_model->prefix, mux_size, mux_verilog_model->cnt);
+               verilog_model->prefix, mux_size, verilog_model->cnt);
 
   /* output port*/
   xlow = src_rr_node->xlow;
@@ -1305,91 +1370,59 @@ void dump_verilog_connection_box_mux(FILE* fp,
                                               FALSE); /* Do not specify the direction of port */
   fprintf(fp, ", "); 
 
-  switch (mux_verilog_model->design_tech) {
-  case SPICE_MODEL_DESIGN_CMOS:
-    decode_cmos_mux_sram_bits(mux_verilog_model, mux_size, path_id, &num_mux_sram_bits, &mux_sram_bits, &mux_level);
-    break;
-  case SPICE_MODEL_DESIGN_RRAM:
-    decode_verilog_rram_mux(mux_verilog_model, mux_size, path_id, &num_mux_sram_bits, &mux_sram_bits, &mux_level);
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",
-               __FILE__, __LINE__, mux_verilog_model->name);
-  }
- 
-  /* Print SRAMs that configure this MUX */
-  switch (mux_verilog_model->design_tech) {
-  case SPICE_MODEL_DESIGN_CMOS:
-    cur_num_sram = sram_verilog_model->cnt;
-    fprintf(fp, "%s_out[%d:%d], ", 
-                sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits - 1, cur_num_sram);
-    fprintf(fp, "%s_outb[%d:%d] ", 
-                sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits - 1, cur_num_sram);
-    cur_num_sram += num_mux_sram_bits;
-    /* End */
-    break;
-  case SPICE_MODEL_DESIGN_RRAM:
-    cur_num_sram = sram_verilog_model->cnt;
-    fprintf(fp,"%s_out[%d:%d], ", 
-            sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits/2 - 1, cur_num_sram);
-    fprintf(fp,"%s_outb[%d:%d] ", 
-            sram_verilog_model->prefix, cur_num_sram + num_mux_sram_bits/2 - 1, cur_num_sram);
-    cur_num_sram += num_mux_sram_bits/2;
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",
-               __FILE__, __LINE__, mux_verilog_model->name);
-  }
+  fprintf(fp, "%s_size%d_%d_configbus, ",
+          verilog_model->prefix, mux_size, verilog_model->cnt);
 
-  /* End with svdd and sgnd, subckt name*/
   fprintf(fp, ");\n");
 
+  switch (verilog_model->design_tech) {
+  case SPICE_MODEL_DESIGN_CMOS:
+    decode_cmos_mux_sram_bits(verilog_model, mux_size, path_id, &num_mux_sram_bits, &mux_sram_bits, &mux_level);
+    break;
+  case SPICE_MODEL_DESIGN_RRAM:
+    decode_verilog_rram_mux(verilog_model, mux_size, path_id, &num_mux_sram_bits, &mux_sram_bits, &mux_level);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",
+               __FILE__, __LINE__, verilog_model->name);
+  }
+
   /* Print the encoding in SPICE netlist for debugging */
-  switch (mux_verilog_model->design_tech) {
+  switch (verilog_model->design_tech) {
   case SPICE_MODEL_DESIGN_CMOS:
     fprintf(fp, "//----- SRAM bits for MUX[%d], level=%d, select_path_id=%d. -----\n", 
-            mux_verilog_model->cnt, mux_level, path_id);
+            verilog_model->cnt, mux_level, path_id);
     fprintf(fp, "//-----");
-    cur_num_sram = sram_verilog_model->cnt;
-    for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
-      fprintf(fp, "%d", mux_sram_bits[ilevel]);
-      /* Store the configuraion bit to linked-list */
-      conf_bits_head = add_conf_bit_info_to_llist(conf_bits_head, cur_num_sram,
-                                                  mux_sram_bits[ilevel], 0, 0, mux_verilog_model);
-      cur_num_sram++;
-    }
+    fprint_commented_sram_bits(fp, num_mux_sram_bits, mux_sram_bits);
     fprintf(fp, "-----\n");
     break;
   case SPICE_MODEL_DESIGN_RRAM:
     fprintf(fp, "//----- BL/WL bits for 4T1R MUX[%d], level=%d, select_path_id=%d. -----\n", 
-            mux_verilog_model->cnt, mux_level, path_id);
+            verilog_model->cnt, mux_level, path_id);
     fprintf(fp, "//---- BL: ");
-    for (ilevel = 0; ilevel < num_mux_sram_bits/2; ilevel++) {
-      fprintf(fp, "%d", mux_sram_bits[ilevel]);
-    }
+    fprint_commented_sram_bits(fp, num_mux_sram_bits/2, mux_sram_bits);
     fprintf(fp, "-----\n");
     fprintf(fp, "//---- WL: ");
-    for (ilevel = 0; ilevel < num_mux_sram_bits/2; ilevel++) {
-      fprintf(fp, "%d", mux_sram_bits[ilevel+num_mux_sram_bits/2]);
-    }
+    fprint_commented_sram_bits(fp, num_mux_sram_bits/2, mux_sram_bits + num_mux_sram_bits/2);
     fprintf(fp, "-----\n");
-    /* Store the configuraion bit to linked-list */
-    cur_num_sram = sram_verilog_model->cnt;
-    for (ilevel = 0; ilevel < num_mux_sram_bits/2; ilevel++) {
-      conf_bits_head = add_conf_bit_info_to_llist(conf_bits_head, cur_num_sram,
-                                                  0, mux_sram_bits[ilevel], mux_sram_bits[ilevel+num_mux_sram_bits/2], 
-                                                  mux_verilog_model);
-      cur_num_sram++;
-    }
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",
-               __FILE__, __LINE__, mux_verilog_model->name);
+               __FILE__, __LINE__, verilog_model->name);
   }
 
-  /* update SRAM counters */
-  mux_verilog_model->cnt++;
-  sram_verilog_model->cnt = cur_num_sram;
+  /* Store the configuraion bit to linked-list */
+  add_mux_conf_bits_to_llist(mux_size, sram_verilog_orgz_info, 
+                             num_mux_sram_bits, mux_sram_bits,
+                             verilog_model);
+  
+  /* update sram counter */
+  verilog_model->cnt++;
+  /* Get the number of configuration bits required by this MUX */
+  num_mux_conf_bits = count_num_conf_bits_one_spice_model(verilog_model, 
+                                                          sram_verilog_orgz_info->type, 
+                                                          mux_size);
+  update_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info, cur_num_sram + num_mux_conf_bits);
 
   /* Free */
   my_free(mux_sram_bits);
@@ -1422,6 +1455,58 @@ void dump_verilog_connection_box_interc(FILE* fp,
   return;
 }
 
+/* Count the number of configuration bits of a connection box */
+int count_verilog_connection_box_conf_bits(t_cb cur_cb_info) {
+  int side;
+  int side_cnt = 0;
+  int num_conf_bits = 0;
+
+  for (side = 0; side < cur_cb_info.num_sides; side++) {
+    /* Bypass side with zero IPINs*/
+    if (0 == cur_cb_info.num_ipin_rr_nodes[side]) {
+      continue;
+    }
+    side_cnt++;
+    assert(0 < cur_cb_info.num_ipin_rr_nodes[side]);
+    assert(NULL != cur_cb_info.ipin_rr_node[side]);
+    /* Count the number of configuration bits */
+    num_conf_bits += count_verilog_connection_box_conf_bits(cur_cb_info.num_ipin_rr_nodes[side], cur_cb_info.ipin_rr_node[side]);
+  }
+  /* Make sure only 2 sides of IPINs are printed */
+  assert(2 == side_cnt);
+
+  return num_conf_bits;
+}
+
+/* Count the number of reserved configuration bits of a connection box */
+int count_verilog_connection_box_reserved_conf_bits(t_cb cur_cb_info) {
+  int side;
+  int side_cnt = 0;
+  int num_reserved_conf_bits = 0;
+  int temp_num_reserved_conf_bits = 0;
+
+  for (side = 0; side < cur_cb_info.num_sides; side++) {
+    /* Bypass side with zero IPINs*/
+    if (0 == cur_cb_info.num_ipin_rr_nodes[side]) {
+      continue;
+    }
+    side_cnt++;
+    assert(0 < cur_cb_info.num_ipin_rr_nodes[side]);
+    assert(NULL != cur_cb_info.ipin_rr_node[side]);
+    /* Count the number of reserved configuration bits */
+    temp_num_reserved_conf_bits = count_verilog_connection_box_conf_bits(cur_cb_info.num_ipin_rr_nodes[side], cur_cb_info.ipin_rr_node[side]);
+    /* Only consider the largest reserved configuration bits */
+    if (temp_num_reserved_conf_bits > num_reserved_conf_bits) {
+      temp_num_reserved_conf_bits = num_reserved_conf_bits;
+    }
+  }
+  /* Make sure only 2 sides of IPINs are printed */
+  assert(2 == side_cnt);
+
+  return num_reserved_conf_bits;
+}
+
+
 /* Print connection boxes
  * Print the sub-circuit of a connection Box (Type: [CHANX|CHANY])
  * Actually it is very similiar to switch box but
@@ -1450,10 +1535,9 @@ void dump_verilog_routing_connection_box_subckt(FILE* fp, t_cb cur_cb_info,
                                                 t_ivec*** LL_rr_node_indices) {
   int itrack, inode, side, x, y;
   int side_cnt = 0;
-  
-  int num_conf_bits = 0;
-  int esti_sram_cnt = 0;
 
+  int cur_num_sram, num_conf_bits, num_reserved_conf_bits, esti_sram_cnt;
+  
   /* Check the file handler*/ 
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
@@ -1535,95 +1619,37 @@ void dump_verilog_routing_connection_box_subckt(FILE* fp, t_cb cur_cb_info,
 
       fprintf(fp, "\n");
     }
-    /* Count the number of configuration bits */
-    num_conf_bits += count_verilog_connection_box_conf_bits(cur_cb_info.num_ipin_rr_nodes[side], cur_cb_info.ipin_rr_node[side]);
   }
   /* Make sure only 2 sides of IPINs are printed */
   assert(2 == side_cnt);
 
-  esti_sram_cnt = sram_verilog_model->cnt + num_conf_bits;
-  /* Print inpad, outpad ports and sram ports */
-  switch(cur_cb_info.type) { 
-  case CHANX:
-    /* inpad */
-    /*
-    assert(!(0 > inpad_verilog_model->cbx_index_high[x][y] - inpad_verilog_model->cbx_index_low[x][y]));
-    if (0 < inpad_verilog_model->cbx_index_high[x][y] - inpad_verilog_model->cbx_index_low[x][y]) {
-      fprintf(fp, "  gfpga_input_%s[%d:%d], \n", 
-              inpad_verilog_model->prefix, 
-              inpad_verilog_model->cbx_index_low[x][y],
-              inpad_verilog_model->cbx_index_high[x][y] - 1);
-    } */
-    /* outpad */
-    /*
-    assert(!(0 > outpad_verilog_model->cbx_index_high[x][y] - outpad_verilog_model->cbx_index_low[x][y]));
-    if (0 < outpad_verilog_model->cbx_index_high[x][y] - outpad_verilog_model->cbx_index_low[x][y]) {
-      fprintf(fp, "  gfpga_output_%s[%d:%d], \n", 
-              outpad_verilog_model->prefix, 
-              outpad_verilog_model->cbx_index_low[x][y],
-              outpad_verilog_model->cbx_index_high[x][y] - 1);
-    } */
-    /* Configuration ports */
-    sram_verilog_model->cbx_index_high[x][y] = esti_sram_cnt;
-    assert(!(0 > sram_verilog_model->cbx_index_high[x][y] - sram_verilog_model->cbx_index_low[x][y]));
-    assert(num_conf_bits == (sram_verilog_model->cbx_index_high[x][y] - sram_verilog_model->cbx_index_low[x][y]));
-    if (0 < sram_verilog_model->cbx_index_high[x][y] - sram_verilog_model->cbx_index_low[x][y]) {
-      fprintf(fp, " input [%d:%d] %s_out, \n", 
-              sram_verilog_model->cbx_index_high[x][y] - 1,
-              sram_verilog_model->cbx_index_low[x][y],
-              sram_verilog_model->prefix);
-      /* inverted output of each configuration bit */
-      fprintf(fp, " input [%d:%d] %s_outb \n", 
-              sram_verilog_model->cbx_index_high[x][y] - 1,
-              sram_verilog_model->cbx_index_low[x][y],
-              sram_verilog_model->prefix); 
-        
-    }
-    break;
-  case CHANY:
-    /* inpad */
-    /*
-    assert(!(0 > inpad_verilog_model->cby_index_high[x][y] - inpad_verilog_model->cby_index_low[x][y]));
-    if (0 < inpad_verilog_model->cby_index_high[x][y] - inpad_verilog_model->cby_index_low[x][y]) {
-      fprintf(fp, "  gfpga_input_%s[%d:%d], \n", 
-              inpad_verilog_model->prefix, 
-              inpad_verilog_model->cby_index_low[x][y],
-              inpad_verilog_model->cby_index_high[x][y] - 1);
-    } */
-    /* outpad */
-    /*
-    assert(!(0 > outpad_verilog_model->cby_index_high[x][y] - outpad_verilog_model->cby_index_low[x][y]));
-    if (0 < outpad_verilog_model->cby_index_high[x][y] - outpad_verilog_model->cby_index_low[x][y]) {
-      fprintf(fp, "  gfpga_output_%s[%d:%d], \n", 
-              outpad_verilog_model->prefix, 
-              outpad_verilog_model->cby_index_low[x][y],
-              outpad_verilog_model->cby_index_high[x][y] - 1);
-    } */
-    /* Configuration ports */
-    sram_verilog_model->cby_index_high[x][y] = esti_sram_cnt;
-    assert(!(0 > sram_verilog_model->cby_index_high[x][y] - sram_verilog_model->cby_index_low[x][y]));
-    assert(num_conf_bits == (sram_verilog_model->cby_index_high[x][y] - sram_verilog_model->cby_index_low[x][y]));
-    if (0 < sram_verilog_model->cby_index_high[x][y] - sram_verilog_model->cby_index_low[x][y]) {
-      fprintf(fp, " input [%d:%d] %s_out, \n", 
-              sram_verilog_model->cby_index_high[x][y] - 1,
-              sram_verilog_model->cby_index_low[x][y],
-              sram_verilog_model->prefix);
-      /* inverted output of each configuration bit */
-      fprintf(fp, " input [%d:%d] %s_outb \n", 
-              sram_verilog_model->cby_index_high[x][y] - 1,
-              sram_verilog_model->cby_index_low[x][y],
-              sram_verilog_model->prefix); 
-        
-    }
-    break;
-  default: 
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
-    exit(1);
-  }
+  /* Count the number of configuration bits */
+  /* Count the number of configuration bits to be consumed by this Switch block */
+  num_conf_bits = count_verilog_connection_box_conf_bits(cur_cb_info);
+  /* Count the number of reserved configuration bits to be consumed by this Switch block */
+  num_reserved_conf_bits = count_verilog_connection_box_reserved_conf_bits(cur_cb_info);
+  /* Estimate the sram_verilog_model->cnt */
+  cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info); 
+  esti_sram_cnt = cur_num_sram + num_conf_bits;
+  /* Record index */
+  cur_cb_info.num_reserved_conf_bits = num_reserved_conf_bits;
+  cur_cb_info.conf_bits_lsb = cur_num_sram;
+  cur_cb_info.conf_bits_msb = cur_num_sram +  num_conf_bits;
 
+  /* Put down configuration port */
+  /* output of each configuration bit */
+  /* Reserved sram ports */
+  dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info, 
+                                   0, num_reserved_conf_bits - 1,
+                                   TRUE);
+  /* Normal sram ports */
+  dump_verilog_sram_ports(fp, sram_verilog_orgz_info, 
+                          cur_num_sram, cur_num_sram + num_conf_bits - 1,
+                          TRUE);
   /* subckt definition ends with svdd and sgnd*/
   fprintf(fp, ");\n");
 
+  /* Record LSB and MSB of reserved_conf_bits and normal conf_bits */
 
   /* Print multiplexers or direct interconnect*/
   side_cnt = 0;
@@ -1657,19 +1683,7 @@ void dump_verilog_routing_connection_box_subckt(FILE* fp, t_cb cur_cb_info,
 
   /* Check */
   assert(esti_sram_cnt == sram_verilog_model->cnt);
-
-  /* record number of configuration bits in global array */
-  switch(cur_cb_info.type) { 
-  case CHANX:
-    num_conf_bits_cbx[x][y] = num_conf_bits;
-    break;
-  case CHANY:
-    num_conf_bits_cby[x][y] = num_conf_bits;
-    break;
-  default: 
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
-    exit(1);
-  }
+  update_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info, cur_num_sram + num_conf_bits);
 
   /* Free */
  

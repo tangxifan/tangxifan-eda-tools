@@ -49,6 +49,8 @@ void init_one_sb_info(t_sb* cur_sb) {
   cur_sb->ipin_rr_node_grid_side = NULL;
   cur_sb->opin_rr_node = NULL;
   cur_sb->opin_rr_node_grid_side = NULL;
+  cur_sb->num_reserved_conf_bits = 0;
+  cur_sb->num_conf_bits = 0;
 
   return;
 }
@@ -139,6 +141,8 @@ void init_one_cb_info(t_cb* cur_cb) {
   cur_cb->ipin_rr_node_grid_side = NULL;
   cur_cb->opin_rr_node = NULL;
   cur_cb->opin_rr_node_grid_side = NULL;
+  cur_cb->num_reserved_conf_bits = 0;
+  cur_cb->num_conf_bits = 0;
 
   return;
 }
