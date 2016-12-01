@@ -1140,8 +1140,7 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp, t_sb cur_sb_info,
   fprintf(fp, "//----- END Verilog Module of Switch Box[%d][%d] -----\n\n", x, y);
 
   /* Check */
-  assert(esti_sram_cnt == sram_verilog_model->cnt);
-  update_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info, cur_num_sram + num_conf_bits);
+  assert(esti_sram_cnt == get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info));
 
   /* Free chan_rr_nodes */
 
@@ -1682,8 +1681,7 @@ void dump_verilog_routing_connection_box_subckt(FILE* fp, t_cb cur_cb_info,
   }
 
   /* Check */
-  assert(esti_sram_cnt == sram_verilog_model->cnt);
-  update_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info, cur_num_sram + num_conf_bits);
+  assert(esti_sram_cnt == get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info));
 
   /* Free */
  

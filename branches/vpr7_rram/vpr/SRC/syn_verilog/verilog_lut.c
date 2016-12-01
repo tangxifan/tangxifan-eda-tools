@@ -228,7 +228,6 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
           cur_num_sram + num_sram - 1, cur_num_sram); 
   fprintf(fp, "%s_outb[%d:%d]", sram_verilog_model->prefix,
           cur_num_sram + num_sram - 1, cur_num_sram); 
-  cur_num_sram += num_sram;
   /* vdd should be connected to special global wire gvdd_lut and gnd,
    * Every LUT has a special VDD for statistics
    */
@@ -303,6 +302,7 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   fprintf(fp, "//----- END LUT Verilog module: %s%s_%d_ -----\n\n",
           formatted_subckt_prefix, cur_pb_type->name, index);
  
+  /* Update counter */
   verilog_model->cnt++;
 
   /*Free*/

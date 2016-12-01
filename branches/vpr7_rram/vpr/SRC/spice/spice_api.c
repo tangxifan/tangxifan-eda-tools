@@ -208,7 +208,7 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   sram_orgz_type = Arch.sram_inf.orgz_type;
   
   /* Initialize the number of configuration bits of all the grids */
-  init_grids_num_conf_bits();
+  init_grids_num_conf_bits(sram_orgz_type);
   init_grids_num_iopads();
 
   /* Add keyword checking */

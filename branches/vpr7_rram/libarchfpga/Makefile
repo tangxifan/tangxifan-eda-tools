@@ -16,7 +16,7 @@ AR = ar
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
 DEBUG_FLAGS = -g
 OPT_FLAGS = -O3
-INC_FLAGS = -Iinclude -I../printhandler/SRC/TIO_InputOutputHandlers
+INC_FLAGS = -Iinclude -Ifpga_spice_include -I../printhandler/SRC/TIO_InputOutputHandlers
 LIB_FLAGS = rcs
 
 EXE = read_arch
@@ -29,7 +29,7 @@ else                              # DEBUG build
   FLAGS := $(FLAGS) $(DEBUG_FLAGS)
 endif
 
-SRC = read_xml_mrfpga.c read_xml_spice_util.c read_xml_spice.c read_xml_arch_file.c read_xml_util.c ezxml.c ReadLine.c util.c
+SRC = read_xml_mrfpga.c linkedlist.c read_xml_spice_util.c read_xml_spice.c read_xml_arch_file.c read_xml_util.c ezxml.c ReadLine.c util.c
 OBJS = $(SRC:.c=.o)
 
 DEPS = $(OBJS:.o=.d) main.d

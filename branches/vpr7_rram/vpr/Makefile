@@ -26,13 +26,13 @@ LIB_DIR = -L.
 LIB = -lm -lvpr
 SRC_DIR = SRC
 OBJ_DIR = OBJ
-OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/route -ISRC/power -ISRC/mrfpga -ISRC/spice -ISRC/clb_pin_remap -ISRC/syn_verilog -ISRC/fpga_spice -I../printhandler/SRC/TIO_InputOutputHandlers
+OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/route -ISRC/power -ISRC/mrfpga -ISRC/spice -ISRC/clb_pin_remap -ISRC/syn_verilog -ISRC/fpga_spice -I../libarchfpga -I../printhandler/SRC/TIO_InputOutputHandlers
 
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
 
 DEBUG_FLAGS = -g 
 OPT_FLAGS = $(OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD)
-INC_FLAGS = -I../libarchfpga/include
+INC_FLAGS = -I../libarchfpga/include -I../libarchfpga/fpga_spice_include
 
 FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -D EZXML_NOMMAP -D_POSIX_C_SOURCE
 

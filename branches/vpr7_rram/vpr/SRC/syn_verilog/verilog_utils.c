@@ -527,8 +527,7 @@ void dump_verilog_sram_ports(FILE* fp,
   }
 
   /* Free */
-  my_free(port1_name);
-  my_free(port2_name);
+  /* Local variables such as port1_name and port2 name are automatically freed  */
 
   return;
 }
@@ -581,8 +580,7 @@ void dump_verilog_reserved_sram_ports(FILE* fp,
   }
 
   /* Free */
-  my_free(port1_name);
-  my_free(port2_name);
+  /* Local variables such as port1_name and port2 name are automatically freed  */
 
   return;
 }

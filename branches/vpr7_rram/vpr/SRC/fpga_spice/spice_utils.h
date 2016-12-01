@@ -352,6 +352,18 @@ add_conf_bit_info_to_llist(t_llist* head, int index,
                            t_spice_model* parent_spice_model);
 
 void  
+add_mux_scff_conf_bits_to_llist(int mux_size,
+                           t_sram_orgz_info* cur_sram_orgz_info, 
+                           int num_mux_sram_bits, int* mux_sram_bits,
+                           t_spice_model* mux_spice_model);
+
+void 
+add_mux_membank_conf_bits_to_llist(int mux_size,
+                                   t_sram_orgz_info* cur_sram_orgz_info, 
+                                   int num_mux_sram_bits, int* mux_sram_bits,
+                                   t_spice_model* mux_spice_model);
+
+void  
 add_mux_conf_bits_to_llist(int mux_size,
                            t_sram_orgz_info* cur_sram_orgz_info, 
                            int num_mux_sram_bits, int* mux_sram_bits,
@@ -401,7 +413,7 @@ void free_sram_orgz_info(t_sram_orgz_info* cur_sram_orgz_info,
 void update_sram_orgz_info_reserved_blwl(t_sram_orgz_info* cur_sram_orgz_info,
                                          int updated_reserved_bl, int updated_reserved_wl);
 int get_sram_orgz_info_num_mem_bit(t_sram_orgz_info* cur_sram_orgz_info);
-int get_sram_orgz_info_num_blwl(t_sram_orgz_info* cur_sram_orgz_info,
+void get_sram_orgz_info_num_blwl(t_sram_orgz_info* cur_sram_orgz_info,
                                 int* cur_bl, int* cur_wl);
 void update_sram_orgz_info_num_mem_bit(t_sram_orgz_info* cur_sram_orgz_info,
                                        int new_num_mem_bit);
