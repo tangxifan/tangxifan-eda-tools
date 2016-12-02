@@ -65,6 +65,13 @@ void dump_verilog_connection_box_interc(FILE* fp,
                                         t_cb cur_cb_info,
                                         t_rr_node* src_rr_node);
 
+
+int count_verilog_connection_box_interc_conf_bits(t_rr_node* cur_rr_node);
+int count_verilog_connection_box_interc_reserved_conf_bits(t_rr_node* cur_rr_node);
+int count_verilog_connection_box_one_side_conf_bits(int num_ipin_rr_nodes,
+                                                    t_rr_node** ipin_rr_node);
+int count_verilog_connection_box_one_side_reserved_conf_bits(int num_ipin_rr_nodes,
+                                                             t_rr_node** ipin_rr_node);
 int count_verilog_connection_box_conf_bits(t_cb cur_cb_info);
 int count_verilog_connection_box_reserved_conf_bits(t_cb cur_cb_info);
 

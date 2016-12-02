@@ -1031,6 +1031,7 @@ void dump_verilog_pb_graph_pin_interc(FILE* fp,
   int mux_level = 0;
   int num_mux_conf_bits = 0;
   int num_mux_reserved_conf_bits = 0;
+  int cur_bl, cur_wl;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -1182,6 +1183,7 @@ void dump_verilog_pb_graph_pin_interc(FILE* fp,
     /* Print SRAMs that configure this MUX */
     /* cur_num_sram = sram_verilog_model->cnt; */
     cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info); 
+    get_sram_orgz_info_num_blwl(sram_verilog_orgz_info, &cur_bl, &cur_wl);
     /* connect to reserved BL/WLs ? */
     num_mux_reserved_conf_bits = count_num_reserved_conf_bits_one_spice_model(cur_interc->spice_model, 
                                                                               sram_verilog_orgz_info->type, 
@@ -1209,7 +1211,9 @@ void dump_verilog_pb_graph_pin_interc(FILE* fp,
     fprintf(fp, "%s__%s_%d_, ", 
             des_pin_prefix, des_pb_graph_pin->port->name, des_pb_graph_pin->pin_number);
 
-    fprintf(fp, "%s_size%d_%d_configbus, ",
+    fprintf(fp, "%s_size%d_%d_configbus0, ",
+            cur_interc->spice_model->prefix, fan_in, cur_interc->spice_model->cnt);
+    fprintf(fp, "%s_size%d_%d_configbus1 ",
             cur_interc->spice_model->prefix, fan_in, cur_interc->spice_model->cnt);
   
     fprintf(fp, ");\n");
@@ -1263,6 +1267,9 @@ void dump_verilog_pb_graph_pin_interc(FILE* fp,
     cur_interc->spice_model->cnt++;
     /* Get the number of configuration bits required by this MUX */
     update_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info, cur_num_sram + num_mux_conf_bits);
+    update_sram_orgz_info_num_blwl(sram_verilog_orgz_info, 
+                                   cur_bl + num_mux_conf_bits, 
+                                   cur_wl + num_mux_conf_bits);
 
     /* Free */
     my_free(mux_sram_bits);
@@ -1793,10 +1800,16 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
    * a few configuration bits. 
    */
   num_reserved_conf_bits = cur_pb_type->default_mode_num_reserved_conf_bits;
+  if (0 < num_reserved_conf_bits) {
+    fprintf(fp, ",\n");
+  }
   dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info,
                                    0, num_reserved_conf_bits - 1,
                                    TRUE);
   num_conf_bits = cur_pb_type->default_mode_num_conf_bits;
+  if (0 < num_conf_bits) {
+    fprintf(fp, ",\n");
+  }
   dump_verilog_sram_ports(fp, sram_verilog_orgz_info,
                           stamped_sram_cnt, stamped_sram_cnt + num_conf_bits - 1,
                           TRUE);
@@ -1885,9 +1898,15 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
       /* update stamped outpad counter */
       stamped_iopad_cnt += child_pb_num_iopads;
       /* Print configuration ports */
+      if (0 < child_pb_num_reserved_conf_bits) {
+        fprintf(fp, ",\n");
+      }
       dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info,
                                        0, child_pb_num_reserved_conf_bits - 1,
-                                       TRUE);
+                                       FALSE);
+      if (0 < child_pb_num_conf_bits) {
+        fprintf(fp, ",\n");
+      }
       dump_verilog_sram_ports(fp, sram_verilog_orgz_info,
                               stamped_sram_cnt,
                               stamped_sram_cnt + child_pb_num_conf_bits - 1,
@@ -2112,10 +2131,16 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
    * a few configuration bits. 
    */
   num_reserved_conf_bits = cur_pb->num_reserved_conf_bits;
+  if (0 < num_reserved_conf_bits) {
+    fprintf(fp, ",\n");
+  }
   dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info,
                                    0, num_reserved_conf_bits - 1,
                                    TRUE);
   num_conf_bits = cur_pb->num_conf_bits;
+  if (0 < num_conf_bits) {
+    fprintf(fp, ",\n");
+  }
   dump_verilog_sram_ports(fp, sram_verilog_orgz_info,
                           stamped_sram_cnt, stamped_sram_cnt + num_conf_bits - 1,
                           TRUE);
@@ -2211,9 +2236,15 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
       /* update stamped outpad counter */
       stamped_iopad_cnt += child_pb_num_iopads;
       /* Print configuration ports */
+      if (0 < child_pb_num_reserved_conf_bits) {
+        fprintf(fp, ",\n");
+      }
       dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info,
                                        0, child_pb_num_reserved_conf_bits - 1,
-                                       TRUE);
+                                       FALSE);
+      if (0 < child_pb_num_conf_bits) {
+        fprintf(fp, ",\n");
+      }
       dump_verilog_sram_ports(fp, sram_verilog_orgz_info,
                               stamped_sram_cnt,
                               stamped_sram_cnt + child_pb_num_conf_bits - 1,
@@ -2408,10 +2439,16 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
    * a few configuration bits. 
    */
   num_reserved_conf_bits = cur_pb_type->physical_mode_num_reserved_conf_bits;
+  if (0 < num_reserved_conf_bits) {
+    fprintf(fp, ",\n");
+  }
   dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info,
                                    0, num_reserved_conf_bits - 1,
                                    TRUE);
   num_conf_bits = cur_pb_type->physical_mode_num_conf_bits;
+  if (0 < num_conf_bits) {
+    fprintf(fp, ",\n");
+  }
   dump_verilog_sram_ports(fp, sram_verilog_orgz_info,
                           stamped_sram_cnt, stamped_sram_cnt + num_conf_bits - 1,
                           TRUE);
@@ -2500,9 +2537,15 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
       /* update stamped outpad counter */
       stamped_iopad_cnt += child_pb_num_iopads;
       /* Print configuration ports */
+      if (0 < child_pb_num_reserved_conf_bits) {
+        fprintf(fp, ",\n");
+      }
       dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info,
                                        0, child_pb_num_reserved_conf_bits - 1,
-                                       TRUE);
+                                       FALSE);
+      if (0 < child_pb_num_conf_bits) {
+        fprintf(fp, ",\n");
+      }
       dump_verilog_sram_ports(fp, sram_verilog_orgz_info,
                               stamped_sram_cnt,
                               stamped_sram_cnt + child_pb_num_conf_bits - 1,
@@ -3267,19 +3310,23 @@ void dump_verilog_grid_blocks(FILE* fp,
   /* Print configuration ports */
   /* Reserved configuration ports */
   if (NULL == mapped_block) {
-    num_reserved_conf_bits = grid[ix][iy].type->pb_type->default_mode_num_reserved_conf_bits - 1;
+    num_reserved_conf_bits = grid[ix][iy].type->pb_type->default_mode_num_reserved_conf_bits;
   } else {
-    num_reserved_conf_bits = mapped_block->pb->num_reserved_conf_bits - 1;
+    num_reserved_conf_bits = mapped_block->pb->num_reserved_conf_bits;
+  }
+  if (0 < num_reserved_conf_bits) {
+    fprintf(fp, ",\n");
   }
   dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info,
                                    0, 
                                    num_reserved_conf_bits - 1,
                                    TRUE);
   /* Normal configuration ports */
-  fprintf(fp, ",\n");
   if (0 < (get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info) - cur_num_mem_bit)) { 
+    fprintf(fp, ",\n");
     dump_verilog_sram_ports(fp, sram_verilog_orgz_info,
-                            cur_num_mem_bit, get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info), 
+                            cur_num_mem_bit, 
+                            get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info) - 1, 
                             TRUE);
   }
   fprintf(fp, ");\n");
@@ -3346,6 +3393,7 @@ void dump_verilog_grid_blocks(FILE* fp,
                                   FALSE); 
     /* Reserved configuration ports */
     if (0 < temp_reserved_conf_bits_msb) { 
+      fprintf(fp, ",\n");
       dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info,
                                        0, temp_reserved_conf_bits_msb - 1,
                                        FALSE); 
@@ -3479,16 +3527,18 @@ void dump_verilog_physical_grid_blocks(FILE* fp,
   /* Reserved configuration ports */
   temp_reserved_conf_bits_msb = grid[ix][iy].type->pb_type->physical_mode_num_reserved_conf_bits; 
   if (0 < temp_reserved_conf_bits_msb) { 
+    fprintf(fp, ",\n");
     dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info,
                                      0, 
                                      temp_reserved_conf_bits_msb - 1,
                                      TRUE);
   }
   /* Normal configuration ports */
-  fprintf(fp, ",\n");
   if (0 < (get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info) - cur_num_mem_bit)) { 
+    fprintf(fp, ",\n");
     dump_verilog_sram_ports(fp, sram_verilog_orgz_info,
-                            cur_num_mem_bit, get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info), 
+                            cur_num_mem_bit, 
+                            get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info) - 1, 
                             TRUE);
   }
   fprintf(fp, ");\n");
@@ -3546,6 +3596,7 @@ void dump_verilog_physical_grid_blocks(FILE* fp,
     assert(!(0 > temp_conf_bits_msb - temp_conf_bits_lsb));
     /* Reserved configuration ports */
     if (0 < temp_reserved_conf_bits_msb) { 
+      fprintf(fp, ",\n");
       dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info,
                                        0, temp_reserved_conf_bits_msb - 1,
                                        FALSE); 

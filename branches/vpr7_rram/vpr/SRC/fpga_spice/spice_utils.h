@@ -419,3 +419,5 @@ void update_sram_orgz_info_num_mem_bit(t_sram_orgz_info* cur_sram_orgz_info,
                                        int new_num_mem_bit);
 void update_sram_orgz_info_num_blwl(t_sram_orgz_info* cur_sram_orgz_info,
                                     int new_bl, int new_wl);
+void get_sram_orgz_info_mem_model(t_sram_orgz_info* cur_sram_orgz_info,
+                                  t_spice_model** mem_model_ptr);

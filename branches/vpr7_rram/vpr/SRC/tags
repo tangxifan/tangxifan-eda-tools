@@ -1554,6 +1554,7 @@ count_netlist_ios_as_constrained_ios	timing/read_sdc.c	/^static void count_netli
 count_num_conf_bit_one_interc	fpga_spice/spice_utils.c	/^int count_num_conf_bit_one_interc(t_interconnect* cur_interc,$/;"	f
 count_num_conf_bits_one_spice_model	fpga_spice/spice_utils.c	/^int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,$/;"	f
 count_num_conf_bits_pb_type_mode_interc	fpga_spice/spice_utils.c	/^int count_num_conf_bits_pb_type_mode_interc(t_mode* cur_pb_type_mode,$/;"	f
+count_num_reserved_conf_bit_one_interc	fpga_spice/spice_utils.c	/^int count_num_reserved_conf_bit_one_interc(t_interconnect* cur_interc,$/;"	f
 count_num_reserved_conf_bits_one_spice_model	fpga_spice/spice_utils.c	/^int count_num_reserved_conf_bits_one_spice_model(t_spice_model* cur_spice_model,$/;"	f
 count_num_reserved_conf_bits_pb_type_mode_interc	fpga_spice/spice_utils.c	/^int count_num_reserved_conf_bits_pb_type_mode_interc(t_mode* cur_pb_type_mode,$/;"	f
 count_num_sram_bits_one_spice_model	fpga_spice/spice_utils.c	/^int count_num_sram_bits_one_spice_model(t_spice_model* cur_spice_model,$/;"	f
@@ -1561,9 +1562,11 @@ count_routing_memristor_buffer	mrfpga/buffer_insertion.c	/^void count_routing_me
 count_routing_transistors	route/rr_graph_area.c	/^void count_routing_transistors(enum e_directionality directionality,$/;"	f
 count_sinks_internal_cb_rr_graph_net_nums	base/read_netlist.c	/^static int count_sinks_internal_cb_rr_graph_net_nums($/;"	f	file:
 count_unidir_routing_transistors	route/rr_graph_area.c	/^void count_unidir_routing_transistors(t_segment_inf * segment_inf,$/;"	f
-count_verilog_connection_box_conf_bits	syn_verilog/verilog_routing.c	/^int count_verilog_connection_box_conf_bits(int num_ipin_rr_nodes,$/;"	f
 count_verilog_connection_box_conf_bits	syn_verilog/verilog_routing.c	/^int count_verilog_connection_box_conf_bits(t_cb cur_cb_info) {$/;"	f
 count_verilog_connection_box_interc_conf_bits	syn_verilog/verilog_routing.c	/^int count_verilog_connection_box_interc_conf_bits(t_rr_node* cur_rr_node) {$/;"	f
+count_verilog_connection_box_interc_reserved_conf_bits	syn_verilog/verilog_routing.c	/^int count_verilog_connection_box_interc_reserved_conf_bits(t_rr_node* cur_rr_node) {$/;"	f
+count_verilog_connection_box_one_side_conf_bits	syn_verilog/verilog_routing.c	/^int count_verilog_connection_box_one_side_conf_bits(int num_ipin_rr_nodes,$/;"	f
+count_verilog_connection_box_one_side_reserved_conf_bits	syn_verilog/verilog_routing.c	/^int count_verilog_connection_box_one_side_reserved_conf_bits(int num_ipin_rr_nodes,$/;"	f
 count_verilog_connection_box_reserved_conf_bits	syn_verilog/verilog_routing.c	/^int count_verilog_connection_box_reserved_conf_bits(t_cb cur_cb_info) {$/;"	f
 count_verilog_switch_box_conf_bits	syn_verilog/verilog_routing.c	/^int count_verilog_switch_box_conf_bits(t_sb cur_sb_info) {$/;"	f
 count_verilog_switch_box_interc_conf_bits	syn_verilog/verilog_routing.c	/^int count_verilog_switch_box_interc_conf_bits(int switch_box_x, int switch_box_y, int chan_side, $/;"	f
@@ -1778,6 +1781,7 @@ dump_verilog_idle_pb_graph_node_rec	syn_verilog/verilog_pbtypes.c	/^void dump_ve
 dump_verilog_io_grid_block_subckt_pins	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_io_grid_block_subckt_pins(FILE* fp,$/;"	f
 dump_verilog_io_grid_pins	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_io_grid_pins(FILE* fp,$/;"	f
 dump_verilog_logic_blocks	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_logic_blocks(char* subckt_dir,$/;"	f
+dump_verilog_mem_config_bus	syn_verilog/verilog_utils.c	/^void dump_verilog_mem_config_bus(FILE* fp, t_spice_model* mem_spice_model, $/;"	f
 dump_verilog_mux_basis_module	syn_verilog/verilog_submodules.c	/^void dump_verilog_mux_basis_module(FILE* fp, $/;"	f
 dump_verilog_mux_config_bus	syn_verilog/verilog_utils.c	/^void dump_verilog_mux_config_bus(FILE* fp, t_spice_model* mux_spice_model, $/;"	f
 dump_verilog_mux_module	syn_verilog/verilog_submodules.c	/^void dump_verilog_mux_module(FILE* fp, $/;"	f
@@ -1796,6 +1800,7 @@ dump_verilog_pb_type_ports	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_pb_
 dump_verilog_phy_pb_graph_node_rec	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_phy_pb_graph_node_rec(FILE* fp,$/;"	f
 dump_verilog_physical_block	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_physical_block(FILE* fp,$/;"	f
 dump_verilog_physical_grid_blocks	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_physical_grid_blocks(FILE* fp,$/;"	f
+dump_verilog_reserved_sram_one_port	syn_verilog/verilog_utils.c	/^void dump_verilog_reserved_sram_one_port(FILE* fp, $/;"	f
 dump_verilog_reserved_sram_ports	syn_verilog/verilog_utils.c	/^void dump_verilog_reserved_sram_ports(FILE* fp, $/;"	f
 dump_verilog_routing_chan_subckt	syn_verilog/verilog_routing.c	/^void dump_verilog_routing_chan_subckt(FILE* fp,$/;"	f
 dump_verilog_routing_connection_box_subckt	syn_verilog/verilog_routing.c	/^void dump_verilog_routing_connection_box_subckt(FILE* fp, t_cb cur_cb_info,$/;"	f
@@ -1806,6 +1811,7 @@ dump_verilog_rram_mux_one_basis_module	syn_verilog/verilog_submodules.c	/^void d
 dump_verilog_rram_mux_onelevel_structure	syn_verilog/verilog_submodules.c	/^void dump_verilog_rram_mux_onelevel_structure(FILE* fp, $/;"	f
 dump_verilog_rram_mux_submodule	syn_verilog/verilog_submodules.c	/^void dump_verilog_rram_mux_submodule(FILE* fp,$/;"	f
 dump_verilog_rram_mux_tree_structure	syn_verilog/verilog_submodules.c	/^void dump_verilog_rram_mux_tree_structure(FILE* fp, $/;"	f
+dump_verilog_sram_one_port	syn_verilog/verilog_utils.c	/^void dump_verilog_sram_one_port(FILE* fp, $/;"	f
 dump_verilog_sram_ports	syn_verilog/verilog_utils.c	/^void dump_verilog_sram_ports(FILE* fp, $/;"	f
 dump_verilog_sram_submodule	syn_verilog/verilog_utils.c	/^void dump_verilog_sram_submodule(FILE* fp, t_sram_orgz_info* cur_sram_orgz_info,$/;"	f
 dump_verilog_submodule_muxes	syn_verilog/verilog_submodules.c	/^void dump_verilog_submodule_muxes(char* submodule_dir,$/;"	f

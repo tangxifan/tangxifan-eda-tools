@@ -73,6 +73,8 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   int* conf_bits_per_sram = NULL;
   int num_conf_bits = 0;
   int num_reserved_conf_bits = 0;
+  int cur_bl, cur_wl;
+  t_spice_model* mem_model = NULL;
 
   /* Ensure a valid file handler*/ 
   if (NULL == fp) {
@@ -108,6 +110,8 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   assert(1 == num_sram_port);
   /* Count the number of configuration bits */
   num_sram = count_num_sram_bits_one_spice_model(verilog_model, -1);
+  /* Get memory model */
+  get_sram_orgz_info_mem_model(sram_verilog_orgz_info, &mem_model);
 
   /* Find the number of BLs/WLs of each SRAM */
   switch (sram_verilog_orgz_type) {
@@ -163,6 +167,7 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   dump_verilog_pb_type_ports(fp, port_prefix, 0, cur_pb_type, TRUE, TRUE); 
   /* Print SRAM ports */
   cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info); 
+  get_sram_orgz_info_num_blwl(sram_verilog_orgz_info, &cur_bl, &cur_wl);
   /* connect to reserved BL/WLs ? */
   num_reserved_conf_bits = count_num_reserved_conf_bits_one_spice_model(verilog_model, sram_verilog_orgz_info->type, 0);
   /* Get the number of configuration bits required by this MUX */
@@ -171,6 +176,9 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info, 
                                    0, num_reserved_conf_bits - 1,
                                    TRUE);
+  if ( 0 < num_reserved_conf_bits) {
+    fprintf(fp, ",\n");
+  }
   /* Normal sram ports */
   dump_verilog_sram_ports(fp, sram_verilog_orgz_info, 
                           cur_num_sram, cur_num_sram + num_conf_bits - 1,
@@ -201,10 +209,11 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   }
 
   /* Specify SRAM output are wires */
+  cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info);
   fprintf(fp, "wire [%d:%d] %s_out;\n",
-          sram_verilog_model->cnt + num_sram - 1, sram_verilog_model->cnt, sram_verilog_model->prefix);
+          cur_num_sram + num_sram - 1, cur_num_sram, mem_model->prefix);
   fprintf(fp, "wire [%d:%d] %s_outb;\n",
-          sram_verilog_model->cnt + num_sram - 1, sram_verilog_model->cnt, sram_verilog_model->prefix);
+          cur_num_sram + num_sram - 1, cur_num_sram, mem_model->prefix);
 
   /* Call LUT subckt*/
   fprintf(fp, "%s %s_%d_ (", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
@@ -224,9 +233,9 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   fprintf(fp, "//----- SRAM ports -----\n");
   /* Connect srams: TODO: to find the SRAM model used by this Verilog model */
   cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info);
-  fprintf(fp, "%s_out[%d:%d], ", sram_verilog_model->prefix, 
+  fprintf(fp, "%s_out[%d:%d], ", mem_model->prefix, 
           cur_num_sram + num_sram - 1, cur_num_sram); 
-  fprintf(fp, "%s_outb[%d:%d]", sram_verilog_model->prefix,
+  fprintf(fp, "%s_outb[%d:%d]", mem_model->prefix,
           cur_num_sram + num_sram - 1, cur_num_sram); 
   /* vdd should be connected to special global wire gvdd_lut and gnd,
    * Every LUT has a special VDD for statistics
@@ -246,17 +255,6 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   fprint_commented_sram_bits(fp, num_sram, sram_bits);
   fprintf(fp, "-----\n");
 
-  /* Call SRAM subckts only 
-   * when Configuration organization style is memory bank */
-  /* No. of SRAMs is different from the number of configuration lines.
-   * Especially when SRAMs/RRAMs are configured with BL/WLs
-   */
-  num_sram = count_num_sram_bits_one_spice_model(verilog_model, -1);
-  for (i = 0; i < num_sram; i++) {
-    dump_verilog_sram_submodule(fp, sram_verilog_orgz_info,
-                                sram_verilog_model); /* TODO: use the mem_model in sram_verilog_orgz_info */
-  }
-
   /* Decode the SRAM bits to BL/WL bits. */ 
   switch (sram_verilog_orgz_type) {
   case SPICE_SRAM_MEMORY_BANK:
@@ -274,11 +272,6 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
      * TODO: NUM_SRAM should be the as they are. 
      * Should use another variable i.e., num_bl
        */
-    update_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info,
-                                      cur_num_sram + num_sram);
-    update_sram_orgz_info_num_blwl(sram_verilog_orgz_info, 
-                                   cur_num_sram + num_sram * num_bl_per_sram,
-                                   cur_num_sram + num_sram * num_bl_per_sram);
     break;
   case SPICE_SRAM_STANDALONE:
   case SPICE_SRAM_SCAN_CHAIN:
@@ -286,13 +279,30 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
     add_mux_conf_bits_to_llist(0, sram_verilog_orgz_info, 
                                num_sram, sram_bits,
                                verilog_model);
-    update_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info,
-                                      cur_num_sram + num_sram);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid SRAM organization type!\n",
                __FILE__, __LINE__);
     exit(1);
+  }
+
+  /* Call SRAM subckts only 
+   * when Configuration organization style is memory bank */
+  /* No. of SRAMs is different from the number of configuration lines.
+   * Especially when SRAMs/RRAMs are configured with BL/WLs
+   */
+  num_sram = count_num_sram_bits_one_spice_model(verilog_model, -1);
+  for (i = 0; i < num_sram; i++) {
+    /* Dump the configuration port bus */
+    /*TODO: to be more smart!!! num_reserved_conf_bits and num_conf_bits/num_sram should be determined by each mem_bit */ 
+    cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info);
+    dump_verilog_mem_config_bus(fp, mem_model, sram_verilog_orgz_info,
+                                cur_num_sram, num_reserved_conf_bits, num_conf_bits/num_sram); 
+    /* This function should be called in the very end, 
+     * because we update the counter of mem_model after each sram submodule is dumped !!!
+     */
+    dump_verilog_sram_submodule(fp, sram_verilog_orgz_info,
+                                mem_model); /* use the mem_model in sram_verilog_orgz_info */
   }
 
   /* End of subckt*/

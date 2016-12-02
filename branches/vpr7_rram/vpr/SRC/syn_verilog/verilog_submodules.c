@@ -99,7 +99,9 @@ void dump_verilog_rram_mux_one_basis_module(FILE* fp,
   /* Port list */
   fprintf(fp, "input wire [0:%d] in,\n", num_input_basis_subckt - 1);
   fprintf(fp, "output reg out,\n");
-  fprintf(fp, "input wire [0:%d] bl,wl);\n",
+  fprintf(fp, "input wire [0:%d] bl,\n",
+          num_mem - 1);
+  fprintf(fp, "input wire [0:%d] wl);\n",
           num_mem - 1);
 
   /* Print the internal logics: 
@@ -485,7 +487,9 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
   fprintf(fp, "input wire [0:%d] %s,\n", mux_size - 1,  input_port[0]->prefix);
   /* Print output ports*/
   fprintf(fp, "output wire %s,\n", output_port[0]->prefix);
-  num_conf_bits = count_num_conf_bits_one_spice_model(&spice_model, sram_verilog_orgz_info->type, mux_size);
+  num_conf_bits = count_num_sram_bits_one_spice_model(&spice_model, 
+                                                      /* sram_verilog_orgz_info->type, */ 
+                                                      mux_size);
   fprintf(fp, "input wire [0:%d] %s,\n", 
           num_conf_bits - 1, sram_port[0]->prefix);
   fprintf(fp, "input wire [0:%d] %s_inv\n", 
@@ -792,8 +796,8 @@ void dump_verilog_rram_mux_onelevel_structure(FILE* fp,
   fprintf(fp, "mux2_l%d_in[0:%d],\n ", 1, spice_mux_arch.num_input - 1); /* inputs  */
   fprintf(fp, "mux2_l%d_in[%d],\n", 0, 0); /* output */
   fprintf(fp, "//----- SRAM ports -----\n");
-  num_conf_bits = count_num_conf_bits_one_spice_model(&spice_model, 
-                                                      sram_verilog_orgz_info->type, 
+  num_conf_bits = count_num_sram_bits_one_spice_model(&spice_model, 
+                                                      /* sram_verilog_orgz_info->type,*/ 
                                                       spice_mux_arch.num_input);
   fprintf(fp, "%s[0:%d], %s_inv[0:%d]", 
             sram_port[0]->prefix, num_conf_bits - 1, 
@@ -865,8 +869,8 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
   /* Print output ports*/
   fprintf(fp, "output wire %s,\n ", output_port[0]->prefix);
   /* Print configuration ports */
-  num_conf_bits = count_num_conf_bits_one_spice_model(&spice_model, 
-                                                      sram_verilog_orgz_info->type, 
+  num_conf_bits = count_num_sram_bits_one_spice_model(&spice_model, 
+                                                      /* sram_verilog_orgz_info->type,*/
                                                       mux_size);
   fprintf(fp, "input wire [0:%d] %s,\n", 
           num_conf_bits - 1, sram_port[0]->prefix);

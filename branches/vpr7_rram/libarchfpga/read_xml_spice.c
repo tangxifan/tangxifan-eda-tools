@@ -629,6 +629,9 @@ static void ProcessSpiceModel(ezxml_t Parent,
         vpr_printf(TIO_MESSAGE_INFO,"[LINE%d] Automatically convert structure of spice model(%s) to one-level.\n",
                    Node->line, spice_model->name);
       }
+    } else if (SPICE_MODEL_STRUCTURE_ONELEVEL == spice_model->design_tech_info.structure) {
+    /* Set mux_num_level for other structure: one-level and tree */
+      spice_model->design_tech_info.mux_num_level = 1;
     }
 	ezxml_set_attr(Node, "num_level", NULL);
     FreeNode(Node);

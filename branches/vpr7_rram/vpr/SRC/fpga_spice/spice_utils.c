@@ -2671,8 +2671,7 @@ int count_num_reserved_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
      */
       switch (cur_sram_orgz_type) {
       case SPICE_SRAM_MEMORY_BANK:
-        num_reserved_conf_bits = (int)pow(2.,(double)(lut_size));
-        assert(num_reserved_conf_bits == sram_ports[0]->size);
+        num_reserved_conf_bits = 1; /*TODO: to be more smart: num_bl-1 of SRAM model ?*/
         break;
       case SPICE_SRAM_SCAN_CHAIN:
       case SPICE_SRAM_STANDALONE:
@@ -2697,14 +2696,13 @@ int count_num_reserved_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
     /* Number of configuration bits depends on the MUX structure */
     switch (cur_spice_model->design_tech_info.structure) {
     case SPICE_MODEL_STRUCTURE_TREE:
-      num_reserved_conf_bits = determine_tree_mux_level(mux_size);
+      num_reserved_conf_bits = 2;
       break;
     case SPICE_MODEL_STRUCTURE_ONELEVEL:
       num_reserved_conf_bits = mux_size;
       break;
     case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-      num_reserved_conf_bits = cur_spice_model->design_tech_info.mux_num_level
-                             * determine_num_input_basis_multilevel_mux(mux_size, 
+      num_reserved_conf_bits = determine_num_input_basis_multilevel_mux(mux_size, 
                                cur_spice_model->design_tech_info.mux_num_level);
       break;
     default:
@@ -2724,7 +2722,6 @@ int count_num_reserved_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
        /* In memory bank, by intensively share the Bit/Word Lines,
         * we only need 1 additional BL and WL for each MUX level.
         */
-        num_reserved_conf_bits = num_reserved_conf_bits - cur_spice_model->design_tech_info.mux_num_level;
         /* For 2:1 MUX, whatever structure, there is only one level */
         if (2 == mux_size) {
           num_reserved_conf_bits = 2;
@@ -3294,6 +3291,12 @@ int rec_count_num_conf_bits_pb_type_default_mode(t_pb_type* cur_pb_type,
       for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
         /* Count in the number of configuration bits of on child pb_type */
         sum_num_conf_bits += cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_conf_bits;
+        temp_num_reserved_conf_bits = 
+                            cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_reserved_conf_bits;
+        /* number of reserved conf. bits is deteremined by the largest number of reserved conf. bits !*/
+        if (temp_num_reserved_conf_bits > num_reserved_conf_bits) {
+          num_reserved_conf_bits = temp_num_reserved_conf_bits;
+        }
       }
     }
     /* Count the number of configuration bits of interconnection */
@@ -3352,6 +3355,12 @@ int rec_count_num_conf_bits_pb_type_physical_mode(t_pb_type* cur_pb_type,
       for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
         /* Count in the number of configuration bits of on child pb_type */
         sum_num_conf_bits += cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_conf_bits;
+        temp_num_reserved_conf_bits = cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_reserved_conf_bits;
+
+        /* number of reserved conf. bits is deteremined by the largest number of reserved conf. bits !*/
+        if (temp_num_reserved_conf_bits > num_reserved_conf_bits) {
+          num_reserved_conf_bits = temp_num_reserved_conf_bits;
+        }
       }
     }
     /* Count the number of configuration bits of interconnection */
@@ -3381,7 +3390,7 @@ int rec_count_num_conf_bits_pb(t_pb* cur_pb,
   t_pb_type* cur_pb_type = NULL;
   t_pb_graph_node* cur_pb_graph_node = NULL;
   int sum_num_conf_bits = 0;
-  int sum_num_reserved_conf_bits = 0;
+  int num_reserved_conf_bits = 0;
   int temp_num_reserved_conf_bits = 0;
 
   /* Check cur_pb_graph_node*/
@@ -3435,9 +3444,16 @@ int rec_count_num_conf_bits_pb(t_pb* cur_pb,
         if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
           /* Count in the number of configuration bits of on child pb */
           sum_num_conf_bits += cur_pb->child_pbs[ipb][jpb].num_conf_bits;
+          temp_num_reserved_conf_bits = cur_pb->child_pbs[ipb][jpb].num_reserved_conf_bits;
         } else {
           /* Count in the number of configuration bits of on child pb_type */
           sum_num_conf_bits += cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_conf_bits;
+          temp_num_reserved_conf_bits = 
+                            cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_reserved_conf_bits;
+        }
+        /* number of reserved conf. bits is deteremined by the largest number of reserved conf. bits !*/
+        if (temp_num_reserved_conf_bits > num_reserved_conf_bits) {
+          num_reserved_conf_bits = temp_num_reserved_conf_bits;
         }
       }
     }
@@ -3449,11 +3465,11 @@ int rec_count_num_conf_bits_pb(t_pb* cur_pb,
                 count_num_reserved_conf_bits_pb_type_mode_interc(&(cur_pb_type->modes[mode_index]),
                                                                  cur_sram_orgz_type); 
     /* number of reserved conf. bits is deteremined by the largest number of reserved conf. bits !*/
-    if (temp_num_reserved_conf_bits > sum_num_reserved_conf_bits) {
-      sum_num_reserved_conf_bits = temp_num_reserved_conf_bits;
+    if (temp_num_reserved_conf_bits > num_reserved_conf_bits) {
+      num_reserved_conf_bits = temp_num_reserved_conf_bits;
     }
     /* Update the info in pb_type */
-    cur_pb->num_reserved_conf_bits = sum_num_reserved_conf_bits;
+    cur_pb->num_reserved_conf_bits = num_reserved_conf_bits;
     cur_pb->num_conf_bits = sum_num_conf_bits;
   }
 
@@ -4553,7 +4569,7 @@ add_mux_membank_conf_bits_to_llist(int mux_size,
                                    t_sram_orgz_info* cur_sram_orgz_info, 
                                    int num_mux_sram_bits, int* mux_sram_bits,
                                    t_spice_model* mux_spice_model) {
-  int ibit, cur_mem_bit, num_conf_bits, cur_bit;
+  int ibit, cur_mem_bit, num_conf_bits, cur_bit, cur_bl, cur_wl;
   int ilevel;
   int num_bl_enabled, num_wl_enabled;
   t_conf_bit** sram_bit = NULL;
@@ -4565,6 +4581,7 @@ add_mux_membank_conf_bits_to_llist(int mux_size,
   assert(NULL != mux_spice_model);
 
   cur_mem_bit = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info); 
+  get_sram_orgz_info_num_blwl(cur_sram_orgz_info, &cur_bl, &cur_wl);
 
   /* Depend on the design technology of mux_spice_model
    * Fill the conf_bits information  */
@@ -4649,7 +4666,7 @@ add_mux_membank_conf_bits_to_llist(int mux_size,
         }
         assert(1 == mux_sram_bits[ibit]);
         if (ibit == (ilevel + 1) * num_mux_sram_bits/(2*num_conf_bits) - 1) { 
-          bl_bit[cur_bit]->addr = cur_mem_bit + ilevel;
+          bl_bit[cur_bit]->addr = cur_bl + ilevel;
         /* Last conf_bit should use a new BL/WL */
         } else {
         /* First part of conf_bit should use reserved BL/WL */
@@ -4671,7 +4688,7 @@ add_mux_membank_conf_bits_to_llist(int mux_size,
         }
         assert(1 == mux_sram_bits[ibit]);
         if (ibit == num_mux_sram_bits/2 + (ilevel + 1) * num_mux_sram_bits/(2*num_conf_bits) - 1) { 
-          wl_bit[cur_bit]->addr = cur_mem_bit + ilevel;
+          wl_bit[cur_bit]->addr = cur_wl + ilevel;
         /* Last conf_bit should use a new BL/WL */
         } else {
         /* First part of conf_bit should use reserved BL/WL */
@@ -5168,6 +5185,34 @@ void update_sram_orgz_info_num_blwl(t_sram_orgz_info* cur_sram_orgz_info,
                __FILE__, __LINE__ );
     exit(1); 
   }
+  
+  return;
+}
+
+void get_sram_orgz_info_mem_model(t_sram_orgz_info* cur_sram_orgz_info,
+                                  t_spice_model** mem_model_ptr) {
+
+  assert(NULL != cur_sram_orgz_info);
+  assert(NULL != mem_model_ptr);
+
+  /* According to the type, we allocate structs */
+  switch (cur_sram_orgz_info->type) {
+  case SPICE_SRAM_STANDALONE:
+    (*mem_model_ptr) = cur_sram_orgz_info->standalone_sram_info->mem_model;
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+    (*mem_model_ptr) = cur_sram_orgz_info->scff_info->mem_model;
+    break;
+  case SPICE_SRAM_MEMORY_BANK:
+    (*mem_model_ptr) = cur_sram_orgz_info->mem_bank_info->mem_model;
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid type of SRAM organization!",
+               __FILE__, __LINE__ );
+    exit(1); 
+  }
+
+  assert(NULL != (*mem_model_ptr));
   
   return;
 }

@@ -187,9 +187,9 @@ void dump_verilog_defined_one_grid(FILE* fp,
   }
 
   if (IO_TYPE == grid[ix][iy].type) {
-    dump_verilog_io_grid_pins(fp, ix, iy, 1, FALSE, TRUE);
+    dump_verilog_io_grid_pins(fp, ix, iy, 1, FALSE, FALSE);
   } else {
-    dump_verilog_grid_pins(fp, ix, iy, 1, FALSE, TRUE);
+    dump_verilog_grid_pins(fp, ix, iy, 1, FALSE, FALSE);
   }
   /* Print Input Pad and Output Pad */
   dump_verilog_grid_common_port(fp, inpad_verilog_model, gio_input_prefix,
@@ -208,11 +208,18 @@ void dump_verilog_defined_one_grid(FILE* fp,
 
   /* Print configuration ports */
   /* Reserved configuration ports */
+  if (0 < sram_verilog_orgz_info->grid_reserved_conf_bits[ix][iy]) {
+    fprintf(fp, ",\n");
+  }
   dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info,
                                    0, 
                                    sram_verilog_orgz_info->grid_reserved_conf_bits[ix][iy] - 1,
                                    FALSE);
   /* Normal configuration ports */
+  if (0 < (sram_verilog_orgz_info->grid_conf_bits_msb[ix][iy]
+           - sram_verilog_orgz_info->grid_conf_bits_lsb[ix][iy])) {
+    fprintf(fp, ",\n");
+  }
   dump_verilog_sram_ports(fp, sram_verilog_orgz_info,
                           sram_verilog_orgz_info->grid_conf_bits_lsb[ix][iy],
                           sram_verilog_orgz_info->grid_conf_bits_msb[ix][iy] - 1,
@@ -546,10 +553,16 @@ void dump_verilog_defined_one_connection_box(FILE* fp,
  
   /* Configuration ports */
   /* Reserved sram ports */
+  if (0 < cur_cb_info.num_reserved_conf_bits) {
+    fprintf(fp, ",\n");
+  }
   dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info, 
                                    0, cur_cb_info.num_reserved_conf_bits - 1,
                                    TRUE);
   /* Normal sram ports */
+  if (0 < (cur_cb_info.conf_bits_msb - cur_cb_info.conf_bits_lsb)) {
+    fprintf(fp, ",\n");
+  }
   dump_verilog_sram_ports(fp, sram_verilog_orgz_info, 
                           cur_cb_info.conf_bits_lsb, cur_cb_info.conf_bits_msb - 1,
                           TRUE);
@@ -693,10 +706,16 @@ void dump_verilog_defined_one_switch_box(FILE* fp,
   /* Configuration ports */
   /* output of each configuration bit */
   /* Reserved sram ports */
+  if (0 < cur_sb_info.num_reserved_conf_bits) {
+    fprintf(fp, ",\n");
+  }
   dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info, 
                                    0, cur_sb_info.num_reserved_conf_bits - 1,
                                    FALSE);
   /* Normal sram ports */
+  if (0 < (cur_sb_info.conf_bits_msb - cur_sb_info.conf_bits_lsb)) {
+    fprintf(fp, ",\n");
+  }
   dump_verilog_sram_ports(fp, sram_verilog_orgz_info, 
                           cur_sb_info.conf_bits_lsb, 
                           cur_sb_info.conf_bits_msb - 1,
@@ -821,7 +840,7 @@ void dump_verilog_configuration_circuits_memory_bank(FILE* fp,
    * TODO: divide to a number of small decoders ?
    */
   /* Bit lines decoder */
-  fprintf(fp, "decoder%dto%d mem_bank_bl_decoder (",
+  fprintf(fp, "bl_decoder%dto%d mem_bank_bl_decoder (",
           bl_decoder_size, num_bl);
   /* Prefix of BL & WL is fixed, in order to simplify grouping nets */
   fprintf(fp, "en_bl, %s[%d:0], %s[%d:0]", 
@@ -830,7 +849,7 @@ void dump_verilog_configuration_circuits_memory_bank(FILE* fp,
   fprintf(fp, ");\n");
 
   /* Word lines decoder */
-  fprintf(fp, "decoder%dto%d mem_bank_wl_decoder (",
+  fprintf(fp, "wl_decoder%dto%d mem_bank_wl_decoder (",
           wl_decoder_size, num_wl);
   fprintf(fp, "en_wl, %s[%d:0], %s[%d:0] ",
           top_netlist_addr_wl_port_name, wl_decoder_size - 1, 
