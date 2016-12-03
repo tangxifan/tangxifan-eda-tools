@@ -1202,7 +1202,6 @@ void dump_verilog_pb_graph_pin_interc(FILE* fp,
     fprintf(fp, "%s_size%d_%d_ (", cur_interc->spice_model->prefix, fan_in, cur_interc->spice_model->cnt);
     fprintf(fp, "in_bus_%s_size%d_%d_, ",
             cur_interc->spice_model->name, fan_in, cur_interc->spice_model->cnt);
-    cur_interc->spice_model->cnt++;
     /* Inputs */
     /* Generate the pin_prefix for src_pb_graph_node and des_pb_graph_node*/
     generate_verilog_src_des_pb_graph_pin_prefix(src_pb_graph_node, des_pb_graph_node, pin2pin_interc_type, 

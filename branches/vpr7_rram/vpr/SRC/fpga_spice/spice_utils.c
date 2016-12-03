@@ -2702,7 +2702,8 @@ int count_num_reserved_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
       num_reserved_conf_bits = mux_size;
       break;
     case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-      num_reserved_conf_bits = determine_num_input_basis_multilevel_mux(mux_size, 
+      num_reserved_conf_bits = cur_spice_model->design_tech_info.mux_num_level * 
+                               determine_num_input_basis_multilevel_mux(mux_size, 
                                cur_spice_model->design_tech_info.mux_num_level);
       break;
     default:

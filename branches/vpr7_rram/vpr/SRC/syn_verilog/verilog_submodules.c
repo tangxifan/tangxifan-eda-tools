@@ -1142,10 +1142,11 @@ void dump_verilog_submodule_muxes(char* submodule_dir,
    */
   update_sram_orgz_info_reserved_blwl(sram_verilog_orgz_info, max_mux_size, max_mux_size);
   /* Reserve memory bit for reserved bl/wls, if required */
-  get_sram_orgz_info_num_blwl(sram_verilog_orgz_info, &cur_bl, &cur_wl);
+  get_sram_orgz_info_reserved_blwl(sram_verilog_orgz_info, &cur_bl, &cur_wl);
   if ((0 < cur_bl)||(0 < cur_wl)) {
     assert((max_mux_size == cur_bl)&&(max_mux_size == cur_wl));
     update_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info, max_mux_size);
+    update_sram_orgz_info_num_blwl(sram_verilog_orgz_info, max_mux_size, max_mux_size);
   }
 
   vpr_printf(TIO_MESSAGE_INFO,"Generated %d Multiplexer submodules.\n",

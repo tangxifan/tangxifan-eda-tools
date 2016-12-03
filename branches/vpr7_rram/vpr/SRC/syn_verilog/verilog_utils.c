@@ -909,20 +909,22 @@ void dump_verilog_grid_common_port(FILE* fp, t_spice_model* cur_verilog_model,
     exit(1);
   }
 
-  if ((NULL != cur_verilog_model)
-     &&(0 < (msb - lsb))) {
-    if (TRUE == dump_port_type) {
-      fprintf(fp, ",\n");
-      fprintf(fp, "  input [%d:%d] %s%s ", 
-              msb, lsb, general_port_prefix,
-              cur_verilog_model->prefix); 
-    } else {
-      fprintf(fp, ",\n");
-      fprintf(fp, " %s%s [%d:%d] ", 
-              general_port_prefix,
-              cur_verilog_model->prefix, 
-              msb, lsb); 
-    }
+  assert(NULL != cur_verilog_model);
+  if (0 >  msb- lsb) {
+    return;
+  }
+
+  if (TRUE == dump_port_type) {
+    fprintf(fp, ",\n");
+    fprintf(fp, "  input [%d:%d] %s%s ", 
+            msb, lsb, general_port_prefix,
+            cur_verilog_model->prefix); 
+  } else {
+    fprintf(fp, ",\n");
+    fprintf(fp, " %s%s [%d:%d] ", 
+            general_port_prefix,
+            cur_verilog_model->prefix, 
+            msb, lsb); 
   }
 
   return;

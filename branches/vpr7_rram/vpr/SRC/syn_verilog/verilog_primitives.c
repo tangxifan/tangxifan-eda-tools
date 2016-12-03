@@ -519,10 +519,8 @@ void dump_verilog_pb_primitive_io(FILE* fp,
                 verilog_model->prefix, verilog_model->cnt);
     /* Print SRAM ports */
     /* Connect srams: TODO: to find the SRAM model used by this Verilog model */
-    fprintf(fp, " %s_%d_configbus0, \n",
-            mem_model->prefix, mem_model->cnt);
-    fprintf(fp, " %s_%d_configbus1 \n",
-            mem_model->prefix, mem_model->cnt);
+    fprintf(fp, " %s_out[%d] \n",
+            mem_model->prefix, cur_num_sram);
     break;
   default:
     /* The rest is invalid */ 

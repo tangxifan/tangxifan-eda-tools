@@ -554,18 +554,17 @@ void dump_verilog_defined_one_connection_box(FILE* fp,
   /* Configuration ports */
   /* Reserved sram ports */
   if (0 < cur_cb_info.num_reserved_conf_bits) {
-    fprintf(fp, ",\n");
   }
   dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info, 
                                    0, cur_cb_info.num_reserved_conf_bits - 1,
-                                   TRUE);
+                                   FALSE);
   /* Normal sram ports */
   if (0 < (cur_cb_info.conf_bits_msb - cur_cb_info.conf_bits_lsb)) {
     fprintf(fp, ",\n");
   }
   dump_verilog_sram_ports(fp, sram_verilog_orgz_info, 
                           cur_cb_info.conf_bits_lsb, cur_cb_info.conf_bits_msb - 1,
-                          TRUE);
+                          FALSE);
  
   fprintf(fp, ");\n");
 
@@ -707,7 +706,6 @@ void dump_verilog_defined_one_switch_box(FILE* fp,
   /* output of each configuration bit */
   /* Reserved sram ports */
   if (0 < cur_sb_info.num_reserved_conf_bits) {
-    fprintf(fp, ",\n");
   }
   dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info, 
                                    0, cur_sb_info.num_reserved_conf_bits - 1,
