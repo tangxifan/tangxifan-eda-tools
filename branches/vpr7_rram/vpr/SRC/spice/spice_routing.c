@@ -24,11 +24,11 @@
 #include "linkedlist.h"
 #include "fpga_spice_globals.h"
 #include "spice_globals.h"
-#include "spice_utils.h"
+#include "fpga_spice_utils.h"
 #include "spice_mux.h"
 #include "spice_lut.h"
 #include "spice_primitives.h"
-#include "spice_backannotate_utils.h"
+#include "fpga_spice_backannotate_utils.h"
 #include "spice_routing.h"
 
 

@@ -24,8 +24,8 @@
 /* Include FPGA-SPICE utils */
 #include "read_xml_spice_util.h"
 #include "linkedlist.h"
-#include "spice_utils.h"
-#include "spice_backannotate_utils.h"
+#include "fpga_spice_utils.h"
+#include "fpga_spice_backannotate_utils.h"
 #include "spice_api.h"
 #include "fpga_spice_globals.h"
 

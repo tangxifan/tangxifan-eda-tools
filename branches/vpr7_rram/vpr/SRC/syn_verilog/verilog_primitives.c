@@ -22,7 +22,7 @@
 
 /* Include spice support headers*/
 #include "linkedlist.h"
-#include "spice_utils.h"
+#include "fpga_spice_utils.h"
 #include "fpga_spice_globals.h"
 
 /* Include verilog support headers*/
@@ -545,8 +545,8 @@ void dump_verilog_pb_primitive_io(FILE* fp,
     /* what is the SRAM bit of a mode? */
     /* If logical block is not NULL, we need to decode the sram bit */
     if (NULL != mapped_logical_block) {
-      assert(NULL != prim_pb_graph_node->pb_type->mode_bits);
-      sram_bits = decode_mode_bits(prim_pb_graph_node->pb_type->mode_bits, &expected_num_sram);
+      assert(NULL != mapped_logical_block->pb->pb_graph_node->pb_type->mode_bits);
+      sram_bits = decode_mode_bits(mapped_logical_block->pb->pb_graph_node->pb_type->mode_bits, &expected_num_sram);
       assert(expected_num_sram == num_sram);
     } else {
       /* Initialize */
@@ -556,13 +556,6 @@ void dump_verilog_pb_primitive_io(FILE* fp,
       }
     }
     /* SRAM_bit will be later reconfigured according to operating mode */
-    /* Call SRAM subckts only 
-     * when Configuration organization style is memory bank */
-    num_sram = count_num_sram_bits_one_spice_model(verilog_model, -1);
-    for (i = 0; i < num_sram; i++) {
-      dump_verilog_sram_submodule(fp, sram_verilog_orgz_info,
-                                  mem_model); /* use the mem_model in sram_verilog_orgz_info */
-    }
     switch (sram_verilog_orgz_type) {
     case SPICE_SRAM_MEMORY_BANK:
       for (i = 0; i < num_sram; i++) {
@@ -570,20 +563,13 @@ void dump_verilog_pb_primitive_io(FILE* fp,
        * first half part is BL, the other half part is WL 
        */
       /* Store the configuraion bit to linked-list */
-        decode_verilog_one_level_4t1r_mux(sram_bits[i], num_bl_per_sram, conf_bits_per_sram);
+        decode_verilog_one_level_4t1r_mux(sram_bits[i], 
+                                          num_bl_per_sram + num_wl_per_sram, 
+                                          conf_bits_per_sram);
         add_mux_conf_bits_to_llist(1, sram_verilog_orgz_info, 
-                                   num_bl_per_sram, conf_bits_per_sram,
+                                   num_bl_per_sram + num_wl_per_sram, conf_bits_per_sram,
                                    verilog_model);
       }
-      /* NUM_SRAM is set to be consistent with number of BL/WLs
-       * TODO: NUM_SRAM should be the as they are. 
-       * Should use another variable i.e., num_bl
-       */
-      update_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info,
-                                        cur_num_sram + num_conf_bits);
-      update_sram_orgz_info_num_blwl(sram_verilog_orgz_info, 
-                                     cur_bl + num_conf_bits,
-                                     cur_wl + num_conf_bits);
       break;
     case SPICE_SRAM_STANDALONE:
     case SPICE_SRAM_SCAN_CHAIN:
@@ -591,14 +577,19 @@ void dump_verilog_pb_primitive_io(FILE* fp,
       add_mux_conf_bits_to_llist(0, sram_verilog_orgz_info, 
                                  num_sram, sram_bits,
                                  verilog_model);
-      update_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info, cur_num_sram + num_conf_bits);
       break;
     default:
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid SRAM organization type!\n",
                  __FILE__, __LINE__);
       exit(1);
     }
-
+    /* Call SRAM subckts only 
+     * when Configuration organization style is memory bank */
+    num_sram = count_num_sram_bits_one_spice_model(verilog_model, -1);
+    for (i = 0; i < num_sram; i++) {
+      dump_verilog_sram_submodule(fp, sram_verilog_orgz_info,
+                                  mem_model); /* use the mem_model in sram_verilog_orgz_info */
+    }
     break;
   default:
     /* The rest is invalid */ 

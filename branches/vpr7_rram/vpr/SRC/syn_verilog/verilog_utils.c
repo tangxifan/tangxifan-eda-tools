@@ -26,7 +26,7 @@
 /* FPGA-SPICE utils */
 #include "read_xml_spice_util.h"
 #include "linkedlist.h"
-#include "spice_utils.h"
+#include "fpga_spice_utils.h"
 #include "fpga_spice_globals.h"
 
 /* syn_verilog globals */

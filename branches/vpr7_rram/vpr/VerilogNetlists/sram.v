@@ -30,8 +30,8 @@ input nequalize,
 input din, // Data input
 output dout, // Data output
 output doutb, // Data output
-input [0:1] bl, // Bit line control signal
-input [0:1] wl// Word line control signal
+input [0:2] bl, // Bit line control signal
+input [0:2] wl// Word line control signal
 );
   //----- local variable need to be registered
   reg a;

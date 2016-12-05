@@ -28,7 +28,7 @@
 #include "linkedlist.h"
 #include "fpga_spice_globals.h"
 #include "spice_globals.h"
-#include "spice_utils.h"
+#include "fpga_spice_utils.h"
 
 enum e_dir_err {
  E_DIR_NOT_EXIST,
@@ -2633,16 +2633,168 @@ int count_num_sram_bits_one_spice_model(t_spice_model* cur_spice_model,
   return num_sram_bits;
 }
 
+/* For a multiplexer, determine its reserved configuration bits */
+int count_num_reserved_conf_bits_one_lut_spice_model(t_spice_model* cur_spice_model,
+                                                     enum e_sram_orgz cur_sram_orgz_type) {
+  int num_reserved_conf_bits = 0;
+  int num_sram_port = 0;
+  t_spice_model_port** sram_ports = NULL;
+
+  /* Check */
+  assert(SPICE_MODEL_LUT == cur_spice_model->type);
+
+  /* Determine size of LUT*/
+  sram_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port);
+  assert(1 == num_sram_port);
+  /* TODO: could be more smart! Use mapped spice_model of SRAM ports!  
+   * Support Non-volatile RRAM-based SRAM */
+  switch (sram_ports[0]->spice_model->design_tech) {
+  case SPICE_MODEL_DESIGN_RRAM:
+  /* Non-volatile SRAM requires 2 BLs and 2 WLs for each 1 memory bit, 
+   * In memory bank, by intensively share the Bit/Word Lines,
+   * we only need 1 additional BL and WL for each memory bit.
+   * Number of memory bits is still same as CMOS SRAM
+   */
+    num_reserved_conf_bits = 
+      count_num_reserved_conf_bits_one_rram_sram_spice_model(sram_ports[0]->spice_model,
+                                                             cur_sram_orgz_type);
+    break;
+  case SPICE_MODEL_DESIGN_CMOS:
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of LUT(name: %s)\n",
+               __FILE__, __LINE__, cur_spice_model->name); 
+    exit(1);
+  }
+
+  /* Free */
+  my_free(sram_ports);
+
+  return num_reserved_conf_bits;
+}
+
+/* For a multiplexer, determine its reserved configuration bits */
+int count_num_reserved_conf_bits_one_mux_spice_model(t_spice_model* cur_spice_model,
+                                                     enum e_sram_orgz cur_sram_orgz_type,
+                                                     int mux_size) {
+  int num_reserved_conf_bits = 0;
+
+  /* Check */
+  assert(SPICE_MODEL_MUX == cur_spice_model->type);
+  assert((2 == mux_size)||(2 < mux_size));
+
+  /* Number of configuration bits depends on the MUX structure */
+  switch (cur_spice_model->design_tech_info.structure) {
+  case SPICE_MODEL_STRUCTURE_TREE:
+    num_reserved_conf_bits = 2;
+    break;
+  case SPICE_MODEL_STRUCTURE_ONELEVEL:
+    num_reserved_conf_bits = mux_size;
+    break;
+  case SPICE_MODEL_STRUCTURE_MULTILEVEL:
+    num_reserved_conf_bits = cur_spice_model->design_tech_info.mux_num_level * 
+                             determine_num_input_basis_multilevel_mux(mux_size, 
+                             cur_spice_model->design_tech_info.mux_num_level);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
+               __FILE__, __LINE__, cur_spice_model->name);
+    exit(1);
+  }
+  /* For 2:1 MUX, whatever structure, there is only one level */
+  if (2 == mux_size) {
+    num_reserved_conf_bits = 2;
+  }
+  /* Also the number of configuration bits depends on the technology*/
+  switch (cur_spice_model->design_tech) {
+  case SPICE_MODEL_DESIGN_RRAM:
+    switch (cur_sram_orgz_type) {
+    case SPICE_SRAM_MEMORY_BANK:
+     /* In memory bank, by intensively share the Bit/Word Lines,
+      * we only need 1 additional BL and WL for each MUX level.
+      */
+      /* For 2:1 MUX, whatever structure, there is only one level */
+      if (2 == mux_size) {
+        num_reserved_conf_bits = 2;
+      } 
+      break;
+    case SPICE_SRAM_SCAN_CHAIN:
+    case SPICE_SRAM_STANDALONE:
+      /* 4T1R MUX requires more configuration bits */
+      if (SPICE_MODEL_STRUCTURE_TREE == cur_spice_model->design_tech_info.structure) {
+      /* For tree-structure: we need 3 times more config. bits */
+        num_reserved_conf_bits = 0;
+      } else if (SPICE_MODEL_STRUCTURE_MULTILEVEL == cur_spice_model->design_tech_info.structure) {
+      /* For multi-level structure: we need 1 more config. bits for each level */
+        num_reserved_conf_bits = 0;
+      } else {
+        num_reserved_conf_bits = 0;
+      }
+      /* For 2:1 MUX, whatever structure, there is only one level */
+      if (2 == mux_size) {
+        num_reserved_conf_bits = 0;
+      } 
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid type of SRAM organization!\n",
+                 __FILE__, __LINE__); 
+      exit(1);
+    }
+    break;
+  case SPICE_MODEL_DESIGN_CMOS:
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of MUX(name: %s)\n",
+               __FILE__, __LINE__, cur_spice_model->name); 
+    exit(1);
+  }
+
+  return num_reserved_conf_bits;
+}
+
+/* For a non-volatile SRAM, we determine its number of reserved conf. bits */
+int count_num_reserved_conf_bits_one_rram_sram_spice_model(t_spice_model* cur_spice_model,
+                                                           enum e_sram_orgz cur_sram_orgz_type) {
+  int num_reserved_conf_bits = 0;
+  int num_bl_ports, num_wl_ports;
+  t_spice_model_port** bl_ports = NULL;
+  t_spice_model_port** wl_ports = NULL;
+
+  /* Check */
+  assert(SPICE_MODEL_SRAM == cur_spice_model->type);
+
+  switch (cur_sram_orgz_type) {
+  case SPICE_SRAM_MEMORY_BANK:
+    find_bl_wl_ports_spice_model(cur_spice_model,
+                                 &num_bl_ports, &bl_ports,
+                                 &num_wl_ports, &wl_ports);
+    assert((1 == num_bl_ports)&&(1 == num_wl_ports));
+    assert(bl_ports[0]->size == wl_ports[0]->size);
+    num_reserved_conf_bits = bl_ports[0]->size - 1; /*TODO: to be more smart: num_bl-1 of SRAM model ?*/
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+  case SPICE_SRAM_STANDALONE:
+    num_reserved_conf_bits = 0;
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid type of SRAM organization!\n",
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  /* Free */
+  my_free(bl_ports);
+  my_free(wl_ports);
+
+  return num_reserved_conf_bits;
+} 
+
 int count_num_reserved_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
                                                  enum e_sram_orgz cur_sram_orgz_type,
                                                  int mux_size) {
   int num_reserved_conf_bits = 0;
+  int temp_num_reserved_conf_bits = 0;
   int iport;
-  int lut_size;
-  int num_input_port = 0;
-  t_spice_model_port** input_ports = NULL;
-  int num_output_port = 0;
-  t_spice_model_port** output_ports = NULL;
   int num_sram_port = 0;
   t_spice_model_port** sram_ports = NULL;
 
@@ -2651,113 +2803,15 @@ int count_num_reserved_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
   /* Only LUT and MUX requires configuration bits*/
   switch (cur_spice_model->type) {
   case SPICE_MODEL_LUT:
-    /* Determine size of LUT*/
-    input_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port);
-    output_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port);
-    sram_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port);
-    assert(1 == num_input_port);
-    assert(1 == num_output_port);
-    assert(1 == num_sram_port);
-    lut_size = input_ports[0]->size;
-    assert(1 == output_ports[0]->size);
-    /* TODO: could be more smart! Use mapped spice_model of SRAM ports!  
-     * Support Non-volatile RRAM-based SRAM */
-    switch (sram_ports[0]->spice_model->design_tech) {
-    case SPICE_MODEL_DESIGN_RRAM:
-    /* Non-volatile SRAM requires 2 BLs and 2 WLs for each 1 memory bit, 
-     * In memory bank, by intensively share the Bit/Word Lines,
-     * we only need 1 additional BL and WL for each memory bit.
-     * Number of memory bits is still same as CMOS SRAM
-     */
-      switch (cur_sram_orgz_type) {
-      case SPICE_SRAM_MEMORY_BANK:
-        num_reserved_conf_bits = 1; /*TODO: to be more smart: num_bl-1 of SRAM model ?*/
-        break;
-      case SPICE_SRAM_SCAN_CHAIN:
-      case SPICE_SRAM_STANDALONE:
-        num_reserved_conf_bits = 0;
-        break;
-      default:
-        vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid type of SRAM organization!\n",
-                   __FILE__, __LINE__); 
-        exit(1);
-      }
-      break;
-    case SPICE_MODEL_DESIGN_CMOS:
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of LUT(name: %s)\n",
-                 __FILE__, __LINE__, cur_spice_model->name); 
-      exit(1);
-    }
+    num_reserved_conf_bits = 
+      count_num_reserved_conf_bits_one_lut_spice_model(cur_spice_model,
+                                                       cur_sram_orgz_type);
     break;
   case SPICE_MODEL_MUX:
-    assert((2 == mux_size)||(2 < mux_size));
-    /* Number of configuration bits depends on the MUX structure */
-    switch (cur_spice_model->design_tech_info.structure) {
-    case SPICE_MODEL_STRUCTURE_TREE:
-      num_reserved_conf_bits = 2;
-      break;
-    case SPICE_MODEL_STRUCTURE_ONELEVEL:
-      num_reserved_conf_bits = mux_size;
-      break;
-    case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-      num_reserved_conf_bits = cur_spice_model->design_tech_info.mux_num_level * 
-                               determine_num_input_basis_multilevel_mux(mux_size, 
-                               cur_spice_model->design_tech_info.mux_num_level);
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
-                 __FILE__, __LINE__, cur_spice_model->name);
-      exit(1);
-    }
-    /* For 2:1 MUX, whatever structure, there is only one level */
-    if (2 == mux_size) {
-      num_reserved_conf_bits = 2;
-    }
-    /* Also the number of configuration bits depends on the technology*/
-    switch (cur_spice_model->design_tech) {
-    case SPICE_MODEL_DESIGN_RRAM:
-      switch (cur_sram_orgz_type) {
-      case SPICE_SRAM_MEMORY_BANK:
-       /* In memory bank, by intensively share the Bit/Word Lines,
-        * we only need 1 additional BL and WL for each MUX level.
-        */
-        /* For 2:1 MUX, whatever structure, there is only one level */
-        if (2 == mux_size) {
-          num_reserved_conf_bits = 2;
-        } 
-        break;
-      case SPICE_SRAM_SCAN_CHAIN:
-      case SPICE_SRAM_STANDALONE:
-        /* 4T1R MUX requires more configuration bits */
-        if (SPICE_MODEL_STRUCTURE_TREE == cur_spice_model->design_tech_info.structure) {
-        /* For tree-structure: we need 3 times more config. bits */
-          num_reserved_conf_bits = 0;
-        } else if (SPICE_MODEL_STRUCTURE_MULTILEVEL == cur_spice_model->design_tech_info.structure) {
-        /* For multi-level structure: we need 1 more config. bits for each level */
-          num_reserved_conf_bits = 0;
-        } else {
-          num_reserved_conf_bits = 0;
-        }
-        /* For 2:1 MUX, whatever structure, there is only one level */
-        if (2 == mux_size) {
-          num_reserved_conf_bits = 0;
-        } 
-        break;
-      default:
-        vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid type of SRAM organization!\n",
-                   __FILE__, __LINE__); 
-        exit(1);
-      }
-      break;
-    case SPICE_MODEL_DESIGN_CMOS:
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of MUX(name: %s)\n",
-                 __FILE__, __LINE__, cur_spice_model->name); 
-      exit(1);
-    }
+    num_reserved_conf_bits = 
+      count_num_reserved_conf_bits_one_mux_spice_model(cur_spice_model,
+                                                       cur_sram_orgz_type,
+                                                       mux_size);
     break;
   case SPICE_MODEL_INPAD:
   case SPICE_MODEL_OUTPAD:
@@ -2814,18 +2868,11 @@ int count_num_reserved_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
         /* Non-volatile SRAM requires 2 BLs and 2 WLs for each 1 memory bit, 
          * Number of memory bits is still same as CMOS SRAM
          */
-          switch (cur_sram_orgz_type) {
-          case SPICE_SRAM_MEMORY_BANK:
-            num_reserved_conf_bits += sram_ports[iport]->size;
-            break;
-          case SPICE_SRAM_SCAN_CHAIN:
-          case SPICE_SRAM_STANDALONE:
-            num_reserved_conf_bits = 0;
-            break;
-          default:
-            vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid type of SRAM organization!\n",
-                       __FILE__, __LINE__); 
-            exit(1);
+          temp_num_reserved_conf_bits = 
+            count_num_reserved_conf_bits_one_rram_sram_spice_model(sram_ports[iport]->spice_model,
+                                                                   cur_sram_orgz_type);
+          if (temp_num_reserved_conf_bits > num_reserved_conf_bits) {
+            num_reserved_conf_bits = temp_num_reserved_conf_bits;
           }
           break;
         case SPICE_MODEL_DESIGN_CMOS:
@@ -2842,6 +2889,9 @@ int count_num_reserved_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid spice_model_type!\n", __FILE__, __LINE__);
     exit(1);
   }
+
+  /* Free */
+  my_free(sram_ports);
 
   return num_reserved_conf_bits;
 }
@@ -4775,8 +4825,8 @@ void find_bl_wl_ports_spice_model(t_spice_model* cur_spice_model,
   case SPICE_MODEL_DESIGN_RRAM:
     /* This check may be too tight */
     assert((*bl_ports)[0]->size == (*wl_ports)[0]->size);
-    assert(2 == (*bl_ports)[0]->size);
-    assert(2 == (*wl_ports)[0]->size);
+    assert(0 < (*bl_ports)[0]->size);
+    assert(0 < (*wl_ports)[0]->size);
     break;
   case SPICE_MODEL_DESIGN_CMOS:
     assert((*bl_ports)[0]->size == (*wl_ports)[0]->size);
@@ -4797,7 +4847,7 @@ int* decode_mode_bits(char* mode_bits, int* num_sram_bits) {
   int* sram_bits = NULL;
   int i;
   
-  assert(NULL == mode_bits);
+  assert(NULL != mode_bits);
   (*num_sram_bits) = strlen(mode_bits);
  
   sram_bits = (int*)my_calloc((*num_sram_bits), sizeof(int));

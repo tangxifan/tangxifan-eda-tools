@@ -28,7 +28,7 @@
 #include "linkedlist.h"
 #include "fpga_spice_globals.h"
 #include "spice_globals.h"
-#include "spice_utils.h"
+#include "fpga_spice_utils.h"
 #include "spice_lut.h"
 
 /* Alloc, initialize and free functions for sb_info & cb_info */

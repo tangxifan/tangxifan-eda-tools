@@ -22,7 +22,7 @@
 
 /* Include spice support headers*/
 #include "linkedlist.h"
-#include "spice_utils.h"
+#include "fpga_spice_utils.h"
 #include "spice_lut.h"
 #include "fpga_spice_globals.h"
 
@@ -94,6 +94,7 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
 
   /* Check if this is an idle logical block mapped*/
   if (NULL != mapped_logical_block) {
+    truth_table = assign_lut_truth_table(mapped_logical_block, &truth_table_length); 
     /* Back-annotate to logical block */
     mapped_logical_block->mapped_spice_model = verilog_model;
     mapped_logical_block->mapped_spice_model_index = verilog_model->cnt;
@@ -263,9 +264,11 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
        * first half part is BL, the other half part is WL 
        */
       /* Store the configuraion bit to linked-list */
-      decode_verilog_one_level_4t1r_mux(sram_bits[i], num_bl_per_sram, conf_bits_per_sram);
+      decode_verilog_one_level_4t1r_mux(sram_bits[i], 
+                                        num_bl_per_sram + num_wl_per_sram, 
+                                        conf_bits_per_sram);
       add_mux_conf_bits_to_llist(1, sram_verilog_orgz_info, 
-                                 num_bl_per_sram, conf_bits_per_sram,
+                                 num_bl_per_sram + num_wl_per_sram, conf_bits_per_sram,
                                  verilog_model);
     }
     /* NUM_SRAM is set to be consistent with number of BL/WLs

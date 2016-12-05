@@ -23,7 +23,7 @@
 
 /* Include FPGA-SPICE utils */
 #include "linkedlist.h"
-#include "spice_utils.h"
+#include "fpga_spice_utils.h"
 #include "spice_mux.h"
 #include "fpga_spice_globals.h"
 
@@ -1077,6 +1077,7 @@ void dump_verilog_submodule_muxes(char* submodule_dir,
   t_spice_mux_model* cur_spice_mux_model = NULL;
   
   int cur_bl, cur_wl;
+  int max_routing_mux_size = -1;
 
   /* Alloc the muxes*/
   muxes_head = stats_spice_muxes(num_switch, switches, spice, routing_arch);
@@ -1133,6 +1134,11 @@ void dump_verilog_submodule_muxes(char* submodule_dir,
     if ((-1 == min_mux_size)||(min_mux_size > cur_spice_mux_model->size)) {
       min_mux_size = cur_spice_mux_model->size;
     }
+    /* Exclude LUT MUX from this statistics */
+    if ((SPICE_MODEL_MUX == cur_spice_mux_model->spice_model->type)
+       &&((-1 == max_routing_mux_size)||(max_routing_mux_size < cur_spice_mux_model->size))) {
+      max_routing_mux_size = cur_spice_mux_model->size;
+    }
     /* Move on to the next*/
     temp = temp->next;
   }
@@ -1140,13 +1146,13 @@ void dump_verilog_submodule_muxes(char* submodule_dir,
   /* Determine reserved Bit/Word Lines if a memory bank is specified,
    * At least 1 BL/WL should be reserved! 
    */
-  update_sram_orgz_info_reserved_blwl(sram_verilog_orgz_info, max_mux_size, max_mux_size);
+  update_sram_orgz_info_reserved_blwl(sram_verilog_orgz_info, max_routing_mux_size, max_routing_mux_size);
   /* Reserve memory bit for reserved bl/wls, if required */
   get_sram_orgz_info_reserved_blwl(sram_verilog_orgz_info, &cur_bl, &cur_wl);
   if ((0 < cur_bl)||(0 < cur_wl)) {
-    assert((max_mux_size == cur_bl)&&(max_mux_size == cur_wl));
-    update_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info, max_mux_size);
-    update_sram_orgz_info_num_blwl(sram_verilog_orgz_info, max_mux_size, max_mux_size);
+    assert((max_routing_mux_size == cur_bl)&&(max_routing_mux_size == cur_wl));
+    update_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info, max_routing_mux_size);
+    update_sram_orgz_info_num_blwl(sram_verilog_orgz_info, max_routing_mux_size, max_routing_mux_size);
   }
 
   vpr_printf(TIO_MESSAGE_INFO,"Generated %d Multiplexer submodules.\n",

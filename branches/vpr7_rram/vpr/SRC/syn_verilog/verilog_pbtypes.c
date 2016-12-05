@@ -21,7 +21,7 @@
 
 /* Include SPICE support headers*/
 #include "linkedlist.h"
-#include "spice_utils.h"
+#include "fpga_spice_utils.h"
 #include "spice_mux.h"
 #include "fpga_spice_globals.h"
 
@@ -2277,15 +2277,34 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
   return;
 }
 
+/* Return a child_pb if it is mapped.*/
+t_pb* get_child_pb_for_phy_pb_graph_node(t_pb* cur_pb, int ipb, int jpb) {
+  t_pb* child_pb = NULL;
+  
+  /* TODO: more check ? */
+
+  if (NULL == cur_pb) {
+    return NULL;
+  }
+
+  if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
+    child_pb = &(cur_pb->child_pbs[ipb][jpb]);
+  }
+  
+  return child_pb;
+}
+
 /* Print physical mode of pb_types and configure it to the idle pb_types recursively
  * search the idle_mode until we reach the leaf node
  */
 void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
                                         char* subckt_prefix,
+                                        t_pb* cur_pb, 
                                         t_pb_graph_node* cur_pb_graph_node,
                                         int pb_type_index) {
-  int mode_index, ipb, jpb, child_mode_index;
+  int mode_index, ipb, jpb, child_mode_index, is_idle;
   t_pb_type* cur_pb_type = NULL;
+  t_pb* child_pb = NULL;
   char* subckt_name = NULL;
   char* formatted_subckt_prefix = format_verilog_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
   char* pass_on_prefix = NULL;
@@ -2319,7 +2338,13 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
                __FILE__, __LINE__); 
     exit(1);
   }
+
   cur_pb_type = cur_pb_graph_node->pb_type;
+
+  is_idle = 1;
+  if (NULL != cur_pb) {
+    is_idle = 0;
+  }
 
   /* Recursively finish all the child pb_types*/
   if (NULL == cur_pb_type->spice_model) { 
@@ -2336,7 +2361,10 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
         sprintf(pass_on_prefix, "%s%s_%d__mode_%s__", 
                 formatted_subckt_prefix, cur_pb_type->name, pb_type_index, cur_pb_type->modes[mode_index].name);
         /* Recursive*/
-        dump_verilog_phy_pb_graph_node_rec(fp, pass_on_prefix,
+        /* Refer to pack/output_clustering.c [LINE 392] */
+        /* Find the child pb that is mapped, and the mapping info is not stored in the physical mode ! */
+        child_pb = get_child_pb_for_phy_pb_graph_node(cur_pb, ipb, jpb);
+        dump_verilog_phy_pb_graph_node_rec(fp, pass_on_prefix, child_pb,
                                           &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]), jpb);
         /* Free */
         my_free(pass_on_prefix);
@@ -2350,21 +2378,21 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
     case LUT_CLASS: 
       /* Consider the num_pb, create all the subckts*/
       dump_verilog_pb_primitive_verilog_model(fp, formatted_subckt_prefix, 
-                                              NULL, cur_pb_graph_node, pb_type_index, 
-                                              cur_pb_type->spice_model, 1); /* last param means idle */
+                                              cur_pb, cur_pb_graph_node, pb_type_index, 
+                                              cur_pb_type->spice_model, is_idle); /* last param means idle */
     case LATCH_CLASS:
       assert(0 == cur_pb_type->num_modes);
       /* Consider the num_pb, create all the subckts*/
       dump_verilog_pb_primitive_verilog_model(fp, formatted_subckt_prefix, 
-                                              NULL, cur_pb_graph_node, pb_type_index, 
-                                              cur_pb_type->spice_model, 1); /* last param means idle */
+                                              cur_pb, cur_pb_graph_node, pb_type_index, 
+                                              cur_pb_type->spice_model, is_idle); /* last param means idle */
       break;
     case UNKNOWN_CLASS:
     case MEMORY_CLASS:
       /* Consider the num_pb, create all the subckts*/
       dump_verilog_pb_primitive_verilog_model(fp, formatted_subckt_prefix, 
-                                              NULL, cur_pb_graph_node, pb_type_index, 
-                                              cur_pb_type->spice_model, 1); /* last param means idle */
+                                              cur_pb, cur_pb_graph_node, pb_type_index, 
+                                              cur_pb_type->spice_model, is_idle); /* last param means idle */
       break;  
     default:
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Unknown class type of pb_type(%s)!\n",
@@ -2661,6 +2689,8 @@ void dump_verilog_physical_block(FILE* fp,
                                  int z,
                                  t_type_ptr type_descriptor) {
   t_pb_graph_node* top_pb_graph_node = NULL;
+  t_block* mapped_block = NULL;
+  t_pb* top_pb = NULL;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -2676,8 +2706,14 @@ void dump_verilog_physical_block(FILE* fp,
   top_pb_graph_node = type_descriptor->pb_graph_head;
   assert(NULL != top_pb_graph_node);
 
+  /* Check in all the mapped blocks(clustered logic block), there is a match x,y,z*/
+  mapped_block = search_mapped_block(x, y, z); 
+  if (NULL != mapped_block) {
+    top_pb = mapped_block->pb; 
+  }
+
   /* Recursively find all idle mode and print netlist*/
-  dump_verilog_phy_pb_graph_node_rec(fp, subckt_name, top_pb_graph_node, z);
+  dump_verilog_phy_pb_graph_node_rec(fp, subckt_name, top_pb, top_pb_graph_node, z);
 
   return;
 }

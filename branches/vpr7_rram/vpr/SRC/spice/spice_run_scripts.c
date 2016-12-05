@@ -26,7 +26,7 @@
 #include "linkedlist.h"
 #include "fpga_spice_globals.h"
 #include "spice_globals.h"
-#include "spice_utils.h"
+#include "fpga_spice_utils.h"
 #include "spice_subckt.h"
 #include "spice_pbtypes.h"
 #include "spice_heads.h"

@@ -23,8 +23,8 @@
 
 /* Include spice support headers*/
 #include "linkedlist.h"
-#include "spice_utils.h"
-#include "spice_backannotate_utils.h"
+#include "fpga_spice_utils.h"
+#include "fpga_spice_backannotate_utils.h"
 #include "fpga_spice_setup.h"
 #include "spice_api.h"
 #include "syn_verilog_api.h"

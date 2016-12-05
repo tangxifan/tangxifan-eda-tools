@@ -257,6 +257,16 @@ int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
                                         enum e_sram_orgz cur_sram_orgz_type,
                                         int mux_size);
 
+int count_num_reserved_conf_bits_one_lut_spice_model(t_spice_model* cur_spice_model,
+                                                     enum e_sram_orgz cur_sram_orgz_type);
+
+int count_num_reserved_conf_bits_one_mux_spice_model(t_spice_model* cur_spice_model,
+                                                     enum e_sram_orgz cur_sram_orgz_type,
+                                                     int mux_size);
+
+int count_num_reserved_conf_bits_one_rram_sram_spice_model(t_spice_model* cur_spice_model,
+                                                           enum e_sram_orgz cur_sram_orgz_type);
+
 int count_num_reserved_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
                                                  enum e_sram_orgz cur_sram_orgz_type,
                                                  int mux_size);
