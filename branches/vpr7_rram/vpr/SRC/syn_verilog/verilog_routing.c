@@ -719,6 +719,11 @@ void dump_verilog_switch_box_mux(FILE* fp,
           verilog_model->prefix, mux_size,
           verilog_model->prefix, mux_size, verilog_model->cnt);
 
+  /* Dump global ports */
+  if  (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model, FALSE, FALSE)) {
+    fprintf(fp, ",\n");
+  }
+
   fprintf(fp, "%s_size%d_%d_inbus, ",
           verilog_model->prefix, mux_size, verilog_model->cnt);
 
@@ -1406,6 +1411,12 @@ void dump_verilog_connection_box_mux(FILE* fp,
   fprintf(fp, "%s_size%d %s_size%d_%d_ (", 
           verilog_model->name, mux_size, 
           verilog_model->prefix, mux_size, verilog_model->cnt);
+
+  /* Dump global ports */
+  if  (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model, FALSE, FALSE)) {
+    fprintf(fp, ",\n");
+  }
+
   /* connect to input bus*/
   fprintf(fp, "%s_size%d_%d_inbus,",
                verilog_model->prefix, mux_size, verilog_model->cnt);

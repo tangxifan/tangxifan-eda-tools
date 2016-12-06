@@ -1227,7 +1227,7 @@ void fprint_spice_pb_graph_primitive_node(FILE* fp,
   fprint_pb_type_ports(fp, subckt_name, 0, cur_pb_type);
   /* Connected to SRAMs */
   /* Configure the SRAMs to be idle*/
-  spice_model_sram_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_SRAM, &num_spice_model_sram_port); 
+  spice_model_sram_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_SRAM, &num_spice_model_sram_port, TRUE); 
   for (iport = 0; iport < num_spice_model_sram_port; iport++) {
     for(ipin = 0; ipin < spice_model_sram_ports[iport]->size; ipin++) {
       fprintf(fp, "sgnd ");

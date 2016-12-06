@@ -100,14 +100,14 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
     mapped_logical_block->mapped_spice_model_index = verilog_model->cnt;
   }
   /* Determine size of LUT*/
-  input_ports = find_spice_model_ports(verilog_model, SPICE_MODEL_PORT_INPUT, &num_input_port);
-  output_ports = find_spice_model_ports(verilog_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port);
+  input_ports = find_spice_model_ports(verilog_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+  output_ports = find_spice_model_ports(verilog_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
   assert(1 == num_input_port);
   assert(1 == num_output_port);
   lut_size = input_ports[0]->size;
   assert(1 == output_ports[0]->size);
   /* Find SRAM ports */
-  sram_ports = find_spice_model_ports(verilog_model, SPICE_MODEL_PORT_SRAM, &num_sram_port);
+  sram_ports = find_spice_model_ports(verilog_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
   assert(1 == num_sram_port);
   /* Count the number of configuration bits */
   num_sram = count_num_sram_bits_one_spice_model(verilog_model, -1);

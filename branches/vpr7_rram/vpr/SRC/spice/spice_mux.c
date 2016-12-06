@@ -915,9 +915,9 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
   assert(SPICE_MODEL_DESIGN_CMOS == spice_model.design_tech);
 
   /* Find the input port, output port, and sram port*/
-  input_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port);
-  output_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port);
-  sram_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port);
+  input_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+  output_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
+  sram_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
 
   /* Asserts*/
   assert(1 == num_input_port);
@@ -1126,9 +1126,9 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
   assert(SPICE_MODEL_DESIGN_RRAM == spice_model.design_tech);
 
   /* Find the input port, output port, and sram port*/
-  input_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port);
-  output_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port);
-  sram_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port);
+  input_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+  output_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
+  sram_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
 
   /* Asserts*/
   assert(1 == num_input_port);
@@ -1536,8 +1536,8 @@ void generate_spice_muxes(char* subckt_dir,
     cur_spice_mux_model = (t_spice_mux_model*)(temp->dptr);
     /* Bypass the spice models who has a user-defined subckt */
     if (NULL != cur_spice_mux_model->spice_model->model_netlist) {
-      input_ports = find_spice_model_ports(cur_spice_mux_model->spice_model, SPICE_MODEL_PORT_INPUT, &num_input_ports);
-      sram_ports = find_spice_model_ports(cur_spice_mux_model->spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_ports);
+      input_ports = find_spice_model_ports(cur_spice_mux_model->spice_model, SPICE_MODEL_PORT_INPUT, &num_input_ports, TRUE);
+      sram_ports = find_spice_model_ports(cur_spice_mux_model->spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_ports, TRUE);
       assert(0 != num_input_ports);
       assert(0 != num_sram_ports);
       /* Check the Input port size */

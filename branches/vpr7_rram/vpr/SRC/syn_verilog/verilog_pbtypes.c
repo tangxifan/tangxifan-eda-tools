@@ -1113,6 +1113,10 @@ void dump_verilog_pb_graph_pin_interc(FILE* fp,
                                                cur_interc, formatted_parent_pin_prefix, &src_pin_prefix, &des_pin_prefix);
     /* Call the subckt that has already been defined before */
     fprintf(fp, "%s ", cur_interc->spice_model->name);
+    /* Dump global ports */
+    if  (0 < rec_dump_verilog_spice_model_global_ports(fp, cur_interc->spice_model, FALSE, FALSE)) {
+      fprintf(fp, ",\n");
+    }
     fprintf(fp, "%s_%d_ (", cur_interc->spice_model->prefix, cur_interc->spice_model->cnt); 
     cur_interc->spice_model->cnt++; /* Stats the number of spice_model used*/
     /* Print the pin names! Input and output
@@ -1200,9 +1204,13 @@ void dump_verilog_pb_graph_pin_interc(FILE* fp,
     /* Call the subckt that has already been defined before */
     fprintf(fp, "%s_size%d ", cur_interc->spice_model->name, fan_in);
     fprintf(fp, "%s_size%d_%d_ (", cur_interc->spice_model->prefix, fan_in, cur_interc->spice_model->cnt);
+    /* Dump global ports */
+    if  (0 < rec_dump_verilog_spice_model_global_ports(fp, cur_interc->spice_model, FALSE, FALSE)) {
+      fprintf(fp, ",\n");
+    }
+    /* Inputs */
     fprintf(fp, "in_bus_%s_size%d_%d_, ",
             cur_interc->spice_model->name, fan_in, cur_interc->spice_model->cnt);
-    /* Inputs */
     /* Generate the pin_prefix for src_pb_graph_node and des_pb_graph_node*/
     generate_verilog_src_des_pb_graph_pin_prefix(src_pb_graph_node, des_pb_graph_node, pin2pin_interc_type, 
                                                cur_interc, formatted_parent_pin_prefix, &src_pin_prefix, &des_pin_prefix);

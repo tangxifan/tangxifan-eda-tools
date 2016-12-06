@@ -424,7 +424,8 @@ int rec_dump_verilog_spice_model_global_ports(FILE* fp,
     /* Update counter */
     dumped_port_cnt++;
   }
-
+  
+  fprintf(fp, "\n");
   fprintf(fp, "//----- END Global ports of SPICE_MODEL(%s)-----\n",
           cur_spice_model->name);
 

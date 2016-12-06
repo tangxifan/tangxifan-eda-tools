@@ -74,9 +74,9 @@ void fprint_pb_primitive_ff(FILE* fp,
   }
 
   /* Find ports*/
-  input_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port);
-  output_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port);
-  clock_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_CLOCK, &num_clock_port);
+  input_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+  output_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
+  clock_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_CLOCK, &num_clock_port, TRUE);
 
   /* Asserts */
   assert(3 == num_input_port); /* D, Set and Reset*/
@@ -212,9 +212,9 @@ void fprint_pb_primitive_hardlogic(FILE* fp,
   }
 
   /* Find ports*/
-  input_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port);
-  output_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port);
-  clock_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_CLOCK, &num_clock_port);
+  input_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+  output_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
+  clock_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_CLOCK, &num_clock_port, TRUE);
 
   /* Asserts */
   assert(SPICE_MODEL_HARDLOGIC == spice_model->type);
@@ -301,9 +301,9 @@ void fprint_pb_primitive_io(FILE* fp,
   }
 
   /* Find ports*/
-  input_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port);
-  output_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port);
-  clock_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_CLOCK, &num_clock_port);
+  input_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+  output_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
+  clock_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_CLOCK, &num_clock_port, TRUE);
 
   /* Asserts */
   assert((SPICE_MODEL_INPAD == spice_model->type)||(SPICE_MODEL_OUTPAD == spice_model->type));

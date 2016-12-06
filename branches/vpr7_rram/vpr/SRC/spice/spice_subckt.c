@@ -361,8 +361,8 @@ void fprint_spice_wire_model(FILE* fp,
   assert(NULL != spice_model.wire_param);
   assert(0 < spice_model.wire_param->level);
   /* Find the input port, output port*/
-  input_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port);
-  output_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port);
+  input_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+  output_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
 
   /* Asserts*/
   assert(1 == num_input_port);

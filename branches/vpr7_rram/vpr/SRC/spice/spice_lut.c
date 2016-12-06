@@ -50,7 +50,7 @@ void stats_lut_spice_mux(t_llist** muxes_head,
   assert(SPICE_MODEL_LUT == spice_model->type); 
 
   /* Get input ports */
-  input_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port);
+  input_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
   assert(1 == num_input_port);
   lut_mux_size = (int)pow(2.,(double)(input_ports[0]->size));
 
@@ -275,9 +275,9 @@ void fprint_spice_lut_subckt(FILE* fp,
   }
   
   /* Find input ports, output ports and sram ports*/
-  input_ports = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port);
-  output_ports = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port);
-  sram_ports = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port);
+  input_ports = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+  output_ports = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
+  sram_ports = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
 
   /* Check */
   assert(1 == num_input_port);
@@ -515,9 +515,9 @@ void fprint_pb_primitive_lut(FILE* fp,
     mapped_logical_block->mapped_spice_model_index = spice_model->cnt;
   }
   /* Determine size of LUT*/
-  input_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port);
-  output_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port);
-  sram_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port);
+  input_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+  output_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
+  sram_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
   assert(1 == num_input_port);
   assert(1 == num_output_port);
   assert(1 == num_sram_port);

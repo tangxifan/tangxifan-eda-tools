@@ -369,7 +369,7 @@ void config_spice_model_input_output_buffers_pass_gate(int num_spice_models,
  */
 t_spice_model_port** find_spice_model_ports(t_spice_model* spice_model,
                                             enum e_spice_model_port_type port_type,
-                                            int* port_num) {
+                                            int* port_num, boolean ignore_global_port) {
   int iport, cur;
   t_spice_model_port** ret = NULL;
 
@@ -380,6 +380,11 @@ t_spice_model_port** find_spice_model_ports(t_spice_model* spice_model,
   /* Count the number of ports that match*/
   (*port_num) = 0;
   for (iport = 0; iport < spice_model->num_port; iport++) {
+    /* ignore global port if user specified */
+    if ((TRUE == ignore_global_port)
+       &&(TRUE == spice_model->ports[iport].is_global)) {
+      continue;
+    }
     if (port_type == spice_model->ports[iport].type) {
       (*port_num)++;
     }
@@ -392,6 +397,11 @@ t_spice_model_port** find_spice_model_ports(t_spice_model* spice_model,
   /* Fill the return pointers*/
   cur = 0;
   for (iport = 0; iport < spice_model->num_port; iport++) {
+    /* ignore global port if user specified */
+    if ((TRUE == ignore_global_port)
+       &&(TRUE == spice_model->ports[iport].is_global)) {
+      continue;
+    }
     if (port_type == spice_model->ports[iport].type) {
       ret[cur] = &(spice_model->ports[iport]);
       cur++;
@@ -2512,9 +2522,9 @@ int count_num_sram_bits_one_spice_model(t_spice_model* cur_spice_model,
   switch (cur_spice_model->type) {
   case SPICE_MODEL_LUT:
     /* Determine size of LUT*/
-    input_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port);
-    output_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port);
-    sram_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port);
+    input_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+    output_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
+    sram_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
     assert(1 == num_input_port);
     assert(1 == num_output_port);
     assert(1 == num_sram_port);
@@ -2600,7 +2610,7 @@ int count_num_sram_bits_one_spice_model(t_spice_model* cur_spice_model,
   case SPICE_MODEL_IOPAD:
     /* Other block, we just count the number SRAM ports defined by user */
     num_sram_bits = 0;
-    sram_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port);
+    sram_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
     /* TODO: could be more smart! 
      * Support Non-volatile RRAM-based SRAM */
     if (0 < num_sram_port) {
@@ -2644,7 +2654,7 @@ int count_num_reserved_conf_bits_one_lut_spice_model(t_spice_model* cur_spice_mo
   assert(SPICE_MODEL_LUT == cur_spice_model->type);
 
   /* Determine size of LUT*/
-  sram_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port);
+  sram_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
   assert(1 == num_sram_port);
   /* TODO: could be more smart! Use mapped spice_model of SRAM ports!  
    * Support Non-volatile RRAM-based SRAM */
@@ -2854,7 +2864,7 @@ int count_num_reserved_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
   case SPICE_MODEL_IOPAD:
     /* Other block, we just count the number SRAM ports defined by user */
     num_reserved_conf_bits = 0;
-    sram_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port);
+    sram_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
     /* TODO: could be more smart! 
      * Support Non-volatile RRAM-based SRAM */
     if (0 < num_sram_port) {
@@ -2918,9 +2928,9 @@ int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
   switch (cur_spice_model->type) {
   case SPICE_MODEL_LUT:
     /* Determine size of LUT*/
-    input_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port);
-    output_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port);
-    sram_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port);
+    input_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+    output_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
+    sram_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
     assert(1 == num_input_port);
     assert(1 == num_output_port);
     assert(1 == num_sram_port);
@@ -3067,7 +3077,7 @@ int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
   case SPICE_MODEL_IOPAD:
     /* Other block, we just count the number SRAM ports defined by user */
     num_conf_bits = 0;
-    sram_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port);
+    sram_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
     /* TODO: could be more smart! 
      * Support Non-volatile RRAM-based SRAM */
     if (0 < num_sram_port) {
@@ -4314,7 +4324,7 @@ void check_sram_spice_model_ports(t_spice_model* cur_spice_model,
   assert(SPICE_MODEL_SRAM == cur_spice_model->type);
 
   /* Check if we has 1 input other than global ports */
-  input_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_INPUT, &num_input_ports);
+  input_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_INPUT, &num_input_ports, TRUE);
   num_global_ports = 0;
   for (iport = 0; iport < num_input_ports; iport++) {
     if (TRUE == input_ports[iport]->is_global) {
@@ -4332,7 +4342,7 @@ void check_sram_spice_model_ports(t_spice_model* cur_spice_model,
     }
   }
   /* Check if we has 1 output with size 2 */
-  output_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_ports);
+  output_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_ports, TRUE);
   num_global_ports = 0;
   for (iport = 0; iport < num_output_ports; iport++) {
     if (TRUE == output_ports[iport]->is_global) {
@@ -4357,7 +4367,7 @@ void check_sram_spice_model_ports(t_spice_model* cur_spice_model,
     }
   }
   /* If bl and wl are required, check their existence */
-  bl_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_BL, &num_bl_ports);
+  bl_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_BL, &num_bl_ports, TRUE);
   if (1 != num_bl_ports) {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) SRAM SPICE MODEL with BL and WL should have only 1 BL port!\n",
                __FILE__, __LINE__);
@@ -4370,7 +4380,7 @@ void check_sram_spice_model_ports(t_spice_model* cur_spice_model,
     }
   }
 
-  wl_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_WL, &num_wl_ports);
+  wl_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_WL, &num_wl_ports, TRUE);
   if (1 != num_wl_ports) {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) SRAM SPICE MODEL with WL and WL should have only 1 WL port!\n",
                __FILE__, __LINE__);
@@ -4414,7 +4424,7 @@ void check_ff_spice_model_ports(t_spice_model* cur_spice_model,
     assert(SPICE_MODEL_SCFF == cur_spice_model->type);
   }
   /* Check if we have D, Set and Reset */
-  input_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_INPUT, &num_input_ports);
+  input_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_INPUT, &num_input_ports, TRUE);
   if (3 != num_input_ports) {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) [FF|SCFF] SPICE MODEL should have only 3 input port!\n",
                __FILE__, __LINE__);
@@ -4428,7 +4438,7 @@ void check_ff_spice_model_ports(t_spice_model* cur_spice_model,
     }
   }
   /* Check if we have clock */
-  clock_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_CLOCK, &num_clock_ports);
+  clock_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_CLOCK, &num_clock_ports, TRUE);
   if (1 != num_clock_ports) {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) [FF|SCFF] SPICE MODEL should have only 1 clock port!\n",
                __FILE__, __LINE__);
@@ -4440,7 +4450,7 @@ void check_ff_spice_model_ports(t_spice_model* cur_spice_model,
     }
   }
   /* Check if we have output */
-  output_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_ports);
+  output_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_ports, TRUE);
   if (FALSE == is_scff) {
     if (1 != output_ports[0]->size) {
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) FF SPICE MODEL: each output port with size 1!\n",
@@ -4810,9 +4820,9 @@ void find_bl_wl_ports_spice_model(t_spice_model* cur_spice_model,
   assert(NULL != cur_spice_model); 
 
   /* Find BL ports */
-  (*bl_ports) = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_BL, num_bl_ports);
+  (*bl_ports) = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_BL, num_bl_ports, TRUE);
   /* Find WL ports */
-  (*wl_ports) = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_WL, num_wl_ports);
+  (*wl_ports) = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_WL, num_wl_ports, TRUE);
 
   /* port size of BL/WL should be at least 1 !*/
   assert(1 == (*num_bl_ports));

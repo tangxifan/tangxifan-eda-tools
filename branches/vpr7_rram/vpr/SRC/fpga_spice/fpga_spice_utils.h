@@ -33,7 +33,7 @@ void config_spice_model_input_output_buffers_pass_gate(int num_spice_models,
 
 t_spice_model_port** find_spice_model_ports(t_spice_model* spice_model,
                                             enum e_spice_model_port_type port_type,
-                                            int* port_num);
+                                            int* port_num, boolean ignore_global_port);
 
 void fprint_spice_head(FILE* fp,
                        char* usage);
