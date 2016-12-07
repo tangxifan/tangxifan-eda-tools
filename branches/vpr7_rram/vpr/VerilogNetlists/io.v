@@ -3,9 +3,9 @@
 //------ Author: Xifan TANG -----//
 module iopad(
 input zin, // Set output to be Z
-inout pad, // bi-directional pad
 output din, // Data input
 input dout, // Data output
+inout pad, // bi-directional pad
 input direction // enable signal to control direction of iopad
 );
   //----- when EN enabled, the direction is input

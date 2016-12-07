@@ -606,7 +606,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
       }
       /* Each inv: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
       fprintf(fp, "not inv_out ("); /* Given name*/
-      fprintf(fp, "mux2_l%d_in%d, ", 0, 0); /* input port */ 
+      fprintf(fp, "mux2_l%d_in[%d], ", 0, 0); /* input port */ 
       fprintf(fp, "%s );", output_port[0]->prefix); /* Output port*/
       fprintf(fp, "\n");
       break;
@@ -616,7 +616,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
       }
       /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
       fprintf(fp, "buf buf_out ("); /* Given name*/
-      fprintf(fp, "mux2_l%d_in%d, ", 0, 0); /* input port */ 
+      fprintf(fp, "mux2_l%d_in[%d], ", 0, 0); /* input port */ 
       fprintf(fp, "%s );", output_port[0]->prefix); /* Output port*/
       fprintf(fp, "\n");
       break;
@@ -630,7 +630,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
       /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
       fprintf(fp, "tapbuf_level%d_f%d buf_out (",
               spice_model.output_buffer->tap_buf_level, spice_model.output_buffer->f_per_stage); /* subckt name */
-      fprintf(fp, "mux2_l%d_in%d, ", 0, 0); /* input port */ 
+      fprintf(fp, "mux2_l%d_in[%d], ", 0, 0); /* input port */ 
       fprintf(fp, "%s );", output_port[0]->prefix); /* Output port*/
       fprintf(fp, "\n");
     }

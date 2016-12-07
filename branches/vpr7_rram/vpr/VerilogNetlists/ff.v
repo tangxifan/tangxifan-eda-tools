@@ -5,11 +5,13 @@
 // Coder       : Xifan TANG
 //-----------------------------------------------------
 module static_dff (
+/* Global ports go first */
+input set,     // set input
+input reset, // Reset input 
+input clk, // Clock Input
+/* Local ports follow */
 input D, // Data Input
-output Q, // Q output 
-input clk    , // Clock Input
-input reset , // Reset input 
-input set     // set input
+output Q // Q output 
 );
 //------------Internal Variables--------
 reg q;
