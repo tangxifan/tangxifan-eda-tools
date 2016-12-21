@@ -202,6 +202,7 @@ static void ProcessSpiceStimulateParamsRiseFall(ezxml_t Parent,
 static void ProcessSpiceStimulateParams(ezxml_t Parent,
                                         t_spice_stimulate_params* stimulate_params) {
   ezxml_t Node;
+
   /* Check */
   if (stimulate_params == NULL) {
     vpr_printf(TIO_MESSAGE_ERROR,"(File: %s,[LINE%d])stimulate_params is NULL!\n", __FILE__, __LINE__);
@@ -211,12 +212,21 @@ static void ProcessSpiceStimulateParams(ezxml_t Parent,
   /* Find Clock */
   Node = FindElement(Parent, "clock", FALSE);
   if (Node) {
-    /* freq, sim_slack */
-    stimulate_params->clock_freq = 0.;
-    stimulate_params->clock_freq = GetFloatProperty(Node, "freq", FALSE, 0);
-    ezxml_set_attr(Node, "freq", NULL);
+    /* op_freq, sim_slack, prog_freq */
+    stimulate_params->op_clock_freq = OPEN;
+    /* op_freq (operation clock frequency) must be defined, either as a number or as "auto" */
+    if (0 == strcmp("auto", FindProperty(Node, "op_freq", TRUE))) {
+      /* We need a sim_slack */
+    } else {
+      stimulate_params->op_clock_freq = GetFloatProperty(Node, "op_freq", TRUE, OPEN);
+      /* We do not need a sim_slack */
+    } 
+    ezxml_set_attr(Node, "op_freq", NULL);
+    /* Read sim_slack */
     stimulate_params->sim_clock_freq_slack = GetFloatProperty(Node, "sim_slack", FALSE, 0.2);
     ezxml_set_attr(Node, "sim_slack", NULL);
+    /* Read prog_freq (programming clock frequency): mandatory! */
+    stimulate_params->prog_clock_freq = GetFloatProperty(Node, "prog_freq", TRUE, OPEN);
     /* For rising/falling slew */
     ProcessSpiceStimulateParamsRiseFall(Node, &(stimulate_params->clock_slew_rise_time), &(stimulate_params->clock_slew_fall_time), &(stimulate_params->clock_slew_rise_type), &(stimulate_params->clock_slew_fall_type));
     /* Free */

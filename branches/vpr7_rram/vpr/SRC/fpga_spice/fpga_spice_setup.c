@@ -53,6 +53,25 @@ void rec_add_pb_type_keywords_to_list(t_pb_type* cur_pb_type,
                                       char** keywords,
                                       char* prefix);
 
+static 
+int check_conflict_syntax_char_in_string(t_llist* LL_reserved_syntax_char_head,
+                                         char* str_to_check);
+
+static 
+void check_spice_model_name_conflict_syntax_char(t_arch Arch,
+                                                 t_llist* LL_reseved_syntax_char_head);
+
+static 
+t_llist* init_llist_verilog_and_spice_syntax_char();
+
+static 
+boolean is_verilog_and_spice_syntax_conflict_char(t_llist* LL_reserved_syntax_char_head, 
+                                                  char ref_char);
+
+static 
+void check_and_rename_io_logical_block_names(t_llist* LL_reserved_syntax_char_head,
+                                             int LL_num_logical_blocks, t_logical_block* LL_logical_block);
+
 /***** Subroutines *****/
 
 /* Map (synchronize) pb_type ports to SPICE model ports
@@ -741,7 +760,7 @@ t_llist* check_and_add_one_global_port_to_llist(t_llist* old_head,
  * if a port is defined to be global, we add its pointer to the linked list
  */
 static 
-t_llist* init_list_global_ports(t_spice* spice) {
+t_llist* init_llist_global_ports(t_spice* spice) {
   int imodel, iport;
   t_llist* head = NULL;
 
@@ -760,6 +779,144 @@ t_llist* init_list_global_ports(t_spice* spice) {
   return head;
 }
 
+/* Check how many conflicts of syntax char in a string */
+static 
+int check_conflict_syntax_char_in_string(t_llist* LL_reserved_syntax_char_head,
+                                         char* str_to_check) {
+  int num_conflicts = 0;
+  int len_str_to_check = strlen(str_to_check);
+  int ichar = 0;
+
+  for (ichar = 0; ichar < len_str_to_check; ichar++) {
+    if (TRUE == is_verilog_and_spice_syntax_conflict_char(LL_reserved_syntax_char_head, 
+                                                          str_to_check[ichar])) {
+      /* Print warning */
+      vpr_printf(TIO_MESSAGE_ERROR, "String (%s) contains conflicted chars[%c] which is not allowed by Verilog and SPICE!\n",
+                                    str_to_check, str_to_check[ichar]);
+      num_conflicts++; 
+    }
+  }
+
+  return num_conflicts;
+}
+
+/* Check if each spice_model name contains any syntax char, which is reseved by SPICE or Verilog */
+static 
+void check_spice_model_name_conflict_syntax_char(t_arch Arch,
+                                                 t_llist* LL_reserved_syntax_char_head) {
+  int imodel, iport;
+  int num_conflicts = 0;
+
+  /* Check spice_model one by one */
+  for (imodel = 0; imodel < Arch.spice->num_spice_model; imodel++) {
+    /* Check spice_model->name */
+    num_conflicts += check_conflict_syntax_char_in_string(LL_reserved_syntax_char_head,
+                                                          Arch.spice->spice_models[imodel].name);
+    /* Check spice_model->prefix */
+    num_conflicts += check_conflict_syntax_char_in_string(LL_reserved_syntax_char_head,
+                                                          Arch.spice->spice_models[imodel].prefix);
+    /* Check each port name */
+    for (iport = 0; iport < Arch.spice->spice_models[imodel].num_port; iport++) {
+      num_conflicts += check_conflict_syntax_char_in_string(LL_reserved_syntax_char_head,
+                                                            Arch.spice->spice_models[imodel].ports[iport].prefix);
+    }
+  }
+
+  if (0 < num_conflicts) {
+    /* Print warning */
+    vpr_printf(TIO_MESSAGE_ERROR, "Fail in syntax char checking, conflicts have been detected!\n");
+    exit(1);
+  }
+
+  return;
+}
+
+/* Initialize a linked-list for syntax char of Verilog and SPICE */
+static 
+t_llist* init_llist_verilog_and_spice_syntax_char() {
+  t_llist* new_head = NULL;
+  int num_syntax_chars = 0;
+  char* syntax_chars = NULL;
+  t_reserved_syntax_char* new_syntax_char = NULL;
+  int ichar = 0;
+  
+  syntax_chars = my_strdup(".,:;\'\"+-<>()[]{}!@#$%^&*~`?/");
+  num_syntax_chars = strlen(syntax_chars);
+
+  /* Create a new element */
+  for (ichar = 0; ichar < num_syntax_chars; ichar++) { 
+    new_syntax_char = (t_reserved_syntax_char*)(my_malloc(sizeof(t_reserved_syntax_char)));
+    new_head = insert_llist_node_before_head(new_head);
+    new_head->dptr = (void*)new_syntax_char;
+    init_reserved_syntax_char(new_syntax_char, syntax_chars[ichar], TRUE, TRUE);
+  }
+
+  return new_head;
+}
+
+/* Check if a char violates the syntax of Verilog and SPICE */
+static 
+boolean is_verilog_and_spice_syntax_conflict_char(t_llist* LL_reserved_syntax_char_head, 
+                                                  char ref_char) {
+  boolean syntax_conflict = FALSE;
+  t_llist* temp = LL_reserved_syntax_char_head;
+  t_reserved_syntax_char* cur_syntax_char = NULL;
+
+  /* Search the conflict linked list ? */
+  while (NULL != temp) {
+    cur_syntax_char = (t_reserved_syntax_char*)(temp->dptr);
+    if (ref_char == cur_syntax_char->syntax_char) {
+      syntax_conflict = TRUE;
+      break;
+    } 
+    /* go to the next */
+    temp = temp->next;
+  }
+ 
+  return syntax_conflict;
+}
+
+/* Check and rename the name of each IO logical block
+ * if the current name violates syntax of SPICE or Verilog 
+ */
+static 
+void check_and_rename_io_logical_block_names(t_llist* LL_reserved_syntax_char_head,
+                                             int LL_num_logical_blocks, t_logical_block* LL_logical_block) {
+  int iblock, ichar, name_str_len;
+  char renamed_char = '_';
+  boolean io_renamed = FALSE;
+  char* temp_io_name = NULL;
+
+  vpr_printf(TIO_MESSAGE_INFO, "Check IO pad names, to avoid violate SPICE or Verilog Syntax...\n");
+
+  for (iblock = 0; iblock < LL_num_logical_blocks; iblock++) {
+    /* Bypass non-IO logical blocks */
+    if ((VPACK_INPAD != logical_block[iblock].type)&&(VPACK_OUTPAD != logical_block[iblock].type)) {
+      continue;
+    }
+    /* initialize the flag */
+    io_renamed = FALSE;
+    /* Keep a copy of previous name */
+    temp_io_name = my_strdup(logical_block[iblock].name);
+    /* Check names character by charcter */
+    name_str_len = strlen(logical_block[iblock].name); /* exclude the last character: \0, which does require to be checked */
+    for (ichar = 0; ichar < name_str_len; ichar++) {
+      /* Check syntax senstive list, if violates, rename it to be '_' */
+      if (TRUE == is_verilog_and_spice_syntax_conflict_char(LL_reserved_syntax_char_head, logical_block[iblock].name[ichar])) {
+        logical_block[iblock].name[ichar] = renamed_char;
+        io_renamed = TRUE;
+      }
+    } 
+    /* Print a warning if */
+    if (TRUE == io_renamed) {
+      vpr_printf(TIO_MESSAGE_WARNING, "I/O is renamed from %s to %s\n",
+                                      temp_io_name, logical_block[iblock].name);
+    }
+  } 
+
+  return;
+}
+
 /* Top-level function of FPGA-SPICE setup */
 void fpga_spice_setup(t_vpr_setup vpr_setup,
                       t_arch* Arch) {
@@ -767,19 +924,32 @@ void fpga_spice_setup(t_vpr_setup vpr_setup,
   int num_clocks = 0;
   float vpr_crit_path_delay = 0.; 
   float vpr_clock_freq = 0.; 
+  float vpr_clock_period = 0.; 
 
 
+  vpr_printf(TIO_MESSAGE_INFO, "\nFPGA-SPICE Tool suites Initilization begins...\n"); 
+  
   /* Initialize Arch SPICE MODELS*/
   init_check_arch_spice_models(Arch, &(vpr_setup.RoutingArch));
 
   /* Create and initialize a linked list for global ports */
-  global_ports_head = init_list_global_ports(Arch->spice);
+  global_ports_head = init_llist_global_ports(Arch->spice);
   vpr_printf(TIO_MESSAGE_INFO, "Detect %d global ports...\n", 
              find_length_llist(global_ports_head) );
+
+  /* Build llist for verilog and spice syntax char  */
+  vpr_printf(TIO_MESSAGE_INFO, "Initialize reserved Verilog and SPICE syntax chars...\n"); 
+  reserved_syntax_char_head = init_llist_verilog_and_spice_syntax_char();
 
   /* Initialize verilog netlist to be included */
   /* Add keyword checking */
   check_keywords_conflict(*Arch);
+  /* TODO: check spice_model names conflict with SPICE or Verilog syntax */
+  vpr_printf(TIO_MESSAGE_INFO, "Checking spice_model compatible with syntax chars...\n"); 
+  check_spice_model_name_conflict_syntax_char(*Arch, reserved_syntax_char_head);
+
+  /* Check and rename io names to avoid violating SPICE or Verilog syntax */
+  check_and_rename_io_logical_block_names(reserved_syntax_char_head, num_logical_blocks, logical_block);
 
   /* Check Activity file is valid */
   if (TRUE == vpr_setup.FPGA_SPICE_Opts.read_act_file) {
@@ -810,7 +980,26 @@ void fpga_spice_setup(t_vpr_setup vpr_setup,
   }
   Arch->spice->spice_params.stimulate_params.num_clocks = num_clocks;
   Arch->spice->spice_params.stimulate_params.vpr_crit_path_delay = vpr_crit_path_delay;
+  vpr_clock_period = 1./vpr_clock_freq;
   auto_select_num_sim_clock_cycle(Arch->spice);
+
+ /* Determine the clock period */
+  if (OPEN == Arch->spice->spice_params.stimulate_params.op_clock_freq) {
+    /* warning the negative slack ! TODO: move to the general check part??? */
+    if (0. > Arch->spice->spice_params.stimulate_params.sim_clock_freq_slack) {
+      assert(0. < (1 + Arch->spice->spice_params.stimulate_params.sim_clock_freq_slack));
+      vpr_printf(TIO_MESSAGE_WARNING, "Slack for clock frequency(=%g) is less than 0! The simulation may fail!\n",
+                 Arch->spice->spice_params.stimulate_params.sim_clock_freq_slack);
+    }
+    Arch->spice->spice_params.stimulate_params.op_clock_freq = 1./(vpr_clock_period *(1. + Arch->spice->spice_params.stimulate_params.sim_clock_freq_slack));
+  } else {
+    /* Simulate clock frequency should be larger than 0 !*/
+    assert(0. < Arch->spice->spice_params.stimulate_params.op_clock_freq);
+  } 
+  vpr_printf(TIO_MESSAGE_INFO, "Use Operation Clock freqency %.2f [MHz] in SPICE simulation.\n",
+             Arch->spice->spice_params.stimulate_params.op_clock_freq / 1e6);
+  vpr_printf(TIO_MESSAGE_INFO, "Use Programming Clock freqency %.2f [MHz] in SPICE simulation.\n",
+             Arch->spice->spice_params.stimulate_params.prog_clock_freq / 1e6);
 
   return;
 }

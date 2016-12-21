@@ -25,6 +25,9 @@ extern int run_parasitic_net_estimation;
 
 /* Linked list for global ports */
 extern t_llist* global_ports_head;
+
+/* Linked list for verilog and spice syntax char */
+extern t_llist* reserved_syntax_char_head;
  
 /* Enumeration */
 enum e_pin2pin_interc_type {

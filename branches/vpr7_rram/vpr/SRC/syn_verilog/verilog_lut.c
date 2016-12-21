@@ -267,9 +267,10 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
       decode_verilog_one_level_4t1r_mux(sram_bits[i], 
                                         num_bl_per_sram + num_wl_per_sram, 
                                         conf_bits_per_sram);
+      /* Use memory model here! Design technology of memory model determines the decoding strategy, instead of LUT model*/
       add_mux_conf_bits_to_llist(1, sram_verilog_orgz_info, 
                                  num_bl_per_sram + num_wl_per_sram, conf_bits_per_sram,
-                                 verilog_model);
+                                 mem_model); 
     }
     /* NUM_SRAM is set to be consistent with number of BL/WLs
      * TODO: NUM_SRAM should be the as they are. 

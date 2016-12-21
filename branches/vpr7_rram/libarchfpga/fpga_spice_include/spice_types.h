@@ -262,8 +262,9 @@ struct s_spice_stimulate_params {
   
   /* clock freqency: could be custimized or following the estimated critical path */
   int num_clocks;
-  float vpr_crit_path_delay;
-  float clock_freq;
+  float vpr_crit_path_delay; /* Reference operation clock frequency */
+  float op_clock_freq; /* Operation clock frequency*/
+  float prog_clock_freq; /* Programming clock frequency, used during programming phase only */
   /* Simulation Clock frequency slack: In this case, we follow the estimated critical path. 
    * For simulation, usually we use a slack that make sure the circuit can run... */
   float sim_clock_freq_slack;
@@ -336,6 +337,14 @@ struct s_spicetb_info {
   int num_sim_clock_cycles;
 };
 
+/* A struct containing a syntax_char that is reserved by Verilog or SPICE */
+typedef struct s_reserved_syntax_char t_reserved_syntax_char;
+struct s_reserved_syntax_char {
+  char syntax_char;
+  boolean verilog_reserved;
+  boolean spice_reserved;
+};
+
 /* A struct to contain Address and its value */
 typedef struct s_conf_bit t_conf_bit;
 struct s_conf_bit {
@@ -355,10 +364,6 @@ struct s_conf_bit_info {
   /* Which spice model this conf. bit belongs to */
   t_spice_model* parent_spice_model;
   int parent_spice_model_index;
-  /* Paired configuration bit, ONLY valid for RRAM MUX.
-   * indicate that a BL should be enabled at the same time as WL  
-   */
-  t_conf_bit_info* pair_conf_bit;
   /* index of this conf_bit in a top-level testbench */
   int index_in_top_tb;
   /* TODO: add location information?

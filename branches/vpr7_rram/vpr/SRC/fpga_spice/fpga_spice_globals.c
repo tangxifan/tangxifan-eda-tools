@@ -31,6 +31,9 @@ int** num_conf_bits_cby = NULL;
 /* Linked list for global ports */
 t_llist* global_ports_head = NULL;
 
+/* Linked list for verilog and spice syntax char */
+t_llist* reserved_syntax_char_head = NULL;
+
 /* Default value of a signal */
 int default_signal_init_value = 0;
 

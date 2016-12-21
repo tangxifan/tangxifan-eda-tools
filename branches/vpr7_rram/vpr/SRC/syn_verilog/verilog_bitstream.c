@@ -175,7 +175,7 @@ void rec_dump_conf_bits_to_bitstream_file(FILE* fp,
     /* Bit line address */
     /* If this WL is selected , we decode its index to address */
     wl_addr = (char*)my_calloc(wl_decoder_size + 1, sizeof(char));
-    assert(NULL != cur_conf_bit_info->bl);
+    assert(NULL != cur_conf_bit_info->wl);
     encode_decoder_addr(cur_conf_bit_info->wl->addr, wl_decoder_size, wl_addr);
     fprintf(fp, "wl'%s = %d, ", wl_addr, cur_conf_bit_info->wl->val);
     fprintf(fp, "// Configuration bit No.: %d, ", cur_conf_bit_info->index);

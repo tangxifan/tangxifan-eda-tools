@@ -116,19 +116,10 @@ void fprint_spice_stimulate_header(char* stimulate_file_name,
    * We define the clock frequency with estimated value and slack
    */
   fprintf(fp, "***** Frequency *****\n");
-  if (0. == spice_stimulate_params.clock_freq) {
-    /* warning the negative slack ! TODO: move to the general check part??? */
-    if (0. > spice_stimulate_params.sim_clock_freq_slack) {
-      vpr_printf(TIO_MESSAGE_WARNING, "Slack for clock frequency(=%g) is less than 0! The simulation may fail!\n",
-                 spice_stimulate_params.sim_clock_freq_slack);
-    }
-    sim_clock_freq = 1./(vpr_clock_period *(1. + spice_stimulate_params.sim_clock_freq_slack));
-  } else {
-    sim_clock_freq = spice_stimulate_params.clock_freq;
-  } 
+  sim_clock_freq = spice_stimulate_params.op_clock_freq;
   /* Simulate clock frequency should be larger than 0 !*/
   assert(0. < sim_clock_freq); /*TODO: check this earlier!!! */
-  vpr_printf(TIO_MESSAGE_INFO, "Use Clock freqency %.2f [MHz] in SPICE simulation.\n", sim_clock_freq/1e6);
+  /* vpr_printf(TIO_MESSAGE_INFO, "Use Clock freqency %.2f [MHz] in SPICE simulation.\n", sim_clock_freq/1e6); */
   fprintf(fp, ".param clock_period=%g\n", 1. / sim_clock_freq);
   sim_clock_period = 1./sim_clock_freq;
 

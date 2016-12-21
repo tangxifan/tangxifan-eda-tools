@@ -53,6 +53,7 @@ void vpr_fpga_spice_tool_suites(t_vpr_setup vpr_setup,
   if (TRUE == vpr_setup.FPGA_SPICE_Opts.do_fpga_spice) {
     /* Free all the backannotation containing post routing information */
     free_backannotate_vpr_post_route_info();
+    /* TODO: free other linked lists ! */
   }
 
   return;

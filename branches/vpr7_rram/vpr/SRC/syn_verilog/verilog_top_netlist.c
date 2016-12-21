@@ -37,12 +37,11 @@
 
 
 /* Global varaiable only accessible in this source file*/
-static int prog_clock_cycle_delay_unit = 2;
-static int op_clock_cycle_delay_unit = 2;
 static char* top_netlist_addr_bl_port_name = "addr_bl";
 static char* top_netlist_addr_wl_port_name = "addr_wl";
 static char* top_netlist_bl_port_name = "bl_bus";
 static char* top_netlist_wl_port_name = "wl_bus";
+static float verilog_sim_timescale = 1e-9; // Verilog Simulation time scale (minimum time unit) : 1ns
 
 /* Local Subroutines declaration */
 
@@ -885,6 +884,37 @@ void dump_verilog_configuration_circuits(FILE* fp) {
   return;
 }
 
+/* Wire global clock ports to operation clock  */
+static 
+void dump_verilog_top_testbench_wire_global_clock_ports(FILE* fp, t_llist* head,
+                                                        char* op_clock_port_name) {
+  t_llist* temp = head;
+  t_spice_model_port* cur_global_port = NULL;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+  }
+
+  while(NULL != temp) {
+    cur_global_port = (t_spice_model_port*)(temp->dptr); 
+    if (SPICE_MODEL_PORT_CLOCK != cur_global_port->type) {
+      /* Go to the next */
+      temp = temp->next;
+      continue;
+    }
+    assert(1 == cur_global_port->size);
+    fprintf(fp, "assign %s = %s;\n", 
+            cur_global_port->prefix, op_clock_port_name); 
+    /* Go to the next */
+    temp = temp->next;
+  }
+
+  return;
+}
+
+
 /* Dump all the global ports that are stored in the linked list */
 static 
 void dump_verilog_top_testbench_global_ports(FILE* fp, t_llist* head) {
@@ -900,14 +930,9 @@ void dump_verilog_top_testbench_global_ports(FILE* fp, t_llist* head) {
   fprintf(fp, "//----- BEGIN Global ports -----\n");
   while(NULL != temp) {
     cur_global_port = (t_spice_model_port*)(temp->dptr); 
-    fprintf(fp, "reg wire [0:%d] %s", 
+    fprintf(fp, "reg [0:%d] %s;\n", 
             cur_global_port->size - 1, 
             cur_global_port->prefix); 
-
-    /* if this is the tail, we do not dump a comma */
-    if (NULL != temp->next) {
-     fprintf(fp, ",\n");
-    }
     /* Go to the next */
     temp = temp->next;
   }
@@ -931,7 +956,7 @@ void dump_verilog_top_testbench_ports(FILE* fp,
   /* set and reset signals */
   fprintf(fp, "\n");
   dump_verilog_top_testbench_global_ports(fp, global_ports_head);
-  fprintf(fp, ",\n");
+  fprintf(fp, "\n");
 
   /* TODO: dump each global signal as reg here */
 
@@ -940,7 +965,7 @@ void dump_verilog_top_testbench_ports(FILE* fp,
   assert(NULL != inpad_verilog_model);
   if ((NULL == inpad_verilog_model)
     &&(inpad_verilog_model->cnt > 0)) {
-    fprintf(fp, " reg wire [%d:0] %s%s; //---FPGA inputs \n", 
+    fprintf(fp, " reg [%d:0] %s%s; //---FPGA inputs \n", 
             inpad_verilog_model->cnt - 1,
             gio_input_prefix,
             inpad_verilog_model->prefix);
@@ -966,8 +991,17 @@ void dump_verilog_top_testbench_ports(FILE* fp,
             iopad_verilog_model->prefix);
   }
 
+  /* Add a signal to identify the configuration phase is finished */
+  fprintf(fp, "reg config_done;\n");
+  /* Programming clock */
+  fprintf(fp, "reg prog_clock;\n");
+  /* Operation clock */
+  fprintf(fp, "reg op_clock;\n");
+  /* wire op_clock to global clk */
+  dump_verilog_top_testbench_wire_global_clock_ports(fp, global_ports_head, "op_clock");
+
   /* Configuration ports depend on the organization of SRAMs */
-  switch(sram_verilog_orgz_type) {
+  switch(sram_verilog_orgz_info->type) {
   case SPICE_SRAM_STANDALONE:
     fprintf(fp, " wire [%d:0] %s; //---- SRAM outputs \n", 
             sram_verilog_model->cnt - 1,
@@ -983,26 +1017,25 @@ void dump_verilog_top_testbench_ports(FILE* fp,
     break;
   case SPICE_SRAM_MEMORY_BANK:
     fprintf(fp, "  wire en_bl, en_wl;\n");
+    /* Wire en_bl, en_wl to prog_clock */
+    fprintf(fp, "assign en_bl = prog_clock;\n");
+    fprintf(fp, "assign en_wl = prog_clock;\n");
     fprintf(fp, "  reg [%d:0] addr_bl; //--- Address of bit lines \n", 
                    decoder_size - 1);
-    fprintf(fp, "  reg wire [%d:0] addr_wl; //--- Address of word lines \n", 
+    fprintf(fp, "  reg [%d:0] addr_wl; //--- Address of word lines \n", 
                    decoder_size - 1);
-    /* I add all the Bit lines and Word lines here just for testbench usage */
+    /* I add all the Bit lines and Word lines here just for testbench usage
     fprintf(fp, "  input wire [%d:0] %s_out; //--- Bit lines \n", 
                    sram_verilog_model->cnt - 1, sram_verilog_model->prefix);
     fprintf(fp, "  input wire [%d:0] %s_outb; //--- Word lines \n", 
                    sram_verilog_model->cnt - 1, sram_verilog_model->prefix);
+    */
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
                __FILE__, __LINE__);
     exit(1);
   }
-
-  /* Add a signal to identify the configuration phase is finished */
-  fprintf(fp, "reg config_done;\n");
-  /* Programming clock */
-  fprintf(fp, "reg prog_clock;\n");
 
   /* Add signals from blif benchmark and short-wire them to FPGA I/O PADs
    * This brings convenience to checking functionality  
@@ -1018,9 +1051,9 @@ void dump_verilog_top_testbench_ports(FILE* fp,
               logical_block[iblock].name, gio_inout_prefix, iopad_idx);
       fprintf(fp, "wire %s_%s[%d];\n",
               logical_block[iblock].name, gio_inout_prefix, iopad_idx);
-      fprintf(fp, "assign %s_%s[%d] = %s[%d];\n",
+      fprintf(fp, "assign %s_%s[%d] = %s%s[%d];\n",
               logical_block[iblock].name, gio_inout_prefix, iopad_idx,
-              gio_inout_prefix, iopad_idx);
+              gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx);
     }
     /* General INPUT*/
     if (inpad_verilog_model == logical_block[iblock].mapped_spice_model) {
@@ -1031,9 +1064,9 @@ void dump_verilog_top_testbench_ports(FILE* fp,
               logical_block[iblock].name, gio_input_prefix, iopad_idx);
       fprintf(fp, "wire %s_%s[%d];\n",
               logical_block[iblock].name, gio_input_prefix, iopad_idx);
-      fprintf(fp, "assign %s_%s[%d] = %s[%d];\n",
+      fprintf(fp, "assign %s_%s[%d] = %s%s[%d];\n",
               logical_block[iblock].name, gio_input_prefix, iopad_idx,
-              gio_input_prefix, iopad_idx);
+              gio_input_prefix, inpad_verilog_model->prefix, iopad_idx);
     }
     /* General INPUT*/
     if (outpad_verilog_model == logical_block[iblock].mapped_spice_model) {
@@ -1044,9 +1077,9 @@ void dump_verilog_top_testbench_ports(FILE* fp,
               logical_block[iblock].name, gio_output_prefix, iopad_idx);
       fprintf(fp, "wire %s_%s[%d];\n",
               logical_block[iblock].name, gio_output_prefix, iopad_idx);
-      fprintf(fp, "assign %s_%s[%d] = %s[%d];\n",
+      fprintf(fp, "assign %s_%s[%d] = %s%s[%d];\n",
               logical_block[iblock].name, gio_output_prefix, iopad_idx,
-              gio_output_prefix, iopad_idx);
+              gio_output_prefix, outpad_verilog_model->prefix, iopad_idx);
     }
   }
 
@@ -1064,7 +1097,6 @@ void dump_verilog_top_testbench_call_top_module(FILE* fp,
   fprintf(fp, "%s_top U0 (\n", circuit_name);
 
   /* Connect to defined signals */
-  fprintf(fp, "\n");
   /* dump global ports */
   if (0 < dump_verilog_global_ports(fp, global_ports_head, FALSE)) {
     fprintf(fp, ",\n");
@@ -1121,13 +1153,14 @@ void dump_verilog_top_testbench_call_top_module(FILE* fp,
                    decoder_size - 1);
     fprintf(fp, "  addr_wl[%d:0] //--- Address of word lines \n", 
                    decoder_size - 1);
-    /* I add all the Bit lines and Word lines here just for testbench usage */
+    /* I add all the Bit lines and Word lines here just for testbench usage
     fprintf(fp, "  %s_out[%d:0], //--- Bit lines \n", 
                    sram_verilog_model->prefix,
                    sram_verilog_model->cnt - 1); 
     fprintf(fp, "  %s_outb[%d:0], //--- Word lines \n", 
                    sram_verilog_model->prefix,
                    sram_verilog_model->cnt - 1); 
+    */
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
@@ -1167,12 +1200,6 @@ int dump_verilog_top_testbench_find_num_config_clock_cycles(t_llist* head) {
          &&(1 == temp_conf_bit_info->wl->val)) {
         cnt++;
         temp_conf_bit_info->index_in_top_tb = cnt;
-      } else if ((1 == temp_conf_bit_info->bl->val)
-               &&(0 == temp_conf_bit_info->wl->val)
-               &&(NULL != temp_conf_bit_info->pair_conf_bit)) {
-        cnt++;
-        temp_conf_bit_info->index_in_top_tb = cnt;
-        temp_conf_bit_info->pair_conf_bit->index_in_top_tb = cnt;
       }
       break;
     default:
@@ -1192,121 +1219,27 @@ int dump_verilog_top_testbench_find_num_config_clock_cycles(t_llist* head) {
  * until the head of the linked list
  */
 static 
-void dump_verilog_top_testbench_conf_bits_parallel(FILE* fp, 
-                                                   t_llist* head) {
-  t_llist* temp = head; 
-  t_conf_bit_info* cur_conf_bit_info = (t_conf_bit_info*)(temp->dptr);
-  int bl_index = 0;
-  int wl_index = 0;
+void rec_dump_verilog_top_testbench_one_conf_bit_serial(FILE* fp, 
+                                                        t_llist* cur_conf_bit) {
+  t_conf_bit_info* cur_conf_bit_info = NULL;
 
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!",__FILE__, __LINE__); 
-    exit(1);
-  } 
-						
-  /* We alraedy touch the tail, start dump */
-  switch (sram_verilog_orgz_type) {
-  case SPICE_SRAM_STANDALONE:
-  case SPICE_SRAM_SCAN_CHAIN:
-    /* For scan chain, the last bit should go first!*/
-    while (NULL != temp) {
-      cur_conf_bit_info = (t_conf_bit_info*)(temp->dptr);
-      /* Scan-chain only loads the SRAM values 
-      */
-      fprintf(fp, "Initial\n");
-      fprintf(fp, "  begin: CONF_BIT_%d\n", cur_conf_bit_info->index);
-      assert((0 == cur_conf_bit_info->sram_bit->val)||(1 == cur_conf_bit_info->sram_bit->val));
-      fprintf(fp, "    %s[%d] = %d, ", 
-              sram_verilog_model->prefix, cur_conf_bit_info->index, 
-              cur_conf_bit_info->sram_bit->val),
-      fprintf(fp, "  end\n");
-      fprintf(fp, "//---- Configuration bit No.: %d, ", cur_conf_bit_info->index);
-      fprintf(fp, " SRAM value: %d, ", cur_conf_bit_info->sram_bit->val);
-      fprintf(fp, " SPICE model name: %s, ", cur_conf_bit_info->parent_spice_model->name);
-      fprintf(fp, " SPICE model index: %d ", cur_conf_bit_info->parent_spice_model_index);
-      fprintf(fp, "\n");
-      /* This is not the tail, keep going */
-      temp = temp->next;
-    }
-    break;
-  case SPICE_SRAM_MEMORY_BANK:
-    /* For memory bank, we do not care the sequence.
-     * To be easy to understand, we go from the first to the last
-     */
-    while (NULL != temp) {
-      cur_conf_bit_info = (t_conf_bit_info*)(temp->dptr);
-      /* Memory bank requires the address to be given to the decoder*/
-      /* If this WL is selected , we decode its index to address */
-      bl_index = cur_conf_bit_info->index;
-      wl_index = cur_conf_bit_info->index;
-      assert((0 == cur_conf_bit_info->bl->val)||(1 == cur_conf_bit_info->bl->val));
-      assert((0 == cur_conf_bit_info->wl->val)||(1 == cur_conf_bit_info->wl->val));
-      /* The BL and WL will be keep its value since the first cycle */
-      /* If this WL is selected, directly force its value for its signal*/
-      fprintf(fp, "Initial\n");
-      fprintf(fp, "  begin: BL_%d\n", bl_index);
-      fprintf(fp, "    %s_out[%d] = 1'b%d;",
-              sram_verilog_model->prefix, bl_index, cur_conf_bit_info->bl->val);
-      /*
-      fprintf(fp, "  input wire [%d:0] %s_out, //--- Bit lines \n", 
-                     sram_verilog_model->cnt - 1, sram_verilog_model->prefix);
-      fprintf(fp, "  input wire [%d:0] %s_outb //--- Word lines \n", 
-                     sram_verilog_model->cnt - 1, sram_verilog_model->prefix);
-      */
-      /* Enable ADDR BL */
-      fprintf(fp, "  end\n");
-      fprintf(fp, "// Configuration bit No.: %d, ", cur_conf_bit_info->index);
-      fprintf(fp, " Bit Line: %d, ", cur_conf_bit_info->bl->val);
-      fprintf(fp, " SPICE model name: %s, ", cur_conf_bit_info->parent_spice_model->name);
-      fprintf(fp, " SPICE model index: %d ", cur_conf_bit_info->parent_spice_model_index);
-      fprintf(fp, "\n");
-      /* Word line address */
-      fprintf(fp, "Initial\n");
-      fprintf(fp, "  begin: WL[%d]\n", wl_index);
-      fprintf(fp, "    %s_outb[%d] = 1'b%d;", 
-              sram_verilog_model->prefix, wl_index, cur_conf_bit_info->wl->val);
-      fprintf(fp, "  end\n");
-      fprintf(fp, "// Configuration bit No.: %d, ", cur_conf_bit_info->index);
-      fprintf(fp, " Word Line: %d, ", cur_conf_bit_info->wl->val);
-      fprintf(fp, " SPICE model name: %s, ", cur_conf_bit_info->parent_spice_model->name);
-      fprintf(fp, " SPICE model index: %d ", cur_conf_bit_info->parent_spice_model_index);
-      fprintf(fp, "\n");
-      /* This is not the tail, keep going */
-      temp = temp->next;
-    }
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
-               __FILE__, __LINE__);
-    exit(1);
-  }
-
-  return;
-}
-
-/* Recursively dump configuration bits which are stored in the linked list 
- * We start dump configuration bit from the tail of the linked list
- * until the head of the linked list
- */
-static 
-void rec_dump_verilog_top_testbench_conf_bits_serial(FILE* fp, 
-                                                     t_llist* cur_conf_bit) {
-  t_llist* temp = cur_conf_bit->next; 
-  t_conf_bit_info* cur_conf_bit_info = (t_conf_bit_info*)(cur_conf_bit->dptr);
-  int decoder_size = determine_decoder_size(sram_verilog_model->cnt);
-  int bl_index = 0;
-  int wl_index = 0;
+  int num_bl, num_wl;
+  int bl_decoder_size, wl_decoder_size;
   char* wl_addr = NULL;
   char* bl_addr = NULL; 
-  int cur_prog_cycle = 0;
-  int dump_cur_conf_bit = 0;
 
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!",__FILE__, __LINE__); 
     exit(1);
   } 
+
+  if (NULL == cur_conf_bit) {
+    return;
+  }
+
+  cur_conf_bit_info = (t_conf_bit_info*)(cur_conf_bit->dptr);
 						
-  /* We alraedy touch the tail, start dump */
+  /* We already touch the tail, start dump */
   switch (sram_verilog_orgz_type) {
   case SPICE_SRAM_STANDALONE:
   case SPICE_SRAM_SCAN_CHAIN:
@@ -1326,82 +1259,49 @@ void rec_dump_verilog_top_testbench_conf_bits_serial(FILE* fp,
     fprintf(fp, "\n");
     */
     /* For scan chain, the last bit should go first!*/
-    if (NULL != temp) {
+    if (NULL != cur_conf_bit->next) {
       /* This is not the tail, keep going */
-      rec_dump_verilog_top_testbench_conf_bits_serial(fp, temp);
+      rec_dump_verilog_top_testbench_one_conf_bit_serial(fp, cur_conf_bit->next);
+    } else {
+      return;
     }
     break;
   case SPICE_SRAM_MEMORY_BANK:
     /* For memory bank, we do not care the sequence.
      * To be easy to understand, we go from the first to the last
      */
-    if (NULL != temp) {
+    if (NULL != cur_conf_bit->next) {
       /* This is not the tail, keep going */
-      rec_dump_verilog_top_testbench_conf_bits_serial(fp, temp);
+      rec_dump_verilog_top_testbench_one_conf_bit_serial(fp, cur_conf_bit->next);
+    } else {
+      return;
     }
+    /* Dump one configuring operation on BL and WL addresses */
+    get_sram_orgz_info_num_blwl(sram_verilog_orgz_info, &num_bl, &num_wl);
+    bl_decoder_size = determine_decoder_size(num_bl);
+    wl_decoder_size = determine_decoder_size(num_wl);
     /* Memory bank requires the address to be given to the decoder*/
+    /* Decode address to BLs and WLs*/
+    /* Encode addresses */
+    /* Bit line address */
     /* If this WL is selected , we decode its index to address */
-    if ((1 == cur_conf_bit_info->bl->val)
-       &&(1 == cur_conf_bit_info->wl->val)) {
-      bl_index = cur_conf_bit_info->index;
-      wl_index = cur_conf_bit_info->index;
-      cur_prog_cycle = cur_conf_bit_info->index_in_top_tb;
-      /* Specify that we need dump this configuration bit */
-      dump_cur_conf_bit = 1;
-    } else if ((1 == cur_conf_bit_info->bl->val)
-             &&(0 == cur_conf_bit_info->wl->val)) {
-      /* Find the paired configuration bit */
-      bl_index = cur_conf_bit_info->index;
-      wl_index = cur_conf_bit_info->pair_conf_bit->index;
-      cur_prog_cycle = cur_conf_bit_info->index_in_top_tb;
-      assert(cur_prog_cycle == cur_conf_bit_info->pair_conf_bit->index_in_top_tb);
-      /* Specify that we need dump this configuration bit */
-      dump_cur_conf_bit = 1;
-    }
-    if (1 == dump_cur_conf_bit) { 
-      /* Current programing cycle */
-      cur_prog_cycle = cur_prog_cycle * prog_clock_cycle_delay_unit;
-      /* Encode addresses */
-      /* Bit line address */
-      /* If this WL is selected , we decode its index to address */
-      bl_addr = (char*)my_calloc(decoder_size + 1, sizeof(char));
-      encode_decoder_addr(bl_index, decoder_size, bl_addr);
-      fprintf(fp, "Initial\n");
-      fprintf(fp, "  begin: CONF_BIT_%d\n", cur_conf_bit_info->index);
-      fprintf(fp, "    addr_bl = {%d {1'b0}};", decoder_size);
-      /* TODO: which programming cycle should it be ? */
-      /* Enable ADDR BL */
-      fprintf(fp, "    #%d addr_bl = %d'%s;\n", 
-                       cur_prog_cycle, decoder_size, bl_addr);
-      /* Disable ADDR BL after one programming clock cycle */
-      fprintf(fp, "    #%d addr_bl = {%d {1'b0}};\n", 
-                     cur_prog_cycle + 1*prog_clock_cycle_delay_unit, decoder_size);
-      fprintf(fp, "  end\n");
-      fprintf(fp, "// Configuration bit No.: %d, ", cur_conf_bit_info->index);
-      fprintf(fp, " Bit Line: %d, ", cur_conf_bit_info->bl->val);
-      fprintf(fp, " SPICE model name: %s, ", cur_conf_bit_info->parent_spice_model->name);
-      fprintf(fp, " SPICE model index: %d ", cur_conf_bit_info->parent_spice_model_index);
-      fprintf(fp, "\n");
-      /* Word line address */
-      wl_addr = (char*)my_calloc(decoder_size + 1, sizeof(char));
-      encode_decoder_addr(wl_index, decoder_size, wl_addr);
-      fprintf(fp, "Initial\n");
-      fprintf(fp, "  begin: CONF_BIT_%d\n", cur_conf_bit_info->index);
-      fprintf(fp, "    addr_wl = {%d {1'b0}};", decoder_size);
-      /* TODO: which programming cycle should it be ? */
-      /* Enable ADDR WL */
-      fprintf(fp, "    #%d addr_wl = %d'%s;\n", 
-                       cur_prog_cycle, decoder_size, bl_addr);
-      /* Disable ADDR WL */
-      fprintf(fp, "    #%d addr_wl = {%d'{1'b0}};\n", 
-                       cur_prog_cycle + 1*prog_clock_cycle_delay_unit, decoder_size);
-      fprintf(fp, "  end\n");
-      fprintf(fp, "// Configuration bit No.: %d, ", cur_conf_bit_info->index);
-      fprintf(fp, " Word Line: %d, ", cur_conf_bit_info->wl->val);
-      fprintf(fp, " SPICE model name: %s, ", cur_conf_bit_info->parent_spice_model->name);
-      fprintf(fp, " SPICE model index: %d ", cur_conf_bit_info->parent_spice_model_index);
-      fprintf(fp, "\n");
-    }
+    bl_addr = (char*)my_calloc(bl_decoder_size + 1, sizeof(char));
+    /* If this WL is selected , we decode its index to address */
+    assert(NULL != cur_conf_bit_info->bl);
+    encode_decoder_addr(cur_conf_bit_info->bl->addr, bl_decoder_size, bl_addr);
+    /* Word line address */
+    wl_addr = (char*)my_calloc(wl_decoder_size + 1, sizeof(char));
+    assert(NULL != cur_conf_bit_info->wl);
+    /* One operation per clock cycle */
+    /* Information about this configuration bit */
+    fprintf(fp, "    //--- Configuration bit No.: %d \n", cur_conf_bit_info->index);
+    fprintf(fp, "    //--- Bit Line: %d, \n", cur_conf_bit_info->bl->val);
+    fprintf(fp, "    //--- Word Line: %d \n ", cur_conf_bit_info->wl->val);
+    fprintf(fp, "    //--- SPICE model name: %s \n", cur_conf_bit_info->parent_spice_model->name);
+    fprintf(fp, "    //--- SPICE model index: %d \n", cur_conf_bit_info->parent_spice_model_index);
+    fprintf(fp, "    prog_cycle_blwl(%d'%s, %d'%s); //--- (BL_addr_code, WL_addr_code) \n",
+                num_bl, bl_addr, num_wl, wl_addr);
+    fprintf(fp, "\n");
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
@@ -1416,158 +1316,117 @@ void rec_dump_verilog_top_testbench_conf_bits_serial(FILE* fp,
   return;
 }
 
-/* This version contains a simplified configuration phase: 
- * All the configuration bits, i.e., RRAM and SRAMs, are programmed in one clock cycle
- * During the first clock cycle, we program all the configuration bits
- * and also meanwhile reset the whole FPGA
- */
 static 
-void dump_verilog_top_testbench_stimuli_parallel_version(FILE* fp,
-                                                         int num_clock,
-                                                         t_spice spice) {
-  int inet, iblock, iopad_idx;
-  int found_mapped_inpad = 0;
-  int num_config_clock_cycles = 1;
+void dump_verilog_top_testbench_conf_bits_serial(FILE* fp, 
+                                                 t_llist* head) {
+  int num_bl, num_wl;
+  int bl_decoder_size, wl_decoder_size;
 
-  /* Find Input Pad Spice model */
-  t_spice_net_info* cur_spice_net_info = NULL;
+  switch (sram_verilog_orgz_type) {
+  case SPICE_SRAM_STANDALONE:
+  case SPICE_SRAM_SCAN_CHAIN:
+    /* TODO */
+    break;
+  case SPICE_SRAM_MEMORY_BANK:
+    get_sram_orgz_info_num_blwl(sram_verilog_orgz_info, &num_bl, &num_wl);
+    bl_decoder_size = determine_decoder_size(num_bl);
+    wl_decoder_size = determine_decoder_size(num_wl);
+    /* Configuration phase: configure each SRAM or BL/WL */
+    fprintf(fp, "//----- Configuration phase -----\n");
+    fprintf(fp, "initial\n");
+    fprintf(fp, "  begin: BL_WL_ADDR\n");
+    fprintf(fp, "    addr_bl = {%d {1'b0}};", bl_decoder_size);
+    fprintf(fp, "    addr_wl = {%d {1'b0}};", wl_decoder_size);
+    /* For each element in linked list, generate a voltage stimuli */
+    rec_dump_verilog_top_testbench_one_conf_bit_serial(fp, head);
+    fprintf(fp, "  end\n");
+    fprintf(fp, "//----- END of Configuration phase -----\n");
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  return;
+}
+
+/* Print tasks, which is very useful in generating stimuli for each clock cycle */
+static 
+void dump_verilog_top_testbench_stimuli_serial_version_tasks(FILE* fp) {
+  int num_bl, num_wl;
+  int bl_decoder_size, wl_decoder_size;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
                __FILE__, __LINE__); 
     exit(1);
+  } 
+
+  switch (sram_verilog_orgz_info->type) {
+  case SPICE_SRAM_STANDALONE:
+  case SPICE_SRAM_SCAN_CHAIN:
+    /* TODO: */
+    break;
+  case SPICE_SRAM_MEMORY_BANK:
+    get_sram_orgz_info_num_blwl(sram_verilog_orgz_info, &num_bl, &num_wl);
+    bl_decoder_size = determine_decoder_size(num_bl);
+    wl_decoder_size = determine_decoder_size(num_wl);
+    /* Declare two tasks:
+     * 1. assign BL/WL IO pads values during a programming clock cycle
+     * 2. assign BL/WL IO pads values during a operating clock cycle
+     */
+    fprintf(fp, "\n");
+    fprintf(fp, "//----- Task 1: input values during a programming clock cycle -----\n");
+    fprintf(fp, "task prog_cycle_blwl;\n");
+    fprintf(fp, "  input [%d:0] bl_addr_val;\n", bl_decoder_size - 1);
+    fprintf(fp, "  input [%d:0] wl_addr_val;\n", wl_decoder_size - 1);
+    fprintf(fp, "  begin\n");
+    fprintf(fp, "    @(postive prog_clock);\n");
+    /*
+    fprintf(fp, "    $display($time, \"Programming cycle: load BL address with \%h, load WL address with \%h\",\n");
+    fprintf(fp, "             bl_addr_val, wl_addr_val);\n");
+    */
+    fprintf(fp, "    bl_addr = bl_addr_val;\n");
+    fprintf(fp, "    wl_addr = wl_addr_val;\n");
+    fprintf(fp, "  end\n");
+    fprintf(fp, "endtask //---prog_cycle_stimuli\n");
+    fprintf(fp, "\n");
+    fprintf(fp, "//----- Task 2: input values during a operating clock cycle -----\n");
+    fprintf(fp, "task op_cycle_blwl;\n");
+    fprintf(fp, "  input [%d:0] bl_addr_val;\n", bl_decoder_size - 1);
+    fprintf(fp, "  input [%d:0] wl_addr_val;\n", wl_decoder_size - 1);
+    fprintf(fp, "  begin\n");
+    fprintf(fp, "    @(postive op_clock);\n");
+    /*
+    fprintf(fp, "    $display($time, \"Operating cycle: load BL address with \%h, load WL address with \%h\",\n");
+    fprintf(fp, "             bl_addr_val, wl_addr_val);\n");
+    */
+    fprintf(fp, "    bl_addr = bl_addr_val;\n");
+    fprintf(fp, "    wl_addr = wl_addr_val;\n");
+    fprintf(fp, "  end\n");
+    fprintf(fp, "endtask //---op_cycle_stimuli\n");
+    fprintf(fp, "\n");
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
+               __FILE__, __LINE__);
+    exit(1);
   }
 
-  /* Configuration phase: configure each SRAM or BL/WL */
-  fprintf(fp, "//----- Configuration phase -----\n");
-  fprintf(fp, "//----- Number of clock cycles in configuration phase: %d -----\n", 
-          num_config_clock_cycles);
-  /* Test a simplified configuration phase: 
-   * configuration bits are programming in one clock cycle
-   */
-  dump_verilog_top_testbench_conf_bits_parallel(fp, conf_bits_head);
-
-  /* Generate stimilus of programming clock */
-  fprintf(fp, "//----- Operation clock ----\n");
-  fprintf(fp, "initial\n");
-  fprintf(fp, "  begin: OP_CLOCK INITIALIZATION\n");
-  fprintf(fp, "    op_clock = 1'b0;\n");
-  fprintf(fp, "  end\n");
-  /* Reset is enabled from the start and only holds for one clock cycle */
-  fprintf(fp, "always\n"); /* TODO: */
-  fprintf(fp, "  begin: OP_CLOCK GENERATOR\n");
-  fprintf(fp, "    #%d op_clock = ~op_clock\n", op_clock_cycle_delay_unit);
-  fprintf(fp, "  end\n");
-  fprintf(fp, "\n");
-
-  /* For each element in linked list, generate a voltage stimuli */
-  
-  /* Operating phase: configuration circuits are off. Stimuli IO pads */
-  fprintf(fp, "//----- Operation phase: IO pads -----\n");
-
-  /* reset signals */
-  fprintf(fp, "//----- Reset Stimuli ----\n");
-  fprintf(fp, "initial\n");
-  fprintf(fp, "  begin: RESET GENERATOR\n");
-  fprintf(fp, "reset = 1'b0;\n");
-  /* Reset is enabled from the start and only holds for one clock cycle */
-  fprintf(fp, "//----- Reset signal,only during the first operation clock cycle, is enabled ----\n");
-  fprintf(fp, "#%d reset = 1'b0\n", 0 * op_clock_cycle_delay_unit);
-  fprintf(fp, "#%d reset = 1'b1\n", 1 * op_clock_cycle_delay_unit);
-  fprintf(fp, "#%d reset = 1'b0\n", 2 * op_clock_cycle_delay_unit);
-  fprintf(fp, "end\n");
-  fprintf(fp, "\n");
-
-  /* set signals */
-  fprintf(fp, "//----- Set Stimuli ----\n");
-  fprintf(fp, "initial\n");
-  fprintf(fp, "  begin: SET GENERATOR\n");
-  fprintf(fp, "set = 1'b0;\n");
-  fprintf(fp, "//----- Set signal is always disabled -----\n");
-  fprintf(fp, "end\n");
-  fprintf(fp, "\n");
-
-  /* config_done signal: indicate when configuration is finished */
-  fprintf(fp, "//----- config_done Stimuli ----\n");
-  fprintf(fp, "initial\n");
-  fprintf(fp, "  begin: CONFIG_DONE GENERATOR\n");
-  fprintf(fp, "config_done = 1'b0;\n");
-  /* Reset is enabled from the start and only holds for one clock cycle */
-  fprintf(fp, "//----- config_done signal is enabled when all the configuration is finished ----\n");
-  fprintf(fp, "#%d config_done = 1'b1\n", 1 * op_clock_cycle_delay_unit);
-  fprintf(fp, "end\n");
-  fprintf(fp, "\n");
-
-  /* For each input_signal
-   * TODO: this part is low-efficent for run-time concern... Need improve
-   */
-  assert(NULL != iopad_verilog_model);
-  for (iopad_idx = 0; iopad_idx < iopad_verilog_model->cnt; iopad_idx++) {
-    /* Find if this inpad is mapped to a logical block */
-    found_mapped_inpad = 0;
-    for (iblock = 0; iblock < num_logical_blocks; iblock++) {
-      if ((iopad_verilog_model == logical_block[iblock].mapped_spice_model)
-         &&(iopad_idx == logical_block[iblock].mapped_spice_model_index)) {
-        /* Make sure We find the correct logical block !*/
-        assert(VPACK_INPAD == logical_block[iblock].type);
-        cur_spice_net_info = NULL;
-        for (inet = 0; inet < num_nets; inet++) { 
-          if (0 == strcmp(clb_net[inet].name, logical_block[iblock].name)) {
-            cur_spice_net_info = clb_net[inet].spice_net_info;
-            break;
-          }
-        }
-        assert(NULL != cur_spice_net_info);
-        assert(!(0 > cur_spice_net_info->density));
-        assert(!(1 < cur_spice_net_info->density));
-        assert(!(0 > cur_spice_net_info->probability));
-        assert(!(1 < cur_spice_net_info->probability));
-        /* Get the net information */
-        /* TODO: Give the net name in the blif file !*/
-        fprintf(fp, "//----- Input %s Stimuli ----\n", logical_block[iblock].name);
-        fprintf(fp, "initial\n");
-        fprintf(fp, "  begin: Input %s GENERATOR\n", logical_block[iblock].name);
-        fprintf(fp, "    %s%s[%d] = 1'b%d;\n", 
-                gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx,
-                cur_spice_net_info->init_val);
-        fprintf(fp, "end\n");
-        fprintf(fp, "always @(config_done)\n");
-        fprintf(fp, "  begin \n");
-        fprintf(fp, "    #%d %s%s[%d] = ~%s%s[%d];\n", 
-                (int)(op_clock_cycle_delay_unit * cur_spice_net_info->density * 2. / cur_spice_net_info->probability), 
-                gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx,
-                gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx);
-        fprintf(fp, "  end \n");
-        fprintf(fp, "\n");
-        found_mapped_inpad++;
-      }
-    } 
-    assert((0 == found_mapped_inpad)||(1 == found_mapped_inpad));
-    /* if we cannot find any mapped inpad from tech.-mapped netlist, give a default */
-    if (0 == found_mapped_inpad) {
-      /* TODO: Give the net name in the blif file !*/
-      fprintf(fp, "//----- Input %s[%d] Stimuli ----\n", gio_input_prefix, iopad_idx);
-      fprintf(fp, "initial\n");
-      fprintf(fp, "  begin: Input %s[%d] GENERATOR\n", gio_input_prefix, iopad_idx);
-      fprintf(fp, "    %s%s[%d] = 1'b%d;\n", 
-              gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx,
-              verilog_default_signal_init_value);
-      fprintf(fp, "end\n");
-    }
-  }
-
-  /* Finish */
-  
   return;
 }
 
-
 /* Print Stimulations for top-level netlist 
+ * Test a complete configuration phase: 
+ * configuration bits are programming in serial (one by one)
  * Task list:
- * 1. For clock signal, we should create voltage waveforms
- * 2. For Set/Reset, TODO: should we reset the chip in the first cycle ???
- * 3. For input/output clb nets (mapped to I/O grids), we should create voltage waveforms
+ * 1. For clock signal, we should create voltage waveforms for two types of clock signals:
+ *    a. operation clock
+ *    b. programming clock 
+ * 2. For Set/Reset, TODO: should we reset the chip after programming phase ends and before operation phase starts
+ * 3. For input/output clb nets (mapped to I/O grids), we should create voltage waveforms only after programming phase 
  */
 static 
 void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
@@ -1575,8 +1434,9 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
                                                        t_spice spice) {
   int inet, iblock, iopad_idx;
   int found_mapped_inpad = 0;
-  int delay_cnt = 0;
   int num_config_clock_cycles = 0;
+  int prog_clock_period = 1./spice.spice_params.stimulate_params.prog_clock_freq;
+  int op_clock_period = 1./spice.spice_params.stimulate_params.prog_clock_freq;
 
   /* Find Input Pad Spice model */
   t_spice_net_info* cur_spice_net_info = NULL;
@@ -1586,32 +1446,45 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
                __FILE__, __LINE__); 
     exit(1);
-  }
+  } 
 
-  /* Configuration phase: configure each SRAM or BL/WL */
-  fprintf(fp, "//----- Configuration phase -----\n");
+  /* Dump tasks */
+  dump_verilog_top_testbench_stimuli_serial_version_tasks(fp);
 
-  /* Test a complete configuration phase: 
-   * configuration bits are programming in serial (one by one)
-   */
   /* Estimate the number of configuration clock cycles 
    * by traversing the linked-list and count the number of SRAM=1 or BL=1&WL=1 in it.
    */
   num_config_clock_cycles = dump_verilog_top_testbench_find_num_config_clock_cycles(conf_bits_head);
   fprintf(fp, "//----- Number of clock cycles in configuration phase: %d -----\n", 
           num_config_clock_cycles);
+
+  /* config_done signal: indicate when configuration is finished */
+  fprintf(fp, "//----- config_done ----\n");
+  fprintf(fp, "initial\n");
+  fprintf(fp, "  begin: CONFIG_DONE GENERATOR\n");
+  fprintf(fp, "    config_done = 1'b0;\n");
+  fprintf(fp, "    //----- config_done signal is enabled after %d configurating operations are done ----\n", 
+              num_config_clock_cycles);
+  fprintf(fp, "    #%.2f config_done = 1'b1\n", 
+              num_config_clock_cycles * prog_clock_period / verilog_sim_timescale);
+  fprintf(fp, "  end\n");
+  fprintf(fp, "//----- END of config_done ----\n");
+  fprintf(fp, "\n");
+
   /* Generate stimilus of programming clock */
   fprintf(fp, "//----- Programming clock ----\n");
   fprintf(fp, "initial\n");
   fprintf(fp, "  begin: PROG_CLOCK INITIALIZATION\n");
   fprintf(fp, "    prog_clock = 1'b0;\n");
   fprintf(fp, "  end\n");
-  /* Reset is enabled from the start and only holds for one clock cycle */
-  delay_cnt = prog_clock_cycle_delay_unit * 1;
-  fprintf(fp, "always\n"); /* TODO: */
+  /* Programming clock should be only enabled during programming phase.
+   * When configuration is done (config_done is enabled), programming clock should be always zero.
+   */
+  fprintf(fp, "always @(~config_done) //---- Triggered only when config_done is disabled\n"); 
   fprintf(fp, "  begin: PROG_CLOCK GENERATOR\n");
-  fprintf(fp, "    #%d prog_clock = ~prog_clock\n", delay_cnt);
+  fprintf(fp, "    #%.2f prog_clock = ~prog_clock;\n", 0.5*prog_clock_period / verilog_sim_timescale);
   fprintf(fp, "  end\n");
+  fprintf(fp, "//----- END of  Programming clock ----\n");
   fprintf(fp, "\n");
 
   /* Generate stimilus of programming clock */
@@ -1620,32 +1493,29 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   fprintf(fp, "  begin: OP_CLOCK INITIALIZATION\n");
   fprintf(fp, "    op_clock = 1'b0;\n");
   fprintf(fp, "  end\n");
-  /* Reset is enabled from the start and only holds for one clock cycle */
-  delay_cnt = prog_clock_cycle_delay_unit * 1;
-  fprintf(fp, "always\n"); /* TODO: */
+  /* Operation clock should be enabled after programming phase finishes.
+   * Before configuration is done (config_done is enabled), operation clock should be always zero.
+   */
+  fprintf(fp, "always @(config_done) //---- Triggered only when config_done is enabled \n"); 
   fprintf(fp, "  begin: OP_CLOCK GENERATOR\n");
-  fprintf(fp, "    #%d op_clock = ~op_clock\n", delay_cnt);
+  fprintf(fp, "    #%.2f op_clock = ~op_clock;\n", 0.5*op_clock_period / verilog_sim_timescale);
   fprintf(fp, "  end\n");
+  fprintf(fp, "//----- END of Operation clock ----\n");
   fprintf(fp, "\n");
-
-  /* For each element in linked list, generate a voltage stimuli */
-  rec_dump_verilog_top_testbench_conf_bits_serial(fp, conf_bits_head);
-  
-  /* Operating phase: configuration circuits are off. Stimuli IO pads */
-  fprintf(fp, "//----- Operation phase: IO pads -----\n");
-  /* determine the base of time slot where operation mode starts */
-  delay_cnt = num_config_clock_cycles * prog_clock_cycle_delay_unit;
 
   /* reset signals */
   fprintf(fp, "//----- Reset Stimuli ----\n");
   fprintf(fp, "initial\n");
   fprintf(fp, "  begin: RESET GENERATOR\n");
   fprintf(fp, "reset = 1'b0;\n");
-  /* Reset is enabled from the start and only holds for one clock cycle */
-  fprintf(fp, "//----- Reset signal,only during the first operation clock cycle, is enabled ----\n");
-  fprintf(fp, "#%d reset = 1'b0\n", delay_cnt + 0 * op_clock_cycle_delay_unit);
-  fprintf(fp, "#%d reset = 1'b1\n", delay_cnt + 1 * op_clock_cycle_delay_unit);
-  fprintf(fp, "#%d reset = 1'b0\n", delay_cnt + 2 * op_clock_cycle_delay_unit);
+  /* Reset is enabled until the first clock cycle in operation phase */
+  fprintf(fp, "//----- Reset signal is enabled until the first clock cycle in operation phase ----\n");
+  fprintf(fp, "#%.2f reset = 1'b0\n",
+              num_config_clock_cycles * prog_clock_period / verilog_sim_timescale);
+  fprintf(fp, "#%.2f reset = 1'b1\n", 
+              (num_config_clock_cycles * prog_clock_period + 1 * op_clock_period)/ verilog_sim_timescale);
+  fprintf(fp, "#%.2f reset = 1'b0\n", 
+              (num_config_clock_cycles * prog_clock_period + 2 * op_clock_period) / verilog_sim_timescale);
   fprintf(fp, "end\n");
   fprintf(fp, "\n");
 
@@ -1658,17 +1528,9 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   fprintf(fp, "end\n");
   fprintf(fp, "\n");
 
-  /* config_done signal: indicate when configuration is finished */
-  fprintf(fp, "//----- config_done Stimuli ----\n");
-  fprintf(fp, "initial\n");
-  fprintf(fp, "  begin: CONFIG_DONE GENERATOR\n");
-  fprintf(fp, "config_done = 1'b0;\n");
-  /* Reset is enabled from the start and only holds for one clock cycle */
-  fprintf(fp, "//----- config_done signal is enabled when all the configuration is finished ----\n");
-  fprintf(fp, "#%d config_done = 1'b1\n", delay_cnt + 1 * op_clock_cycle_delay_unit);
-  fprintf(fp, "end\n");
-  fprintf(fp, "\n");
-
+  /* Inputs stimuli: BL/WL address lines */
+  dump_verilog_top_testbench_conf_bits_serial(fp, sram_verilog_orgz_info->conf_bit_head); 
+  
   /* For each input_signal
    * TODO: this part is low-efficent for run-time concern... Need improve
    */
@@ -1677,10 +1539,10 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
     /* Find if this inpad is mapped to a logical block */
     found_mapped_inpad = 0;
     for (iblock = 0; iblock < num_logical_blocks; iblock++) {
+      /* Make sure We find the correct logical block !*/
       if ((iopad_verilog_model == logical_block[iblock].mapped_spice_model)
-         &&(iopad_idx == logical_block[iblock].mapped_spice_model_index)) {
-        /* Make sure We find the correct logical block !*/
-        assert(VPACK_INPAD == logical_block[iblock].type);
+         &&(iopad_idx == logical_block[iblock].mapped_spice_model_index)
+         &&(VPACK_INPAD == logical_block[iblock].type)) {
         cur_spice_net_info = NULL;
         for (inet = 0; inet < num_nets; inet++) { 
           if (0 == strcmp(clb_net[inet].name, logical_block[iblock].name)) {
@@ -1704,8 +1566,8 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
         fprintf(fp, "end\n");
         fprintf(fp, "always @(config_done)\n");
         fprintf(fp, "  begin \n");
-        fprintf(fp, "    #%d %s%s[%d] = ~%s%s[%d];\n", 
-                (int)(op_clock_cycle_delay_unit * cur_spice_net_info->density * 2. / cur_spice_net_info->probability), 
+        fprintf(fp, "    #%.2f %s%s[%d] = ~%s%s[%d];\n", 
+                (op_clock_period * cur_spice_net_info->density * 2. / cur_spice_net_info->probability), 
                 gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx,
                 gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx);
         fprintf(fp, "  end \n");
@@ -1745,11 +1607,15 @@ void dump_verilog_top_testbench_stimuli(FILE* fp,
                                         t_syn_verilog_opts syn_verilog_opts,
                                         t_spice verilog) {
 
+  /*
   if (TRUE == syn_verilog_opts.tb_serial_config_mode) {
-    dump_verilog_top_testbench_stimuli_serial_version(fp, num_clock, verilog);
   } else {
     dump_verilog_top_testbench_stimuli_parallel_version(fp, num_clock, verilog);
   }
+  */
+
+  /* Only serial version is avaiable now */
+  dump_verilog_top_testbench_stimuli_serial_version(fp, num_clock, verilog);
 
   return;
 }

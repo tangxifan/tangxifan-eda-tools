@@ -52,7 +52,8 @@ void InitSpiceStimulateParams(t_spice_stimulate_params* stimulate_params) {
   stimulate_params->clock_slew_fall_time = 0.05;
   stimulate_params->clock_slew_fall_type = SPICE_FRAC;
 
-  stimulate_params->clock_freq = 0.;
+  stimulate_params->op_clock_freq = 0.;
+  stimulate_params->prog_clock_freq = 0.;
   stimulate_params->sim_clock_freq_slack = 0.2;
   /* inputs */
   stimulate_params->input_slew_rise_time = 0.05;

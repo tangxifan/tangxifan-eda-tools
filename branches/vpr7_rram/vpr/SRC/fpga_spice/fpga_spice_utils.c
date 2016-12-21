@@ -4523,9 +4523,6 @@ alloc_one_conf_bit_info(int index,
   new_conf_bit_info->parent_spice_model = parent_spice_model;
   new_conf_bit_info->parent_spice_model_index = parent_spice_model->cnt;
 
-  /* Leave NULL for the pair conf_bit, it is supposed to be filled by another function */
-  new_conf_bit_info->pair_conf_bit = NULL;
-
   return new_conf_bit_info; 
 }
  
@@ -5278,3 +5275,14 @@ void get_sram_orgz_info_mem_model(t_sram_orgz_info* cur_sram_orgz_info,
   return;
 }
 
+/* Manipulating functions for struct t_reserved_syntax_char */
+void init_reserved_syntax_char(t_reserved_syntax_char* cur_reserved_syntax_char,
+                               char cur_syntax_char, boolean cur_verilog_reserved, boolean cur_spice_reserved) {
+  assert(NULL != cur_reserved_syntax_char);
+
+  cur_reserved_syntax_char->syntax_char = cur_syntax_char;
+  cur_reserved_syntax_char->verilog_reserved = cur_verilog_reserved;
+  cur_reserved_syntax_char->spice_reserved = cur_spice_reserved;
+
+  return;
+}
