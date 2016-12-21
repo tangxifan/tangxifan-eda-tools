@@ -1291,6 +1291,7 @@ void rec_dump_verilog_top_testbench_one_conf_bit_serial(FILE* fp,
     encode_decoder_addr(cur_conf_bit_info->bl->addr, bl_decoder_size, bl_addr);
     /* Word line address */
     wl_addr = (char*)my_calloc(wl_decoder_size + 1, sizeof(char));
+    encode_decoder_addr(cur_conf_bit_info->wl->addr, wl_decoder_size, wl_addr);
     assert(NULL != cur_conf_bit_info->wl);
     /* One operation per clock cycle */
     /* Information about this configuration bit */
@@ -1299,8 +1300,8 @@ void rec_dump_verilog_top_testbench_one_conf_bit_serial(FILE* fp,
     fprintf(fp, "    //--- Word Line: %d \n ", cur_conf_bit_info->wl->val);
     fprintf(fp, "    //--- SPICE model name: %s \n", cur_conf_bit_info->parent_spice_model->name);
     fprintf(fp, "    //--- SPICE model index: %d \n", cur_conf_bit_info->parent_spice_model_index);
-    fprintf(fp, "    prog_cycle_blwl(%d'%s, %d'%s); //--- (BL_addr_code, WL_addr_code) \n",
-                num_bl, bl_addr, num_wl, wl_addr);
+    fprintf(fp, "    prog_cycle_blwl(%d'b%s, %d'b%s); //--- (BL_addr_code, WL_addr_code) \n",
+                bl_decoder_size, bl_addr, wl_decoder_size, wl_addr);
     fprintf(fp, "\n");
     break;
   default:
@@ -1334,9 +1335,9 @@ void dump_verilog_top_testbench_conf_bits_serial(FILE* fp,
     /* Configuration phase: configure each SRAM or BL/WL */
     fprintf(fp, "//----- Configuration phase -----\n");
     fprintf(fp, "initial\n");
-    fprintf(fp, "  begin: BL_WL_ADDR\n");
-    fprintf(fp, "    addr_bl = {%d {1'b0}};", bl_decoder_size);
-    fprintf(fp, "    addr_wl = {%d {1'b0}};", wl_decoder_size);
+    fprintf(fp, "  begin //--- BL_WL_ADDR\n");
+    fprintf(fp, "    addr_bl = {%d {1'b0}};\n", bl_decoder_size);
+    fprintf(fp, "    addr_wl = {%d {1'b0}};\n", wl_decoder_size);
     /* For each element in linked list, generate a voltage stimuli */
     rec_dump_verilog_top_testbench_one_conf_bit_serial(fp, head);
     fprintf(fp, "  end\n");
@@ -1383,13 +1384,13 @@ void dump_verilog_top_testbench_stimuli_serial_version_tasks(FILE* fp) {
     fprintf(fp, "  input [%d:0] bl_addr_val;\n", bl_decoder_size - 1);
     fprintf(fp, "  input [%d:0] wl_addr_val;\n", wl_decoder_size - 1);
     fprintf(fp, "  begin\n");
-    fprintf(fp, "    @(postive prog_clock);\n");
+    fprintf(fp, "    @(posedge prog_clock);\n");
     /*
     fprintf(fp, "    $display($time, \"Programming cycle: load BL address with \%h, load WL address with \%h\",\n");
     fprintf(fp, "             bl_addr_val, wl_addr_val);\n");
     */
-    fprintf(fp, "    bl_addr = bl_addr_val;\n");
-    fprintf(fp, "    wl_addr = wl_addr_val;\n");
+    fprintf(fp, "    addr_bl = bl_addr_val;\n");
+    fprintf(fp, "    addr_wl = wl_addr_val;\n");
     fprintf(fp, "  end\n");
     fprintf(fp, "endtask //---prog_cycle_stimuli\n");
     fprintf(fp, "\n");
@@ -1398,13 +1399,13 @@ void dump_verilog_top_testbench_stimuli_serial_version_tasks(FILE* fp) {
     fprintf(fp, "  input [%d:0] bl_addr_val;\n", bl_decoder_size - 1);
     fprintf(fp, "  input [%d:0] wl_addr_val;\n", wl_decoder_size - 1);
     fprintf(fp, "  begin\n");
-    fprintf(fp, "    @(postive op_clock);\n");
+    fprintf(fp, "    @(posedge op_clock);\n");
     /*
     fprintf(fp, "    $display($time, \"Operating cycle: load BL address with \%h, load WL address with \%h\",\n");
     fprintf(fp, "             bl_addr_val, wl_addr_val);\n");
     */
-    fprintf(fp, "    bl_addr = bl_addr_val;\n");
-    fprintf(fp, "    wl_addr = wl_addr_val;\n");
+    fprintf(fp, "    addr_bl = bl_addr_val;\n");
+    fprintf(fp, "    addr_wl = wl_addr_val;\n");
     fprintf(fp, "  end\n");
     fprintf(fp, "endtask //---op_cycle_stimuli\n");
     fprintf(fp, "\n");
@@ -1461,11 +1462,11 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   /* config_done signal: indicate when configuration is finished */
   fprintf(fp, "//----- config_done ----\n");
   fprintf(fp, "initial\n");
-  fprintf(fp, "  begin: CONFIG_DONE GENERATOR\n");
+  fprintf(fp, "  begin //--- CONFIG_DONE GENERATOR\n");
   fprintf(fp, "    config_done = 1'b0;\n");
   fprintf(fp, "    //----- config_done signal is enabled after %d configurating operations are done ----\n", 
               num_config_clock_cycles);
-  fprintf(fp, "    #%.2f config_done = 1'b1\n", 
+  fprintf(fp, "    #%.2f config_done = 1'b1;\n", 
               num_config_clock_cycles * prog_clock_period / verilog_sim_timescale);
   fprintf(fp, "  end\n");
   fprintf(fp, "//----- END of config_done ----\n");
@@ -1474,14 +1475,14 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   /* Generate stimilus of programming clock */
   fprintf(fp, "//----- Programming clock ----\n");
   fprintf(fp, "initial\n");
-  fprintf(fp, "  begin: PROG_CLOCK INITIALIZATION\n");
+  fprintf(fp, "  begin //--- PROG_CLOCK INITIALIZATION\n");
   fprintf(fp, "    prog_clock = 1'b0;\n");
   fprintf(fp, "  end\n");
   /* Programming clock should be only enabled during programming phase.
    * When configuration is done (config_done is enabled), programming clock should be always zero.
    */
   fprintf(fp, "always @(~config_done) //---- Triggered only when config_done is disabled\n"); 
-  fprintf(fp, "  begin: PROG_CLOCK GENERATOR\n");
+  fprintf(fp, "  begin //--- PROG_CLOCK GENERATOR\n");
   fprintf(fp, "    #%.2f prog_clock = ~prog_clock;\n", 0.5*prog_clock_period / verilog_sim_timescale);
   fprintf(fp, "  end\n");
   fprintf(fp, "//----- END of  Programming clock ----\n");
@@ -1490,14 +1491,14 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   /* Generate stimilus of programming clock */
   fprintf(fp, "//----- Operation clock ----\n");
   fprintf(fp, "initial\n");
-  fprintf(fp, "  begin: OP_CLOCK INITIALIZATION\n");
+  fprintf(fp, "  begin //--- OP_CLOCK INITIALIZATION\n");
   fprintf(fp, "    op_clock = 1'b0;\n");
   fprintf(fp, "  end\n");
   /* Operation clock should be enabled after programming phase finishes.
    * Before configuration is done (config_done is enabled), operation clock should be always zero.
    */
   fprintf(fp, "always @(config_done) //---- Triggered only when config_done is enabled \n"); 
-  fprintf(fp, "  begin: OP_CLOCK GENERATOR\n");
+  fprintf(fp, "  begin //--- OP_CLOCK GENERATOR\n");
   fprintf(fp, "    #%.2f op_clock = ~op_clock;\n", 0.5*op_clock_period / verilog_sim_timescale);
   fprintf(fp, "  end\n");
   fprintf(fp, "//----- END of Operation clock ----\n");
@@ -1506,15 +1507,15 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   /* reset signals */
   fprintf(fp, "//----- Reset Stimuli ----\n");
   fprintf(fp, "initial\n");
-  fprintf(fp, "  begin: RESET GENERATOR\n");
+  fprintf(fp, "  begin //--- RESET GENERATOR\n");
   fprintf(fp, "reset = 1'b0;\n");
   /* Reset is enabled until the first clock cycle in operation phase */
   fprintf(fp, "//----- Reset signal is enabled until the first clock cycle in operation phase ----\n");
-  fprintf(fp, "#%.2f reset = 1'b0\n",
+  fprintf(fp, "#%.2f reset = 1'b0;\n",
               num_config_clock_cycles * prog_clock_period / verilog_sim_timescale);
-  fprintf(fp, "#%.2f reset = 1'b1\n", 
+  fprintf(fp, "#%.2f reset = 1'b1;\n", 
               (num_config_clock_cycles * prog_clock_period + 1 * op_clock_period)/ verilog_sim_timescale);
-  fprintf(fp, "#%.2f reset = 1'b0\n", 
+  fprintf(fp, "#%.2f reset = 1'b0;\n", 
               (num_config_clock_cycles * prog_clock_period + 2 * op_clock_period) / verilog_sim_timescale);
   fprintf(fp, "end\n");
   fprintf(fp, "\n");
@@ -1522,7 +1523,7 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   /* set signals */
   fprintf(fp, "//----- Set Stimuli ----\n");
   fprintf(fp, "initial\n");
-  fprintf(fp, "  begin: SET GENERATOR\n");
+  fprintf(fp, "  begin //--- SET GENERATOR\n");
   fprintf(fp, "set = 1'b0;\n");
   fprintf(fp, "//----- Set signal is always disabled -----\n");
   fprintf(fp, "end\n");
@@ -1559,7 +1560,7 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
         /* TODO: Give the net name in the blif file !*/
         fprintf(fp, "//----- Input %s Stimuli ----\n", logical_block[iblock].name);
         fprintf(fp, "initial\n");
-        fprintf(fp, "  begin: Input %s GENERATOR\n", logical_block[iblock].name);
+        fprintf(fp, "  begin //--- Input %s GENERATOR\n", logical_block[iblock].name);
         fprintf(fp, "    %s%s[%d] = 1'b%d;\n", 
                 gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx,
                 cur_spice_net_info->init_val);
@@ -1581,7 +1582,7 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
       /* TODO: Give the net name in the blif file !*/
       fprintf(fp, "//----- Input %s[%d] Stimuli ----\n", gio_input_prefix, iopad_idx);
       fprintf(fp, "initial\n");
-      fprintf(fp, "  begin: Input %s[%d] GENERATOR\n", gio_input_prefix, iopad_idx);
+      fprintf(fp, "  begin //--- Input %s[%d] GENERATOR\n", gio_input_prefix, iopad_idx);
       fprintf(fp, "    %s%s[%d] = 1'b%d;\n", 
               gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx,
               verilog_default_signal_init_value);
