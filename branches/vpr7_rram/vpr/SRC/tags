@@ -489,6 +489,7 @@ OT_FIX_PINS	base/OptionTokens.h	/^	OT_FIX_PINS,$/;"	e	enum:e_OptionBaseToken
 OT_FPGA_SPICE	base/OptionTokens.h	/^    OT_FPGA_SPICE, \/* Xifan TANG: FPGA SPICE Model Support *\/$/;"	e	enum:e_OptionBaseToken
 OT_FPGA_SPICE_LEAKAGE_ONLY	base/OptionTokens.h	/^    OT_FPGA_SPICE_LEAKAGE_ONLY, \/* Xifan TANG: Print SPICE Testbench for MUXes *\/$/;"	e	enum:e_OptionBaseToken
 OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION_OFF	base/OptionTokens.h	/^    OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION_OFF, \/* Xifan TANG: turn off the parasitic net estimation*\/$/;"	e	enum:e_OptionBaseToken
+OT_FPGA_SPICE_RENAME_ILLEGAL_PORT	base/OptionTokens.h	/^    OT_FPGA_SPICE_RENAME_ILLEGAL_PORT, $/;"	e	enum:e_OptionBaseToken
 OT_FPGA_VERILOG_SYN	base/OptionTokens.h	/^    OT_FPGA_VERILOG_SYN, \/* Xifan TANG: Synthesizable Verilog Dump *\/$/;"	e	enum:e_OptionBaseToken
 OT_FPGA_VERILOG_SYN_DIR	base/OptionTokens.h	/^    OT_FPGA_VERILOG_SYN_DIR, \/* Xifan TANG: Synthesizable Verilog Dump *\/$/;"	e	enum:e_OptionBaseToken
 OT_FPGA_VERILOG_SYN_TB_SERIAL_CONFIG_MODE	base/OptionTokens.h	/^    OT_FPGA_VERILOG_SYN_TB_SERIAL_CONFIG_MODE, \/* Xifan TANG: Synthesizable Verilog Dump *\/$/;"	e	enum:e_OptionBaseToken
@@ -1024,7 +1025,7 @@ WHITE	base/easygl_constants.h	/^enum color_types {WHITE, BLACK, DARKGREY, LIGHTG
 WILTON	../../libarchfpga/include/physical_types.h	/^	SUBSET, WILTON, UNIVERSAL, FULL$/;"	e	enum:e_switch_block_type
 WIRE_MODEL_PIE	../../libarchfpga/fpga_spice_include/spice_types.h	/^  WIRE_MODEL_PIE,$/;"	e	enum:e_wire_model_type
 WIRE_MODEL_T	../../libarchfpga/fpga_spice_include/spice_types.h	/^  WIRE_MODEL_T$/;"	e	enum:e_wire_model_type
-WIRE_SEGMENT_LENGTH	base/vpr_api.c	485;"	d	file:
+WIRE_SEGMENT_LENGTH	base/vpr_api.c	486;"	d	file:
 WL	base/place_and_route.h	5;"	d
 WNEED	base/place_and_route.h	4;"	d
 W_seed	base/globals.c	/^int W_seed = -1;$/;"	v
@@ -1387,7 +1388,7 @@ check_all_tracks_reach_pins	route/rr_graph.c	/^static void check_all_tracks_reac
 check_and_add_mux_to_linked_list	spice/spice_mux.c	/^void check_and_add_mux_to_linked_list(t_llist** muxes_head,$/;"	f
 check_and_add_one_global_port_to_llist	fpga_spice/fpga_spice_setup.c	/^t_llist* check_and_add_one_global_port_to_llist(t_llist* old_head, $/;"	f	file:
 check_and_count_models	base/read_blif.c	/^static void check_and_count_models(int doall, const char* model_name,$/;"	f	file:
-check_and_rename_io_logical_block_names	fpga_spice/fpga_spice_setup.c	/^void check_and_rename_io_logical_block_names(t_llist* LL_reserved_syntax_char_head,$/;"	f	file:
+check_and_rename_io_logical_block_names	fpga_spice/fpga_spice_setup.c	/^int check_and_rename_io_logical_block_names(t_llist* LL_reserved_syntax_char_head, boolean rename_illegal_port,$/;"	f	file:
 check_clb_conn	base/check_netlist.c	/^static int check_clb_conn(int iblk, int num_conn) {$/;"	f	file:
 check_clb_internal_nets	base/check_netlist.c	/^static int check_clb_internal_nets(int iblk) {$/;"	f	file:
 check_clocks	pack/cluster.c	/^static void check_clocks(boolean *is_clock) {$/;"	f	file:
@@ -1783,6 +1784,10 @@ dump_verilog_hard_wired_gnd	syn_verilog/verilog_submodules.c	/^void dump_verilog
 dump_verilog_hard_wired_vdd	syn_verilog/verilog_submodules.c	/^void dump_verilog_hard_wired_vdd(FILE* fp, $/;"	f
 dump_verilog_idle_block	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_idle_block(FILE* fp,$/;"	f
 dump_verilog_idle_pb_graph_node_rec	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_idle_pb_graph_node_rec(FILE* fp,$/;"	f
+dump_verilog_input_blif_testbench	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_input_blif_testbench(char* circuit_name,$/;"	f
+dump_verilog_input_blif_testbench_call_top_module	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_input_blif_testbench_call_top_module(FILE* fp, $/;"	f	file:
+dump_verilog_input_blif_testbench_ports	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_input_blif_testbench_ports(FILE* fp,$/;"	f	file:
+dump_verilog_input_blif_testbench_stimuli	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_input_blif_testbench_stimuli(FILE* fp,$/;"	f	file:
 dump_verilog_io_grid_block_subckt_pins	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_io_grid_block_subckt_pins(FILE* fp,$/;"	f
 dump_verilog_io_grid_pins	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_io_grid_pins(FILE* fp,$/;"	f
 dump_verilog_logic_blocks	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_logic_blocks(char* subckt_dir,$/;"	f
@@ -1835,6 +1840,7 @@ dump_verilog_top_testbench_call_top_module	syn_verilog/verilog_top_netlist.c	/^v
 dump_verilog_top_testbench_conf_bits_serial	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_top_testbench_conf_bits_serial(FILE* fp, $/;"	f	file:
 dump_verilog_top_testbench_find_num_config_clock_cycles	syn_verilog/verilog_top_netlist.c	/^int dump_verilog_top_testbench_find_num_config_clock_cycles(t_llist* head) {$/;"	f
 dump_verilog_top_testbench_global_ports	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_top_testbench_global_ports(FILE* fp, t_llist* head) {$/;"	f	file:
+dump_verilog_top_testbench_global_ports_stimuli	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_top_testbench_global_ports_stimuli(FILE* fp, t_llist* head) {$/;"	f	file:
 dump_verilog_top_testbench_ports	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_top_testbench_ports(FILE* fp,$/;"	f	file:
 dump_verilog_top_testbench_stimuli	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_top_testbench_stimuli(FILE* fp,$/;"	f
 dump_verilog_top_testbench_stimuli_serial_version	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,$/;"	f	file:
@@ -2796,6 +2802,7 @@ is_cbox	route/rr_graph2.c	/^boolean is_cbox(INP int chan, INP int seg, INP int t
 is_chain	../../libarchfpga/include/cad_types.h	/^	boolean is_chain; \/* Does this pattern chain across logic blocks *\/$/;"	m	struct:s_pack_patterns
 is_clock	../../libarchfpga/include/logic_types.h	/^	boolean is_clock; \/* clock? *\/$/;"	m	struct:s_model_ports
 is_clock	../../libarchfpga/include/physical_types.h	/^	boolean is_clock;$/;"	m	struct:s_port
+is_config_enable	../../libarchfpga/fpga_spice_include/spice_types.h	/^  boolean is_config_enable;$/;"	m	struct:s_spice_model_port
 is_const_gen	base/vpr_types.h	/^	boolean is_const_gen;$/;"	m	struct:s_net
 is_default	../../libarchfpga/fpga_spice_include/spice_types.h	/^  int is_default;$/;"	m	struct:s_spice_model
 is_done_callibration	power/PowerSpicedComponent.c	/^bool PowerSpicedComponent::is_done_callibration(void) {$/;"	f	class:PowerSpicedComponent
@@ -2821,8 +2828,10 @@ is_number	timing/read_sdc.c	/^static boolean is_number(char * ptr) {$/;"	f	file:
 is_opin	util/vpr_utils.c	/^boolean is_opin(int ipin, t_type_ptr type) {$/;"	f
 is_opin_cblock_defined	../../libarchfpga/include/arch_types_mrfpga.h	/^  int is_opin_cblock_defined;$/;"	m	struct:s_arch_mrfpga
 is_pin_open	pack/cluster_legality.c	/^boolean is_pin_open(int i) {$/;"	f
+is_reset	../../libarchfpga/fpga_spice_include/spice_types.h	/^  boolean is_reset;$/;"	m	struct:s_spice_model_port
 is_sb_interc_between_segments	fpga_spice/fpga_spice_utils.c	/^int is_sb_interc_between_segments(int switch_box_x, $/;"	f
 is_sbox	route/rr_graph2.c	/^boolean is_sbox(INP int chan, INP int wire_seg, INP int sb_seg, INP int track,$/;"	f
+is_set	../../libarchfpga/fpga_spice_include/spice_types.h	/^  boolean is_set;$/;"	m	struct:s_spice_model_port
 is_show_pass_trans	../../libarchfpga/include/arch_types_mrfpga.h	/^  boolean is_show_pass_trans;$/;"	m	struct:s_arch_mrfpga
 is_show_pass_trans	mrfpga/mrfpga_globals.c	/^boolean is_show_sram = FALSE, is_show_pass_trans = FALSE;$/;"	v
 is_show_sram	../../libarchfpga/include/arch_types_mrfpga.h	/^  boolean is_show_sram;$/;"	m	struct:s_arch_mrfpga
@@ -3808,6 +3817,7 @@ reload_ext_net_rr_terminal_cluster	pack/cluster_legality.c	/^void reload_ext_net
 reload_intra_cluster_nets	base/vpr_api.c	/^static void reload_intra_cluster_nets(t_pb *pb) {$/;"	f	file:
 relocate	timing/slre.c	/^static void relocate(struct slre *r, int begin, int shift) {$/;"	f	file:
 remove_llist_node	../../libarchfpga/linkedlist.c	/^void remove_llist_node(t_llist* cur) { $/;"	f
+rename_illegal_port	base/vpr_types.h	/^  boolean rename_illegal_port; \/* Rename illegal port names that is not compatible with verilog\/SPICE syntax *\/$/;"	m	struct:s_fpga_spice_opts
 repeat	../../libarchfpga/include/physical_types.h	/^	int repeat;$/;"	m	struct:s_grid_loc_def
 report_structure	base/graphics.c	/^void report_structure(t_report *report) {$/;"	f
 report_structure	base/graphics.c	/^void report_structure(t_report*) { }$/;"	f
@@ -4520,6 +4530,11 @@ top_netlist_addr_bl_port_name	syn_verilog/verilog_top_netlist.c	/^static char* t
 top_netlist_addr_wl_port_name	syn_verilog/verilog_top_netlist.c	/^static char* top_netlist_addr_wl_port_name = "addr_wl";$/;"	v	file:
 top_netlist_bl_port_name	syn_verilog/verilog_top_netlist.c	/^static char* top_netlist_bl_port_name = "bl_bus";$/;"	v	file:
 top_netlist_wl_port_name	syn_verilog/verilog_top_netlist.c	/^static char* top_netlist_wl_port_name = "wl_bus";$/;"	v	file:
+top_tb_config_done_port_name	syn_verilog/verilog_top_netlist.c	/^static char* top_tb_config_done_port_name = "config_done";$/;"	v	file:
+top_tb_op_clock_port_name	syn_verilog/verilog_top_netlist.c	/^static char* top_tb_op_clock_port_name = "op_clock";$/;"	v	file:
+top_tb_prog_clock_port_name	syn_verilog/verilog_top_netlist.c	/^static char* top_tb_prog_clock_port_name = "prog_clock";$/;"	v	file:
+top_tb_reset_port_name	syn_verilog/verilog_top_netlist.c	/^static char* top_tb_reset_port_name = "greset";$/;"	v	file:
+top_tb_set_port_name	syn_verilog/verilog_top_netlist.c	/^static char* top_tb_set_port_name = "gset";$/;"	v	file:
 top_testbench_verilog_file_postfix	syn_verilog/verilog_global.c	/^char* top_testbench_verilog_file_postfix = "_top_tb.v";$/;"	v
 top_width	base/graphics.c	/^static int top_width, top_height;      \/* window size *\/$/;"	v	file:
 top_width	base/graphics.h	/^	int top_width, top_height;$/;"	m	struct:__anon6

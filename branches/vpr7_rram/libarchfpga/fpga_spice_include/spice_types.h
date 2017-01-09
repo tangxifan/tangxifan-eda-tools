@@ -147,6 +147,9 @@ struct s_spice_model_port {
   boolean mode_select;
   int default_val;
   boolean is_global;
+  boolean is_reset;
+  boolean is_set;
+  boolean is_config_enable;
   char* spice_model_name;
   t_spice_model* spice_model;
 };

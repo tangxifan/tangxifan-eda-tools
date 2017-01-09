@@ -454,9 +454,11 @@ static void ProcessSpiceModelPort(ezxml_t Node,
   if (SPICE_MODEL_PORT_SRAM == port->type) {
     port->mode_select = GetBooleanProperty(Node, "mode_select", FALSE, FALSE);
     ezxml_set_attr(Node, "mode_select", NULL);
-    port->default_val = GetIntProperty(Node, "default_val", FALSE, 0);
-    ezxml_set_attr(Node, "default_val", NULL);
   }
+
+  /* Assign a default value for a port, which is useful in customizing the SRAM bit of idle LUTs */
+  port->default_val = GetIntProperty(Node, "default_val", FALSE, 0);
+  ezxml_set_attr(Node, "default_val", NULL);
 
   /* See if this is a global signal 
    * We assume that global signals are shared by all the SPICE Model/blocks.
@@ -464,6 +466,16 @@ static void ProcessSpiceModelPort(ezxml_t Node,
    */
   port->is_global = GetBooleanProperty(Node, "is_global", FALSE, FALSE);
   ezxml_set_attr(Node, "is_global", NULL);
+
+  /* Check if this port is a set or reset port */ 
+  port->is_reset = GetBooleanProperty(Node, "is_reset", FALSE, FALSE);
+  ezxml_set_attr(Node, "is_reset", NULL);
+  port->is_set = GetBooleanProperty(Node, "is_set", FALSE, FALSE);
+  ezxml_set_attr(Node, "is_set", NULL);
+
+  /* Check if this port is a config_done port */ 
+  port->is_config_enable = GetBooleanProperty(Node, "is_config_enable", FALSE, FALSE);
+  ezxml_set_attr(Node, "is_config_enable", NULL);
 
   /* Check if this port is linked to another spice_model*/
   port->spice_model_name = my_strdup(FindProperty(Node,"spice_model_name",FALSE));

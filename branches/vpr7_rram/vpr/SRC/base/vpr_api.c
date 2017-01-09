@@ -184,6 +184,7 @@ void vpr_print_usage(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_syn_verilog\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_syn_verilog_dir <directory_path_of_dumped_verilog_files>\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_syn_verilog_tb_serial_config_mode\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_rename_illegal_port\n");
 }
 
 /* Initialize VPR 

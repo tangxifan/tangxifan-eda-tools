@@ -404,7 +404,7 @@ sub opts_read() {
     if ("on" eq $opt_ptr->{rram_enhance}) {
       &read_opt_into_hash("rram_mux_isolate","on","off");  # Check -rram_mux_isolate
       &read_opt_into_hash("rram_mux_dvc","off","off");  # Check -rram_mux_isolate
-      &read_opt_into_hash("naive_rram_mux","on","off");  # Check -rram_mux_isolate
+      &read_opt_into_hash("naive_rram_mux","off","off");  # Check -rram_mux_isolate
       &read_opt_into_hash("advance_rram_mux","off","off");  # Check -rram_mux_isolate
       &read_opt_into_hash("wprog_sweep","on","off");  # Check -wprog_sweep
       &read_opt_into_hash("rram_2n1r","off","off");  # Check -rram2n1r

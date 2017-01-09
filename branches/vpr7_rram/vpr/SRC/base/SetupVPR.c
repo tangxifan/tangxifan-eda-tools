@@ -1074,6 +1074,13 @@ static void SetupFpgaSpiceOpts(t_options Options,
 
   /* Decide if we need to read activity file */
   fpga_spice_opts->read_act_file = FALSE;
+
+  /* Decide if we need to rename illegal port names */
+  fpga_spice_opts->rename_illegal_port = FALSE;
+  if (Options.Count[OT_FPGA_SPICE_RENAME_ILLEGAL_PORT]) {
+    fpga_spice_opts->rename_illegal_port = TRUE;
+  }
+
   /* Decide if we need to do FPGA-SPICE */
   fpga_spice_opts->do_fpga_spice = FALSE;
   if (( TRUE == fpga_spice_opts->SpiceOpts.do_spice)

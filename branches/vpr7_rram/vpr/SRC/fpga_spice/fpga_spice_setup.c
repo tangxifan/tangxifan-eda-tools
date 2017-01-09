@@ -69,8 +69,8 @@ boolean is_verilog_and_spice_syntax_conflict_char(t_llist* LL_reserved_syntax_ch
                                                   char ref_char);
 
 static 
-void check_and_rename_io_logical_block_names(t_llist* LL_reserved_syntax_char_head,
-                                             int LL_num_logical_blocks, t_logical_block* LL_logical_block);
+int check_and_rename_io_logical_block_names(t_llist* LL_reserved_syntax_char_head, boolean rename_illegal_port,
+                                            int LL_num_logical_blocks, t_logical_block* LL_logical_block);
 
 /***** Subroutines *****/
 
@@ -768,6 +768,11 @@ t_llist* init_llist_global_ports(t_spice* spice) {
   for (imodel = 0; imodel < spice->num_spice_model; imodel++) {
     for (iport = 0; iport < spice->spice_models[imodel].num_port; iport++) {
       if (TRUE == spice->spice_models[imodel].ports[iport].is_global) {
+        /* Check each global signal has non conflicted flags : 
+         * At most one of the properties: is_config_enable, is_set and is_reset, can be true */
+        assert(2 > (spice->spice_models[imodel].ports[iport].is_set
+                   + spice->spice_models[imodel].ports[iport].is_reset
+                   + spice->spice_models[imodel].ports[iport].is_config_enable));
         /* Add to linked list, the organization will be first-in last-out 
          * First element would be the tail of linked list  
          */
@@ -880,14 +885,16 @@ boolean is_verilog_and_spice_syntax_conflict_char(t_llist* LL_reserved_syntax_ch
  * if the current name violates syntax of SPICE or Verilog 
  */
 static 
-void check_and_rename_io_logical_block_names(t_llist* LL_reserved_syntax_char_head,
-                                             int LL_num_logical_blocks, t_logical_block* LL_logical_block) {
-  int iblock, ichar, name_str_len;
+int check_and_rename_io_logical_block_names(t_llist* LL_reserved_syntax_char_head, boolean rename_illegal_port,
+                                            int LL_num_logical_blocks, t_logical_block* LL_logical_block) {
+  int iblock, ichar, name_str_len, num_violations;
   char renamed_char = '_';
   boolean io_renamed = FALSE;
   char* temp_io_name = NULL;
 
   vpr_printf(TIO_MESSAGE_INFO, "Check IO pad names, to avoid violate SPICE or Verilog Syntax...\n");
+
+  num_violations = 0;
 
   for (iblock = 0; iblock < LL_num_logical_blocks; iblock++) {
     /* Bypass non-IO logical blocks */
@@ -903,18 +910,29 @@ void check_and_rename_io_logical_block_names(t_llist* LL_reserved_syntax_char_he
     for (ichar = 0; ichar < name_str_len; ichar++) {
       /* Check syntax senstive list, if violates, rename it to be '_' */
       if (TRUE == is_verilog_and_spice_syntax_conflict_char(LL_reserved_syntax_char_head, logical_block[iblock].name[ichar])) {
-        logical_block[iblock].name[ichar] = renamed_char;
-        io_renamed = TRUE;
+        num_violations++;
+        if ( TRUE == rename_illegal_port) {
+          logical_block[iblock].name[ichar] = renamed_char;
+          io_renamed = TRUE;
+        }
       }
     } 
     /* Print a warning if */
     if (TRUE == io_renamed) {
       vpr_printf(TIO_MESSAGE_WARNING, "I/O is renamed from %s to %s\n",
                                       temp_io_name, logical_block[iblock].name);
+    } else {
+      vpr_printf(TIO_MESSAGE_WARNING, "I/O name %s violates syntax rules \n",
+                                      temp_io_name);
     }
   } 
 
-  return;
+  if ((0 < num_violations) && ( FALSE == rename_illegal_port )) {
+    vpr_printf(TIO_MESSAGE_ERROR, "Detect %d port violate syntax rules while renaming port is disabled\n", num_violations);
+    exit(1);
+  }
+
+  return num_violations;
 }
 
 /* Top-level function of FPGA-SPICE setup */
@@ -949,7 +967,8 @@ void fpga_spice_setup(t_vpr_setup vpr_setup,
   check_spice_model_name_conflict_syntax_char(*Arch, reserved_syntax_char_head);
 
   /* Check and rename io names to avoid violating SPICE or Verilog syntax */
-  check_and_rename_io_logical_block_names(reserved_syntax_char_head, num_logical_blocks, logical_block);
+  check_and_rename_io_logical_block_names(reserved_syntax_char_head, vpr_setup.FPGA_SPICE_Opts.rename_illegal_port,
+                                          num_logical_blocks, logical_block);
 
   /* Check Activity file is valid */
   if (TRUE == vpr_setup.FPGA_SPICE_Opts.read_act_file) {
