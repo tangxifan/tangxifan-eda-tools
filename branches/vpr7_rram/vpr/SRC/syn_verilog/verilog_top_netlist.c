@@ -47,6 +47,7 @@ static char* top_tb_set_port_name = "gset";
 static char* top_tb_config_done_port_name = "config_done";
 static char* top_tb_op_clock_port_name = "op_clock";
 static char* top_tb_prog_clock_port_name = "prog_clock";
+static char* top_tb_inout_reg_postfix = "_reg";
 
 /* Local Subroutines declaration */
 
@@ -889,37 +890,6 @@ void dump_verilog_configuration_circuits(FILE* fp) {
   return;
 }
 
-/* Wire global clock ports to operation clock  */
-static 
-void dump_verilog_top_testbench_wire_global_clock_ports(FILE* fp, t_llist* head,
-                                                        char* op_clock_port_name) {
-  t_llist* temp = head;
-  t_spice_model_port* cur_global_port = NULL;
-
-  /* Check the file handler*/ 
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
-               __FILE__, __LINE__); 
-  }
-
-  while(NULL != temp) {
-    cur_global_port = (t_spice_model_port*)(temp->dptr); 
-    if (SPICE_MODEL_PORT_CLOCK != cur_global_port->type) {
-      /* Go to the next */
-      temp = temp->next;
-      continue;
-    }
-    assert(1 == cur_global_port->size);
-    fprintf(fp, "assign %s = %s;\n", 
-            cur_global_port->prefix, op_clock_port_name); 
-    /* Go to the next */
-    temp = temp->next;
-  }
-
-  return;
-}
-
-
 /* Dump all the global ports that are stored in the linked list */
 static 
 void dump_verilog_top_testbench_global_ports(FILE* fp, t_llist* head) {
@@ -935,13 +905,88 @@ void dump_verilog_top_testbench_global_ports(FILE* fp, t_llist* head) {
   fprintf(fp, "//----- BEGIN Global ports -----\n");
   while(NULL != temp) {
     cur_global_port = (t_spice_model_port*)(temp->dptr); 
-    fprintf(fp, "reg [0:%d] %s;\n", 
+    fprintf(fp, "wire [0:%d] %s;\n", 
             cur_global_port->size - 1, 
             cur_global_port->prefix); 
     /* Go to the next */
     temp = temp->next;
   }
   fprintf(fp, "//----- END Global ports -----\n");
+
+  return;
+}
+
+/* Connect a global port to a voltage stimuli */
+static 
+void dump_verilog_top_testbench_wire_one_global_port_stimuli(FILE* fp, t_spice_model_port* cur_global_port, 
+                                                             char* voltage_stimuli_port_name) {
+  int ipin;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  assert(NULL != cur_global_port);
+
+  for (ipin = 0; ipin < cur_global_port->size; ipin++) {
+    fprintf(fp, "assign %s[%d] = ",
+                cur_global_port->prefix, ipin);
+    assert((0 == cur_global_port->default_val)||(1 == cur_global_port->default_val));
+    if (1 == cur_global_port->default_val) {
+      fprintf(fp, "~");
+    }
+    fprintf(fp, "%s;\n",
+                voltage_stimuli_port_name);
+  }
+
+  return;
+}
+
+/* Print stimuli for global ports in top-level testbench */
+static 
+void dump_verilog_top_testbench_global_ports_stimuli(FILE* fp, t_llist* head) {
+  t_llist* temp = head;
+  t_spice_model_port* cur_global_port = NULL;
+  int ipin;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  fprintf(fp, "//----- Connecting Global ports -----\n");
+  while(NULL != temp) {
+    cur_global_port = (t_spice_model_port*)(temp->dptr); 
+    /* Make sure this is a global port */
+    assert(TRUE == cur_global_port->is_global);
+    /* If this is a clock signal, connect to op_clock signal */
+    if (SPICE_MODEL_PORT_CLOCK == cur_global_port->type) {
+      dump_verilog_top_testbench_wire_one_global_port_stimuli(fp, cur_global_port, top_tb_op_clock_port_name);
+    /* If this is a config_enable signal, connect to config_done signal */
+    } else if (TRUE == cur_global_port->is_config_enable) {
+      dump_verilog_top_testbench_wire_one_global_port_stimuli(fp, cur_global_port, top_tb_config_done_port_name);
+    /* If this is a set/reset signal, connect to global reset and set signals */
+    } else if (TRUE == cur_global_port->is_reset) {
+      dump_verilog_top_testbench_wire_one_global_port_stimuli(fp, cur_global_port, top_tb_reset_port_name);
+    /* If this is a set/reset signal, connect to global reset and set signals */
+    } else if (TRUE == cur_global_port->is_set) {
+      dump_verilog_top_testbench_wire_one_global_port_stimuli(fp, cur_global_port, top_tb_set_port_name);
+    } else {
+    /* Other global signals stuck at the default values */
+      for (ipin = 0; ipin < cur_global_port->size; ipin++) {
+        fprintf(fp, "assign %s[%d] = 1'b%d;\n", 
+                    cur_global_port->prefix, ipin, cur_global_port->default_val); 
+      }
+    }
+    /* Go to the next */
+    temp = temp->next;
+  }
+  fprintf(fp, "//----- End Connecting Global ports -----\n");
 
   return;
 }
@@ -990,20 +1035,30 @@ void dump_verilog_top_testbench_ports(FILE* fp,
   assert(NULL != iopad_verilog_model);
   if ((NULL == iopad_verilog_model)
    ||(iopad_verilog_model->cnt > 0)) {
-    fprintf(fp, " reg [%d:0] %s%s; //---- FPGA inouts \n", 
+    fprintf(fp, "//----- Wire for inouts ----- \n");
+    fprintf(fp, " wire [%d:0] %s%s; //---- FPGA inouts \n", 
             iopad_verilog_model->cnt - 1,
             gio_inout_prefix,
             iopad_verilog_model->prefix);
+    fprintf(fp, "//----- Reg for inouts (voltage stimuli) ----- \n");
+    fprintf(fp, " reg [%d:0] %s%s%s; //---- reg for FPGA inouts \n", 
+            iopad_verilog_model->cnt - 1,
+            gio_inout_prefix,
+            iopad_verilog_model->prefix, 
+            top_tb_inout_reg_postfix);
   }
 
   /* Add a signal to identify the configuration phase is finished */
-  fprintf(fp, "reg config_done;\n");
+  fprintf(fp, "reg %s;\n", top_tb_config_done_port_name);
   /* Programming clock */
-  fprintf(fp, "reg prog_clock;\n");
+  fprintf(fp, "reg %s;\n", top_tb_prog_clock_port_name);
   /* Operation clock */
-  fprintf(fp, "reg op_clock;\n");
-  /* wire op_clock to global clk */
-  dump_verilog_top_testbench_wire_global_clock_ports(fp, global_ports_head, "op_clock");
+  fprintf(fp, "reg %s;\n", top_tb_op_clock_port_name);
+  /* Global set and reset */
+  fprintf(fp, "reg %s;\n", top_tb_reset_port_name);
+  fprintf(fp, "reg %s;\n", top_tb_set_port_name);
+  /* Generate stimuli for global ports or connect them to existed signals */
+  dump_verilog_top_testbench_global_ports_stimuli(fp, global_ports_head);
 
   /* Configuration ports depend on the organization of SRAMs */
   switch(sram_verilog_orgz_info->type) {
@@ -1054,9 +1109,9 @@ void dump_verilog_top_testbench_ports(FILE* fp,
       assert((VPACK_INPAD == logical_block[iblock].type)||(VPACK_OUTPAD == logical_block[iblock].type));
       fprintf(fp, "//----- Blif Benchmark inout %s is mapped to FPGA IOPAD %s[%d] -----\n", 
               logical_block[iblock].name, gio_inout_prefix, iopad_idx);
-      fprintf(fp, "wire %s_%s[%d];\n",
+      fprintf(fp, "wire %s_%s_%d_;\n",
               logical_block[iblock].name, gio_inout_prefix, iopad_idx);
-      fprintf(fp, "assign %s_%s[%d] = %s%s[%d];\n",
+      fprintf(fp, "assign %s_%s_%d_ = %s%s[%d];\n",
               logical_block[iblock].name, gio_inout_prefix, iopad_idx,
               gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx);
     }
@@ -1067,9 +1122,9 @@ void dump_verilog_top_testbench_ports(FILE* fp,
       assert(VPACK_INPAD == logical_block[iblock].type);
       fprintf(fp, "//----- Blif Benchmark input %s is mapped to FPGA IOPAD %s[%d] -----\n", 
               logical_block[iblock].name, gio_input_prefix, iopad_idx);
-      fprintf(fp, "wire %s_%s[%d];\n",
+      fprintf(fp, "wire %s_%s_%d_;\n",
               logical_block[iblock].name, gio_input_prefix, iopad_idx);
-      fprintf(fp, "assign %s_%s[%d] = %s%s[%d];\n",
+      fprintf(fp, "assign %s_%s_%d_ = %s%s[%d];\n",
               logical_block[iblock].name, gio_input_prefix, iopad_idx,
               gio_input_prefix, inpad_verilog_model->prefix, iopad_idx);
     }
@@ -1080,9 +1135,9 @@ void dump_verilog_top_testbench_ports(FILE* fp,
       assert(VPACK_OUTPAD == logical_block[iblock].type);
       fprintf(fp, "//----- Blif Benchmark output %s is mapped to FPGA IOPAD %s[%d] -----\n", 
               logical_block[iblock].name, gio_output_prefix, iopad_idx);
-      fprintf(fp, "wire %s_%s[%d];\n",
+      fprintf(fp, "wire %s_%s_%d_;\n",
               logical_block[iblock].name, gio_output_prefix, iopad_idx);
-      fprintf(fp, "assign %s_%s[%d] = %s%s[%d];\n",
+      fprintf(fp, "assign %s_%s_%d_ = %s%s[%d];\n",
               logical_block[iblock].name, gio_output_prefix, iopad_idx,
               gio_output_prefix, outpad_verilog_model->prefix, iopad_idx);
     }
@@ -1424,57 +1479,6 @@ void dump_verilog_top_testbench_stimuli_serial_version_tasks(FILE* fp) {
   return;
 }
 
-/* Print stimuli for global ports in top-level testbench */
-static 
-void dump_verilog_top_testbench_global_ports_stimuli(FILE* fp, t_llist* head) {
-  t_llist* temp = head;
-  t_spice_model_port* cur_global_port = NULL;
-  int ipin;
-
-  /* Check the file handler*/ 
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
-               __FILE__, __LINE__); 
-    exit(1);
-  }
-
-  fprintf(fp, "//----- Connecting Global ports -----\n");
-  while(NULL != temp) {
-    cur_global_port = (t_spice_model_port*)(temp->dptr); 
-    /* Make sure this is a global port */
-    assert(TRUE == cur_global_port->is_global);
-    /* If this is a config_enable signal, connect to config_done signal */
-    if (TRUE == cur_global_port->is_config_enable) {
-      for (ipin = 0; ipin < cur_global_port->size; ipin++) {
-        fprintf(fp, "assign %s[%d] = %s\n",
-                    cur_global_port->prefix, ipin, top_tb_config_done_port_name);
-      }
-    /* If this is a set/reset signal, connect to global reset and set signals */
-    } else if (TRUE == cur_global_port->is_reset) {
-      for (ipin = 0; ipin < cur_global_port->size; ipin++) {
-        fprintf(fp, "assign %s[%d] = %s\n",
-                    cur_global_port->prefix, ipin, top_tb_reset_port_name);
-      }
-    /* If this is a set/reset signal, connect to global reset and set signals */
-    } else if (TRUE == cur_global_port->is_set) {
-      for (ipin = 0; ipin < cur_global_port->size; ipin++) {
-        fprintf(fp, "assign %s[%d] = %s\n",
-                    cur_global_port->prefix, ipin, top_tb_set_port_name);
-      }
-    } else {
-    /* Other global signals stuck at the default values */
-      for (ipin = 0; ipin < cur_global_port->size; ipin++) {
-        fprintf(fp, "assign %s[%d] = 1'b%d;\n", 
-                    cur_global_port->prefix, ipin, cur_global_port->default_val); 
-      }
-    }
-    /* Go to the next */
-    temp = temp->next;
-  }
-  fprintf(fp, "//----- End Connecting Global ports -----\n");
-
-  return;
-}
 
 /* Print Stimulations for top-level netlist 
  * Test a complete configuration phase: 
@@ -1493,8 +1497,8 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   int inet, iblock, iopad_idx;
   int found_mapped_inpad = 0;
   int num_config_clock_cycles = 0;
-  int prog_clock_period = 1./spice.spice_params.stimulate_params.prog_clock_freq;
-  int op_clock_period = 1./spice.spice_params.stimulate_params.prog_clock_freq;
+  float prog_clock_period = (1./spice.spice_params.stimulate_params.prog_clock_freq);
+  float op_clock_period = (1./spice.spice_params.stimulate_params.prog_clock_freq);
 
   /* Find Input Pad Spice model */
   t_spice_net_info* cur_spice_net_info = NULL;
@@ -1523,7 +1527,7 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   fprintf(fp, "    %s = 1'b0;\n", top_tb_config_done_port_name);
   fprintf(fp, "    //----- %s signal is enabled after %d configurating operations are done ----\n", 
               top_tb_config_done_port_name, num_config_clock_cycles);
-  fprintf(fp, "    #%.2f %s = 1'b1;\n", 
+  fprintf(fp, "    #%.2g %s = 1'b1;\n", 
               num_config_clock_cycles * prog_clock_period / verilog_sim_timescale, top_tb_config_done_port_name);
   fprintf(fp, "  end\n");
   fprintf(fp, "//----- END of %s ----\n", 
@@ -1542,7 +1546,7 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   fprintf(fp, "always @(~%s) //---- Triggered only when %s is disabled\n", 
               top_tb_config_done_port_name, top_tb_config_done_port_name); 
   fprintf(fp, "  begin //--- PROG_CLOCK GENERATOR\n");
-  fprintf(fp, "    #%.2f %s = ~%s;\n", 
+  fprintf(fp, "    #%.2g %s = ~%s;\n", 
               0.5*prog_clock_period / verilog_sim_timescale,
               top_tb_prog_clock_port_name, top_tb_prog_clock_port_name);
   fprintf(fp, "  end\n");
@@ -1560,7 +1564,7 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
    */
   fprintf(fp, "always @(%s) //---- Triggered only when config_done is enabled \n", top_tb_config_done_port_name); 
   fprintf(fp, "  begin //--- OP_CLOCK GENERATOR\n");
-  fprintf(fp, "    #%.2f %s = ~%s;\n", 
+  fprintf(fp, "    #%.2g %s = ~%s;\n", 
               0.5*op_clock_period / verilog_sim_timescale,
               top_tb_op_clock_port_name, top_tb_op_clock_port_name);
   fprintf(fp, "  end\n");
@@ -1574,11 +1578,11 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   fprintf(fp, " %s = 1'b0;\n", top_tb_reset_port_name);
   /* Reset is enabled until the first clock cycle in operation phase */
   fprintf(fp, "//----- Reset signal is enabled until the first clock cycle in operation phase ----\n");
-  fprintf(fp, "#%.2f greset = 1'b0;\n",
+  fprintf(fp, "#%.2g greset = 1'b0;\n",
               num_config_clock_cycles * prog_clock_period / verilog_sim_timescale);
-  fprintf(fp, "#%.2f greset = 1'b1;\n", 
+  fprintf(fp, "#%.2g greset = 1'b1;\n", 
               (num_config_clock_cycles * prog_clock_period + 1 * op_clock_period)/ verilog_sim_timescale);
-  fprintf(fp, "#%.2f greset = 1'b0;\n", 
+  fprintf(fp, "#%.2g greset = 1'b0;\n", 
               (num_config_clock_cycles * prog_clock_period + 2 * op_clock_period) / verilog_sim_timescale);
   fprintf(fp, "end\n");
   fprintf(fp, "\n");
@@ -1591,9 +1595,6 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   fprintf(fp, "//----- Set signal is always disabled -----\n");
   fprintf(fp, "end\n");
   fprintf(fp, "\n");
-
-  /* Generate stimuli for global ports or connect them to existed signals */
-  dump_verilog_top_testbench_global_ports_stimuli(fp, global_ports_head);
 
   /* Inputs stimuli: BL/WL address lines */
   dump_verilog_top_testbench_conf_bits_serial(fp, sram_verilog_orgz_info->conf_bit_head); 
@@ -1622,21 +1623,26 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
         assert(!(1 < cur_spice_net_info->density));
         assert(!(0 > cur_spice_net_info->probability));
         assert(!(1 < cur_spice_net_info->probability));
+        /* Connect the reg to inouts */
+        fprintf(fp, "//----- Input %s Stimuli ----\n", logical_block[iblock].name);
+        fprintf(fp, "assign %s%s[%d] = %s%s%s[%d];\n",
+                gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx,
+                gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx);
         /* Get the net information */
         /* TODO: Give the net name in the blif file !*/
-        fprintf(fp, "//----- Input %s Stimuli ----\n", logical_block[iblock].name);
         fprintf(fp, "initial\n");
         fprintf(fp, "  begin //--- Input %s GENERATOR\n", logical_block[iblock].name);
-        fprintf(fp, "    %s%s[%d] = 1'b%d;\n", 
-                gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx,
+        fprintf(fp, "    %s%s%s[%d] = 1'b%d;\n", 
+                gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx,
                 cur_spice_net_info->init_val);
+        fprintf(fp, "    wait (~%s)\n");
         fprintf(fp, "end\n");
-        fprintf(fp, "always @(%s)\n", top_tb_config_done_port_name);
+        fprintf(fp, "always \n");
         fprintf(fp, "  begin \n");
-        fprintf(fp, "    #%.2f %s%s[%d] = ~%s%s[%d];\n", 
-                (op_clock_period * cur_spice_net_info->density * 2. / cur_spice_net_info->probability), 
-                gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx,
-                gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx);
+        fprintf(fp, "    #%.2g %s%s%s[%d] = ~%s%s%s[%d];\n", 
+                (op_clock_period * cur_spice_net_info->density * 2. / cur_spice_net_info->probability) / verilog_sim_timescale, 
+                gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx,
+                gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx);
         fprintf(fp, "  end \n");
         fprintf(fp, "\n");
         found_mapped_inpad++;
@@ -1645,12 +1651,16 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
     assert((0 == found_mapped_inpad)||(1 == found_mapped_inpad));
     /* if we cannot find any mapped inpad from tech.-mapped netlist, give a default */
     if (0 == found_mapped_inpad) {
-      /* TODO: Give the net name in the blif file !*/
+      /* Connect the reg to inouts */
       fprintf(fp, "//----- Input %s[%d] Stimuli ----\n", gio_input_prefix, iopad_idx);
+      fprintf(fp, "assign %s%s[%d] = %s%s%s[%d];\n",
+              gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx,
+              gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx);
+      /* TODO: Give the net name in the blif file !*/
       fprintf(fp, "initial\n");
       fprintf(fp, "  begin //--- Input %s[%d] GENERATOR\n", gio_input_prefix, iopad_idx);
-      fprintf(fp, "    %s%s[%d] = 1'b%d;\n", 
-              gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx,
+      fprintf(fp, "    %s%s%s[%d] = 1'b%d;\n", 
+              gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx,
               verilog_default_signal_init_value);
       fprintf(fp, "end\n");
     }
@@ -1694,16 +1704,18 @@ void dump_verilog_input_blif_testbench_ports(FILE* fp,
   int iblock;
   
   fprintf(fp, "module %s_blif_tb;\n", circuit_name);
+ 
+  fprintf(fp, "  reg %s;\n", top_tb_reset_port_name);
 
   /* Print all the inputs/outputs*/
   for (iblock = 0; iblock < num_logical_blocks; iblock++) {
     /* Make sure We find the correct logical block !*/
     switch (logical_block[iblock].type) {
     case VPACK_INPAD:
-      fprintf(fp, "  input %s;\n", logical_block[iblock].name);
+      fprintf(fp, "  reg %s;\n", logical_block[iblock].name);
       break;
     case VPACK_OUTPAD:
-      fprintf(fp, "  output %s;\n", logical_block[iblock].name);
+      fprintf(fp, "  wire %s;\n", logical_block[iblock].name);
       break;
 	case VPACK_COMB: 
     case VPACK_LATCH: 
@@ -1723,7 +1735,9 @@ void dump_verilog_input_blif_testbench_ports(FILE* fp,
 static 
 void dump_verilog_input_blif_testbench_call_top_module(FILE* fp, 
                                                        char* circuit_name) {
-  int iblock;
+  int iblock, cnt;
+  /* Initialize a counter */
+  cnt = 0;
 
   fprintf(fp, "%s uut (\n", circuit_name);
   /* Print all the inputs/outputs*/
@@ -1732,7 +1746,14 @@ void dump_verilog_input_blif_testbench_call_top_module(FILE* fp,
     switch (logical_block[iblock].type) {
     case VPACK_INPAD:
     case VPACK_OUTPAD:
-      fprintf(fp, "%s,\n", logical_block[iblock].name);
+      /* Dump a comma only when needed*/
+      if (0 < cnt) {
+        fprintf(fp, ",\n");
+      }
+      /* Dump an input/output, avoid additional comma leading to wrong connections */
+      fprintf(fp, "%s", logical_block[iblock].name);
+      /* Update counter */
+      cnt++; 
       break;
 	case VPACK_COMB: 
     case VPACK_LATCH: 
@@ -1745,6 +1766,8 @@ void dump_verilog_input_blif_testbench_call_top_module(FILE* fp,
     }
   }
   fprintf(fp, ");\n");
+  fprintf(fp, "//---- End call module %s (%d inputs and outputs) -----\n",
+               circuit_name, cnt);
 
   return;
 }
@@ -1757,9 +1780,21 @@ void dump_verilog_input_blif_testbench_stimuli(FILE* fp,
                                                t_spice spice) {
   int iblock, inet;
   t_spice_net_info* cur_spice_net_info = NULL;
-  int op_clock_period = 1./spice.spice_params.stimulate_params.prog_clock_freq;
+  float op_clock_period = 1./spice.spice_params.stimulate_params.prog_clock_freq;
 
-  /* Give one clock cycle for reset ? */
+  fprintf(fp, "//----- Operation clock period: %.2g -----\n", op_clock_period);
+
+  /* reset signals: only enabled during the first clock cycle in operation phase */
+  fprintf(fp, "//----- Reset Stimuli ----\n");
+  fprintf(fp, "initial\n");
+  fprintf(fp, "  begin //--- RESET GENERATOR\n");
+  fprintf(fp, " %s = 1'b1;\n", top_tb_reset_port_name);
+  /* Reset is enabled until the first clock cycle in operation phase */
+  fprintf(fp, "//----- Reset signal is enabled until the first clock cycle in operation phase ----\n");
+  fprintf(fp, "#%.2g greset = 1'b0;\n", 
+              (1 * op_clock_period) / verilog_sim_timescale);
+  fprintf(fp, "end\n");
+  fprintf(fp, "\n");
 
   /* Regular inputs */   
   for (iblock = 0; iblock < num_logical_blocks; iblock++) {
@@ -1786,11 +1821,12 @@ void dump_verilog_input_blif_testbench_stimuli(FILE* fp,
       fprintf(fp, "    %s = 1'b%d;\n", 
               logical_block[iblock].name,
               cur_spice_net_info->init_val);
+      fprintf(fp, " wait (~%s);\n", top_tb_reset_port_name);
       fprintf(fp, "end\n");
-      fprintf(fp, "always @(%s)\n", top_tb_config_done_port_name);
+      fprintf(fp, "always\n", top_tb_reset_port_name);
       fprintf(fp, "  begin \n");
-      fprintf(fp, "    #%.2f %s = ~%s;\n", 
-              (op_clock_period * cur_spice_net_info->density * 2. / cur_spice_net_info->probability), 
+      fprintf(fp, "    #%.2g %s = ~%s;\n", 
+              (op_clock_period * cur_spice_net_info->density * 2. / cur_spice_net_info->probability) / verilog_sim_timescale, 
               logical_block[iblock].name,
               logical_block[iblock].name);
       fprintf(fp, "  end \n");

@@ -2,6 +2,7 @@
 extern char* verilog_top_postfix;
 extern char* bitstream_verilog_file_postfix;
 extern char* top_testbench_verilog_file_postfix;
+extern char* blif_testbench_verilog_file_postfix;
 extern char* logic_block_verilog_file_name;
 extern char* luts_verilog_file_name;
 extern char* routing_verilog_file_name;
