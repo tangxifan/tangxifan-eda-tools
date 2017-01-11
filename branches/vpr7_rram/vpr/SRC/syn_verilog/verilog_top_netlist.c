@@ -48,6 +48,7 @@ static char* top_tb_config_done_port_name = "config_done";
 static char* top_tb_op_clock_port_name = "op_clock";
 static char* top_tb_prog_clock_port_name = "prog_clock";
 static char* top_tb_inout_reg_postfix = "_reg";
+static char* top_tb_clock_reg_postfix = "_reg";
 
 /* Local Subroutines declaration */
 
@@ -1051,9 +1052,11 @@ void dump_verilog_top_testbench_ports(FILE* fp,
   /* Add a signal to identify the configuration phase is finished */
   fprintf(fp, "reg %s;\n", top_tb_config_done_port_name);
   /* Programming clock */
-  fprintf(fp, "reg %s;\n", top_tb_prog_clock_port_name);
+  fprintf(fp, "wire %s;\n", top_tb_prog_clock_port_name);
+  fprintf(fp, "reg %s%s;\n", top_tb_prog_clock_port_name, top_tb_clock_reg_postfix);
   /* Operation clock */
-  fprintf(fp, "reg %s;\n", top_tb_op_clock_port_name);
+  fprintf(fp, "wire %s;\n", top_tb_op_clock_port_name);
+  fprintf(fp, "reg %s%s;\n", top_tb_op_clock_port_name, top_tb_clock_reg_postfix);
   /* Global set and reset */
   fprintf(fp, "reg %s;\n", top_tb_reset_port_name);
   fprintf(fp, "reg %s;\n", top_tb_set_port_name);
@@ -1256,11 +1259,8 @@ int dump_verilog_top_testbench_find_num_config_clock_cycles(t_llist* head) {
       }
       break;
     case SPICE_SRAM_MEMORY_BANK:
-      if ((1 == temp_conf_bit_info->bl->val)
-         &&(1 == temp_conf_bit_info->wl->val)) {
-        cnt++;
-        temp_conf_bit_info->index_in_top_tb = cnt;
-      }
+      cnt++;
+      temp_conf_bit_info->index_in_top_tb = cnt;
       break;
     default:
       vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
@@ -1516,7 +1516,7 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   /* Estimate the number of configuration clock cycles 
    * by traversing the linked-list and count the number of SRAM=1 or BL=1&WL=1 in it.
    */
-  num_config_clock_cycles = dump_verilog_top_testbench_find_num_config_clock_cycles(conf_bits_head);
+  num_config_clock_cycles = dump_verilog_top_testbench_find_num_config_clock_cycles(sram_verilog_orgz_info->conf_bit_head);
   fprintf(fp, "//----- Number of clock cycles in configuration phase: %d -----\n", 
               num_config_clock_cycles);
 
@@ -1535,55 +1535,70 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   fprintf(fp, "\n");
 
   /* Generate stimilus of programming clock */
-  fprintf(fp, "//----- Programming clock ----\n");
+  fprintf(fp, "//----- Raw Programming clock ----\n");
   fprintf(fp, "initial\n");
   fprintf(fp, "  begin //--- PROG_CLOCK INITIALIZATION\n");
-  fprintf(fp, "    %s = 1'b0;\n", top_tb_prog_clock_port_name);
+  fprintf(fp, "    %s%s = 1'b0;\n", top_tb_prog_clock_port_name, top_tb_clock_reg_postfix);
   fprintf(fp, "  end\n");
-  /* Programming clock should be only enabled during programming phase.
-   * When configuration is done (config_done is enabled), programming clock should be always zero.
-   */
-  fprintf(fp, "always @(~%s) //---- Triggered only when %s is disabled\n", 
-              top_tb_config_done_port_name, top_tb_config_done_port_name); 
+  fprintf(fp, "always\n"); 
   fprintf(fp, "  begin //--- PROG_CLOCK GENERATOR\n");
-  fprintf(fp, "    #%.2g %s = ~%s;\n", 
+  fprintf(fp, "    #%.2g %s%s = ~%s%s;\n", 
               0.5*prog_clock_period / verilog_sim_timescale,
-              top_tb_prog_clock_port_name, top_tb_prog_clock_port_name);
+              top_tb_prog_clock_port_name, top_tb_clock_reg_postfix, 
+              top_tb_prog_clock_port_name, top_tb_clock_reg_postfix);
   fprintf(fp, "  end\n");
   fprintf(fp, "//----- END of  Programming clock ----\n");
   fprintf(fp, "\n");
+  /* Programming clock should be only enabled during programming phase.
+   * When configuration is done (config_done is enabled), programming clock should be always zero.
+   */
+  fprintf(fp, "//---- Actual programming clock is triggered only when %s is disabled\n", 
+              top_tb_config_done_port_name); 
+  fprintf(fp, "  assign %s = %s%s & (~%s);\n",
+              top_tb_prog_clock_port_name,
+              top_tb_prog_clock_port_name, top_tb_clock_reg_postfix,
+              top_tb_config_done_port_name);
+  fprintf(fp, "//----- END of Actual Programming clock ----\n");
+  fprintf(fp, "\n");
 
   /* Generate stimilus of programming clock */
-  fprintf(fp, "//----- Operation clock ----\n");
+  fprintf(fp, "//----- Raw Operation clock ----\n");
   fprintf(fp, "initial\n");
   fprintf(fp, "  begin //--- OP_CLOCK INITIALIZATION\n");
-  fprintf(fp, "    %s = 1'b0;\n", top_tb_op_clock_port_name);
+  fprintf(fp, "    %s%s = 1'b0;\n", top_tb_op_clock_port_name, top_tb_clock_reg_postfix);
   fprintf(fp, "  end\n");
+  fprintf(fp, "always wait(%s)\n", top_tb_config_done_port_name); 
+  fprintf(fp, "  begin //--- OP_CLOCK GENERATOR\n");
+  fprintf(fp, "    #%.2g %s%s = ~%s%s;\n", 
+              0.5*op_clock_period / verilog_sim_timescale,
+              top_tb_op_clock_port_name, top_tb_clock_reg_postfix,
+              top_tb_op_clock_port_name, top_tb_clock_reg_postfix);
+  fprintf(fp, "  end\n");
+  fprintf(fp, "//----- END of Operation clock ----\n");
   /* Operation clock should be enabled after programming phase finishes.
    * Before configuration is done (config_done is enabled), operation clock should be always zero.
    */
-  fprintf(fp, "always @(%s) //---- Triggered only when config_done is enabled \n", top_tb_config_done_port_name); 
-  fprintf(fp, "  begin //--- OP_CLOCK GENERATOR\n");
-  fprintf(fp, "    #%.2g %s = ~%s;\n", 
-              0.5*op_clock_period / verilog_sim_timescale,
-              top_tb_op_clock_port_name, top_tb_op_clock_port_name);
-  fprintf(fp, "  end\n");
-  fprintf(fp, "//----- END of Operation clock ----\n");
+  fprintf(fp, "//---- Actual operation clock is triggered only when %s is enabled \n", 
+              top_tb_config_done_port_name); 
+  fprintf(fp, "  assign %s = %s%s & (%s);\n",
+              top_tb_op_clock_port_name,
+              top_tb_op_clock_port_name, top_tb_clock_reg_postfix,
+              top_tb_config_done_port_name);
+  fprintf(fp, "//----- END of Actual Operation clock ----\n");
   fprintf(fp, "\n");
 
   /* reset signals: only enabled during the first clock cycle in operation phase */
   fprintf(fp, "//----- Reset Stimuli ----\n");
   fprintf(fp, "initial\n");
   fprintf(fp, "  begin //--- RESET GENERATOR\n");
-  fprintf(fp, " %s = 1'b0;\n", top_tb_reset_port_name);
+  fprintf(fp, " %s = 1'b1;\n", top_tb_reset_port_name);
   /* Reset is enabled until the first clock cycle in operation phase */
   fprintf(fp, "//----- Reset signal is enabled until the first clock cycle in operation phase ----\n");
-  fprintf(fp, "#%.2g greset = 1'b0;\n",
-              num_config_clock_cycles * prog_clock_period / verilog_sim_timescale);
+  fprintf(fp, "wait(%s);\n", top_tb_config_done_port_name); 
   fprintf(fp, "#%.2g greset = 1'b1;\n", 
-              (num_config_clock_cycles * prog_clock_period + 1 * op_clock_period)/ verilog_sim_timescale);
+              (1 * op_clock_period)/ verilog_sim_timescale);
   fprintf(fp, "#%.2g greset = 1'b0;\n", 
-              (num_config_clock_cycles * prog_clock_period + 2 * op_clock_period) / verilog_sim_timescale);
+              (2 * op_clock_period) / verilog_sim_timescale);
   fprintf(fp, "end\n");
   fprintf(fp, "\n");
 
@@ -1635,9 +1650,8 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
         fprintf(fp, "    %s%s%s[%d] = 1'b%d;\n", 
                 gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx,
                 cur_spice_net_info->init_val);
-        fprintf(fp, "    wait (~%s)\n");
         fprintf(fp, "end\n");
-        fprintf(fp, "always \n");
+        fprintf(fp, "always wait (~%s)\n", top_tb_reset_port_name);
         fprintf(fp, "  begin \n");
         fprintf(fp, "    #%.2g %s%s%s[%d] = ~%s%s%s[%d];\n", 
                 (op_clock_period * cur_spice_net_info->density * 2. / cur_spice_net_info->probability) / verilog_sim_timescale, 
@@ -1821,9 +1835,8 @@ void dump_verilog_input_blif_testbench_stimuli(FILE* fp,
       fprintf(fp, "    %s = 1'b%d;\n", 
               logical_block[iblock].name,
               cur_spice_net_info->init_val);
-      fprintf(fp, " wait (~%s);\n", top_tb_reset_port_name);
       fprintf(fp, "end\n");
-      fprintf(fp, "always\n", top_tb_reset_port_name);
+      fprintf(fp, "always wait (~%s)\n", top_tb_reset_port_name);
       fprintf(fp, "  begin \n");
       fprintf(fp, "    #%.2g %s = ~%s;\n", 
               (op_clock_period * cur_spice_net_info->density * 2. / cur_spice_net_info->probability) / verilog_sim_timescale, 
