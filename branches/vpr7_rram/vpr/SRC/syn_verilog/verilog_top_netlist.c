@@ -155,18 +155,18 @@ void dump_verilog_top_netlist_ports(FILE* fp,
     fprintf(fp, "  wire [%d:%d] %s_%s; //---- Normal Word lines \n",
             num_wl - 1, num_reserved_wl, mem_model->prefix, "wl");
     /* Connect reserved conf_bits and normal conf_bits to the bus */
-    fprintf(fp, "  assign %s[%d:0] = %s_%s[%d:0];\n",
-            top_netlist_bl_port_name, num_reserved_bl - 1,
-            mem_model->prefix, "reserved_bl", num_reserved_bl - 1);
-    fprintf(fp, "  assign %s[%d:0] = %s_%s[%d:0];\n",
-            top_netlist_wl_port_name, num_reserved_wl - 1,
-            mem_model->prefix, "reserved_wl", num_reserved_wl - 1);
-    fprintf(fp, "  assign %s[%d:%d] = %s_%s[%d:%d];\n",
-            top_netlist_bl_port_name, num_mem_bit - 1, num_reserved_bl,
-            mem_model->prefix, "bl", num_mem_bit - 1, num_reserved_bl);
-    fprintf(fp, "  assign %s[%d:%d] = %s_%s[%d:%d];\n",
-            top_netlist_wl_port_name, num_mem_bit - 1, num_reserved_wl,
-            mem_model->prefix, "wl", num_mem_bit - 1, num_reserved_wl);
+    fprintf(fp, "  assign %s_%s[%d:0] = %s[%d:0];\n",
+            mem_model->prefix, "reserved_bl", num_reserved_bl - 1,
+            top_netlist_bl_port_name, num_reserved_bl - 1);
+    fprintf(fp, "  assign %s_%s[%d:0] = %s[%d:0];\n",
+            mem_model->prefix, "reserved_wl", num_reserved_wl - 1,
+            top_netlist_wl_port_name, num_reserved_wl - 1);
+    fprintf(fp, "  assign %s_%s[%d:%d] = %s[%d:%d];\n",
+            mem_model->prefix, "bl", num_mem_bit - 1, num_reserved_bl,
+            top_netlist_bl_port_name, num_mem_bit - 1, num_reserved_bl);
+    fprintf(fp, "  assign %s_%s[%d:%d] = %s[%d:%d];\n",
+            mem_model->prefix, "wl", num_mem_bit - 1, num_reserved_wl,
+            top_netlist_wl_port_name, num_mem_bit - 1, num_reserved_wl);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
@@ -970,7 +970,7 @@ void dump_verilog_top_testbench_global_ports_stimuli(FILE* fp, t_llist* head) {
       dump_verilog_top_testbench_wire_one_global_port_stimuli(fp, cur_global_port, top_tb_op_clock_port_name);
     /* If this is a config_enable signal, connect to config_done signal */
     } else if (TRUE == cur_global_port->is_config_enable) {
-      dump_verilog_top_testbench_wire_one_global_port_stimuli(fp, cur_global_port, top_tb_config_done_port_name);
+      dump_verilog_top_testbench_wire_one_global_port_stimuli(fp, cur_global_port, top_tb_prog_clock_port_name);
     /* If this is a set/reset signal, connect to global reset and set signals */
     } else if (TRUE == cur_global_port->is_reset) {
       dump_verilog_top_testbench_wire_one_global_port_stimuli(fp, cur_global_port, top_tb_reset_port_name);
@@ -1450,7 +1450,7 @@ void dump_verilog_top_testbench_stimuli_serial_version_tasks(FILE* fp) {
     fprintf(fp, "             bl_addr_val, wl_addr_val);\n");
     */
     fprintf(fp, "    %s = bl_addr_val;\n", top_netlist_addr_bl_port_name);
-    fprintf(fp, "    %s = wl_addr_val;\n", top_netlist_addr_bl_port_name);
+    fprintf(fp, "    %s = wl_addr_val;\n", top_netlist_addr_wl_port_name);
     fprintf(fp, "  end\n");
     fprintf(fp, "endtask //---prog_cycle_stimuli\n");
     fprintf(fp, "\n");
@@ -1465,7 +1465,7 @@ void dump_verilog_top_testbench_stimuli_serial_version_tasks(FILE* fp) {
     fprintf(fp, "             bl_addr_val, wl_addr_val);\n");
     */
     fprintf(fp, "    %s = bl_addr_val;\n", top_netlist_addr_bl_port_name);
-    fprintf(fp, "    %s = wl_addr_val;\n", top_netlist_addr_bl_port_name);
+    fprintf(fp, "    %s = wl_addr_val;\n", top_netlist_addr_wl_port_name);
     fprintf(fp, "  end\n");
     fprintf(fp, "endtask //---op_cycle_stimuli\n");
     fprintf(fp, "\n");

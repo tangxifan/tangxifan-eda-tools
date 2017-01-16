@@ -14,16 +14,19 @@ input D, // Data Input
 output Q // Q output 
 );
 //------------Internal Variables--------
-reg q;
+reg q_reg;
 
 //-------------Code Starts Here---------
-always @ ( posedge clk or negedge reset or negedge set)
-if (~reset) begin
-  q <= 1'b0;
-end else if (~set) begin
-  q <= 1'b1;
+always @ ( posedge clk or reset or set)
+if (reset) begin
+  q_reg <= 1'b0;
+end else if (set) begin
+  q_reg <= 1'b1;
 end else begin
-  q <= D;
+  q_reg <= D;
 end
+
+// Wire q_reg to Q
+assign Q = q_reg; 
 
 endmodule //End Of Module static_dff

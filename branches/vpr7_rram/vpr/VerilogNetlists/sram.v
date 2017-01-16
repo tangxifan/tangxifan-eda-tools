@@ -34,21 +34,37 @@ input [0:2] bl, // Bit line control signal
 input [0:2] wl// Word line control signal
 );
   //----- local variable need to be registered
-  reg a;
+  //----- Modeling two RRAMs 
+  reg r0, r1;
 
-  //----- when wl is enabled, we can read in data from bl
-  always @(posedge wl[0])
-  if (1'b1 == bl[1]) begin
-      a <= 0;
-  end 
+  always @(bl[0], bl[1], bl[2], wl[0], wl[1], wl[2]) 
+  begin
+    r0 = 1'b0;
+    r1 = 1'b1;
+    //----- Cases to program r0 
+    //----- case 1: bl[0] = 1, wl[2] = 1, r0 -> 0
+    if ((1'b1 == bl[0])&&(1'b1 == wl[2])) begin
+      r0 <= 0;
+    end 
+    //----- case 2: bl[2] = 1, wl[0] = 1, r0 -> 1
+    if ((1'b1 == bl[2])&&(1'b1 == wl[0])) begin
+      r0 <= 1;
+    end 
+    //----- Cases to program r1 
+    //----- case 1: bl[1] = 1, wl[2] = 1, r0 -> 0
+    if ((1'b1 == bl[1])&&(1'b1 == wl[2])) begin
+      r1 <= 0;
+    end 
+    //----- case 2: bl[2] = 1, wl[1] = 1, r0 -> 1
+    if ((1'b1 == bl[2])&&(1'b1 == wl[1])) begin
+      r1 <= 1;
+    end
+  end
 
-  always @(posedge wl[1])
-  if (1'b1 == bl[0]) begin
-      a <= 1;
-  end 
+  // dout is r0 AND r1  
+  assign dout = r0 | (~r1);
 
-  // dout is short-wired to din 
-  assign dout = a;
   //---- doutb is always opposite to dout 
   assign doutb = ~dout;
+
 endmodule

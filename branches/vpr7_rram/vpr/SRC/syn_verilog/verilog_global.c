@@ -17,6 +17,7 @@ char* luts_verilog_file_name = "luts.v";
 char* routing_verilog_file_name = "routing.v";
 char* muxes_verilog_file_name = "muxes.v";
 char* wires_verilog_file_name = "wires.v";
+char* essentials_verilog_file_name = "inv_buf_passgate.v";
 char* decoders_verilog_file_name = "decoders.v";
 
 char* verilog_mux_basis_posfix = "_basis";
