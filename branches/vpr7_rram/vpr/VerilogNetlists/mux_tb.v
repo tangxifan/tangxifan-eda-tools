@@ -1,7 +1,7 @@
 //-----------------------------------------------------
-// Design Name : testbench for static_dff
-// File Name   : ff_tb.v
-// Function    : D flip-flop with asyn reset and set
+// Design Name : testbench for 1-level RRAM MUX
+// File Name   : mux_tb.v
+// Function    : 4T1R-based 1-level MUXes
 // Coder       : Xifan TANG
 //-----------------------------------------------------
 //----- Time scale: simulation time step and accuracy -----

@@ -139,34 +139,38 @@ void dump_verilog_top_netlist_ports(FILE* fp,
     fprintf(fp, ");\n");
     /* Definition ends */
     /* I add all the Bit lines and Word lines here just for testbench usage */
-    fprintf(fp, "  wire [%d:0] %s; //--- Bit lines bus \n", 
+    /* Important!!!:
+     * BL/WL should always start from LSB to MSB!
+     * In order to follow this convention in primitive nodes. 
+     */
+    fprintf(fp, "  wire [0:%d] %s; //--- Bit lines bus \n", 
                    num_bl - 1, top_netlist_bl_port_name);
-    fprintf(fp, "  wire [%d:0] %s; //--- Word lines bus \n", 
+    fprintf(fp, "  wire [0:%d] %s; //--- Word lines bus \n", 
                    num_wl - 1, top_netlist_wl_port_name);
     fprintf(fp, "\n");
     /* Declare reserved and normal conf_bits ports  */
     mem_model = sram_verilog_orgz_info->mem_bank_info->mem_model;
-    fprintf(fp, "  wire [%d:0] %s_%s; //---- Reserved Bit lines \n",
+    fprintf(fp, "  wire [0:%d] %s_%s; //---- Reserved Bit lines \n",
             num_reserved_bl - 1, mem_model->prefix, "reserved_bl");
-    fprintf(fp, "  wire [%d:0] %s_%s; //---- Reserved Word lines \n",
+    fprintf(fp, "  wire [0:%d] %s_%s; //---- Reserved Word lines \n",
             num_reserved_wl - 1, mem_model->prefix, "reserved_wl");
     fprintf(fp, "  wire [%d:%d] %s_%s; //---- Normal Bit lines \n",
-            num_bl - 1, num_reserved_bl, mem_model->prefix, "bl");
+            num_reserved_bl, num_bl - 1, mem_model->prefix, "bl");
     fprintf(fp, "  wire [%d:%d] %s_%s; //---- Normal Word lines \n",
-            num_wl - 1, num_reserved_wl, mem_model->prefix, "wl");
+            num_reserved_wl, num_wl - 1, mem_model->prefix, "wl");
     /* Connect reserved conf_bits and normal conf_bits to the bus */
-    fprintf(fp, "  assign %s_%s[%d:0] = %s[%d:0];\n",
+    fprintf(fp, "  assign %s_%s[0:%d] = %s[0:%d];\n",
             mem_model->prefix, "reserved_bl", num_reserved_bl - 1,
             top_netlist_bl_port_name, num_reserved_bl - 1);
-    fprintf(fp, "  assign %s_%s[%d:0] = %s[%d:0];\n",
+    fprintf(fp, "  assign %s_%s[0:%d] = %s[0:%d];\n",
             mem_model->prefix, "reserved_wl", num_reserved_wl - 1,
             top_netlist_wl_port_name, num_reserved_wl - 1);
     fprintf(fp, "  assign %s_%s[%d:%d] = %s[%d:%d];\n",
-            mem_model->prefix, "bl", num_mem_bit - 1, num_reserved_bl,
-            top_netlist_bl_port_name, num_mem_bit - 1, num_reserved_bl);
+            mem_model->prefix, "bl", num_reserved_bl, num_mem_bit - 1, 
+            top_netlist_bl_port_name, num_reserved_bl, num_mem_bit - 1);
     fprintf(fp, "  assign %s_%s[%d:%d] = %s[%d:%d];\n",
-            mem_model->prefix, "wl", num_mem_bit - 1, num_reserved_wl,
-            top_netlist_wl_port_name, num_mem_bit - 1, num_reserved_wl);
+            mem_model->prefix, "wl", num_reserved_wl, num_mem_bit - 1,
+            top_netlist_wl_port_name, num_reserved_wl, num_mem_bit - 1);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
@@ -847,7 +851,7 @@ void dump_verilog_configuration_circuits_memory_bank(FILE* fp,
   fprintf(fp, "bl_decoder%dto%d mem_bank_bl_decoder (",
           bl_decoder_size, num_bl);
   /* Prefix of BL & WL is fixed, in order to simplify grouping nets */
-  fprintf(fp, "en_bl, %s[%d:0], %s[%d:0]", 
+  fprintf(fp, "en_bl, %s[%d:0], %s[0:%d]", 
           top_netlist_addr_bl_port_name, bl_decoder_size - 1, 
           top_netlist_bl_port_name, num_bl - 1);
   fprintf(fp, ");\n");
@@ -855,7 +859,7 @@ void dump_verilog_configuration_circuits_memory_bank(FILE* fp,
   /* Word lines decoder */
   fprintf(fp, "wl_decoder%dto%d mem_bank_wl_decoder (",
           wl_decoder_size, num_wl);
-  fprintf(fp, "en_wl, %s[%d:0], %s[%d:0] ",
+  fprintf(fp, "en_wl, %s[%d:0], %s[0:%d] ",
           top_netlist_addr_wl_port_name, wl_decoder_size - 1, 
           top_netlist_wl_port_name, num_wl - 1);
   fprintf(fp, ");\n");

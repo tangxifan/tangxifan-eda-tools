@@ -523,12 +523,12 @@ void dump_verilog_sram_one_port(FILE* fp,
 
   if (TRUE == dump_port_type) {
     fprintf(fp,"input [%d:%d] %s_%s ", 
-            sram_msb, sram_lsb,
+            sram_lsb, sram_msb,
             mem_model->prefix, port_name);
   } else {
     fprintf(fp,"%s_%s[%d:%d] ", 
             mem_model->prefix, port_name,
-            sram_msb, sram_lsb);
+            sram_lsb, sram_msb);
   }
 
   /* Free */
@@ -608,12 +608,12 @@ void dump_verilog_reserved_sram_one_port(FILE* fp,
 
   if (TRUE == dump_port_type) {
     fprintf(fp,"input [%d:%d] %s_%s ", 
-            sram_msb, sram_lsb,
+            sram_lsb, sram_msb,
             mem_model->prefix, port_name);
   } else {
     fprintf(fp,"%s_%s[%d:%d] ", 
             mem_model->prefix, port_name,
-            sram_msb, sram_lsb);
+            sram_lsb, sram_msb);
   }
 
   /* Free */
@@ -707,10 +707,10 @@ void dump_verilog_sram_submodule(FILE* fp, t_sram_orgz_info* cur_sram_orgz_info,
     /* Connect to Bit lines and Word lines, consider each conf_bit */
     fprintf(fp, "%s_%d_configbus0[%d:%d], ", 
             cur_sram_verilog_model->prefix, cur_sram_verilog_model->cnt, 
-            cur_bl + num_bl_per_sram - 1, cur_bl); 
+            cur_bl, cur_bl + num_bl_per_sram - 1); 
     fprintf(fp, "%s_%d_configbus1[%d:%d] ", 
             cur_sram_verilog_model->prefix, cur_sram_verilog_model->cnt, 
-            cur_wl + num_wl_per_sram - 1, cur_wl); /* Outputs */
+            cur_wl, cur_wl + num_wl_per_sram - 1); /* Outputs */
     fprintf(fp, ");\n");  //
     /* Update the counter */
     update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info,
@@ -771,29 +771,29 @@ void dump_verilog_mem_config_bus(FILE* fp, t_spice_model* mem_spice_model,
   /* configuration wire bus */
   /* First bus is for sram_out in CMOS MUX or BL in RRAM MUX */
   fprintf(fp, "wire [%d:%d] %s_%d_configbus0;\n",
-          cur_num_sram + num_mem_reserved_conf_bits + num_mem_conf_bits - 1,
           cur_num_sram,
+          cur_num_sram + num_mem_reserved_conf_bits + num_mem_conf_bits - 1,
           mem_spice_model->prefix, mem_spice_model->cnt);
   /* Second bus is for sram_out_inv in CMOS MUX or WL in RRAM MUX */
   fprintf(fp, "wire [%d:%d] %s_%d_configbus1;\n",
-          cur_num_sram + num_mem_reserved_conf_bits + num_mem_conf_bits - 1,
           cur_num_sram,
+          cur_num_sram + num_mem_reserved_conf_bits + num_mem_conf_bits - 1,
           mem_spice_model->prefix, mem_spice_model->cnt);
   /* Connect wires to config bus */
   /* reserved configuration bits */
   if (0 < num_mem_reserved_conf_bits) {
     fprintf(fp, "assign %s_%d_configbus0[%d:%d] = ",
             mem_spice_model->prefix, mem_spice_model->cnt,
-            cur_num_sram + num_mem_reserved_conf_bits + num_mem_conf_bits - 1,
-            cur_num_sram + num_mem_conf_bits);
+            cur_num_sram,
+            cur_num_sram + num_mem_reserved_conf_bits - 1);
     dump_verilog_reserved_sram_one_port(fp, cur_sram_orgz_info, 
                                         0, num_mem_reserved_conf_bits - 1,
                                         0, FALSE);
     fprintf(fp, ";\n");
     fprintf(fp, "assign %s_%d_configbus1[%d:%d] = ",
             mem_spice_model->prefix, mem_spice_model->cnt,
-            cur_num_sram + num_mem_reserved_conf_bits + num_mem_conf_bits - 1,
-            cur_num_sram + num_mem_conf_bits);
+            cur_num_sram,
+            cur_num_sram + num_mem_reserved_conf_bits - 1);
     dump_verilog_reserved_sram_one_port(fp, cur_sram_orgz_info, 
                                         0, num_mem_reserved_conf_bits - 1,
                                         1, FALSE);
@@ -803,16 +803,16 @@ void dump_verilog_mem_config_bus(FILE* fp, t_spice_model* mem_spice_model,
   if (0 < num_mem_conf_bits) {
     fprintf(fp, "assign %s_%d_configbus0[%d:%d] = ",
             mem_spice_model->prefix, mem_spice_model->cnt,
-            cur_num_sram + num_mem_conf_bits - 1,
-            cur_num_sram);
+            cur_num_sram + num_mem_reserved_conf_bits,
+            cur_num_sram + num_mem_reserved_conf_bits + num_mem_conf_bits - 1);
     dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
                                cur_num_sram, cur_num_sram + num_mem_conf_bits - 1,
                                0, FALSE);
     fprintf(fp, ";\n");
     fprintf(fp, "assign %s_%d_configbus1[%d:%d] = ",
             mem_spice_model->prefix,  mem_spice_model->cnt,
-            cur_num_sram + num_mem_conf_bits - 1,
-            cur_num_sram);
+            cur_num_sram + num_mem_reserved_conf_bits,
+            cur_num_sram + num_mem_reserved_conf_bits + num_mem_conf_bits - 1);
     dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
                                cur_num_sram, cur_num_sram + num_mem_conf_bits - 1,
                                1, FALSE);
@@ -842,11 +842,11 @@ void dump_verilog_mux_config_bus(FILE* fp, t_spice_model* mux_spice_model,
 
   /* configuration wire bus */
   /* First bus is for sram_out in CMOS MUX or BL in RRAM MUX */
-  fprintf(fp, "wire [%d:0] %s_size%d_%d_configbus0;\n",
+  fprintf(fp, "wire [0:%d] %s_size%d_%d_configbus0;\n",
           num_mux_reserved_conf_bits + num_mux_conf_bits - 1,
           mux_spice_model->prefix, mux_size, mux_spice_model->cnt);
   /* Second bus is for sram_out_inv in CMOS MUX or WL in RRAM MUX */
-  fprintf(fp, "wire [%d:0] %s_size%d_%d_configbus1;\n",
+  fprintf(fp, "wire [0:%d] %s_size%d_%d_configbus1;\n",
           num_mux_reserved_conf_bits + num_mux_conf_bits - 1,
           mux_spice_model->prefix, mux_size, mux_spice_model->cnt);
   /* Connect wires to config bus */
@@ -854,16 +854,14 @@ void dump_verilog_mux_config_bus(FILE* fp, t_spice_model* mux_spice_model,
   if (0 < num_mux_reserved_conf_bits) {
     fprintf(fp, "assign %s_size%d_%d_configbus0[%d:%d] = ",
             mux_spice_model->prefix, mux_size, mux_spice_model->cnt,
-            num_mux_reserved_conf_bits + num_mux_conf_bits - 1,
-            num_mux_conf_bits);
+            0, num_mux_reserved_conf_bits - 1);
     dump_verilog_reserved_sram_one_port(fp, cur_sram_orgz_info, 
                                         0, num_mux_reserved_conf_bits - 1,
                                         0, FALSE);
     fprintf(fp, ";\n");
     fprintf(fp, "assign %s_size%d_%d_configbus1[%d:%d] = ",
             mux_spice_model->prefix, mux_size, mux_spice_model->cnt,
-            num_mux_reserved_conf_bits + num_mux_conf_bits - 1,
-            num_mux_conf_bits);
+            0, num_mux_reserved_conf_bits - 1);
     dump_verilog_reserved_sram_one_port(fp, cur_sram_orgz_info, 
                                         0, num_mux_reserved_conf_bits - 1,
                                         1, FALSE);
@@ -873,16 +871,16 @@ void dump_verilog_mux_config_bus(FILE* fp, t_spice_model* mux_spice_model,
   if (0 < num_mux_conf_bits) {
     fprintf(fp, "assign %s_size%d_%d_configbus0[%d:%d] = ",
             mux_spice_model->prefix, mux_size, mux_spice_model->cnt,
-            num_mux_conf_bits - 1,
-            0);
+            num_mux_reserved_conf_bits,
+            num_mux_reserved_conf_bits + num_mux_conf_bits - 1);
     dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
                                cur_num_sram, cur_num_sram + num_mux_conf_bits - 1,
                                0, FALSE);
     fprintf(fp, ";\n");
     fprintf(fp, "assign %s_size%d_%d_configbus1[%d:%d] = ",
             mux_spice_model->prefix, mux_size, mux_spice_model->cnt,
-            num_mux_conf_bits - 1,
-            0);
+            num_mux_reserved_conf_bits,
+            num_mux_reserved_conf_bits + num_mux_conf_bits - 1);
     dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
                                cur_num_sram, cur_num_sram + num_mux_conf_bits - 1,
                                1, FALSE);

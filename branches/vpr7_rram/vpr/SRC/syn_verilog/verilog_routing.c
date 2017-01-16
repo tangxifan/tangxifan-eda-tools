@@ -648,7 +648,7 @@ void dump_verilog_switch_box_mux(FILE* fp,
   /* Get verilog model*/
   verilog_model = switch_inf[switch_index].spice_model;
   /* Specify the input bus */
-  fprintf(fp, "wire [%d:0] %s_size%d_%d_inbus;\n",
+  fprintf(fp, "wire [0:%d] %s_size%d_%d_inbus;\n",
           mux_size - 1,
           verilog_model->prefix, mux_size, verilog_model->cnt);
 
@@ -1366,7 +1366,7 @@ void dump_verilog_connection_box_mux(FILE* fp,
   verilog_model = switch_inf[switch_index].spice_model;
 
   /* Specify the input bus */
-  fprintf(fp, "wire [%d:0] %s_size%d_%d_inbus;\n",
+  fprintf(fp, "wire [0:%d] %s_size%d_%d_inbus;\n",
           mux_size - 1,
           verilog_model->prefix, mux_size, verilog_model->cnt);
 

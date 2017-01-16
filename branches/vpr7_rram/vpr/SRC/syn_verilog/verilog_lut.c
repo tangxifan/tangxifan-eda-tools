@@ -212,9 +212,9 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   /* Specify SRAM output are wires */
   cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info);
   fprintf(fp, "wire [%d:%d] %s_out;\n",
-          cur_num_sram + num_sram - 1, cur_num_sram, mem_model->prefix);
+          cur_num_sram, cur_num_sram + num_sram - 1, mem_model->prefix);
   fprintf(fp, "wire [%d:%d] %s_outb;\n",
-          cur_num_sram + num_sram - 1, cur_num_sram, mem_model->prefix);
+          cur_num_sram, cur_num_sram + num_sram - 1, mem_model->prefix);
 
   /* Call LUT subckt*/
   fprintf(fp, "%s %s_%d_ (", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
@@ -235,9 +235,9 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   /* Connect srams: TODO: to find the SRAM model used by this Verilog model */
   cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info);
   fprintf(fp, "%s_out[%d:%d], ", mem_model->prefix, 
-          cur_num_sram + num_sram - 1, cur_num_sram); 
+          cur_num_sram, cur_num_sram + num_sram - 1); 
   fprintf(fp, "%s_outb[%d:%d]", mem_model->prefix,
-          cur_num_sram + num_sram - 1, cur_num_sram); 
+          cur_num_sram, cur_num_sram + num_sram - 1); 
   /* vdd should be connected to special global wire gvdd_lut and gnd,
    * Every LUT has a special VDD for statistics
    */

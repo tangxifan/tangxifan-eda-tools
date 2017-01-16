@@ -30,6 +30,8 @@ input nequalize,
 input din, // Data input
 output dout, // Data output
 output doutb, // Data output
+// !!! Port bit position should start from LSB to MSB
+// Follow this convention for BL/WLs in each module!
 input [0:2] bl, // Bit line control signal
 input [0:2] wl// Word line control signal
 );
