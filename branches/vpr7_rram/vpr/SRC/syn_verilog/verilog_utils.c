@@ -159,6 +159,78 @@ void dump_verilog_file_header(FILE* fp,
   return;
 }
 
+/* Decode BL and WL bits for a SRAM
+ * SRAM could be
+ * 1. NV SRAM
+ * or
+ * 2. SRAM 
+ */
+void decode_verilog_memory_bank_sram(t_spice_model* cur_sram_spice_model, int sram_bit,
+                                     int bl_len, int wl_len, int bl_offset, int wl_offset,
+                                     int* bl_conf_bits, int* wl_conf_bits) {
+  int i;
+
+  /* Check */
+  assert(NULL != cur_sram_spice_model);
+  assert(NULL != bl_conf_bits);
+  assert(NULL != wl_conf_bits);
+  assert((1 == sram_bit)||(0 == sram_bit));
+
+  /* All the others should be zero */
+  for (i = 0; i < bl_len; i++) {
+    bl_conf_bits[i] = 0;
+  }
+  for (i = 0; i < wl_len; i++) {
+    wl_conf_bits[i] = 0;
+  }
+  
+  /* Depending on the design technology of SRAM */
+  switch (cur_sram_spice_model->design_tech) {
+  case SPICE_MODEL_DESIGN_CMOS:
+    /* CMOS SRAM */
+    /* Make sure there is only 1 BL and 1 WL */
+    assert((1 == bl_len)&&(1 == wl_len));
+    /* We always assume that BL is a write-enable signal
+     * While WL contains what data will be written into SRAM 
+     */
+    bl_conf_bits[0] = 1;
+    wl_conf_bits[0] = sram_bit;
+    break;
+  case SPICE_MODEL_DESIGN_RRAM:
+    /* NV SRAM (RRAM-based) */
+    /* We need at least 2 BLs and 2 WLs but no more than 3, See schematic in manual */
+    /* Whatever the number of BLs and WLs, (RRAM0)
+     * when sram bit is 1, last bit of BL should be enabled
+     * while first bit of WL should be enabled at the same time
+     * when sram bit is 0, last bit of WL should be enabled
+     * while first bit of BL should be enabled at the same time
+     */
+    assert((1 < bl_len)&&(bl_len < 4)); 
+    assert((1 < wl_len)&&(wl_len < 4)); 
+    assert((-1 < bl_offset)&&(bl_offset < bl_len));
+    assert((-1 < wl_offset)&&(wl_offset < wl_len));
+    /* In addition, we will may need two programing cycles.
+     * The first cycle is dedicated to programming RRAM0
+     * The second cycle is dedicated to programming RRAM1
+     */
+    if (1 == sram_bit) {
+      bl_conf_bits[bl_len-1] = 1;
+      wl_conf_bits[0 + wl_offset] = 1;
+    } else {
+      assert(0 == sram_bit);
+      bl_conf_bits[0 + bl_offset] = 1;
+      wl_conf_bits[wl_len-1] = 1;
+    } 
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for SRAM!\n", 
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  return;
+}
+
 /** Decode 1-level 4T1R MUX
  */
 void decode_verilog_one_level_4t1r_mux(int path_id, 

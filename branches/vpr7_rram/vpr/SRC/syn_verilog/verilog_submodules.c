@@ -272,7 +272,7 @@ void dump_verilog_cmos_mux_one_basis_module(FILE* fp,
           num_mem - 1);
   /* Verilog Behavior description for a MUX */
   fprintf(fp, "//---- Behavior-level description -----\n");
-  fprintf(fp, "assign out = in[mem];\n");
+  fprintf(fp, "assign out = in[%d - mem];\n", num_input_basis_subckt - 1);
 
   /* Put an end to this module */
   fprintf(fp, "endmodule\n");

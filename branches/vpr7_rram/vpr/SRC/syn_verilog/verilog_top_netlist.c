@@ -1337,8 +1337,6 @@ void rec_dump_verilog_top_testbench_one_conf_bit_serial(FILE* fp,
     if (NULL != cur_conf_bit->next) {
       /* This is not the tail, keep going */
       rec_dump_verilog_top_testbench_one_conf_bit_serial(fp, cur_conf_bit->next);
-    } else {
-      return;
     }
     /* Dump one configuring operation on BL and WL addresses */
     get_sram_orgz_info_num_blwl(sram_verilog_orgz_info, &num_bl, &num_wl);

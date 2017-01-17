@@ -4808,6 +4808,127 @@ add_mux_conf_bits_to_llist(int mux_size,
   return;
 }
 
+
+/* Add SRAM configuration bits in memory bank organization to a linked list */
+void add_sram_membank_conf_bits_to_llist(t_sram_orgz_info* cur_sram_orgz_info, int mem_index, 
+                                         int num_bls, int num_wls, 
+                                         int* bl_conf_bits, int* wl_conf_bits) {
+  int ibit, cur_bl, cur_wl, cur_mem_bit;
+  t_spice_model* cur_sram_spice_model = NULL;
+  t_conf_bit* bl_bit = NULL;
+  t_conf_bit* wl_bit = NULL;
+  int bit_cnt = 0;
+
+  /* Assert*/
+  assert(NULL != cur_sram_orgz_info);
+
+  /* Get current counter of sram_spice_model */
+  cur_mem_bit = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info); 
+  get_sram_orgz_info_num_blwl(cur_sram_orgz_info, &cur_bl, &cur_wl);
+
+  /* Get memory model */
+  get_sram_orgz_info_mem_model(cur_sram_orgz_info, &cur_sram_spice_model);
+  assert(NULL != cur_sram_spice_model);
+
+  /* Malloc */
+  bl_bit = (t_conf_bit*)my_malloc(sizeof(t_conf_bit));
+  wl_bit = (t_conf_bit*)my_malloc(sizeof(t_conf_bit));
+
+  /* Fill information */
+  bit_cnt = 0; /* Check counter */
+  for (ibit = 0; ibit < num_bls; ibit++) {
+    /* Bypass zero bit */
+    if (0 == bl_conf_bits[ibit]) {
+      continue;
+    }
+    /* Check if this bit is in reserved bls */
+    if (ibit == num_bls - 1) { 
+      /* Last bit is always independent */
+      bl_bit->addr = mem_index;
+      bl_bit->val = 1;
+    } else {
+      /* Other bits are shared */
+      bl_bit->addr = ibit;
+      bl_bit->val = 1;
+    }
+    /* Update check counter */
+    bit_cnt++;
+  }
+  /* Check */
+  assert(1 == bit_cnt);
+
+  bit_cnt = 0; /* Check counter */
+  for (ibit = 0; ibit < num_wls; ibit++) {
+    /* Bypass zero bit */
+    if (0 == wl_conf_bits[ibit]) {
+      continue;
+    }
+    /* Check if this bit is in reserved bls */
+    if (ibit == num_wls - 1) { 
+      /* Last bit is always independent */
+      wl_bit->addr = mem_index;
+      wl_bit->val = 1;
+    } else {
+      /* Other bits are shared */
+      wl_bit->addr = ibit;
+      wl_bit->val = 1;
+    }
+    /* Update check counter */
+    bit_cnt++;
+  }
+  /* Check */
+  assert(1 == bit_cnt);
+
+  /* Fill the linked list */
+  cur_sram_orgz_info->conf_bit_head =
+      add_conf_bit_info_to_llist(cur_sram_orgz_info->conf_bit_head, mem_index, 
+                                 NULL, bl_bit, wl_bit,
+                                 cur_sram_spice_model);
+
+  return;
+}
+
+/* Add SRAM configuration bits to a linked list */
+void  
+add_sram_conf_bits_to_llist(t_sram_orgz_info* cur_sram_orgz_info, int mem_index, 
+                            int num_sram_bits, int* sram_bits) {
+  int num_bls, num_wls;
+  int* bl_conf_bits = NULL;
+  int* wl_conf_bits = NULL;
+
+  /* According to the type, we allocate structs */
+  switch (cur_sram_orgz_info->type) {
+  case SPICE_SRAM_STANDALONE:
+  case SPICE_SRAM_SCAN_CHAIN:
+    /* TODO:
+    add_sram_scff_conf_bits_to_llist(cur_sram_orgz_info, 
+                                     num_sram_bits, sram_bits);
+    */
+    break;
+  case SPICE_SRAM_MEMORY_BANK:
+    /* Initialize parameters */
+    /* Number of BLs should be same as WLs */
+    num_bls = num_sram_bits/2;
+    num_wls = num_sram_bits/2;
+    /* Convention: first part of Array (sram_bits) is BL configuration bits,
+     * second part is WL configuration bits.
+     */
+    bl_conf_bits = sram_bits;
+    wl_conf_bits = sram_bits + num_bls;
+    add_sram_membank_conf_bits_to_llist(cur_sram_orgz_info, mem_index, 
+                                        num_bls, num_wls, 
+                                        bl_conf_bits, wl_conf_bits);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid type of SRAM organization!",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  return;
+}
+
+
 /* Find BL and WL ports for a SRAM model.
  * And check if the number of BL/WL satisfy the technology needs
  */

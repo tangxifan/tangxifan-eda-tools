@@ -302,7 +302,7 @@ void dump_verilog_pb_primitive_io(FILE* fp,
   int num_sram_port = 0;
   t_spice_model_port** sram_ports = NULL;
   
-  int i;
+  int i, j;
   int num_sram = 0;
   int* sram_bits = NULL;
 
@@ -562,13 +562,26 @@ void dump_verilog_pb_primitive_io(FILE* fp,
       /* Decode the SRAM bits to BL/WL bits.
        * first half part is BL, the other half part is WL 
        */
-      /* Store the configuraion bit to linked-list */
-        decode_verilog_one_level_4t1r_mux(sram_bits[i], 
-                                          num_bl_per_sram + num_wl_per_sram, 
-                                          conf_bits_per_sram);
-        add_mux_conf_bits_to_llist(1, sram_verilog_orgz_info, 
-                                   num_bl_per_sram + num_wl_per_sram, conf_bits_per_sram,
-                                   verilog_model);
+        /* Store the configuraion bit to linked-list */
+        assert(num_bl_per_sram == num_wl_per_sram);
+        /* When the number of BL/WL is more than 1, we need multiple programming cycles to configure a SRAM */
+        /* ONLY valid for NV SRAM !!!*/
+        for (j = 0; j < num_bl_per_sram - 1; j++) { 
+          if (0 == j) {
+            /* Store the configuraion bit to linked-list */
+            decode_verilog_memory_bank_sram(mem_model, sram_bits[i], 
+                                            num_bl_per_sram, num_wl_per_sram, j, j, 
+                                            conf_bits_per_sram, conf_bits_per_sram + num_bl_per_sram);
+          } else {
+            /* Store the configuraion bit to linked-list */
+            decode_verilog_memory_bank_sram(mem_model, 1 - sram_bits[i], 
+                                            num_bl_per_sram, num_wl_per_sram, j, j, 
+                                            conf_bits_per_sram, conf_bits_per_sram + num_bl_per_sram);
+          }
+          /* Use memory model here! Design technology of memory model determines the decoding strategy, instead of LUT model*/
+          add_sram_conf_bits_to_llist(sram_verilog_orgz_info, cur_num_sram + i, 
+                                      num_bl_per_sram + num_wl_per_sram, conf_bits_per_sram); 
+        }
       }
       break;
     case SPICE_SRAM_STANDALONE:

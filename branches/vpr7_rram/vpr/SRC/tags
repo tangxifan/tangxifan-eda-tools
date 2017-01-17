@@ -1282,6 +1282,7 @@ blif_circuit_name	base/globals.c	/^char *blif_circuit_name = NULL;$/;"	v
 blif_file_name	base/vpr_types.h	/^	char *blif_file_name;$/;"	m	struct:s_packer_opts
 blif_hash	base/read_blif.c	/^static struct s_hash **blif_hash;$/;"	v	typeref:struct:s_hash	file:
 blif_model	../../libarchfpga/include/physical_types.h	/^	char *blif_model;$/;"	m	struct:s_pb_type
+blif_testbench_verilog_file_postfix	syn_verilog/verilog_global.c	/^char* blif_testbench_verilog_file_postfix = "_blif_tb.v";$/;"	v
 blk_index	place/place_macro.h	/^	int blk_index;$/;"	m	struct:s_pl_macro_member
 block	base/globals.c	/^struct s_block *block = NULL;$/;"	v	typeref:struct:s_block
 block	base/globals_declare.h	/^struct s_block *block;$/;"	v	typeref:struct:s_block
@@ -1613,6 +1614,7 @@ decode_mode_bits	fpga_spice/fpga_spice_utils.c	/^int* decode_mode_bits(char* mod
 decode_multilevel_mux_sram_bits	fpga_spice/fpga_spice_utils.c	/^int* decode_multilevel_mux_sram_bits(int fan_in,$/;"	f
 decode_onelevel_mux_sram_bits	fpga_spice/fpga_spice_utils.c	/^int* decode_onelevel_mux_sram_bits(int fan_in,$/;"	f
 decode_tree_mux_sram_bits	fpga_spice/fpga_spice_utils.c	/^int* decode_tree_mux_sram_bits(int fan_in,$/;"	f
+decode_verilog_memory_bank_sram	syn_verilog/verilog_utils.c	/^void decode_verilog_memory_bank_sram(t_spice_model* cur_sram_spice_model, int sram_bit,$/;"	f
 decode_verilog_multilevel_4t1r_mux	syn_verilog/verilog_utils.c	/^void decode_verilog_multilevel_4t1r_mux(int num_level, int num_input_basis,$/;"	f
 decode_verilog_one_level_4t1r_mux	syn_verilog/verilog_utils.c	/^void decode_verilog_one_level_4t1r_mux(int path_id, $/;"	f
 decode_verilog_rram_mux	syn_verilog/verilog_utils.c	/^void decode_verilog_rram_mux(t_spice_model* mux_spice_model,$/;"	f
@@ -1788,6 +1790,7 @@ dump_verilog_input_blif_testbench	syn_verilog/verilog_top_netlist.c	/^void dump_
 dump_verilog_input_blif_testbench_call_top_module	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_input_blif_testbench_call_top_module(FILE* fp, $/;"	f	file:
 dump_verilog_input_blif_testbench_ports	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_input_blif_testbench_ports(FILE* fp,$/;"	f	file:
 dump_verilog_input_blif_testbench_stimuli	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_input_blif_testbench_stimuli(FILE* fp,$/;"	f	file:
+dump_verilog_invbuf_module	syn_verilog/verilog_submodules.c	/^void dump_verilog_invbuf_module(FILE* fp,$/;"	f
 dump_verilog_io_grid_block_subckt_pins	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_io_grid_block_subckt_pins(FILE* fp,$/;"	f
 dump_verilog_io_grid_pins	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_io_grid_pins(FILE* fp,$/;"	f
 dump_verilog_logic_blocks	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_logic_blocks(char* subckt_dir,$/;"	f
@@ -1796,6 +1799,7 @@ dump_verilog_mux_basis_module	syn_verilog/verilog_submodules.c	/^void dump_veril
 dump_verilog_mux_config_bus	syn_verilog/verilog_utils.c	/^void dump_verilog_mux_config_bus(FILE* fp, t_spice_model* mux_spice_model, $/;"	f
 dump_verilog_mux_module	syn_verilog/verilog_submodules.c	/^void dump_verilog_mux_module(FILE* fp, $/;"	f
 dump_verilog_mux_one_basis_module	syn_verilog/verilog_submodules.c	/^void dump_verilog_mux_one_basis_module(FILE* fp, $/;"	f
+dump_verilog_passgate_module	syn_verilog/verilog_submodules.c	/^void dump_verilog_passgate_module(FILE* fp,$/;"	f
 dump_verilog_pb_graph_interc	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_pb_graph_interc(FILE* fp, $/;"	f
 dump_verilog_pb_graph_node_rec	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_pb_graph_node_rec(FILE* fp, $/;"	f
 dump_verilog_pb_graph_pin_interc	syn_verilog/verilog_pbtypes.c	/^void dump_verilog_pb_graph_pin_interc(FILE* fp,$/;"	f
@@ -1824,6 +1828,7 @@ dump_verilog_rram_mux_tree_structure	syn_verilog/verilog_submodules.c	/^void dum
 dump_verilog_sram_one_port	syn_verilog/verilog_utils.c	/^void dump_verilog_sram_one_port(FILE* fp, $/;"	f
 dump_verilog_sram_ports	syn_verilog/verilog_utils.c	/^void dump_verilog_sram_ports(FILE* fp, $/;"	f
 dump_verilog_sram_submodule	syn_verilog/verilog_utils.c	/^void dump_verilog_sram_submodule(FILE* fp, t_sram_orgz_info* cur_sram_orgz_info,$/;"	f
+dump_verilog_submodule_essentials	syn_verilog/verilog_submodules.c	/^void dump_verilog_submodule_essentials(char* submodule_dir,$/;"	f
 dump_verilog_submodule_luts	syn_verilog/verilog_submodules.c	/^void dump_verilog_submodule_luts(char* submodule_dir,$/;"	f
 dump_verilog_submodule_muxes	syn_verilog/verilog_submodules.c	/^void dump_verilog_submodule_muxes(char* submodule_dir,$/;"	f
 dump_verilog_submodule_one_lut	syn_verilog/verilog_submodules.c	/^void dump_verilog_submodule_one_lut(FILE* fp, $/;"	f
@@ -1845,7 +1850,7 @@ dump_verilog_top_testbench_ports	syn_verilog/verilog_top_netlist.c	/^void dump_v
 dump_verilog_top_testbench_stimuli	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_top_testbench_stimuli(FILE* fp,$/;"	f
 dump_verilog_top_testbench_stimuli_serial_version	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,$/;"	f	file:
 dump_verilog_top_testbench_stimuli_serial_version_tasks	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_top_testbench_stimuli_serial_version_tasks(FILE* fp) {$/;"	f	file:
-dump_verilog_top_testbench_wire_global_clock_ports	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_top_testbench_wire_global_clock_ports(FILE* fp, t_llist* head,$/;"	f	file:
+dump_verilog_top_testbench_wire_one_global_port_stimuli	syn_verilog/verilog_top_netlist.c	/^void dump_verilog_top_testbench_wire_one_global_port_stimuli(FILE* fp, t_spice_model_port* cur_global_port, $/;"	f	file:
 dump_verilog_wire_module	syn_verilog/verilog_submodules.c	/^void dump_verilog_wire_module(FILE* fp,$/;"	f
 dumped_num_conf_bits	syn_verilog/verilog_bitstream.c	/^static int dumped_num_conf_bits = 0;$/;"	v	file:
 dynamic	../../libarchfpga/include/physical_types.h	/^	float dynamic;$/;"	m	struct:s_power_usage
@@ -1952,6 +1957,7 @@ equivalent	../../libarchfpga/include/physical_types.h	/^	boolean equivalent;$/;"
 err	../../libarchfpga/include/ezxml.h	/^	char err[EZXML_ERRL]; \/* error string *\/$/;"	m	struct:ezxml_root
 error_no_match	timing/slre.c	/^static const char *error_no_match = "No match";$/;"	v	file:
 error_string	timing/slre.c	/^  const char *error_string;   \/\/ Error string$/;"	m	struct:slre	file:
+essentials_verilog_file_name	syn_verilog/verilog_global.c	/^char* essentials_verilog_file_name = "inv_buf_passgate.v";$/;"	v
 esti_distance_num_seg_delay	clb_pin_remap/post_place_timing.c	/^float esti_distance_num_seg_delay(int distance,$/;"	f
 esti_one_segment_net_delay	clb_pin_remap/post_place_timing.c	/^float esti_one_segment_net_delay(int distance, t_segment_inf segment_inf) {$/;"	f
 esti_pin2pin_one_net_delay	clb_pin_remap/post_place_timing.c	/^float esti_pin2pin_one_net_delay(t_block src_blk,$/;"	f
@@ -4530,7 +4536,9 @@ top_netlist_addr_bl_port_name	syn_verilog/verilog_top_netlist.c	/^static char* t
 top_netlist_addr_wl_port_name	syn_verilog/verilog_top_netlist.c	/^static char* top_netlist_addr_wl_port_name = "addr_wl";$/;"	v	file:
 top_netlist_bl_port_name	syn_verilog/verilog_top_netlist.c	/^static char* top_netlist_bl_port_name = "bl_bus";$/;"	v	file:
 top_netlist_wl_port_name	syn_verilog/verilog_top_netlist.c	/^static char* top_netlist_wl_port_name = "wl_bus";$/;"	v	file:
+top_tb_clock_reg_postfix	syn_verilog/verilog_top_netlist.c	/^static char* top_tb_clock_reg_postfix = "_reg";$/;"	v	file:
 top_tb_config_done_port_name	syn_verilog/verilog_top_netlist.c	/^static char* top_tb_config_done_port_name = "config_done";$/;"	v	file:
+top_tb_inout_reg_postfix	syn_verilog/verilog_top_netlist.c	/^static char* top_tb_inout_reg_postfix = "_reg";$/;"	v	file:
 top_tb_op_clock_port_name	syn_verilog/verilog_top_netlist.c	/^static char* top_tb_op_clock_port_name = "op_clock";$/;"	v	file:
 top_tb_prog_clock_port_name	syn_verilog/verilog_top_netlist.c	/^static char* top_tb_prog_clock_port_name = "prog_clock";$/;"	v	file:
 top_tb_reset_port_name	syn_verilog/verilog_top_netlist.c	/^static char* top_tb_reset_port_name = "greset";$/;"	v	file:

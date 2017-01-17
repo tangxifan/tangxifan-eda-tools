@@ -560,6 +560,10 @@ void dump_verilog_switch_box_short_interc(FILE* fp,
           chan_name, cur_sb_info->x, cur_sb_info->y, des_chan_port_name, cur_rr_node->ptc_num);
   fprintf(fp, "assign "); 
 
+  /* Output port */
+  dump_verilog_switch_box_chan_port(fp, cur_sb_info, chan_side, cur_rr_node, OUT_PORT);
+  fprintf(fp, " = "); 
+
   /* Check the driver*/
   if (0 == actual_fan_in) {
     assert(drive_rr_node == cur_rr_node);
@@ -599,10 +603,6 @@ void dump_verilog_switch_box_short_interc(FILE* fp,
                __FILE__, __LINE__);
     exit(1);
   }
-
-  /* Output port */
-  fprintf(fp, " = "); 
-  dump_verilog_switch_box_chan_port(fp, cur_sb_info, chan_side, cur_rr_node, OUT_PORT);
 
   /* END */
   fprintf(fp, ";\n");
@@ -1679,7 +1679,7 @@ void dump_verilog_routing_connection_box_subckt(FILE* fp, t_cb* cur_cb_info,
     assert(NULL != cur_cb_info->ipin_rr_node[side]);
     for (inode = 0; inode < cur_cb_info->num_ipin_rr_nodes[side]; inode++) {
       /* Print each INPUT Pins of a grid */
-      dump_verilog_grid_side_pin_with_given_index(fp, OPIN, /* This is an output of a connection box */
+      dump_verilog_grid_side_pin_with_given_index(fp, IPIN, /* This is an output of a connection box */
                                                   cur_cb_info->ipin_rr_node[side][inode]->ptc_num,
                                                   cur_cb_info->ipin_rr_node_grid_side[side][inode],
                                                   cur_cb_info->ipin_rr_node[side][inode]->xlow,

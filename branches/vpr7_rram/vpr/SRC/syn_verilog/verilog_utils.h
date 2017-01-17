@@ -10,6 +10,10 @@ void dump_include_user_defined_verilog_netlists(FILE* fp,
 void dump_verilog_file_header(FILE* fp,
                               char* usage);
 
+void decode_verilog_memory_bank_sram(t_spice_model* cur_sram_spice_model, int sram_bit,
+                                     int bl_len, int wl_len, int bl_offset, int wl_offset,
+                                     int* bl_conf_bits, int* wl_conf_bits);
+
 void decode_verilog_one_level_4t1r_mux(int path_id, 
                                        int bit_len, int* conf_bits); 
 

@@ -40,7 +40,7 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
                                    t_pb_graph_node* cur_pb_graph_node,
                                    int index,
                                    t_spice_model* verilog_model) {
-  int i;
+  int i, j;
   int* sram_bits = NULL; /* decoded SRAM bits */ 
   int truth_table_length = 0;
   char** truth_table = NULL;
@@ -204,7 +204,7 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   fprintf(fp, "wire [0:%d] %s__%s;\n",
           output_ports[0]->size - 1, port_prefix, pb_type_output_ports[0]->name);
   for (i = 0; i < output_ports[0]->size; i++) {
-    fprintf(fp, "assign %s__%s[%d] = %s__%s_%d_;\n",
+    fprintf(fp, "assign %s__%s_%d_ = %s__%s[%d];\n",
                 port_prefix, pb_type_output_ports[0]->name, i,
                 port_prefix, pb_type_output_ports[0]->name, i);
   }
@@ -259,18 +259,31 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   /* Decode the SRAM bits to BL/WL bits. */ 
   switch (sram_verilog_orgz_type) {
   case SPICE_SRAM_MEMORY_BANK:
+    cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info);
     for (i = 0; i < num_sram; i++) {
+      /* TODO: should be more structural in coding !!! */
       /* Decode the SRAM bits to BL/WL bits.
        * first half part is BL, the other half part is WL 
        */
-      /* Store the configuraion bit to linked-list */
-      decode_verilog_one_level_4t1r_mux(sram_bits[i], 
-                                        num_bl_per_sram + num_wl_per_sram, 
-                                        conf_bits_per_sram);
-      /* Use memory model here! Design technology of memory model determines the decoding strategy, instead of LUT model*/
-      add_mux_conf_bits_to_llist(1, sram_verilog_orgz_info, 
-                                 num_bl_per_sram + num_wl_per_sram, conf_bits_per_sram,
-                                 mem_model); 
+      assert(num_bl_per_sram == num_wl_per_sram);
+      /* When the number of BL/WL is more than 1, we need multiple programming cycles to configure a SRAM */
+      /* ONLY valid for NV SRAM !!!*/
+      for (j = 0; j < num_bl_per_sram - 1; j++) { 
+        if (0 == j) {
+          /* Store the configuraion bit to linked-list */
+          decode_verilog_memory_bank_sram(mem_model, sram_bits[i], 
+                                          num_bl_per_sram, num_wl_per_sram, j, j, 
+                                          conf_bits_per_sram, conf_bits_per_sram + num_bl_per_sram);
+        } else {
+          /* Store the configuraion bit to linked-list */
+          decode_verilog_memory_bank_sram(mem_model, 1 - sram_bits[i], 
+                                          num_bl_per_sram, num_wl_per_sram, j, j, 
+                                          conf_bits_per_sram, conf_bits_per_sram + num_bl_per_sram);
+        }
+        /* Use memory model here! Design technology of memory model determines the decoding strategy, instead of LUT model*/
+        add_sram_conf_bits_to_llist(sram_verilog_orgz_info, cur_num_sram + i, 
+                                    num_bl_per_sram + num_wl_per_sram, conf_bits_per_sram); 
+      }
     }
     /* NUM_SRAM is set to be consistent with number of BL/WLs
      * TODO: NUM_SRAM should be the as they are. 

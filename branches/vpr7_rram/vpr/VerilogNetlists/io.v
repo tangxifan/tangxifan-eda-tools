@@ -3,12 +3,13 @@
 //------ Author: Xifan TANG -----//
 module iopad(
 input zin, // Set output to be Z
-output din, // Data input
 input dout, // Data output
+output din, // Data input
 inout pad, // bi-directional pad
 input direction // enable signal to control direction of iopad
 );
-  //----- when EN enabled, the direction is input
+  //----- when direction enabled, the signal is propagated from pad to din
   assign din = direction ? pad : 1'bz;
-  assign dout = direction ? 1'bz : pad;
+  //----- when direction is disabled, the signal is propagated from dout to pad
+  assign pad = direction ? 1'bz : dout;
 endmodule

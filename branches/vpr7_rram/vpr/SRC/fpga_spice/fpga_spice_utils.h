@@ -379,6 +379,14 @@ add_mux_conf_bits_to_llist(int mux_size,
                            int num_mux_sram_bits, int* mux_sram_bits,
                            t_spice_model* mux_spice_model);
 
+void add_sram_membank_conf_bits_to_llist(t_sram_orgz_info* cur_sram_orgz_info, int mem_index, 
+                                         int num_bls, int num_wls, 
+                                         int* bl_conf_bits, int* wl_conf_bits);
+
+void  
+add_sram_conf_bits_to_llist(t_sram_orgz_info* cur_sram_orgz_info, int mem_index, 
+                            int num_sram_bits, int* sram_bits);
+
 void find_bl_wl_ports_spice_model(t_spice_model* cur_spice_model,
                                   int* num_bl_ports, t_spice_model_port*** bl_ports,
                                   int* num_wl_ports, t_spice_model_port*** wl_ports);
