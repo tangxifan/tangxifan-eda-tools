@@ -826,6 +826,9 @@ void dump_verilog_configuration_circuits_memory_bank(FILE* fp,
                                                      t_sram_orgz_info* cur_sram_orgz_info) {
   int bl_decoder_size, wl_decoder_size;
   int num_bl, num_wl;
+  t_spice_model* mem_model = NULL;
+  boolean bl_inverted = FALSE;
+  boolean wl_inverted = TRUE;
 
   /* Check */
   assert(SPICE_SRAM_MEMORY_BANK == cur_sram_orgz_info->type);
@@ -839,6 +842,9 @@ void dump_verilog_configuration_circuits_memory_bank(FILE* fp,
   get_sram_orgz_info_num_blwl(cur_sram_orgz_info, &num_bl, &num_wl);
   bl_decoder_size = determine_decoder_size(num_bl);
   wl_decoder_size = determine_decoder_size(num_wl);
+  /* Get memory model */
+  get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model);
+  assert(NULL != mem_model);
 
   /* Comment lines */
   fprintf(fp, "//----- BEGIN call decoders for memory bank controller -----\n");
@@ -847,20 +853,32 @@ void dump_verilog_configuration_circuits_memory_bank(FILE* fp,
   /* Two huge decoders
    * TODO: divide to a number of small decoders ?
    */
+  /* Check if the BL of mem_model requires inverted or not */
+  check_mem_model_blwl_inverted(mem_model, SPICE_MODEL_PORT_BL, &bl_inverted); 
   /* Bit lines decoder */
   fprintf(fp, "bl_decoder%dto%d mem_bank_bl_decoder (",
           bl_decoder_size, num_bl);
   /* Prefix of BL & WL is fixed, in order to simplify grouping nets */
-  fprintf(fp, "en_bl, %s[%d:0], %s[0:%d]", 
-          top_netlist_addr_bl_port_name, bl_decoder_size - 1, 
+  fprintf(fp, "en_bl, %s[%d:0], ",
+          top_netlist_addr_bl_port_name, bl_decoder_size - 1); 
+  if (TRUE == bl_inverted) {
+    fprintf(fp, "~");
+  }
+  fprintf(fp, "%s[0:%d]", 
           top_netlist_bl_port_name, num_bl - 1);
   fprintf(fp, ");\n");
 
+  /* Check if the WL of mem_model requires inverted or not */
+  check_mem_model_blwl_inverted(mem_model, SPICE_MODEL_PORT_WL, &wl_inverted); 
   /* Word lines decoder */
   fprintf(fp, "wl_decoder%dto%d mem_bank_wl_decoder (",
           wl_decoder_size, num_wl);
-  fprintf(fp, "en_wl, %s[%d:0], %s[0:%d] ",
-          top_netlist_addr_wl_port_name, wl_decoder_size - 1, 
+  fprintf(fp, "en_wl, %s[%d:0], ",
+          top_netlist_addr_wl_port_name, wl_decoder_size - 1); 
+  if (TRUE == wl_inverted) {
+    fprintf(fp, "~");
+  }
+  fprintf(fp, "%s[0:%d]", 
           top_netlist_wl_port_name, num_wl - 1);
   fprintf(fp, ");\n");
 

@@ -5407,3 +5407,40 @@ void init_reserved_syntax_char(t_reserved_syntax_char* cur_reserved_syntax_char,
 
   return;
 }
+
+void check_mem_model_blwl_inverted(t_spice_model* cur_mem_model, 
+                                   enum e_spice_model_port_type blwl_port_type,
+                                   boolean* blwl_inverted) {
+  int num_blwl_ports = 0;
+  t_spice_model_port** blwl_port = NULL;
+
+  /* Check */
+  assert((SPICE_MODEL_PORT_BL == blwl_port_type)||(SPICE_MODEL_PORT_WL == blwl_port_type));
+
+  /* Find BL and WL ports */
+  blwl_port = find_spice_model_ports(cur_mem_model, blwl_port_type, &num_blwl_ports, TRUE);
+
+  /* If we cannot find any return with warnings */
+  if (0 == num_blwl_ports) {
+    (*blwl_inverted) = FALSE;
+    vpr_printf(TIO_MESSAGE_WARNING, "(FILE:%s,[LINE%d])Unable to find any BL/WL port for memory model(%s)!\n",
+               __FILE__, __LINE__, cur_mem_model->name);
+    return;
+  }
+
+  /* Only 1 port should be found */ 
+  assert(1 == num_blwl_ports);
+  /* And port size should be at least 1 */
+  assert(0 < blwl_port[0]->size);
+
+  /* if default value of a BL/WL port is 0, we do not need an inversion. */
+  if (0 == blwl_port[0]->default_val) {
+    (*blwl_inverted) = FALSE;
+  } else {
+  /* if default value of a BL/WL port is 1, we need an inversion! */
+    assert(1 == blwl_port[0]->default_val); 
+    (*blwl_inverted) = TRUE;
+  }
+
+  return;
+}

@@ -442,3 +442,7 @@ void get_sram_orgz_info_mem_model(t_sram_orgz_info* cur_sram_orgz_info,
 
 void init_reserved_syntax_char(t_reserved_syntax_char* cur_reserved_syntax_char,
                                char cur_syntax_char, boolean cur_verilog_reserved, boolean cur_spice_reserved);
+
+void check_mem_model_blwl_inverted(t_spice_model* cur_mem_model, 
+                                   enum e_spice_model_port_type blwl_port_type,
+                                   boolean* blwl_inverted);
