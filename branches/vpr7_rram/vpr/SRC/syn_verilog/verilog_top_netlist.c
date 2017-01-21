@@ -1642,10 +1642,24 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
     /* Find if this inpad is mapped to a logical block */
     found_mapped_inpad = 0;
     for (iblock = 0; iblock < num_logical_blocks; iblock++) {
+      /* Bypass OUTPAD: donot put any voltage stimuli */
       /* Make sure We find the correct logical block !*/
       if ((iopad_verilog_model == logical_block[iblock].mapped_spice_model)
-         &&(iopad_idx == logical_block[iblock].mapped_spice_model_index)
-         &&(VPACK_INPAD == logical_block[iblock].type)) {
+         &&(iopad_idx == logical_block[iblock].mapped_spice_model_index)) {
+      /* Output PAD only need a short connection */
+        if (VPACK_OUTPAD == logical_block[iblock].type) {
+          fprintf(fp, "//----- Output %s does not need a Stimuli ----\n", logical_block[iblock].name);
+          fprintf(fp, "initial\n");
+          fprintf(fp, "  begin //--- Input %s[%d] GENERATOR\n", gio_input_prefix, iopad_idx);
+          fprintf(fp, "    %s%s%s[%d] = 1'b%d;\n", 
+                  gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx,
+                  verilog_default_signal_init_value);
+           fprintf(fp, "end\n");
+          found_mapped_inpad = 1;
+          break;
+        }
+      /* Input PAD only need a short connection */
+        assert(VPACK_INPAD == logical_block[iblock].type);
         cur_spice_net_info = NULL;
         for (inet = 0; inet < num_nets; inet++) { 
           if (0 == strcmp(clb_net[inet].name, logical_block[iblock].name)) {
