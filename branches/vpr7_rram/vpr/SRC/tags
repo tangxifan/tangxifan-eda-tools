@@ -1080,6 +1080,8 @@ add_rr_graph_fast_edge_opin_to_cb	route/rr_graph_opincb.c	/^int add_rr_graph_fas
 add_rr_graph_one_grid_fast_edge_opin_to_cb	route/rr_graph_opincb.c	/^int add_rr_graph_one_grid_fast_edge_opin_to_cb(int grid_x, $/;"	f	file:
 add_rr_graph_switch_segment_pattern	route/rr_graph_swseg.c	/^int add_rr_graph_switch_segment_pattern(enum e_directionality directionality,$/;"	f
 add_size	power/PowerSpicedComponent.c	/^void PowerCallibInputs::add_size(float transistor_size, float power) {$/;"	f	class:PowerCallibInputs
+add_sram_conf_bits_to_llist	fpga_spice/fpga_spice_utils.c	/^add_sram_conf_bits_to_llist(t_sram_orgz_info* cur_sram_orgz_info, int mem_index, $/;"	f
+add_sram_membank_conf_bits_to_llist	fpga_spice/fpga_spice_utils.c	/^void add_sram_membank_conf_bits_to_llist(t_sram_orgz_info* cur_sram_orgz_info, int mem_index, $/;"	f
 add_subckt	base/read_blif.c	/^static void add_subckt(int doall, t_model *user_models) {$/;"	f	file:
 add_to_heap	route/route_common.c	/^static void add_to_heap(struct s_heap *hptr) {$/;"	f	file:
 add_to_mod_list	route/route_common.c	/^void add_to_mod_list(float *fptr) {$/;"	f
@@ -1407,6 +1409,7 @@ check_locally_used_clb_opins	route/check_route.c	/^static void check_locally_use
 check_lookahead_pins_used	pack/cluster.c	/^static boolean check_lookahead_pins_used(t_pb *cur_pb) {$/;"	f	file:
 check_macro_can_be_placed	place/place.c	/^static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z) {$/;"	f	file:
 check_macros_contained	place/place_macro.c	/^int check_macros_contained(t_pl_macro pl_macro_a,$/;"	f
+check_mem_model_blwl_inverted	fpga_spice/fpga_spice_utils.c	/^void check_mem_model_blwl_inverted(t_spice_model* cur_mem_model, $/;"	f
 check_net	base/read_blif.c	/^static void check_net(boolean sweep_hanging_nets_and_inputs) {$/;"	f	file:
 check_netlist	base/check_netlist.c	/^void check_netlist() {$/;"	f
 check_node	route/check_rr_graph.c	/^void check_node(int inode, enum e_route_type route_type) {$/;"	f

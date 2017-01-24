@@ -87,7 +87,7 @@ void try_buffer_for_net( int inet, t_rc_node** rc_node_free_list, t_linked_rc_ed
        rc_root = alloc_and_load_rc_tree (inet, rc_node_free_list, 
                   rc_edge_free_list, rr_node_to_rc_node);
        plan_list = try_buffer_rc_tree(rc_root, num_pins, isink_to_inode);
-       best.Tdel = HUGE;
+       best.Tdel = HUGE_VAL;
        traverse = plan_list.front;
        while ( traverse != NULL )
        {
@@ -397,7 +397,7 @@ static t_buffer_plan_list join_left_plan_list_into_whole( t_buffer_plan_list lef
     {
         for( i=0; i< num_whole; i++ )
         {
-            best_plans[i].C_downstream = HUGE;
+            best_plans[i].C_downstream = HUGE_VAL;
             if ( left.front == whole[ i ].front )
             {
                 continue;
@@ -412,7 +412,7 @@ static t_buffer_plan_list join_left_plan_list_into_whole( t_buffer_plan_list lef
                 }
                 whole_traverse = whole_traverse->next;
             }
-            if ( best_plans[i].C_downstream == HUGE )
+            if ( best_plans[i].C_downstream == HUGE_VAL )
             {
                 break;
             }
@@ -439,7 +439,7 @@ static t_buffer_plan combine_buffer_plan( t_buffer_plan slow_branch, t_buffer_pl
     copy_delay( new_plan.sink_delay, slow_branch.sink_delay, slow_branch.sink_head );
     for( i = 0; i < num_whole; i++ )
     {
-        if ( plan_whole[ i ].C_downstream == HUGE )
+        if ( plan_whole[ i ].C_downstream == HUGE_VAL )
         {
             continue;
         }
@@ -482,7 +482,7 @@ static t_buffer_plan_list insert_buffer( t_buffer_plan_list list, int inode, flo
     //int i;
     float Tdel_temp;
     float delay_addition;
-    float Tdel_best = HUGE;
+    float Tdel_best = HUGE_VAL;
     t_buffer_plan_node* traverse = list.front;
     while ( traverse != NULL )
     {

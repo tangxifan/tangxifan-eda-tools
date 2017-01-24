@@ -301,7 +301,7 @@ void config_spice_model_input_output_buffers_pass_gate(int num_spice_models,
       memcpy(spice_model[i].input_buffer, buf_spice_model->design_tech_info.buffer_info, sizeof(t_spice_model_buffer));
       /* Recover the spice_model_name and exist */
       spice_model[i].input_buffer->exist = 1;
-      spice_model[i].input_buffer->spice_model_name = strdup(buf_spice_model->name);
+      spice_model[i].input_buffer->spice_model_name = my_strdup(buf_spice_model->name);
     }
 
     /* Check if this spice model has output buffers */
@@ -318,7 +318,7 @@ void config_spice_model_input_output_buffers_pass_gate(int num_spice_models,
       memcpy(spice_model[i].output_buffer, buf_spice_model->design_tech_info.buffer_info, sizeof(t_spice_model_buffer));
       /* Recover the spice_model_name and exist */
       spice_model[i].output_buffer->exist = 1;
-      spice_model[i].output_buffer->spice_model_name = strdup(buf_spice_model->name);
+      spice_model[i].output_buffer->spice_model_name = my_strdup(buf_spice_model->name);
     }
  
     /* If this spice_model is a LUT, check the lut_input_buffer */
@@ -337,7 +337,7 @@ void config_spice_model_input_output_buffers_pass_gate(int num_spice_models,
       memcpy(spice_model[i].lut_input_buffer, buf_spice_model->design_tech_info.buffer_info, sizeof(t_spice_model_buffer));
       /* Recover the spice_model_name and exist */
       spice_model[i].lut_input_buffer->exist = 1;
-      spice_model[i].lut_input_buffer->spice_model_name = strdup(buf_spice_model->name);
+      spice_model[i].lut_input_buffer->spice_model_name = my_strdup(buf_spice_model->name);
     }
     
     /* Check pass_gate logic only for LUT and MUX */
@@ -354,7 +354,7 @@ void config_spice_model_input_output_buffers_pass_gate(int num_spice_models,
       /* Copy the information from found spice model to current spice model*/
       memcpy(spice_model[i].pass_gate_logic, pgl_spice_model->design_tech_info.pass_gate_info, sizeof(t_spice_model_pass_gate_logic));
       /* Recover the spice_model_name */
-      spice_model[i].pass_gate_logic->spice_model_name = strdup(pgl_spice_model->name);
+      spice_model[i].pass_gate_logic->spice_model_name = my_strdup(pgl_spice_model->name);
     }
   }
   
