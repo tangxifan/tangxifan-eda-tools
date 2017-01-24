@@ -347,7 +347,7 @@
         <output_buffer exist="on" spice_model_name="inv4"/>
         <pass_gate_logic spice_model_name="tgate"/>
         <port type="inout" prefix="pad" size="1"/>
-        <port type="sram" prefix="en" size="1" mode_select="true" spice_model_name="sram6T_rram"/>
+        <port type="sram" prefix="en" size="1" mode_select="true" spice_model_name="sram6T_rram" default_val="1"/>
         <port type="input" prefix="outpad" size="1"/>
         <port type="input" prefix="zin" size="1" is_global="true" default_val="0" />
         <port type="output" prefix="inpad" size="1"/>
