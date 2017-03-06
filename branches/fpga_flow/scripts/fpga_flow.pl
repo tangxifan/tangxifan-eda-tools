@@ -129,6 +129,7 @@ sub print_usage()
   print "      -black_box_ace: run activity estimation with black box support. It increase the power.\n";
   print "      -remove_designs: remove all the old results.\n";
   print "      -abc_scl : run ABC optimization for sequential circuits, mandatory when VTR flow is selected.\n";
+  print "      -abc_verilog_rewrite : run ABC to convert a blif netlist to a Verilog netlist.\n";
   print "      -vpr_timing_pack_off : turn off the timing-driven pack for vpr.\n";
   print "      -vpr_place_clb_pin_remap: turn on place_clb_pin_remap in VPR.\n";
   print "      -vpr_max_router_iteration <int> : specify the max router iteration in VPR.\n";
@@ -143,6 +144,8 @@ sub print_usage()
   print "      -vpr_fpga_spice_print_toptb : print full-chip testbench in VPR FPGA SPICE\n";
   print "      -vpr_fpga_spice_leakage_only : turn on leakage_only mode in VPR FPGA SPICE\n";
   print "      -vpr_fpga_spice_parasitic_net_estimation_off : turn off parasitic_net_estimation in VPR FPGA SPICE\n";
+  print "      -vpr_fpga_spice_verilog_generator : turn on Verilog Generator of VPR FPGA SPICE\n";
+  print "      -vpr_fpga_spice_rename_illegal_port : turn on renaming illegal ports option of VPR FPGA SPICE\n";
   print "      -multi_thread <int>: turn on the mutli-thread mode, specify the number of threads\n";
   print "      -parse_results_only : only parse the flow results and write CSV report.\n";
   print "      -min_hard_adder_size: min. size of hard adder in carry chain defined in Arch XML.(Default:1)\n";
@@ -283,6 +286,7 @@ sub opts_read()
   &read_opt_into_hash("black_box_ace","off","off");
   &read_opt_into_hash("remove_designs","off","off");
   &read_opt_into_hash("abc_scl","off","off");
+  &read_opt_into_hash("abc_verilog_rewrite","off","off");
   &read_opt_into_hash("vpr_timing_pack_off","off","off");
   &read_opt_into_hash("vpr_route_breadthfirst","off","off");
   &read_opt_into_hash("min_route_chan_width","on","off");
@@ -293,11 +297,13 @@ sub opts_read()
   &read_opt_into_hash("parse_results_only","off","off");
  
   # VTR/VTR_MCCL/VTR_MIG_MCCL flow options 
+  # Read Opt into Hash(opt_ptr) : "opt_name","with_val","mandatory"
   &read_opt_into_hash("min_hard_adder_size","on","off");
   &read_opt_into_hash("mem_size","on","off");
   &read_opt_into_hash("odin2_carry_chain_support","off","off");
 
   # FPGA-SPICE options
+  # Read Opt into Hash(opt_ptr) : "opt_name","with_val","mandatory"
   &read_opt_into_hash("vpr_fpga_spice","on","off");
   &read_opt_into_hash("vpr_fpga_spice_print_cbsbtb","off","off");
   &read_opt_into_hash("vpr_fpga_spice_print_pbtb","off","off");
@@ -305,6 +311,8 @@ sub opts_read()
   &read_opt_into_hash("vpr_fpga_spice_print_toptb","off","off");
   &read_opt_into_hash("vpr_fpga_spice_leakage_only","off","off");
   &read_opt_into_hash("vpr_fpga_spice_parasitic_net_estimation_off","off","off");
+  &read_opt_into_hash("vpr_fpga_spice_verilog_generator","off","off");
+  &read_opt_into_hash("vpr_fpga_spice_rename_illegal_port","off","off");
 
   &print_opts(); 
 
@@ -542,12 +550,21 @@ sub run_abc_fpgamap($ $ $)
   }
   my ($fpga_synthesis_method) = ("if");
   #my ($fpga_synthesis_method) = ("fpga");
+  #
+  my ($dump_verilog) = ("");
+  if ("on" eq $opt_ptr->{abc_verilog_rewrite}) {
+    $dump_verilog = "write_verilog $bm.v";
+  }
   # Run FPGA ABC
   #`csh -cx './$abc_name -c \"read $bm; resyn2; $fpga_synthesis_method -K $lut_num; $abc_seq_optimize $abc_seq_optimize sweep; write_blif $blif_out; quit\" > $log'`;
-  `csh -cx './$abc_name -c \"read $bm; resyn; resyn2; $fpga_synthesis_method -K $lut_num; $abc_seq_optimize write_blif $blif_out; quit;\" > $log'`;
+  `csh -cx './$abc_name -c \"read $bm; resyn; resyn2; $fpga_synthesis_method -K $lut_num; $abc_seq_optimize write_blif $blif_out; $dump_verilog; quit;\" > $log'`;
 
   if (!(-e $blif_out)) {
     die "ERROR: Fail ABC for benchmark $bm.\n";
+  }
+
+  if (("on" eq $opt_ptr->{abc_verilog_rewrite})&&(!(-e "$bm.v"))) {
+    die "ERROR: ABC verilog rewrite failed for benchmark $bm!\n";
   }
 
   chdir $cwd;
@@ -566,13 +583,22 @@ sub run_abc_bb_fpgamap($ $ $) {
   }
   my ($fpga_synthesis_method) = ("if");
   #my ($fpga_synthesis_method) = ("fpga");
+  #
+  my ($dump_verilog) = ("");
+  if ("on" eq $opt_ptr->{abc_verilog_rewrite}) {
+    $dump_verilog = "write_verilog $bm.v";
+  }
 
   chdir $abc_dir;
   # Run FPGA ABC
-  `csh -cx './$abc_name -c \"read $bm; resyn; resyn2; $fpga_synthesis_method -K $lut_num; $abc_seq_optimize sweep; write_hie $bm $blif_out; quit;\" > $log'`;
+  `csh -cx './$abc_name -c \"read $bm; resyn; resyn2; $fpga_synthesis_method -K $lut_num; $abc_seq_optimize sweep; write_hie $bm $blif_out; $dump_verilog; quit;\" > $log'`;
 
   if (!(-e $blif_out)) {
     die "ERROR: Fail ABC_with_bb_support for benchmark $bm.\n";
+  }
+
+  if (("on" eq $opt_ptr->{abc_verilog_rewrite})&&(!(-e "$bm.v"))) {
+    die "ERROR: ABC verilog rewrite failed for benchmark $bm!\n";
   }
 
   chdir $cwd;
@@ -1034,6 +1060,12 @@ sub run_std_vpr($ $ $ $ $ $ $ $ $)
       $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_parasitic_net_estimation_off";
     }
   }
+  if ("on" eq $opt_ptr->{vpr_fpga_spice_verilog_generator}) {
+    $vpr_spice_opts = $vpr_spice_opts." --fpga_syn_verilog";
+    if ("on" eq $opt_ptr->{vpr_fpga_spice_rename_illegal_port}) {
+      $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_rename_illegal_port";
+    }
+  }
   
   my ($other_opt) = ("");
   if ("on" eq $opt_ptr->{vpr_place_clb_pin_remap}) {
@@ -1092,6 +1124,12 @@ sub run_vpr_route($ $ $ $ $ $ $ $ $)
     }
     if ("on" eq $opt_ptr->{vpr_fpga_spice_parasitic_net_estimation_off}) {
       $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_parasitic_net_estimation_off";
+    }
+  }
+  if ("on" eq $opt_ptr->{vpr_fpga_spice_verilog_generator}) {
+    $vpr_spice_opts = $vpr_spice_opts." --fpga_syn_verilog";
+    if ("on" eq $opt_ptr->{vpr_fpga_spice_rename_illegal_port}) {
+      $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_rename_illegal_port";
     }
   }
   

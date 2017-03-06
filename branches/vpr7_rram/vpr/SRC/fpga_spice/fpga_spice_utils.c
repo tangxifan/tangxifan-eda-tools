@@ -4540,6 +4540,7 @@ add_conf_bit_info_to_llist(t_llist* head, int index,
     new_conf_bit_info = alloc_one_conf_bit_info(index, sram_val, bl_val, wl_val, parent_spice_model);
     assert(NULL != new_conf_bit_info);
     temp->dptr = (void*)new_conf_bit_info; 
+    assert(NULL == temp->next);
     return temp; 
   } else {
   /* If head is a valid pointer, we add a new element to the tail of this linked-list */

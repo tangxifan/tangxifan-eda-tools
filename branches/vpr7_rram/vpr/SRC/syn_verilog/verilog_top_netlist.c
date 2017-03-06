@@ -1296,13 +1296,15 @@ int dump_verilog_top_testbench_find_num_config_clock_cycles(t_llist* head) {
   return cnt;
 }
 
-/* Recursively dump configuration bits which are stored in the linked list 
+/* dump configuration bits which are stored in the linked list 
+ * USE while LOOP !!! Recursive method causes memory corruptions!
  * We start dump configuration bit from the tail of the linked list
  * until the head of the linked list
  */
 static 
-void rec_dump_verilog_top_testbench_one_conf_bit_serial(FILE* fp, 
-                                                        t_llist* cur_conf_bit) {
+void dump_verilog_top_testbench_one_conf_bit_serial(FILE* fp, 
+                                                    t_llist* cur_conf_bit) {
+  t_llist* temp = cur_conf_bit;
   t_conf_bit_info* cur_conf_bit_info = NULL;
 
   int num_bl, num_wl;
@@ -1315,85 +1317,75 @@ void rec_dump_verilog_top_testbench_one_conf_bit_serial(FILE* fp,
     exit(1);
   } 
 
-  if (NULL == cur_conf_bit) {
-    return;
-  }
-
-  cur_conf_bit_info = (t_conf_bit_info*)(cur_conf_bit->dptr);
-						
-  /* We already touch the tail, start dump */
-  switch (sram_verilog_orgz_type) {
-  case SPICE_SRAM_STANDALONE:
-  case SPICE_SRAM_SCAN_CHAIN:
-    /* TODO: Scan-chain only loads the SRAM values 
-    fprintf(fp, "Initial\n");
-    fprintf(fp, "  begin: CONF_BIT_%d\n", cur_conf_bit_info->index);
-    assert((0 == cur_conf_bit_info->sram_val)||(1 == cur_conf_bit_info->sram_val));
-    fprintf(fp, "    %s[%d] = %d, ", 
-            sram_model_prefix, 
-            1- cur_conf_bit_info->sram_val),
-    fprintf(fp, "  end\n");
-    fprintf(fp, "%d, ", cur_conf_bit_info->sram_val),
-    fprintf(fp, "//---- Configuration bit No.: %d, ", cur_conf_bit_info->index);
-    fprintf(fp, " SRAM value: %d, ", cur_conf_bit_info->sram_val);
-    fprintf(fp, " SPICE model name: %s, ", cur_conf_bit_info->parent_spice_model->name);
-    fprintf(fp, " SPICE model index: %d ", cur_conf_bit_info->parent_spice_model_index);
-    fprintf(fp, "\n");
-    */
-    /* For scan chain, the last bit should go first!*/
-    if (NULL != cur_conf_bit->next) {
-      /* This is not the tail, keep going */
-      rec_dump_verilog_top_testbench_one_conf_bit_serial(fp, cur_conf_bit->next);
-    } else {
-      return;
+  while (NULL != temp) {
+    cur_conf_bit_info = (t_conf_bit_info*)(temp->dptr);
+    						
+    /* We already touch the tail, start dump */
+    switch (sram_verilog_orgz_type) {
+    case SPICE_SRAM_STANDALONE:
+    case SPICE_SRAM_SCAN_CHAIN:
+      /* TODO: Scan-chain only loads the SRAM values 
+      fprintf(fp, "Initial\n");
+      fprintf(fp, "  begin: CONF_BIT_%d\n", cur_conf_bit_info->index);
+      assert((0 == cur_conf_bit_info->sram_val)||(1 == cur_conf_bit_info->sram_val));
+      fprintf(fp, "    %s[%d] = %d, ", 
+              sram_model_prefix, 
+              1- cur_conf_bit_info->sram_val),
+      fprintf(fp, "  end\n");
+      fprintf(fp, "%d, ", cur_conf_bit_info->sram_val),
+      fprintf(fp, "//---- Configuration bit No.: %d, ", cur_conf_bit_info->index);
+      fprintf(fp, " SRAM value: %d, ", cur_conf_bit_info->sram_val);
+      fprintf(fp, " SPICE model name: %s, ", cur_conf_bit_info->parent_spice_model->name);
+      fprintf(fp, " SPICE model index: %d ", cur_conf_bit_info->parent_spice_model_index);
+      fprintf(fp, "\n");
+      */
+      /* For scan chain, the last bit should go first!*/
+      /* Reverse the linked list first !!! */
+      break;
+    case SPICE_SRAM_MEMORY_BANK:
+      /* For memory bank, we do not care the sequence.
+       * To be easy to understand, we go from the first to the last
+       */
+      /* Dump one configuring operation on BL and WL addresses */
+      get_sram_orgz_info_num_blwl(sram_verilog_orgz_info, &num_bl, &num_wl);
+      bl_decoder_size = determine_decoder_size(num_bl);
+      wl_decoder_size = determine_decoder_size(num_wl);
+      /* Memory bank requires the address to be given to the decoder*/
+      /* Decode address to BLs and WLs*/
+      /* Encode addresses */
+      /* Bit line address */
+      /* If this WL is selected , we decode its index to address */
+      bl_addr = (char*)my_calloc(bl_decoder_size + 1, sizeof(char));
+      /* If this WL is selected , we decode its index to address */
+      assert(NULL != cur_conf_bit_info->bl);
+      encode_decoder_addr(cur_conf_bit_info->bl->addr, bl_decoder_size, bl_addr);
+      /* Word line address */
+      wl_addr = (char*)my_calloc(wl_decoder_size + 1, sizeof(char));
+      encode_decoder_addr(cur_conf_bit_info->wl->addr, wl_decoder_size, wl_addr);
+      assert(NULL != cur_conf_bit_info->wl);
+      /* One operation per clock cycle */
+      /* Information about this configuration bit */
+      fprintf(fp, "    //--- Configuration bit No.: %d \n", cur_conf_bit_info->index);
+      fprintf(fp, "    //--- Bit Line: %d, \n", cur_conf_bit_info->bl->val);
+      fprintf(fp, "    //--- Word Line: %d \n ", cur_conf_bit_info->wl->val);
+      fprintf(fp, "    //--- SPICE model name: %s \n", cur_conf_bit_info->parent_spice_model->name);
+      fprintf(fp, "    //--- SPICE model index: %d \n", cur_conf_bit_info->parent_spice_model_index);
+      fprintf(fp, "    prog_cycle_blwl(%d'b%s, %d'b%s); //--- (BL_addr_code, WL_addr_code) \n",
+                  bl_decoder_size, bl_addr, wl_decoder_size, wl_addr);
+      fprintf(fp, "\n");
+      /* Free */
+      my_free(wl_addr);
+      my_free(bl_addr);
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
+                 __FILE__, __LINE__);
+      exit(1);
     }
-    break;
-  case SPICE_SRAM_MEMORY_BANK:
-    /* For memory bank, we do not care the sequence.
-     * To be easy to understand, we go from the first to the last
-     */
-    if (NULL != cur_conf_bit->next) {
-      /* This is not the tail, keep going */
-      rec_dump_verilog_top_testbench_one_conf_bit_serial(fp, cur_conf_bit->next);
-    }
-    /* Dump one configuring operation on BL and WL addresses */
-    get_sram_orgz_info_num_blwl(sram_verilog_orgz_info, &num_bl, &num_wl);
-    bl_decoder_size = determine_decoder_size(num_bl);
-    wl_decoder_size = determine_decoder_size(num_wl);
-    /* Memory bank requires the address to be given to the decoder*/
-    /* Decode address to BLs and WLs*/
-    /* Encode addresses */
-    /* Bit line address */
-    /* If this WL is selected , we decode its index to address */
-    bl_addr = (char*)my_calloc(bl_decoder_size + 1, sizeof(char));
-    /* If this WL is selected , we decode its index to address */
-    assert(NULL != cur_conf_bit_info->bl);
-    encode_decoder_addr(cur_conf_bit_info->bl->addr, bl_decoder_size, bl_addr);
-    /* Word line address */
-    wl_addr = (char*)my_calloc(wl_decoder_size + 1, sizeof(char));
-    encode_decoder_addr(cur_conf_bit_info->wl->addr, wl_decoder_size, wl_addr);
-    assert(NULL != cur_conf_bit_info->wl);
-    /* One operation per clock cycle */
-    /* Information about this configuration bit */
-    fprintf(fp, "    //--- Configuration bit No.: %d \n", cur_conf_bit_info->index);
-    fprintf(fp, "    //--- Bit Line: %d, \n", cur_conf_bit_info->bl->val);
-    fprintf(fp, "    //--- Word Line: %d \n ", cur_conf_bit_info->wl->val);
-    fprintf(fp, "    //--- SPICE model name: %s \n", cur_conf_bit_info->parent_spice_model->name);
-    fprintf(fp, "    //--- SPICE model index: %d \n", cur_conf_bit_info->parent_spice_model_index);
-    fprintf(fp, "    prog_cycle_blwl(%d'b%s, %d'b%s); //--- (BL_addr_code, WL_addr_code) \n",
-                bl_decoder_size, bl_addr, wl_decoder_size, wl_addr);
-    fprintf(fp, "\n");
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
-               __FILE__, __LINE__);
-    exit(1);
+    /* Go to next */
+    temp = temp->next;
   }
-
-  /* Free */
-  my_free(wl_addr);
-  my_free(bl_addr);
-
+  
   return;
 }
 
@@ -1402,11 +1394,20 @@ void dump_verilog_top_testbench_conf_bits_serial(FILE* fp,
                                                  t_llist* head) {
   int num_bl, num_wl;
   int bl_decoder_size, wl_decoder_size;
+  t_llist* new_head = head;
 
   switch (sram_verilog_orgz_type) {
   case SPICE_SRAM_STANDALONE:
   case SPICE_SRAM_SCAN_CHAIN:
-    /* TODO */
+    /* For scan chain, the last bit should go first!*/
+    /* Reverse the linked list first !!! */
+    new_head = reverse_llist(new_head); 
+    /* TODO: For each element in linked list, generate a voltage stimuli */
+    dump_verilog_top_testbench_one_conf_bit_serial(fp, head);
+    /* Recover the sequence of linked list (reverse again) !!! */
+    new_head = reverse_llist(new_head); 
+    /* Check */
+    assert(head == new_head);
     break;
   case SPICE_SRAM_MEMORY_BANK:
     get_sram_orgz_info_num_blwl(sram_verilog_orgz_info, &num_bl, &num_wl);
@@ -1419,7 +1420,7 @@ void dump_verilog_top_testbench_conf_bits_serial(FILE* fp,
     fprintf(fp, "    addr_bl = {%d {1'b0}};\n", bl_decoder_size);
     fprintf(fp, "    addr_wl = {%d {1'b0}};\n", wl_decoder_size);
     /* For each element in linked list, generate a voltage stimuli */
-    rec_dump_verilog_top_testbench_one_conf_bit_serial(fp, head);
+    dump_verilog_top_testbench_one_conf_bit_serial(fp, head);
     fprintf(fp, "  end\n");
     fprintf(fp, "//----- END of Configuration phase -----\n");
     break;

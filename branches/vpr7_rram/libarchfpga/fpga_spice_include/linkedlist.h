@@ -27,4 +27,6 @@ int find_length_llist(t_llist* head);
 
 void free_llist(t_llist* head);
 
+t_llist* reverse_llist(t_llist* head);
+
 #endif
