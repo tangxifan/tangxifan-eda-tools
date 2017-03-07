@@ -1317,6 +1317,11 @@ void dump_verilog_top_testbench_one_conf_bit_serial(FILE* fp,
     exit(1);
   } 
 
+  /* Dump one configuring operation on BL and WL addresses */
+  get_sram_orgz_info_num_blwl(sram_verilog_orgz_info, &num_bl, &num_wl);
+  bl_decoder_size = determine_decoder_size(num_bl);
+  wl_decoder_size = determine_decoder_size(num_wl);
+
   while (NULL != temp) {
     cur_conf_bit_info = (t_conf_bit_info*)(temp->dptr);
     						
@@ -1345,11 +1350,9 @@ void dump_verilog_top_testbench_one_conf_bit_serial(FILE* fp,
     case SPICE_SRAM_MEMORY_BANK:
       /* For memory bank, we do not care the sequence.
        * To be easy to understand, we go from the first to the last
+       * IMPORTANT: sequence seems to be critical.
+       * Reversing the sequence leading to functional incorrect.
        */
-      /* Dump one configuring operation on BL and WL addresses */
-      get_sram_orgz_info_num_blwl(sram_verilog_orgz_info, &num_bl, &num_wl);
-      bl_decoder_size = determine_decoder_size(num_bl);
-      wl_decoder_size = determine_decoder_size(num_wl);
       /* Memory bank requires the address to be given to the decoder*/
       /* Decode address to BLs and WLs*/
       /* Encode addresses */
@@ -1420,7 +1423,13 @@ void dump_verilog_top_testbench_conf_bits_serial(FILE* fp,
     fprintf(fp, "    addr_bl = {%d {1'b0}};\n", bl_decoder_size);
     fprintf(fp, "    addr_wl = {%d {1'b0}};\n", wl_decoder_size);
     /* For each element in linked list, generate a voltage stimuli */
-    dump_verilog_top_testbench_one_conf_bit_serial(fp, head);
+    /* Reverse the linked list first !!! */
+    new_head = reverse_llist(new_head); 
+    dump_verilog_top_testbench_one_conf_bit_serial(fp, new_head);
+    /* Recover the sequence of linked list (reverse again) !!! */
+    new_head = reverse_llist(new_head); 
+    /* Check */
+    assert(head == new_head);
     fprintf(fp, "  end\n");
     fprintf(fp, "//----- END of Configuration phase -----\n");
     break;

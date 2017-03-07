@@ -26,10 +26,11 @@ void types_pin_equivalence_auto_detect() {
     }
   }
 
-
   return;
 }
 
+
+/* For a type_descriptor, check if its input/output ports are logic equivalent */
 int one_type_pin_equivalence_auto_detect(t_type_descriptor* cur_type) {
   t_pb_graph_node* pb_graph_head;
   int iport, ipin, iedge;

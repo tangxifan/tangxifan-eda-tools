@@ -164,15 +164,17 @@ void free_llist(t_llist* head) {
 /* Reverse a linked list and return the new head */
 t_llist* reverse_llist(t_llist* head) {
   t_llist* temp = head; 
+  t_llist* next = NULL;
   t_llist* last = NULL; /* pointor to the last-visited llist node */
 
   while (NULL != temp) {
     /* Modify the next pointor of current node */
+    next = temp->next;
     temp->next = last;
     /* Update the last node */
     last = temp;
     /* Go to next */
-    temp = temp->next;
+    temp = next;
   }
  
   return last; 
