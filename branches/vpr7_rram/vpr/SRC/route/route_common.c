@@ -20,6 +20,9 @@
 #include "buffer_insertion.h"
 /* end */
 
+/* Xifan TANG: useful functions for pb_pin_eq_auto_detect */
+void reassign_rr_node_net_num_from_scratch();
+
 /***************** Variables shared only by route modules *******************/
 
 t_rr_node_route_inf *rr_node_route_inf = NULL; /* [0..num_rr_nodes-1] */
@@ -140,6 +143,14 @@ void save_routing(struct s_trace **best_routing,
 
 	for (iblk = 0; iblk < num_blocks; iblk++) {
 		type = block[iblk].type;
+        /* Xifan TANG: Bypass those with pin_equivalence auto-detect */
+        if (TRUE == type->output_ports_eq_auto_detect) {
+          continue;
+        }
+        /* Xifan TANG: By pass IO */
+        if (IO_TYPE == type) {
+          continue;
+        }
 		for (iclass = 0; iclass < type->num_class; iclass++) {
 			num_local_opins = clb_opins_used_locally[iblk][iclass].nelem;
 			for (ipin = 0; ipin < num_local_opins; ipin++) {
@@ -277,7 +288,7 @@ boolean try_route(int width_fac, struct s_router_opts router_opts,
 			directs, num_directs, FALSE,
 			&tmp, 
             // Xifan TANG: Add Switch Segment Pattern Support
-            det_routing_arch.num_swseg_pattern, swseg_patterns); 
+            det_routing_arch.num_swseg_pattern, swseg_patterns, TRUE, TRUE); 
 
 	end = clock();
 #ifdef CLOCKS_PER_SEC
@@ -319,6 +330,10 @@ boolean feasible_routing(void) {
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
 		if (rr_node[inode].occ > rr_node[inode].capacity) {
+            /*
+            vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]rr_node[%d] occupancy(%d) exceeds its capacity(%d)!\n",
+                       __FILE__, __LINE__, inode, rr_node[inode].occ, rr_node[inode].capacity);
+            */
 			return (FALSE);
 		}
 	}
@@ -717,7 +732,10 @@ alloc_and_load_clb_opins_used_locally(void) {
 			if(type == IO_TYPE) {
 				continue;
 			}
-		
+	        /* Comment by Xifan TANG: count the number of unused clb OPINs ? Those pins may be used locally... 
+             * It seems that jluu wants to force all these pins are used, even though there is no net mapped!
+             * Then router will not route with these unused clb_pins!!!   
+             */	
 			if ((block[iblk].nets[clb_pin] != OPEN
 					&& clb_net[block[iblk].nets[clb_pin]].num_sinks == 0) || block[iblk].nets[clb_pin] == OPEN
 				) {
@@ -1250,6 +1268,10 @@ void reserve_locally_used_opins(float pres_fac, boolean rip_up_local_opins,
 
 	for (iblk = 0; iblk < num_blocks; iblk++) {
 		type = block[iblk].type;
+        /* By pass type_descriptors that turns on pin equivalence auto_detect */
+        //if (TRUE == type->output_ports_eq_auto_detect) {
+        //  continue;
+        //}
 		for (iclass = 0; iclass < type->num_class; iclass++) {
 			num_local_opin = clb_opins_used_locally[iblk][iclass].nelem;
 			/* Always 0 for pads and for RECEIVER (IPIN) classes */
@@ -1259,14 +1281,28 @@ void reserve_locally_used_opins(float pres_fac, boolean rip_up_local_opins,
 				num_edges = rr_node[from_node].num_edges;
 				for (iconn = 0; iconn < num_edges; iconn++) {
 					to_node = rr_node[from_node].edges[iconn];
+                    /* Xifan TANG: the to_node may not be the one should be reserved
+                     * Need double check if the ptc_num of this node matches class_id  
+                     */
+                    //if (type->pin_class[rr_node[to_node].ptc_num] != iclass) {
+                    //  continue;
+                    //}
+                    /* Original VPR */
 					cost = get_rr_cong_cost(to_node);
+                    /* Push nodes to heap:
+                     * Xifan TANG:
+                     *   Need to check we do not push a node twice into the heap!
+                     */
 					node_to_heap(to_node, cost, OPEN, OPEN, 0., 0.);
 				}
 
 				for (ipin = 0; ipin < num_local_opin; ipin++) {
 					heap_head_ptr = get_heap_head();
 					inode = heap_head_ptr->index;
+                    /* Xifan TANG: we only modify occ for single driver OPIN ! */
+                    //if (1 == rr_node[inode].fan_in) {
 					adjust_one_rr_occ_and_pcost(inode, 1, pres_fac);
+                    //}
 					clb_opins_used_locally[iblk][iclass].list[ipin] = inode;
 					free_heap_data(heap_head_ptr);
 				}
@@ -1276,6 +1312,120 @@ void reserve_locally_used_opins(float pres_fac, boolean rip_up_local_opins,
 		}
 	}
 }
+
+/* Xifan TANG: new function to auto detect and reserved locally used opins */
+void auto_detect_and_reserve_locally_used_opins(float pres_fac, boolean rip_up_local_opins,
+		                                        t_ivec ** clb_opins_used_locally) {
+
+  /* In the past, this function implicitly allowed LUT duplication when there are free LUTs. 
+   This was especially important for logical equivalence; however, now that we have a very general
+   logic cluster, it does not make sense to allow LUT duplication implicitly. we'll need to look into how we want to handle this case
+   */
+
+  int iblk, num_local_opin, inode, from_node, iconn, num_edges, to_node;
+  int iclass, ipin;
+  float cost;
+  struct s_heap *heap_head_ptr;
+  t_type_ptr type;
+
+  /* Xifan TANG: Update net_num for all the rr_nodes  */
+  reassign_rr_node_net_num_from_scratch(); 
+
+  /* VPR original method */
+  if (rip_up_local_opins) {
+	for (iblk = 0; iblk < num_blocks; iblk++) {
+  	  type = block[iblk].type;
+      /* Bypass those with pin_equivalence auto-detect */
+      if (TRUE == type->output_ports_eq_auto_detect) {
+        continue;
+      }
+      /* By pass IO */
+      if (IO_TYPE == type) {
+        continue;
+      }
+	  for (iclass = 0; iclass < type->num_class; iclass++) {
+	    num_local_opin = clb_opins_used_locally[iblk][iclass].nelem;
+	    /* Always 0 for pads and for RECEIVER (IPIN) classes */
+		for (ipin = 0; ipin < num_local_opin; ipin++) {
+	  	  inode = clb_opins_used_locally[iblk][iclass].list[ipin];
+  		  adjust_one_rr_occ_and_pcost(inode, -1, pres_fac);
+		}
+ 	  }
+	}
+  }
+
+  for (iblk = 0; iblk < num_blocks; iblk++) {
+	type = block[iblk].type;
+    /* Bypass those with pin_equivalence auto-detect */
+    if (TRUE == type->output_ports_eq_auto_detect) {
+      continue;
+    }
+    /* By pass IO */
+    if (IO_TYPE == type) {
+      continue;
+    }
+    for (iclass = 0; iclass < type->num_class; iclass++) {
+      /* Bypass non driver class */
+      if (DRIVER != type->class_inf[iclass].type) {
+        continue;
+      }
+	  num_local_opin = clb_opins_used_locally[iblk][iclass].nelem;
+	  /* Have to reserve (use) some OPINs */
+      ipin = 0;
+      /* We push nodes into heap and then we can pop-up with a sort by cost */
+ 	  from_node = rr_blk_source[iblk][iclass];
+	  num_edges = rr_node[from_node].num_edges;
+      /* initialize rr_node element: is_in_heap */
+	  for (iconn = 0; iconn < num_edges; iconn++) {
+	    to_node = rr_node[from_node].edges[iconn];
+        rr_node[to_node].is_in_heap = FALSE;
+      }
+      /* Find unmapped pins and add to heap */
+	  for (iconn = 0; iconn < num_edges; iconn++) {
+	    to_node = rr_node[from_node].edges[iconn];
+        if (OPEN != rr_node[to_node].net_num) {
+          continue;
+        }
+        /* we search by net_num if this inode is used or not */
+        if (FALSE == rr_node[to_node].is_in_heap) { 
+          rr_node[to_node].is_in_heap = TRUE;
+          /* Original VPR */
+	      cost = get_rr_cong_cost(to_node);
+          /* Push nodes to heap:
+           * Xifan TANG:
+           *   Need to check we do not push a node twice into the heap!
+           */
+	      node_to_heap(to_node, cost, OPEN, OPEN, 0., 0.);
+          ipin++;
+        }
+	  }
+      /* Re-allocate the look-up table if needed */ 
+      if (num_local_opin != ipin) {
+	    clb_opins_used_locally[iblk][iclass].nelem = ipin;
+        if (0 == clb_opins_used_locally[iblk][iclass].nelem) { 
+          clb_opins_used_locally[iblk][iclass].list = NULL;
+        } else {
+          clb_opins_used_locally[iblk][iclass].list = (int *) my_realloc(clb_opins_used_locally[iblk][iclass].list,
+	                                                                     clb_opins_used_locally[iblk][iclass].nelem * sizeof(int));
+        }
+      }
+      /* We want to re-build the list of locally used opins from lowest cost to highest */
+	  for (iconn = 0; iconn < clb_opins_used_locally[iblk][iclass].nelem; iconn++) {
+	    heap_head_ptr = get_heap_head();
+	    inode = heap_head_ptr->index;
+        /* Only update used pins */
+        assert(OPEN == rr_node[inode].net_num);
+  	    adjust_one_rr_occ_and_pcost(inode, 1, pres_fac); /* Reserve the pin ? */
+	    clb_opins_used_locally[iblk][iclass].list[iconn] = inode;
+        rr_node[inode].is_in_heap = FALSE; /* reset the flag */
+	    free_heap_data(heap_head_ptr);
+  	  }
+
+	  empty_heap();
+	}
+  }
+}
+
 
 static void adjust_one_rr_occ_and_pcost(int inode, int add_or_sub,
 		float pres_fac) {

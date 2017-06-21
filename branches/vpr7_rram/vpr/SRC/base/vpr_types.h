@@ -535,6 +535,8 @@ typedef struct s_net {
     t_spice_net_info* spice_net_info;
     /* Xifan TANG: CLB_IPIN_REMAP */
     int** prefer_side; /* [0..num_sinks][0..3] */
+    /* Xifan TANG: OPIN occupancy stats */
+    int num_mapped_opins;
 } t_net;
 
 /* s_grid_tile is the minimum tile of the fpga                         
@@ -960,6 +962,8 @@ struct s_rr_node {
     int num_drive_rr_nodes;
     t_rr_node** drive_rr_nodes;
     int* drive_switches;
+    /* Xifan TANG: pb_pin_eq_auto_detect support */
+    boolean is_in_heap;
     /* SPECIAL: For switch box muxes */
     int sb_num_drive_rr_nodes;
     t_rr_node** sb_drive_rr_nodes;

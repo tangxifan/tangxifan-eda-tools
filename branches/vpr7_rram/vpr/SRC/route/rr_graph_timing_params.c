@@ -176,6 +176,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 				/* UDSD by ICK Start */
 				to_node = rr_node[inode].edges[iedge];
 				to_rr_type = rr_node[to_node].type;
+				if (!(to_rr_type == CHANX || to_rr_type == CHANY || to_rr_type == IPIN)) 
 				assert(to_rr_type == CHANX || to_rr_type == CHANY || to_rr_type == IPIN);
 				if (rr_node[to_node].drivers != SINGLE) {
 					Cout = switch_inf[switch_index].Cout;

@@ -43,26 +43,106 @@ time_step = 1e-9;
 %Vel0 = 0.4;
 % Atom spacing
 %a0 = 0.35e-9/10;
-%Ea = 0.1;
+%Ea = 0.12;
 
 %% Fit Device parameters:
-% Vset = Vreset = 0.9V
+% Vset = Vreset = 1.1V
 % Iset,max = 500uA
-% RLRS = 1.8kOhm, RHRS = 20MOhm
+% RLRS = 2.4kOhm, RHRS = 23MOhm
 gap_max = 2.48e-9;
 gap_min = 0.10e-9;
 g0 = 0.25e-9;
 V0 = 0.8;
 I0 = 570e-6;
 beta = 1e-2;
-gamma0 = 17;
-Vel0 = 0.7;
+gamma0 = 13;
+Vel0 = 0.68;
 % Atom spacing
-a0 = 0.268e-10;
-Ea = 0.165;
+a0 = 0.2e-10;
+Ea = 0.147;
+
+% Vset = Vreset = 1.0V
+% Iset,max = 500uA
+% RLRS = 2.4kOhm, RHRS = 23MOhm
+%gap_max = 2.48e-9;
+%gap_min = 0.10e-9;
+%g0 = 0.25e-9;
+%V0 = 0.8;
+%I0 = 570e-6;
+%beta = 1e-2;
+%gamma0 = 14;
+%Vel0 = 0.7;
+% Atom spacing
+%a0 = 0.268e-10;
+%Ea = 0.14;
+
+%% Fit Device parameters:
+% Vset = Vreset = 0.9V
+% Iset,max = 500uA
+% RLRS = 1.8kOhm, RHRS = 20MOhm
+%gap_max = 2.48e-9;
+%gap_min = 0.10e-9;
+%g0 = 0.25e-9;
+%V0 = 0.8;
+%I0 = 570e-6;
+%beta = 1e-2;
+%gamma0 = 17;
+%Vel0 = 0.7;
+% Atom spacing
+%a0 = 0.268e-10;
+%Ea = 0.165;
+
+%% Fit Device parameters:
+% Vset = Vreset = 0.6V
+% Iset,max = 500uA
+% RLRS = 1.8kOhm, RHRS = 20MOhm
+%gap_max = 2.48e-9;
+%gap_min = 0.10e-9;
+%g0 = 0.25e-9;
+%V0 = 0.8;
+%I0 = 570e-6;
+%beta = 1e-2;
+%gamma0 = 18;
+%Vel0 = 0.7;
+% Atom spacing
+%a0 = 0.268e-10;
+%Ea = 0.165;
+
+
+%% Fit Device parameters:
+% Vset = Vreset = 0.3V
+% Iset,max = 500uA
+% RLRS = 1.8kOhm, RHRS = 20MOhm
+%gap_max = 2.48e-9;
+%gap_min = 0.10e-9;
+%g0 = 0.25e-9;
+%V0 = 0.8;
+%I0 = 570e-6;
+%beta = 1e-2;
+%gamma0 = 48;
+%Vel0 = 0.7;
+% Atom spacing
+%a0 = 0.268e-10;
+%Ea = 0.165;
+
+%% Fit Device parameters:
+% Vset = Vreset = 0.2V
+% Iset,max = 500uA
+% RLRS = 1.8kOhm, RHRS = 20MOhm
+%gap_max = 2.48e-9;
+%gap_min = 0.10e-9;
+%g0 = 0.25e-9;
+%V0 = 0.8;
+%I0 = 570e-6;
+%beta = 1e-2;
+%gamma0 = 75;
+%Vel0 = 0.7;
+% Atom spacing
+%a0 = 0.268e-10;
+%Ea = 0.165;
 
 %% I-V equation
-Vtb = -1.3:0.1:1.3;
+Vtb = -1.5:0.1:1.5;
 %Vtb = -1.8:0.1:1.8;
 gap = gap_min:0.1e-9:gap_max;
 iv_legend = [{'Ireset(gap=max)'}, {'Iset(gap=min)'}];
@@ -152,7 +232,7 @@ grid on
 
 %% Fig. 5: plot Field - Vtb
 gamma0_sweep = [gamma0,10,8]; % (0,20);
-gamma0_sweep_legend = [{'gamma0=17'}, {'gamma0=10'}, {'gamma0=8'}];
+gamma0_sweep_legend = [{['gamma0=', num2str(gamma0)]}, {'gamma0=10'}, {'gamma0=8'}];
 
 gamma = gamma0 - beta * (gap_max/1e-9)^3;
 F = (gamma*abs(Vtb)/tox);
@@ -179,7 +259,7 @@ grid on
 
 %% Fig. 6: plot gap_ddt - Vtb
 Vel0_sweep = [Vel0, 0.8, 0.9]; % (0,20);
-Vel0_sweep_legend = [{'Vel0=0.7'}, {'Vel0=0.8'}, {'Vel0=0.9'}];
+Vel0_sweep_legend = [{['Vel0=',num2str(Vel0)]}, {'Vel0=0.8'}, {'Vel0=0.9'}];
 
 T_cur = T_ini;
 gap_ddt = zeros(1,length(Vtb));
@@ -207,7 +287,7 @@ grid on
 
 %% Fig. 7: plot gamma - beta
 beta_sweep = [beta, 0.02, 0.05]; % (0,20);
-beta_sweep_legend = [{'beta=0.01'}, {'beta=0.02'}, {'beta=0.05'}];
+beta_sweep_legend = [{['beta=',num2str(beta)]}, {'beta=0.02'}, {'beta=0.05'}];
 
 gap = gap_min: 0.1*(gap_max-gap_min): gap_max;
 for i=1:1:length(gap)
@@ -230,7 +310,7 @@ grid on
 
 %% Fig. 8: plot gap_ddt - Vtb
 Ea_sweep = [Ea, 0.12, 0.15]; % (0,1);
-Ea_sweep_legend = [{'Ea=0.1'}, {'Ea=0.12'}, {'Ea=0.15'}];
+Ea_sweep_legend = [{['Ea=',num2str(Ea)]}, {'Ea=0.12'}, {'Ea=0.15'}];
 
 T_cur = T_ini;
 gap_ddt = zeros(1,length(Vtb));
@@ -259,7 +339,7 @@ grid on
 
 %% Fig. 9: plot gap_ddt - a0
 a0_sweep = [a0, 0.3e-10, 0.35e-10]; % (0,1);
-a0_sweep_legend = [{'a0=0.25e-10'}, {'a0=0.3e-10'}, {'a0=0.35e-10'}];
+a0_sweep_legend = [{['a0=',num2str(a0)]}, {'a0=0.3e-10'}, {'a0=0.35e-10'}];
 
 T_cur = T_ini;
 gap_ddt = zeros(1,length(Vtb));

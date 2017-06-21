@@ -134,8 +134,8 @@
   <!-- ODIN II specific config ends -->
 
   <!-- Physical descriptions begin -->
-  <!--layout auto="1.0"/-->
-  <layout width="2" height="2"/>
+  <layout auto="1.0"/>
+  <!--layout width="2" height="2"/-->
 
   <!--mrFPGA_settings--> 
     <!-- below is the timing parameters for a single memristor device (or so called RRAM) -->
@@ -526,7 +526,7 @@
 	   routing area up significantly, we estimate into the ~70% range. 
 	   -->
     <pb_type name="clb" area="53894" opin_to_cb="false">
-      <pin_equivalence_auto_detect input_ports ="off" output_ports="on"/>
+      <pin_equivalence_auto_detect input_ports ="off" output_ports="off"/>
       <input name="I" num_pins="40" equivalent="true"/>
       <output name="O" num_pins="10" equivalent="false"/>
       <!--input name="I" num_pins="40" equivalent="true"/-->
@@ -630,7 +630,8 @@
                then the outputs those 6-LUTs take get evenly distributed across all four sides of the CLB instead of clumped on two sides (which is what happens with a more
                naive specification).
           -->
-        <direct name="clbouts1" input="fle[9:0].out[0:0]" output="clb.O[9:0]"/>
+        <!--direct name="clbouts1" input="fle[9:0].out[0:0]" output="clb.O[9:0]"/-->
+        <complete name="clbouts1" input="fle[9:0].out[0:0]" output="clb.O[9:0]"/>
       </interconnect>
 
       <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->

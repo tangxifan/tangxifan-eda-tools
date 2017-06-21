@@ -53,6 +53,10 @@ typedef struct s_clb_to_clb_directs {
 	int to_clb_pin_end_index;
 } t_clb_to_clb_directs;
 
+/* Xifan TANG: opin_to_cb support */
+#include "pb_pin_eq_auto_detect.h"
+/* end */
+
 /* UDSD Modifications by WMF End */
 
 /******************* Variables local to this module. ***********************/
@@ -211,7 +215,8 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 		INP enum e_base_cost_type base_cost_type, INP t_direct_inf *directs, 
 		INP int num_directs, INP boolean ignore_Fc_0, OUTP int *Warnings,
         /*Xifan TANG: Switch Segment Pattern Support*/
-        INP int num_swseg_pattern, INP t_swseg_pattern_inf* swseg_patterns) {
+        INP int num_swseg_pattern, INP t_swseg_pattern_inf* swseg_patterns,
+        INP boolean opin_to_cb_fast_edges, INP boolean opin_logic_eq_edges) {
 	/* Temp structures used to build graph */
 	int nodes_per_chan, i, j;
 	t_seg_details *seg_details = NULL;
@@ -437,13 +442,14 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
 	}
 
     /* Xifan TANG: Add Fast Interconnection from LB OPINs to adjacent LB IPINs*/
-    vpr_printf(TIO_MESSAGE_INFO,"Adding %d fast edges from logic block OPIN to logic block IPIN ...\n",
-               add_rr_graph_fast_edge_opin_to_cb(rr_node_indices));
+	if (TRUE == opin_to_cb_fast_edges) { // Do only detailed rr_graph is needed 
+      vpr_printf(TIO_MESSAGE_INFO,"Adding %d fast edges from logic block OPIN to logic block IPIN ...\n",
+                 add_rr_graph_fast_edge_opin_to_cb(rr_node_indices));
+    }
     /*END*/
 
-
     /*Xifan TANG: Switch Segment Pattern Support*/
-    if (NULL != swseg_patterns) { // Do only the pointer is not NULL
+	if (NULL != swseg_patterns) { // Do only the pointer is not NULL
       vpr_printf(TIO_MESSAGE_INFO,"Applying Switch Segment Pattern...\n");
 	  if (UNI_DIRECTIONAL == directionality) {
         add_rr_graph_switch_segment_pattern(directionality,nodes_per_chan, num_swseg_pattern, swseg_patterns, rr_node_indices, seg_details, seg_details);
@@ -454,8 +460,18 @@ void build_rr_graph(INP t_graph_type graph_type, INP int L_num_types,
     }
     /*END*/
 
+    /* Xifan TANG: Check logic equivalence of LB OPINs and IPINs. Then modify the associated rr_graph */
+    /* use net_rr_terminal array to find SOURCE rr_node for each net*/
+	if (TRUE == opin_logic_eq_edges) { // Do only detailed rr_graph is needed 
+      vpr_printf(TIO_MESSAGE_INFO,"Adding %d logic equivalent edges for logic block OPIN ...\n",
+                                 // alloc_and_add_grids_fully_capacity_sb_rr_edges(rr_node_indices, num_directs, clb_to_clb_directs));
+                                  alloc_and_add_grids_fully_capacity_rr_edges(rr_node_indices, num_directs, clb_to_clb_directs));
+    }
+    /*END*/
+
 	rr_graph_externals(timing_inf, segment_inf, num_seg_types, nodes_per_chan,
 			wire_to_ipin_switch, base_cost_type);
+
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH)) {
 		dump_rr_graph(getEchoFileName(E_ECHO_RR_GRAPH));
 	} else
@@ -1068,7 +1084,7 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 			/* Add in information so that I can identify which cluster pin this rr_node connects to later */
 			L_rr_node[inode].z = z;
 			if(iporttype == 0) {
-				L_rr_node[inode].pb_graph_pin = &pb_graph_node->input_pins[iport][ipb_pin];
+                L_rr_node[inode].pb_graph_pin = &pb_graph_node->input_pins[iport][ipb_pin];
 				ipb_pin++;
 				if(ipb_pin >= pb_graph_node->num_input_pins[iport]) {
 					iport++;
@@ -1084,6 +1100,7 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 			} else {
 				assert(iporttype == 1);
 				L_rr_node[inode].pb_graph_pin = &pb_graph_node->clock_pins[iport][ipb_pin];
+				ipb_pin++; /* Xifan TANG: Original VPR does not have this incremental!!! */
 				if(ipb_pin >= pb_graph_node->num_clock_pins[iport]) {
 					iport++;
 					ipb_pin = 0;
@@ -1113,6 +1130,7 @@ static void build_rr_sinks_sources(INP int i, INP int j,
 			L_rr_node[inode].type = OPIN;
 			
 			L_rr_node[inode].pb_graph_pin = &pb_graph_node->output_pins[iport][ipb_pin];
+	        ipb_pin++; /* Xifan TANG: Original VPR does not have this incremental!!! */
 			if(ipb_pin >= pb_graph_node->num_output_pins[iport]) {
 				iport++;
 				ipb_pin = 0;

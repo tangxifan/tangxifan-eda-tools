@@ -272,6 +272,7 @@ sub print_usage()
   print "      -rram_2n1r: use two n-type transistors in advance rram mux\n";
   print "      -naive_rram_mux: Naive RRAM-based multiplexer design\n";
   print "      -wprog_sweep <max_wprog>: sweep the wprog when turn on enhancements for RRAM (Valid for MUX only)\n";
+  print "      -reset_trans_ratio <float>: ratio between the transistors devoted to reset and set programming transistors.\n";
   print "      -enum_mux_leakage: test all cases for multiplexer leakages\n";
   print "      -auto_out_tapered_buffer <level>: automatically add a tapered buffer at output port for high-fan-out nets(equivalent fanout = 4^<level>).\n";
   print "      -mux_unbuffered: turn off adding buffers to inputs and outputs of MUXes\n";
@@ -408,6 +409,7 @@ sub opts_read() {
       &read_opt_into_hash("advance_rram_mux","off","off");  # Check -rram_mux_isolate
       &read_opt_into_hash("wprog_sweep","on","off");  # Check -wprog_sweep
       &read_opt_into_hash("rram_2n1r","off","off");  # Check -rram2n1r
+      &read_opt_into_hash("reset_trans_ratio","on","off");  # Check -wprog_sweep
     }
   }
 
@@ -987,6 +989,16 @@ sub check_lib_settings()
   }
 
 
+  # If the slack of reset programming transistor is not specified,
+  # the default_value is 1
+  if ("on" eq $opt_ptr->{reset_trans_ratio}) {
+    if (0 > $opt_ptr->{reset_trans_ratio_val}) {
+      die "Option reset_trans_ratio should be larger than 0!";
+    }
+  } else {
+    $opt_ptr->{reset_trans_ratio_val} = 1;
+  }
+
 }
 
 # Run Hspice
@@ -1543,6 +1555,7 @@ sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
     &tab_print($spfh,".param tprog=$conf_ptr->{rram_settings}->{Tprog}->{val}\n",0);
     &tab_print($spfh,".param vprog=$conf_ptr->{rram_settings}->{Vdd_break}->{val}\n",0);
     &tab_print($spfh,".param c_rram=$conf_ptr->{rram_settings}->{C_RRAM}->{val}\n",0);
+    &tab_print($spfh,".param reset_trans_slack=$opt_ptr->{reset_trans_ratio_val}\n",0);
     #&tab_print($spfh,"* Global port for programming vdd \n",0);
     &tab_print($spfh,"* Include RRAM verilogA model \n",0);
     # Include RRAM verilogA model
@@ -2901,6 +2914,8 @@ sub gen_1level_rram_mux_dvd_subckt($ $ $ $ $ $ $) {
 
   # Print array of transistors/RRAMs
   for (my $i = 0; $i < $mux_size; $i++) {
+    # Identify if the functionality of programming transistors at this stage
+    # Set or Reset
     #  Program Pair 
     if ("on" eq $finfet_tech) {
       for (my $jfin = 0; $jfin < $wprog; $jfin++) {
@@ -2921,7 +2936,7 @@ sub gen_1level_rram_mux_dvd_subckt($ $ $ $ $ $ $) {
         # Classical 4T1R structure
         &tab_print($spfh, "Xprog_pmos$i mux1level_in$i bl[$i]_b prog_vdd0 prog_vdd0 $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
       }
-      &tab_print($spfh, "Xprog_nmos$i mux1level_in$i wl[$i] prog_gnd0 prog_gnd0 $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
+      &tab_print($spfh, "Xprog_nmos$i mux1level_in$i wl[$i] prog_gnd0 prog_gnd0 $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'reset_trans_slack*wprog*prog_wn\'\n",0);
     }
     # Initilization: RRAM0 (in0) is off, rest of RRAMs are on. Programming will switch RRAM0 to on and the rest to off.
     if (1 == $i) {
@@ -2938,6 +2953,10 @@ sub gen_1level_rram_mux_dvd_subckt($ $ $ $ $ $ $) {
       #&tab_print($spfh,"Rmux1level_$i mux1level_in$i mux1level_out \'roff\'\n",0);
     }
     &tab_print($spfh,"*.print V(Xrram$i.R_out) V(Xrram$i.gap_out)\n",0);
+    # add parasitic capacitances
+    &tab_print($spfh,"Cwire_in$i mux1level_in$i sgnd \'cap_in_wire\'\n",0);  
+    # add parasitic capacitances
+    &tab_print($spfh, "Cwire_out$i mux1level_out sgnd \'cap_out_wire\'\n", 0);
   }
   # Add output program pair 
   if ("on" eq $finfet_tech) {
@@ -2954,10 +2973,10 @@ sub gen_1level_rram_mux_dvd_subckt($ $ $ $ $ $ $) {
   } else {
     # RRAM 2N1R: Use two nmos transistors to build programming structures 
     if ("on" eq $opt_ptr->{rram_2n1r}) {
-      &tab_print($spfh, "Xprog_2n1r_nmos$mux_size mux1level_out bl[$mux_size] prog_vdd1 prog_vdd1 $elc_prog_nmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wn\'\n",0);
+      &tab_print($spfh, "Xprog_2n1r_nmos$mux_size mux1level_out bl[$mux_size] prog_vdd1 prog_vdd1 $elc_prog_nmos_subckt_name L=\'prog_pl\' W=\'reset_trans_slack*wprog*prog_wn\'\n",0);
     } else {
     # Classical 4T1R structure
-      &tab_print($spfh, "Xprog_pmos$mux_size mux1level_out bl[$mux_size]_b prog_vdd1 prog_vdd1 $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+      &tab_print($spfh, "Xprog_pmos$mux_size mux1level_out bl[$mux_size]_b prog_vdd1 prog_vdd1 $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'reset_trans_slack*wprog*prog_wp*prog_beta\'\n",0);
     }
     &tab_print($spfh, "Xprog_nmos$mux_size mux1level_out wl[$mux_size] prog_gnd1 prog_gnd1 $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
   }
@@ -2970,11 +2989,7 @@ sub gen_1level_rram_mux_dvd_subckt($ $ $ $ $ $ $) {
     } else {
       &tab_print($spfh,"V$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux1level_in$i 0\n",0); 
     }
-    # add parasitic capacitances
-    &tab_print($spfh,"Cwire_in$i mux1level_in$i sgnd cap_in_wire\n",0);  
   }
-  # add parasitic capacitances
-  &tab_print($spfh, "Cwire_out mux1level_out sgnd cap_out_wire\n", 0);
 
   if ("on" eq $opt_ptr->{auto_out_tapered_buffer}) {
     my ($tapbuf_size) = (4**$opt_ptr->{auto_out_tapered_buffer_val});
@@ -3092,6 +3107,10 @@ sub gen_1level_rram_mux_basic_subckt($ $ $ $ $ $ $) {
       #&tab_print($spfh,"Rmux1level_$i mux1level_in$i mux1level_out \'roff\'\n",0);
     }
     &tab_print($spfh,"*.print V(Xrram$i.R_out) V(Xrram$i.gap_out)\n",0);
+    # add parasitic capacitances
+    &tab_print($spfh,"Cwire_in$i mux1level_in$i sgnd cap_in_wire\n",0);  
+    # add parasitic capacitances
+    &tab_print($spfh, "Cwire_out$i mux1level_out sgnd cap_out_wire\n", 0);
   }
   # Add output program pair 
   if ("on" eq $finfet_tech) {
@@ -3131,11 +3150,7 @@ sub gen_1level_rram_mux_basic_subckt($ $ $ $ $ $ $) {
     } else {
       &tab_print($spfh,"V$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux1level_in$i 0\n",0); 
     }
-    # add parasitic capacitances
-    &tab_print($spfh,"Cwire_in$i mux1level_in$i sgnd cap_in_wire\n",0);  
   }
-  # add parasitic capacitances
-  &tab_print($spfh, "Cwire_out mux1level_out sgnd cap_out_wire\n", 0);
 
   if ("on" eq $opt_ptr->{auto_out_tapered_buffer}) {
     my ($tapbuf_size) = (4**$opt_ptr->{auto_out_tapered_buffer_val});
@@ -3220,9 +3235,9 @@ sub gen_1level_mux_subckt($ $ $ $ $ $ $) {
     }
     # add parasitic capacitances
     &tab_print($spfh,"Cwire_in$i mux1level_in$i sgnd cap_in_wire\n",0);  
+    # add parasitic capacitances
+    &tab_print($spfh, "Cwire_out$i mux1level_out sgnd cap_out_wire\n", 0);
   }
-  # add parasitic capacitances
-  &tab_print($spfh, "Cwire_out mux1level_out sgnd cap_out_wire\n", 0);
 
   if ("on" eq $opt_ptr->{auto_out_tapered_buffer}) {
     my ($tapbuf_size) = (4**$opt_ptr->{auto_out_tapered_buffer_val});
@@ -3578,6 +3593,8 @@ sub gen_multilevel_rram_mux_dvd_subckt($ $ $ $ $ $ $ $) {
   my ($num_sram) = ($num_lvls*$basis);
   my ($prog_vdd, $prog_gnd) = ("prog_vdd0", "prog_gnd0");
   my ($op_mode_enb, $op_mode_en) = ("op_mode_enb", "op_mode_en");
+  my ($lefthand_prog_pmos_slack, $lefthand_prog_nmos_slack) = ("", "reset_trans_slack");
+  my ($righthand_prog_pmos_slack, $righthand_prog_nmos_slack) = ("reset_trans_slack", "");
 
   if ("on" ne $rram_enhance) {
     die "ERROR: RRAM MUX would not be generated because rram_enhance is off!\n";
@@ -3650,8 +3667,10 @@ sub gen_multilevel_rram_mux_dvd_subckt($ $ $ $ $ $ $ $) {
     &tab_print($spfh, "* Programming Pair: level $lvl\n",0);
     if (0 == $lvl % 2) {
       ($prog_vdd, $prog_gnd) = ("prog_vdd0", "prog_gnd0");
+      ($lefthand_prog_pmos_slack, $lefthand_prog_nmos_slack) = ("1", "reset_trans_slack");
     } else {
       ($prog_vdd, $prog_gnd) = ("prog_vdd1", "prog_gnd1");
+      ($lefthand_prog_pmos_slack, $lefthand_prog_nmos_slack) = ("reset_trans_slack", "1");
     }
     for (my $i = 0; $i < $num_inputs_cur_lvl; $i++) {
       # Determine the input index of next level
@@ -3675,9 +3694,9 @@ sub gen_multilevel_rram_mux_dvd_subckt($ $ $ $ $ $ $ $) {
           &tab_print($spfh, "Xprog_2n1r_nmos_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx] $prog_vdd $prog_vdd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
         } else {
         # Classical 4T1R structure 
-          &tab_print($spfh, "Xprog_pmos_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+          &tab_print($spfh, "Xprog_pmos_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i bl[$in_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'$lefthand_prog_pmos_slack*wprog*prog_wp*prog_beta\'\n",0);
         }
-        &tab_print($spfh, "Xprog_nmos_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i wl[$in_blwl_idx] $prog_gnd $prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
+        &tab_print($spfh, "Xprog_nmos_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i wl[$in_blwl_idx] $prog_gnd $prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'$lefthand_prog_nmos_slack*wprog*prog_wn\'\n",0);
       }
       # RRAMs' TEs and BEs: level 0 (first level) RRAM is organized as (TE, BE).
       # level 1 (second level) RRAM is organized as (BE, TE), opposite to the first level.
@@ -3704,8 +3723,20 @@ sub gen_multilevel_rram_mux_dvd_subckt($ $ $ $ $ $ $ $) {
       # Parasitic capacitances of RRAM
       if (0 == $lvl % 2) {
         &tab_print($spfh, "Crram_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i mux2lvl_lvl$next_lvl\_in$next_lvl_input \'c_rram\'\n");
+        # add parasitic capacitances
+        # Cap_in_wire is added to the output of current stage, 
+        &tab_print($spfh, "Cwire_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i sgnd \'cap_in_wire\'\n");
+        # add parasitic capacitances
+        # Cap_in_wire is added to the input of next level, 
+        &tab_print($spfh, "Cwire_out_lvl$lvl\_in$i mux2lvl_lvl$next_lvl\_in$next_lvl_input sgnd \'cap_out_wire\'\n");
       } else {
         &tab_print($spfh, "Crram_lvl$lvl\_in$i mux2lvl_lvl$next_lvl\_in$next_lvl_input mux2lvl_lvl$lvl\_in$i \'c_rram\'\n");
+        # add parasitic capacitances
+        # Cap_in_wire is added to the output of current stage, 
+        &tab_print($spfh, "Cwire_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i sgnd \'cap_in_wire\'\n");
+        # add parasitic capacitances
+        # Cap_in_wire is added to the input of next level, 
+        &tab_print($spfh, "Cwire_out_lvl$lvl\_in$i mux2lvl_lvl$next_lvl\_in$next_lvl_input sgnd \'cap_out_wire\'\n");
       }
 
       # Calculate the index of BL/WL lines
@@ -3720,8 +3751,10 @@ sub gen_multilevel_rram_mux_dvd_subckt($ $ $ $ $ $ $ $) {
     my ($next_lvl_num_inputs) = (int($num_inputs_cur_lvl / $basis));
     if (1 == $lvl % 2) {
       ($prog_vdd, $prog_gnd) = ("prog_vdd0", "prog_gnd0");
+      ($righthand_prog_pmos_slack, $righthand_prog_nmos_slack) = ("1", "reset_trans_slack");
     } else {
       ($prog_vdd, $prog_gnd) = ("prog_vdd1", "prog_gnd1");
+      ($righthand_prog_pmos_slack, $righthand_prog_nmos_slack) = ("reset_trans_slack", "1");
     }
     for (my $j = 0; $j < $next_lvl_num_inputs; $j++) {
       &tab_print($spfh, "* Programming Pair: level $lvl\n",0);
@@ -3743,9 +3776,9 @@ sub gen_multilevel_rram_mux_dvd_subckt($ $ $ $ $ $ $ $) {
           &tab_print($spfh, "Xprog_2n1r_nmos_out_lvl$next_lvl\_in$j mux2lvl_lvl$next_lvl\_in$j bl[$out_blwl_idx] $prog_vdd $prog_vdd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
         } else {
         # Classical 4T1R structure 
-          &tab_print($spfh, "Xprog_pmos_out_lvl$next_lvl\_in$j mux2lvl_lvl$next_lvl\_in$j bl[$out_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+          &tab_print($spfh, "Xprog_pmos_out_lvl$next_lvl\_in$j mux2lvl_lvl$next_lvl\_in$j bl[$out_blwl_idx]_b $prog_vdd $prog_vdd $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'$righthand_prog_pmos_slack*wprog*prog_wp*prog_beta\'\n",0);
         }
-        &tab_print($spfh, "Xprog_nmos_out_lvl$next_lvl\_in$j mux2lvl_lvl$next_lvl\_in$j wl[$out_blwl_idx] $prog_gnd $prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
+        &tab_print($spfh, "Xprog_nmos_out_lvl$next_lvl\_in$j mux2lvl_lvl$next_lvl\_in$j wl[$out_blwl_idx] $prog_gnd $prog_gnd $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'$righthand_prog_nmos_slack*wprog*prog_wn\'\n",0);
       }
     }
   }
@@ -3758,11 +3791,7 @@ sub gen_multilevel_rram_mux_dvd_subckt($ $ $ $ $ $ $ $) {
     } else {
       &tab_print($spfh,"V$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux2lvl_lvl0_in$i 0\n",0); 
     }
-    # add parasitic capacitances
-    &tab_print($spfh,"Cwire_in$i mux2lvl_lvl0_in$i sgnd cap_in_wire\n",0);  
   }
-  # add parasitic capacitances
-  &tab_print($spfh, "Cwire_out mux2lvl_lvl$num_lvls\_in0 sgnd cap_out_wire\n", 0);
 
   if (0 == $num_lvls % 2) {
     ($prog_vdd, $prog_gnd) = ("prog_vdd0", "prog_gnd0");
@@ -3932,8 +3961,20 @@ sub gen_multilevel_rram_mux_basic_subckt($ $ $ $ $ $ $ $) {
       # Parasitic capacitances of RRAM
       if (0 == $lvl % 2) {
         &tab_print($spfh, "Crram_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i mux2lvl_lvl$next_lvl\_in$next_lvl_input \'c_rram\'\n");
+        # add parasitic capacitances
+        # Cap_in_wire is added to the output of current stage, 
+        &tab_print($spfh, "Cwire_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i sgnd \'cap_in_wire\'\n");
+        # add parasitic capacitances
+        # Cap_in_wire is added to the input of next level, 
+        &tab_print($spfh, "Cwire_out_lvl$lvl\_in$i mux2lvl_lvl$next_lvl\_in$next_lvl_input sgnd \'cap_out_wire\'\n");
       } else {
         &tab_print($spfh, "Crram_lvl$lvl\_in$i mux2lvl_lvl$next_lvl\_in$next_lvl_input mux2lvl_lvl$lvl\_in$i \'c_rram\'\n");
+        # add parasitic capacitances
+        # Cap_in_wire is added to the output of current stage, 
+        &tab_print($spfh, "Cwire_in_lvl$lvl\_in$i mux2lvl_lvl$lvl\_in$i sgnd \'cap_in_wire\'\n");
+        # add parasitic capacitances
+        # Cap_in_wire is added to the input of next level, 
+        &tab_print($spfh, "Cwire_out_lvl$lvl\_in$i mux2lvl_lvl$next_lvl\_in$next_lvl_input sgnd \'cap_out_wire\'\n");
       }
 
       # Calculate the index of BL/WL lines
@@ -3994,10 +4035,10 @@ sub gen_multilevel_rram_mux_basic_subckt($ $ $ $ $ $ $ $) {
       &tab_print($spfh,"V$i $conf_ptr->{mux_settings}->{IN_port_prefix}->{val}$i mux2lvl_lvl0_in$i 0\n",0); 
     }
     # add parasitic capacitances
-    &tab_print($spfh,"Cwire_in$i mux2lvl_lvl0_in$i sgnd cap_in_wire\n",0);  
+    #&tab_print($spfh,"Cwire_in$i mux2lvl_lvl0_in$i sgnd \'cap_in_wire\'\n",0);  
   }
   # add parasitic capacitances
-  &tab_print($spfh, "Cwire_out mux2lvl_lvl$num_lvls\_in0 sgnd cap_out_wire\n", 0);
+  #&tab_print($spfh, "Cwire_out mux2lvl_lvl$num_lvls\_in0 sgnd \'cap_out_wire\'\n", 0);
 
   if (0 == $num_lvls % 2) {
     ($prog_vdd, $prog_gnd) = ("prog_vdd", "prog_gnd");

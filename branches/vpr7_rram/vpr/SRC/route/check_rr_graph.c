@@ -333,7 +333,6 @@ void check_node(int inode, enum e_route_type route_type) {
 					inode, rr_type, capacity);
 			exit(1);
 		}
-
 		break;
 
 	case SINK:

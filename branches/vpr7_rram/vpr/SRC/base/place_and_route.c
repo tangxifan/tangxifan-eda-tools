@@ -564,7 +564,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			directs, num_directs, FALSE,
 			&warnings,
             /*Xifan TANG: Switch Segment Pattern Support*/
-            det_routing_arch.num_swseg_pattern, swseg_patterns);
+            det_routing_arch.num_swseg_pattern, swseg_patterns, TRUE, TRUE);
 
 	restore_routing(best_routing, clb_opins_used_locally,
 			saved_clb_opins_used_locally);

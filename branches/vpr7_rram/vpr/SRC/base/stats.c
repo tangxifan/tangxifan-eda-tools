@@ -18,6 +18,9 @@
 #include "buffer_insertion.h"
 #include "cal_capacitance.h"
 /* end */
+/* Xifan TANG: pb_pin_eq_auto_detect */
+void print_net_opin_occupancy();
+/* end */
 
 /********************** Subroutines local to this module *********************/
 
@@ -146,6 +149,9 @@ void routing_stats(boolean full_stats, enum e_route_type route_type,
 
 	if (full_stats == TRUE)
 		print_wirelen_prob_dist();
+
+    /* Xifan TANG: Statisitcs for each net which has occupied more than 1 OPIN */
+    print_net_opin_occupancy();
 }
 
 void get_length_and_bends_stats(void) {

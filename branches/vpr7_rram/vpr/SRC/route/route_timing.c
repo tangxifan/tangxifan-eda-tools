@@ -111,6 +111,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		for (i = 0; i < num_nets; i++) {
 			inet = net_index[i];
 			if (clb_net[inet].is_global == FALSE) { /* Skip global nets. */
+                //vpr_printf(TIO_MESSAGE_INFO, "try routing net(%s)...\n", clb_net[inet].name);
 
 				is_routable = timing_driven_route_net(inet, pres_fac,
 					router_opts.max_criticality,
@@ -121,7 +122,7 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 				/* Impossible to route? (disconnected rr_graph) */
 
 				if (!is_routable) {
-					vpr_printf(TIO_MESSAGE_INFO, "Routing failed.\n");
+					vpr_printf(TIO_MESSAGE_INFO, "Routing failed for net (%s).\n", clb_net[inet].name);
 					free_timing_driven_route_structs(pin_criticality,
 							sink_order, rt_node_of_sink);
 					free(net_index);
@@ -173,12 +174,19 @@ boolean try_timing_driven_route(struct s_router_opts router_opts,
 		 * to them are reserved for that purpose.                                 */
 
 		if (itry == 1)
-			rip_up_local_opins = FALSE;
+			rip_up_local_opins = FALSE; 
 		else
 			rip_up_local_opins = TRUE;
 
-		reserve_locally_used_opins(pres_fac, rip_up_local_opins,
+        /* Xifan TANG: may need a new function 
+         * OPINs should only be reserved when it directly connected to a subblock!
+         */		
+        /*
+        reserve_locally_used_opins(pres_fac, rip_up_local_opins,
 				clb_opins_used_locally);
+        */
+        /* Xifan TANG: a smart function to detect which OPINs are used and update routing cost */
+        auto_detect_and_reserve_locally_used_opins(pres_fac, rip_up_local_opins, clb_opins_used_locally);
 
 		/* Pathfinder guys quit after finding a feasible route. I may want to keep *
 		 * going longer, trying to improve timing.  Think about this some.         */

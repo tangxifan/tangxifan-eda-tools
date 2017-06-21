@@ -57,7 +57,7 @@ void check_route(enum e_route_type route_type, int num_switch,
 		exit(1);
 	}
 
-	check_locally_used_clb_opins(clb_opins_used_locally, route_type);
+	check_locally_used_clb_opins(clb_opins_used_locally, route_type); 
 
 	connected_to_route = (boolean *) my_calloc(num_rr_nodes, sizeof(boolean));
 
@@ -349,8 +349,14 @@ static boolean check_adjacent(int from_node, int to_node) {
 			assert(from_grid_type == to_grid_type);
 
 			iclass = to_grid_type->pin_class[to_ptc];
-			if (iclass == from_ptc)
+			if (iclass == from_ptc) {
 				num_adj++;
+            /* Xifan TANG: fully_capable network dirty hack:
+             * more rules, if they belong to the same port, we think they are adjacent 
+             */
+            } else if (OPEN != rr_node[from_node].net_num) {
+              num_adj++;
+            }
 		}
 		break;
 
@@ -360,6 +366,14 @@ static boolean check_adjacent(int from_node, int to_node) {
 
 	case OPIN:
 		if(to_type == CHANX || to_type == CHANY) {
+            /* Xifan TANG: a dirty hack for pin_equivalence auto detect */
+			from_grid_type = grid[from_xlow][from_ylow].type;
+            if (TRUE == from_grid_type->output_ports_eq_auto_detect) {
+              num_adj = 1;
+              break;
+            }
+            /* END */
+            /* Original VPR */
 			num_adj += pin_and_chan_adjacent(from_node, to_node);
 		} else {
 			assert(to_type == IPIN); /* direct OPIN to IPIN connections not necessarily adjacent */
@@ -665,6 +679,11 @@ static void recompute_occupancy_from_scratch(t_ivec ** clb_opins_used_locally) {
 	 * locally).                                                                */
 
 	for (iblk = 0; iblk < num_blocks; iblk++) {
+        /* Xifan TANG: Bypass pin equivalence auto detect block */
+        if (TRUE == block[iblk].type->output_ports_eq_auto_detect) {
+          continue;
+        }
+        /* Original VPR */
 		for (iclass = 0; iclass < block[iblk].type->num_class; iclass++) {
 			num_local_opins = clb_opins_used_locally[iblk][iclass].nelem;
 			/* Will always be 0 for pads or SINK classes. */
@@ -686,6 +705,11 @@ static void check_locally_used_clb_opins(t_ivec ** clb_opins_used_locally,
 	t_rr_type rr_type;
 
 	for (iblk = 0; iblk < num_blocks; iblk++) {
+        /* Xifan TANG: do not check the class when pin equivalence auto-detect is turned on */
+        if (TRUE == block[iblk].type->output_ports_eq_auto_detect) {
+          continue;
+        }
+
 		for (iclass = 0; iclass < block[iblk].type->num_class; iclass++) {
 			num_local_opins = clb_opins_used_locally[iblk][iclass].nelem;
 			/* Always 0 for pads and for SINK classes */
@@ -711,7 +735,10 @@ static void check_locally_used_clb_opins(t_ivec ** clb_opins_used_locally,
 							iblk, block[iblk].name);
 					vpr_printf(TIO_MESSAGE_ERROR, "\tExpected class %d local OPIN has class %d -- rr_node #: %d.\n",
 							iclass,	block[iblk].type->pin_class[ipin], inode);
+                    /* Xifan TANG: reduce this error to warning when multi- fan_in is found */
+                    //if (1 == rr_node[inode].fan_in) {
 					exit(1);
+                    //}
 				}
 			}
 		}

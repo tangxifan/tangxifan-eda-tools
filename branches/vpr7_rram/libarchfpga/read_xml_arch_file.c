@@ -2666,11 +2666,14 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 
         /* Xifan TANG: pin equivalence auto-detection */
 	    if (1 == CountChildren(CurType, "pin_equivalence_auto_detect", 0)) {
-           Cur = FindFirstElement(CurType, "pin_equivalence_auto_detect", TRUE);
+           Cur = FindFirstElement(CurType, "pin_equivalence_auto_detect", FALSE);
            SetupPinEquivalenceAutoDetect(Cur, Type);
            FreeNode(Cur);
         } else {
 	      assert(0 == CountChildren(CurType, "pin_equivalence_auto_detect", 0));
+          /* Initialize */
+          Type->input_ports_eq_auto_detect = FALSE;
+          Type->output_ports_eq_auto_detect = FALSE;
         }
 
 		/* Load pin names and classes and locations */
@@ -3976,6 +3979,7 @@ void SetupPinEquivalenceAutoDetect(ezxml_t Parent, t_type_descriptor* Type) {
 
   Prop = FindProperty(Parent, "input_ports", TRUE);
 
+  Type->input_ports_eq_auto_detect = FALSE;
   if (strcmp(Prop, "on") == 0) {
     Type->input_ports_eq_auto_detect = TRUE;
   } else if (strcmp(Prop, "off") == 0) {
@@ -3989,6 +3993,7 @@ void SetupPinEquivalenceAutoDetect(ezxml_t Parent, t_type_descriptor* Type) {
 
   Prop = FindProperty(Parent, "output_ports", TRUE);
 
+  Type->output_ports_eq_auto_detect = FALSE;
   if (strcmp(Prop, "on") == 0) {
     Type->output_ports_eq_auto_detect = TRUE;
   } else if (strcmp(Prop, "off") == 0) {

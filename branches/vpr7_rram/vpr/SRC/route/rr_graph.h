@@ -42,7 +42,9 @@ void build_rr_graph(INP t_graph_type graph_type,
 		OUTP int *Warnings,
         /* Xifan TANG: Switch Segment Pattern Support*/
         int num_swseg_pattern,
-        t_swseg_pattern_inf* swseg_patterns);
+        t_swseg_pattern_inf* swseg_patterns,
+        boolean opin_to_cb_fast_edges,
+        boolean opin_logic_eq_edges);
 
 void free_rr_graph(void);
 
