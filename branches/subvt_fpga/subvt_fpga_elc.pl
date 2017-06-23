@@ -1014,7 +1014,7 @@ sub run_hspice($ $ $)
     my ($process_dir,$process_file) = &split_prog_path("$conf_ptr->{general_settings}->{process_tech}->{val}");
     chdir $process_dir;
     print "Enter directory($process_dir)...\n";
-    `csh -x 'source /softs/synopsys/hspice/2015.06/hspice/bin/cshrc.meta'`;
+    `csh -x 'source /softs/synopsys/hspice/2017.03/hspice/bin/cshrc.meta'`;
     #system("tcsh -x 'source /softs/synopsys/hspice/I-2013.12/hspice/bin/cshrc.meta'");
     #system("printenv");
   }
@@ -1039,7 +1039,7 @@ sub run_hspice($ $ $)
   #`csh -cx 'cd ./process'`;
   # Use Cshell to run hspice
   if ("on" eq $verilogA_sim) {
-    `csh -cx '$hspice_path -i $fspice -o $flis -hdlpath /softs/synopsys/hspice/2015.06/hspice/include'`;
+    `csh -cx '$hspice_path -i $fspice -o $flis -hdlpath /softs/synopsys/hspice/2017.03/hspice/include'`;
     #system("$hspice_path -i $fspice -o $flis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include");
     chdir $cwd;
     print "Return directory($cwd)...\n";
@@ -2863,6 +2863,8 @@ sub gen_1level_rram_mux_dvd_subckt($ $ $ $ $ $ $) {
   my ($spfh,$mux_size,$subckt_name,$mux1level_subckt,$buffered,$rram_enhance,$wprog) = @_;
   my ($num_sram) = ($mux_size);
   my ($ongap_kw, $ongap_val, $offgap_kw, $offgap_val);
+  my ($lefthand_prog_pmos_slack, $lefthand_prog_nmos_slack) = ("1", "reset_trans_slack");
+  my ($righthand_prog_pmos_slack, $righthand_prog_nmos_slack) = ("reset_trans_slack", "1");
 
   if ("on" ne $rram_enhance) {
     die "ERROR: RRAM MUX would not be generated because rram_enhance is off!\n";
@@ -2934,9 +2936,9 @@ sub gen_1level_rram_mux_dvd_subckt($ $ $ $ $ $ $) {
         &tab_print($spfh, "Xprog_2n1r_nmos$i mux1level_in$i bl[$i] prog_vdd0 prog_vdd0 $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'wprog*prog_wn\'\n",0);
       } else {
         # Classical 4T1R structure
-        &tab_print($spfh, "Xprog_pmos$i mux1level_in$i bl[$i]_b prog_vdd0 prog_vdd0 $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wp*prog_beta\'\n",0);
+        &tab_print($spfh, "Xprog_pmos$i mux1level_in$i bl[$i]_b prog_vdd0 prog_vdd0 $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'$lefthand_prog_pmos_slack*wprog*prog_wp*prog_beta\'\n",0);
       }
-      &tab_print($spfh, "Xprog_nmos$i mux1level_in$i wl[$i] prog_gnd0 prog_gnd0 $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'reset_trans_slack*wprog*prog_wn\'\n",0);
+      &tab_print($spfh, "Xprog_nmos$i mux1level_in$i wl[$i] prog_gnd0 prog_gnd0 $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'$lefthand_prog_nmos_slack*reset_trans_slack*wprog*prog_wn\'\n",0);
     }
     # Initilization: RRAM0 (in0) is off, rest of RRAMs are on. Programming will switch RRAM0 to on and the rest to off.
     if (1 == $i) {
@@ -2966,14 +2968,14 @@ sub gen_1level_rram_mux_dvd_subckt($ $ $ $ $ $ $) {
         &tab_print($spfh, "Xprog_2n1r_nmos$mux_size\_$jfin mux1level_out bl[$mux_size] prog_vdd1 prog_vdd1 $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
       } else {
         # Classical 4T1R structure
-        &tab_print($spfh, "Xprog_pmos$mux_size\_$jfin mux1level_out bl[$mux_size]_b prog_vdd1 prog_vdd1 $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'prog_wp*prog_beta\'\n",0);
+        &tab_print($spfh, "Xprog_pmos$mux_size\_$jfin mux1level_out bl[$mux_size]_b prog_vdd1 prog_vdd1 $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'$righthand_prog_pmos_slack*prog_wp*prog_beta\'\n",0);
       }
-      &tab_print($spfh, "Xprog_nmos$mux_size\_$jfin mux1level_out wl[$mux_size] prog_gnd1 prog_gnd1 $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'prog_wn\'\n",0);
+      &tab_print($spfh, "Xprog_nmos$mux_size\_$jfin mux1level_out wl[$mux_size] prog_gnd1 prog_gnd1 $elc_prog_nmos_subckt_name L=\'prog_nl\' W=\'$righthand_prog_nmos_slack*prog_wn\'\n",0);
     }
   } else {
     # RRAM 2N1R: Use two nmos transistors to build programming structures 
     if ("on" eq $opt_ptr->{rram_2n1r}) {
-      &tab_print($spfh, "Xprog_2n1r_nmos$mux_size mux1level_out bl[$mux_size] prog_vdd1 prog_vdd1 $elc_prog_nmos_subckt_name L=\'prog_pl\' W=\'reset_trans_slack*wprog*prog_wn\'\n",0);
+      &tab_print($spfh, "Xprog_2n1r_nmos$mux_size mux1level_out bl[$mux_size] prog_vdd1 prog_vdd1 $elc_prog_nmos_subckt_name L=\'prog_pl\' W=\'wprog*prog_wn\'\n",0);
     } else {
     # Classical 4T1R structure
       &tab_print($spfh, "Xprog_pmos$mux_size mux1level_out bl[$mux_size]_b prog_vdd1 prog_vdd1 $elc_prog_pmos_subckt_name L=\'prog_pl\' W=\'reset_trans_slack*wprog*prog_wp*prog_beta\'\n",0);
@@ -3593,8 +3595,8 @@ sub gen_multilevel_rram_mux_dvd_subckt($ $ $ $ $ $ $ $) {
   my ($num_sram) = ($num_lvls*$basis);
   my ($prog_vdd, $prog_gnd) = ("prog_vdd0", "prog_gnd0");
   my ($op_mode_enb, $op_mode_en) = ("op_mode_enb", "op_mode_en");
-  my ($lefthand_prog_pmos_slack, $lefthand_prog_nmos_slack) = ("", "reset_trans_slack");
-  my ($righthand_prog_pmos_slack, $righthand_prog_nmos_slack) = ("reset_trans_slack", "");
+  my ($lefthand_prog_pmos_slack, $lefthand_prog_nmos_slack) = ("1", "reset_trans_slack");
+  my ($righthand_prog_pmos_slack, $righthand_prog_nmos_slack) = ("reset_trans_slack", "1");
 
   if ("on" ne $rram_enhance) {
     die "ERROR: RRAM MUX would not be generated because rram_enhance is off!\n";
@@ -4585,6 +4587,9 @@ sub run_mux_sim($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
     my @gap_keyword = ($conf_ptr->{rram_settings}->{gap_keyword}->{val});
     &get_sim_results($lis_file,\@gap_keyword,$results);
     $on_gap = $results->{$gap_keyword[0]};
+    if ("failed" eq $on_gap) {
+      die "Fail to find the gap in $lis_file!\n";
+    }
     # Update the source file with found gap.
     if ($spfh->open("> $mux_file")) {
       print "INFO: updating gaps in $mux_file...\n";

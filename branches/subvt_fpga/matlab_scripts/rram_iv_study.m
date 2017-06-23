@@ -59,7 +59,7 @@ gamma0 = 13;
 Vel0 = 0.68;
 % Atom spacing
 a0 = 0.2e-10;
-Ea = 0.147;
+Ea = 0.13;
 
 % Vset = Vreset = 1.0V
 % Iset,max = 500uA

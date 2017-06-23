@@ -70,7 +70,7 @@ parameter real		q		= 1.6e-19;
   //  average switching fitting parameters g0, V0, I0, beta, gamma0
 parameter real		g0		= 0.25e-9 from(0:2e-9);
 parameter real		V0		= 0.8    from(0:10);
-parameter real		Vel0		= 0.7    from(0:20);
+parameter real		Vel0		= 0.8   from(0:20);
 parameter real		I0		= 570e-6 from(0:1e-2);
 parameter real		beta		= 1e-2    from(0:inf);
 parameter real		gamma0		= 13  from(0:inf); 
@@ -80,9 +80,10 @@ parameter real		T_crit		= 450		from(390:460);
 parameter real          deltaGap0	= 0.02		from[0:0.1);
 parameter real		T_smth		= 500		from(400:600);
 //  activation energy for vacancy generation
-parameter real		Ea		= 0.163 from(0:1);
+//parameter real		Ea		= 0.147 from(0:1); // For tree RRAM MUX this seems to work
+parameter real		Ea		= 0.125 from(0:1); // This seems work for one-level and two-level RRAM MUX
 //  atom spacing, a0
-parameter real		a0		= 0.268e-10 from(0:inf);
+parameter real		a0		= 0.2e-10 from(0:inf);
 //  initial room temperature in devices
 parameter real		T_ini		= 273 + 25 from(0:inf);
 //  minimum field requirement to enhance gap formation, F_min
