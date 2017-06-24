@@ -8,7 +8,7 @@ num_VDD = 3;
 num_merits = 7;
 
 %% Part I: case x = 0
-rram_mux_improve_tree_x0 = zeros( num_merits, num_swept_wprog, num_swept_input_size, num_VDD); 
+rram_mux_improve_tree_x0 = zeros( num_swept_wprog, num_merits, num_swept_input_size, num_VDD); 
 % Fill data
 
 % Number of input = 2
@@ -1163,7 +1163,7 @@ rram_mux_improve_tree_x0(:,:,25,3) = [
 
 
 %% Part I: case x = L
-rram_mux_improve_tree_xl = zeros( num_merits, num_swept_wprog, num_swept_input_size, num_VDD); 
+rram_mux_improve_tree_xl = zeros( num_swept_wprog, num_merits, num_swept_input_size, num_VDD); 
 
 % Fill data
 

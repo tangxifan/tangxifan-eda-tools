@@ -8,7 +8,7 @@ num_VDD = 3;
 num_merits = 7;
 
 %% Part I: case x = 0
-rram_mux_improve_2level_x0 = zeros( num_merits, num_swept_wprog, num_swept_input_size, num_VDD); 
+rram_mux_improve_2level_x0 = zeros( num_swept_wprog, num_merits, num_swept_input_size, num_VDD); 
 % Fill data
 
 % Number of input = 2
@@ -1163,7 +1163,7 @@ rram_mux_improve_2level_x0(:,:,25,3) = [
 
 
 %% Part I: case x = L
-rram_mux_improve_2level_xl = zeros( num_merits, num_swept_wprog, num_swept_input_size, num_VDD); 
+rram_mux_improve_2level_xl = zeros( num_swept_wprog, num_merits, num_swept_input_size, num_VDD); 
 
 % Fill data
 
@@ -2319,9 +2319,9 @@ rram_mux_improve_2level_xl(:,:,25,3) = [
 
 %% Post process the data
 % Find the best Wprog and associated performance
-rram_mux_improve_2level_best_delay = zeros(num_merits, num_swept_input_size, num_VDD); % Plus 1 flags:  X_opt and delete the 1st flag: Ron
-rram_mux_improve_2level_best_power = zeros(num_merits, num_swept_input_size, num_VDD); % Plus 1 flags:  X_opt and delete the 1st flag: Ron 
-rram_mux_improve_2level_best_pdp = zeros(num_merits, num_swept_input_size, num_VDD); % Plus 1 flags:  X_opt and delete the 1st flag: Ron
+rram_mux_improve_2level_best_delay = zeros(num_merits + 1, num_swept_input_size, num_VDD); % Plus 1 flags:  X_opt and delete the 1st flag: Ron
+rram_mux_improve_2level_best_power = zeros(num_merits + 1, num_swept_input_size, num_VDD); % Plus 1 flags:  X_opt and delete the 1st flag: Ron 
+rram_mux_improve_2level_best_pdp = zeros(num_merits + 1, num_swept_input_size, num_VDD); % Plus 1 flags:  X_opt and delete the 1st flag: Ron
 % Search each input size, find the best Wprog and X_opt
 for isize = 1:1:num_swept_input_size
   % Traverse VDD 
@@ -2340,25 +2340,25 @@ for isize = 1:1:num_swept_input_size
     rram_mux_improve_2level_x0_best_delay (:,isize, ivdd) = [ rram_mux_improve_2level_x0(best_delay_x0_index,1:7,isize,ivdd) ]; % 0 indicates this is x=0
     rram_mux_improve_2level_xl_best_delay (:,isize, ivdd) = [ rram_mux_improve_2level_xl(best_delay_xl_index,1:7,isize,ivdd) ]; % 1 indicates this is x=L
     if (best_delay_x0 < best_delay_xl) 
-      rram_mux_improve_2level_best_delay (:,isize, ivdd) = [ rram_mux_improve_2level_x0(best_delay_x0_index,2:7,isize,ivdd), 0 ]; % 0 indicates this is x=0
+      rram_mux_improve_2level_best_delay (:,isize, ivdd) = [ rram_mux_improve_2level_x0(best_delay_x0_index,1:7,isize,ivdd), 0 ]; % 0 indicates this is x=0
     else 
-      rram_mux_improve_2level_best_delay (:,isize, ivdd) = [ rram_mux_improve_2level_xl(best_delay_xl_index,2:7,isize,ivdd), 1 ]; % 1 indicates this is x=L
+      rram_mux_improve_2level_best_delay (:,isize, ivdd) = [ rram_mux_improve_2level_xl(best_delay_xl_index,1:7,isize,ivdd), 1 ]; % 1 indicates this is x=L
     end
     % best power 
     rram_mux_improve_2level_x0_best_power (:,isize, ivdd) = [ rram_mux_improve_2level_x0(best_power_x0_index,1:7,isize,ivdd) ]; % 0 indicates this is x=0
     rram_mux_improve_2level_xl_best_power (:,isize, ivdd) = [ rram_mux_improve_2level_xl(best_power_xl_index,1:7,isize,ivdd) ]; % 1 indicates this is x=L
     if (best_power_x0 < best_power_xl) 
-      rram_mux_improve_2level_best_power (:,isize, ivdd) = [ rram_mux_improve_2level_x0(best_power_x0_index,2:7,isize,ivdd), 0 ]; % 0 indicates this is x=0
+      rram_mux_improve_2level_best_power (:,isize, ivdd) = [ rram_mux_improve_2level_x0(best_power_x0_index,1:7,isize,ivdd), 0 ]; % 0 indicates this is x=0
     else 
-      rram_mux_improve_2level_best_power (:,isize, ivdd) = [ rram_mux_improve_2level_xl(best_power_xl_index,2:7,isize,ivdd), 1 ]; % 1 indicates this is x=L
+      rram_mux_improve_2level_best_power (:,isize, ivdd) = [ rram_mux_improve_2level_xl(best_power_xl_index,1:7,isize,ivdd), 1 ]; % 1 indicates this is x=L
     end
     % best pdp 
     rram_mux_improve_2level_x0_best_pdp (:,isize, ivdd) = [ rram_mux_improve_2level_x0(best_pdp_x0_index,1:7,isize,ivdd) ]; % 0 indicates this is x=0
     rram_mux_improve_2level_xl_best_pdp (:,isize, ivdd) = [ rram_mux_improve_2level_xl(best_pdp_xl_index,1:7,isize,ivdd) ]; % 1 indicates this is x=L
     if (best_pdp_x0 < best_pdp_xl) 
-      rram_mux_improve_2level_best_pdp (:,isize, ivdd) = [ rram_mux_improve_2level_x0(best_pdp_x0_index,2:7,isize,ivdd), 0 ]; % 0 indicates this is x=0
+      rram_mux_improve_2level_best_pdp (:,isize, ivdd) = [ rram_mux_improve_2level_x0(best_pdp_x0_index,1:7,isize,ivdd), 0 ]; % 0 indicates this is x=0
     else 
-      rram_mux_improve_2level_best_pdp (:,isize, ivdd) = [ rram_mux_improve_2level_xl(best_pdp_xl_index,2:7,isize,ivdd), 1 ]; % 1 indicates this is x=L
+      rram_mux_improve_2level_best_pdp (:,isize, ivdd) = [ rram_mux_improve_2level_xl(best_pdp_xl_index,1:7,isize,ivdd), 1 ]; % 1 indicates this is x=L
     end
   end
 end
