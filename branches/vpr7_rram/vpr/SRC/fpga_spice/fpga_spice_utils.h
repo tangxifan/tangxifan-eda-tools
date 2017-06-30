@@ -403,6 +403,8 @@ t_standalone_sram_info* alloc_one_standalone_sram_info();
 void free_one_standalone_sram_info(t_standalone_sram_info* standalone_sram_info);
 void init_mem_bank_info(t_mem_bank_info* cur_mem_bank_info,
                         t_spice_model* cur_mem_model);
+void try_update_sram_orgz_info_reserved_blwl(t_sram_orgz_info* cur_sram_orgz_info,
+                                             int updated_reserved_bl, int updated_reserved_wl);
 void update_mem_bank_info_reserved_blwl(t_mem_bank_info* cur_mem_bank_info,
                                         int updated_reserved_bl, int updated_reserved_wl);
 void get_mem_bank_info_reserved_blwl(t_mem_bank_info* cur_mem_bank_info,

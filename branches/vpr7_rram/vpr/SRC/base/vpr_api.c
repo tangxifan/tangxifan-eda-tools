@@ -165,7 +165,9 @@ void vpr_print_usage(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "\t--tech_properties <tech_properties.xml>\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
     /* Xifan TANG: FPGA-SPICE Support*/
-	vpr_printf(TIO_MESSAGE_INFO, "Spice Support Options:\n");
+	vpr_printf(TIO_MESSAGE_INFO, "FPGA-SPICE tool suite Options:\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_rename_illegal_port\n");
+	vpr_printf(TIO_MESSAGE_INFO, "SPICE Support Options:\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--spice_dir <directory_path_output_spice_netlists>\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--print_spice_top_testbench\n");
@@ -180,11 +182,10 @@ void vpr_print_usage(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_leakage_only\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_parasitic_net_estimation_off\n");
     /* Xifan TANG: Synthesizable Verilog Dump*/
-	vpr_printf(TIO_MESSAGE_INFO, "Dump synthesizable verilog files Options:\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Synthesizable Verilog Generator Options:\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_syn_verilog\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_syn_verilog_dir <directory_path_of_dumped_verilog_files>\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_syn_verilog_tb_serial_config_mode\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_rename_illegal_port\n");
 }
 
 /* Initialize VPR 

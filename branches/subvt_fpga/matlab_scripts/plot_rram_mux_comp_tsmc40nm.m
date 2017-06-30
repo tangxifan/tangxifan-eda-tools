@@ -393,5 +393,3 @@ hleg = legend([{'CMOS MUX (V_{DD}=0.7V)'}, {'CMOS MUX (V_{DD}=0.9V)'}, {'4T1R MU
 set(fig_handle13, 'Position', [1 1 650 500]);
 grid on
 
-
-

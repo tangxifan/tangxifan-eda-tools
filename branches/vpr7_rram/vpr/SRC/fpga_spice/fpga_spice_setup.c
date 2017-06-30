@@ -390,6 +390,12 @@ void init_check_arch_spice_models(t_arch* arch,
     }
     /* TODO: check Scan-chain Flip-flop ports */
     check_ff_spice_model_ports(arch->sram_inf.spice_model, TRUE);
+    /* TODO: RRAM Scan-chain is not supported yet. Now just forbidden this option */
+    if (SPICE_MODEL_DESIGN_RRAM == arch->sram_inf.spice_model->design_tech) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) RRAM-based Scan-chain Flip-flop has not been supported yet!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
     break;
   case SPICE_SRAM_MEMORY_BANK:
     vpr_printf(TIO_MESSAGE_INFO, "INFO: Checking if SRAM spice model fit memory-bank organization...\n");

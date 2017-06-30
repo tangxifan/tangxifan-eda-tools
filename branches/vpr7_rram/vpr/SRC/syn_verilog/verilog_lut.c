@@ -288,7 +288,7 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
     /* NUM_SRAM is set to be consistent with number of BL/WLs
      * TODO: NUM_SRAM should be the as they are. 
      * Should use another variable i.e., num_bl
-       */
+     */
     break;
   case SPICE_SRAM_STANDALONE:
   case SPICE_SRAM_SCAN_CHAIN:
