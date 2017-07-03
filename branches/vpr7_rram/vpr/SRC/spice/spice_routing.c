@@ -509,7 +509,7 @@ void fprint_switch_box_mux(FILE* fp,
   fprintf(fp, "*****\n");
 
   /* Call SRAM subckts*/
-  switch (sram_orgz_type) {
+  switch (sram_spice_orgz_type) {
   case SPICE_SRAM_STANDALONE:
   case SPICE_SRAM_MEMORY_BANK:
     for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
@@ -742,7 +742,7 @@ void fprint_routing_switch_box_subckt(FILE* fp, t_sb cur_sb_info,
   fprintf(fp, "svdd sgnd\n");
 
   /* Specify the head of scan-chain */
-  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
     fprintf(fp, "***** Head of scan-chain *****\n");
     fprintf(fp, "Rsb[%d][%d]_sc_head sb[%d][%d]_sc_head %s[%d]->in 0\n",
             x, y, x, y, sram_spice_model->prefix, sram_spice_model->cnt);
@@ -762,7 +762,7 @@ void fprint_routing_switch_box_subckt(FILE* fp, t_sb cur_sb_info,
   }
 
   /* Specify the tail of scan-chain */
-  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
     fprintf(fp, "***** Tail of scan-chain *****\n");
     fprintf(fp, "Rsb[%d][%d]_sc_tail sb[%d][%d]_sc_tail %s[%d]->in 0\n",
             x, y, x, y, sram_spice_model->prefix, sram_spice_model->cnt);
@@ -988,7 +988,7 @@ void fprint_connection_box_mux(FILE* fp,
   fprintf(fp, "*****\n");
 
   /* Call SRAM subckts*/
-  switch (sram_orgz_type) {
+  switch (sram_spice_orgz_type) {
   case SPICE_SRAM_STANDALONE:
   case SPICE_SRAM_MEMORY_BANK:
     for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
@@ -1184,7 +1184,7 @@ void fprint_routing_connection_box_subckt(FILE* fp, t_cb cur_cb_info,
   fprintf(fp, "svdd sgnd\n");
 
   /* Specify the head of scan-chain */
-  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
     switch(cur_cb_info.type) {
     case CHANX:
       fprintf(fp, "***** Head of scan-chain *****\n");
@@ -1221,7 +1221,7 @@ void fprint_routing_connection_box_subckt(FILE* fp, t_cb cur_cb_info,
   assert(2 == side_cnt);
 
   /* Specify the tail of scan-chain */
-  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
     switch(cur_cb_info.type) {
     case CHANX:
       fprintf(fp, "***** Tail of scan-chain *****\n");

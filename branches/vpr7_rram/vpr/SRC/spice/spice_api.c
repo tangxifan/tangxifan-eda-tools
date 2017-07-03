@@ -205,10 +205,13 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
 
   /* assign the global variable of SRAM model */
   sram_spice_model = Arch.sram_inf.spice_model;
-  sram_orgz_type = Arch.sram_inf.orgz_type;
+  sram_spice_orgz_type = Arch.sram_inf.orgz_type;
+  /* initialize the SRAM organization information struct */
+  sram_spice_orgz_info = alloc_one_sram_orgz_info();
+  init_sram_orgz_info(sram_spice_orgz_info, sram_spice_orgz_type, sram_spice_model, nx + 2, ny + 2);
   
   /* Initialize the number of configuration bits of all the grids */
-  init_grids_num_conf_bits(sram_orgz_type);
+  init_grids_num_conf_bits(sram_spice_orgz_info);
   init_grids_num_iopads();
 
   /* Add keyword checking */

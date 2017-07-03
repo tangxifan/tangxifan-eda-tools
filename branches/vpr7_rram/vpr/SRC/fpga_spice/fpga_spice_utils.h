@@ -281,18 +281,18 @@ int count_num_conf_bits_pb_type_mode_interc(t_mode* cur_pb_type_mode,
                                             enum e_sram_orgz cur_sram_orgz_type);
 
 int rec_count_num_conf_bits_pb_type_default_mode(t_pb_type* cur_pb_type,
-                                                 enum e_sram_orgz cur_sram_orgz_type);
+                                                 t_sram_orgz_info* cur_sram_orgz_info);
 
 int rec_count_num_conf_bits_pb_type_physical_mode(t_pb_type* cur_pb_type,
-                                                  enum e_sram_orgz cur_sram_orgz_type);
+                                                  t_sram_orgz_info* cur_sram_orgz_info);
 
 int rec_count_num_conf_bits_pb(t_pb* cur_pb,
-                               enum e_sram_orgz cur_sram_orgz_type);
+                               t_sram_orgz_info* cur_sram_orgz_info);
 
 void init_one_grid_num_conf_bits(int ix, int iy,
-                                 enum e_sram_orgz cur_sram_orgz_type);
+                                 t_sram_orgz_info* cur_sram_orgz_info);
 
-void init_grids_num_conf_bits(enum e_sram_orgz cur_sram_orgz_type);
+void init_grids_num_conf_bits(t_sram_orgz_info* cur_sram_orgz_info);
 
 void zero_spice_models_cnt(int num_spice_models, t_spice_model* spice_model);
 

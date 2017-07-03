@@ -433,10 +433,11 @@ char* verilog_convert_port_type_to_string(enum e_spice_model_port_type port_type
 int rec_dump_verilog_spice_model_global_ports(FILE* fp, 
                                               t_spice_model* cur_spice_model,
                                               boolean dump_port_type, boolean recursive) {
-  int iport, dumped_port_cnt;
+  int iport, dumped_port_cnt, rec_dumped_port_cnt;
   boolean dump_comma = FALSE;
 
   dumped_port_cnt = 0;
+  rec_dumped_port_cnt = 0;
 
   /* Check */
   assert(NULL != cur_spice_model);
@@ -465,11 +466,15 @@ int rec_dump_verilog_spice_model_global_ports(FILE* fp,
         if (TRUE == dump_comma) {
           fprintf(fp, ",\n");
         }
-        dumped_port_cnt += 
+        rec_dumped_port_cnt += 
            rec_dump_verilog_spice_model_global_ports(fp, cur_spice_model->ports[iport].spice_model, 
                                                      dump_port_type, recursive);
         /* Decide if we need a comma */
-        dump_comma = TRUE; 
+        if (0 < rec_dumped_port_cnt) {
+          dump_comma = TRUE; 
+        }
+        /* Update counter */
+        dumped_port_cnt += rec_dumped_port_cnt;
         continue;
       }
     }

@@ -69,7 +69,7 @@ void fprint_spice_dff_testbench_global_ports(FILE* fp, int grid_x, int grid_y,
   fprintf(fp, "***** Global Clock Signals *****\n");
   fprintf(fp, ".global gclock\n");
   /* Print scan-chain global ports */
-  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
     fprintf(fp, "*.global sc_clk sc_set sc_rst\n");
   }
 

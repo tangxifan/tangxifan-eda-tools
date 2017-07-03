@@ -472,6 +472,8 @@ static void ProcessSpiceModelPort(ezxml_t Node,
   ezxml_set_attr(Node, "is_reset", NULL);
   port->is_set = GetBooleanProperty(Node, "is_set", FALSE, FALSE);
   ezxml_set_attr(Node, "is_set", NULL);
+  port->is_set = GetBooleanProperty(Node, "is_prog_clock", FALSE, FALSE);
+  ezxml_set_attr(Node, "is_prog_clock", NULL);
 
   /* Check if this port is a config_done port */ 
   port->is_config_enable = GetBooleanProperty(Node, "is_config_enable", FALSE, FALSE);

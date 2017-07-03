@@ -570,7 +570,7 @@ void fprint_pb_primitive_lut(FILE* fp,
   /* Call SRAM subckts*/
   cur_sram = sram_spice_model->cnt;
   /* Depend on the type of SRAM organization */
-  switch (sram_orgz_type) {
+  switch (sram_spice_orgz_type) {
   case SPICE_SRAM_STANDALONE:
   case SPICE_SRAM_MEMORY_BANK:
     for (i = 0; i < num_sram; i++) {

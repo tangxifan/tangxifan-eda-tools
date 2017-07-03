@@ -41,7 +41,8 @@ extern char* spice_dff_tb_dir_name;
 */
 
 extern t_spice_model* sram_spice_model;
-extern enum e_sram_orgz sram_orgz_type;
+extern enum e_sram_orgz sram_spice_orgz_type;
+extern t_sram_orgz_info* sram_spice_orgz_info;
 
 extern int rram_design_tech;
 extern int num_used_grid_mux_tb;

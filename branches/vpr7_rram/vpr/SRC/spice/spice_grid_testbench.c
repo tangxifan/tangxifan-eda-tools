@@ -75,7 +75,7 @@ void fprint_spice_grid_testbench_global_ports(FILE* fp, int x, int y,
   fprintf(fp, "***** Global Clock Signals *****\n");
   fprintf(fp, ".global gclock\n");
   /* Print scan-chain global ports */
-  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
     fprintf(fp, ".global sc_clk sc_set sc_rst\n");
   }
 
@@ -387,7 +387,7 @@ void fprint_spice_grid_testbench_stimulations(FILE* fp,
             sram_spice_model->prefix, i, sram_spice_model->prefix, i);
   }
   */
-  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
     fprintf(fp, "Vsc_clk sc_clk 0 0\n");
     fprintf(fp, "Vsc_rst sc_rst 0 0\n");
     fprintf(fp, "Vsc_set sc_set 0 0\n");

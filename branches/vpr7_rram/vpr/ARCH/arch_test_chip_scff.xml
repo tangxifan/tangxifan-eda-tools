@@ -299,7 +299,7 @@
          <port type="input" prefix="Set" size="1" is_global="true" default_val="0" is_set="true"/>
          <port type="input" prefix="Reset" size="1" is_global="true" default_val="0" is_reset="true"/>
          <port type="output" prefix="Q" size="2"/>
-         <port type="clock" prefix="prog_clock" size="1" is_global="true" default_val="0" />
+         <port type="clock" prefix="prog_clk" size="1" is_global="true" default_val="0" is_prog_clock="true" />
       </spice_model>
       <spice_model type="inpad" name="inpad" prefix="inpad" spice_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/io.sp" verilog_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/io.v">
         <design_technology type="cmos"/>

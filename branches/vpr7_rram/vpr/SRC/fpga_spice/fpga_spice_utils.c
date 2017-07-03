@@ -2670,6 +2670,7 @@ int count_num_reserved_conf_bits_one_lut_spice_model(t_spice_model* cur_spice_mo
                                                              cur_sram_orgz_type);
     break;
   case SPICE_MODEL_DESIGN_CMOS:
+    num_reserved_conf_bits = 0;
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of LUT(name: %s)\n",
@@ -2752,6 +2753,7 @@ int count_num_reserved_conf_bits_one_mux_spice_model(t_spice_model* cur_spice_mo
     }
     break;
   case SPICE_MODEL_DESIGN_CMOS:
+    num_reserved_conf_bits = 0;
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of MUX(name: %s)\n",
@@ -2886,6 +2888,7 @@ int count_num_reserved_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
           }
           break;
         case SPICE_MODEL_DESIGN_CMOS:
+          num_reserved_conf_bits = 0;
           break;
         default:
           vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of LUT(name: %s)\n",
@@ -3333,7 +3336,7 @@ int count_num_reserved_conf_bits_pb_type_mode_interc(t_mode* cur_pb_type_mode,
 
 /* Count the number of configuration bits of a grid (type_descriptor) in default mode */
 int rec_count_num_conf_bits_pb_type_default_mode(t_pb_type* cur_pb_type,
-                                                 enum e_sram_orgz cur_sram_orgz_type) {
+                                                 t_sram_orgz_info* cur_sram_orgz_info) {
   int mode_index, ipb, jpb;
   int sum_num_conf_bits = 0;
   int num_reserved_conf_bits = 0;
@@ -3347,19 +3350,19 @@ int rec_count_num_conf_bits_pb_type_default_mode(t_pb_type* cur_pb_type,
     mode_index = find_pb_type_idle_mode_index((*cur_pb_type));
     for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
       for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) { 
-        rec_count_num_conf_bits_pb_type_default_mode(&(cur_pb_type->modes[mode_index].pb_type_children[ipb]), cur_sram_orgz_type);
+        rec_count_num_conf_bits_pb_type_default_mode(&(cur_pb_type->modes[mode_index].pb_type_children[ipb]), cur_sram_orgz_info);
       }
     }
   }
 
   /* Check if this has defined a spice_model*/
   if (NULL != cur_pb_type->spice_model) {
-    sum_num_conf_bits = count_num_conf_bits_one_spice_model(cur_pb_type->spice_model, cur_sram_orgz_type, 0);
+    sum_num_conf_bits = count_num_conf_bits_one_spice_model(cur_pb_type->spice_model, cur_sram_orgz_info->type, 0);
     cur_pb_type->default_mode_num_conf_bits = sum_num_conf_bits;
     /* calculate the number of reserved configuration bits */
     cur_pb_type->default_mode_num_reserved_conf_bits = 
          count_num_reserved_conf_bits_one_spice_model(cur_pb_type->spice_model,
-                                                      cur_sram_orgz_type, 0);
+                                                      cur_sram_orgz_info->type, 0);
   } else { /* Count the sum of configuration bits of all the children pb_types */
     /* Find the mode that define_idle_mode*/
     mode_index = find_pb_type_idle_mode_index((*cur_pb_type));
@@ -3378,11 +3381,11 @@ int rec_count_num_conf_bits_pb_type_default_mode(t_pb_type* cur_pb_type,
       }
     }
     /* Count the number of configuration bits of interconnection */
-    sum_num_conf_bits += count_num_conf_bits_pb_type_mode_interc(&(cur_pb_type->modes[mode_index]), cur_sram_orgz_type); 
+    sum_num_conf_bits += count_num_conf_bits_pb_type_mode_interc(&(cur_pb_type->modes[mode_index]), cur_sram_orgz_info->type); 
     /* Count the number of reserved_configuration bits of interconnection */
     temp_num_reserved_conf_bits = 
                 count_num_reserved_conf_bits_pb_type_mode_interc(&(cur_pb_type->modes[mode_index]),
-                                                                 cur_sram_orgz_type); 
+                                                                 cur_sram_orgz_info->type); 
     /* number of reserved conf. bits is deteremined by the largest number of reserved conf. bits !*/
     if (temp_num_reserved_conf_bits > num_reserved_conf_bits) {
       num_reserved_conf_bits = temp_num_reserved_conf_bits;
@@ -3397,7 +3400,7 @@ int rec_count_num_conf_bits_pb_type_default_mode(t_pb_type* cur_pb_type,
 
 /* Count the number of configuration bits of a grid (type_descriptor) in default mode */
 int rec_count_num_conf_bits_pb_type_physical_mode(t_pb_type* cur_pb_type,
-                                                  enum e_sram_orgz cur_sram_orgz_type) {
+                                                  t_sram_orgz_info* cur_sram_orgz_info) {
   int mode_index, ipb, jpb;
   int sum_num_conf_bits = 0;
   int num_reserved_conf_bits = 0;
@@ -3411,19 +3414,19 @@ int rec_count_num_conf_bits_pb_type_physical_mode(t_pb_type* cur_pb_type,
     mode_index = find_pb_type_physical_mode_index((*cur_pb_type));
     for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
       for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) { 
-        rec_count_num_conf_bits_pb_type_physical_mode(&(cur_pb_type->modes[mode_index].pb_type_children[ipb]), cur_sram_orgz_type);
+        rec_count_num_conf_bits_pb_type_physical_mode(&(cur_pb_type->modes[mode_index].pb_type_children[ipb]), cur_sram_orgz_info);
       }
     }
   }
 
   /* Check if this has defined a spice_model*/
   if (NULL != cur_pb_type->spice_model) {
-    sum_num_conf_bits = count_num_conf_bits_one_spice_model(cur_pb_type->spice_model, cur_sram_orgz_type, 0);
+    sum_num_conf_bits = count_num_conf_bits_one_spice_model(cur_pb_type->spice_model, cur_sram_orgz_info->type, 0);
     cur_pb_type->physical_mode_num_conf_bits = sum_num_conf_bits;
     /* calculate the number of reserved configuration bits */
     cur_pb_type->physical_mode_num_reserved_conf_bits = 
          count_num_reserved_conf_bits_one_spice_model(cur_pb_type->spice_model,
-                                                      cur_sram_orgz_type, 0);
+                                                      cur_sram_orgz_info->type, 0);
   } else { /* Count the sum of configuration bits of all the children pb_types */
     /* Find the mode that define_idle_mode*/
     mode_index = find_pb_type_physical_mode_index((*cur_pb_type));
@@ -3443,11 +3446,11 @@ int rec_count_num_conf_bits_pb_type_physical_mode(t_pb_type* cur_pb_type,
     }
     /* Count the number of configuration bits of interconnection */
     sum_num_conf_bits += count_num_conf_bits_pb_type_mode_interc(&(cur_pb_type->modes[mode_index]), 
-                                                                 cur_sram_orgz_type); 
+                                                                 cur_sram_orgz_info->type); 
     /* Count the number of reserved_configuration bits of interconnection */
     temp_num_reserved_conf_bits = 
                 count_num_reserved_conf_bits_pb_type_mode_interc(&(cur_pb_type->modes[mode_index]),
-                                                                 cur_sram_orgz_type); 
+                                                                 cur_sram_orgz_info->type); 
     /* number of reserved conf. bits is deteremined by the largest number of reserved conf. bits !*/
     if (temp_num_reserved_conf_bits > num_reserved_conf_bits) {
       num_reserved_conf_bits = temp_num_reserved_conf_bits;
@@ -3463,7 +3466,7 @@ int rec_count_num_conf_bits_pb_type_physical_mode(t_pb_type* cur_pb_type,
 
 /* Count the number of configuration bits of a pb_graph_node */
 int rec_count_num_conf_bits_pb(t_pb* cur_pb, 
-                               enum e_sram_orgz cur_sram_orgz_type) {
+                               t_sram_orgz_info* cur_sram_orgz_info) {
   int mode_index, ipb, jpb;
   t_pb_type* cur_pb_type = NULL;
   t_pb_graph_node* cur_pb_graph_node = NULL;
@@ -3491,11 +3494,11 @@ int rec_count_num_conf_bits_pb(t_pb* cur_pb,
         /* Recursive*/
         /* Refer to pack/output_clustering.c [LINE 392] */
         if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
-          rec_count_num_conf_bits_pb(&(cur_pb->child_pbs[ipb][jpb]), cur_sram_orgz_type);
+          rec_count_num_conf_bits_pb(&(cur_pb->child_pbs[ipb][jpb]), cur_sram_orgz_info);
         } else {
           /* Check if this pb has no children, no children mean idle*/
           rec_count_num_conf_bits_pb_type_default_mode(cur_pb->child_pbs[ipb][jpb].pb_graph_node->pb_type,
-                                                       cur_sram_orgz_type);
+                                                       cur_sram_orgz_info);
         }
       } 
     }
@@ -3504,12 +3507,12 @@ int rec_count_num_conf_bits_pb(t_pb* cur_pb,
   /* Check if this has defined a spice_model*/
   if (NULL != cur_pb_type->spice_model) {
     sum_num_conf_bits += count_num_conf_bits_one_spice_model(cur_pb_type->spice_model, 
-                                                             cur_sram_orgz_type, 0);
+                                                             cur_sram_orgz_info->type, 0);
     cur_pb->num_conf_bits = sum_num_conf_bits;
     /* calculate the number of reserved configuration bits */
     cur_pb->num_reserved_conf_bits = 
          count_num_reserved_conf_bits_one_spice_model(cur_pb_type->spice_model,
-                                                      cur_sram_orgz_type, 0);
+                                                      cur_sram_orgz_info->type, 0);
  
   } else {
     /* Definition ends*/
@@ -3537,11 +3540,11 @@ int rec_count_num_conf_bits_pb(t_pb* cur_pb,
     }
     /* Count the number of configuration bits of interconnection */
     sum_num_conf_bits += count_num_conf_bits_pb_type_mode_interc(&(cur_pb_type->modes[mode_index]),
-                                                                 cur_sram_orgz_type); 
+                                                                 cur_sram_orgz_info->type); 
     /* Count the number of reserved_configuration bits of interconnection */
     temp_num_reserved_conf_bits = 
                 count_num_reserved_conf_bits_pb_type_mode_interc(&(cur_pb_type->modes[mode_index]),
-                                                                 cur_sram_orgz_type); 
+                                                                 cur_sram_orgz_info->type); 
     /* number of reserved conf. bits is deteremined by the largest number of reserved conf. bits !*/
     if (temp_num_reserved_conf_bits > num_reserved_conf_bits) {
       num_reserved_conf_bits = temp_num_reserved_conf_bits;
@@ -3556,7 +3559,7 @@ int rec_count_num_conf_bits_pb(t_pb* cur_pb,
 
 /* Initialize the number of configuraion bits for one grid */
 void init_one_grid_num_conf_bits(int ix, int iy, 
-                                 enum e_sram_orgz cur_sram_orgz_type) {
+                                 t_sram_orgz_info* cur_sram_orgz_info) {
   t_block* mapped_block = NULL;
   int iz;
   int cur_block_index = 0;
@@ -3577,17 +3580,17 @@ void init_one_grid_num_conf_bits(int ix, int iy,
   for (iz = 0; iz < capacity; iz++) {
     /* Check in all the blocks(clustered logic block), there is a match x,y,z*/
     mapped_block = search_mapped_block(ix, iy, iz); 
-    rec_count_num_conf_bits_pb_type_physical_mode(grid[ix][iy].type->pb_type, cur_sram_orgz_type);
+    rec_count_num_conf_bits_pb_type_physical_mode(grid[ix][iy].type->pb_type, cur_sram_orgz_info);
     /* Comments: Grid [x][y]*/
     if (NULL == mapped_block) {
       /* Print a consider a idle pb_type ...*/
-      rec_count_num_conf_bits_pb_type_default_mode(grid[ix][iy].type->pb_type, cur_sram_orgz_type);
+      rec_count_num_conf_bits_pb_type_default_mode(grid[ix][iy].type->pb_type, cur_sram_orgz_info);
     } else {
       if (iz == mapped_block->z) {
         // assert(mapped_block == &(block[grid[ix][iy].blocks[cur_block_index]]));
         cur_block_index++;
       }
-      rec_count_num_conf_bits_pb(mapped_block->pb, cur_sram_orgz_type);
+      rec_count_num_conf_bits_pb(mapped_block->pb, cur_sram_orgz_info);
     }
   } 
 
@@ -3597,14 +3600,14 @@ void init_one_grid_num_conf_bits(int ix, int iy,
 }
 
 /* Initialize the number of configuraion bits for all grids */
-void init_grids_num_conf_bits(enum e_sram_orgz cur_sram_orgz_type) {
+void init_grids_num_conf_bits(t_sram_orgz_info* cur_sram_orgz_info) {
   int ix, iy; 
 
   /* Core grid */
   vpr_printf(TIO_MESSAGE_INFO, "INFO: Initializing number of configuration bits of Core grids...\n");
   for (ix = 1; ix < (nx + 1); ix++) {
     for (iy = 1; iy < (ny + 1); iy++) {
-      init_one_grid_num_conf_bits(ix, iy, cur_sram_orgz_type);
+      init_one_grid_num_conf_bits(ix, iy, cur_sram_orgz_info);
     }
   }
   
@@ -3615,28 +3618,28 @@ void init_grids_num_conf_bits(enum e_sram_orgz cur_sram_orgz_type) {
   for (iy = 1; iy < (ny + 1); iy++) {
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
-    init_one_grid_num_conf_bits(ix, iy, cur_sram_orgz_type);
+    init_one_grid_num_conf_bits(ix, iy, cur_sram_orgz_info);
   }
   /* Right side : x = nx + 1, y = 1 .. ny*/
   ix = nx + 1;
   for (iy = 1; iy < (ny + 1); iy++) {
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
-    init_one_grid_num_conf_bits(ix, iy, cur_sram_orgz_type);
+    init_one_grid_num_conf_bits(ix, iy, cur_sram_orgz_info);
   }
   /* Bottom  side : x = 1 .. nx + 1, y = 0 */
   iy = 0;
   for (ix = 1; ix < (nx + 1); ix++) {
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
-    init_one_grid_num_conf_bits(ix, iy, cur_sram_orgz_type);
+    init_one_grid_num_conf_bits(ix, iy, cur_sram_orgz_info);
   }
   /* Top side : x = 1 .. nx + 1, y = nx + 1  */
   iy = ny + 1;
   for (ix = 1; ix < (nx + 1); ix++) {
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
-    init_one_grid_num_conf_bits(ix, iy, cur_sram_orgz_type);
+    init_one_grid_num_conf_bits(ix, iy, cur_sram_orgz_info);
   }
  
   return;

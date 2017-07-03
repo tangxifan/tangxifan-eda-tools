@@ -150,6 +150,7 @@ struct s_spice_model_port {
   boolean is_reset;
   boolean is_set;
   boolean is_config_enable;
+  boolean is_prog_clock;
   char* spice_model_name;
   t_spice_model* spice_model;
 };

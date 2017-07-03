@@ -39,7 +39,8 @@ char* spice_dff_testbench_postfix = "_dff_testbench.sp";
 
 /* SRAM SPICE MODEL should be set as global*/
 t_spice_model* sram_spice_model = NULL;
-enum e_sram_orgz sram_orgz_type = SPICE_SRAM_STANDALONE;
+enum e_sram_orgz sram_spice_orgz_type = SPICE_SRAM_STANDALONE;
+t_sram_orgz_info* sram_spice_orgz_info = NULL;
 /* Global counters */
 int rram_design_tech = 0;
 int num_used_grid_mux_tb = 0;

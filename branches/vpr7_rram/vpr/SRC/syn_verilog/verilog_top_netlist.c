@@ -95,7 +95,7 @@ void dump_verilog_top_netlist_memory_bank_ports(FILE* fp,
     }
     fprintf(fp, "  %s, %s, %s,\n",
             top_netlist_bl_enable_port_name,
-            top_netlist_bl_enable_port_name,
+            top_netlist_wl_enable_port_name,
             top_netlist_bl_data_in_port_name
             );
     break;
@@ -209,6 +209,8 @@ void dump_verilog_top_netlist_memory_bank_internal_wires(FILE* fp) {
               top_netlist_array_bl_port_name, 0, num_array_bl - 1);
     }
     /* Connections for rows */
+    fprintf(fp, "  genvar i;\n");
+    fprintf(fp, "  generate\n");
     for (irow = 0; irow < num_array_wl - 1; irow++) {
       cur_wl_lsb = irow * num_array_wl; 
       cur_wl_msb = (irow + 1) * num_array_wl - 1; 
@@ -218,12 +220,13 @@ void dump_verilog_top_netlist_memory_bank_internal_wires(FILE* fp) {
         cur_wl_msb = num_wl - 1;
       }
       /* connect to the BLs of all the SRAMs in the column */
-      fprintf(fp, "  for (i = %d; i < %d; i = i + 1) begin\n", cur_wl_lsb, cur_wl_msb + 1);
-      fprintf(fp, "    assign %s%s[i] = %s[%d];\n",
+      fprintf(fp, "    for (i = %d; i < %d; i = i + 1) begin\n", cur_wl_lsb, cur_wl_msb + 1);
+      fprintf(fp, "      assign %s%s[i] = %s[%d];\n",
               mem_model->prefix, top_netlist_normal_wl_port_postfix,
               top_netlist_array_wl_port_name, irow);
-      fprintf(fp, "  end\n");
+      fprintf(fp, "    end\n");
     }
+    fprintf(fp, "  endgenerate\n");
     break; 
   case SPICE_MODEL_DESIGN_RRAM: 
     /* Check: there should be reserved BLs and WLs */
@@ -307,25 +310,28 @@ void dump_verilog_top_netlist_scan_chain_internal_wires(FILE* fp) {
   assert( SPICE_MODEL_SCFF == scff_mem_model->type );
 
   /* Delcare local wires */
-  fprintf(fp, "wire [0:%d] %s_scff_in;\n",
+  fprintf(fp, "  wire [0:%d] %s_scff_in;\n",
           num_scffs - 1, scff_mem_model->prefix);
 
-  fprintf(fp, "wire [0:%d] %s_scff_out;\n",
+  fprintf(fp, "  wire [0:%d] %s_scff_out;\n",
           num_scffs - 1, scff_mem_model->prefix);
 
   /* Exception for head: connect to primary inputs */ 
-  fprintf(fp, "assign %s_scff_in[%d] = %s;\n",
+  fprintf(fp, "  assign %s_scff_in[%d] = %s;\n",
           scff_mem_model->prefix, 0,
           top_netlist_scan_chain_head_prefix);
 
   /* Connected the scan-chain flip-flops */
   /* Ensure we are in the correct range */
-  fprintf(fp, "  for (i = %d; i < %d; i = i + 1) begin\n", 
+  fprintf(fp, "  genvar i;\n");
+  fprintf(fp, "  generate;\n");
+  fprintf(fp, "    for (i = %d; i < %d; i = i + 1) begin\n", 
           1, num_scffs - 1);
-  fprintf(fp, "assign %s_scff_in[i] = %s_scff_out[i - 1];\n",
+  fprintf(fp,   "assign %s_scff_in[i] = %s_scff_out[i - 1];\n",
             scff_mem_model->prefix, 
             scff_mem_model->prefix);
-  fprintf(fp, "  end\n");
+  fprintf(fp, "    end\n");
+  fprintf(fp, "  endgenerate;\n");
 
   return;
 }
@@ -792,13 +798,11 @@ void dump_verilog_defined_one_connection_box(FILE* fp,
  
   /* Configuration ports */
   /* Reserved sram ports */
-  if (0 < cur_cb_info.num_reserved_conf_bits) {
-  }
   dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info, 
                                    0, cur_cb_info.num_reserved_conf_bits - 1,
                                    FALSE);
   /* Normal sram ports */
-  if (0 < (cur_cb_info.conf_bits_msb - cur_cb_info.conf_bits_lsb)) {
+  if (0 < (cur_cb_info.num_reserved_conf_bits)) {
     fprintf(fp, ",\n");
   }
   dump_verilog_sram_ports(fp, sram_verilog_orgz_info, 
@@ -944,13 +948,11 @@ void dump_verilog_defined_one_switch_box(FILE* fp,
   /* Configuration ports */
   /* output of each configuration bit */
   /* Reserved sram ports */
-  if (0 < cur_sb_info.num_reserved_conf_bits) {
-  }
   dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info, 
                                    0, cur_sb_info.num_reserved_conf_bits - 1,
                                    FALSE);
   /* Normal sram ports */
-  if (0 < (cur_sb_info.conf_bits_msb - cur_sb_info.conf_bits_lsb)) {
+  if (0 < (cur_sb_info.num_reserved_conf_bits)) {
     fprintf(fp, ",\n");
   }
   dump_verilog_sram_ports(fp, sram_verilog_orgz_info, 
@@ -1234,7 +1236,12 @@ void dump_verilog_top_testbench_global_ports_stimuli(FILE* fp, t_llist* head) {
     assert(TRUE == cur_global_port->is_global);
     /* If this is a clock signal, connect to op_clock signal */
     if (SPICE_MODEL_PORT_CLOCK == cur_global_port->type) {
-      dump_verilog_top_testbench_wire_one_global_port_stimuli(fp, cur_global_port, top_tb_op_clock_port_name);
+      /* Special for programming clock */
+      if (TRUE == cur_global_port->is_prog_clock) {
+        dump_verilog_top_testbench_wire_one_global_port_stimuli(fp, cur_global_port, top_tb_prog_clock_port_name);
+      } else {
+        dump_verilog_top_testbench_wire_one_global_port_stimuli(fp, cur_global_port, top_tb_op_clock_port_name);
+      }
     /* If this is a config_enable signal, connect to config_done signal */
     } else if (TRUE == cur_global_port->is_config_enable) {
       dump_verilog_top_testbench_wire_one_global_port_stimuli(fp, cur_global_port, top_tb_prog_clock_port_name);
@@ -1504,8 +1511,6 @@ void dump_verilog_top_testbench_call_top_module(FILE* fp,
                __FILE__, __LINE__);
     exit(1);
   }
-
-  fprintf(fp, ");\n");
 
 }
 

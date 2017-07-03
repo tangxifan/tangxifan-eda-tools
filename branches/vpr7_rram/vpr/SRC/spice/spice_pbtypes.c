@@ -897,7 +897,7 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
     fprintf(fp, "*****\n");
     /* Print all the srams*/
     cur_sram = sram_spice_model->cnt; 
-    switch (sram_orgz_type) {
+    switch (sram_spice_orgz_type) {
     case SPICE_SRAM_STANDALONE:
     case SPICE_SRAM_MEMORY_BANK:
       for (ilevel = 0; ilevel < num_sram_bits; ilevel++) {
@@ -1406,7 +1406,7 @@ void fprint_spice_idle_pb_graph_node_rec(FILE* fp,
     /* Definition ends*/
 
     /* Specify the head of scan-chain */
-    if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+    if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
       fprintf(fp, "***** Head of scan-chain *****\n");
       fprintf(fp, "R%s_sc_head %s_sc_head %s[%d]->in 0\n",
               subckt_name, subckt_name, sram_spice_model->prefix, sram_spice_model->cnt);
@@ -1468,7 +1468,7 @@ void fprint_spice_idle_pb_graph_node_rec(FILE* fp,
     /* Check each pins of pb_graph_node */ 
 
     /* Specify the Tail of scan-chain */
-    if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+    if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
       fprintf(fp, "***** Tail of scan-chain *****\n");
       fprintf(fp, "R%s_sc_tail %s_sc_tail %s[%d]->in 0\n",
               subckt_name, subckt_name, sram_spice_model->prefix, sram_spice_model->cnt);
@@ -2138,7 +2138,7 @@ void fprint_grid_blocks(FILE* fp,
   sprintf(subckt_name, "grid[%d][%d]_", ix, iy);
 
   /* Specify the head of scan-chain */
-  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
     fprintf(fp, "***** Head of scan-chain *****\n");
     fprintf(fp, "Rgrid[%d][%d]_sc_head grid[%d][%d]_sc_head %s[%d]->in 0\n",
             ix, iy, ix, iy, sram_spice_model->prefix, sram_spice_model->cnt);
@@ -2168,7 +2168,7 @@ void fprint_grid_blocks(FILE* fp,
   } 
 
   /* Specify the tail of scan-chain */
-  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
     fprintf(fp, "***** Tail of scan-chain *****\n");
     fprintf(fp, "Rgrid[%d][%d]_sc_tail grid[%d][%d]_sc_tail %s[%d]->in 0\n",
             ix, iy, ix, iy, sram_spice_model->prefix, sram_spice_model->cnt);

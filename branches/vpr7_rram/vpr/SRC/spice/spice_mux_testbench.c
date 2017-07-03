@@ -171,7 +171,7 @@ void fprint_spice_mux_testbench_global_ports(FILE* fp,
   fprintf(fp, "*.global gvdd_load\n");
   fprintf(fp, "*.global %s->in\n", sram_spice_model->prefix);
   /* Print scan-chain global ports */
-  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
     fprintf(fp, "*.global sc_clk sc_set sc_rst\n");
     fprintf(fp, "*.global %s[0]->in\n", sram_spice_model->prefix);
   }
@@ -588,7 +588,7 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
   */
 
   /* Call SRAM subckts*/
-  switch (sram_orgz_type) {
+  switch (sram_spice_orgz_type) {
   case SPICE_SRAM_STANDALONE:
   case SPICE_SRAM_MEMORY_BANK:
     for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
@@ -2188,7 +2188,7 @@ void fprint_spice_mux_testbench_stimulations(FILE* fp,
   fprintf(fp, "***** Global VDD for load inverters *****\n");
   fprintf(fp, "Vgvdd_load gvdd_load 0 vsp\n");
   fprintf(fp, "***** Global Force for all SRAMs *****\n");
-  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
     fprintf(fp, "Vsc_clk sc_clk 0 0\n");
     fprintf(fp, "Vsc_rst sc_rst 0 0\n");
     fprintf(fp, "Vsc_set sc_set 0 0\n");
@@ -2527,7 +2527,7 @@ int fprint_spice_mux_testbench_call_one_cb_tb(FILE* fp,
   fprintf(fp, "Vgvdd_cb[%d][%d] gvdd_cb[%d][%d] 0 vsp\n", x, y, x, y);
 
   fprintf(fp, "***** Global Force for all SRAMs *****\n");
-  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
     fprintf(fp, "Vsc_clk sc_clk 0 0\n");
     fprintf(fp, "Vsc_rst sc_rst 0 0\n");
     fprintf(fp, "Vsc_set sc_set 0 0\n");
@@ -2924,7 +2924,7 @@ int fprint_spice_mux_testbench_call_one_sb_tb(FILE* fp,
   fprintf(fp, "Vgvdd_sb[%d][%d] gvdd_sb[%d][%d] 0 vsp\n", x, y, x, y);
 
   fprintf(fp, "***** Global Force for all SRAMs *****\n");
-  if (SPICE_SRAM_SCAN_CHAIN == sram_orgz_type) {
+  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
     fprintf(fp, "Vsc_clk sc_clk 0 0\n");
     fprintf(fp, "Vsc_rst sc_rst 0 0\n");
     fprintf(fp, "Vsc_set sc_set 0 0\n");
