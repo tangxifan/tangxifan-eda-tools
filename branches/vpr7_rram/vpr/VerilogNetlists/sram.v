@@ -14,10 +14,19 @@ input wl // Word line control signal
   reg a;
 
   //----- when wl is enabled, we can read in data from bl
-  always @(posedge wl)
-  if (1'b1 == wl) begin
-    a <= bl;
-  end 
+  always @(bl, wl) 
+  begin
+    //----- Cases to program internal memory bit 
+    //----- case 1: bl = 1, wl = 1, a -> 0
+    if ((1'b1 == bl)&&(1'b1 == wl)) begin
+      a <= 1'b1;
+    end 
+    //----- case 2: bl = 0, wl = 1, a -> 0
+    if ((1'b0 == bl)&&(1'b1 == wl)) begin
+     a <= 1'b0;
+    end 
+  end
+
   // dout is short-wired to din 
   assign dout = a;
   //---- doutb is always opposite to dout 

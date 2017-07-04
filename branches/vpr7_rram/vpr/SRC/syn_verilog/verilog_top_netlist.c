@@ -54,6 +54,8 @@ static char* top_netlist_scan_chain_head_prefix = "sc_in";
 static float verilog_sim_timescale = 1e-9; // Verilog Simulation time scale (minimum time unit) : 1ns
 static char* top_tb_reset_port_name = "greset";
 static char* top_tb_set_port_name = "gset";
+static char* top_tb_prog_reset_port_name = "prog_reset";
+static char* top_tb_prog_set_port_name = "prog_set";
 static char* top_tb_config_done_port_name = "config_done";
 static char* top_tb_op_clock_port_name = "op_clock";
 static char* top_tb_prog_clock_port_name = "prog_clock";
@@ -1237,9 +1239,10 @@ void dump_verilog_top_testbench_global_ports_stimuli(FILE* fp, t_llist* head) {
     /* If this is a clock signal, connect to op_clock signal */
     if (SPICE_MODEL_PORT_CLOCK == cur_global_port->type) {
       /* Special for programming clock */
-      if (TRUE == cur_global_port->is_prog_clock) {
+      if (TRUE == cur_global_port->is_prog) {
         dump_verilog_top_testbench_wire_one_global_port_stimuli(fp, cur_global_port, top_tb_prog_clock_port_name);
       } else {
+        assert(FALSE == cur_global_port->is_prog);
         dump_verilog_top_testbench_wire_one_global_port_stimuli(fp, cur_global_port, top_tb_op_clock_port_name);
       }
     /* If this is a config_enable signal, connect to config_done signal */
@@ -1247,10 +1250,22 @@ void dump_verilog_top_testbench_global_ports_stimuli(FILE* fp, t_llist* head) {
       dump_verilog_top_testbench_wire_one_global_port_stimuli(fp, cur_global_port, top_tb_prog_clock_port_name);
     /* If this is a set/reset signal, connect to global reset and set signals */
     } else if (TRUE == cur_global_port->is_reset) {
-      dump_verilog_top_testbench_wire_one_global_port_stimuli(fp, cur_global_port, top_tb_reset_port_name);
+      /* Special for programming reset */
+      if (TRUE == cur_global_port->is_prog) {
+        dump_verilog_top_testbench_wire_one_global_port_stimuli(fp, cur_global_port, top_tb_prog_reset_port_name);
+      } else {
+        assert(FALSE == cur_global_port->is_prog);
+        dump_verilog_top_testbench_wire_one_global_port_stimuli(fp, cur_global_port, top_tb_reset_port_name);
+      }
     /* If this is a set/reset signal, connect to global reset and set signals */
     } else if (TRUE == cur_global_port->is_set) {
-      dump_verilog_top_testbench_wire_one_global_port_stimuli(fp, cur_global_port, top_tb_set_port_name);
+      /* Special for programming reset */
+      if (TRUE == cur_global_port->is_prog) {
+        dump_verilog_top_testbench_wire_one_global_port_stimuli(fp, cur_global_port, top_tb_prog_set_port_name);
+      } else {
+        assert(FALSE == cur_global_port->is_prog);
+        dump_verilog_top_testbench_wire_one_global_port_stimuli(fp, cur_global_port, top_tb_set_port_name);
+      }
     } else {
     /* Other global signals stuck at the default values */
       for (ipin = 0; ipin < cur_global_port->size; ipin++) {
@@ -1335,6 +1350,9 @@ void dump_verilog_top_testbench_ports(FILE* fp,
   /* Operation clock */
   fprintf(fp, "wire %s;\n", top_tb_op_clock_port_name);
   fprintf(fp, "reg %s%s;\n", top_tb_op_clock_port_name, top_tb_clock_reg_postfix);
+  /* Programming set and reset */
+  fprintf(fp, "reg %s;\n", top_tb_prog_reset_port_name);
+  fprintf(fp, "reg %s;\n", top_tb_prog_set_port_name);
   /* Global set and reset */
   fprintf(fp, "reg %s;\n", top_tb_reset_port_name);
   fprintf(fp, "reg %s;\n", top_tb_set_port_name);
@@ -1618,13 +1636,12 @@ void dump_verilog_top_testbench_sram_memory_bank_conf_bits_serial(FILE* fp,
   /* Dump decoder input for each programming cycle */ 
   for (iwl = 0; iwl < num_array_wl; iwl++) {
     for (ibl = 0; ibl < num_array_bl; ibl++) {
-      /* Bypass SRAM bit equals to 0 */
-      /* This can be commented when a completed configuration is required */
-      if (0 == array_bit[iwl][ibl]) {
+      /* Bypass configuration bit not available */
+      if ( NULL == array_conf_bit_info[iwl][ibl]) {
         continue;
       }
       /* Check */
-      assert( 1 == array_bit[iwl][ibl]);
+      assert(( 1 == array_bit[iwl][ibl] )||( 0 == array_bit[iwl][ibl] ));
       assert( NULL != array_conf_bit_info[iwl][ibl]);
       /* If this WL is selected , we decode its index to address */
       bl_addr = (char*)my_calloc(bl_decoder_size + 1, sizeof(char));
@@ -1756,7 +1773,6 @@ void dump_verilog_top_testbench_memory_bank_conf_bits_serial(FILE* fp,
 static 
 void dump_verilog_top_testbench_scan_chain_conf_bits_serial(FILE* fp, 
                                                             t_llist* cur_conf_bit) { 
-  int count = 0;
   t_llist* temp = cur_conf_bit;
   t_conf_bit_info* cur_conf_bit_info = NULL;
 
@@ -1773,6 +1789,13 @@ void dump_verilog_top_testbench_scan_chain_conf_bits_serial(FILE* fp,
    * In the rest of programming cycles, 
    * configuration bits are fed at the falling edge of programming clock.
    */
+  /* We do not care the value of scan_chain head during the first programming cycle 
+   * It is reset anyway
+   */
+  fprintf(fp, "    %s = 1'b%d;\n", 
+              top_netlist_scan_chain_head_prefix,
+              0 );
+  fprintf(fp, "\n");
   /* Check we have a valid first bit */
   while (NULL != temp) {
     cur_conf_bit_info = (t_conf_bit_info*)(temp->dptr);
@@ -1782,18 +1805,9 @@ void dump_verilog_top_testbench_scan_chain_conf_bits_serial(FILE* fp,
     fprintf(fp, " SPICE model name: %s, ", cur_conf_bit_info->parent_spice_model->name);
     fprintf(fp, " SPICE model index: %d ", cur_conf_bit_info->parent_spice_model_index);
     /* First bit is special */
-    if (0 == count) {
-      fprintf(fp, "    %s = 1'b%d;\n", 
-                top_netlist_scan_chain_head_prefix,
-                cur_conf_bit_info->sram_bit->val );
-      fprintf(fp, "\n");
-    }  else {
-      fprintf(fp, " prog_cycle_scan_chain(1'b%d); //--- (Scan_chain bits) \n",
-                  cur_conf_bit_info->sram_bit->val);
-      fprintf(fp, "\n");
-    }
-    /* Update counter */
-    count++;
+    fprintf(fp, " prog_cycle_scan_chain(1'b%d); //--- (Scan_chain bits) \n",
+                cur_conf_bit_info->sram_bit->val);
+    fprintf(fp, "\n");
     /* Go to next */
     temp = temp->next;
   }
@@ -2099,8 +2113,9 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
 
   /* Estimate the number of configuration clock cycles 
    * by traversing the linked-list and count the number of SRAM=1 or BL=1&WL=1 in it.
+   * We plus 1 additional config clock cycle here because we need to reset everything during the first clock cycle
    */
-  num_config_clock_cycles = dump_verilog_top_testbench_find_num_config_clock_cycles(sram_verilog_orgz_info->conf_bit_head);
+  num_config_clock_cycles = 1 + dump_verilog_top_testbench_find_num_config_clock_cycles(sram_verilog_orgz_info->conf_bit_head);
   fprintf(fp, "//----- Number of clock cycles in configuration phase: %d -----\n", 
               num_config_clock_cycles);
 
@@ -2136,12 +2151,14 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   /* Programming clock should be only enabled during programming phase.
    * When configuration is done (config_done is enabled), programming clock should be always zero.
    */
-  fprintf(fp, "//---- Actual programming clock is triggered only when %s is disabled\n", 
-              top_tb_config_done_port_name); 
-  fprintf(fp, "  assign %s = %s%s & (~%s);\n",
+  fprintf(fp, "//---- Actual programming clock is triggered only when %s and %s are disabled\n", 
+              top_tb_config_done_port_name, 
+              top_tb_prog_reset_port_name); 
+  fprintf(fp, "  assign %s = %s%s & (~%s) & (~%s);\n",
               top_tb_prog_clock_port_name,
               top_tb_prog_clock_port_name, top_tb_clock_reg_postfix,
-              top_tb_config_done_port_name);
+              top_tb_config_done_port_name,
+              top_tb_prog_reset_port_name); 
   fprintf(fp, "//----- END of Actual Programming clock ----\n");
   fprintf(fp, "\n");
 
@@ -2171,6 +2188,28 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   fprintf(fp, "//----- END of Actual Operation clock ----\n");
   fprintf(fp, "\n");
 
+  /* Reset signal for configuration circuit : only enable during the first clock cycle in programming phase */
+  fprintf(fp, "//----- Programming Reset Stimuli ----\n");
+  fprintf(fp, "initial\n");
+  fprintf(fp, "  begin //--- PROGRAMMING RESET GENERATOR\n");
+  fprintf(fp, " %s = 1'b1;\n", top_tb_prog_reset_port_name);
+  /* Reset is enabled until the first clock cycle in operation phase */
+  fprintf(fp, "//----- Reset signal is enabled until the first clock cycle in programming phase ----\n");
+  fprintf(fp, "#%.2g %s = 1'b0;\n", 
+              (1 * prog_clock_period) / verilog_sim_timescale,
+              top_tb_prog_reset_port_name);
+  fprintf(fp, "end\n");
+  fprintf(fp, "\n");
+
+  /* Set signal for configuration circuit : only enable during the first clock cycle in programming phase */
+  fprintf(fp, "//----- Programming set Stimuli ----\n");
+  fprintf(fp, "initial\n");
+  fprintf(fp, "  begin //--- PROGRAMMING SET GENERATOR\n");
+  fprintf(fp, "%s = 1'b0;\n", top_tb_prog_set_port_name);
+  fprintf(fp, "//----- Programming set signal is always disabled -----\n");
+  fprintf(fp, "end\n");
+  fprintf(fp, "\n");
+
   /* reset signals: only enabled during the first clock cycle in operation phase */
   fprintf(fp, "//----- Reset Stimuli ----\n");
   fprintf(fp, "initial\n");
@@ -2178,11 +2217,14 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   fprintf(fp, " %s = 1'b1;\n", top_tb_reset_port_name);
   /* Reset is enabled until the first clock cycle in operation phase */
   fprintf(fp, "//----- Reset signal is enabled until the first clock cycle in operation phase ----\n");
-  fprintf(fp, "wait(%s);\n", top_tb_config_done_port_name); 
-  fprintf(fp, "#%.2g greset = 1'b1;\n", 
-              (1 * op_clock_period)/ verilog_sim_timescale);
-  fprintf(fp, "#%.2g greset = 1'b0;\n", 
-              (2 * op_clock_period) / verilog_sim_timescale);
+  fprintf(fp, "wait(%s);\n", 
+               top_tb_config_done_port_name); 
+  fprintf(fp, "#%.2g %s = 1'b1;\n", 
+              (1 * op_clock_period)/ verilog_sim_timescale,
+              top_tb_reset_port_name);
+  fprintf(fp, "#%.2g %s = 1'b0;\n", 
+              (2 * op_clock_period) / verilog_sim_timescale,
+              top_tb_reset_port_name);
   fprintf(fp, "end\n");
   fprintf(fp, "\n");
 

@@ -335,6 +335,10 @@ int alloc_and_add_grids_fully_capacity_rr_edges(t_ivec*** LL_rr_node_indices,
   /* Go by grid to grid */
   for (ix = 0; ix < (nx + 2); ix++) {
     for (iy = 0; iy < (ny + 2); iy++) {
+      /* Skip EMPTY_TYPE */
+      if (EMPTY_TYPE == grid[ix][iy].type) {
+        continue;
+      }
       /* Skip IO_TYPE */
       if (IO_TYPE == grid[ix][iy].type) {
         continue;

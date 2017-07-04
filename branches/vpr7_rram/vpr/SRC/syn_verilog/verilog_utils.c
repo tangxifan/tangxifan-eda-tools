@@ -190,11 +190,11 @@ void decode_verilog_memory_bank_sram(t_spice_model* cur_sram_spice_model, int sr
     /* CMOS SRAM */
     /* Make sure there is only 1 BL and 1 WL */
     assert((1 == bl_len)&&(1 == wl_len));
-    /* We always assume that BL is a write-enable signal
-     * While WL contains what data will be written into SRAM 
+    /* We always assume that WL is a write-enable signal
+     * While BL contains what data will be written into SRAM 
      */
-    bl_conf_bits[0] = 1;
-    wl_conf_bits[0] = sram_bit;
+    bl_conf_bits[0] = sram_bit;
+    wl_conf_bits[0] = 1;
     break;
   case SPICE_MODEL_DESIGN_RRAM:
     /* NV SRAM (RRAM-based) */
@@ -230,6 +230,77 @@ void decode_verilog_memory_bank_sram(t_spice_model* cur_sram_spice_model, int sr
 
   return;
 }
+
+/* Decode one SRAM bit for memory-bank-style configuration circuit, and add it to linked list */
+void 
+decode_and_add_verilog_sram_membank_conf_bit_to_llist(t_sram_orgz_info* cur_sram_orgz_info,
+                                                      int mem_index,
+                                                      int num_bl_per_sram, int num_wl_per_sram, 
+                                                      int cur_sram_bit) {
+  int j;
+  int* conf_bits_per_sram = NULL;
+  t_spice_model* mem_model = NULL;
+
+  /* Check */
+  assert( SPICE_SRAM_MEMORY_BANK == cur_sram_orgz_info->type );
+
+  /* Get memory model */
+  get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model);
+  assert(NULL != mem_model);
+
+  /* Malloc/Calloc */
+  conf_bits_per_sram = (int*)my_calloc(num_bl_per_sram + num_wl_per_sram, sizeof(int));
+
+  /* Depend on the memory technology, we have different configuration bits */
+  switch (mem_model->design_tech) {
+  case SPICE_MODEL_DESIGN_CMOS: 
+    /* Check */
+    assert((1 == num_bl_per_sram) && (1 == num_wl_per_sram));
+    /* For CMOS SRAM */
+    decode_verilog_memory_bank_sram(mem_model, cur_sram_bit, 
+                                    num_bl_per_sram, num_wl_per_sram, 0, 0, 
+                                    conf_bits_per_sram, conf_bits_per_sram + num_bl_per_sram);
+    /* Use memory model here! Design technology of memory model determines the decoding strategy, instead of LUT model*/
+    add_sram_conf_bits_to_llist(cur_sram_orgz_info, mem_index, 
+                                num_bl_per_sram + num_wl_per_sram, conf_bits_per_sram); 
+    break; 
+  case SPICE_MODEL_DESIGN_RRAM: 
+    /* Decode the SRAM bits to BL/WL bits.
+     * first half part is BL, the other half part is WL 
+     */
+    /* Store the configuraion bit to linked-list */
+    assert(num_bl_per_sram == num_wl_per_sram);
+    /* When the number of BL/WL is more than 1, we need multiple programming cycles to configure a SRAM */
+    /* ONLY valid for NV SRAM !!!*/
+    for (j = 0; j < num_bl_per_sram - 1; j++) { 
+      if (0 == j) {
+        /* Store the configuraion bit to linked-list */
+        decode_verilog_memory_bank_sram(mem_model, cur_sram_bit, 
+                                        num_bl_per_sram, num_wl_per_sram, j, j, 
+                                        conf_bits_per_sram, conf_bits_per_sram + num_bl_per_sram);
+       } else {
+        /* Store the configuraion bit to linked-list */
+        decode_verilog_memory_bank_sram(mem_model, 1 - cur_sram_bit, 
+                                        num_bl_per_sram, num_wl_per_sram, j, j, 
+                                        conf_bits_per_sram, conf_bits_per_sram + num_bl_per_sram);
+      }
+      /* Use memory model here! Design technology of memory model determines the decoding strategy, instead of LUT model*/
+      add_sram_conf_bits_to_llist(cur_sram_orgz_info, mem_index, 
+                                  num_bl_per_sram + num_wl_per_sram, conf_bits_per_sram); 
+    }
+    break; 
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid design technology!",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /* Free */
+  my_free(conf_bits_per_sram);
+ 
+  return;
+}
+
 
 /** Decode 1-level 4T1R MUX
  */

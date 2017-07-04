@@ -296,10 +296,10 @@
          <output_buffer exist="on" spice_model_name="inv4"/>
          <pass_gate_logic spice_model_name="tgate"/>
          <port type="input" prefix="D" size="1"/>
-         <port type="input" prefix="Set" size="1" is_global="true" default_val="0" is_set="true"/>
-         <port type="input" prefix="Reset" size="1" is_global="true" default_val="0" is_reset="true"/>
+         <port type="input" prefix="pset" size="1" is_global="true" default_val="0" is_set="true"/>
+         <port type="input" prefix="preset" size="1" is_global="true" default_val="0" is_reset="true"/>
          <port type="output" prefix="Q" size="2"/>
-         <port type="clock" prefix="prog_clk" size="1" is_global="true" default_val="0" is_prog_clock="true"/>
+         <port type="clock" prefix="prog_clk" size="1" is_global="true" default_val="0" is_prog="true"/>
       </spice_model>
       <spice_model type="inpad" name="inpad" prefix="inpad" spice_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/io.sp" verilog_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/io.v">
         <design_technology type="cmos"/>
@@ -502,7 +502,7 @@
 	   routing area up significantly, we estimate into the ~70% range. 
 	   -->
     <pb_type name="clb" area="53894" opin_to_cb="false">
-      <pin_equivalence_auto_detect input_ports ="off" output_ports="on"/>
+      <pin_equivalence_auto_detect input_ports ="off" output_ports="off"/>
       <input name="I" num_pins="40" equivalent="true"/>
       <output name="O" num_pins="10" equivalent="false"/>
       <!--input name="I" num_pins="40" equivalent="true"/-->

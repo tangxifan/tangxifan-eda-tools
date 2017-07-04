@@ -2666,7 +2666,7 @@ static void ProcessComplexBlocks(INOUTP ezxml_t Node,
 
         /* Xifan TANG: pin equivalence auto-detection */
 	    if (1 == CountChildren(CurType, "pin_equivalence_auto_detect", 0)) {
-           Cur = FindFirstElement(CurType, "pin_equivalence_auto_detect", FALSE);
+           Cur = FindFirstElement(CurType, "pin_equivalence_auto_detect", TRUE);
            SetupPinEquivalenceAutoDetect(Cur, Type);
            FreeNode(Cur);
         } else {

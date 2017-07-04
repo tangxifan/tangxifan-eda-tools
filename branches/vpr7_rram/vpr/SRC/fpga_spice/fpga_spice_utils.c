@@ -4655,16 +4655,11 @@ add_mux_membank_conf_bits_to_llist(int mux_size,
      * Assume all the SRAMs are zero initially.
      * only Configuration to bit 1 requires a programming operation    
      */
-    num_conf_bits = 0;
-    for (ibit = 0; ibit < num_mux_sram_bits; ibit++) {
-      if (1 == mux_sram_bits[ibit]) {
-        num_conf_bits++;
-      }
-    }
+    num_conf_bits = num_mux_sram_bits;
     /* Allocate the array */
-    bl_bit = (t_conf_bit**)my_malloc(num_conf_bits * sizeof(t_conf_bit*));
-    wl_bit = (t_conf_bit**)my_malloc(num_conf_bits * sizeof(t_conf_bit*));
-    for (ibit = 0; ibit < num_conf_bits; ibit++) {
+    bl_bit = (t_conf_bit**)my_malloc(num_mux_sram_bits * sizeof(t_conf_bit*));
+    wl_bit = (t_conf_bit**)my_malloc(num_mux_sram_bits * sizeof(t_conf_bit*));
+    for (ibit = 0; ibit < num_mux_sram_bits; ibit++) {
       bl_bit[ibit] = (t_conf_bit*)my_malloc(sizeof(t_conf_bit));
       wl_bit[ibit] = (t_conf_bit*)my_malloc(sizeof(t_conf_bit));
     }
@@ -4672,15 +4667,11 @@ add_mux_membank_conf_bits_to_llist(int mux_size,
      * Actual BL/WL address in the array is hard to predict here,
      * they will be handled in the top_netlist and top_testbench generation 
      */
-    cur_bit = 0;
     for (ibit = 0; ibit < num_mux_sram_bits; ibit++) {
-      if (1 == mux_sram_bits[ibit]) {
-        bl_bit[cur_bit]->addr = cur_mem_bit + ibit;
-        bl_bit[cur_bit]->val = mux_sram_bits[ibit];
-        wl_bit[cur_bit]->addr = cur_mem_bit + ibit; 
-        wl_bit[cur_bit]->val = 1; /* We always assume WL is the write enable signal of a SRAM */ 
-        cur_bit++;
-      }
+      bl_bit[ibit]->addr = cur_mem_bit + ibit;
+      bl_bit[ibit]->val = mux_sram_bits[ibit];
+      wl_bit[ibit]->addr = cur_mem_bit + ibit; 
+      wl_bit[ibit]->val = 1; /* We always assume WL is the write enable signal of a SRAM */ 
     }
     break; 
   case SPICE_MODEL_DESIGN_RRAM:
@@ -4889,50 +4880,66 @@ void add_sram_membank_conf_bits_to_llist(t_sram_orgz_info* cur_sram_orgz_info, i
   bl_bit = (t_conf_bit*)my_malloc(sizeof(t_conf_bit));
   wl_bit = (t_conf_bit*)my_malloc(sizeof(t_conf_bit));
 
-  /* Fill information */
-  bit_cnt = 0; /* Check counter */
-  for (ibit = 0; ibit < num_bls; ibit++) {
-    /* Bypass zero bit */
-    if (0 == bl_conf_bits[ibit]) {
-      continue;
+  /* Depend on the memory technology, we have different configuration bits */
+  switch (cur_sram_spice_model->design_tech) {
+  case SPICE_MODEL_DESIGN_CMOS: 
+    assert((1 == num_bls)&&(1 == num_wls));
+    bl_bit->addr = mem_index;
+    wl_bit->addr = mem_index;
+    bl_bit->val = bl_conf_bits[0];
+    wl_bit->val = wl_conf_bits[0];
+    break;
+  case SPICE_MODEL_DESIGN_RRAM: 
+    /* Fill information */
+    bit_cnt = 0; /* Check counter */
+    for (ibit = 0; ibit < num_bls; ibit++) {
+      /* Bypass zero bit */
+      if (0 == bl_conf_bits[ibit]) {
+        continue;
+      }
+      /* Check if this bit is in reserved bls */
+      if (ibit == num_bls - 1) { 
+        /* Last bit is always independent */
+        bl_bit->addr = mem_index;
+        bl_bit->val = 1;
+      } else {
+        /* Other bits are shared */
+        bl_bit->addr = ibit;
+        bl_bit->val = 1;
+      }
+      /* Update check counter */
+      bit_cnt++;
     }
-    /* Check if this bit is in reserved bls */
-    if (ibit == num_bls - 1) { 
-      /* Last bit is always independent */
-      bl_bit->addr = mem_index;
-      bl_bit->val = 1;
-    } else {
-      /* Other bits are shared */
-      bl_bit->addr = ibit;
-      bl_bit->val = 1;
+    /* Check */
+    assert(1 == bit_cnt);
+  
+    bit_cnt = 0; /* Check counter */
+    for (ibit = 0; ibit < num_wls; ibit++) {
+      /* Bypass zero bit */
+      if (0 == wl_conf_bits[ibit]) {
+        continue;
+      }
+      /* Check if this bit is in reserved bls */
+      if (ibit == num_wls - 1) { 
+        /* Last bit is always independent */
+        wl_bit->addr = mem_index;
+        wl_bit->val = 1;
+      } else {
+        /* Other bits are shared */
+        wl_bit->addr = ibit;
+        wl_bit->val = 1;
+      }
+      /* Update check counter */
+      bit_cnt++;
     }
-    /* Update check counter */
-    bit_cnt++;
+    /* Check */
+    assert(1 == bit_cnt);
+    break; 
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid design technology!",
+               __FILE__, __LINE__);
+    exit(1);
   }
-  /* Check */
-  assert(1 == bit_cnt);
-
-  bit_cnt = 0; /* Check counter */
-  for (ibit = 0; ibit < num_wls; ibit++) {
-    /* Bypass zero bit */
-    if (0 == wl_conf_bits[ibit]) {
-      continue;
-    }
-    /* Check if this bit is in reserved bls */
-    if (ibit == num_wls - 1) { 
-      /* Last bit is always independent */
-      wl_bit->addr = mem_index;
-      wl_bit->val = 1;
-    } else {
-      /* Other bits are shared */
-      wl_bit->addr = ibit;
-      wl_bit->val = 1;
-    }
-    /* Update check counter */
-    bit_cnt++;
-  }
-  /* Check */
-  assert(1 == bit_cnt);
 
   /* Fill the linked list */
   cur_sram_orgz_info->conf_bit_head =
@@ -4980,7 +4987,6 @@ add_sram_conf_bits_to_llist(t_sram_orgz_info* cur_sram_orgz_info, int mem_index,
 
   return;
 }
-
 
 /* Find BL and WL ports for a SRAM model.
  * And check if the number of BL/WL satisfy the technology needs

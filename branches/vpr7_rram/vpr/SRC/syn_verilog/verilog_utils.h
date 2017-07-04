@@ -14,6 +14,13 @@ void decode_verilog_memory_bank_sram(t_spice_model* cur_sram_spice_model, int sr
                                      int bl_len, int wl_len, int bl_offset, int wl_offset,
                                      int* bl_conf_bits, int* wl_conf_bits);
 
+void 
+decode_and_add_verilog_sram_membank_conf_bit_to_llist(t_sram_orgz_info* cur_sram_orgz_info,
+                                                      int mem_index,
+                                                      int num_bl_per_sram, int num_wl_per_sram, 
+                                                      int cur_sram_bit);
+
+
 void decode_verilog_one_level_4t1r_mux(int path_id, 
                                        int bit_len, int* conf_bits); 
 
