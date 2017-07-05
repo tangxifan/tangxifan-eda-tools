@@ -68,10 +68,16 @@ static char* top_tb_clock_reg_postfix = "_reg";
 
 static 
 void dump_verilog_top_netlist_memory_bank_ports(FILE* fp, 
-                                                boolean dump_port_type) {
+                                                enum e_dump_verilog_port_type dump_port_type) {
   t_spice_model* mem_model = NULL;
   int num_array_bl, num_array_wl;
   int bl_decoder_size, wl_decoder_size;
+  char split_sign;
+
+  split_sign = determine_verilog_generic_port_split_sign(dump_port_type);
+
+  /* Only accept two types of dump_port_type here! */
+  assert((VERILOG_PORT_INPUT == dump_port_type)||(VERILOG_PORT_CONKT == dump_port_type));
 
   /* Check */
   assert (sram_verilog_orgz_info->type == SPICE_SRAM_MEMORY_BANK);
@@ -92,23 +98,23 @@ void dump_verilog_top_netlist_memory_bank_ports(FILE* fp,
   /* Depend on the memory technology */
   switch (mem_model->design_tech) {
   case SPICE_MODEL_DESIGN_CMOS:
-    if (TRUE == dump_port_type) {
-      fprintf(fp, "  input ");
-    }
-    fprintf(fp, "  %s, %s, %s,\n",
-            top_netlist_bl_enable_port_name,
-            top_netlist_wl_enable_port_name,
-            top_netlist_bl_data_in_port_name
-            );
+    dump_verilog_generic_port(fp, dump_port_type,
+                              top_netlist_bl_enable_port_name, 0, 0);
+    fprintf(fp, "%c //--- BL enable port \n", split_sign);
+    dump_verilog_generic_port(fp, dump_port_type,
+                              top_netlist_wl_enable_port_name, 0, 0);
+    fprintf(fp, "%c //--- WL enable port \n", split_sign);
+    dump_verilog_generic_port(fp, dump_port_type,
+                              top_netlist_bl_data_in_port_name, 0, 0);
+    fprintf(fp, "%c //--- BL data input port \n", split_sign);
     break;
   case SPICE_MODEL_DESIGN_RRAM: 
-    if (TRUE == dump_port_type) {
-      fprintf(fp, "  input ");
-    }
-    fprintf(fp, " %s, %s,\n",
-            top_netlist_bl_enable_port_name,
-            top_netlist_bl_enable_port_name
-            );
+    dump_verilog_generic_port(fp, dump_port_type,
+                              top_netlist_bl_enable_port_name, 0, 0);
+    fprintf(fp, "%c //--- BL enable port \n", split_sign);
+    dump_verilog_generic_port(fp, dump_port_type,
+                              top_netlist_wl_enable_port_name, 0, 0);
+    fprintf(fp, "%c //--- WL enable port \n", split_sign);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
@@ -116,26 +122,13 @@ void dump_verilog_top_netlist_memory_bank_ports(FILE* fp,
     exit(1);
   }
 
-  if (TRUE == dump_port_type) {
-    fprintf(fp, " input wire [%d:0] %s, //--- Address of bit lines \n", 
-                 bl_decoder_size - 1, top_netlist_addr_bl_port_name);
-  } else {
-    assert(FALSE == dump_port_type);
-    fprintf(fp, " %s[%d:0], //--- Address of bit lines \n", 
-                 top_netlist_addr_bl_port_name,
-                 bl_decoder_size - 1);
-  }
-  if (TRUE == dump_port_type) {
-    fprintf(fp, "  input wire [%d:0] %s //--- Address of word lines \n", 
-                   wl_decoder_size - 1, top_netlist_addr_wl_port_name);
-  } else {
-    assert(FALSE == dump_port_type);
-    fprintf(fp, "  %s[%d:0]  //--- Address of word lines \n", 
-                   top_netlist_addr_wl_port_name,
-                   wl_decoder_size - 1);
-  }
-  fprintf(fp, ");\n");
-
+  dump_verilog_generic_port(fp, dump_port_type,
+                            top_netlist_addr_bl_port_name, bl_decoder_size - 1, 0);
+  fprintf(fp, "%c //--- Address of bit lines \n", split_sign);
+  dump_verilog_generic_port(fp, dump_port_type,
+                            top_netlist_addr_wl_port_name, wl_decoder_size - 1, 0);
+  fprintf(fp, " //--- Address of word lines \n");
+  
   return;
 }
 
@@ -177,10 +170,12 @@ void dump_verilog_top_netlist_memory_bank_internal_wires(FILE* fp) {
    * In order to follow this convention in primitive nodes. 
    */
   /* No. of BLs and WLs in the array */
-  fprintf(fp, "  wire [0:%d] %s; //--- Array Bit lines bus \n", 
-                 num_array_bl - 1, top_netlist_array_bl_port_name);
-  fprintf(fp, "  wire [0:%d] %s; //--- Array Word lines bus \n", 
-                 num_array_wl - 1, top_netlist_array_wl_port_name);
+  dump_verilog_generic_port(fp, VERILOG_PORT_WIRE,
+                            top_netlist_array_bl_port_name, 0, num_array_bl - 1);
+  fprintf(fp, "; //--- Array Bit lines bus \n");
+  dump_verilog_generic_port(fp, VERILOG_PORT_WIRE,
+                            top_netlist_array_wl_port_name, 0, num_array_wl - 1);
+  fprintf(fp, "; //--- Array Bit lines bus \n");
   fprintf(fp, "\n");
 
   switch (mem_model->design_tech) {
@@ -283,12 +278,10 @@ void dump_verilog_top_netlist_scan_chain_ports(FILE* fp,
   if (TRUE == dump_port_type) {
     fprintf(fp, "  input wire %s //---- Scan-chain head \n", 
             top_netlist_scan_chain_head_prefix);
-    fprintf(fp, ");\n");
   } else {
     assert(FALSE == dump_port_type);
     fprintf(fp, "  %s //---- Scan-chain head \n", 
             top_netlist_scan_chain_head_prefix);
-    fprintf(fp, ");\n");
   }
 
   return;
@@ -337,6 +330,107 @@ void dump_verilog_top_netlist_scan_chain_internal_wires(FILE* fp) {
 
   return;
 }
+
+/* Dump ports for the top-level module in Verilog netlist */
+static 
+void dump_verilog_top_module_ports(FILE* fp,
+                                   enum e_dump_verilog_port_type dump_port_type) {
+  char* port_name = NULL;
+  char split_sign;
+  enum e_dump_verilog_port_type actual_dump_port_type;
+  boolean dump_global_port_type = FALSE;
+
+  split_sign = determine_verilog_generic_port_split_sign(dump_port_type);
+
+  /* Only accept two types of dump_port_type here! */
+  assert((VERILOG_PORT_INPUT == dump_port_type)||(VERILOG_PORT_CONKT == dump_port_type));
+
+  if (VERILOG_PORT_INPUT == dump_port_type) {
+     dump_global_port_type = TRUE;
+  }
+
+  /* dump global ports */
+  if (0 < dump_verilog_global_ports(fp, global_ports_head, dump_global_port_type)) {
+    fprintf(fp, "%c\n", split_sign);
+  }
+  /* Inputs and outputs of I/O pads */
+  /* Input Pads */
+  assert(NULL != inpad_verilog_model);
+  if ((NULL == inpad_verilog_model)
+    &&(inpad_verilog_model->cnt > 0)) {
+    /* Malloc and assign port_name */
+    port_name = (char*)my_malloc(sizeof(char)*(strlen(gio_input_prefix) + strlen(inpad_verilog_model->prefix) + 1));
+    sprintf(port_name, "%s%s", gio_input_prefix, inpad_verilog_model->prefix);
+    /* Dump a register port */
+    dump_verilog_generic_port(fp, dump_port_type, 
+                              port_name, inpad_verilog_model->cnt - 1, 0);
+    fprintf(fp, "%c //---FPGA inputs \n", split_sign); 
+    /* Free port_name */
+    my_free(port_name);
+  }
+
+  /* Output Pads */
+  assert(NULL != outpad_verilog_model);
+  if ((NULL == outpad_verilog_model)
+   ||(outpad_verilog_model->cnt > 0)) {
+    actual_dump_port_type = VERILOG_PORT_CONKT;
+    if (VERILOG_PORT_INPUT == dump_port_type) {
+      actual_dump_port_type = VERILOG_PORT_OUTPUT;
+    }
+    /* Malloc and assign port_name */
+    port_name = (char*)my_malloc(sizeof(char)*(strlen(gio_output_prefix) + strlen(outpad_verilog_model->prefix) + 1));
+    sprintf(port_name, "%s%s", gio_output_prefix, outpad_verilog_model->prefix);
+    /* Dump a register port */
+    dump_verilog_generic_port(fp, actual_dump_port_type, 
+                              port_name, outpad_verilog_model->cnt - 1, 0);
+    fprintf(fp, "%c //---FPGA outputs \n", split_sign); 
+    /* Free port_name */
+    my_free(port_name);
+  }
+
+  /* Inout Pads */
+  assert(NULL != iopad_verilog_model);
+  if ((NULL == iopad_verilog_model)
+   ||(iopad_verilog_model->cnt > 0)) {
+    actual_dump_port_type = VERILOG_PORT_CONKT;
+    if (VERILOG_PORT_INPUT == dump_port_type) {
+      actual_dump_port_type = VERILOG_PORT_INOUT;
+    }
+    /* Malloc and assign port_name */
+    port_name = (char*)my_malloc(sizeof(char)*(strlen(gio_inout_prefix) + strlen(iopad_verilog_model->prefix) + 1));
+    sprintf(port_name, "%s%s", gio_inout_prefix, iopad_verilog_model->prefix);
+    /* Dump a register port */
+    dump_verilog_generic_port(fp, actual_dump_port_type, 
+                              port_name, iopad_verilog_model->cnt - 1, 0);
+    fprintf(fp, "%c //---FPGA inouts \n", split_sign); 
+    /* Free port_name */
+    my_free(port_name);
+  }
+
+  /* Configuration ports depend on the organization of SRAMs */
+  switch(sram_verilog_orgz_info->type) {
+  case SPICE_SRAM_STANDALONE:
+    dump_verilog_generic_port(fp, dump_port_type, 
+                              sram_verilog_model->prefix, sram_verilog_model->cnt - 1, 0);
+    fprintf(fp, " //--- SRAM outputs \n"); 
+    /* Definition ends */
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+    dump_verilog_top_netlist_scan_chain_ports(fp, TRUE);
+    /* Definition ends */
+    break;
+  case SPICE_SRAM_MEMORY_BANK:
+    dump_verilog_top_netlist_memory_bank_ports(fp, dump_port_type);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  return; 
+}
+
   
 /* Dump ports for the top-level Verilog netlist */
 static 
@@ -346,6 +440,7 @@ void dump_verilog_top_netlist_ports(FILE* fp,
                                     t_spice verilog) {
   int num_array_bl, num_array_wl;
   int bl_decoder_size, wl_decoder_size;
+  char* port_name = NULL;
 
   /* A valid file handler */
   if (NULL == fp) {
@@ -356,57 +451,27 @@ void dump_verilog_top_netlist_ports(FILE* fp,
   fprintf(fp, "//----- Top-level Verilog Module -----\n");
   fprintf(fp, "module %s_top (\n", circuit_name);
   fprintf(fp, "\n");
-  /* dump global ports */
-  if (0 < dump_verilog_global_ports(fp, global_ports_head, TRUE)) {
-    fprintf(fp, ",\n");
-  }
-  /* Inputs and outputs of I/O pads */
-  /* Input Pads */
-  assert(NULL != inpad_verilog_model);
-  if ((NULL == inpad_verilog_model)
-    &&(inpad_verilog_model->cnt > 0)) {
-    fprintf(fp, " input wire [%d:0] %s%s, //---FPGA inputs \n", 
-            inpad_verilog_model->cnt - 1,
-            gio_input_prefix,
-            inpad_verilog_model->prefix);
-  }
 
-  /* Output Pads */
-  assert(NULL != outpad_verilog_model);
-  if ((NULL == outpad_verilog_model)
-   ||(outpad_verilog_model->cnt > 0)) {
-    fprintf(fp, " output wire [%d:0] %s%s, //---- FPGA outputs \n", 
-            outpad_verilog_model->cnt - 1,
-            gio_output_prefix,
-            outpad_verilog_model->prefix);
-  }
+  dump_verilog_top_module_ports(fp, VERILOG_PORT_INPUT);
 
-  /* Inout Pads */
-  assert(NULL != iopad_verilog_model);
-  if ((NULL == iopad_verilog_model)
-   ||(iopad_verilog_model->cnt > 0)) {
-    fprintf(fp, " inout wire [%d:0] %s%s, //---- FPGA inouts \n", 
-            iopad_verilog_model->cnt - 1,
-            gio_inout_prefix,
-            iopad_verilog_model->prefix);
-  }
+  fprintf(fp, ");\n");
 
+  return;
+}
+ 
+
+static 
+void dump_verilog_top_netlist_internal_wires(FILE* fp) {
   /* Configuration ports depend on the organization of SRAMs */
   switch(sram_verilog_orgz_info->type) {
   case SPICE_SRAM_STANDALONE:
-    fprintf(fp, "  input wire [%d:0] %s //---- SRAM outputs \n", 
-            sram_verilog_model->cnt - 1,
-            sram_verilog_model->prefix); 
-    fprintf(fp, ");\n");
     /* Definition ends */
     break;
   case SPICE_SRAM_SCAN_CHAIN:
-    dump_verilog_top_netlist_scan_chain_ports(fp, TRUE);
     dump_verilog_top_netlist_scan_chain_internal_wires(fp);
     /* Definition ends */
     break;
   case SPICE_SRAM_MEMORY_BANK:
-    dump_verilog_top_netlist_memory_bank_ports(fp, TRUE);
     dump_verilog_top_netlist_memory_bank_internal_wires(fp);
     break;
   default:
@@ -442,16 +507,16 @@ void dump_verilog_defined_one_grid(FILE* fp,
   dump_verilog_grid_common_port(fp, inpad_verilog_model, gio_input_prefix,
                                 inpad_verilog_model->grid_index_low[ix][iy],
                                 inpad_verilog_model->grid_index_high[ix][iy] - 1,
-                                FALSE); 
+                                VERILOG_PORT_CONKT); 
   dump_verilog_grid_common_port(fp, outpad_verilog_model, gio_output_prefix, 
                                 outpad_verilog_model->grid_index_low[ix][iy],
                                 outpad_verilog_model->grid_index_high[ix][iy] - 1,
-                                FALSE); 
+                                VERILOG_PORT_CONKT); 
   /* IO PAD */
   dump_verilog_grid_common_port(fp, iopad_verilog_model, gio_inout_prefix, 
                                 iopad_verilog_model->grid_index_low[ix][iy],
                                 iopad_verilog_model->grid_index_high[ix][iy] - 1,
-                                FALSE); 
+                                VERILOG_PORT_CONKT); 
 
   /* Print configuration ports */
   /* Reserved configuration ports */
@@ -461,7 +526,7 @@ void dump_verilog_defined_one_grid(FILE* fp,
   dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info,
                                    0, 
                                    sram_verilog_orgz_info->grid_reserved_conf_bits[ix][iy] - 1,
-                                   FALSE);
+                                   VERILOG_PORT_CONKT);
   /* Normal configuration ports */
   if (0 < (sram_verilog_orgz_info->grid_conf_bits_msb[ix][iy]
            - sram_verilog_orgz_info->grid_conf_bits_lsb[ix][iy])) {
@@ -470,7 +535,7 @@ void dump_verilog_defined_one_grid(FILE* fp,
   dump_verilog_sram_ports(fp, sram_verilog_orgz_info,
                           sram_verilog_orgz_info->grid_conf_bits_lsb[ix][iy],
                           sram_verilog_orgz_info->grid_conf_bits_msb[ix][iy] - 1,
-                          FALSE);
+                          VERILOG_PORT_CONKT);
   fprintf(fp, ");\n");
   /* Comment lines */
   fprintf(fp, "//----- END call Grid[%d][%d] module -----\n\n", ix, iy);
@@ -802,14 +867,14 @@ void dump_verilog_defined_one_connection_box(FILE* fp,
   /* Reserved sram ports */
   dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info, 
                                    0, cur_cb_info.num_reserved_conf_bits - 1,
-                                   FALSE);
+                                   VERILOG_PORT_CONKT);
   /* Normal sram ports */
   if (0 < (cur_cb_info.num_reserved_conf_bits)) {
     fprintf(fp, ",\n");
   }
   dump_verilog_sram_ports(fp, sram_verilog_orgz_info, 
                           cur_cb_info.conf_bits_lsb, cur_cb_info.conf_bits_msb - 1,
-                          FALSE);
+                          VERILOG_PORT_CONKT);
  
   fprintf(fp, ");\n");
 
@@ -952,7 +1017,7 @@ void dump_verilog_defined_one_switch_box(FILE* fp,
   /* Reserved sram ports */
   dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info, 
                                    0, cur_sb_info.num_reserved_conf_bits - 1,
-                                   FALSE);
+                                   VERILOG_PORT_CONKT);
   /* Normal sram ports */
   if (0 < (cur_sb_info.num_reserved_conf_bits)) {
     fprintf(fp, ",\n");
@@ -960,7 +1025,7 @@ void dump_verilog_defined_one_switch_box(FILE* fp,
   dump_verilog_sram_ports(fp, sram_verilog_orgz_info, 
                           cur_sb_info.conf_bits_lsb, 
                           cur_sb_info.conf_bits_msb - 1,
-                          FALSE);
+                          VERILOG_PORT_CONKT);
 
   fprintf(fp, ");\n");
 
@@ -1164,7 +1229,8 @@ void dump_verilog_configuration_circuits(FILE* fp) {
 
 /* Dump all the global ports that are stored in the linked list */
 static 
-void dump_verilog_top_testbench_global_ports(FILE* fp, t_llist* head) {
+void dump_verilog_top_testbench_global_ports(FILE* fp, t_llist* head,
+                                             enum e_dump_verilog_port_type dump_port_type) {
   t_llist* temp = head;
   t_spice_model_port* cur_global_port = NULL;
 
@@ -1177,9 +1243,9 @@ void dump_verilog_top_testbench_global_ports(FILE* fp, t_llist* head) {
   fprintf(fp, "//----- BEGIN Global ports -----\n");
   while(NULL != temp) {
     cur_global_port = (t_spice_model_port*)(temp->dptr); 
-    fprintf(fp, "wire [0:%d] %s;\n", 
-            cur_global_port->size - 1, 
-            cur_global_port->prefix); 
+    dump_verilog_generic_port(fp, dump_port_type, 
+                                  cur_global_port->prefix, 0, cur_global_port->size - 1);
+    fprintf(fp, ";\n"); 
     /* Go to the next */
     temp = temp->next;
   }
@@ -1288,6 +1354,7 @@ void dump_verilog_top_testbench_ports(FILE* fp,
   int bl_decoder_size, wl_decoder_size;
   int iblock, iopad_idx;
   t_spice_model* mem_model = NULL;
+  char* port_name = NULL;
  
   get_sram_orgz_info_mem_model(sram_verilog_orgz_info, &mem_model);
 
@@ -1299,7 +1366,7 @@ void dump_verilog_top_testbench_ports(FILE* fp,
   /* Connect to defined signals */
   /* set and reset signals */
   fprintf(fp, "\n");
-  dump_verilog_top_testbench_global_ports(fp, global_ports_head);
+  dump_verilog_top_testbench_global_ports(fp, global_ports_head, VERILOG_PORT_WIRE);
   fprintf(fp, "\n");
 
   /* TODO: dump each global signal as reg here */
@@ -1309,92 +1376,111 @@ void dump_verilog_top_testbench_ports(FILE* fp,
   assert(NULL != inpad_verilog_model);
   if ((NULL == inpad_verilog_model)
     &&(inpad_verilog_model->cnt > 0)) {
-    fprintf(fp, " reg [%d:0] %s%s; //---FPGA inputs \n", 
-            inpad_verilog_model->cnt - 1,
-            gio_input_prefix,
-            inpad_verilog_model->prefix);
+    /* Malloc and assign port_name */
+    port_name = (char*)my_malloc(sizeof(char)*(strlen(gio_input_prefix) + strlen(inpad_verilog_model->prefix) + 1));
+    sprintf(port_name, "%s%s", gio_input_prefix, inpad_verilog_model->prefix);
+    /* Dump a register port */
+    dump_verilog_generic_port(fp, VERILOG_PORT_REG, 
+                              port_name, inpad_verilog_model->cnt - 1, 0);
+    fprintf(fp, "; //---FPGA inputs \n"); 
+    /* Free port_name */
+    my_free(port_name);
   }
 
   /* Output Pads */
   assert(NULL != outpad_verilog_model);
   if ((NULL == outpad_verilog_model)
    ||(outpad_verilog_model->cnt > 0)) {
-    fprintf(fp, " wire [%d:0] %s%s; //---- FPGA outputs \n", 
-            outpad_verilog_model->cnt - 1,
-            gio_output_prefix,
-            outpad_verilog_model->prefix);
+    /* Malloc and assign port_name */
+    port_name = (char*)my_malloc(sizeof(char)*(strlen(gio_output_prefix) + strlen(outpad_verilog_model->prefix) + 1));
+    sprintf(port_name, "%s%s", gio_output_prefix, outpad_verilog_model->prefix);
+    /* Dump a wired port */
+    dump_verilog_generic_port(fp, VERILOG_PORT_WIRE, 
+                              port_name, outpad_verilog_model->cnt - 1, 0);
+    fprintf(fp, "; //---FPGA outputs \n"); 
+    /* Free port_name */
+    my_free(port_name);
   }
 
   /* Inout Pads */
   assert(NULL != iopad_verilog_model);
   if ((NULL == iopad_verilog_model)
    ||(iopad_verilog_model->cnt > 0)) {
-    fprintf(fp, "//----- Wire for inouts ----- \n");
-    fprintf(fp, " wire [%d:0] %s%s; //---- FPGA inouts \n", 
-            iopad_verilog_model->cnt - 1,
-            gio_inout_prefix,
-            iopad_verilog_model->prefix);
-    fprintf(fp, "//----- Reg for inouts (voltage stimuli) ----- \n");
-    fprintf(fp, " reg [%d:0] %s%s%s; //---- reg for FPGA inouts \n", 
-            iopad_verilog_model->cnt - 1,
-            gio_inout_prefix,
-            iopad_verilog_model->prefix, 
-            top_tb_inout_reg_postfix);
+    /* Malloc and assign port_name */
+    port_name = (char*)my_malloc(sizeof(char)*(strlen(gio_inout_prefix) + strlen(iopad_verilog_model->prefix) + 1));
+    sprintf(port_name, "%s%s", gio_inout_prefix, iopad_verilog_model->prefix);
+    /* Dump a wired port */
+    dump_verilog_generic_port(fp, VERILOG_PORT_WIRE, 
+                              port_name, iopad_verilog_model->cnt - 1, 0);
+    fprintf(fp, "; //--- FPGA inouts \n"); 
+    /* Free port_name */
+    my_free(port_name);
+    /* Malloc and assign port_name */
+    port_name = (char*)my_malloc(sizeof(char)*(strlen(gio_inout_prefix) + strlen(iopad_verilog_model->prefix) + strlen(top_tb_inout_reg_postfix) + 1));
+    sprintf(port_name, "%s%s%s", gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix);
+    /* Dump a wired port */
+    dump_verilog_generic_port(fp, VERILOG_PORT_REG, 
+                              port_name, iopad_verilog_model->cnt - 1, 0);
+    fprintf(fp, "; //--- reg for FPGA inouts \n"); 
+    /* Free port_name */
+    my_free(port_name);
   }
 
   /* Add a signal to identify the configuration phase is finished */
-  fprintf(fp, "reg %s;\n", top_tb_config_done_port_name);
+  fprintf(fp, "reg [0:0] %s;\n", top_tb_config_done_port_name);
   /* Programming clock */
-  fprintf(fp, "wire %s;\n", top_tb_prog_clock_port_name);
-  fprintf(fp, "reg %s%s;\n", top_tb_prog_clock_port_name, top_tb_clock_reg_postfix);
+  fprintf(fp, "wire [0:0] %s;\n", top_tb_prog_clock_port_name);
+  fprintf(fp, "reg [0:0] %s%s;\n", top_tb_prog_clock_port_name, top_tb_clock_reg_postfix);
   /* Operation clock */
-  fprintf(fp, "wire %s;\n", top_tb_op_clock_port_name);
-  fprintf(fp, "reg %s%s;\n", top_tb_op_clock_port_name, top_tb_clock_reg_postfix);
+  fprintf(fp, "wire [0:0] %s;\n", top_tb_op_clock_port_name);
+  fprintf(fp, "reg [0:0] %s%s;\n", top_tb_op_clock_port_name, top_tb_clock_reg_postfix);
   /* Programming set and reset */
-  fprintf(fp, "reg %s;\n", top_tb_prog_reset_port_name);
-  fprintf(fp, "reg %s;\n", top_tb_prog_set_port_name);
+  fprintf(fp, "reg [0:0] %s;\n", top_tb_prog_reset_port_name);
+  fprintf(fp, "reg [0:0] %s;\n", top_tb_prog_set_port_name);
   /* Global set and reset */
-  fprintf(fp, "reg %s;\n", top_tb_reset_port_name);
-  fprintf(fp, "reg %s;\n", top_tb_set_port_name);
+  fprintf(fp, "reg [0:0] %s;\n", top_tb_reset_port_name);
+  fprintf(fp, "reg [0:0] %s;\n", top_tb_set_port_name);
   /* Generate stimuli for global ports or connect them to existed signals */
   dump_verilog_top_testbench_global_ports_stimuli(fp, global_ports_head);
 
   /* Configuration ports depend on the organization of SRAMs */
   switch(sram_verilog_orgz_info->type) {
   case SPICE_SRAM_STANDALONE:
-    fprintf(fp, " wire [%d:0] %s; //---- SRAM outputs \n", 
-            sram_verilog_model->cnt - 1,
-            sram_verilog_model->prefix); 
+    dump_verilog_generic_port(fp, VERILOG_PORT_WIRE, 
+                              sram_verilog_model->prefix, sram_verilog_model->cnt - 1, 0);
+    fprintf(fp, "; //---- SRAM outputs \n");
     break;
   case SPICE_SRAM_SCAN_CHAIN:
     /* We put the head of scan-chains here  
 	 */
-    fprintf(fp, "  wire [%d:0] %s; //---- Scan-chain inputs \n", 
-            0,
-            top_netlist_scan_chain_head_prefix);
+    dump_verilog_generic_port(fp, VERILOG_PORT_WIRE, 
+                              top_netlist_scan_chain_head_prefix, 0, 0);
+    fprintf(fp, "; //---- Scan-chain head \n");
     break;
   case SPICE_SRAM_MEMORY_BANK:
     /* Get the number of array BLs/WLs, decoder sizes */
     determine_verilog_blwl_decoder_size(sram_verilog_orgz_info,
                                         &num_array_bl, &num_array_wl, &bl_decoder_size, &wl_decoder_size);
 
-    fprintf(fp, "  wire %s, %s;\n",
-            top_netlist_bl_enable_port_name,
+    fprintf(fp, "  wire [0:0] %s;\n",
+            top_netlist_bl_enable_port_name
+            );
+    fprintf(fp, "  wire [0:0] %s;\n",
             top_netlist_wl_enable_port_name
             );
     /* Wire en_bl, en_wl to prog_clock */
-    fprintf(fp, "assign %s = %s;\n",
+    fprintf(fp, "assign %s[0:0] = %s[0:0];\n",
             top_netlist_bl_enable_port_name,
             top_tb_prog_clock_port_name);
-    fprintf(fp, "assign %s = %s;\n",
+    fprintf(fp, "assign %s [0:0]= %s[0:0];\n",
             top_netlist_wl_enable_port_name,
             top_tb_prog_clock_port_name);
-    fprintf(fp, "  reg [%d:0] %s; //--- Address of bit lines \n", 
-                   bl_decoder_size - 1,
-                   top_netlist_addr_bl_port_name);
-    fprintf(fp, "  reg [%d:0] %s; //--- Address of word lines \n", 
-                   wl_decoder_size - 1,
-                   top_netlist_addr_wl_port_name);
+    dump_verilog_generic_port(fp, VERILOG_PORT_REG, 
+                              top_netlist_addr_bl_port_name, bl_decoder_size - 1, 0);
+    fprintf(fp, "; //--- Address of bit lines \n"); 
+    dump_verilog_generic_port(fp, VERILOG_PORT_REG, 
+                              top_netlist_addr_wl_port_name, wl_decoder_size - 1, 0);
+    fprintf(fp, "; //--- Address of word lines \n"); 
     /* data_in is only require by BL decoder of SRAM array 
      * As for RRAM array, the data_in signal will not be used 
      */
@@ -1474,62 +1560,10 @@ void dump_verilog_top_testbench_call_top_module(FILE* fp,
   fprintf(fp, "//------Call defined Top-level Verilog Module -----\n");
   fprintf(fp, "%s_top U0 (\n", circuit_name);
 
-  /* Connect to defined signals */
-  /* dump global ports */
-  if (0 < dump_verilog_global_ports(fp, global_ports_head, FALSE)) {
-    fprintf(fp, ",\n");
-  }
-  /* Inputs and outputs of I/O pads */
-  /* Input Pads */
-  assert(NULL != inpad_verilog_model);
-  if ((NULL == inpad_verilog_model)
-    &&(inpad_verilog_model->cnt > 0)) {
-    fprintf(fp, " %s%s[%d:0], //---FPGA inputs \n", 
-            gio_input_prefix,
-            inpad_verilog_model->prefix,
-            inpad_verilog_model->cnt - 1);
-  }
+  dump_verilog_top_module_ports(fp, VERILOG_PORT_CONKT);
 
-  /* Output Pads */
-  assert(NULL != outpad_verilog_model);
-  if ((NULL == outpad_verilog_model)
-   ||(outpad_verilog_model->cnt > 0)) {
-    fprintf(fp, " %s%s[%d:0], //---- FPGA outputs \n", 
-            gio_output_prefix,
-            outpad_verilog_model->prefix,
-            outpad_verilog_model->cnt - 1);
-  }
-
-  /* Inout Pads */
-  assert(NULL != iopad_verilog_model);
-  if ((NULL == iopad_verilog_model)
-   ||(iopad_verilog_model->cnt > 0)) {
-    fprintf(fp, " %s%s[%d:0], //---- FPGA inouts \n", 
-            gio_inout_prefix,
-            iopad_verilog_model->prefix,
-            iopad_verilog_model->cnt - 1);
-  }
-
-  /* Configuration ports depend on the organization of SRAMs */
-  switch(sram_verilog_orgz_type) {
-  case SPICE_SRAM_STANDALONE:
-    fprintf(fp, "  %s[%d:0], //---- SRAM outputs \n", 
-            sram_verilog_model->prefix, 
-            sram_verilog_model->cnt - 1);
-    break;
-  case SPICE_SRAM_SCAN_CHAIN:
-    /* Only dump the head of scan-chain */
-    dump_verilog_top_netlist_scan_chain_ports(fp, FALSE);
-    break;
-  case SPICE_SRAM_MEMORY_BANK:
-    dump_verilog_top_netlist_memory_bank_ports(fp, FALSE);
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
-               __FILE__, __LINE__);
-    exit(1);
-  }
-
+  fprintf(fp, ");\n");
+  return;
 }
 
 /* Find the number of configuration clock cycles for a top-level testbench
@@ -1657,11 +1691,13 @@ void dump_verilog_top_testbench_sram_memory_bank_conf_bits_serial(FILE* fp,
       fprintf(fp, "    //--- Configuration bit No.: %d \n", cur_conf_bit_info->index);
       fprintf(fp, "    //--- Bit Line Address: %d, \n", cur_conf_bit_info->bl->addr);
       fprintf(fp, "    //--- Word Line Address: %d \n ", cur_conf_bit_info->wl->addr);
+      fprintf(fp, "    //--- Bit Line index: %d, \n", ibl);
+      fprintf(fp, "    //--- Word Line index: %d \n ", iwl);
       fprintf(fp, "    //--- Bit Line Value: %d, \n", cur_conf_bit_info->bl->val);
       fprintf(fp, "    //--- Word Line Value: %d \n ", cur_conf_bit_info->wl->val);
       fprintf(fp, "    //--- SPICE model name: %s \n", cur_conf_bit_info->parent_spice_model->name);
       fprintf(fp, "    //--- SPICE model index: %d \n", cur_conf_bit_info->parent_spice_model_index);
-      fprintf(fp, "    prog_cycle_blwl(%d'b%s, %d'b%s, 1'b%d); //--- (BL_addr_code, WL_addr_code) \n",
+      fprintf(fp, "    prog_cycle_blwl(%d'b%s, %d'b%s, 1'b%d); //--- (BL_addr_code, WL_addr_code, bl_data_in) \n",
                   bl_decoder_size, bl_addr, wl_decoder_size, wl_addr, array_bit[iwl][ibl]);
       fprintf(fp, "\n");
     }
@@ -2578,6 +2614,8 @@ void dump_verilog_top_netlist(char* circuit_name,
  
   /* Print all global wires*/
   dump_verilog_top_netlist_ports(fp, num_clock, circuit_name, verilog);
+
+  dump_verilog_top_netlist_internal_wires(fp);
 
   /* Quote defined Logic blocks subckts (Grids) */
   dump_verilog_defined_grids(fp);

@@ -424,14 +424,14 @@ void dump_verilog_pb_primitive_io(FILE* fp,
     }
     dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info, 
                                      0, num_reserved_conf_bits - 1,
-                                     TRUE);
+                                     VERILOG_PORT_INPUT);
     /* Normal sram ports */
     if (0 < num_conf_bits) {
       fprintf(fp, ",\n");
     }
     dump_verilog_sram_ports(fp, sram_verilog_orgz_info, 
                             cur_num_sram, cur_num_sram + num_sram - 1,
-                            TRUE);
+                            VERILOG_PORT_INPUT);
     /* Local vdd and gnd*/
     fprintf(fp, ");\n");
     switch (sram_verilog_orgz_type) {

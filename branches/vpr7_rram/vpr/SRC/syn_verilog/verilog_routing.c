@@ -618,7 +618,7 @@ void dump_verilog_switch_box_mux(FILE* fp,
                                  int mux_size,
                                  t_rr_node** drive_rr_nodes,
                                  int switch_index) {
-  int inode, side, index, input_cnt = 0;
+  int i, inode, side, index, input_cnt = 0;
   int grid_x, grid_y;
   t_spice_model* verilog_model = NULL;
   int mux_level, path_id, cur_num_sram;
@@ -627,6 +627,7 @@ void dump_verilog_switch_box_mux(FILE* fp,
   int num_mux_conf_bits = 0;
   int num_mux_reserved_conf_bits = 0;
   int cur_bl, cur_wl;
+  t_spice_model* mem_model = NULL;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -731,12 +732,10 @@ void dump_verilog_switch_box_mux(FILE* fp,
   dump_verilog_switch_box_chan_port(fp, cur_sb_info, chan_side, cur_rr_node, OUT_PORT);
   /* Add a comma because dump_verilog_switch_box_chan_port does not add so  */
   fprintf(fp, ", ");
-
-  fprintf(fp, "%s_size%d_%d_configbus0, ",
-          verilog_model->prefix, mux_size, verilog_model->cnt);
-
-  fprintf(fp, "%s_size%d_%d_configbus1 ",
-          verilog_model->prefix, mux_size, verilog_model->cnt);
+  
+  /* Different design technology requires different configuration bus! */
+  dump_verilog_mux_config_bus_ports(fp, verilog_model, sram_verilog_orgz_info,
+                                    mux_size, cur_num_sram, num_mux_reserved_conf_bits, num_mux_conf_bits);
 
   fprintf(fp, ");\n");
 
@@ -766,7 +765,6 @@ void dump_verilog_switch_box_mux(FILE* fp,
                __FILE__, __LINE__, verilog_model->name);
     exit(1);
   }
-
   
   /* Print the encoding in SPICE netlist for debugging */
   switch (verilog_model->design_tech) {
@@ -797,13 +795,34 @@ void dump_verilog_switch_box_mux(FILE* fp,
                              num_mux_sram_bits, mux_sram_bits,
                              verilog_model);
   
+  get_sram_orgz_info_mem_model(sram_verilog_orgz_info, &mem_model);
+  /* Dump sram modules */
+  switch (verilog_model->design_tech) {
+  case SPICE_MODEL_DESIGN_CMOS:
+    /* SRAM-based MUX required dumping SRAMs! */
+    for (i = 0; i < num_mux_sram_bits; i++) {
+      dump_verilog_mux_sram_submodule(fp, sram_verilog_orgz_info, verilog_model, mux_size,
+                                      mem_model); /* use the mem_model in sram_verilog_orgz_info */
+    }
+    break;
+  case SPICE_MODEL_DESIGN_RRAM:
+    /* RRAM-based MUX does not need any SRAM dumping
+     * But we have to get the number of configuration bits required by this MUX 
+     * and update the number of memory bits 
+     */
+    update_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info, cur_num_sram + num_mux_conf_bits);
+    update_sram_orgz_info_num_blwl(sram_verilog_orgz_info, 
+                                   cur_bl + num_mux_conf_bits, 
+                                   cur_wl + num_mux_conf_bits);
+    break;  
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",
+               __FILE__, __LINE__, verilog_model->name);
+  }
+
+
   /* update sram counter */
   verilog_model->cnt++;
-  /* Get the number of configuration bits required by this MUX */
-  update_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info, cur_num_sram + num_mux_conf_bits);
-  update_sram_orgz_info_num_blwl(sram_verilog_orgz_info, 
-                                 cur_bl + num_mux_conf_bits, 
-                                 cur_wl + num_mux_conf_bits);
 
   /* Free */
   my_free(mux_sram_bits);
@@ -1125,7 +1144,7 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp, t_sb* cur_sb_info,
   /* Reserved sram ports */
   dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info, 
                                    0, cur_sb_info->num_reserved_conf_bits - 1,
-                                   TRUE);
+                                   VERILOG_PORT_INPUT);
   if (0 < cur_sb_info->num_reserved_conf_bits) {
     fprintf(fp, ",\n");
   }
@@ -1133,7 +1152,7 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp, t_sb* cur_sb_info,
   dump_verilog_sram_ports(fp, sram_verilog_orgz_info, 
                           cur_sb_info->conf_bits_lsb, 
                           cur_sb_info->conf_bits_msb - 1,
-                          TRUE);
+                          VERILOG_PORT_INPUT);
   fprintf(fp, "); \n");
 
   /* Put down all the multiplexers */
@@ -1325,7 +1344,7 @@ void dump_verilog_connection_box_short_interc(FILE* fp,
 void dump_verilog_connection_box_mux(FILE* fp,
                                      t_cb* cur_cb_info,
                                      t_rr_node* src_rr_node) {
-  int mux_size, cur_num_sram, input_cnt = 0;
+  int i, mux_size, cur_num_sram, input_cnt = 0;
   t_rr_node** drive_rr_nodes = NULL;
   int inode, mux_level, path_id, switch_index;
   t_spice_model* verilog_model = NULL;
@@ -1336,6 +1355,7 @@ void dump_verilog_connection_box_mux(FILE* fp,
   int num_mux_conf_bits = 0;
   int num_mux_reserved_conf_bits = 0;
   int cur_bl, cur_wl;
+  t_spice_model* mem_model = NULL;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -1437,10 +1457,10 @@ void dump_verilog_connection_box_mux(FILE* fp,
                                               FALSE); /* Do not specify the direction of port */
   fprintf(fp, ", "); 
 
-  fprintf(fp, "%s_size%d_%d_configbus0, ",
-          verilog_model->prefix, mux_size, verilog_model->cnt);
-  fprintf(fp, "%s_size%d_%d_configbus1 ",
-          verilog_model->prefix, mux_size, verilog_model->cnt);
+  /* Different design technology requires different configuration bus! */
+  dump_verilog_mux_config_bus_ports(fp, verilog_model, sram_verilog_orgz_info,
+                                    mux_size, cur_num_sram, num_mux_reserved_conf_bits, num_mux_conf_bits);
+
 
   fprintf(fp, ");\n");
 
@@ -1485,13 +1505,33 @@ void dump_verilog_connection_box_mux(FILE* fp,
                              num_mux_sram_bits, mux_sram_bits,
                              verilog_model);
   
+  get_sram_orgz_info_mem_model(sram_verilog_orgz_info, &mem_model);
+  /* Dump sram modules */
+  switch (verilog_model->design_tech) {
+  case SPICE_MODEL_DESIGN_CMOS:
+    /* SRAM-based MUX required dumping SRAMs! */
+    for (i = 0; i < num_mux_sram_bits; i++) {
+      dump_verilog_mux_sram_submodule(fp, sram_verilog_orgz_info, verilog_model, mux_size,
+                                      mem_model); /* use the mem_model in sram_verilog_orgz_info */
+    }
+    break;
+  case SPICE_MODEL_DESIGN_RRAM:
+    /* RRAM-based MUX does not need any SRAM dumping
+     * But we have to get the number of configuration bits required by this MUX 
+     * and update the number of memory bits 
+     */
+    update_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info, cur_num_sram + num_mux_conf_bits);
+    update_sram_orgz_info_num_blwl(sram_verilog_orgz_info, 
+                                   cur_bl + num_mux_conf_bits, 
+                                   cur_wl + num_mux_conf_bits);
+    break;  
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",
+               __FILE__, __LINE__, verilog_model->name);
+  }
+
   /* update sram counter */
   verilog_model->cnt++;
-  /* Get the number of configuration bits required by this MUX */
-  update_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info, cur_num_sram + num_mux_conf_bits);
-  update_sram_orgz_info_num_blwl(sram_verilog_orgz_info, 
-                                 cur_bl + num_mux_conf_bits, 
-                                 cur_wl + num_mux_conf_bits);
 
   /* Free */
   my_free(mux_sram_bits);
@@ -1710,7 +1750,7 @@ void dump_verilog_routing_connection_box_subckt(FILE* fp, t_cb* cur_cb_info,
   /* Reserved sram ports */
   dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info, 
                                    0, cur_cb_info->num_reserved_conf_bits - 1,
-                                   TRUE);
+                                   VERILOG_PORT_INPUT);
   if (0 < cur_cb_info->num_reserved_conf_bits) {
     fprintf(fp, ",\n");
   }
@@ -1718,7 +1758,7 @@ void dump_verilog_routing_connection_box_subckt(FILE* fp, t_cb* cur_cb_info,
   dump_verilog_sram_ports(fp, sram_verilog_orgz_info, 
                           cur_cb_info->conf_bits_lsb,
                           cur_cb_info->conf_bits_msb - 1,
-                          TRUE);
+                          VERILOG_PORT_INPUT);
   /* subckt definition ends with svdd and sgnd*/
   fprintf(fp, ");\n");
 

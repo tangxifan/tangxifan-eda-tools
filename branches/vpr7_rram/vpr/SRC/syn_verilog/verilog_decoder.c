@@ -28,8 +28,8 @@
 #include "fpga_spice_globals.h"
 
 /* Include verilog utils */
-#include "verilog_utils.h"
 #include "verilog_global.h"
+#include "verilog_utils.h"
 
 /***** Subroutines *****/
 void determine_verilog_blwl_decoder_size(INP t_sram_orgz_info* cur_sram_verilog_orgz_info,

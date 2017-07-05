@@ -28,8 +28,8 @@
 #include "fpga_spice_globals.h"
 
 /* Include verilog utils */
-#include "verilog_utils.h"
 #include "verilog_global.h"
+#include "verilog_utils.h"
 #include "verilog_pbtypes.h"
 
 /***** Subroutines *****/
@@ -242,6 +242,7 @@ void dump_verilog_cmos_mux_one_basis_module(FILE* fp,
                                             char* mux_basis_subckt_name, 
                                             int num_input_basis_subckt, 
                                             t_spice_model* cur_spice_model) { 
+  int cur_mem, i;
   int num_mem = num_input_basis_subckt;
 
   /* Make sure we have a valid file handler*/
@@ -272,7 +273,37 @@ void dump_verilog_cmos_mux_one_basis_module(FILE* fp,
           num_mem - 1);
   /* Verilog Behavior description for a MUX */
   fprintf(fp, "//---- Behavior-level description -----\n");
-  fprintf(fp, "assign out = in[%d - mem];\n", num_input_basis_subckt - 1);
+  /* Special case: only one memory, switch case is simpler 
+   * When mem = 1, propagate input 0; 
+   * when mem = 0, propagate input 1;
+   */
+  if (1 == num_mem) {
+    fprintf(fp, "  assign out = in[%d - mem];\n", num_input_basis_subckt - 1);
+  } else {
+  /* Other cases, we need to follow the rules:
+   * When mem[k] is enabled, switch on input[k]
+   * Only one memory bit is enabled!
+   */
+    fprintf(fp, "  reg out_reg;\n");
+    fprintf(fp, "  always @(in or mem)\n");
+    fprintf(fp, "  case (mem)\n");
+    for (cur_mem = 0; cur_mem < num_mem; cur_mem++) {
+      fprintf(fp, "    %d'b", num_mem);
+      for (i = 0; i < num_mem - cur_mem - 1; i++) {
+        fprintf(fp, "0");
+      }
+      fprintf(fp, "1");
+      for (i = 0; i < cur_mem; i++) {
+        fprintf(fp, "0");
+      }
+      fprintf(fp, ":");
+      fprintf(fp, " out_reg <= in[%d];\n", cur_mem);
+    }
+    fprintf(fp, "    default: out_reg <= 1'bx;\n");
+    fprintf(fp, "  endcase\n");
+
+    fprintf(fp, "  assign out = out_reg;\n");
+  }
 
   /* Put an end to this module */
   fprintf(fp, "endmodule\n");

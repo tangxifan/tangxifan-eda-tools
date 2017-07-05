@@ -27,3 +27,11 @@ extern t_llist* conf_bits_head;
 
 extern int verilog_default_signal_init_value;
 
+enum e_dump_verilog_port_type {
+VERILOG_PORT_INPUT,
+VERILOG_PORT_OUTPUT,
+VERILOG_PORT_INOUT,
+VERILOG_PORT_WIRE,
+VERILOG_PORT_REG,
+VERILOG_PORT_CONKT
+};

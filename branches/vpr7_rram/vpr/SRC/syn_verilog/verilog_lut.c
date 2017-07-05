@@ -173,14 +173,14 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   /* Reserved sram ports */
   dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info, 
                                    0, num_reserved_conf_bits - 1,
-                                   TRUE);
+                                   VERILOG_PORT_INPUT);
   if ( 0 < num_reserved_conf_bits) {
     fprintf(fp, ",\n");
   }
   /* Normal sram ports */
   dump_verilog_sram_ports(fp, sram_verilog_orgz_info, 
                           cur_num_sram, cur_num_sram + num_conf_bits - 1,
-                          TRUE);
+                          VERILOG_PORT_INPUT);
   /* Local Vdd and gnd*/ 
   fprintf(fp, ");\n");
   /* Definition ends*/
