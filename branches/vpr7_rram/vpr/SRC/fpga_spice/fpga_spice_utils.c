@@ -870,17 +870,29 @@ int determine_lut_path_id(int lut_size,
   return path_id;
 }
 
+/* Decoding a one-level MUX:
+ * SPICE/Verilog model declare the sram port sequence as follows:
+ * sel0, sel1, ... , selN, 
+ * which control the pass-gate logic connected to 
+ * in0, in1, ... , inN
+ * When decode the SRAM bits, we initialize every bits to zero
+ * And then set the sel signal corresponding to the input to be 1.
+ * TODO: previously the decoding is not correct, need to check any bug in SPICE part 
+ */
 int* decode_onelevel_mux_sram_bits(int fan_in,
                                    int mux_level,
                                    int path_id) {
   int* ret = (int*)my_malloc(sizeof(int)*fan_in);
   int i;
+
+  /* Check */
+  assert( (!(0 > path_id)) && (path_id < fan_in) );
   
   for (i = 0; i < fan_in; i++) {
     ret[i] = 0;
   }
-  ret[fan_in-1-path_id] = 1;
- 
+  ret[path_id] = 1;
+  /* ret[fan_in - 1 - path_id] = 1; */
   return ret; 
 }
 
@@ -1200,7 +1212,7 @@ void fprint_commented_sram_bits(FILE* fp,
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d]) FileHandle is NULL!\n",__FILE__,__LINE__); 
     exit(1);
   } 
-  
+   
   for (i = 0; i < num_sram_bits; i++) { 
     fprintf(fp, "%d", sram_bits[i]);
   }

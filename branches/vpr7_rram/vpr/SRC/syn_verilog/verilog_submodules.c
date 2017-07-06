@@ -285,21 +285,23 @@ void dump_verilog_cmos_mux_one_basis_module(FILE* fp,
    * Only one memory bit is enabled!
    */
     fprintf(fp, "  reg out_reg;\n");
-    fprintf(fp, "  always @(in or mem)\n");
+    fprintf(fp, "  always @(in, mem)\n");
     fprintf(fp, "  case (mem)\n");
+    fprintf(fp, "//---- Note that MSB is mem[0] while LSB is mem[%d] -----\n", num_mem-1);
+    fprintf(fp, "//---- Due to the delcare convention of port [MSB:LSB] -----\n");
     for (cur_mem = 0; cur_mem < num_mem; cur_mem++) {
       fprintf(fp, "    %d'b", num_mem);
-      for (i = 0; i < num_mem - cur_mem - 1; i++) {
+      for (i = 0; i < cur_mem; i++) {
         fprintf(fp, "0");
       }
       fprintf(fp, "1");
-      for (i = 0; i < cur_mem; i++) {
+      for (i = cur_mem + 1; i < num_mem; i++) {
         fprintf(fp, "0");
       }
       fprintf(fp, ":");
       fprintf(fp, " out_reg <= in[%d];\n", cur_mem);
     }
-    fprintf(fp, "    default: out_reg <= 1'bx;\n");
+    fprintf(fp, "    default: out_reg <= 1'bz;\n");
     fprintf(fp, "  endcase\n");
 
     fprintf(fp, "  assign out = out_reg;\n");
@@ -686,6 +688,7 @@ void dump_verilog_cmos_mux_multilevel_structure(FILE* fp,
       sram_port[0]->prefix, sram_idx, sram_idx + cur_num_input_basis -1,
       sram_port[0]->prefix, sram_idx, sram_idx + cur_num_input_basis -1);
       fprintf(fp, ");\n");
+      fprintf(fp, "\n");
       /* Update the counter */
       mux_basis_cnt++;
     } 

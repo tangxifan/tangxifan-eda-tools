@@ -771,6 +771,7 @@ void dump_verilog_switch_box_mux(FILE* fp,
   case SPICE_MODEL_DESIGN_CMOS:
     fprintf(fp, "//----- SRAM bits for MUX[%d], level=%d, select_path_id=%d. -----\n", 
             verilog_model->cnt, mux_level, path_id);
+    fprintf(fp, "//----- From LSB(LEFT) TO MSB (RIGHT) -----\n");
     fprintf(fp, "//-----");
     fprint_commented_sram_bits(fp, num_mux_sram_bits, mux_sram_bits);
     fprintf(fp, "-----\n");
@@ -778,9 +779,11 @@ void dump_verilog_switch_box_mux(FILE* fp,
   case SPICE_MODEL_DESIGN_RRAM:
     fprintf(fp, "//----- BL/WL bits for 4T1R MUX[%d], level=%d, select_path_id=%d. -----\n", 
             verilog_model->cnt, mux_level, path_id);
+    fprintf(fp, "//----- From LSB(LEFT) TO MSB (RIGHT) -----\n");
     fprintf(fp, "//---- BL: ");
     fprint_commented_sram_bits(fp, num_mux_sram_bits/2, mux_sram_bits);
     fprintf(fp, "-----\n");
+    fprintf(fp, "//----- From LSB(LEFT) TO MSB (RIGHT) -----\n");
     fprintf(fp, "//---- WL: ");
     fprint_commented_sram_bits(fp, num_mux_sram_bits/2, mux_sram_bits + num_mux_sram_bits/2);
     fprintf(fp, "-----\n");
@@ -1481,6 +1484,7 @@ void dump_verilog_connection_box_mux(FILE* fp,
   case SPICE_MODEL_DESIGN_CMOS:
     fprintf(fp, "//----- SRAM bits for MUX[%d], level=%d, select_path_id=%d. -----\n", 
             verilog_model->cnt, mux_level, path_id);
+    fprintf(fp, "//----- From LSB(LEFT) TO MSB (RIGHT) -----\n");
     fprintf(fp, "//-----");
     fprint_commented_sram_bits(fp, num_mux_sram_bits, mux_sram_bits);
     fprintf(fp, "-----\n");
@@ -1488,9 +1492,11 @@ void dump_verilog_connection_box_mux(FILE* fp,
   case SPICE_MODEL_DESIGN_RRAM:
     fprintf(fp, "//----- BL/WL bits for 4T1R MUX[%d], level=%d, select_path_id=%d. -----\n", 
             verilog_model->cnt, mux_level, path_id);
+    fprintf(fp, "//----- From LSB(LEFT) TO MSB (RIGHT) -----\n");
     fprintf(fp, "//---- BL: ");
     fprint_commented_sram_bits(fp, num_mux_sram_bits/2, mux_sram_bits);
     fprintf(fp, "-----\n");
+    fprintf(fp, "//----- From LSB(LEFT) TO MSB (RIGHT) -----\n");
     fprintf(fp, "//---- WL: ");
     fprint_commented_sram_bits(fp, num_mux_sram_bits/2, mux_sram_bits + num_mux_sram_bits/2);
     fprintf(fp, "-----\n");
