@@ -44,7 +44,8 @@ input reset, // Reset input
 input clk, // Clock Input
 /* Local ports follow */
 input D, // Data Input
-output Q // Q output 
+output Q, // Q output 
+output Qb // Q output 
 );
 //------------Internal Variables--------
 reg q_reg;
@@ -61,5 +62,6 @@ end
 
 // Wire q_reg to Q
 assign Q = q_reg; 
+assign Qb = ~Q;
 
 endmodule //End Of Module static_dff

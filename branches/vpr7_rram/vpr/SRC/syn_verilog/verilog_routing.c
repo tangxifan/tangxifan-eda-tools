@@ -1158,6 +1158,12 @@ void dump_verilog_routing_switch_box_subckt(FILE* fp, t_sb* cur_sb_info,
                           VERILOG_PORT_INPUT);
   fprintf(fp, "); \n");
 
+  /* Local wires for memory configurations */
+  /*
+  dump_verilog_sram_config_bus_internal_wires(fp, sram_verilog_orgz_info, 
+                                              cur_sb_info->conf_bits_lsb, cur_sb_info->conf_bits_msb - 1);
+   */
+
   /* Put down all the multiplexers */
   for (side = 0; side < cur_sb_info->num_sides; side++) {
     fprintf(fp, "//----- %s side Multiplexers -----\n", 
@@ -1767,6 +1773,12 @@ void dump_verilog_routing_connection_box_subckt(FILE* fp, t_cb* cur_cb_info,
                           VERILOG_PORT_INPUT);
   /* subckt definition ends with svdd and sgnd*/
   fprintf(fp, ");\n");
+
+  /* Local wires for memory configurations */
+  /*
+  dump_verilog_sram_config_bus_internal_wires(fp, sram_verilog_orgz_info, 
+                                              cur_cb_info->conf_bits_lsb, cur_cb_info->conf_bits_msb - 1);
+   */
 
   /* Record LSB and MSB of reserved_conf_bits and normal conf_bits */
 

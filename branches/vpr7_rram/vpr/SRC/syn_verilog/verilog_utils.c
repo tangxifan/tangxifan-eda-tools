@@ -31,6 +31,7 @@
 
 /* syn_verilog globals */
 #include "verilog_global.h"
+#include "verilog_utils.h"
 
 /****** Subroutines *******/
 void init_list_include_verilog_netlists(t_spice* spice) { 
@@ -850,10 +851,10 @@ void dump_verilog_sram_one_outport(FILE* fp,
     break;
   case SPICE_SRAM_SCAN_CHAIN:
     if (0 == port_type_index) {
-      port_name = "out";
+      port_name = "scff_out";
     } else {
       assert(1 == port_type_index);
-      port_name = "outb";
+      port_name = "scff_outb";
     }
     break;
   case SPICE_SRAM_MEMORY_BANK:
@@ -926,6 +927,7 @@ void dump_verilog_sram_one_port(FILE* fp,
   t_spice_model* mem_model = NULL;
   char* port_name = NULL;
   char* port_full_name = NULL;
+  enum e_dump_verilog_port_type actual_dump_port_type = dump_port_type;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -954,6 +956,10 @@ void dump_verilog_sram_one_port(FILE* fp,
     } else {
       assert(1 == port_type_index);
       port_name = "scff_out";
+      /* Special case: scan-chain ff output should be an output always */
+      if (VERILOG_PORT_INPUT == dump_port_type) {
+        actual_dump_port_type = VERILOG_PORT_OUTPUT;
+      }
     }
     break;
   case SPICE_SRAM_MEMORY_BANK:
@@ -975,7 +981,7 @@ void dump_verilog_sram_one_port(FILE* fp,
   port_full_name = (char*)my_malloc(sizeof(char)*(strlen(mem_model->prefix) + strlen(port_name) + 1));
   sprintf(port_full_name, "%s_%s", mem_model->prefix, port_name);
 
-  dump_verilog_generic_port(fp, dump_port_type, port_full_name, sram_lsb, sram_msb); 
+  dump_verilog_generic_port(fp, actual_dump_port_type, port_full_name, sram_lsb, sram_msb); 
 
   /* Free */
   /* Local variables such as port1_name and port2 name are automatically freed  */
@@ -1203,15 +1209,23 @@ void dump_verilog_mux_sram_submodule(FILE* fp, t_sram_orgz_info* cur_sram_orgz_i
       fprintf(fp, ",\n");
     }
     /* Input of Scan-chain DFF, should be connected to the output of its precedent */
-    fprintf(fp, "%s_scff_in[%d], ", 
-            cur_sram_verilog_model->prefix, cur_sram_verilog_model->cnt); /* Input*/
+    dump_verilog_sram_one_port(fp, cur_sram_orgz_info,
+                               cur_num_sram,
+                               cur_num_sram,
+                               0, VERILOG_PORT_CONKT);
+    fprintf(fp, ", \n");  //
     /* Output of Scan-chain DFF, should be connected to the output of its successor */
-    fprintf(fp, "%s_scff_out[%d], ", 
-            cur_sram_verilog_model->prefix, cur_sram_verilog_model->cnt); /* Regular Outputs */
+    dump_verilog_sram_one_port(fp, cur_sram_orgz_info,
+                               cur_num_sram,
+                               cur_num_sram,
+                               1, VERILOG_PORT_CONKT);
+    fprintf(fp, ", \n");  //
     /* Memory outputs of Scan-chain DFF, should be connected to the SRAM(memory port) of IOPAD, MUX and LUT */
-    fprintf(fp, "%s_out[%d], %s_outb[%d] ", 
-            cur_sram_verilog_model->prefix, cur_sram_verilog_model->cnt, 
-            cur_sram_verilog_model->prefix, cur_sram_verilog_model->cnt); /* Memory Outputs */
+    dump_verilog_mux_sram_one_outport(fp, cur_sram_orgz_info, 
+                                      cur_mux_verilog_model, mux_size,
+                                      cur_num_sram,
+                                      cur_num_sram,
+                                      1, VERILOG_PORT_CONKT);
     fprintf(fp, ");\n");  //
     /* Update the counter */
     update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info,
@@ -1317,16 +1331,23 @@ void dump_verilog_sram_submodule(FILE* fp, t_sram_orgz_info* cur_sram_orgz_info,
     if (0 < rec_dump_verilog_spice_model_global_ports(fp, cur_sram_verilog_model, FALSE, TRUE)) {
       fprintf(fp, ",\n");
     }
-    /* Input of Scan-chain DFF, should be connected to the output of its precedent */
-    fprintf(fp, "%s_scff_in[%d], ", 
-            cur_sram_verilog_model->prefix, cur_sram_verilog_model->cnt); /* Input*/
+   /* Input of Scan-chain DFF, should be connected to the output of its precedent */
+    dump_verilog_sram_one_port(fp, cur_sram_orgz_info,
+                               cur_num_sram,
+                               cur_num_sram,
+                               0, VERILOG_PORT_CONKT);
+    fprintf(fp, ", \n");  //
     /* Output of Scan-chain DFF, should be connected to the output of its successor */
-    fprintf(fp, "%s_scff_out[%d], ", 
-            cur_sram_verilog_model->prefix, cur_sram_verilog_model->cnt); /* Regular Outputs */
+    dump_verilog_sram_one_port(fp, cur_sram_orgz_info,
+                               cur_num_sram,
+                               cur_num_sram,
+                               1, VERILOG_PORT_CONKT);
+    fprintf(fp, ", \n");  //
     /* Memory outputs of Scan-chain DFF, should be connected to the SRAM(memory port) of IOPAD, MUX and LUT */
-    fprintf(fp, "%s_out[%d], %s_outb[%d] ", 
-            cur_sram_verilog_model->prefix, cur_sram_verilog_model->cnt, 
-            cur_sram_verilog_model->prefix, cur_sram_verilog_model->cnt); /* Memory Outputs */
+    dump_verilog_sram_one_outport(fp,  
+                                  cur_sram_orgz_info,
+                                  cur_num_sram, cur_num_sram,
+                                  1, VERILOG_PORT_CONKT);
     fprintf(fp, ");\n");  //
     /* Update the counter */
     update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info,
@@ -1340,6 +1361,39 @@ void dump_verilog_sram_submodule(FILE* fp, t_sram_orgz_info* cur_sram_orgz_info,
 
   /* Update the counter */
   cur_sram_verilog_model->cnt++;
+
+  return;
+}
+
+void dump_verilog_scff_config_bus(FILE* fp,
+                                 t_spice_model* mem_spice_model, 
+                                 t_sram_orgz_info* cur_sram_orgz_info,
+                                 int lsb, int msb,
+                                 enum e_dump_verilog_port_type dump_port_type) {
+  char* port_full_name = NULL;   
+ 
+  /* Check */
+  assert(NULL != mem_spice_model);
+  assert(SPICE_MODEL_SCFF == mem_spice_model->type);
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  /*Malloc and generate the full name of port */
+  port_full_name = (char*)my_malloc(sizeof(char)*
+                                   ( strlen(mem_spice_model->prefix) + 1
+                                   + strlen(my_itoa(mem_spice_model->cnt)) + 12 + 1));
+  sprintf(port_full_name, "%s_%d_config_bus0", mem_spice_model->prefix, mem_spice_model->cnt);
+
+  dump_verilog_generic_port(fp, dump_port_type, port_full_name, lsb, msb); 
+
+  /* Free */
+  /* Local variables such as port1_name and port2 name are automatically freed  */
+  my_free(port_full_name);
 
   return;
 }
@@ -1362,69 +1416,89 @@ void dump_verilog_mem_config_bus(FILE* fp, t_spice_model* mem_spice_model,
   assert((SPICE_MODEL_SRAM == mem_spice_model->type)
         || (SPICE_MODEL_SCFF == mem_spice_model->type));
 
-  /* configuration wire bus */
-  if (0 < (num_mem_reserved_conf_bits + num_mem_conf_bits)) {
-    /* First bus is for sram_out in CMOS MUX or BL in RRAM MUX */
-    fprintf(fp, "wire [%d:%d] %s_%d_configbus0;\n",
-            cur_num_sram,
-            cur_num_sram + num_mem_reserved_conf_bits + num_mem_conf_bits - 1,
-            mem_spice_model->prefix, mem_spice_model->cnt);
-    /* Second bus is for sram_out_inv in CMOS MUX or WL in RRAM MUX */
-    fprintf(fp, "wire [%d:%d] %s_%d_configbus1;\n",
-            cur_num_sram,
-            cur_num_sram + num_mem_reserved_conf_bits + num_mem_conf_bits - 1,
-            mem_spice_model->prefix, mem_spice_model->cnt);
-  }
-  /* Connect wires to config bus */
-  /* reserved configuration bits */
-  if (0 < num_mem_reserved_conf_bits) {
-    fprintf(fp, "assign %s_%d_configbus0[%d:%d] = ",
-            mem_spice_model->prefix, mem_spice_model->cnt,
-            cur_num_sram,
-            cur_num_sram + num_mem_reserved_conf_bits - 1);
-    dump_verilog_reserved_sram_one_port(fp, cur_sram_orgz_info, 
-                                        0, num_mem_reserved_conf_bits - 1,
-                                        0, VERILOG_PORT_CONKT);
+  /* Depend on the style of configuraion circuit */
+  switch (cur_sram_orgz_info->type) {
+  case SPICE_SRAM_STANDALONE:
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+    /* We do not need any configuration bus
+     * Scan-chain FF outputs are directly wired to SRAM inputs of MUXes  
+    dump_verilog_scff_config_bus(fp, mem_spice_model, 
+                                 cur_sram_orgz_info,
+                                 cur_num_sram, cur_num_sram + num_mem_conf_bits - 1,
+                                 VERILOG_PORT_WIRE);
     fprintf(fp, ";\n");
-    fprintf(fp, "assign %s_%d_configbus1[%d:%d] = ",
-            mem_spice_model->prefix, mem_spice_model->cnt,
-            cur_num_sram,
-            cur_num_sram + num_mem_reserved_conf_bits - 1);
-    dump_verilog_reserved_sram_one_port(fp, cur_sram_orgz_info, 
-                                        0, num_mem_reserved_conf_bits - 1,
-                                        1, VERILOG_PORT_CONKT);
-    fprintf(fp, ";\n");
-  }
-  /* normal configuration bits */
-  if (0 < num_mem_conf_bits) {
-    fprintf(fp, "assign %s_%d_configbus0[%d:%d] = ",
-            mem_spice_model->prefix, mem_spice_model->cnt,
-            cur_num_sram + num_mem_reserved_conf_bits,
-            cur_num_sram + num_mem_reserved_conf_bits + num_mem_conf_bits - 1);
-    dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
-                               cur_num_sram, cur_num_sram + num_mem_conf_bits - 1,
-                               0, VERILOG_PORT_CONKT);
-    fprintf(fp, ";\n");
-    fprintf(fp, "assign %s_%d_configbus1[%d:%d] = ",
-            mem_spice_model->prefix,  mem_spice_model->cnt,
-            cur_num_sram + num_mem_reserved_conf_bits,
-            cur_num_sram + num_mem_reserved_conf_bits + num_mem_conf_bits - 1);
-    dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
-                               cur_num_sram, cur_num_sram + num_mem_conf_bits - 1,
-                               1, VERILOG_PORT_CONKT);
-    fprintf(fp, ";\n");
+     */ 
+    break;
+  case SPICE_SRAM_MEMORY_BANK:
+    /* configuration wire bus */
+    if (0 < (num_mem_reserved_conf_bits + num_mem_conf_bits)) {
+      /* First bus is for sram_out in CMOS MUX or BL in RRAM MUX */
+      fprintf(fp, "wire [%d:%d] %s_%d_configbus0;\n",
+              cur_num_sram,
+              cur_num_sram + num_mem_reserved_conf_bits + num_mem_conf_bits - 1,
+              mem_spice_model->prefix, mem_spice_model->cnt);
+      /* Second bus is for sram_out_inv in CMOS MUX or WL in RRAM MUX */
+      fprintf(fp, "wire [%d:%d] %s_%d_configbus1;\n",
+              cur_num_sram,
+              cur_num_sram + num_mem_reserved_conf_bits + num_mem_conf_bits - 1,
+              mem_spice_model->prefix, mem_spice_model->cnt);
+    }
+    /* Connect wires to config bus */
+    /* reserved configuration bits */
+    if (0 < num_mem_reserved_conf_bits) {
+      fprintf(fp, "assign %s_%d_configbus0[%d:%d] = ",
+              mem_spice_model->prefix, mem_spice_model->cnt,
+              cur_num_sram,
+              cur_num_sram + num_mem_reserved_conf_bits - 1);
+      dump_verilog_reserved_sram_one_port(fp, cur_sram_orgz_info, 
+                                          0, num_mem_reserved_conf_bits - 1,
+                                          0, VERILOG_PORT_CONKT);
+      fprintf(fp, ";\n");
+      fprintf(fp, "assign %s_%d_configbus1[%d:%d] = ",
+              mem_spice_model->prefix, mem_spice_model->cnt,
+              cur_num_sram,
+              cur_num_sram + num_mem_reserved_conf_bits - 1);
+      dump_verilog_reserved_sram_one_port(fp, cur_sram_orgz_info, 
+                                          0, num_mem_reserved_conf_bits - 1,
+                                          1, VERILOG_PORT_CONKT);
+      fprintf(fp, ";\n");
+    }
+    /* normal configuration bits */
+    if (0 < num_mem_conf_bits) {
+      fprintf(fp, "assign %s_%d_configbus0[%d:%d] = ",
+              mem_spice_model->prefix, mem_spice_model->cnt,
+              cur_num_sram + num_mem_reserved_conf_bits,
+              cur_num_sram + num_mem_reserved_conf_bits + num_mem_conf_bits - 1);
+      dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
+                                 cur_num_sram, cur_num_sram + num_mem_conf_bits - 1,
+                                 0, VERILOG_PORT_CONKT);
+      fprintf(fp, ";\n");
+      fprintf(fp, "assign %s_%d_configbus1[%d:%d] = ",
+              mem_spice_model->prefix,  mem_spice_model->cnt,
+              cur_num_sram + num_mem_reserved_conf_bits,
+              cur_num_sram + num_mem_reserved_conf_bits + num_mem_conf_bits - 1);
+      dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
+                                 cur_num_sram, cur_num_sram + num_mem_conf_bits - 1,
+                                 1, VERILOG_PORT_CONKT);
+      fprintf(fp, ";\n");
+    }
+      break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid SRAM organization type!\n",
+               __FILE__, __LINE__);
+    exit(1);
   }
 
   return;
 }
 
-
 /* Dump MUX reserved and normal configuration wire bus */
-void dump_verilog_mux_config_bus(FILE* fp, t_spice_model* mux_spice_model, 
-                                 t_sram_orgz_info* cur_sram_orgz_info,
-                                 int mux_size, int cur_num_sram,
-                                 int num_mux_reserved_conf_bits,
-                                 int num_mux_conf_bits) { 
+void dump_verilog_cmos_mux_config_bus(FILE* fp, t_spice_model* mux_spice_model, 
+                                      t_sram_orgz_info* cur_sram_orgz_info,
+                                      int mux_size, int cur_num_sram,
+                                      int num_mux_reserved_conf_bits,
+                                      int num_mux_conf_bits) { 
   /* Check the file handler*/ 
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
@@ -1436,16 +1510,20 @@ void dump_verilog_mux_config_bus(FILE* fp, t_spice_model* mux_spice_model,
   assert(NULL != mux_spice_model);
   assert(SPICE_MODEL_MUX == mux_spice_model->type);
 
-  /* depend on the design technology of this MUX:
-   * bus connections are different
-   * SRAM MUX: bus is connected to the output ports of SRAM
-   * RRAM MUX: bus is connected to the BL/WL of MUX
-   * TODO: Maybe things will become even more complicated, 
-   * the bus connections may depend on the type of configuration circuit...
-   * Currently, this is fine.
-   */
-  switch (mux_spice_model->design_tech) {
-  case SPICE_MODEL_DESIGN_CMOS:
+  switch(cur_sram_orgz_info->type) {
+  case SPICE_SRAM_STANDALONE:
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+    /* We do not need any configuration bus
+     * Scan-chain FF outputs are directly wired to SRAM inputs of MUXes  
+     */ 
+    dump_verilog_mux_sram_one_outport(fp, cur_sram_orgz_info, 
+                                      mux_spice_model, mux_size,
+                                      cur_num_sram, cur_num_sram + num_mux_conf_bits - 1,
+                                      1, VERILOG_PORT_WIRE);
+    fprintf(fp, ";\n");
+    break;
+  case SPICE_SRAM_MEMORY_BANK:
     /* configuration wire bus */
     /* First bus is for sram_out in CMOS MUX */
     fprintf(fp, "wire [%d:%d] %s_size%d_%d_configbus0;\n",
@@ -1482,6 +1560,46 @@ void dump_verilog_mux_config_bus(FILE* fp, t_spice_model* mux_spice_model,
                                cur_num_sram, cur_num_sram + num_mux_conf_bits - 1,
                                1, VERILOG_PORT_CONKT);
     fprintf(fp, ";\n");
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid SRAM organization!\n", 
+               __FILE__, __LINE__);
+    exit(1);
+  }
+  return;
+
+}
+
+/* Dump MUX reserved and normal configuration wire bus */
+void dump_verilog_mux_config_bus(FILE* fp, t_spice_model* mux_spice_model, 
+                                 t_sram_orgz_info* cur_sram_orgz_info,
+                                 int mux_size, int cur_num_sram,
+                                 int num_mux_reserved_conf_bits,
+                                 int num_mux_conf_bits) { 
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  /* Check */
+  assert(NULL != mux_spice_model);
+  assert(SPICE_MODEL_MUX == mux_spice_model->type);
+
+  /* depend on the design technology of this MUX:
+   * bus connections are different
+   * SRAM MUX: bus is connected to the output ports of SRAM
+   * RRAM MUX: bus is connected to the BL/WL of MUX
+   * TODO: Maybe things will become even more complicated, 
+   * the bus connections may depend on the type of configuration circuit...
+   * Currently, this is fine.
+   */
+  switch (mux_spice_model->design_tech) {
+  case SPICE_MODEL_DESIGN_CMOS:
+    dump_verilog_cmos_mux_config_bus(fp, mux_spice_model, cur_sram_orgz_info, 
+                                     mux_size, cur_num_sram,
+                                     num_mux_reserved_conf_bits, num_mux_conf_bits); 
     break;
   case SPICE_MODEL_DESIGN_RRAM:
     /* configuration wire bus */
@@ -1540,6 +1658,64 @@ void dump_verilog_mux_config_bus(FILE* fp, t_spice_model* mux_spice_model,
   return;
 }
 
+/* Dump CMOS verilog MUX configuraiton bus ports */
+void dump_verilog_cmos_mux_config_bus_ports(FILE* fp, t_spice_model* mux_spice_model, 
+                                            t_sram_orgz_info* cur_sram_orgz_info,
+                                            int mux_size, int cur_num_sram,
+                                            int num_mux_reserved_conf_bits,
+                                            int num_mux_conf_bits) { 
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  /* Check */
+  assert(NULL != mux_spice_model);
+  assert(SPICE_MODEL_MUX == mux_spice_model->type);
+
+  switch(cur_sram_orgz_info->type) {
+  case SPICE_SRAM_STANDALONE:
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+    /* configuration wire bus */
+    /* FOR Scan-chain, we need regular output of a scan-chain FF
+     * We do not need a prefix implying MUX name, size and index 
+     */
+    dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
+                               cur_num_sram, cur_num_sram + num_mux_conf_bits - 1,
+                               1, VERILOG_PORT_CONKT);
+    fprintf(fp, ",\n");
+    dump_verilog_mux_sram_one_outport(fp, cur_sram_orgz_info, 
+                                      mux_spice_model, mux_size,
+                                      cur_num_sram, cur_num_sram + num_mux_conf_bits - 1,
+                                      1, VERILOG_PORT_CONKT);
+    break;
+  case SPICE_SRAM_MEMORY_BANK:
+    /* configuration wire bus */
+    /* First bus is for sram_out in CMOS MUX 
+     * We need a prefix implying MUX name, size and index 
+     */
+    dump_verilog_mux_sram_one_outport(fp, cur_sram_orgz_info, 
+                                      mux_spice_model, mux_size,
+                                      cur_num_sram, cur_num_sram + num_mux_conf_bits - 1,
+                                      0, VERILOG_PORT_CONKT);
+    fprintf(fp, ",\n");
+    dump_verilog_mux_sram_one_outport(fp, cur_sram_orgz_info, 
+                                      mux_spice_model, mux_size,
+                                      cur_num_sram, cur_num_sram + num_mux_conf_bits - 1,
+                                      1, VERILOG_PORT_CONKT);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid SRAM organization!\n", 
+               __FILE__, __LINE__);
+    exit(1);
+  }
+  return;
+}
+
+
 /* Dump MUX reserved and normal configuration wire bus */
 void dump_verilog_mux_config_bus_ports(FILE* fp, t_spice_model* mux_spice_model, 
                                        t_sram_orgz_info* cur_sram_orgz_info,
@@ -1560,24 +1736,12 @@ void dump_verilog_mux_config_bus_ports(FILE* fp, t_spice_model* mux_spice_model,
   /* depend on the design technology of this MUX:
    * bus connections are different
    * SRAM MUX: bus is connected to the output ports of SRAM
-   * RRAM MUX: bus is connected to the BL/WL of MUX
-   * TODO: Maybe things will become even more complicated, 
-   * the bus connections may depend on the type of configuration circuit...
-   * Currently, this is fine.
    */
   switch (mux_spice_model->design_tech) {
   case SPICE_MODEL_DESIGN_CMOS:
-    /* configuration wire bus */
-    /* First bus is for sram_out in CMOS MUX */
-    dump_verilog_mux_sram_one_outport(fp, cur_sram_orgz_info, 
-                                      mux_spice_model, mux_size,
-                                      cur_num_sram, cur_num_sram + num_mux_conf_bits - 1,
-                                      0, VERILOG_PORT_CONKT);
-    fprintf(fp, ",\n");
-    dump_verilog_mux_sram_one_outport(fp, cur_sram_orgz_info, 
-                                      mux_spice_model, mux_size,
-                                      cur_num_sram, cur_num_sram + num_mux_conf_bits - 1,
-                                      1, VERILOG_PORT_CONKT);
+    dump_verilog_cmos_mux_config_bus_ports(fp, mux_spice_model, cur_sram_orgz_info,
+                                           mux_size, cur_num_sram,
+                                           num_mux_reserved_conf_bits, num_mux_conf_bits); 
     break;
   case SPICE_MODEL_DESIGN_RRAM:
     /* configuration wire bus */
@@ -1634,3 +1798,47 @@ void dump_verilog_grid_common_port(FILE* fp, t_spice_model* cur_verilog_model,
 
   return;
 }
+
+/* A widely used function to dump the configuration bus
+ * This is supposed to be called when declaring local wires in the main body of a module
+ * We will the internal wires (bus) used for connect SRAMs/RRAMs to other modules,
+ * such as LUTs, MUXes and IOs 
+ */
+void dump_verilog_sram_config_bus_internal_wires(FILE* fp, t_sram_orgz_info* cur_sram_orgz_info, 
+                                                 int lsb, int msb) {
+  t_spice_model* mem_model = NULL;
+
+  /* Get the memory spice model*/
+  get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model);
+  assert (NULL != mem_model);
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  /* Depend on the configuraion style */
+  switch(cur_sram_orgz_info->type) {
+  case SPICE_SRAM_STANDALONE:
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+    dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, lsb, msb, 1, VERILOG_PORT_WIRE); 
+    fprintf(fp, ";\n");
+    break;
+  case SPICE_SRAM_MEMORY_BANK:
+    dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, lsb, msb, 0, VERILOG_PORT_WIRE); 
+    fprintf(fp, ";\n");
+    dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, lsb, msb, 1, VERILOG_PORT_WIRE); 
+    fprintf(fp, ";\n");
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid SRAM organization!\n", 
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  return;
+}
+

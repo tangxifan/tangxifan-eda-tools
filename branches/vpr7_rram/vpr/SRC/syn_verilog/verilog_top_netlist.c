@@ -265,7 +265,13 @@ void dump_verilog_top_netlist_memory_bank_internal_wires(FILE* fp) {
  */
 static 
 void dump_verilog_top_netlist_scan_chain_ports(FILE* fp,
-                                               boolean dump_port_type) {
+                                               enum e_dump_verilog_port_type dump_port_type) {
+  /* Only accept two types of dump_port_type here! */
+  assert((VERILOG_PORT_INPUT == dump_port_type)||(VERILOG_PORT_CONKT == dump_port_type));
+
+  /* Check */
+  assert (sram_verilog_orgz_info->type == SPICE_SRAM_SCAN_CHAIN);
+
   /* A valid file handler */
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
@@ -275,14 +281,9 @@ void dump_verilog_top_netlist_scan_chain_ports(FILE* fp,
   /* Only the head of scan-chain will be the primary input in the top-level netlist 
    * TODO: we may have multiple scan-chains, their heads will be the primary outputs 
    */
-  if (TRUE == dump_port_type) {
-    fprintf(fp, "  input wire %s //---- Scan-chain head \n", 
-            top_netlist_scan_chain_head_prefix);
-  } else {
-    assert(FALSE == dump_port_type);
-    fprintf(fp, "  %s //---- Scan-chain head \n", 
-            top_netlist_scan_chain_head_prefix);
-  }
+  dump_verilog_generic_port(fp, dump_port_type,
+                            top_netlist_scan_chain_head_prefix, 0, 0);
+  fprintf(fp, " //---- Scan-chain head \n"); 
 
   return;
 }
@@ -318,8 +319,9 @@ void dump_verilog_top_netlist_scan_chain_internal_wires(FILE* fp) {
 
   /* Connected the scan-chain flip-flops */
   /* Ensure we are in the correct range */
+  /*
   fprintf(fp, "  genvar i;\n");
-  fprintf(fp, "  generate;\n");
+  fprintf(fp, "  generate\n");
   fprintf(fp, "    for (i = %d; i < %d; i = i + 1) begin\n", 
           1, num_scffs - 1);
   fprintf(fp,   "assign %s_scff_in[i] = %s_scff_out[i - 1];\n",
@@ -327,6 +329,7 @@ void dump_verilog_top_netlist_scan_chain_internal_wires(FILE* fp) {
             scff_mem_model->prefix);
   fprintf(fp, "    end\n");
   fprintf(fp, "  endgenerate;\n");
+  */
 
   return;
 }
@@ -416,7 +419,7 @@ void dump_verilog_top_module_ports(FILE* fp,
     /* Definition ends */
     break;
   case SPICE_SRAM_SCAN_CHAIN:
-    dump_verilog_top_netlist_scan_chain_ports(fp, TRUE);
+    dump_verilog_top_netlist_scan_chain_ports(fp, dump_port_type);
     /* Definition ends */
     break;
   case SPICE_SRAM_MEMORY_BANK:
@@ -1098,20 +1101,14 @@ void dump_verilog_configuration_circuits_scan_chains(FILE* fp) {
   /* Dump each Scan-chain FF */
   fprintf(fp, "//------ Scan-chain FFs -----\n");
   for (i = 0; i < sram_verilog_model->cnt; i++) {
-    fprintf(fp, "%s %s_%d (\n", 
-            sram_verilog_model->name, sram_verilog_model->prefix, i);
-    /* Port sequence: <D> <Q> <Qb> <CLK> <RESET> <SET> */
-    fprintf(fp, "%s_in[%d], %s_out[%d], %s_outb[%d], ",
-            sram_verilog_model->prefix, i,
-            sram_verilog_model->prefix, i,
-            sram_verilog_model->prefix, i);
-    fprintf(fp, "prog_clk, prog_rst, prog_set ");
-    fprintf(fp, ");\n");
     /* Connect the head of current scff to the tail of previous scff*/
     if (0 < i) {
-      fprintf(fp, "assign %s_in[%d] <= %s_out[%d];\n",
-              sram_verilog_model->prefix, i,
-              sram_verilog_model->prefix, i - 1);
+      fprintf(fp, "        ");
+      fprintf(fp, "assign ");
+      dump_verilog_sram_one_port(fp, sram_verilog_orgz_info, i, i, 0, VERILOG_PORT_CONKT);
+      fprintf(fp, " = ");
+      dump_verilog_sram_one_port(fp, sram_verilog_orgz_info, i - 1, i - 1, 1, VERILOG_PORT_CONKT);
+      fprintf(fp, ";\n");
     }
   }
   fprintf(fp, "//------ END Scan-chain FFs -----\n");
@@ -1453,7 +1450,7 @@ void dump_verilog_top_testbench_ports(FILE* fp,
   case SPICE_SRAM_SCAN_CHAIN:
     /* We put the head of scan-chains here  
 	 */
-    dump_verilog_generic_port(fp, VERILOG_PORT_WIRE, 
+    dump_verilog_generic_port(fp, VERILOG_PORT_REG, 
                               top_netlist_scan_chain_head_prefix, 0, 0);
     fprintf(fp, "; //---- Scan-chain head \n");
     break;
@@ -1584,10 +1581,8 @@ int dump_verilog_top_testbench_find_num_config_clock_cycles(t_llist* head) {
     switch (sram_verilog_orgz_type) {
     case SPICE_SRAM_STANDALONE:
     case SPICE_SRAM_SCAN_CHAIN:
-      if (1 == temp_conf_bit_info->sram_bit->val) {
-        cnt++;
-        temp_conf_bit_info->index_in_top_tb = cnt;
-      }
+      cnt++;
+      temp_conf_bit_info->index_in_top_tb = cnt;
       break;
     case SPICE_SRAM_MEMORY_BANK:
       cnt++;
@@ -1828,18 +1823,21 @@ void dump_verilog_top_testbench_scan_chain_conf_bits_serial(FILE* fp,
   /* We do not care the value of scan_chain head during the first programming cycle 
    * It is reset anyway
    */
-  fprintf(fp, "    %s = 1'b%d;\n", 
-              top_netlist_scan_chain_head_prefix,
+  fprintf(fp, "    "); 
+  dump_verilog_generic_port(fp, VERILOG_PORT_CONKT,
+                            top_netlist_scan_chain_head_prefix, 0, 0);
+  fprintf(fp, " = 1'b%d;\n", 
               0 );
   fprintf(fp, "\n");
   /* Check we have a valid first bit */
   while (NULL != temp) {
     cur_conf_bit_info = (t_conf_bit_info*)(temp->dptr);
     /* Scan-chain only loads the SRAM values */ 
-    fprintf(fp, "//---- Configuration bit No.: %d, ", cur_conf_bit_info->index);
-    fprintf(fp, " SRAM value: %d, ", cur_conf_bit_info->sram_bit->val);
-    fprintf(fp, " SPICE model name: %s, ", cur_conf_bit_info->parent_spice_model->name);
-    fprintf(fp, " SPICE model index: %d ", cur_conf_bit_info->parent_spice_model_index);
+    fprintf(fp, "//---- Configuration bit No.: %d \n ", cur_conf_bit_info->index);
+    fprintf(fp, "//---- SRAM value: %d \n", cur_conf_bit_info->sram_bit->val);
+    fprintf(fp, "//---- SPICE model name: %s \n ", cur_conf_bit_info->parent_spice_model->name);
+    fprintf(fp, "//---- SPICE model index: %d \n", cur_conf_bit_info->parent_spice_model_index);
+    fprintf(fp, "\n");
     /* First bit is special */
     fprintf(fp, " prog_cycle_scan_chain(1'b%d); //--- (Scan_chain bits) \n",
                 cur_conf_bit_info->sram_bit->val);
@@ -1892,14 +1890,12 @@ void dump_verilog_top_testbench_conf_bits_serial(FILE* fp,
   case SPICE_SRAM_STANDALONE:
   case SPICE_SRAM_SCAN_CHAIN:
     /* For scan chain, the last bit should go first!*/
-    /* Reverse the linked list first !!! */
-    new_head = reverse_llist(new_head); 
-    /* TODO: For each element in linked list, generate a voltage stimuli */
-    dump_verilog_top_testbench_one_conf_bit_serial(fp, new_head);
-    /* Recover the sequence of linked list (reverse again) !!! */
-    new_head = reverse_llist(new_head); 
-    /* Check */
-    assert(head == new_head);
+    /* We do not need to reverse the linked list HERE !!! 
+     * Because, it is already arranged in the seqence of MSB to LSB
+     * Note that the first element in the linked list is the last bit now!
+     */
+    /* For each element in linked list, generate a voltage stimuli */
+    dump_verilog_top_testbench_one_conf_bit_serial(fp, head);
     break;
   case SPICE_SRAM_MEMORY_BANK:
     /* Configuration bits are loaded differently depending on memory technology */
@@ -2074,8 +2070,10 @@ void dump_verilog_top_testbench_stimuli_serial_version_tasks_scan_chain(FILE* fp
               top_netlist_scan_chain_head_prefix);
   fprintf(fp, "  begin\n");
   fprintf(fp, "    @(negedge %s);\n", top_tb_prog_clock_port_name);
-  fprintf(fp, "    %s = %s_val;\n", 
-              top_netlist_scan_chain_head_prefix,
+  fprintf(fp, "    "); 
+  dump_verilog_generic_port(fp, VERILOG_PORT_CONKT,
+                            top_netlist_scan_chain_head_prefix, 0, 0);
+  fprintf(fp, " = %s_val;\n", 
               top_netlist_scan_chain_head_prefix);
   fprintf(fp, "  end\n");
   fprintf(fp, "endtask //---prog_cycle_stimuli\n");
@@ -2132,7 +2130,7 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   int found_mapped_inpad = 0;
   int num_config_clock_cycles = 0;
   float prog_clock_period = (1./spice.spice_params.stimulate_params.prog_clock_freq);
-  float op_clock_period = (1./spice.spice_params.stimulate_params.prog_clock_freq);
+  float op_clock_period = (1./spice.spice_params.stimulate_params.op_clock_freq);
 
   /* Find Input Pad Spice model */
   t_spice_net_info* cur_spice_net_info = NULL;
@@ -2162,7 +2160,7 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   fprintf(fp, "    %s = 1'b0;\n", top_tb_config_done_port_name);
   fprintf(fp, "    //----- %s signal is enabled after %d configurating operations are done ----\n", 
               top_tb_config_done_port_name, num_config_clock_cycles);
-  fprintf(fp, "    #%.2g %s = 1'b1;\n", 
+  fprintf(fp, "    #%.2f %s = 1'b1;\n", 
               num_config_clock_cycles * prog_clock_period / verilog_sim_timescale, top_tb_config_done_port_name);
   fprintf(fp, "  end\n");
   fprintf(fp, "//----- END of %s ----\n", 
@@ -2177,7 +2175,7 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   fprintf(fp, "  end\n");
   fprintf(fp, "always\n"); 
   fprintf(fp, "  begin //--- PROG_CLOCK GENERATOR\n");
-  fprintf(fp, "    #%.2g %s%s = ~%s%s;\n", 
+  fprintf(fp, "    #%.2f %s%s = ~%s%s;\n", 
               0.5*prog_clock_period / verilog_sim_timescale,
               top_tb_prog_clock_port_name, top_tb_clock_reg_postfix, 
               top_tb_prog_clock_port_name, top_tb_clock_reg_postfix);
@@ -2195,6 +2193,12 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
               top_tb_prog_clock_port_name, top_tb_clock_reg_postfix,
               top_tb_config_done_port_name,
               top_tb_prog_reset_port_name); 
+  /*
+  fprintf(fp, "  assign %s = %s%s & (~%s);\n",
+              top_tb_prog_clock_port_name,
+              top_tb_prog_clock_port_name, top_tb_clock_reg_postfix,
+              top_tb_config_done_port_name); 
+  */
   fprintf(fp, "//----- END of Actual Programming clock ----\n");
   fprintf(fp, "\n");
 
@@ -2206,7 +2210,7 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   fprintf(fp, "  end\n");
   fprintf(fp, "always wait(%s)\n", top_tb_config_done_port_name); 
   fprintf(fp, "  begin //--- OP_CLOCK GENERATOR\n");
-  fprintf(fp, "    #%.2g %s%s = ~%s%s;\n", 
+  fprintf(fp, "    #%.2f %s%s = ~%s%s;\n", 
               0.5*op_clock_period / verilog_sim_timescale,
               top_tb_op_clock_port_name, top_tb_clock_reg_postfix,
               top_tb_op_clock_port_name, top_tb_clock_reg_postfix);
@@ -2231,7 +2235,7 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   fprintf(fp, " %s = 1'b1;\n", top_tb_prog_reset_port_name);
   /* Reset is enabled until the first clock cycle in operation phase */
   fprintf(fp, "//----- Reset signal is enabled until the first clock cycle in programming phase ----\n");
-  fprintf(fp, "#%.2g %s = 1'b0;\n", 
+  fprintf(fp, "#%.2f %s = 1'b0;\n", 
               (1 * prog_clock_period) / verilog_sim_timescale,
               top_tb_prog_reset_port_name);
   fprintf(fp, "end\n");
@@ -2255,10 +2259,10 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   fprintf(fp, "//----- Reset signal is enabled until the first clock cycle in operation phase ----\n");
   fprintf(fp, "wait(%s);\n", 
                top_tb_config_done_port_name); 
-  fprintf(fp, "#%.2g %s = 1'b1;\n", 
+  fprintf(fp, "#%.2f %s = 1'b1;\n", 
               (1 * op_clock_period)/ verilog_sim_timescale,
               top_tb_reset_port_name);
-  fprintf(fp, "#%.2g %s = 1'b0;\n", 
+  fprintf(fp, "#%.2f %s = 1'b0;\n", 
               (2 * op_clock_period) / verilog_sim_timescale,
               top_tb_reset_port_name);
   fprintf(fp, "end\n");
@@ -2329,7 +2333,7 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
         fprintf(fp, "end\n");
         fprintf(fp, "always wait (~%s)\n", top_tb_reset_port_name);
         fprintf(fp, "  begin \n");
-        fprintf(fp, "    #%.2g %s%s%s[%d] = ~%s%s%s[%d];\n", 
+        fprintf(fp, "    #%.2f %s%s%s[%d] = ~%s%s%s[%d];\n", 
                 (op_clock_period * cur_spice_net_info->density * 2. / cur_spice_net_info->probability) / verilog_sim_timescale, 
                 gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx,
                 gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx);

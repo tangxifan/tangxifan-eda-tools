@@ -998,7 +998,8 @@ void fpga_spice_setup(t_vpr_setup vpr_setup,
   /* if we don't have global clock, clock_freqency should be set to 0.*/
   num_clocks = count_netlist_clocks();
   if (0 == num_clocks) {
-     vpr_clock_freq = 0.;
+     /* This could a combinational circuit */
+     vpr_clock_freq = 1. / vpr_crit_path_delay; 
   } else { 
     assert(1 == num_clocks);
     vpr_clock_freq = 1. / vpr_crit_path_delay; 

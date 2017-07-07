@@ -434,15 +434,12 @@ void dump_verilog_pb_primitive_io(FILE* fp,
                             VERILOG_PORT_INPUT);
     /* Local vdd and gnd*/
     fprintf(fp, ");\n");
+
+    dump_verilog_sram_config_bus_internal_wires(fp, sram_verilog_orgz_info, 
+                                                cur_num_sram, cur_num_sram + num_sram - 1);
     switch (sram_verilog_orgz_type) {
     case SPICE_SRAM_MEMORY_BANK:
       /* Local wires */
-      fprintf(fp, "wire [%d:%d] %s_out;\n", 
-                 cur_num_sram + num_sram - 1, cur_num_sram, 
-                 mem_model->prefix); /* Wires */
-      fprintf(fp, "wire [%d:%d] %s_outb;\n", 
-                 cur_num_sram + num_sram - 1, cur_num_sram, 
-                 mem_model->prefix); /* Wires */
       /* Find the number of BLs/WLs of each SRAM */
       /* Detect the SRAM SPICE model linked to this SRAM port */
       assert(NULL != sram_ports[0]->spice_model);
@@ -472,8 +469,10 @@ void dump_verilog_pb_primitive_io(FILE* fp,
   /* Definition ends*/
 
   /* Dump the configuration port bus */
+  /*
   dump_verilog_mem_config_bus(fp, mem_model, sram_verilog_orgz_info,
                               cur_num_sram, num_reserved_conf_bits, num_conf_bits); 
+  */
 
   /* Call the I/O subckt*/
   fprintf(fp, "%s %s_%d_ (", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
@@ -516,8 +515,13 @@ void dump_verilog_pb_primitive_io(FILE* fp,
                 verilog_model->prefix, verilog_model->cnt);
     /* Print SRAM ports */
     /* Connect srams: TODO: to find the SRAM model used by this Verilog model */
+    dump_verilog_sram_one_outport(fp, sram_verilog_orgz_info,
+                                  cur_num_sram, cur_num_sram,
+                                  0, VERILOG_PORT_CONKT);
+    /*
     fprintf(fp, " %s_out[%d] \n",
             mem_model->prefix, cur_num_sram);
+    */
     break;
   default:
     /* The rest is invalid */ 

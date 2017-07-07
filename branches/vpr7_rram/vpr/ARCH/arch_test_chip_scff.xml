@@ -296,8 +296,8 @@
          <output_buffer exist="on" spice_model_name="inv4"/>
          <pass_gate_logic spice_model_name="tgate"/>
          <port type="input" prefix="D" size="1"/>
-         <port type="input" prefix="pSet" size="1" is_global="true" default_val="0" is_set="true"/>
-         <port type="input" prefix="pReset" size="1" is_global="true" default_val="0" is_reset="true"/>
+         <port type="input" prefix="pSet" size="1" is_global="true" default_val="0" is_set="true" is_prog="true"/>
+         <port type="input" prefix="pReset" size="1" is_global="true" default_val="0" is_reset="true" is_prog="true"/>
          <port type="output" prefix="Q" size="2"/>
          <port type="clock" prefix="prog_clk" size="1" is_global="true" default_val="0" is_prog="true" />
       </spice_model>
@@ -323,7 +323,7 @@
         <output_buffer exist="on" spice_model_name="inv4"/>
         <pass_gate_logic spice_model_name="tgate"/>
         <port type="inout" prefix="pad" size="1"/>
-        <port type="sram" prefix="en" size="1" mode_select="true" spice_model_name="sram6T_blwl" default_val="1"/>
+        <port type="sram" prefix="en" size="1" mode_select="true" spice_model_name="sc_dff" default_val="1"/>
         <port type="input" prefix="outpad" size="1"/>
         <port type="input" prefix="zin" size="1" is_global="true" default_val="0" />
         <port type="output" prefix="inpad" size="1"/>

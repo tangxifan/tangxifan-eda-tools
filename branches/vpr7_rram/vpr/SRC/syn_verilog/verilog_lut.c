@@ -208,10 +208,16 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
 
   /* Specify SRAM output are wires */
   cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info);
+  dump_verilog_sram_config_bus_internal_wires(fp, sram_verilog_orgz_info, cur_num_sram, cur_num_sram + num_sram - 1);
+  /*
   fprintf(fp, "wire [%d:%d] %s_out;\n",
           cur_num_sram, cur_num_sram + num_sram - 1, mem_model->prefix);
   fprintf(fp, "wire [%d:%d] %s_outb;\n",
           cur_num_sram, cur_num_sram + num_sram - 1, mem_model->prefix);
+  */
+
+  num_sram = count_num_sram_bits_one_spice_model(verilog_model, -1);
+  cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info);
 
   /* Call LUT subckt*/
   fprintf(fp, "%s %s_%d_ (", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
@@ -231,10 +237,29 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   fprintf(fp, "//----- SRAM ports -----\n");
   /* Connect srams: TODO: to find the SRAM model used by this Verilog model */
   cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info);
-  fprintf(fp, "%s_out[%d:%d], ", mem_model->prefix, 
-          cur_num_sram, cur_num_sram + num_sram - 1); 
-  fprintf(fp, "%s_outb[%d:%d]", mem_model->prefix,
-          cur_num_sram, cur_num_sram + num_sram - 1); 
+  /* TODO: switch depending on the type of configuration circuit */
+  switch (sram_verilog_orgz_info->type) {
+  case SPICE_SRAM_STANDALONE: 
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+    dump_verilog_sram_one_port(fp, sram_verilog_orgz_info, 
+                               cur_num_sram, cur_num_sram + num_sram - 1, 
+                               1, VERILOG_PORT_CONKT);
+    fprintf(fp, ", ");
+    dump_verilog_sram_one_outport(fp, sram_verilog_orgz_info, 
+                                  cur_num_sram, cur_num_sram + num_sram - 1, 
+                                  1, VERILOG_PORT_CONKT);
+    break;
+  case SPICE_SRAM_MEMORY_BANK:
+    dump_verilog_sram_ports(fp, sram_verilog_orgz_info, 
+                            cur_num_sram, cur_num_sram + num_sram - 1, 
+                            VERILOG_PORT_CONKT);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid SRAM organization type!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
   /* vdd should be connected to special global wire gvdd_lut and gnd,
    * Every LUT has a special VDD for statistics
    */

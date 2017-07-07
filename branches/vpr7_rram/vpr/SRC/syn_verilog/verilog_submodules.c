@@ -278,7 +278,14 @@ void dump_verilog_cmos_mux_one_basis_module(FILE* fp,
    * when mem = 0, propagate input 1;
    */
   if (1 == num_mem) {
-    fprintf(fp, "  assign out = in[%d - mem];\n", num_input_basis_subckt - 1);
+    fprintf(fp, "  reg out_reg;\n");
+    fprintf(fp, "  always @(in, mem)\n");
+    fprintf(fp, "  case (mem)\n");
+    fprintf(fp, "    1'b1: out_reg = in[0];\n");
+    fprintf(fp, "    1'b0: out_reg = in[1];\n");
+    fprintf(fp, "    default: out_reg <= 1'bz;\n");
+    fprintf(fp, "  endcase\n");
+    fprintf(fp, "  assign out = out_reg;\n");
   } else {
   /* Other cases, we need to follow the rules:
    * When mem[k] is enabled, switch on input[k]
