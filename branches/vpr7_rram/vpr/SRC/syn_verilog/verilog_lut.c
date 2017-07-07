@@ -251,9 +251,13 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
                                   1, VERILOG_PORT_CONKT);
     break;
   case SPICE_SRAM_MEMORY_BANK:
-    dump_verilog_sram_ports(fp, sram_verilog_orgz_info, 
-                            cur_num_sram, cur_num_sram + num_sram - 1, 
-                            VERILOG_PORT_CONKT);
+    dump_verilog_sram_one_outport(fp, sram_verilog_orgz_info, 
+                                  cur_num_sram, cur_num_sram + num_sram - 1, 
+                                  0, VERILOG_PORT_CONKT);
+    fprintf(fp, ", ");
+    dump_verilog_sram_one_outport(fp, sram_verilog_orgz_info, 
+                                  cur_num_sram, cur_num_sram + num_sram - 1, 
+                                  1, VERILOG_PORT_CONKT);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid SRAM organization type!\n",

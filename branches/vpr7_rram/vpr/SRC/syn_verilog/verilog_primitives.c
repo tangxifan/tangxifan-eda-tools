@@ -469,10 +469,8 @@ void dump_verilog_pb_primitive_io(FILE* fp,
   /* Definition ends*/
 
   /* Dump the configuration port bus */
-  /*
   dump_verilog_mem_config_bus(fp, mem_model, sram_verilog_orgz_info,
                               cur_num_sram, num_reserved_conf_bits, num_conf_bits); 
-  */
 
   /* Call the I/O subckt*/
   fprintf(fp, "%s %s_%d_ (", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
