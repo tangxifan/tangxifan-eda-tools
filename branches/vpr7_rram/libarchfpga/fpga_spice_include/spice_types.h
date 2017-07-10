@@ -192,6 +192,7 @@ struct s_spice_model {
   char* verilog_netlist; /* Verilog netlist provided by user */
   t_spice_model_netlist* include_netlist;
   int is_default;
+  boolean dump_structural_verilog;
 
   /* type */
   enum e_spice_model_design_tech design_tech;

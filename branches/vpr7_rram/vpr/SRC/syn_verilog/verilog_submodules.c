@@ -250,6 +250,7 @@ void dump_verilog_cmos_mux_one_basis_module(FILE* fp,
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
     exit(1);
   } 
+
   /* Special: 2-input MUX has only 1 memory bit */
   if (2 == num_input_basis_subckt) {
     num_mem = 1;
@@ -323,8 +324,155 @@ void dump_verilog_cmos_mux_one_basis_module(FILE* fp,
   return;
 }
 
-/* TODO: UNIFINISHED!!!
- * Dump a RRAM MUX basis module */
+/* Dump a structural verilog for SRAM-based MUX basis module 
+ * This is only called when structural verilog dumping option is enabled for this spice model
+ * Note that the structural verilog may be used for functionality verification!!!
+ */
+static 
+void dump_verilog_cmos_mux_one_basis_module_structural(FILE* fp, 
+                                                       char* mux_basis_subckt_name, 
+                                                       int num_input_basis_subckt, 
+                                                       t_spice_model* cur_spice_model) { 
+  int cur_mem, i;
+  int num_mem = num_input_basis_subckt;
+  /* Get the tgate module name */
+  char* tgate_module_name = cur_spice_model->pass_gate_logic->spice_model_name;
+
+  assert(TRUE == cur_spice_model->dump_structural_verilog);
+
+  /* Make sure we have a valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
+    exit(1);
+  } 
+  /* Special: 2-input MUX has only 1 memory bit */
+  if (2 == num_input_basis_subckt) {
+    num_mem = 1;
+  }
+
+  /* Comment lines */
+  fprintf(fp, "//---- Structural Verilog for CMOS MUX basis module: %s -----\n", mux_basis_subckt_name);
+
+  /* Print the port list and definition */
+  fprintf(fp, "module %s (\n", mux_basis_subckt_name);
+  /* Dump global ports */
+  if  (0 < rec_dump_verilog_spice_model_global_ports(fp, cur_spice_model, TRUE, FALSE)) {
+    fprintf(fp, ",\n");
+  }
+  /* Port list */
+  fprintf(fp, "input [0:%d] in,\n", num_input_basis_subckt - 1);
+  fprintf(fp, "output out,\n");
+  fprintf(fp, "input [0:%d] mem,\n",
+          num_mem - 1);
+  fprintf(fp, "input [0:%d] mem_inv);\n",
+          num_mem - 1);
+  /* Verilog Behavior description for a MUX */
+  fprintf(fp, "//---- Structure-level description -----\n");
+  /* Special case: only one memory, switch case is simpler 
+   * When mem = 1, propagate input 0; 
+   * when mem = 0, propagate input 1;
+   */
+  if (1 == num_mem) {
+    /* Transmission gates are connected to each input and also the output*/
+    fprintf(fp, "  %s %s_0 (in[0], mem[0], mem_inv[0], out);\n",
+                tgate_module_name, tgate_module_name);
+    fprintf(fp, "  %s %s_1 (in[1], mem_inv[0], mem[0], out);\n",
+                tgate_module_name, tgate_module_name);
+  } else {
+  /* Other cases, we need to follow the rules:
+   * When mem[k] is enabled, switch on input[k]
+   * Only one memory bit is enabled!
+   */
+    for (i = 0; i < num_mem; i++) {
+      fprintf(fp, "  %s %s_%d (in[%d], mem[%d], mem_inv[%d], out);\n",
+                  tgate_module_name, tgate_module_name, i,
+                  i, i, i);
+    }
+  }
+
+  /* Put an end to this module */
+  fprintf(fp, "endmodule\n");
+
+  /* Comment lines */
+  fprintf(fp, "//---- END Structural Verilog CMOS MUX basis module: %s -----\n\n", mux_basis_subckt_name);
+
+  return;
+}
+
+/* Dump a structural verilog for RRAM MUX basis module 
+ * This is only called when structural verilog dumping option is enabled for this spice model
+ * Note that the structural verilog cannot be used for functionality verification!!!
+ */
+static 
+void dump_verilog_rram_mux_one_basis_module_structural(FILE* fp, 
+                                                       char* mux_basis_subckt_name, 
+                                                       int num_input_basis_subckt, 
+                                                       t_spice_model* cur_spice_model) { 
+  /* RRAM MUX needs 2*(input_size + 1) memory bits for configuration purpose */
+  int num_mem = num_input_basis_subckt + 1;
+  int i, iport, ipin;
+  int find_prog_EN = 0;
+  int find_prog_ENb = 0;
+  char* progTE_module_name = "PROG_TE";
+  char* progBE_module_name = "PROG_BE";
+
+  /* Make sure we have a valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  assert(TRUE == cur_spice_model->dump_structural_verilog);
+
+  /* Comment lines */
+  fprintf(fp, "//---- Structural Verilog for RRAM MUX basis module: %s -----\n", mux_basis_subckt_name);
+
+  /* Print the port list and definition */
+  fprintf(fp, "module %s (\n", mux_basis_subckt_name);
+  /* Dump global ports */
+  if  (0 < rec_dump_verilog_spice_model_global_ports(fp, cur_spice_model, TRUE, FALSE)) {
+    fprintf(fp, ",\n");
+  }
+  /* Port list */
+  fprintf(fp, "input wire [0:%d] in,\n", num_input_basis_subckt - 1);
+  fprintf(fp, "output wire out,\n");
+  fprintf(fp, "input wire [0:%d] bl,\n",
+          num_mem - 1);
+  fprintf(fp, "input wire [0:%d] wl);\n",
+          num_mem - 1);
+
+  /* Print internal structure of 4T1R programming structures
+   * Written in structural Verilog
+   * The whole structure-level description is divided into two parts:
+   * 1. Left part consists of N PROG_TE modules, each of which
+   * includes a PMOS, a NMOS and a RRAM, which is actually the left
+   * part of a 4T1R programming structure 
+   * 2. Right part includes only a PROG_BE module, which consists
+   * of a PMOS and a NMOS, which is actually the right part of a
+   * 4T1R programming sturcture
+   */
+  /* LEFT part */
+  for (i = 0; i < num_input_basis_subckt - 1; i++) {
+    fprintf(fp, "%s %s_%d (in[%d], wl[%d], bl[%d], out);\n",
+                 progTE_module_name, progTE_module_name, i,
+                 i, i, i);
+  }
+  /* RIGHT part */
+  fprintf(fp, "%s %s_%d (out, wl[%d], bl[%d]);\n",
+               progBE_module_name, progBE_module_name, i,
+               i, i);
+
+  /* Put an end to this module */
+  fprintf(fp, "endmodule\n");
+
+  /* Comment lines */
+  fprintf(fp, "//---- END Structural Verilog for RRAM MUX basis module: %s -----\n\n", mux_basis_subckt_name);
+
+  return;
+}
+
+
+/* Dump a RRAM MUX basis module */
 void dump_verilog_rram_mux_one_basis_module(FILE* fp, 
                                             char* mux_basis_subckt_name, 
                                             int num_input_basis_subckt, 
@@ -371,6 +519,7 @@ void dump_verilog_rram_mux_one_basis_module(FILE* fp,
   }
   fprintf(fp, ")\n");
   fprintf(fp, "begin \n");
+
   /* Only when the last bit of wl is enabled, 
    * the propagating path can be changed 
    * (RRAM value can be changed) */
@@ -451,14 +600,27 @@ void dump_verilog_mux_one_basis_module(FILE* fp,
   /* Depend on the technology */
   switch (cur_spice_model->design_tech) {
   case SPICE_MODEL_DESIGN_CMOS:
-    dump_verilog_cmos_mux_one_basis_module(fp, mux_basis_subckt_name,
-                                           num_input_basis_subckt,
-                                           cur_spice_model);
+    if (TRUE == cur_spice_model->dump_structural_verilog) {
+      dump_verilog_cmos_mux_one_basis_module_structural(fp, mux_basis_subckt_name,
+                                                        num_input_basis_subckt,
+                                                        cur_spice_model);
+    } else {
+      dump_verilog_cmos_mux_one_basis_module(fp, mux_basis_subckt_name,
+                                             num_input_basis_subckt,
+                                             cur_spice_model);
+    }
     break;
   case SPICE_MODEL_DESIGN_RRAM:
-    dump_verilog_rram_mux_one_basis_module(fp, mux_basis_subckt_name,
-                                           num_input_basis_subckt,
-                                           cur_spice_model);
+    /* If requested, we can dump structural verilog for basis module */
+    if (TRUE == cur_spice_model->dump_structural_verilog) {
+      dump_verilog_rram_mux_one_basis_module_structural(fp, mux_basis_subckt_name,
+                                                        num_input_basis_subckt,
+                                                        cur_spice_model);
+    } else {
+      dump_verilog_rram_mux_one_basis_module(fp, mux_basis_subckt_name,
+                                             num_input_basis_subckt,
+                                             cur_spice_model);
+    }
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of MUX(name: %s)\n",

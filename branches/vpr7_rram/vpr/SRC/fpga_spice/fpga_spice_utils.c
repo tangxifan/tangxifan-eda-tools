@@ -947,7 +947,11 @@ int* decode_multilevel_mux_sram_bits(int fan_in,
     for (j = 0; j < num_input_basis; j++) {
       path_differ = (j + 1) * (int)pow((double)num_input_basis,(double)(i+active_mux_level-mux_level));
       if (temp < path_differ) { 
-        ret[i*num_input_basis + j] = 1; 
+        /* This is orignal one for SPICE, but not work for VerilogGen
+         * I comment it here
+         ret[i*num_input_basis + j] = 1; 
+         */
+        ret[(mux_level - 1 - i)*num_input_basis + j] = 1; 
         /* Reduce the min. start index of this basis */
         temp -= j * (int)pow((double)num_input_basis,(double)(i+active_mux_level-mux_level));
         break; /* Touch the boundry, stop and move onto the next level */
