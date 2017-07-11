@@ -36,10 +36,13 @@
 /* Dump a module of inverter or buffer or tapered buffer */
 void dump_verilog_invbuf_module(FILE* fp,
                                 t_spice_model* invbuf_spice_model) {
+  int ipin, iport, port_cnt;
   int num_input_port = 0;
   int num_output_port = 0;
+  int num_powergate_port = 0;
   t_spice_model_port** input_port = NULL;
   t_spice_model_port** output_port = NULL;
+  t_spice_model_port** powergate_port = NULL;
 
   /* Ensure a valid file handler*/
   if (NULL == fp) {
@@ -54,6 +57,7 @@ void dump_verilog_invbuf_module(FILE* fp,
   /* Find the input port, output port*/
   input_port = find_spice_model_ports(invbuf_spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
   output_port = find_spice_model_ports(invbuf_spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
+  powergate_port = find_spice_model_config_done_ports(invbuf_spice_model, SPICE_MODEL_PORT_INPUT, &num_powergate_port, FALSE);
 
   /* Make sure:
    * There is only 1 input port and 1 output port, 
@@ -64,10 +68,23 @@ void dump_verilog_invbuf_module(FILE* fp,
   assert(1 == num_output_port);
   assert(1 == output_port[0]->size);
 
+  /* If power-gated, we need to find enable signals */
+  if (TRUE == invbuf_spice_model->design_tech_info.power_gated) {
+    if (0 ==  num_powergate_port) {
+      vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Inverter, buffer SPICE model is power-gated, but cannot find any power-gate port!\n",
+                 __FILE__, __LINE__); 
+      exit(1);
+    }
+    assert ( 0 < num_powergate_port);
+  }
+
   /* dump module body */
   fprintf(fp, "module %s (\n",
           invbuf_spice_model->name);
-
+  /* Dump global ports */
+  if  (0 < rec_dump_verilog_spice_model_global_ports(fp, invbuf_spice_model, TRUE, FALSE)) {
+    fprintf(fp, ",\n");
+  }
   /* Dump ports */
   fprintf(fp, "input %s,\n", input_port[0]->prefix);
   fprintf(fp, "output %s\n", output_port[0]->prefix);
@@ -77,14 +94,129 @@ void dump_verilog_invbuf_module(FILE* fp,
   /* Assign logics : depending on topology */
   switch (invbuf_spice_model->design_tech_info.buffer_info->type) {
   case SPICE_MODEL_BUF_INV:
-    fprintf(fp, "assign %s = ~%s;\n",
-                output_port[0]->prefix,
-                input_port[0]->prefix);
+    if (TRUE == invbuf_spice_model->design_tech_info.power_gated) {
+      /* Create a sensitive list */
+      fprintf(fp, "reg %s_reg;\n", output_port[0]->prefix);
+      fprintf(fp, "always @(");
+      /* Power-gate port first*/
+      for (iport = 0; iport < num_powergate_port; iport++) {
+        fprintf(fp, "%s,", powergate_port[iport]->prefix);
+      }
+      fprintf(fp, "%s) begin\n", 
+                  input_port[0]->prefix); 
+      /* Dump the case of power-gated */
+      fprintf(fp, "  if (");
+      port_cnt = 0; /* Initialize the counter: decide if we need to put down '&&' */
+      for (iport = 0; iport < num_powergate_port; iport++) {
+        if (0 == powergate_port[iport]->default_val) {
+          for (ipin = 0; ipin < powergate_port[iport]->size; ipin++) {
+            if ( 0 < port_cnt ) {
+              fprintf(fp, "\n\t&&");
+            }
+            /* Power-gated signal are disable during operating, enabled during configuration,
+             * Therefore, we need to reverse them here   
+             */
+            fprintf(fp, "(~%s[%d])", 
+                         powergate_port[iport]->prefix,
+                         ipin);
+            port_cnt++; /* Update port counter*/
+          }
+        } else {
+          assert (1 == powergate_port[iport]->default_val);
+          for (ipin = 0; ipin < powergate_port[iport]->size; ipin++) {
+            if ( 0 < port_cnt ) {
+              fprintf(fp, "\n\t&&");
+            }
+            /* Power-gated signal are disable during operating, enabled during configuration,
+             * Therefore, we need to reverse them here   
+             */
+            fprintf(fp, "(%s[%d])", 
+                        powergate_port[iport]->prefix,
+                        ipin);
+            port_cnt++; /* Update port counter*/
+          }
+        }
+      }
+      fprintf(fp, ") begin\n");
+      fprintf(fp, "\t\tassign %s_reg = ~%s;\n",
+                  output_port[0]->prefix,
+                  input_port[0]->prefix);
+      fprintf(fp, "\tend else begin\n");
+      fprintf(fp, "\t\tassign %s_reg = 1'bz;\n",
+                  output_port[0]->prefix);
+      fprintf(fp, "\tend\n");
+      fprintf(fp, "end\n");
+      fprintf(fp, "assign %s = %s_reg;\n",
+                  output_port[0]->prefix,
+                  output_port[0]->prefix);
+    } else {
+      fprintf(fp, "assign %s = ~%s;\n",
+                  output_port[0]->prefix,
+                  input_port[0]->prefix);
+    }
     break;
   case SPICE_MODEL_BUF_BUF:
-    fprintf(fp, "assign %s = %s;\n",
-                output_port[0]->prefix,
-                input_port[0]->prefix);
+    if (TRUE == invbuf_spice_model->design_tech_info.power_gated) {
+      /* Create a sensitive list */
+      fprintf(fp, "reg %s_reg;\n", output_port[0]->prefix);
+      fprintf(fp, "always @(");
+      /* Power-gate port first*/
+      for (iport = 0; iport < num_powergate_port; iport++) {
+        fprintf(fp, "%s,", powergate_port[iport]->prefix);
+      }
+      fprintf(fp, "%s) begin\n", 
+                  input_port[0]->prefix);
+      /* Dump the case of power-gated */
+      fprintf(fp, "  if (");
+      port_cnt = 0; /* Initialize the counter: decide if we need to put down '&&' */
+      for (iport = 0; iport < num_powergate_port; iport++) {
+        if (0 == powergate_port[iport]->default_val) {
+          for (ipin = 0; ipin < powergate_port[iport]->size; ipin++) {
+            if ( 0 < port_cnt ) {
+              fprintf(fp, "\n\t&&");
+            }
+            /* Power-gated signal are disable during operating, enabled during configuration,
+             * Therefore, we need to reverse them here   
+             */
+            fprintf(fp, "(~%s[%d])", 
+                         powergate_port[iport]->prefix,
+                         ipin);
+            port_cnt++; /* Update port counter*/
+          }
+        } else {
+          assert (1 == powergate_port[iport]->default_val);
+          for (ipin = 0; ipin < powergate_port[iport]->size; ipin++) {
+            if ( 0 < port_cnt ) {
+              fprintf(fp, "\n\t&&");
+            }
+            /* Power-gated signal are disable during operating, enabled during configuration,
+             * Therefore, we need to reverse them here   
+             */
+            fprintf(fp, "(%s[%d])", 
+                        powergate_port[iport]->prefix,
+                        ipin);
+            port_cnt++; /* Update port counter*/
+          }
+        }
+      }
+      fprintf(fp, ") begin\n");
+      fprintf(fp, "\t\tassign %s_reg = %s;\n",
+                  output_port[0]->prefix,
+                  input_port[0]->prefix);
+      fprintf(fp, "\tend else begin\n");
+      fprintf(fp, "\t\tassign %s_reg = 1'bz;\n",
+                  output_port[0]->prefix);
+      fprintf(fp, "\tend\n");
+      fprintf(fp, "end\n");
+      fprintf(fp, "assign %s = %s_reg;\n",
+                  output_port[0]->prefix,
+                  output_port[0]->prefix);
+
+    } else {
+      fprintf(fp, "assign %s = %s;\n",
+                  output_port[0]->prefix,
+                  input_port[0]->prefix);
+    }
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid topology for spice model (%s)!\n",
@@ -925,6 +1057,8 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
   t_spice_model_port** input_port = NULL;
   t_spice_model_port** output_port = NULL;
   t_spice_model_port** sram_port = NULL;
+  t_spice_model* input_invbuf_spice_model = NULL;
+  t_spice_model* output_invbuf_spice_model = NULL;
 
   /* Find the basis subckt*/
   char* mux_basis_subckt_name = NULL;
@@ -1027,6 +1161,10 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
         /* Each inv: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
         fprintf(fp, "%s inv%d (", 
                 spice_model.input_buffer->spice_model_name, i); /* Given name*/
+        /* Dump global ports */
+        if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.input_buffer->spice_model, FALSE, FALSE)) {
+          fprintf(fp, ",\n");
+        }
         fprintf(fp, "%s[%d], ", input_port[0]->prefix, i); /* input port */ 
         fprintf(fp, "mux2_l%d_in[%d]); ", spice_mux_arch.input_level[i], spice_mux_arch.input_offset[i]); /* output port*/
         fprintf(fp, "\n");
@@ -1036,6 +1174,10 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
         /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
         fprintf(fp, "%s buf%d (", 
                 spice_model.input_buffer->spice_model_name, i); /* Given name*/
+        /* Dump global ports */
+        if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.input_buffer->spice_model, FALSE, FALSE)) {
+          fprintf(fp, ",\n");
+        }
         fprintf(fp, "%s[%d], ", input_port[0]->prefix, i); /* input port */ 
         fprintf(fp, "mux2_l%d_in[%d]); ", spice_mux_arch.input_level[i], spice_mux_arch.input_offset[i]); /* output port*/
         fprintf(fp, "\n");
@@ -1064,6 +1206,10 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
       /* Each inv: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
       fprintf(fp, "%s inv_out (",
               spice_model.output_buffer->spice_model_name); /* Given name*/
+      /* Dump global ports */
+      if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.output_buffer->spice_model, FALSE, FALSE)) {
+        fprintf(fp, ",\n");
+      }
       fprintf(fp, "mux2_l%d_in[%d], ", 0, 0); /* input port */ 
       fprintf(fp, "%s );", output_port[0]->prefix); /* Output port*/
       fprintf(fp, "\n");
@@ -1075,6 +1221,10 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
       /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
       fprintf(fp, "%s buf_out (",
               spice_model.output_buffer->spice_model_name); /* Given name*/
+      /* Dump global ports */
+      if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.output_buffer->spice_model, FALSE, FALSE)) {
+        fprintf(fp, ",\n");
+      }
       fprintf(fp, "mux2_l%d_in[%d], ", 0, 0); /* input port */ 
       fprintf(fp, "%s );", output_port[0]->prefix); /* Output port*/
       fprintf(fp, "\n");
@@ -1089,6 +1239,10 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
       /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
       fprintf(fp, "%s buf_out (",
               spice_model.output_buffer->spice_model_name); /* subckt name */
+      /* Dump global ports */
+      if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.output_buffer->spice_model, FALSE, FALSE)) {
+        fprintf(fp, ",\n");
+      }
       fprintf(fp, "mux2_l%d_in[%d], ", 0, 0); /* input port */ 
       fprintf(fp, "%s );", output_port[0]->prefix); /* Output port*/
       fprintf(fp, "\n");
@@ -1434,6 +1588,10 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
         /* Each inv: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
         fprintf(fp, "%s inv%d (", 
                     spice_model.input_buffer->spice_model_name, i); /* Given name*/
+        /* Dump global ports */
+        if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.input_buffer->spice_model, FALSE, FALSE)) {
+          fprintf(fp, ",\n");
+        }
         fprintf(fp, "%s[%d], ", input_port[0]->prefix, i); /* input port */ 
         fprintf(fp, "mux2_l%d_in[%d]);", spice_mux_arch.input_level[i], spice_mux_arch.input_offset[i]); /* output port*/
         fprintf(fp, "\n");
@@ -1443,6 +1601,10 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
         /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
         fprintf(fp, "%s buf%d (", 
                     spice_model.input_buffer->spice_model_name, i); /* Given name*/
+        /* Dump global ports */
+        if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.input_buffer->spice_model, FALSE, FALSE)) {
+          fprintf(fp, ",\n");
+        }
         fprintf(fp, "%s[%d], ", input_port[0]->prefix, i); /* input port */ 
         fprintf(fp, "mux2_l%d_in[%d)];", spice_mux_arch.input_level[i], spice_mux_arch.input_offset[i]); /* output port*/
         fprintf(fp, "\n");
@@ -1471,6 +1633,10 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
       /* Each inv: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
       fprintf(fp, "%s inv_out (", 
                   spice_model.output_buffer->spice_model_name); /* Given name*/
+      /* Dump global ports */
+      if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.output_buffer->spice_model, FALSE, FALSE)) {
+        fprintf(fp, ",\n");
+      }
       fprintf(fp, "mux2_l%d_in[%d], ", 0, 0); /* input port */ 
       fprintf(fp, "%s );", output_port[0]->prefix); /* Output port*/
       fprintf(fp, "\n");
@@ -1482,6 +1648,10 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
       /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
       fprintf(fp, "%s buf_out (",
                   spice_model.output_buffer->spice_model_name); /* Given name*/
+      /* Dump global ports */
+      if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.output_buffer->spice_model, FALSE, FALSE)) {
+        fprintf(fp, ",\n");
+      }
       fprintf(fp, "mux2_l%d_in[%d], ", 0, 0); /* input port */ 
       fprintf(fp, "%s );", output_port[0]->prefix); /* Output port*/
       fprintf(fp, "\n");
@@ -1496,6 +1666,10 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
       /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
       fprintf(fp, "%s buf_out (",
               spice_model.output_buffer->spice_model_name); /* subckt name */
+      /* Dump global ports */
+      if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.output_buffer->spice_model, FALSE, FALSE)) {
+        fprintf(fp, ",\n");
+      }
       fprintf(fp, "mux2_l%d_in[%d], ", 0 , 0); /* input port */ 
       fprintf(fp, "%s );", output_port[0]->prefix); /* Output port*/
       fprintf(fp, "\n");

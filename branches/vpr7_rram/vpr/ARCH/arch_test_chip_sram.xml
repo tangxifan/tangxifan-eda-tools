@@ -218,7 +218,7 @@
         <port type="output" prefix="out" size="1"/>
         <wire_param model_type="pie" res_val="0" cap_val="0" level="1"/> <!-- model_type could be T, res_val cap_val should be defined -->
       </spice_model>
-      <spice_model type="mux" name="mux_2level" prefix="mux_2level" is_default="1" dump_structural_verilog="false">
+      <spice_model type="mux" name="mux_2level" prefix="mux_2level" is_default="1" dump_structural_verilog="true">
         <design_technology type="cmos" structure="multi-level" num_level="2"/>
         <!--design_technology type="rram" ron="3e3" roff="1e6" wprog_set_nmos="1" wprog_reset_nmos="1" wprog_set_pmos="1" wprog_reset_pmos="1" structure="one-level"/-->
         <input_buffer exist="on" spice_model_name="INVTX1"/>
@@ -229,7 +229,7 @@
         <port type="output" prefix="out" size="1"/>
         <port type="sram" prefix="sram" size="1"/>
       </spice_model>
-      <spice_model type="mux" name="mux_1level" prefix="mux_1level" dump_structural_verilog="false">
+      <spice_model type="mux" name="mux_1level" prefix="mux_1level" dump_structural_verilog="true">
         <design_technology type="cmos" structure="one-level"/>
         <!--design_technology type="rram" ron="3e3" roff="1e6" wprog_set_nmos="1" wprog_reset_nmos="1" wprog_set_pmos="1" wprog_reset_pmos="1" structure="one-level"/-->
         <input_buffer exist="on" spice_model_name="INVTX1"/>
@@ -262,7 +262,7 @@
          <port type="output" prefix="Q" size="1"/>
          <port type="clock" prefix="clk" size="1" is_global="true" default_val="0" />
       </spice_model>
-      <spice_model type="lut" name="lut6" prefix="lut6" dump_structural_verilog="false">
+      <spice_model type="lut" name="lut6" prefix="lut6" dump_structural_verilog="true">
         <design_technology type="cmos"/>
         <input_buffer exist="on" spice_model_name="INVTX1"/>
         <output_buffer exist="on" spice_model_name="INVTX1"/>
@@ -291,7 +291,7 @@
         <port type="wl" prefix="wl" size="1" default_val="0"/>
       </spice_model>
       <!--Scan-chain DFF subckt ports should be defined as <D> <Q> <Qb> <CLK> <RESET> <SET>  -->
-      <spice_model type="sff" name="sc_dff" prefix="sc_dff" spice_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/ff.sp" verilog_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/ff.v">
+      <spice_model type="sff" name="sc_ff" prefix="scff" spice_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/ff.sp" verilog_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/ff.v">
          <design_technology type="cmos"/>
          <input_buffer exist="on" spice_model_name="INVTX1"/>
          <output_buffer exist="on" spice_model_name="INVTX1"/>

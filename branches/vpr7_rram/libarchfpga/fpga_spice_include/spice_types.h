@@ -131,6 +131,7 @@ struct s_spice_model_buffer {
   int tap_buf_level;
   int f_per_stage;
   char* spice_model_name;
+  t_spice_model* spice_model;
 };
 
 struct s_spice_model_pass_gate_logic {
@@ -138,6 +139,7 @@ struct s_spice_model_pass_gate_logic {
   float nmos_size;
   float pmos_size;
   char* spice_model_name;
+  t_spice_model* spice_model;
 };
 
 struct s_spice_model_port {
@@ -182,6 +184,8 @@ struct s_spice_model_design_tech_info {
   /* Mux information only */
   enum e_spice_model_structure structure;
   int mux_num_level;
+  /* Power gate information */
+  boolean power_gated;
 };
 
 struct s_spice_model {

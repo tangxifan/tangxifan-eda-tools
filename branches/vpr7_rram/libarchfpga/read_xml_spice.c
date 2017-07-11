@@ -583,6 +583,10 @@ static void ProcessSpiceModel(ezxml_t Parent,
   /* Check the design technology settings*/
   Node = ezxml_child(Parent, "design_technology");
   if (Node) {
+    /* Specify if this spice_model is power gated or not*/
+    spice_model->design_tech_info.power_gated = GetBooleanProperty(Node,"power_gated", FALSE, FALSE);
+	ezxml_set_attr(Node, "power_gated", NULL);
+    /* More options*/
     if (0 == strcmp(FindProperty(Node,"type",TRUE),"cmos")) {
       spice_model->design_tech = SPICE_MODEL_DESIGN_CMOS;
       /* If this spice model is an inverter, buffer or pass_gate,

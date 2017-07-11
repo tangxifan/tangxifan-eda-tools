@@ -978,7 +978,7 @@ void dump_verilog_sram_one_port(FILE* fp,
   }
 
   /*Malloc and generate the full name of port */
-  port_full_name = (char*)my_malloc(sizeof(char)*(strlen(mem_model->prefix) + strlen(port_name) + 1));
+  port_full_name = (char*)my_malloc(sizeof(char)*(strlen(mem_model->prefix) + strlen(port_name) + 1 + 1));
   sprintf(port_full_name, "%s_%s", mem_model->prefix, port_name);
 
   dump_verilog_generic_port(fp, actual_dump_port_type, port_full_name, sram_lsb, sram_msb); 
@@ -1061,7 +1061,7 @@ void dump_verilog_reserved_sram_one_port(FILE* fp,
   }
 
   /*Malloc and generate the full name of port */
-  port_full_name = (char*)my_malloc(sizeof(char)*(strlen(mem_model->prefix) + strlen(port_name) + 1));
+  port_full_name = (char*)my_malloc(sizeof(char)*(strlen(mem_model->prefix) + strlen(port_name) + 1 + 1));
   sprintf(port_full_name, "%s_%s", mem_model->prefix, port_name);
 
   dump_verilog_generic_port(fp, dump_port_type, port_full_name, sram_lsb, sram_msb); 

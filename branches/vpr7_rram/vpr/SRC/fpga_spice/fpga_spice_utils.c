@@ -302,6 +302,7 @@ void config_spice_model_input_output_buffers_pass_gate(int num_spice_models,
       /* Recover the spice_model_name and exist */
       spice_model[i].input_buffer->exist = 1;
       spice_model[i].input_buffer->spice_model_name = my_strdup(buf_spice_model->name);
+      spice_model[i].input_buffer->spice_model = buf_spice_model;
     }
 
     /* Check if this spice model has output buffers */
@@ -319,6 +320,7 @@ void config_spice_model_input_output_buffers_pass_gate(int num_spice_models,
       /* Recover the spice_model_name and exist */
       spice_model[i].output_buffer->exist = 1;
       spice_model[i].output_buffer->spice_model_name = my_strdup(buf_spice_model->name);
+      spice_model[i].output_buffer->spice_model = buf_spice_model;
     }
  
     /* If this spice_model is a LUT, check the lut_input_buffer */
@@ -327,6 +329,7 @@ void config_spice_model_input_output_buffers_pass_gate(int num_spice_models,
 
       buf_spice_model = find_name_matched_spice_model(spice_model[i].lut_input_buffer->spice_model_name,
                                                       num_spice_models, spice_model);
+
       /* We should find a buffer spice_model*/
       if (NULL == buf_spice_model) {
         vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Fail to find inv/buffer spice_model to the lut_input buffer of spice_model(name=%s)!\n",
@@ -338,6 +341,7 @@ void config_spice_model_input_output_buffers_pass_gate(int num_spice_models,
       /* Recover the spice_model_name and exist */
       spice_model[i].lut_input_buffer->exist = 1;
       spice_model[i].lut_input_buffer->spice_model_name = my_strdup(buf_spice_model->name);
+      spice_model[i].lut_input_buffer->spice_model = buf_spice_model;
     }
     
     /* Check pass_gate logic only for LUT and MUX */
@@ -355,6 +359,7 @@ void config_spice_model_input_output_buffers_pass_gate(int num_spice_models,
       memcpy(spice_model[i].pass_gate_logic, pgl_spice_model->design_tech_info.pass_gate_info, sizeof(t_spice_model_pass_gate_logic));
       /* Recover the spice_model_name */
       spice_model[i].pass_gate_logic->spice_model_name = my_strdup(pgl_spice_model->name);
+      spice_model[i].pass_gate_logic->spice_model = pgl_spice_model;
     }
   }
   
@@ -403,6 +408,55 @@ t_spice_model_port** find_spice_model_ports(t_spice_model* spice_model,
       continue;
     }
     if (port_type == spice_model->ports[iport].type) {
+      ret[cur] = &(spice_model->ports[iport]);
+      cur++;
+    }
+  }
+  /* Check correctness*/
+  assert(cur == (*port_num));
+  
+  return ret;
+}
+
+/* Find the configure done ports */
+t_spice_model_port** find_spice_model_config_done_ports(t_spice_model* spice_model,
+                                                        enum e_spice_model_port_type port_type,
+                                                        int* port_num, boolean ignore_global_port) {
+  int iport, cur;
+  t_spice_model_port** ret = NULL;
+
+  /* Check codes*/
+  assert(NULL != port_num);
+  assert(NULL != spice_model);
+
+  /* Count the number of ports that match*/
+  (*port_num) = 0;
+  for (iport = 0; iport < spice_model->num_port; iport++) {
+    /* ignore global port if user specified */
+    if ((TRUE == ignore_global_port)
+       &&(TRUE == spice_model->ports[iport].is_global)) {
+      continue;
+    }
+    if ((port_type == spice_model->ports[iport].type)
+       &&(TRUE == spice_model->ports[iport].is_config_enable)) {
+      (*port_num)++;
+    }
+  }
+  
+  /* Initial the return pointers*/
+  ret = (t_spice_model_port**)my_malloc(sizeof(t_spice_model_port*)*(*port_num));
+  memset(ret, 0 , sizeof(t_spice_model_port*)*(*port_num));
+  
+  /* Fill the return pointers*/
+  cur = 0;
+  for (iport = 0; iport < spice_model->num_port; iport++) {
+    /* ignore global port if user specified */
+    if ((TRUE == ignore_global_port)
+       &&(TRUE == spice_model->ports[iport].is_global)) {
+      continue;
+    }
+    if ((port_type == spice_model->ports[iport].type)
+       &&(TRUE == spice_model->ports[iport].is_config_enable)) {
       ret[cur] = &(spice_model->ports[iport]);
       cur++;
     }

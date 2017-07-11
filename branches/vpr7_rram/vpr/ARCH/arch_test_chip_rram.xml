@@ -135,7 +135,7 @@
 
   <!-- Physical descriptions begin -->
   <!-- layout auto="1.0"/ -->
-  <layout width="10" height="10"/>
+  <layout width="2" height="2"/>
 
   <!--mrFPGA_settings--> 
     <!-- below is the timing parameters for a single memristor device (or so called RRAM) -->
@@ -179,7 +179,14 @@
     </transistors> 
     <module_spice_models>
       <spice_model type="inv_buf" name="INVTX1" prefix="INVTX1" is_default="1">
-        <design_technology type="cmos" topology="inverter" size="4" tapered="off"/>
+        <design_technology type="cmos" topology="inverter" size="4" tapered="off" power_gated="true"/>
+        <port type="input" prefix="in" size="1"/>
+        <port type="input" prefix="EN" size="1" is_global="true" default_val="0" is_config_enable="true"/>
+        <port type="input" prefix="ENB" size="1" is_global="true" default_val="1" is_config_enable="true"/>
+        <port type="output" prefix="out" size="1"/>
+      </spice_model>
+      <spice_model type="inv_buf" name="INVD1BWP" prefix="INVD1BWP" is_default="1">
+        <design_technology type="cmos" topology="inverter" size="4" tapered="off" power_gated="false"/>
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="1"/>
       </spice_model>
@@ -223,7 +230,7 @@
         <!--design_technology type="rram" ron="3e3" roff="1e6" wprog_set_nmos="1" wprog_reset_nmos="1" wprog_set_pmos="1" wprog_reset_pmos="1" structure="multi-level" num_level="2"/-->
         <design_technology type="rram" ron="3e3" roff="1e6" wprog_set_nmos="1" wprog_reset_nmos="1" wprog_set_pmos="1" wprog_reset_pmos="1" structure="one-level"/>
         <input_buffer exist="on" spice_model_name="INVTX1"/>
-        <output_buffer exist="on" spice_model_name="INVTX1"/>
+        <output_buffer exist="on" spice_model_name="INVD1BWP"/>
         <!--mux2to1 subckt_name="mux2to1"/-->
         <pass_gate_logic spice_model_name="TGATE"/>
         <port type="input" prefix="in" size="1"/>
@@ -236,7 +243,7 @@
         <!--design_technology type="cmos" structure="one-level"/-->
         <design_technology type="rram" ron="3e3" roff="1e6" wprog_set_nmos="1" wprog_reset_nmos="1" wprog_set_pmos="1" wprog_reset_pmos="1" structure="one-level"/>
         <input_buffer exist="on" spice_model_name="INVTX1"/>
-        <output_buffer exist="on" spice_model_name="INVTX1"/>
+        <output_buffer exist="on" spice_model_name="INVD1BWP"/>
         <!--mux2to1 subckt_name="mux2to1"/-->
         <pass_gate_logic spice_model_name="TGATE"/>
         <port type="input" prefix="in" size="1"/>
@@ -249,7 +256,7 @@
         <!--design_technology type="cmos" structure="tree"/-->
         <design_technology type="rram" structure="tree" ron="3e3" roff="1e6" wprog_set_nmos="1" wprog_reset_nmos="1" wprog_set_pmos="1" wprog_reset_pmos="1"/>
         <input_buffer exist="on" spice_model_name="INVTX1"/>
-        <output_buffer exist="on" spice_model_name="INVTX1"/>
+        <output_buffer exist="on" spice_model_name="INVD1BWP"/>
         <pass_gate_logic spice_model_name="TGATE"/>
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="1"/>
@@ -258,8 +265,8 @@
       <!--DFF subckt ports should be defined as <D> <Q> <CLK> <RESET> <SET>  -->
       <spice_model type="ff" name="static_dff" prefix="dff" spice_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/ff.sp" verilog_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/ff.v">
          <design_technology type="cmos"/>
-         <input_buffer exist="on" spice_model_name="INVTX1"/>
-         <output_buffer exist="on" spice_model_name="INVTX1"/>
+         <input_buffer exist="on" spice_model_name="INVD1BWP"/>
+         <output_buffer exist="on" spice_model_name="INVD1BWP"/>
          <pass_gate_logic spice_model_name="TGATE"/>
          <port type="input" prefix="D" size="1"/>
          <port type="input" prefix="Set" size="1" is_global="true" default_val="0" is_set="true"/>
@@ -270,8 +277,8 @@
       <spice_model type="lut" name="lut6" prefix="lut6" dump_structural_verilog="true">
         <design_technology type="cmos"/>
         <!--design_technology type="rram" structure="tree" ron="3e3" roff="1e6" wprog_set_nmos="1" wprog_reset_nmos="1" wprog_set_pmos="1" wprog_reset_pmos="1"/-->
-        <input_buffer exist="on" spice_model_name="INVTX1"/>
-        <output_buffer exist="on" spice_model_name="INVTX1"/>
+        <input_buffer exist="on" spice_model_name="INVD1BWP"/>
+        <output_buffer exist="on" spice_model_name="INVD1BWP"/>
         <lut_input_buffer exist="on" spice_model_name="tap_buf4"/>
         <pass_gate_logic spice_model_name="TGATE"/>
         <port type="input" prefix="in" size="6"/>
@@ -280,8 +287,8 @@
       </spice_model>
       <spice_model type="sram" name="sram6T" prefix="sram" spice_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/sram.sp" verilog_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/sram.v" >
         <design_technology type="cmos"/>
-        <input_buffer exist="on" spice_model_name="INVTX1"/>
-        <output_buffer exist="on" spice_model_name="INVTX1"/>
+        <input_buffer exist="on" spice_model_name="INVD1BWP"/>
+        <output_buffer exist="on" spice_model_name="INVD1BWP"/>
         <pass_gate_logic spice_model_name="TGATE"/>
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="2"/>
@@ -289,8 +296,8 @@
       <spice_model type="sram" name="sram6T_rram" prefix="nvsram" spice_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/sram.sp" verilog_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/sram.v" >
         <!--design_technology type="cmos"/-->
         <design_technology type="rram" structure="tree" ron="3e3" roff="1e6" wprog_set_nmos="1" wprog_reset_nmos="1" wprog_set_pmos="1" wprog_reset_pmos="1"/>
-        <input_buffer exist="on" spice_model_name="INVTX1"/>
-        <output_buffer exist="on" spice_model_name="INVTX1"/>
+        <input_buffer exist="on" spice_model_name="INVD1BWP"/>
+        <output_buffer exist="on" spice_model_name="INVD1BWP"/>
         <pass_gate_logic spice_model_name="TGATE"/>
         <port type="input" prefix="in" size="1"/>
         <port type="input" prefix="read" size="1" is_global="true" default_val="0" />
@@ -301,8 +308,8 @@
       </spice_model>
       <spice_model type="sram" name="sram6T_blwl" prefix="sram_blwl" spice_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/sram.sp" verilog_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/sram.v">
         <design_technology type="cmos"/>
-        <input_buffer exist="on" spice_model_name="INVTX1"/>
-        <output_buffer exist="on" spice_model_name="INVTX1"/>
+        <input_buffer exist="on" spice_model_name="INVD1BWP"/>
+        <output_buffer exist="on" spice_model_name="INVD1BWP"/>
         <pass_gate_logic spice_model_name="TGATE"/>
         <port type="input" prefix="in" size="1"/>
         <port type="input" prefix="read" size="1" is_global="true" default_val="0" />
@@ -312,10 +319,10 @@
         <port type="wl" prefix="wl" size="1"/>
       </spice_model>
       <!--Scan-chain DFF subckt ports should be defined as <D> <Q> <Qb> <CLK> <RESET> <SET>  -->
-      <spice_model type="sff" name="sc_dff" prefix="sc_dff" spice_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/ff.sp" verilog_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/ff.v">
+      <spice_model type="sff" name="sc_ff" prefix="scff" spice_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/ff.sp" verilog_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/ff.v">
          <design_technology type="cmos"/>
-         <input_buffer exist="on" spice_model_name="INVTX1"/>
-         <output_buffer exist="on" spice_model_name="INVTX1"/>
+         <input_buffer exist="on" spice_model_name="INVD1BWP"/>
+         <output_buffer exist="on" spice_model_name="INVD1BWP"/>
          <pass_gate_logic spice_model_name="TGATE"/>
          <port type="input" prefix="D" size="1"/>
          <port type="input" prefix="Set" size="1"/>
@@ -326,16 +333,16 @@
       </spice_model>
       <spice_model type="inpad" name="inpad" prefix="inpad" spice_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/io.sp" verilog_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/io.v">
         <design_technology type="cmos"/>
-        <input_buffer exist="on" spice_model_name="INVTX1"/>
-        <output_buffer exist="on" spice_model_name="INVTX1"/>
+        <input_buffer exist="on" spice_model_name="INVD1BWP"/>
+        <output_buffer exist="on" spice_model_name="INVD1BWP"/>
         <pass_gate_logic spice_model_name="TGATE"/>
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="1"/>
       </spice_model>
       <spice_model type="outpad" name="outpad" prefix="outpad" spice_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/io.sp" verilog_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/io.v">
         <design_technology type="cmos"/>
-        <input_buffer exist="on" spice_model_name="INVTX1"/>
-        <output_buffer exist="on" spice_model_name="INVTX1"/>
+        <input_buffer exist="on" spice_model_name="INVD1BWP"/>
+        <output_buffer exist="on" spice_model_name="INVD1BWP"/>
         <pass_gate_logic spice_model_name="TGATE"/>
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="1"/>
@@ -343,8 +350,8 @@
       <spice_model type="iopad" name="iopad" prefix="iopad" spice_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/io.sp" verilog_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/io.v">
         <!--design_technology type="cmos"/-->
         <design_technology type="rram" structure="tree" ron="3e3" roff="1e6" wprog_set_nmos="1" wprog_reset_nmos="1" wprog_set_pmos="1" wprog_reset_pmos="1"/>
-        <input_buffer exist="on" spice_model_name="INVTX1"/>
-        <output_buffer exist="on" spice_model_name="INVTX1"/>
+        <input_buffer exist="on" spice_model_name="INVD1BWP"/>
+        <output_buffer exist="on" spice_model_name="INVD1BWP"/>
         <pass_gate_logic spice_model_name="TGATE"/>
         <port type="inout" prefix="pad" size="1"/>
         <port type="sram" prefix="en" size="1" mode_select="true" spice_model_name="sram6T_rram" default_val="1"/>

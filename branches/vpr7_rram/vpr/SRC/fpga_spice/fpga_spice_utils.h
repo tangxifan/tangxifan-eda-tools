@@ -35,6 +35,10 @@ t_spice_model_port** find_spice_model_ports(t_spice_model* spice_model,
                                             enum e_spice_model_port_type port_type,
                                             int* port_num, boolean ignore_global_port);
 
+t_spice_model_port** find_spice_model_config_done_ports(t_spice_model* spice_model,
+                                                        enum e_spice_model_port_type port_type,
+                                                        int* port_num, boolean ignore_global_port);
+
 void fprint_spice_head(FILE* fp,
                        char* usage);
 
