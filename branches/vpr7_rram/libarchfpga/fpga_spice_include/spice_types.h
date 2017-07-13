@@ -14,8 +14,6 @@ enum e_spice_model_type {
   SPICE_MODEL_MUX, 
   SPICE_MODEL_LUT, 
   SPICE_MODEL_FF, 
-  SPICE_MODEL_INPAD, 
-  SPICE_MODEL_OUTPAD, 
   SPICE_MODEL_SRAM, 
   SPICE_MODEL_HARDLOGIC,
   SPICE_MODEL_SCFF,
@@ -186,6 +184,7 @@ struct s_spice_model_design_tech_info {
   int mux_num_level;
   /* Power gate information */
   boolean power_gated;
+  boolean advanced_rram_design;
 };
 
 struct s_spice_model {

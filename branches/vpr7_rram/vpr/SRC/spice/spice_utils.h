@@ -5,6 +5,39 @@ enum e_measure_type {
 };
 
 /* Subroutines declarations */
+
+void fprint_spice_head(FILE* fp,
+                       char* usage);
+
+
+int rec_fprint_spice_model_global_ports(FILE* fp, 
+                                        t_spice_model* cur_spice_model,
+                                        boolean recursive);
+
+int fprint_spice_global_ports(FILE* fp, t_llist* head);
+
+void fprint_spice_sram_one_outport(FILE* fp,
+                                   t_sram_orgz_info* cur_sram_orgz_info,
+                                   int cur_sram,
+                                   int port_type_index);
+
+void fprint_spice_one_specific_sram_subckt(FILE* fp,
+                                          t_sram_orgz_info* cur_sram_orgz_info,
+                                          t_spice_model* parent_spice_model,
+                                          char* vdd_port_name,
+                                          int sram_index);
+
+void fprint_spice_one_sram_subckt(FILE* fp,
+                                  t_sram_orgz_info* cur_sram_orgz_info,
+                                  t_spice_model* parent_spice_model,
+                                  char* vdd_port_name);
+
+void fprint_voltage_pulse_params(FILE* fp,
+                                 int init_val,
+                                 float density,
+                                 float probability);
+
+
 void init_include_user_defined_netlists(t_spice spice);
 
 void fprint_include_user_defined_netlists(FILE* fp,

@@ -1,18 +1,4 @@
 
-int find_path_id_between_pb_rr_nodes(t_rr_node* local_rr_graph,
-                                     int src_node,
-                                     int des_node);
-
-enum e_interconnect find_pb_graph_pin_in_edges_interc_type(t_pb_graph_pin pb_graph_pin);
-
-t_spice_model* find_pb_graph_pin_in_edges_interc_spice_model(t_pb_graph_pin pb_graph_pin);
-
-void stats_mux_spice_model_pb_type_rec(t_llist** muxes_head,
-                                       t_pb_type* cur_pb_type);
-
-void stats_mux_spice_model_pb_node_rec(t_llist** muxes_head,
-                                       t_pb_graph_node* cur_pb_node);
-
 void fprint_pb_type_ports(FILE* fp,
                           char* port_prefix,
                           int use_global_clock,

@@ -529,10 +529,6 @@ static void ProcessSpiceModel(ezxml_t Parent,
     spice_model->type = SPICE_MODEL_LUT;
   } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"ff")) {
     spice_model->type = SPICE_MODEL_FF;
-  } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"inpad")) {
-    spice_model->type = SPICE_MODEL_INPAD;
-  } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"outpad")) {
-    spice_model->type = SPICE_MODEL_OUTPAD;
   } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"sram")) {
     spice_model->type = SPICE_MODEL_SRAM;
   } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"hard_logic")) {
@@ -666,6 +662,9 @@ static void ProcessSpiceModel(ezxml_t Parent,
       spice_model->design_tech_info.mux_num_level = 1;
     }
 	ezxml_set_attr(Node, "num_level", NULL);
+    /* Specify if should use the advanced 4T1R MUX design */
+    spice_model->design_tech_info.advanced_rram_design = GetBooleanProperty(Node,"advanced_rram_design", FALSE, FALSE);
+    ezxml_set_attr(Node, "advanced_rram_design", NULL);
     FreeNode(Node);
   } else {
     vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] design_technology is expected in spice_model(%s).\n",
@@ -829,9 +828,7 @@ static void check_spice_models(int num_spice_model,
       }
     }
     /* Check io has been defined and has input and output ports*/
-    if ((SPICE_MODEL_INPAD == spice_models[i].type)
-      ||(SPICE_MODEL_OUTPAD == spice_models[i].type)
-      ||(SPICE_MODEL_IOPAD == spice_models[i].type)) {
+    if (SPICE_MODEL_IOPAD == spice_models[i].type) {
       has_io = 1;
       has_in_port = 0;
       has_out_port = 0;

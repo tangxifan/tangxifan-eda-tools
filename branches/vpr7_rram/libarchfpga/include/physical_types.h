@@ -630,15 +630,11 @@ struct s_pb_type {
     /* Xifan TANG: FPGA-SPICE and SynVerilog */
     int physical_mode_num_reserved_conf_bits;
     int physical_mode_num_conf_bits;
-    int physical_mode_num_inpads;
-    int physical_mode_num_outpads;
     int physical_mode_num_iopads;
 
     int default_mode_num_reserved_conf_bits;
     int default_mode_num_conf_bits;
     int default_mode_num_mode_bits;
-    int default_mode_num_inpads;
-    int default_mode_num_outpads;
     int default_mode_num_iopads;
 };
 typedef struct s_pb_type t_pb_type;

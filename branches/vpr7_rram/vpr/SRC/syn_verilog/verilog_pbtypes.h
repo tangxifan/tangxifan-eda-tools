@@ -89,8 +89,6 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
                                     t_pb_graph_node* cur_pb_graph_node,
                                     int pb_type_index);
 
-t_pb* get_child_pb_for_phy_pb_graph_node(t_pb* cur_pb, int ipb, int jpb);
-
 void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
                                         char* subckt_prefix,
                                         t_pb_graph_node* cur_pb_graph_node,

@@ -20,6 +20,9 @@ int split_path_prog_name(char* prog_path,
 
 char* chomp_file_name_postfix(char* file_name);
 
+void fprint_commented_sram_bits(FILE* fp,
+                                int num_sram_bits, int* sram_bits);
+
 t_spice_model* find_name_matched_spice_model(char* spice_model_name,
                                              int num_spice_model,
                                              t_spice_model* spice_models);
@@ -39,11 +42,6 @@ t_spice_model_port** find_spice_model_config_done_ports(t_spice_model* spice_mod
                                                         enum e_spice_model_port_type port_type,
                                                         int* port_num, boolean ignore_global_port);
 
-void fprint_spice_head(FILE* fp,
-                       char* usage);
-
-void fprint_commented_sram_bits(FILE* fp,
-                                int num_sram_bits, int* sram_bits);
 
 t_spice_transistor_type* find_mosfet_tech_lib(t_spice_tech_lib tech_lib,
                                               e_spice_trans_type trans_type);
@@ -66,6 +64,9 @@ t_port** find_pb_type_ports_match_spice_model_port_type(t_pb_type* pb_type,
 
 t_block* search_mapped_block(int x, int y, int z);
 
+
+int determine_num_sram_bits_mux_basis_subckt(t_spice_model* mux_spice_model,
+                                             int num_input_per_level);
 
 int determine_tree_mux_level(int mux_size);
 
@@ -109,12 +110,6 @@ char* convert_chan_rr_node_direction_to_string(enum PORTS chan_rr_node_direction
 
 void init_spice_net_info(t_spice_net_info* spice_net_info);
 
-t_spice_model* find_inpad_spice_model(int num_spice_model,
-                                      t_spice_model* spice_models);
-
-t_spice_model* find_outpad_spice_model(int num_spice_model,
-                                       t_spice_model* spice_models);
-
 t_spice_model* find_iopad_spice_model(int num_spice_model,
                                       t_spice_model* spice_models);
 
@@ -150,10 +145,6 @@ float get_rr_node_net_probability(t_rr_node node);
 
 int get_rr_node_net_init_value(t_rr_node node);
 
-void fprint_voltage_pulse_params(FILE* fp,
-                                 int init_val,
-                                 float density,
-                                 float probability);
 
 int find_parent_pb_type_child_index(t_pb_type* parent_pb_type,
                                     int mode_index,
@@ -397,52 +388,98 @@ void find_bl_wl_ports_spice_model(t_spice_model* cur_spice_model,
 
 int* decode_mode_bits(char* mode_bits, int* num_sram_bits);
 
+/* Useful functions for LUT decoding */
+void stats_lut_spice_mux(t_llist** muxes_head,
+                         t_spice_model* spice_model);
+
+char* complete_truth_table_line(int lut_size,
+                                char* input_truth_table_line);
+
+void configure_lut_sram_bits_per_line_rec(int** sram_bits, 
+                                          int lut_size,
+                                          char* truth_table_line,
+                                          int start_point);
+
+int* generate_lut_sram_bits(int truth_table_len,
+                            char** truth_table,
+                            int lut_size);
+
+char** assign_lut_truth_table(t_logical_block* mapped_logical_block,
+                              int* truth_table_length);
+
+int get_lut_output_init_val(t_logical_block* lut_logical_block);
+
 /* Functions to manipulate structs of SRAM orgz */
 t_sram_orgz_info* alloc_one_sram_orgz_info();
+
 t_mem_bank_info* alloc_one_mem_bank_info();
+
 void free_one_mem_bank_info(t_mem_bank_info* mem_bank_info);
+
 t_scff_info* alloc_one_scff_info();
+
 void free_one_scff_info(t_scff_info* scff_info);
+
 t_standalone_sram_info* alloc_one_standalone_sram_info();
+
 void free_one_standalone_sram_info(t_standalone_sram_info* standalone_sram_info);
+
 void init_mem_bank_info(t_mem_bank_info* cur_mem_bank_info,
                         t_spice_model* cur_mem_model);
+
 void try_update_sram_orgz_info_reserved_blwl(t_sram_orgz_info* cur_sram_orgz_info,
                                              int updated_reserved_bl, int updated_reserved_wl);
+
 void update_mem_bank_info_reserved_blwl(t_mem_bank_info* cur_mem_bank_info,
                                         int updated_reserved_bl, int updated_reserved_wl);
+
 void get_mem_bank_info_reserved_blwl(t_mem_bank_info* cur_mem_bank_info,
                                      int* num_reserved_bl, int* num_reserved_wl);
+
 void update_mem_bank_info_num_blwl(t_mem_bank_info* cur_mem_bank_info,
                                    int updated_bl, int updated_wl);
+
 void get_sram_orgz_info_reserved_blwl(t_sram_orgz_info* cur_sram_orgz_info,
                                       int* num_reserved_bl, int* num_reserved_wl);
+
 void update_mem_bank_info_num_mem_bit(t_mem_bank_info* cur_mem_bank_info,
                                       int num_mem_bit);
+
 void init_scff_info(t_scff_info* cur_scff_info,
                     t_spice_model* cur_mem_model);
+
 void update_scff_info_num_mem_bit(t_scff_info* cur_scff_info,
                                   int num_mem_bit);
+
 void init_standalone_sram_info(t_standalone_sram_info* cur_standalone_sram_info,
                                t_spice_model* cur_mem_model);
+
 void update_standalone_sram_info_num_mem_bit(t_standalone_sram_info* cur_standalone_sram_info,
                                              int num_mem_bit);
+
 void init_sram_orgz_info(t_sram_orgz_info* cur_sram_orgz_info,
                          enum e_sram_orgz cur_sram_orgz_type,
                          t_spice_model* cur_mem_model, 
                          int grid_nx, int grid_ny);
+
 void free_sram_orgz_info(t_sram_orgz_info* cur_sram_orgz_info,
                          enum e_sram_orgz cur_sram_orgz_type,
                          int grid_nx, int grid_ny);
+
 void update_sram_orgz_info_reserved_blwl(t_sram_orgz_info* cur_sram_orgz_info,
                                          int updated_reserved_bl, int updated_reserved_wl);
+
 int get_sram_orgz_info_num_mem_bit(t_sram_orgz_info* cur_sram_orgz_info);
+
 void get_sram_orgz_info_num_blwl(t_sram_orgz_info* cur_sram_orgz_info,
                                 int* cur_bl, int* cur_wl);
+
 void update_sram_orgz_info_num_mem_bit(t_sram_orgz_info* cur_sram_orgz_info,
                                        int new_num_mem_bit);
+
 void update_sram_orgz_info_num_blwl(t_sram_orgz_info* cur_sram_orgz_info,
                                     int new_bl, int new_wl);
+
 void get_sram_orgz_info_mem_model(t_sram_orgz_info* cur_sram_orgz_info,
                                   t_spice_model** mem_model_ptr);
 
@@ -452,3 +489,48 @@ void init_reserved_syntax_char(t_reserved_syntax_char* cur_reserved_syntax_char,
 void check_mem_model_blwl_inverted(t_spice_model* cur_mem_model, 
                                    enum e_spice_model_port_type blwl_port_type,
                                    boolean* blwl_inverted);
+
+void init_spice_mux_arch(t_spice_model* spice_model,
+                         t_spice_mux_arch* spice_mux_arch,
+                         int mux_size);
+
+int find_spice_mux_arch_special_basis_size(t_spice_mux_arch spice_mux_arch);
+
+t_llist* search_mux_linked_list(t_llist* mux_head,
+                                int mux_size,
+                                t_spice_model* spice_model);
+
+void check_and_add_mux_to_linked_list(t_llist** muxes_head,
+                                      int mux_size,
+                                      t_spice_model* spice_model);
+
+void free_muxes_llist(t_llist* muxes_head);
+
+void stats_spice_muxes_routing_arch(t_llist** muxes_head,
+                                    int num_switch,
+                                    t_switch_inf* switches,
+                                    t_spice* spice,
+                                    t_det_routing_arch* routing_arch);
+
+void stats_mux_spice_model_pb_type_rec(t_llist** muxes_head,
+                                       t_pb_type* cur_pb_type);
+
+void stats_mux_spice_model_pb_node_rec(t_llist** muxes_head,
+                                       t_pb_graph_node* cur_pb_node);
+
+t_llist* stats_spice_muxes(int num_switch,
+                           t_switch_inf* switches,
+                           t_spice* spice,
+                           t_det_routing_arch* routing_arch);
+
+enum e_interconnect find_pb_graph_pin_in_edges_interc_type(t_pb_graph_pin pb_graph_pin);
+
+t_spice_model* find_pb_graph_pin_in_edges_interc_spice_model(t_pb_graph_pin pb_graph_pin);
+
+int find_path_id_between_pb_rr_nodes(t_rr_node* local_rr_graph,
+                                     int src_node,
+                                     int des_node);
+
+t_pb* get_child_pb_for_phy_pb_graph_node(t_pb* cur_pb, int ipb, int jpb);
+
+

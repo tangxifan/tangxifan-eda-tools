@@ -28,36 +28,10 @@
 #include "spice_pbtypes.h"
 #include "spice_routing.h"
 #include "spice_subckt.h"
-#include "spice_netlist_utils.h"
+#include "spice_utils.h"
 #include "spice_top_netlist.h"
 
-/* Local Subroutines declaration */
-static 
-void fprint_top_netlist_global_ports(FILE* fp,
-                                     int num_clock,
-                                     t_spice spice);
-
-static 
-void fprint_measure_vdds_cbs(FILE* fp,
-                             enum e_measure_type meas_type,
-                             int num_clock_cycle,
-                             boolean leakage_only);
-
-static 
-void fprint_measure_vdds_sbs(FILE* fp,
-                             enum e_measure_type meas_type,
-                             int num_clock_cycle,
-                             boolean leakage_only);
-
-static 
-void fprint_top_netlist_stimulations(FILE* fp,
-                                     int num_clock,
-                                     t_spice spice);
-
-static 
-void fprint_top_netlist_measurements(FILE* fp, 
-                                     t_spice spice,
-                                     boolean leakage_only);
+/* Global variables in this source file*/
 
 
 /******** Subroutines ***********/
@@ -65,6 +39,8 @@ static
 void fprint_top_netlist_global_ports(FILE* fp,
                                      int num_clock,
                                      t_spice spice) {
+  t_spice_model* mem_model = NULL;
+
 
   /* A valid file handler */
   if (NULL == fp) {
@@ -73,13 +49,25 @@ void fprint_top_netlist_global_ports(FILE* fp,
   }
 
   /* Global nodes: Vdd for SRAMs, Logic Blocks(Include IO), Switch Boxes, Connection Boxes */
-  fprintf(fp, ".global gvdd gset greset\n");
-  fprintf(fp, ".global gvdd_local_interc gvdd_io gvdd_hardlogic\n");
+  fprintf(fp, ".global %s %s %s\n", 
+              spice_top_netlist_global_vdd_port,
+              spice_top_netlist_global_set_port,
+              spice_top_netlist_global_reset_port);
+  fprintf(fp, ".global %s %s %s\n",
+              spice_top_netlist_global_vdd_localrouting_port,
+              spice_top_netlist_global_vdd_io_port,
+              spice_top_netlist_global_vdd_hardlogic_port);
+
+  /* Get memory spice model */
+  get_sram_orgz_info_mem_model(sram_spice_orgz_info, &mem_model);
+  /* Print the VDD ports of SRAM belonging to other SPICE module */
   fprintf(fp, ".global gvdd_sram_local_routing gvdd_sram_luts gvdd_sram_cbs gvdd_sram_sbs\n");
-  fprintf(fp, ".global %s->in\n", sram_spice_model->prefix);
+  fprintf(fp, ".global gvdd_sram_ios\n");
+
+  fprintf(fp, ".global %s->in\n", mem_model->prefix);
   /* Define a global clock port if we need one*/
   fprintf(fp, "***** Global Clock Signals *****\n");
-  fprintf(fp, ".global gclock\n");
+  fprintf(fp, ".global %s\n", spice_top_netlist_global_clock_port);
 
   /* Print scan-chain global ports */
   if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
@@ -117,11 +105,11 @@ static
 void fprint_top_netlist_stimulations(FILE* fp,
                                      int num_clock,
                                      t_spice spice) {
-  int inet, iblock, inpad_idx;
+  int inet, iblock, iopad_idx;
   int ix, iy;
-  int found_mapped_inpad = 0;
+  int found_mapped_iopad = 0;
   /* Find Input Pad Spice model */
-  t_spice_model* inpad_spice_model = find_inpad_spice_model(spice.num_spice_model, spice.spice_models);
+  t_spice_model* iopad_spice_model = find_iopad_spice_model(spice.num_spice_model, spice.spice_models);
   t_spice_net_info* cur_spice_net_info = NULL;
 
   /* Check the file handler*/ 
@@ -229,14 +217,18 @@ void fprint_top_netlist_stimulations(FILE* fp,
   /* For each input_signal
    * TODO: this part is low-efficent for run-time concern... Need improve
    */
-  assert(NULL != inpad_spice_model);
-  for (inpad_idx = 0; inpad_idx < inpad_spice_model->cnt; inpad_idx++) {
+  assert(NULL != iopad_spice_model);
+  for (iopad_idx = 0; iopad_idx < iopad_spice_model->cnt; iopad_idx++) {
     /* Find if this inpad is mapped to a logical block */
-    found_mapped_inpad = 0;
+    found_mapped_iopad = 0;
     for (iblock = 0; iblock < num_logical_blocks; iblock++) {
-      if ((inpad_spice_model == logical_block[iblock].mapped_spice_model)
-         &&(inpad_idx == logical_block[iblock].mapped_spice_model_index)) {
+      if ((iopad_spice_model == logical_block[iblock].mapped_spice_model)
+         &&(iopad_idx == logical_block[iblock].mapped_spice_model_index)) {
         /* Make sure We find the correct logical block !*/
+        if (VPACK_OUTPAD == logical_block[iblock].type) {
+          /* Bypass outputs */
+          continue;
+        }
         assert(VPACK_INPAD == logical_block[iblock].type);
         cur_spice_net_info = NULL;
         for (inet = 0; inet < num_nets; inet++) { 
@@ -252,19 +244,23 @@ void fprint_top_netlist_stimulations(FILE* fp,
         assert(!(1 < cur_spice_net_info->probability));
         /* Get the net information */
         /* First cycle reserved for measuring leakage */
-        fprintf(fp, "Vgfpga_input[%d]_%s[%d] gfpga_input[%d]_%s[%d] 0 \n", 
-                inpad_idx, inpad_spice_model->prefix, inpad_idx,
-                inpad_idx, inpad_spice_model->prefix, inpad_idx);
+        fprintf(fp, "V%s[%d]_%s[%d] %s[%d]_%s[%d] 0 \n", 
+                gio_inout_prefix,
+                iopad_idx, iopad_spice_model->prefix, iopad_idx,
+                gio_inout_prefix,
+                iopad_idx, iopad_spice_model->prefix, iopad_idx);
         fprint_voltage_pulse_params(fp, cur_spice_net_info->init_val, cur_spice_net_info->density, cur_spice_net_info->probability);
-        found_mapped_inpad++;
+        found_mapped_iopad++;
       }
     } 
-    assert((0 == found_mapped_inpad)||(1 == found_mapped_inpad));
+    assert((0 == found_mapped_iopad)||(1 == found_mapped_iopad));
     /* if we cannot find any mapped inpad from tech.-mapped netlist, give a default */
-    if (0 == found_mapped_inpad) {
-      fprintf(fp, "Vgfpga_input[%d]_%s[%d] gfpga_input[%d]_%s[%d] 0 ",
-              inpad_idx, inpad_spice_model->prefix, inpad_idx,
-              inpad_idx, inpad_spice_model->prefix, inpad_idx);
+    if (0 == found_mapped_iopad) {
+      fprintf(fp, "V%s[%d]_%s[%d] %s[%d]_%s[%d] 0 ",
+              gio_inout_prefix,
+              iopad_idx, iopad_spice_model->prefix, iopad_idx,
+              gio_inout_prefix,
+              iopad_idx, iopad_spice_model->prefix, iopad_idx);
       switch (default_signal_init_value) {
       case 0:
         fprintf(fp, "0\n");
@@ -675,6 +671,7 @@ void fprint_spice_top_netlist(char* circuit_name,
  
   /* Print all global wires*/
   fprint_top_netlist_global_ports(fp, num_clock, spice);
+  fprint_spice_global_ports(fp, global_ports_head);
  
   /* Print simulation temperature and other options for SPICE */
   fprint_spice_options(fp, spice.spice_params);

@@ -383,10 +383,10 @@ void dump_verilog_cmos_mux_one_basis_module(FILE* fp,
     exit(1);
   } 
 
-  /* Special: 2-input MUX has only 1 memory bit */
-  if (2 == num_input_basis_subckt) {
-    num_mem = 1;
-  }
+  /* Determine the number of memory bit
+   * The function considers a special case :
+   * 2-input basis in tree-like MUX only requires 1 memory bit */
+  num_mem = determine_num_sram_bits_mux_basis_subckt(cur_spice_model, num_input_basis_subckt);
 
   /* Comment lines */
   fprintf(fp, "//---- CMOS MUX basis module: %s -----\n", mux_basis_subckt_name);
@@ -477,10 +477,10 @@ void dump_verilog_cmos_mux_one_basis_module_structural(FILE* fp,
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
     exit(1);
   } 
-  /* Special: 2-input MUX has only 1 memory bit */
-  if (2 == num_input_basis_subckt) {
-    num_mem = 1;
-  }
+  /* Determine the number of memory bit
+   * The function considers a special case :
+   * 2-input basis in tree-like MUX only requires 1 memory bit */
+  num_mem = determine_num_sram_bits_mux_basis_subckt(cur_spice_model, num_input_basis_subckt);
 
   /* Comment lines */
   fprintf(fp, "//---- Structural Verilog for CMOS MUX basis module: %s -----\n", mux_basis_subckt_name);

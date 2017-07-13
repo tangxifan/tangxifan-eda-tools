@@ -187,11 +187,7 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   sram_verilog_orgz_info = alloc_one_sram_orgz_info();
   init_sram_orgz_info(sram_verilog_orgz_info, sram_verilog_orgz_type, sram_verilog_model, nx + 2, ny + 2);
   /* Assign global variables of input and output pads */
-  inpad_verilog_model = find_inpad_spice_model(Arch.spice->num_spice_model, Arch.spice->spice_models);
-  outpad_verilog_model = find_outpad_spice_model(Arch.spice->num_spice_model, Arch.spice->spice_models);
   iopad_verilog_model = find_iopad_spice_model(Arch.spice->num_spice_model, Arch.spice->spice_models);
-  assert(NULL != inpad_verilog_model);
-  assert(NULL != outpad_verilog_model);
   assert(NULL != iopad_verilog_model);
 
   /* zero the counter of each spice_model */

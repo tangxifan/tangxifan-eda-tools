@@ -29,9 +29,302 @@
 #include "spice_pbtypes.h"
 #include "spice_routing.h"
 #include "fpga_spice_backannotate_utils.h"
-#include "spice_netlist_utils.h"
+#include "spice_utils.h"
 
 /***** Subroutines *****/
+void fprint_spice_head(FILE* fp,
+                       char* usage) {
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d]) FileHandle is NULL!\n",__FILE__,__LINE__); 
+    exit(1);
+  } 
+  fprintf(fp,"*****************************\n");
+  fprintf(fp,"*     FPGA SPICE Netlist    *\n");
+  fprintf(fp,"* Description: %s *\n",usage);
+  fprintf(fp,"*    Author: Xifan TANG     *\n");
+  fprintf(fp,"* Organization: EPFL/IC/LSI *\n");
+  fprintf(fp,"* Date: %s *\n",my_gettime());
+  fprintf(fp,"*****************************\n");
+  return;
+}
+
+
+/* Print all the global ports that are stored in the linked list 
+ * Return the number of ports that have been dumped 
+ */
+int rec_fprint_spice_model_global_ports(FILE* fp, 
+                                        t_spice_model* cur_spice_model,
+                                        boolean recursive) {
+  int i, iport, dumped_port_cnt, rec_dumped_port_cnt;
+
+  dumped_port_cnt = 0;
+  rec_dumped_port_cnt = 0;
+
+  /* Check */
+  assert(NULL != cur_spice_model);
+  if (0 < cur_spice_model->num_port) {
+    assert(NULL != cur_spice_model->ports);
+  }
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+  }
+
+  fprintf(fp, "\n");
+  fprintf(fp, "***** BEGIN Global ports of SPICE_MODEL(%s) *****\n",
+          cur_spice_model->name);
+
+  for (iport = 0; iport < cur_spice_model->num_port; iport++) {
+    /* if this spice model requires customized netlist to be included, we do not go recursively */
+    if (TRUE == recursive) { 
+      /* GO recursively first, and meanwhile count the number of global ports */
+      /* For the port that requires another spice_model, i.e., SRAM
+       * We need include any global port in that spice model
+       */
+      if (NULL != cur_spice_model->ports[iport].spice_model) {
+        /* Check if we need to dump a comma */
+        rec_dumped_port_cnt += 
+           rec_fprint_spice_model_global_ports(fp, cur_spice_model->ports[iport].spice_model, 
+                                               recursive);
+        /* Update counter */
+        dumped_port_cnt += rec_dumped_port_cnt;
+        continue;
+      }
+    }
+    /* By pass non-global ports*/
+    if (FALSE == cur_spice_model->ports[iport].is_global) {
+      continue;
+    }
+    /* Check if we need to dump a comma */
+    fprintf(fp, "+ ");
+    for (i = 0; i < cur_spice_model->ports[iport].size; i++) {
+      fprintf(fp, " %s[%d] ", 
+              cur_spice_model->ports[iport].prefix,
+              i);
+    }
+    /* Update counter */
+    dumped_port_cnt++;
+  }
+  
+  fprintf(fp, "\n");
+  fprintf(fp, "***** END Global ports of SPICE_MODEL(%s) *****\n",
+          cur_spice_model->name);
+
+  return dumped_port_cnt;
+}
+
+/* Print all the global ports that are stored in the linked list */
+int fprint_spice_global_ports(FILE* fp, t_llist* head) {
+  t_llist* temp = head;
+  t_spice_model_port* cur_global_port = NULL;
+  int dumped_port_cnt = 0;
+  int i;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+  }
+
+  fprintf(fp, "\n");
+  fprintf(fp, "***** BEGIN Global ports *****\n");
+  fprintf(fp, "+ ");
+  while(NULL != temp) {
+    cur_global_port = (t_spice_model_port*)(temp->dptr); 
+    for (i = 0; i < cur_global_port->size; i++) {
+      fprintf(fp, " %s[%d] ", 
+              cur_global_port->prefix,
+              i); 
+    }
+    /* Update counter */
+    dumped_port_cnt++;
+    /* Go to the next */
+    temp = temp->next;
+  }
+  fprintf(fp, "\n");
+  fprintf(fp, "***** END Global ports *****\n");
+
+  return dumped_port_cnt;
+}
+
+
+/* Print a SRAM output port in SPICE format */
+void fprint_spice_sram_one_outport(FILE* fp,
+                                   t_sram_orgz_info* cur_sram_orgz_info,
+                                   int cur_sram,
+                                   int port_type_index) {
+  t_spice_model* mem_model = NULL;
+  char* port_name = NULL;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  /* Get memory_model */
+  get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model);
+ 
+  /* Keep the branch as it is, in case thing may become more complicated*/
+  switch (cur_sram_orgz_info->type) {
+  case SPICE_SRAM_STANDALONE:
+    if (0 == port_type_index) {
+      port_name = "out";
+    } else {
+      assert(1 == port_type_index);
+      port_name = "outb";
+    }
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+    if (0 == port_type_index) {
+      port_name = "scff_out";
+    } else {
+      assert(1 == port_type_index);
+      port_name = "scff_outb";
+    }
+    break;
+  case SPICE_SRAM_MEMORY_BANK:
+    if (0 == port_type_index) {
+      port_name = "out";
+    } else {
+      assert(1 == port_type_index);
+      port_name = "outb";
+    }
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization !\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /*Malloc and generate the full name of port */
+  fprintf(fp, "%s[%d]->%s ", 
+          mem_model->prefix, cur_sram, port_name); /* Outputs */
+
+  /* Free */
+  /* Local variables such as port1_name and port2 name are automatically freed  */
+
+  return;
+}
+
+/* Print a SRAM module in SPICE format */
+void fprint_spice_one_specific_sram_subckt(FILE* fp,
+                                          t_sram_orgz_info* cur_sram_orgz_info,
+                                          t_spice_model* parent_spice_model,
+                                          char* vdd_port_name,
+                                          int sram_index) {
+  t_spice_model* mem_model = NULL;
+  char* port_name = NULL;
+  int cur_sram = 0;
+  
+  /* Get memory model */
+  get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model);
+
+  /* Get current index of SRAM module */
+  cur_sram = sram_index; 
+
+  /* Depend on the type of SRAM organization */
+  switch (cur_sram_orgz_info->type) {
+  case SPICE_SRAM_STANDALONE:
+  case SPICE_SRAM_MEMORY_BANK:
+    fprintf(fp, "X%s[%d] ", mem_model->prefix, cur_sram); /* SRAM subckts*/
+    /* fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, cur_sram);*/ /* Input*/
+    /* Global ports : 
+     * Only dump the global ports belonging to a spice_model 
+     * Do not go recursive, we can freely define global ports anywhere in SPICE netlist
+     */
+    rec_fprint_spice_model_global_ports(fp, mem_model, FALSE); 
+    /* Local ports */
+    fprintf(fp, "%s->in ", mem_model->prefix); /* Input*/
+    fprintf(fp, "%s[%d]->out %s[%d]->outb ", 
+            mem_model->prefix, cur_sram, mem_model->prefix, cur_sram); /* Outputs */
+    fprintf(fp, "gvdd_%s_%s sgnd ", 
+                vdd_port_name);  //
+    fprintf(fp, " %s\n", mem_model->name);  //
+    /* Add nodeset to help convergence */ 
+    fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", mem_model->prefix, cur_sram);
+    fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", mem_model->prefix, cur_sram);
+    break;
+  case SPICE_SRAM_SCAN_CHAIN: 
+    fprintf(fp, "X%s[%d] ", mem_model->prefix, cur_sram); /* SRAM subckts*/
+    /* Global ports : 
+     * Only dump the global ports belonging to a spice_model 
+     * Do not go recursive, we can freely define global ports anywhere in SPICE netlist
+     */
+    rec_fprint_spice_model_global_ports(fp, mem_model, FALSE); 
+    /* Local ports */
+    fprintf(fp, "%s[%d]->in ", mem_model->prefix, cur_sram); /* Input*/
+    fprintf(fp, "%s[%d]->out %s[%d]->outb ", 
+            mem_model->prefix, cur_sram, mem_model->prefix, cur_sram); /* Outputs */
+    fprintf(fp, "sc_clk sc_rst sc_set \n");  //
+    fprintf(fp, "gvdd_%s_%s sgnd ", 
+                 vdd_port_name);  //
+    fprintf(fp, " %s\n", mem_model->name);  //
+    /* Add nodeset to help convergence */ 
+    fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", mem_model->prefix, cur_sram);
+    fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", mem_model->prefix, cur_sram);
+    /* Connect to the tail of previous Scan-chain FF*/
+    fprintf(fp,"R%s[%d]_short %s[%d]->out %s[%d]->in 0\n", 
+            mem_model->prefix, cur_sram,
+            mem_model->prefix, cur_sram,
+            sram_spice_model->prefix, cur_sram + 1);
+    /* Specify this is a global signal*/
+    fprintf(fp, ".global %s[%d]->in\n", sram_spice_model->prefix, cur_sram);
+    /* Specify the head and tail of the scan-chain of this LUT */
+    fprintf(fp,"R%s[%d]_sc_head %s[%d]_sc_head %s[%d]->in 0\n", 
+            mem_model->prefix, mem_model->cnt, 
+            mem_model->prefix, mem_model->cnt, 
+            mem_model->prefix, mem_model->cnt);
+    fprintf(fp,"R%s[%d]_sc_tail %s[%d]_sc_tail %s[%d]->in 0\n", 
+            mem_model->prefix, mem_model->cnt, 
+            mem_model->prefix, mem_model->cnt, 
+            mem_model->prefix, cur_sram);
+    fprintf(fp,".global %s[%d]_sc_head %s[%d]_sc_tail\n",
+            mem_model->prefix, mem_model->cnt, 
+            mem_model->prefix, mem_model->cnt);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Invalid SRAM organization type!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+  
+  return;
+}
+
+
+/* Print a SRAM module in SPICE format */
+void fprint_spice_one_sram_subckt(FILE* fp,
+                                  t_sram_orgz_info* cur_sram_orgz_info,
+                                  t_spice_model* parent_spice_model,
+                                  char* vdd_port_name) {
+  t_spice_model* mem_model = NULL;
+  int cur_num_sram = 0;
+  
+  /* Get memory model */
+  get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model);
+
+  /* Get current index of SRAM module */
+  cur_num_sram = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info); 
+  
+  /* Call a subroutine: fprint_spice_one_specific_sram_subckt */
+  fprint_spice_one_specific_sram_subckt(fp, cur_sram_orgz_info, 
+                                        parent_spice_model, 
+                                        vdd_port_name, cur_num_sram); 
+
+  /* Update the memory counter in sram_orgz_info */
+  update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info,
+                                    cur_num_sram + 1);
+  /* Update the memory counter */
+  mem_model->cnt++;
+
+  return;
+}
+
+/* Include user defined SPICE netlists */
 void init_include_user_defined_netlists(t_spice spice) {
   int i;
 
@@ -206,16 +499,11 @@ void fprint_global_pad_ports_spice_model(FILE* fp,
   for (imodel = 0; imodel < spice.num_spice_model; imodel++) {  
     switch (spice.spice_models[imodel].type) {
     /* Handle multiple INPAD/OUTPAD spice models*/
-    case SPICE_MODEL_INPAD:
+    case SPICE_MODEL_IOPAD:
       for (i = 0; i < spice.spice_models[imodel].cnt; i++) {
-        fprintf(fp, "+ gfpga_input[%d]_%s[%d]\n", i, spice.spice_models[imodel].prefix, i);
+        fprintf(fp, "+ %s[%d]_%s[%d]\n", gio_inout_prefix, i, spice.spice_models[imodel].prefix, i);
       }
       break; 
-    case SPICE_MODEL_OUTPAD:
-      for (i = 0; i < spice.spice_models[imodel].cnt; i++) {
-        fprintf(fp, "+ gfpga_output[%d]_%s[%d]\n", i, spice.spice_models[imodel].prefix, i);
-      }
-      break;
     /* SRAM inputs*/
     case SPICE_MODEL_SRAM:
       /*

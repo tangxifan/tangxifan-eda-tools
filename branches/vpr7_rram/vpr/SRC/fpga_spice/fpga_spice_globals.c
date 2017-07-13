@@ -17,8 +17,6 @@ t_spice_model* fpga_spice_outpad_model = NULL;
 t_spice_model* fpga_spice_iopad_model = NULL;
 
 /* Prefix of global input, output and inout of a I/O pad */
-char* gio_input_prefix = "gfpga_input_";
-char* gio_output_prefix = "gfpga_output_";
 char* gio_inout_prefix = "gfpga_pad_";
 
 /* Number of configuration bits of each switch block */

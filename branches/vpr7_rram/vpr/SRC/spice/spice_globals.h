@@ -6,6 +6,7 @@ extern char* io_pmos_subckt_name;
 extern char* cpt_subckt_name;
 extern char* rram_veriloga_file_name;
 extern char* mux_basis_posfix;
+extern char* mux_special_basis_posfix;
 extern char* nmos_pmos_spice_file_name;
 extern char* basics_spice_file_name;
 extern char* muxes_spice_file_name;
@@ -57,5 +58,14 @@ extern t_llist* tb_head;
 /* Heads of scan-chain */
 extern t_llist* scan_chain_heads;
 
+/* Name of global ports used in all netlists */
+extern char* spice_top_netlist_global_vdd_port;
+extern char* spice_top_netlist_global_set_port;
+extern char* spice_top_netlist_global_reset_port;
+extern char* spice_top_netlist_global_vdd_localrouting_port;
+extern char* spice_top_netlist_global_vdd_io_port;
+extern char* spice_top_netlist_global_vdd_hardlogic_port;
+extern char* spice_top_netlist_global_vdd_sram_port;
+extern char* spice_top_netlist_global_clock_port;
 
 

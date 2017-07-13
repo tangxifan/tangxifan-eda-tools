@@ -219,6 +219,23 @@ char* chomp_file_name_postfix(char* file_name) {
   return ret;
 }
 
+/* Print SRAM bits, typically in a comment line */
+void fprint_commented_sram_bits(FILE* fp,
+                                int num_sram_bits, int* sram_bits) {
+  int i;
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d]) FileHandle is NULL!\n",__FILE__,__LINE__); 
+    exit(1);
+  } 
+   
+  for (i = 0; i < num_sram_bits; i++) { 
+    fprintf(fp, "%d", sram_bits[i]);
+  }
+
+  return;
+} 
+
+
 /* With a given spice_model_name, find the spice model and return its pointer
  * If we find nothing, return NULL
  */
@@ -783,6 +800,9 @@ t_block* search_mapped_block(int x, int y, int z) {
   return ret;
 }
 
+
+
+
 /* Change the decimal number to binary 
  * and return a array of integer*/
 int* my_decimal2binary(int decimal,
@@ -806,6 +826,32 @@ int* my_decimal2binary(int decimal,
   }
 
   return ret;
+}
+
+/* Determine the number of SRAM bit for a basis subckt of a multiplexer
+ * In general, the number of SRAM bits should be same as the number of inputs per level
+ * with one exception: 
+ * When multiplexing structure is tree-like, there should be only 1 SRAM bit
+ */
+int determine_num_sram_bits_mux_basis_subckt(t_spice_model* mux_spice_model,
+                                             int num_input_per_level) {
+  int num_sram_bits; 
+
+  /* General cases */
+  switch (mux_spice_model->design_tech_info.structure) {
+  case SPICE_MODEL_STRUCTURE_TREE:
+    num_sram_bits = 1;
+    break;
+  case SPICE_MODEL_STRUCTURE_ONELEVEL:
+  case SPICE_MODEL_STRUCTURE_MULTILEVEL:
+    num_sram_bits = num_input_per_level;
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
+               __FILE__, __LINE__, mux_spice_model->name);
+    exit(1);
+  }
+  return num_sram_bits;
 }
 
 /* Determine the level of multiplexer
@@ -1246,39 +1292,6 @@ char* convert_chan_rr_node_direction_to_string(enum PORTS chan_rr_node_direction
   }
 }
 
-void fprint_spice_head(FILE* fp,
-                       char* usage) {
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d]) FileHandle is NULL!\n",__FILE__,__LINE__); 
-    exit(1);
-  } 
-  fprintf(fp,"*****************************\n");
-  fprintf(fp,"*     FPGA SPICE Netlist    *\n");
-  fprintf(fp,"* Description: %s *\n",usage);
-  fprintf(fp,"*    Author: Xifan TANG     *\n");
-  fprintf(fp,"* Organization: EPFL/IC/LSI *\n");
-  fprintf(fp,"* Date: %s *\n",my_gettime());
-  fprintf(fp,"*****************************\n");
-  return;
-}
-
-/* Print SRAM bits, typically in a comment line */
-void fprint_commented_sram_bits(FILE* fp,
-                                int num_sram_bits, int* sram_bits) {
-  int i;
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d]) FileHandle is NULL!\n",__FILE__,__LINE__); 
-    exit(1);
-  } 
-   
-  for (i = 0; i < num_sram_bits; i++) { 
-    fprintf(fp, "%d", sram_bits[i]);
-  }
-
-  return;
-} 
-
-
 void init_spice_net_info(t_spice_net_info* spice_net_info) {
   if (NULL == spice_net_info) {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid spice_net_info!\n", __FILE__, __LINE__);
@@ -1297,44 +1310,6 @@ void init_spice_net_info(t_spice_net_info* spice_net_info) {
   spice_net_info->slew_rise = 0.;
   
   return;
-}
-
-/* Find the spice model for Input Pad
- */
-t_spice_model* find_inpad_spice_model(int num_spice_model,
-                                      t_spice_model* spice_models) {
-  t_spice_model* ret = NULL;
-  int imodel;
-  int num_found = 0;
-
-  for (imodel = 0; imodel < num_spice_model; imodel++) {
-    if (SPICE_MODEL_INPAD == spice_models[imodel].type) {
-      ret = &(spice_models[imodel]);
-      num_found++;
-    }
-  }
-
-  assert(1 == num_found);
-
-  return ret;
-}
-
-t_spice_model* find_outpad_spice_model(int num_spice_model,
-                                       t_spice_model* spice_models) {
-  t_spice_model* ret = NULL;
-  int imodel;
-  int num_found = 0;
-
-  for (imodel = 0; imodel < num_spice_model; imodel++) {
-    if (SPICE_MODEL_OUTPAD == spice_models[imodel].type) {
-      ret = &(spice_models[imodel]);
-      num_found++;
-    }
-  }
-
-  assert(1 == num_found);
-
-  return ret;
 }
 
 t_spice_model* find_iopad_spice_model(int num_spice_model,
@@ -1371,12 +1346,6 @@ char* generate_string_spice_model_type(enum e_spice_model_type spice_model_type)
     break;
   case SPICE_MODEL_FF:
     ret = "Flip-flop";
-    break;
-  case SPICE_MODEL_INPAD:
-    ret = "Input PAD";
-    break;
-  case SPICE_MODEL_OUTPAD:
-    ret = "Output PAD";
     break;
   case SPICE_MODEL_SRAM:
     ret = "SRAM";
@@ -2668,8 +2637,6 @@ int count_num_sram_bits_one_spice_model(t_spice_model* cur_spice_model,
       exit(1);
     }
     break;
-  case SPICE_MODEL_INPAD:
-  case SPICE_MODEL_OUTPAD:
   case SPICE_MODEL_WIRE:
   case SPICE_MODEL_FF:
   case SPICE_MODEL_SRAM:
@@ -2895,37 +2862,6 @@ int count_num_reserved_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
                                                        cur_sram_orgz_type,
                                                        mux_size);
     break;
-  case SPICE_MODEL_INPAD:
-  case SPICE_MODEL_OUTPAD:
-    /* TODO: could be more smart! 
-     * Support Non-volatile RRAM-based SRAM */
-    switch (cur_spice_model->design_tech) {
-    case SPICE_MODEL_DESIGN_RRAM:
-    /* Non-volatile SRAM requires 2 BLs and 2 WLs for each 1 memory bit, 
-     * Number of memory bits is still same as CMOS SRAM
-     */
-      switch (cur_sram_orgz_type) {
-      case SPICE_SRAM_MEMORY_BANK:
-        num_reserved_conf_bits = 1;
-        break;
-      case SPICE_SRAM_SCAN_CHAIN:
-      case SPICE_SRAM_STANDALONE:
-        num_reserved_conf_bits = 0;
-        break;
-      default:
-        vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid type of SRAM organization!\n",
-                   __FILE__, __LINE__); 
-        exit(1);
-      }
-    case SPICE_MODEL_DESIGN_CMOS:
-      num_reserved_conf_bits = 0;
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of LUT(name: %s)\n",
-                 __FILE__, __LINE__, cur_spice_model->name); 
-      exit(1);
-    }
-    break;
   case SPICE_MODEL_WIRE:
   case SPICE_MODEL_FF:
   case SPICE_MODEL_SRAM:
@@ -3106,36 +3042,6 @@ int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
       break;
     default:
       vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of MUX(name: %s)\n",
-                 __FILE__, __LINE__, cur_spice_model->name); 
-      exit(1);
-    }
-    break;
-  case SPICE_MODEL_INPAD:
-  case SPICE_MODEL_OUTPAD:
-    /* TODO: could be more smart! 
-     * Support Non-volatile RRAM-based SRAM */
-    switch (cur_spice_model->design_tech) {
-    case SPICE_MODEL_DESIGN_RRAM:
-    /* Non-volatile SRAM requires 2 BLs and 2 WLs for each 1 memory bit, 
-     * Number of memory bits is still same as CMOS SRAM
-     */
-      switch (cur_sram_orgz_type) {
-      case SPICE_SRAM_MEMORY_BANK:
-        break;
-      case SPICE_SRAM_SCAN_CHAIN:
-      case SPICE_SRAM_STANDALONE:
-        num_conf_bits = 2;
-        break;
-      default:
-        vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid type of SRAM organization!\n",
-                   __FILE__, __LINE__); 
-        exit(1);
-      }
-    case SPICE_MODEL_DESIGN_CMOS:
-      num_conf_bits = 1;
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of LUT(name: %s)\n",
                  __FILE__, __LINE__, cur_spice_model->name); 
       exit(1);
     }
@@ -3898,12 +3804,8 @@ void update_spice_models_routing_index_low(int x, int y, t_rr_type chan_type,
 /* Count the number of inpad and outpad of a grid (type_descriptor) in default mode */
 void rec_count_num_iopads_pb_type_physical_mode(t_pb_type* cur_pb_type) {
   int mode_index, ipb, jpb;
-  int sum_num_inpads = 0;
-  int sum_num_outpads = 0;
   int sum_num_iopads = 0;
 
-  cur_pb_type->physical_mode_num_inpads = 0;
-  cur_pb_type->physical_mode_num_outpads = 0;
   cur_pb_type->physical_mode_num_iopads = 0;
 
   /* Recursively finish all the child pb_types*/
@@ -3919,14 +3821,6 @@ void rec_count_num_iopads_pb_type_physical_mode(t_pb_type* cur_pb_type) {
 
   /* Check if this has defined a spice_model*/
   if (NULL != cur_pb_type->spice_model) {
-    if (SPICE_MODEL_INPAD == cur_pb_type->spice_model->type) {
-      sum_num_inpads = 1;
-      cur_pb_type->physical_mode_num_inpads = sum_num_inpads;
-    }
-    if (SPICE_MODEL_OUTPAD == cur_pb_type->spice_model->type) {
-      sum_num_outpads = 1;
-      cur_pb_type->physical_mode_num_outpads = sum_num_outpads;
-    }
     if (SPICE_MODEL_IOPAD == cur_pb_type->spice_model->type) {
       sum_num_iopads = 1;
       cur_pb_type->physical_mode_num_iopads = sum_num_iopads;
@@ -3939,15 +3833,11 @@ void rec_count_num_iopads_pb_type_physical_mode(t_pb_type* cur_pb_type) {
       /* Each child may exist multiple times in the hierarchy*/
       for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
         /* Count in the number of configuration bits of on child pb_type */
-        sum_num_inpads += cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_inpads;
-        sum_num_outpads += cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_outpads;
         sum_num_iopads += cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_iopads;
       }
     }
     /* Count the number of configuration bits of interconnection */
     /* Update the info in pb_type */
-    cur_pb_type->physical_mode_num_inpads = sum_num_inpads;
-    cur_pb_type->physical_mode_num_outpads = sum_num_outpads;
     cur_pb_type->physical_mode_num_iopads = sum_num_iopads;
   }
 
@@ -3957,12 +3847,8 @@ void rec_count_num_iopads_pb_type_physical_mode(t_pb_type* cur_pb_type) {
 /* Count the number of inpad and outpad of a grid (type_descriptor) in default mode */
 void rec_count_num_iopads_pb_type_default_mode(t_pb_type* cur_pb_type) {
   int mode_index, ipb, jpb;
-  int sum_num_inpads = 0;
-  int sum_num_outpads = 0;
   int sum_num_iopads = 0;
 
-  cur_pb_type->default_mode_num_inpads = 0;
-  cur_pb_type->default_mode_num_outpads = 0;
   cur_pb_type->default_mode_num_iopads = 0;
 
   /* Recursively finish all the child pb_types*/
@@ -3978,14 +3864,6 @@ void rec_count_num_iopads_pb_type_default_mode(t_pb_type* cur_pb_type) {
 
   /* Check if this has defined a spice_model*/
   if (NULL != cur_pb_type->spice_model) {
-    if (SPICE_MODEL_INPAD == cur_pb_type->spice_model->type) {
-      sum_num_inpads = 1;
-      cur_pb_type->default_mode_num_inpads = sum_num_inpads;
-    }
-    if (SPICE_MODEL_OUTPAD == cur_pb_type->spice_model->type) {
-      sum_num_outpads = 1;
-      cur_pb_type->default_mode_num_outpads = sum_num_outpads;
-    }
     if (SPICE_MODEL_IOPAD == cur_pb_type->spice_model->type) {
       sum_num_iopads = 1;
       cur_pb_type->default_mode_num_iopads = sum_num_iopads;
@@ -3998,15 +3876,11 @@ void rec_count_num_iopads_pb_type_default_mode(t_pb_type* cur_pb_type) {
       /* Each child may exist multiple times in the hierarchy*/
       for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
         /* Count in the number of configuration bits of on child pb_type */
-        sum_num_inpads += cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_inpads;
-        sum_num_outpads += cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_outpads;
         sum_num_iopads += cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_iopads;
       }
     }
     /* Count the number of configuration bits of interconnection */
     /* Update the info in pb_type */
-    cur_pb_type->default_mode_num_inpads = sum_num_inpads;
-    cur_pb_type->default_mode_num_outpads = sum_num_outpads;
     cur_pb_type->default_mode_num_iopads = sum_num_iopads;
   }
 
@@ -4019,8 +3893,6 @@ void rec_count_num_iopads_pb(t_pb* cur_pb) {
   t_pb_type* cur_pb_type = NULL;
   t_pb_graph_node* cur_pb_graph_node = NULL;
 
-  int sum_num_inpads = 0;
-  int sum_num_outpads = 0;
   int sum_num_iopads = 0;
 
   /* Check cur_pb_graph_node*/
@@ -4033,8 +3905,6 @@ void rec_count_num_iopads_pb(t_pb* cur_pb) {
   cur_pb_type = cur_pb_graph_node->pb_type;
   mode_index = cur_pb->mode; 
 
-  cur_pb->num_inpads = 0;
-  cur_pb->num_outpads = 0;
   cur_pb->num_iopads = 0;
 
   /* Recursively finish all the child pb_types*/
@@ -4056,14 +3926,6 @@ void rec_count_num_iopads_pb(t_pb* cur_pb) {
 
   /* Check if this has defined a spice_model*/
   if (NULL != cur_pb_type->spice_model) {
-    if (SPICE_MODEL_INPAD == cur_pb_type->spice_model->type) {
-      sum_num_inpads = 1;
-      cur_pb->num_inpads = sum_num_inpads;
-    }
-    if (SPICE_MODEL_OUTPAD == cur_pb_type->spice_model->type) {
-      sum_num_outpads = 1;
-      cur_pb->num_outpads = sum_num_outpads;
-    }
     if (SPICE_MODEL_IOPAD == cur_pb_type->spice_model->type) {
       sum_num_iopads = 1;
       cur_pb->num_iopads = sum_num_iopads;
@@ -4078,21 +3940,15 @@ void rec_count_num_iopads_pb(t_pb* cur_pb) {
         assert(jpb == cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb].placement_index);
         if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
           /* Count in the number of configuration bits of on child pb */
-          sum_num_inpads += cur_pb->child_pbs[ipb][jpb].num_inpads;
-          sum_num_outpads += cur_pb->child_pbs[ipb][jpb].num_outpads;
           sum_num_iopads += cur_pb->child_pbs[ipb][jpb].num_iopads;
         } else {
           /* Count in the number of configuration bits of on child pb_type */
-          sum_num_inpads += cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_inpads;
-          sum_num_outpads += cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_outpads;
           sum_num_iopads += cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_iopads;
         }
       }
     }
     /* Count the number of configuration bits of interconnection */
     /* Update the info in pb_type */
-    cur_pb->num_inpads = sum_num_inpads;
-    cur_pb->num_outpads = sum_num_outpads;
     cur_pb->num_iopads = sum_num_iopads;
   }
 
@@ -4206,11 +4062,7 @@ void rec_count_num_mode_bits_pb_type_default_mode(t_pb_type* cur_pb_type) {
 
   /* Check if this has defined a spice_model*/
   if (NULL != cur_pb_type->spice_model) {
-    if (SPICE_MODEL_INPAD == cur_pb_type->spice_model->type) {
-      sum_num_mode_bits = 1;
-      cur_pb_type->default_mode_num_mode_bits = sum_num_mode_bits;
-    }
-    if (SPICE_MODEL_OUTPAD == cur_pb_type->spice_model->type) {
+    if (SPICE_MODEL_IOPAD == cur_pb_type->spice_model->type) {
       sum_num_mode_bits = 1;
       cur_pb_type->default_mode_num_mode_bits = sum_num_mode_bits;
     }
@@ -4272,11 +4124,7 @@ void rec_count_num_mode_bits_pb(t_pb* cur_pb) {
 
   /* Check if this has defined a spice_model*/
   if (NULL != cur_pb_type->spice_model) {
-    if (SPICE_MODEL_INPAD == cur_pb_type->spice_model->type) {
-      sum_num_mode_bits = 1;
-      cur_pb->num_mode_bits = sum_num_mode_bits;
-    }
-    if (SPICE_MODEL_OUTPAD == cur_pb_type->spice_model->type) {
+    if (SPICE_MODEL_IOPAD == cur_pb_type->spice_model->type) {
       sum_num_mode_bits = 1;
       cur_pb->num_mode_bits = sum_num_mode_bits;
     }
@@ -5127,6 +4975,325 @@ int* decode_mode_bits(char* mode_bits, int* num_sram_bits) {
   return sram_bits;
 }
 
+/* For LUTs without SPICE netlist defined, we can create a SPICE netlist
+ * In this case, we need a MUX
+ */
+void stats_lut_spice_mux(t_llist** muxes_head,
+                         t_spice_model* spice_model) {
+  int lut_mux_size = 0; 
+  int num_input_port = 0;
+  t_spice_model_port** input_ports = NULL;
+
+  if (NULL == spice_model) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid Spice_model pointer!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /* Check */
+  assert(SPICE_MODEL_LUT == spice_model->type); 
+
+  /* Get input ports */
+  input_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+  assert(1 == num_input_port);
+  lut_mux_size = (int)pow(2.,(double)(input_ports[0]->size));
+
+  /* MUX size = 2^lut_size */
+  check_and_add_mux_to_linked_list(muxes_head, lut_mux_size, spice_model);
+
+  return;
+}
+
+char* complete_truth_table_line(int lut_size,
+                                char* input_truth_table_line) {
+  char* ret = NULL;
+  int num_token = 0;
+  char** tokens = NULL;
+  int cover_len = 0;
+  int j;
+
+  /* Due to the size of truth table may be less than the lut size.
+   * i.e. in LUT-6 architecture, there exists LUT1-6 in technology-mapped netlists
+   * So, in truth table line, there may be 10- 1
+   * In this case, we should complete it by --10- 1
+   */ 
+  /*Malloc the completed truth table, lut_size + space + truth_val + '\0'*/
+  ret = (char*)my_malloc(sizeof(char)*lut_size + 3);
+  /* Split one line of truth table line*/
+  tokens = my_strtok(input_truth_table_line, " ", &num_token); 
+  /* Check, only 2 tokens*/
+  /* Sometimes, the truth table is ' 0' or ' 1', which corresponds to a constant */
+  if (1 == num_token) {
+    /* restore the token[0]*/
+    tokens = (char**)realloc(tokens, 2*sizeof(char*));
+    tokens[1] = tokens[0];
+    tokens[0] = my_strdup("-");
+    num_token = 2;
+  }
+
+  /* In Most cases, there should be 2 tokens. */
+  assert(2 == num_token);
+  if ((0 != strcmp(tokens[1], "1"))&&(0 != strcmp(tokens[1], "0"))) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Last token of truth table line should be [0|1]!\n",
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+  /* Complete the truth table line*/
+  cover_len = strlen(tokens[0]); 
+  assert((cover_len < lut_size)||(cover_len == lut_size));
+  /* Add the number of '-' we should add in the front*/
+  for (j = 0; j < (lut_size - cover_len); j++) {
+    ret[j] = '-';
+  }
+  /* Copy the original truth table line */ 
+  sprintf(ret + lut_size - cover_len, "%s %s", tokens[0], tokens[1]); 
+
+  /* Free */
+  for (j = 0; j < num_token; j++) {
+    my_free(tokens[j]);
+  }
+
+  return ret;
+}
+
+/* For each lut_bit_lines, we should recover the truth table,
+ * and then set the sram bits to "1" if the truth table defines so.
+ * Start_point: the position we start decode recursively
+ */
+void configure_lut_sram_bits_per_line_rec(int** sram_bits, 
+                                          int lut_size,
+                                          char* truth_table_line,
+                                          int start_point) {
+  int i;
+  int num_sram_bit = (int)pow(2., (double)(lut_size));
+  char* temp_line = my_strdup(truth_table_line);
+  int do_config = 1;
+  int sram_id = 0;
+
+  /* Check the length of sram bits and truth table line */
+  //assert((sizeof(int)*num_sram_bit) == sizeof(*sram_bits)); /*TODO: fix this assert*/
+  assert((unsigned)(lut_size + 1 + 1)== strlen(truth_table_line)); /* lut_size + space + '1' */
+  /* End of truth_table_line should be "space" and "1" */ 
+  assert((0 == strcmp(" 1", truth_table_line + lut_size))||(0 == strcmp(" 0", truth_table_line + lut_size)));
+  /* Make sure before start point there is no '-' */
+  for (i = 0; i < start_point; i++) {
+    assert('-' != truth_table_line[i]);
+  }
+
+  /* Configure sram bits recursively */
+  for (i = start_point; i < lut_size; i++) {
+    if ('-' == truth_table_line[i]) {
+      do_config = 0;
+      /* if we find a dont_care, we don't do configure now but recursively*/
+      /* '0' branch */
+      temp_line[i] = '0'; 
+      configure_lut_sram_bits_per_line_rec(sram_bits, lut_size, temp_line, start_point + 1);
+      /* '1' branch */
+      temp_line[i] = '1'; 
+      configure_lut_sram_bits_per_line_rec(sram_bits, lut_size, temp_line, start_point + 1);
+      break; 
+    }
+  }
+
+  /* do_config*/
+  if (do_config) {
+    for (i = 0; i < lut_size; i++) {
+      /* Should be either '0' or '1' */
+      switch (truth_table_line[i]) {
+      case '0':
+        /* We assume the 1-lut pass sram1 when input = 0 */
+        sram_id += (int)pow(2., (double)(i));
+        break;
+      case '1':
+        /* We assume the 1-lut pass sram0 when input = 1 */
+        break;
+      case '-':
+        assert('-' != truth_table_line[i]); /* Make sure there is no dont_care */
+      default :
+        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid truth_table bit(%c), should be [0|1|'-]!\n",
+                   __FILE__, __LINE__, truth_table_line[i]); 
+        exit(1);
+      }
+    }
+    /* Set the sram bit to '1'*/
+    assert(sram_id < num_sram_bit);
+    if (0 == strcmp(" 1", truth_table_line + lut_size)) {
+      (*sram_bits)[sram_id] = 1; /* on set*/
+    } else if (0 == strcmp(" 0", truth_table_line + lut_size)) {
+      (*sram_bits)[sram_id] = 0; /* off set */
+    } else {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid truth_table_line ending(=%s)!\n",
+                 __FILE__, __LINE__, truth_table_line + lut_size);
+      exit(1);
+    }
+  }
+  
+  /* Free */
+  my_free(temp_line);
+
+  return; 
+}
+
+int* generate_lut_sram_bits(int truth_table_len,
+                            char** truth_table,
+                            int lut_size) {
+  int num_sram = (int)pow(2.,(double)(lut_size));
+  int* ret = (int*)my_malloc(sizeof(int)*num_sram); 
+  char** completed_truth_table = (char**)my_malloc(sizeof(char*)*truth_table_len);
+  int on_set = 0;
+  int off_set = 0;
+  int i;
+
+  /* if No truth_table, do default*/
+  if (0 == truth_table_len) {
+    switch (default_signal_init_value) {
+    case 0:
+      off_set = 0;
+      on_set = 1;
+      break;
+    case 1:
+      off_set = 1;
+      on_set = 0;
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid default_signal_init_value(=%d)!\n",
+                 __FILE__, __LINE__, default_signal_init_value);
+      exit(1);
+    }
+  }
+
+  /* Read in truth table lines, decode one by one */
+  for (i = 0; i < truth_table_len; i++) {
+    /* Complete the truth table line by line*/
+    //printf("truth_table[%d] = %s\n", i, truth_table[i]);
+    completed_truth_table[i] = complete_truth_table_line(lut_size, truth_table[i]);
+    //printf("Completed_truth_table[%d] = %s\n", i, completed_truth_table[i]);
+    if (0 == strcmp(" 1", completed_truth_table[i] + lut_size)) {
+      on_set = 1;
+    } else if (0 == strcmp(" 0", completed_truth_table[i] + lut_size)) {
+      off_set = 1;
+    }
+  }
+  //printf("on_set=%d off_set=%d", on_set, off_set);
+  assert(1 == (on_set + off_set));
+
+  if (1 == on_set) {
+    /* Initial all sram bits to 0*/
+    for (i = 0 ; i < num_sram; i++) {
+      ret[i] = 0;
+    }
+  } else if (1 == off_set) {
+    /* Initial all sram bits to 1*/
+    for (i = 0 ; i < num_sram; i++) {
+      ret[i] = 1;
+    }
+  }
+
+  for (i = 0; i < truth_table_len; i++) {
+    /* Update the truth table, sram_bits */
+    configure_lut_sram_bits_per_line_rec(&ret, lut_size, completed_truth_table[i], 0);
+  }
+
+  /* Free */
+  for (i = 0; i < truth_table_len; i++) {
+    my_free(completed_truth_table[i]);
+  }
+
+  return ret;
+}
+
+char** assign_lut_truth_table(t_logical_block* mapped_logical_block,
+                              int* truth_table_length) {
+  char** truth_table = NULL;
+  t_linked_vptr* head = NULL;
+  int cur = 0;
+
+  if (NULL == mapped_logical_block) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid mapped_logical_block!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+  /* Count the lines of truth table*/
+  head = mapped_logical_block->truth_table;
+  while(head) {
+    (*truth_table_length)++;
+    head = head->next;
+  }
+  /* Allocate truth_tables */
+  truth_table = (char**)my_malloc(sizeof(char*)*(*truth_table_length));
+  /* Fill truth_tables*/
+  cur = 0;
+  head = mapped_logical_block->truth_table;
+  while(head) {
+    truth_table[cur] = my_strdup((char*)head->data_vptr);
+    head = head->next;
+    cur++;
+  }
+  assert(cur == (*truth_table_length));
+
+  return truth_table;
+}
+
+int get_lut_output_init_val(t_logical_block* lut_logical_block) {
+  int i;
+  int* sram_bits = NULL; /* decoded SRAM bits */ 
+  int truth_table_length = 0;
+  char** truth_table = NULL;
+  int lut_size = 0;
+  int input_net_index = OPEN;
+  int* input_init_val = NULL;
+  int init_path_id = 0;
+  int output_init_val = 0;
+
+  /* Ensure a valid file handler*/ 
+  if (NULL == lut_logical_block) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid LUT logical block!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+  /* Get the truth table */
+  truth_table = assign_lut_truth_table(lut_logical_block, &truth_table_length); 
+  lut_size = lut_logical_block->used_input_pins;
+  assert(!(0 > lut_size));
+  /* Special for LUT_size = 0 */
+  if (0 == lut_size) {
+    /* Generate sram bits*/
+    sram_bits = generate_lut_sram_bits(truth_table_length, truth_table, 1);
+    /* This is constant generator, SRAM bits should be the same */
+    output_init_val = sram_bits[0];
+    for (i = 0; i < (int)pow(2.,(double)lut_size); i++) { 
+      assert(sram_bits[i] == output_init_val);
+    } 
+  } else { 
+    /* Generate sram bits*/
+    sram_bits = generate_lut_sram_bits(truth_table_length, truth_table, lut_size);
+
+    assert(1 == lut_logical_block->pb->pb_graph_node->num_input_ports);
+    assert(1 == lut_logical_block->pb->pb_graph_node->num_output_ports);
+    /* Get the initial path id */
+    input_init_val = (int*)my_malloc(sizeof(int)*lut_size);
+    for (i = 0; i < lut_size; i++) {
+      input_net_index = lut_logical_block->input_nets[0][i]; 
+      input_init_val[i] = vpack_net[input_net_index].spice_net_info->init_val;
+    } 
+
+    init_path_id = determine_lut_path_id(lut_size, input_init_val);
+    /* Check */  
+    assert((!(0 > init_path_id))&&(init_path_id < (int)pow(2.,(double)lut_size)));
+    output_init_val = sram_bits[init_path_id]; 
+  }
+   
+  /*Free*/
+  for (i = 0; i < truth_table_length; i++) {
+    free(truth_table[i]);
+  }
+  free(truth_table);
+  my_free(sram_bits);
+
+  return output_init_val;
+}
+
+
 /* Functions to manipulate struct sram_orgz_info */
 t_sram_orgz_info* alloc_one_sram_orgz_info() {
   return (t_sram_orgz_info*)my_malloc(sizeof(t_sram_orgz_info));
@@ -5640,3 +5807,579 @@ void check_mem_model_blwl_inverted(t_spice_model* cur_mem_model,
 
   return;
 }
+
+/* Useful functions for MUX architecture */
+void init_spice_mux_arch(t_spice_model* spice_model,
+                         t_spice_mux_arch* spice_mux_arch,
+                         int mux_size) {
+  int cur;
+  int i;
+  /* Make sure we have a valid pointer*/
+  if (NULL == spice_mux_arch) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d])Invalid spice_mux_arch!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  } 
+
+  /* Basic info*/
+  spice_mux_arch->structure = spice_model->design_tech_info.structure;
+  spice_mux_arch->num_input = mux_size;
+  /* For different structure */
+  switch (spice_model->design_tech_info.structure) {
+  case SPICE_MODEL_STRUCTURE_TREE:
+    spice_mux_arch->num_level = determine_tree_mux_level(spice_mux_arch->num_input);
+    spice_mux_arch->num_input_basis = 2;
+    /* Determine the level and index of per MUX inputs*/
+    spice_mux_arch->num_input_last_level = tree_mux_last_level_input_num(spice_mux_arch->num_level, mux_size);
+    break;
+  case SPICE_MODEL_STRUCTURE_ONELEVEL:
+    spice_mux_arch->num_level = 1;
+    spice_mux_arch->num_input_basis = mux_size;
+    /* Determine the level and index of per MUX inputs*/
+    spice_mux_arch->num_input_last_level = mux_size;
+    break;
+  case SPICE_MODEL_STRUCTURE_MULTILEVEL:
+    spice_mux_arch->num_level = spice_model->design_tech_info.mux_num_level;
+    spice_mux_arch->num_input_basis = determine_num_input_basis_multilevel_mux(mux_size, spice_mux_arch->num_level);
+    /* Determine the level and index of per MUX inputs*/
+    spice_mux_arch->num_input_last_level = multilevel_mux_last_level_input_num(spice_mux_arch->num_level, spice_mux_arch->num_input_basis, mux_size);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
+               __FILE__, __LINE__, spice_model->name);
+    exit(1);
+  }
+
+  /* Alloc*/
+  spice_mux_arch->num_input_per_level = (int*) my_malloc(sizeof(int)*spice_mux_arch->num_level);
+  spice_mux_arch->input_level = (int*)my_malloc(sizeof(int)*spice_mux_arch->num_input);
+  spice_mux_arch->input_offset = (int*)my_malloc(sizeof(int)*spice_mux_arch->num_input);
+
+  /* Assign inputs info for the last level first */
+  for (i = 0; i < spice_mux_arch->num_input_last_level; i++) {
+    spice_mux_arch->input_level[i] = spice_mux_arch->num_level;
+    spice_mux_arch->input_offset[i] = i; 
+  }
+  /* For the last second level*/
+  if (spice_mux_arch->num_input > spice_mux_arch->num_input_last_level) {
+    cur = spice_mux_arch->num_input_last_level/spice_mux_arch->num_input_basis;
+    /* Start from the input ports that are not occupied by the last level
+     * last level has (cur) outputs
+     */
+    for (i = spice_mux_arch->num_input_last_level; i < spice_mux_arch->num_input; i++) {
+      spice_mux_arch->input_level[i] = spice_mux_arch->num_level - 1;
+      spice_mux_arch->input_offset[i] = cur; 
+      cur++;
+    }
+    assert((cur < (int)pow((double)spice_mux_arch->num_input_basis, (double)(spice_mux_arch->num_level-1)))
+           ||(cur == (int)pow((double)spice_mux_arch->num_input_basis, (double)(spice_mux_arch->num_level-1))));
+  }
+  /* Fill the num_input_per_level*/
+  for (i = 0; i < spice_mux_arch->num_level; i++) {
+    cur = i+1;
+    spice_mux_arch->num_input_per_level[i] = (int)pow((double)spice_mux_arch->num_input_basis, (double)cur);
+    if ((cur == spice_mux_arch->num_level)
+       &&(spice_mux_arch->num_input_last_level < spice_mux_arch->num_input_per_level[i])) {
+      spice_mux_arch->num_input_per_level[i] = spice_mux_arch->num_input_last_level;
+    }
+  }
+  
+  return; 
+}
+
+/* Determine if we need a speical basis.
+ * If we need one, we give the MUX size of this special basis 
+ */
+int find_spice_mux_arch_special_basis_size(t_spice_mux_arch spice_mux_arch) {
+  int im;
+  int mux_size = spice_mux_arch.num_input;
+  int num_input_basis = spice_mux_arch.num_input_basis;
+  int num_input_special_basis = 0;
+  int special_basis_start = 0;
+   
+  /* For different structure */
+  switch (spice_mux_arch.structure) {
+  case SPICE_MODEL_STRUCTURE_TREE:
+    break;
+  case SPICE_MODEL_STRUCTURE_ONELEVEL:
+    break;
+  case SPICE_MODEL_STRUCTURE_MULTILEVEL:
+    special_basis_start = mux_size - mux_size % num_input_basis;
+    for (im = special_basis_start; im < mux_size; im++) {
+      if (spice_mux_arch.num_level == spice_mux_arch.input_level[im]) {
+        num_input_special_basis++;
+      }
+    } 
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice_mux_arch!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  return num_input_special_basis;
+}
+
+/* Search the linked list, if we have the same mux size and spice_model
+ * return 1, if not we return 0
+ */
+t_llist* search_mux_linked_list(t_llist* mux_head,
+                                int mux_size,
+                                t_spice_model* spice_model) {
+  t_llist* temp = mux_head;
+  t_spice_mux_model* cur_mux = NULL;
+  /* traversal the linked list*/ 
+  while(temp) {
+    cur_mux = (t_spice_mux_model*)(temp->dptr);
+    if ((cur_mux->size == mux_size)
+      &&(spice_model == cur_mux->spice_model)) {
+      return temp;
+    }
+    /* next */
+    temp = temp->next;
+  }
+
+  return NULL;
+}
+
+/* Check the linked list if we have a mux stored with same spice model
+ * if not, we create a new one.
+ */
+void check_and_add_mux_to_linked_list(t_llist** muxes_head,
+                                      int mux_size,
+                                      t_spice_model* spice_model) {
+  t_spice_mux_model* cur_mux = NULL;
+  t_llist* temp = NULL;
+
+  /* Check code: to avoid mistake, we should check the mux size
+   * the mux_size should be at least 2 so that we need a mux
+   */
+  if (mux_size < 2) {
+    printf("Warning:(File:%s,LINE[%d]) ilegal mux size (%d), expect to be at least 2!\n",
+           __FILE__, __LINE__, mux_size);
+    return;
+  }
+
+  /* Search the linked list */
+  if (NULL != search_mux_linked_list((*muxes_head),mux_size,spice_model)) {
+    /* We find one, there is no need to create a new one*/
+    return;
+  }
+  /*Create a linked list, if head is NULL*/
+  if (NULL == (*muxes_head)) {
+    (*muxes_head) = create_llist(1); 
+    (*muxes_head)->dptr = my_malloc(sizeof(t_spice_mux_model));
+    cur_mux = (t_spice_mux_model*)((*muxes_head)->dptr);
+  } else { 
+    /* We have to create a new elment in linked list*/
+    temp = insert_llist_node((*muxes_head)); 
+    temp->dptr = my_malloc(sizeof(t_spice_mux_model));
+    cur_mux = (t_spice_mux_model*)(temp->dptr);
+  }
+  /* Fill the new SPICE MUX Model*/
+  cur_mux->size = mux_size;
+  cur_mux->spice_model = spice_model;
+  cur_mux->cnt = 1; /* Initialize the counter*/
+
+  return;
+}
+
+/* Free muxes linked list
+ */
+void free_muxes_llist(t_llist* muxes_head) {
+  t_llist* temp = muxes_head;
+  while(temp) {
+    /* Free the mux_spice_model, remember to set the pointer to NULL */
+    free(temp->dptr);
+    temp->dptr = NULL;
+    /* Move on to the next pointer*/
+    temp = temp->next;
+  }
+  free_llist(muxes_head);
+  return;
+}
+
+
+
+
+/* Stats the multiplexer sizes and structure in the global routing architecture*/
+void stats_spice_muxes_routing_arch(t_llist** muxes_head,
+                                    int num_switch,
+                                    t_switch_inf* switches,
+                                    t_spice* spice,
+                                    t_det_routing_arch* routing_arch) {
+  int inode;
+  t_rr_node* node;
+  t_spice_model* sb_switch_spice_model = NULL;
+  t_spice_model* cb_switch_spice_model = NULL;
+
+  /* Current Version: Support Uni-directional routing architecture only*/ 
+  if (UNI_DIRECTIONAL != routing_arch->directionality) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d])Spice Modeling Only support uni-directional routing architecture.\n",__FILE__, __LINE__);
+    exit(1);
+  }
+
+  /* The routing path is. 
+   *  OPIN ----> CHAN ----> ... ----> CHAN ----> IPIN
+   *  Each edge is a switch, for IPIN, the switch is a connection block,
+   *  for the rest is a switch box
+   */
+  /* Count the sizes of muliplexers in routing architecture */  
+  /* Visit the global variable : num_rr_nodes, rr_node */
+  for (inode = 0; inode < num_rr_nodes; inode++) {
+    node = &rr_node[inode]; 
+    switch (node->type) {
+    case IPIN: 
+      /* Have to consider the fan_in only, it is a connection box(multiplexer)*/
+      assert((node->fan_in > 0)||(0 == node->fan_in));
+      if (0 == node->fan_in) {
+        break; 
+      }
+      /* Find the spice_model for multiplexers in connection blocks */
+      cb_switch_spice_model = switches[node->driver_switch].spice_model;
+      /* we should select a spice model for the connection box*/
+      assert(NULL != cb_switch_spice_model);
+      check_and_add_mux_to_linked_list(muxes_head, node->fan_in,cb_switch_spice_model);
+      break;
+    case CHANX:
+    case CHANY: 
+      /* Channels are the same, have to consider the fan_in as well, 
+       * it could be a switch box if previous rr_node is a channel
+       * or it could be a connection box if previous rr_node is a IPIN or OPIN
+       */
+      assert((node->fan_in > 0)||(0 == node->fan_in));
+      if (0 == node->fan_in) {
+        break; 
+      }
+      /* Find the spice_model for multiplexers in switch blocks*/
+      sb_switch_spice_model = switches[node->driver_switch].spice_model;
+      /* we should select a spice model for the Switch box*/
+      assert(NULL != sb_switch_spice_model);
+      check_and_add_mux_to_linked_list(muxes_head, node->fan_in,sb_switch_spice_model);
+      break;
+    case OPIN: 
+      /* Actually, in single driver routing architecture, the OPIN, source of a routing path,
+       * is directly connected to Switch Box multiplexers
+       */
+      break;
+    default:
+      break;
+    }
+  }
+
+  return;
+}
+
+/* Recursively do statistics for the
+ * multiplexer spice models inside pb_types
+ */
+void stats_mux_spice_model_pb_type_rec(t_llist** muxes_head,
+                                       t_pb_type* cur_pb_type) {
+  
+  int imode, ichild, jinterc;
+  t_spice_model* interc_spice_model = NULL;
+ 
+  if (NULL == cur_pb_type) {
+    vpr_printf(TIO_MESSAGE_WARNING,"(File:%s,LINE[%d])cur_pb_type is null pointor!\n",__FILE__,__LINE__);
+    return;
+  }
+
+  /* If there is spice_model_name, this is a leaf node!*/
+  if (NULL != cur_pb_type->spice_model_name) {
+    /* What annoys me is VPR create a sub pb_type for each lut which suppose to be a leaf node
+     * This may bring software convience but ruins SPICE modeling
+     */
+    assert(NULL != cur_pb_type->spice_model);
+    return;
+  }
+  /* Traversal the hierarchy*/
+  for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
+    /* Then we have to statisitic the interconnections*/
+    for (jinterc = 0; jinterc < cur_pb_type->modes[imode].num_interconnect; jinterc++) {
+      /* Check the num_mux and fan_in*/
+      assert((0 == cur_pb_type->modes[imode].interconnect[jinterc].num_mux)
+            ||(0 < cur_pb_type->modes[imode].interconnect[jinterc].num_mux));
+      if (0 == cur_pb_type->modes[imode].interconnect[jinterc].num_mux) {
+        continue;
+      }
+      interc_spice_model = cur_pb_type->modes[imode].interconnect[jinterc].spice_model;
+      assert(NULL != interc_spice_model); 
+      check_and_add_mux_to_linked_list(muxes_head,
+                                       cur_pb_type->modes[imode].interconnect[jinterc].fan_in,
+                                       interc_spice_model);
+    }
+    for (ichild = 0; ichild < cur_pb_type->modes[imode].num_pb_type_children; ichild++) {
+      stats_mux_spice_model_pb_type_rec(muxes_head,
+                                        &cur_pb_type->modes[imode].pb_type_children[ichild]);
+    }
+  }
+  return;
+}
+
+/* Statistics the MUX SPICE MODEL with the help of pb_graph
+ * Not the most efficient function to finish the job 
+ * Abandon it. But remains a good framework that could be re-used in connecting
+ * spice components together
+ */
+void stats_mux_spice_model_pb_node_rec(t_llist** muxes_head,
+                                       t_pb_graph_node* cur_pb_node) {
+  int imode, ipb, ichild, iport, ipin;
+  t_pb_type* cur_pb_type = cur_pb_node->pb_type;
+  t_spice_model* interc_spice_model = NULL;
+  enum e_interconnect pin_interc_type;
+  
+  if (NULL == cur_pb_node) {
+    vpr_printf(TIO_MESSAGE_WARNING,"(File:%s,LINE[%d])cur_pb_node is null pointor!\n",__FILE__,__LINE__);
+    return;
+  }
+
+  if (NULL == cur_pb_type) {
+    vpr_printf(TIO_MESSAGE_WARNING,"(File:%s,LINE[%d])cur_pb_type is null pointor!\n",__FILE__,__LINE__);
+    return;
+  }
+
+  /* If there is 0 mode, this is a leaf node!*/
+  if (NULL != cur_pb_type->blif_model) {
+    assert(0 == cur_pb_type->num_modes);
+    assert(NULL == cur_pb_type->modes);
+    /* Ensure there is blif_model, and spice_model*/
+    assert(NULL != cur_pb_type->model);
+    assert(NULL != cur_pb_type->spice_model_name);
+    assert(NULL != cur_pb_type->spice_model);
+    return;
+  }
+  /* Traversal the hierarchy*/
+  for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
+    /* Then we have to statisitic the interconnections*/
+    /* See the input ports*/
+    for (iport = 0; iport < cur_pb_node->num_input_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_node->num_input_pins[iport]; ipin++) {
+        /* Ensure this is an input port */
+        assert(IN_PORT == cur_pb_node->input_pins[iport][ipin].port->type);
+        /* See the edges, if the interconnetion type infer a MUX, we go next step*/
+        pin_interc_type = find_pb_graph_pin_in_edges_interc_type(cur_pb_node->input_pins[iport][ipin]);
+        if ((COMPLETE_INTERC != pin_interc_type)&&(MUX_INTERC != pin_interc_type)) {
+          continue;
+        }
+        /* We shoule check the size of inputs, in some case of complete, the input_edge is one...*/
+        if ((COMPLETE_INTERC == pin_interc_type)&&(1 == cur_pb_node->input_pins[iport][ipin].num_input_edges)) {
+          continue;
+        }
+        /* Note: i do care the input_edges only! They may infer multiplexers*/
+        interc_spice_model = find_pb_graph_pin_in_edges_interc_spice_model(cur_pb_node->input_pins[iport][ipin]);
+        check_and_add_mux_to_linked_list(muxes_head,
+                                         cur_pb_node->input_pins[iport][ipin].num_input_edges,
+                                         interc_spice_model);
+      }
+    }
+    /* See the output ports*/
+    for (iport = 0; iport < cur_pb_node->num_output_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_node->num_output_pins[iport]; ipin++) {
+        /* Ensure this is an input port */
+        assert(OUT_PORT == cur_pb_node->output_pins[iport][ipin].port->type);
+        /* See the edges, if the interconnetion type infer a MUX, we go next step*/
+        pin_interc_type = find_pb_graph_pin_in_edges_interc_type(cur_pb_node->output_pins[iport][ipin]);
+        if ((COMPLETE_INTERC != pin_interc_type)&&(MUX_INTERC != pin_interc_type)) {
+          continue;
+        }
+        /* We shoule check the size of inputs, in some case of complete, the input_edge is one...*/
+        if ((COMPLETE_INTERC == pin_interc_type)&&(1 == cur_pb_node->output_pins[iport][ipin].num_input_edges)) {
+          continue;
+        }
+        /* Note: i do care the input_edges only! They may infer multiplexers*/
+        interc_spice_model = find_pb_graph_pin_in_edges_interc_spice_model(cur_pb_node->output_pins[iport][ipin]);
+        check_and_add_mux_to_linked_list(muxes_head,
+                                         cur_pb_node->output_pins[iport][ipin].num_input_edges,
+                                         interc_spice_model);
+      }
+    }
+    /* See the clock ports*/
+    for (iport = 0; iport < cur_pb_node->num_clock_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_node->num_clock_pins[iport]; ipin++) {
+        /* Ensure this is an input port */
+        assert(IN_PORT == cur_pb_node->clock_pins[iport][ipin].port->type);
+        /* See the edges, if the interconnetion type infer a MUX, we go next step*/
+        pin_interc_type = find_pb_graph_pin_in_edges_interc_type(cur_pb_node->clock_pins[iport][ipin]);
+        if ((COMPLETE_INTERC != pin_interc_type)&&(MUX_INTERC != pin_interc_type)) {
+          continue;
+        }
+        /* We shoule check the size of inputs, in some case of complete, the input_edge is one...*/
+        if ((COMPLETE_INTERC == pin_interc_type)&&(1 == cur_pb_node->clock_pins[iport][ipin].num_input_edges)) {
+          continue;
+        }
+        /* Note: i do care the input_edges only! They may infer multiplexers*/
+        interc_spice_model = find_pb_graph_pin_in_edges_interc_spice_model(cur_pb_node->clock_pins[iport][ipin]);
+        check_and_add_mux_to_linked_list(muxes_head,
+                                         cur_pb_node->clock_pins[iport][ipin].num_input_edges,
+                                         interc_spice_model);
+      }
+    }
+    for (ichild = 0; ichild < cur_pb_type->modes[imode].num_pb_type_children; ichild++) {
+      /* num_pb is the number of such pb_type in a mode*/
+      for (ipb = 0; ipb < cur_pb_type->modes[imode].pb_type_children[ichild].num_pb; ipb++) {
+        /* child_pb_grpah_nodes: [0..num_modes-1][0..num_pb_type_in_mode-1][0..num_pb_type-1]*/
+        stats_mux_spice_model_pb_node_rec(muxes_head,
+                                          &cur_pb_node->child_pb_graph_nodes[imode][ichild][ipb]);
+      }
+    }
+  } 
+  return;  
+}
+
+
+/* Statistic for all the multiplexers in FPGA
+ * We determine the sizes and its structure (according to spice_model) for each type of multiplexers
+ * We search multiplexers in Switch Blocks, Connection blocks and Configurable Logic Blocks
+ * In additional to multiplexers, this function also consider crossbars.
+ * All the statistics are stored in a linked list, as a return value
+ */
+t_llist* stats_spice_muxes(int num_switches,
+                           t_switch_inf* switches,
+                           t_spice* spice,
+                           t_det_routing_arch* routing_arch) {
+  int iedge;
+  int itype;
+  int imodel;
+  /* Linked-list to store the information of Multiplexers*/
+  t_llist* muxes_head = NULL; 
+
+  /* Step 1: We should check the multiplexer spice models defined in routing architecture.*/
+  stats_spice_muxes_routing_arch(&muxes_head, num_switches, switches, spice, routing_arch);
+
+  /* Statistics after search routing resources */
+  /*
+  temp = muxes_head;
+  while(temp) {
+    t_spice_mux_model* spice_mux_model = (t_spice_mux_model*)temp->dptr;
+    vpr_printf(TIO_MESSAGE_INFO,"Routing multiplexers: size=%d\n",spice_mux_model->size);
+    temp = temp->next;
+  }
+  */
+
+  /* Step 2: Count the sizes of multiplexers in complex logic blocks */  
+  for (itype = 0; itype < num_types; itype++) {
+    if (NULL != type_descriptors[itype].pb_type) {
+      stats_mux_spice_model_pb_type_rec(&muxes_head,type_descriptors[itype].pb_type);
+    }
+  }
+
+  /* Step 3: count the size of multiplexer that will be used in LUTs*/
+  for (imodel = 0; imodel < spice->num_spice_model; imodel++) {
+    /* For those LUTs that netlists are not provided. We create a netlist and thus need a MUX*/
+    if ((SPICE_MODEL_LUT == spice->spice_models[imodel].type)
+      &&(NULL == spice->spice_models[imodel].model_netlist)) {
+      stats_lut_spice_mux(&muxes_head, &(spice->spice_models[imodel])); 
+    }
+  }
+
+  /* Statistics after search routing resources */
+  /*
+  temp = muxes_head;
+  while(temp) {
+    t_spice_mux_model* spice_mux_model = (t_spice_mux_model*)temp->dptr;
+    vpr_printf(TIO_MESSAGE_INFO,"Pb_types multiplexers: size=%d\n",spice_mux_model->size);
+    temp = temp->next;
+  }
+  */
+
+  return muxes_head;
+}
+
+/* Find the interconnection type of pb_graph_pin edges*/
+enum e_interconnect find_pb_graph_pin_in_edges_interc_type(t_pb_graph_pin pb_graph_pin) {
+  enum e_interconnect interc_type;
+  int def_interc_type = 0;
+  int iedge;
+
+  for (iedge = 0; iedge < pb_graph_pin.num_input_edges; iedge++) {
+    /* Make sure all edges are legal: 1 input_pin, 1 output_pin*/
+    check_pb_graph_edge(*(pb_graph_pin.input_edges[iedge]));
+    /* Make sure all the edges interconnect type is the same*/
+    if (0 == def_interc_type) {
+      interc_type = pb_graph_pin.input_edges[iedge]->interconnect->type;
+    } else if (interc_type != pb_graph_pin.input_edges[iedge]->interconnect->type) {
+      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,LINE[%d])Interconnection type are not same for port(%s),pin(%d).\n",
+                 __FILE__, __LINE__, pb_graph_pin.port->name,pb_graph_pin.pin_number);
+      exit(1);
+    }
+  }
+
+  return interc_type;  
+}
+
+/* Find the interconnection type of pb_graph_pin edges*/
+t_spice_model* find_pb_graph_pin_in_edges_interc_spice_model(t_pb_graph_pin pb_graph_pin) {
+  t_spice_model* interc_spice_model;
+  int def_interc_model = 0;
+  int iedge;
+
+  for (iedge = 0; iedge < pb_graph_pin.num_input_edges; iedge++) {
+    /* Make sure all edges are legal: 1 input_pin, 1 output_pin*/
+    check_pb_graph_edge(*(pb_graph_pin.input_edges[iedge]));
+    /* Make sure all the edges interconnect type is the same*/
+    if (0 == def_interc_model) {
+      interc_spice_model= pb_graph_pin.input_edges[iedge]->interconnect->spice_model;
+    } else if (interc_spice_model != pb_graph_pin.input_edges[iedge]->interconnect->spice_model) {
+      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,LINE[%d])Interconnection spice_model are not same for port(%s),pin(%d).\n",
+                 __FILE__, __LINE__, pb_graph_pin.port->name,pb_graph_pin.pin_number);
+      exit(1);
+    }
+  }
+
+  return interc_spice_model;  
+}
+
+int find_path_id_between_pb_rr_nodes(t_rr_node* local_rr_graph,
+                                     int src_node,
+                                     int des_node) {
+  int path_id = -1;
+  int prev_edge = -1;
+  int path_count = 0;
+  int iedge;
+  t_interconnect* cur_interc = NULL;
+
+  /* Check */
+  assert(NULL != local_rr_graph);
+  assert((0 == src_node)||(0 < src_node));
+  assert((0 == des_node)||(0 < des_node));
+
+  prev_edge = local_rr_graph[des_node].prev_edge;
+  check_pb_graph_edge(*(local_rr_graph[src_node].pb_graph_pin->output_edges[prev_edge]));
+  assert(local_rr_graph[src_node].pb_graph_pin->output_edges[prev_edge]->output_pins[0] == local_rr_graph[des_node].pb_graph_pin);
+ 
+  cur_interc = local_rr_graph[src_node].pb_graph_pin->output_edges[prev_edge]->interconnect;
+  /* Search des_node input edges */ 
+  for (iedge = 0; iedge < local_rr_graph[des_node].pb_graph_pin->num_input_edges; iedge++) {
+    if (local_rr_graph[des_node].pb_graph_pin->input_edges[iedge]->input_pins[0] 
+        == local_rr_graph[src_node].pb_graph_pin) {
+      /* Strict check */
+      assert(local_rr_graph[src_node].pb_graph_pin->output_edges[prev_edge]
+              == local_rr_graph[des_node].pb_graph_pin->input_edges[iedge]);
+      path_id = path_count;
+      break;
+    }
+    if (cur_interc == local_rr_graph[des_node].pb_graph_pin->input_edges[iedge]->interconnect) {
+      path_count++;
+    }
+  }
+
+  return path_id; 
+}
+
+/* Return a child_pb if it is mapped.*/
+t_pb* get_child_pb_for_phy_pb_graph_node(t_pb* cur_pb, int ipb, int jpb) {
+  t_pb* child_pb = NULL;
+  
+  /* TODO: more check ? */
+
+  if (NULL == cur_pb) {
+    return NULL;
+  }
+
+  if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
+    child_pb = &(cur_pb->child_pbs[ipb][jpb]);
+  }
+  
+  return child_pb;
+}
+

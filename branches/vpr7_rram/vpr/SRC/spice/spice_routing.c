@@ -4,6 +4,7 @@
 /***********************************/
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <time.h>
 #include <assert.h>
@@ -25,6 +26,7 @@
 #include "fpga_spice_globals.h"
 #include "spice_globals.h"
 #include "fpga_spice_utils.h"
+#include "spice_utils.h"
 #include "spice_mux.h"
 #include "spice_lut.h"
 #include "spice_primitives.h"
@@ -374,6 +376,7 @@ void fprint_switch_box_mux(FILE* fp,
   int mux_level, path_id, cur_num_sram, ilevel;
   int num_mux_sram_bits = 0;
   int* mux_sram_bits = NULL;
+  char* sram_vdd_port_name = NULL;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -396,7 +399,6 @@ void fprint_switch_box_mux(FILE* fp,
   spice_model = switch_inf[switch_index].spice_model;
   /* Now it is the time print the SPICE netlist of MUX*/
   fprintf(fp, "X%s_size%d[%d] ", spice_model->prefix, mux_size, spice_model->cnt);
-  spice_model->cnt++;
   /* Input ports*/
   for (inode = 0; inode < mux_size; inode++) {
     switch (drive_rr_nodes[inode]->type) {
@@ -475,25 +477,14 @@ void fprint_switch_box_mux(FILE* fp,
     exit(1);
   } 
   /* Print SRAMs that configure this MUX */
-  /* TODO: What about RRAM-based MUX? */
-  cur_num_sram = sram_spice_model->cnt;
+  /* Get current counter of mem_bits, bl and wl */
+  cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_spice_orgz_info); 
   for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
-    /* Configure the SRAMs*/
-    switch (mux_sram_bits[ilevel]) {
-    case 0:
-      fprintf(fp,"%s[%d]->out %s[%d]->outb ", 
-              sram_spice_model->prefix, cur_num_sram, sram_spice_model->prefix, cur_num_sram);
-      break;
-    case 1:
-      fprintf(fp,"%s[%d]->outb %s[%d]->out ", 
-              sram_spice_model->prefix, cur_num_sram, sram_spice_model->prefix, cur_num_sram);
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File: %s,[LINE%d])Invalid sram_bit(=%d)! Should be [0|1].\n",
-                 __FILE__, __LINE__, mux_sram_bits[ilevel]);
-      exit(1);
-    }
-    cur_num_sram++;
+    assert( (0 == mux_sram_bits[ilevel]) || (1 == mux_sram_bits[ilevel]) );
+    fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, 
+                                  cur_num_sram + ilevel, mux_sram_bits[ilevel]);
+    fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, 
+                                  cur_num_sram + ilevel, 1 - mux_sram_bits[ilevel]);
   }
 
   /* End with svdd and sgnd, subckt name*/
@@ -509,62 +500,30 @@ void fprint_switch_box_mux(FILE* fp,
   fprintf(fp, "*****\n");
 
   /* Call SRAM subckts*/
-  switch (sram_spice_orgz_type) {
-  case SPICE_SRAM_STANDALONE:
-  case SPICE_SRAM_MEMORY_BANK:
-    for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
-      fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, sram_spice_model->cnt);
-      /*fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, sram_spice_model->cnt);*/
-      fprintf(fp, "%s->in ", sram_spice_model->prefix); /* Input*/
-      fprintf(fp, "%s[%d]->out ", sram_spice_model->prefix, sram_spice_model->cnt);
-      fprintf(fp, "%s[%d]->outb ", sram_spice_model->prefix, sram_spice_model->cnt);
-      fprintf(fp, "gvdd_sram_sbs sgnd %s\n", sram_spice_model->name);
-      /* Add nodeset to help convergence */ 
-      fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, sram_spice_model->cnt);
-      fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, sram_spice_model->cnt);
-      /* Pull Up/Down the SRAM outputs*/
-      sram_spice_model->cnt++;
-    }
-    break;
-  case SPICE_SRAM_SCAN_CHAIN:
-    for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
-      fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, sram_spice_model->cnt);
-      fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, sram_spice_model->cnt); /* Input*/
-      fprintf(fp, "%s[%d]->out ", sram_spice_model->prefix, sram_spice_model->cnt);
-      fprintf(fp, "%s[%d]->outb ", sram_spice_model->prefix, sram_spice_model->cnt);
-      fprintf(fp, "sc_clk sc_rst sc_set \n");
-      fprintf(fp, "gvdd_sram_sbs sgnd %s\n", sram_spice_model->name);
-      /* Add nodeset to help convergence */ 
-      fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, sram_spice_model->cnt);
-      fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, sram_spice_model->cnt);
-      /* Connect to the tail of previous Scan-chain FF*/
-      fprintf(fp,"R%s[%d]_short %s[%d]->out %s[%d]->in 0\n", 
-              sram_spice_model->prefix, sram_spice_model->cnt, 
-              sram_spice_model->prefix, sram_spice_model->cnt, 
-              sram_spice_model->prefix, sram_spice_model->cnt + 1);
-      /* Specify this is a global signal*/
-      fprintf(fp, ".global %s[%d]->in\n", sram_spice_model->prefix, sram_spice_model->cnt);
-      /* Pull Up/Down the SRAM outputs*/
-      sram_spice_model->cnt++;
-    }
-    /* Specify the head and tail of the scan-chain of this MUX */
-    fprintf(fp,"R%s[%d]_sc_head %s[%d]_sc_head %s[%d]->in 0\n", 
-            spice_model->prefix, spice_model->cnt, 
-            spice_model->prefix, spice_model->cnt,
-             sram_spice_model->prefix, sram_spice_model->cnt - num_mux_sram_bits);
-    fprintf(fp,"R%s[%d]_sc_tail %s[%d]_sc_tail %s[%d]->in 0\n", 
-            spice_model->prefix, spice_model->cnt, 
-            spice_model->prefix, spice_model->cnt, 
-            sram_spice_model->prefix, sram_spice_model->cnt);
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Invalid SRAM organization type!\n",
-               __FILE__, __LINE__);
-    exit(1);
+  /* Give the VDD port name for SRAMs */
+  sram_vdd_port_name = (char*)my_malloc(sizeof(char)*
+                                       (strlen(spice_top_netlist_global_vdd_sram_port) 
+                                        + 1 + strlen("sbs") 
+                                        + 1 ));
+  sprintf(sram_vdd_port_name, "%s_%s",
+                              spice_top_netlist_global_vdd_sram_port,
+                              "sbs");
+  /* Now Print SRAMs one by one */
+  for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
+    fprint_spice_one_sram_subckt(fp, sram_spice_orgz_info, 
+                                 spice_model, sram_vdd_port_name);
   }
+
+  /* Store the configuraion bit to linked-list */
+  add_sram_conf_bits_to_llist(sram_spice_orgz_info, cur_num_sram,
+                              num_mux_sram_bits, mux_sram_bits);
+
+  /* Update spice_model counter */
+  spice_model->cnt++;
 
   /* Free */
   my_free(mux_sram_bits);
+  my_free(sram_vdd_port_name);
 
   return;
 }
@@ -859,6 +818,7 @@ void fprint_connection_box_mux(FILE* fp,
   int* mux_sram_bits = NULL;
   t_rr_type drive_rr_node_type = NUM_RR_TYPES;
   int xlow, ylow, offset, side, index;
+  char* sram_vdd_port_name = NULL;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -891,7 +851,6 @@ void fprint_connection_box_mux(FILE* fp,
 
   /* Call the MUX SPICE model */
   fprintf(fp, "X%s_size%d[%d] ", mux_spice_model->prefix, mux_size, mux_spice_model->cnt);
-  mux_spice_model->cnt++;
   /* Check drive_rr_nodes type, should be the same*/
   for (inode = 0; inode < mux_size; inode++) {
     if (NUM_RR_TYPES == drive_rr_node_type) { 
@@ -951,28 +910,14 @@ void fprint_connection_box_mux(FILE* fp,
   } 
  
   /* Print SRAMs that configure this MUX */
-  /* TODO: What about RRAM-based MUX? */
-  cur_num_sram = sram_spice_model->cnt;
+  /* Get current counter of mem_bits, bl and wl */
+  cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_spice_orgz_info); 
   for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
-    /* Configure the SRAMs*/
-    /* Pull Up/Down the SRAM outputs*/
-    switch (mux_sram_bits[ilevel]) {
-    case 0:
-      /* Pull down power is considered as a part of subckt (CB or SB)*/
-      fprintf(fp,"%s[%d]->out %s[%d]->outb ", 
-            sram_spice_model->prefix, cur_num_sram, sram_spice_model->prefix, cur_num_sram);
-      break;
-    case 1:
-      /* Pull down power is considered as a part of subckt (CB or SB)*/
-      fprintf(fp,"%s[%d]->outb %s[%d]->out ", 
-            sram_spice_model->prefix, cur_num_sram, sram_spice_model->prefix, cur_num_sram);
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File: %s,[LINE%d])Invalid sram_bit(=%d)! Should be [0|1].\n",
-                 __FILE__, __LINE__, mux_sram_bits[ilevel]);
-      exit(1);
-    }
-    cur_num_sram++;
+    assert( (0 == mux_sram_bits[ilevel]) || (1 == mux_sram_bits[ilevel]) );
+    fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, 
+                                  cur_num_sram + ilevel, mux_sram_bits[ilevel]);
+    fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, 
+                                  cur_num_sram + ilevel, 1 - mux_sram_bits[ilevel]);
   }
 
   /* End with svdd and sgnd, subckt name*/
@@ -988,63 +933,30 @@ void fprint_connection_box_mux(FILE* fp,
   fprintf(fp, "*****\n");
 
   /* Call SRAM subckts*/
-  switch (sram_spice_orgz_type) {
-  case SPICE_SRAM_STANDALONE:
-  case SPICE_SRAM_MEMORY_BANK:
-    for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
-      fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, sram_spice_model->cnt);
-      /*fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, sram_spice_model->cnt);*/
-      fprintf(fp, "%s->in ", sram_spice_model->prefix); /* Input*/
-      fprintf(fp, "%s[%d]->out ", sram_spice_model->prefix, sram_spice_model->cnt);
-      fprintf(fp, "%s[%d]->outb ", sram_spice_model->prefix, sram_spice_model->cnt);
-      fprintf(fp, "gvdd_sram_cbs sgnd %s\n", sram_spice_model->name);
-      /* Add nodeset to help convergence */ 
-      fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, sram_spice_model->cnt);
-      fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, sram_spice_model->cnt);
-      sram_spice_model->cnt++;
-    }
-    break;
-  case SPICE_SRAM_SCAN_CHAIN:
-    for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
-      fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, sram_spice_model->cnt);
-      fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, sram_spice_model->cnt); /* Input*/
-      fprintf(fp, "%s[%d]->out ", sram_spice_model->prefix, sram_spice_model->cnt);
-      fprintf(fp, "%s[%d]->outb ", sram_spice_model->prefix, sram_spice_model->cnt);
-      fprintf(fp, "sc_clk sc_rst sc_set \n");
-      fprintf(fp, "gvdd_sram_cbs sgnd %s\n", sram_spice_model->name);
-      /* Add nodeset to help convergence */ 
-      fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, sram_spice_model->cnt);
-      fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, sram_spice_model->cnt);
-      /* Connect to the tail of previous Scan-chain FF*/
-      fprintf(fp,"R%s[%d]_short %s[%d]->out %s[%d]->in 0\n", 
-              sram_spice_model->prefix, sram_spice_model->cnt, 
-              sram_spice_model->prefix, sram_spice_model->cnt, 
-              sram_spice_model->prefix, sram_spice_model->cnt + 1);
-      /* Specify this is a global signal*/
-      fprintf(fp, ".global %s[%d]->in\n", sram_spice_model->prefix, sram_spice_model->cnt);
-      sram_spice_model->cnt++;
-    }
-    /* Specify the head and tail of the scan-chain of this MUX */
-    fprintf(fp,"R%s[%d]_sc_head %s[%d]_sc_head %s[%d]->in 0\n", 
-            mux_spice_model->prefix, mux_spice_model->cnt, 
-            mux_spice_model->prefix, mux_spice_model->cnt,
-            sram_spice_model->prefix, sram_spice_model->cnt - num_mux_sram_bits);
-    fprintf(fp,"R%s[%d]_sc_tail %s[%d]_sc_tail %s[%d]->in 0\n", 
-            mux_spice_model->prefix, mux_spice_model->cnt, 
-            mux_spice_model->prefix, mux_spice_model->cnt, 
-            sram_spice_model->prefix, sram_spice_model->cnt);
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Invalid SRAM organization type!\n",
-               __FILE__, __LINE__);
-    exit(1);
+  /* Give the VDD port name for SRAMs */
+  sram_vdd_port_name = (char*)my_malloc(sizeof(char)*
+                                       (strlen(spice_top_netlist_global_vdd_sram_port) 
+                                        + 1 + strlen("cbs") 
+                                        + 1 ));
+  sprintf(sram_vdd_port_name, "%s_%s",
+                              spice_top_netlist_global_vdd_sram_port,
+                              "cbs");
+  /* Now Print SRAMs one by one */
+  for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
+    fprint_spice_one_sram_subckt(fp, sram_spice_orgz_info, 
+                                 mux_spice_model, sram_vdd_port_name);
   }
 
-  /* Check SRAM counters */
-  assert(cur_num_sram == sram_spice_model->cnt);
+  /* Store the configuraion bit to linked-list */
+  add_sram_conf_bits_to_llist(sram_spice_orgz_info, cur_num_sram,
+                              num_mux_sram_bits, mux_sram_bits);
+
+  /* Update spice_model counter */
+  mux_spice_model->cnt++;
 
   /* Free */
   my_free(mux_sram_bits);
+  my_free(sram_vdd_port_name);
 
   return;
 }

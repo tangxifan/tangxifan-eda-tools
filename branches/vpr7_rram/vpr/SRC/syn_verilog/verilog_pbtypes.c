@@ -1630,8 +1630,6 @@ void dump_verilog_pb_primitive_verilog_model(FILE* fp,
     dump_verilog_pb_primitive_ff(fp, subckt_prefix, mapped_logical_block, prim_pb_graph_node,
                            pb_index, verilog_model);
     break;
-  case SPICE_MODEL_INPAD:
-  case SPICE_MODEL_OUTPAD:
   case SPICE_MODEL_IOPAD:
     assert(NULL != verilog_model->model_netlist);
     dump_verilog_pb_primitive_io(fp, subckt_prefix, mapped_logical_block, prim_pb_graph_node,
@@ -1684,8 +1682,6 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
   int stamped_sram_cnt = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info); 
   int stamped_sram_lsb = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info); 
 
-  int stamped_inpad_cnt = inpad_verilog_model->cnt;
-  int stamped_outpad_cnt = outpad_verilog_model->cnt;
   int stamped_iopad_cnt = iopad_verilog_model->cnt;
 
   /* Check the file handler*/ 
@@ -1734,11 +1730,6 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
                                               NULL, cur_pb_graph_node, pb_type_index, 
                                               cur_pb_type->spice_model, 1);
       /* update the number of SRAM, I/O pads */
-      /* update stamped inpad counter */
-      stamped_inpad_cnt += cur_pb_type->default_mode_num_inpads;
-      /* update stamped outpad counter */
-      stamped_outpad_cnt += cur_pb_type->default_mode_num_outpads;
-      /* update stamped sram counter */
       stamped_sram_cnt += cur_pb_type->default_mode_num_conf_bits;
       break;
     case LATCH_CLASS:
@@ -1747,10 +1738,6 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
       dump_verilog_pb_primitive_verilog_model(fp, formatted_subckt_prefix, 
                                       NULL, cur_pb_graph_node, pb_type_index, cur_pb_type->spice_model, 1);
       /* update the number of SRAM, I/O pads */
-      /* update stamped inpad counter */
-      stamped_inpad_cnt += cur_pb_type->default_mode_num_inpads;
-      /* update stamped outpad counter */
-      stamped_outpad_cnt += cur_pb_type->default_mode_num_outpads;
       /* update stamped sram counter */
       stamped_sram_cnt += cur_pb_type->default_mode_num_conf_bits;
       break;
@@ -1760,10 +1747,6 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
       dump_verilog_pb_primitive_verilog_model(fp, formatted_subckt_prefix, 
                                       NULL, cur_pb_graph_node, pb_type_index, cur_pb_type->spice_model, 1);
       /* update the number of SRAM, I/O pads */
-      /* update stamped inpad counter */
-      stamped_inpad_cnt += cur_pb_type->default_mode_num_inpads;
-      /* update stamped outpad counter */
-      stamped_outpad_cnt += cur_pb_type->default_mode_num_outpads;
       /* update stamped sram counter */
       stamped_sram_cnt += cur_pb_type->default_mode_num_conf_bits;
       break;  
@@ -1774,8 +1757,6 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
     }
     /* Check */
     assert(stamped_sram_cnt == get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info)); 
-    assert(stamped_inpad_cnt == inpad_verilog_model->cnt); 
-    assert(stamped_outpad_cnt == outpad_verilog_model->cnt); 
     assert(stamped_iopad_cnt == iopad_verilog_model->cnt); 
     /* Finish job for primitive node, return */
     return;
@@ -1810,14 +1791,6 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
   /* Simplify the port prefix, make SPICE netlist readable */
   dump_verilog_pb_type_ports(fp, subckt_port_prefix, 0, cur_pb_type, TRUE, FALSE);
   /* Print Input Pad and Output Pad */
-  dump_verilog_grid_common_port(fp, inpad_verilog_model,
-                                gio_input_prefix, 
-                                stamped_inpad_cnt, inpad_verilog_model->cnt - 1,
-                                VERILOG_PORT_INPUT);
-  dump_verilog_grid_common_port(fp, outpad_verilog_model,
-                                gio_output_prefix, 
-                                stamped_outpad_cnt, outpad_verilog_model->cnt - 1,
-                                VERILOG_PORT_INPUT);
   dump_verilog_grid_common_port(fp, iopad_verilog_model,
                                 gio_inout_prefix, 
                                 stamped_iopad_cnt, iopad_verilog_model->cnt - 1,
@@ -1868,8 +1841,6 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
       /* Collect information of child pb_type */
       child_pb_num_reserved_conf_bits = cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_reserved_conf_bits;
       child_pb_num_conf_bits = cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_conf_bits;
-      child_pb_num_inpads = cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_inpads;
-      child_pb_num_outpads = cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_outpads;
       child_pb_num_iopads = cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_iopads;
 
       /* <formatted_subckt_prefix>mode[<mode_name>]_<child_pb_type_name>[<ipb>]
@@ -1903,22 +1874,6 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
        * NO SRAMs !!! They have already been fixed in the bottom level
        */
       dump_verilog_pb_type_ports(fp, child_pb_type_prefix, 0, &(cur_pb_type->modes[mode_index].pb_type_children[ipb]),FALSE, FALSE);
-      /* Print input pads */
-      dump_verilog_grid_common_port(fp, inpad_verilog_model,
-                                    gio_input_prefix, 
-                                    stamped_inpad_cnt,
-                                    stamped_inpad_cnt + child_pb_num_inpads - 1,
-                                    VERILOG_PORT_CONKT);
-      /* update stamped inpad counter */
-      stamped_inpad_cnt += child_pb_num_inpads;
-      /* Print output pads */
-      dump_verilog_grid_common_port(fp, outpad_verilog_model,
-                                    gio_output_prefix, 
-                                    stamped_outpad_cnt,
-                                    stamped_outpad_cnt + child_pb_num_outpads - 1,
-                                    VERILOG_PORT_CONKT);
-      /* update stamped outpad counter */
-      stamped_outpad_cnt += child_pb_num_outpads;
       /* Print I/O pads */
       dump_verilog_grid_common_port(fp, iopad_verilog_model,
                                     gio_inout_prefix, 
@@ -1962,8 +1917,6 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
   my_free(subckt_name);
 
   assert(stamped_sram_cnt == get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info)); 
-  assert(stamped_inpad_cnt == inpad_verilog_model->cnt); 
-  assert(stamped_outpad_cnt == outpad_verilog_model->cnt);
   assert(stamped_iopad_cnt == iopad_verilog_model->cnt);
 
   return;
@@ -1995,8 +1948,6 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
   int stamped_sram_cnt = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info); 
   int stamped_sram_lsb = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info); 
 
-  int stamped_inpad_cnt = inpad_verilog_model->cnt;
-  int stamped_outpad_cnt = outpad_verilog_model->cnt;
   int stamped_iopad_cnt = iopad_verilog_model->cnt;
 
   /* Check the file handler*/ 
@@ -2058,10 +2009,6 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
           dump_verilog_pb_primitive_verilog_model(fp, formatted_subckt_prefix, 
                                           &(cur_pb->child_pbs[ipb][jpb]), cur_pb_graph_node, pb_type_index, cur_pb_type->spice_model, 0);
           /* update the number of SRAM, I/O pads */
-          /* update stamped inpad counter */
-          stamped_inpad_cnt += cur_pb->num_inpads;
-          /* update stamped outpad counter */
-          stamped_outpad_cnt += cur_pb->num_outpads;
           /* update stamped iopad counter */
           stamped_iopad_cnt += cur_pb->num_iopads;
           /* update stamped sram counter */
@@ -2075,10 +2022,6 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
       dump_verilog_pb_primitive_verilog_model(fp, formatted_subckt_prefix, 
                                       cur_pb, cur_pb_graph_node, pb_type_index, cur_pb_type->spice_model, 0);
       /* update the number of SRAM, I/O pads */
-      /* update stamped inpad counter */
-      stamped_inpad_cnt += cur_pb->num_inpads;
-      /* update stamped outpad counter */
-      stamped_outpad_cnt += cur_pb->num_outpads;
       /* update stamped iopad counter */
       stamped_iopad_cnt += cur_pb->num_iopads;
       /* update stamped sram counter */
@@ -2090,10 +2033,6 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
       dump_verilog_pb_primitive_verilog_model(fp, formatted_subckt_prefix, 
                                         cur_pb, cur_pb_graph_node, pb_type_index, cur_pb_type->spice_model, 0);
       /* update the number of SRAM, I/O pads */
-      /* update stamped inpad counter */
-      stamped_inpad_cnt += cur_pb->num_inpads;
-      /* update stamped outpad counter */
-      stamped_outpad_cnt += cur_pb->num_outpads;
       /* update stamped iopad counter */
       stamped_iopad_cnt += cur_pb->num_iopads;
       /* update stamped sram counter */
@@ -2106,8 +2045,6 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
     }
     /* Check */
     assert(stamped_sram_cnt == get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info)); 
-    assert(stamped_inpad_cnt == inpad_verilog_model->cnt); 
-    assert(stamped_outpad_cnt == outpad_verilog_model->cnt); 
     assert(stamped_iopad_cnt == iopad_verilog_model->cnt); 
     /* Finish job for primitive node, return */
     return;
@@ -2141,14 +2078,6 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
   /* Simplify the prefix! Make the SPICE netlist readable*/
   dump_verilog_pb_type_ports(fp, subckt_port_prefix, 0, cur_pb_type, TRUE, FALSE);
   /* Print Input Pad and Output Pad */
-  dump_verilog_grid_common_port(fp, inpad_verilog_model,
-                                gio_input_prefix, 
-                                stamped_inpad_cnt, inpad_verilog_model->cnt - 1,
-                                VERILOG_PORT_INPUT);
-  dump_verilog_grid_common_port(fp, outpad_verilog_model,
-                                gio_output_prefix, 
-                                stamped_outpad_cnt, outpad_verilog_model->cnt - 1,
-                                VERILOG_PORT_INPUT);
   dump_verilog_grid_common_port(fp, iopad_verilog_model,
                                 gio_inout_prefix, 
                                 stamped_iopad_cnt, iopad_verilog_model->cnt - 1,
@@ -2198,8 +2127,6 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
         child_mode_index = find_pb_type_idle_mode_index(cur_pb_type->modes[mode_index].pb_type_children[ipb]);
         child_pb_num_reserved_conf_bits = cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_reserved_conf_bits;
         child_pb_num_conf_bits = cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_conf_bits;
-        child_pb_num_inpads = cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_inpads;
-        child_pb_num_outpads = cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_outpads;
         child_pb_num_iopads = cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_iopads;
       }
       /* If the pb_type_children is a leaf node, we don't use the mode to name it,
@@ -2241,22 +2168,6 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
        * NO SRAMs !!! They have already been fixed in the bottom level
        */
       dump_verilog_pb_type_ports(fp, child_pb_type_prefix, 0, &(cur_pb_type->modes[mode_index].pb_type_children[ipb]), FALSE, FALSE);
-      /* Print input pads */
-      dump_verilog_grid_common_port(fp, inpad_verilog_model,
-                                    gio_input_prefix, 
-                                    stamped_inpad_cnt,
-                                    stamped_inpad_cnt + child_pb_num_inpads - 1,
-                                    VERILOG_PORT_CONKT);
-      /* update stamped inpad counter */
-      stamped_inpad_cnt += child_pb_num_inpads;
-      /* Print output pads */
-      dump_verilog_grid_common_port(fp, outpad_verilog_model,
-                                    gio_output_prefix, 
-                                    stamped_outpad_cnt,
-                                    stamped_outpad_cnt + child_pb_num_outpads - 1,
-                                    VERILOG_PORT_CONKT);
-      /* update stamped outpad counter */
-      stamped_outpad_cnt += child_pb_num_outpads;
       /* Print I/O pads */
       dump_verilog_grid_common_port(fp, iopad_verilog_model,
                                     gio_inout_prefix, 
@@ -2301,28 +2212,9 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
   my_free(subckt_name);
 
   assert(stamped_sram_cnt == get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info)); 
-  assert(stamped_inpad_cnt == inpad_verilog_model->cnt); 
-  assert(stamped_outpad_cnt == outpad_verilog_model->cnt); 
   assert(stamped_iopad_cnt == iopad_verilog_model->cnt); 
 
   return;
-}
-
-/* Return a child_pb if it is mapped.*/
-t_pb* get_child_pb_for_phy_pb_graph_node(t_pb* cur_pb, int ipb, int jpb) {
-  t_pb* child_pb = NULL;
-  
-  /* TODO: more check ? */
-
-  if (NULL == cur_pb) {
-    return NULL;
-  }
-
-  if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
-    child_pb = &(cur_pb->child_pbs[ipb][jpb]);
-  }
-  
-  return child_pb;
 }
 
 /* Print physical mode of pb_types and configure it to the idle pb_types recursively
@@ -2353,8 +2245,6 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
   int stamped_sram_cnt = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info); 
   int stamped_sram_lsb = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info); 
 
-  int stamped_inpad_cnt = inpad_verilog_model->cnt;
-  int stamped_outpad_cnt = outpad_verilog_model->cnt;
   int stamped_iopad_cnt = iopad_verilog_model->cnt;
   
   /* Check the file handler*/ 
@@ -2431,18 +2321,12 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
       exit(1);
     }
     /* update the number of SRAM, I/O pads */
-    /* update stamped inpad counter */
-    stamped_inpad_cnt += cur_pb_type->physical_mode_num_inpads;
-    /* update stamped outpad counter */
-    stamped_outpad_cnt += cur_pb_type->physical_mode_num_outpads;
     /* update stamped iopad counter */
     stamped_iopad_cnt += cur_pb_type->physical_mode_num_iopads;
     /* update stamped sram counter */
     stamped_sram_cnt += cur_pb_type->physical_mode_num_conf_bits;
     /* Check */
     assert(stamped_sram_cnt == get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info)); 
-    assert(stamped_inpad_cnt == inpad_verilog_model->cnt); 
-    assert(stamped_outpad_cnt == outpad_verilog_model->cnt);
     assert(stamped_iopad_cnt == iopad_verilog_model->cnt);
     /* Finish for primitive node, return  */
     return;
@@ -2460,7 +2344,7 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
   sprintf(subckt_name, "%s%s_%d__mode_%s_", 
           formatted_subckt_prefix, cur_pb_type->name, pb_type_index, cur_pb_type->modes[mode_index].name);
   /* Comment lines */
-  fprintf(fp, "//----- Idle programmable logic block Verilog module %s -----\n", subckt_name);
+  fprintf(fp, "//----- Physical programmable logic block Verilog module %s -----\n", subckt_name);
   fprintf(fp, "module %s (", subckt_name);
   /* Inputs, outputs, inouts, clocks */
   subckt_port_prefix = (char*)my_malloc(sizeof(char)*
@@ -2477,14 +2361,6 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
   /* Simplify the port prefix, make SPICE netlist readable */
   dump_verilog_pb_type_ports(fp, subckt_port_prefix, 0, cur_pb_type, TRUE, FALSE);
   /* Print Input Pad and Output Pad */
-  dump_verilog_grid_common_port(fp, inpad_verilog_model,
-                                gio_input_prefix, 
-                                stamped_inpad_cnt, inpad_verilog_model->cnt - 1,
-                                VERILOG_PORT_INPUT);
-  dump_verilog_grid_common_port(fp, outpad_verilog_model,
-                                gio_output_prefix, 
-                                stamped_outpad_cnt, outpad_verilog_model->cnt - 1,
-                                VERILOG_PORT_INPUT);
   dump_verilog_grid_common_port(fp, iopad_verilog_model,
                                 gio_inout_prefix, 
                                 stamped_iopad_cnt, iopad_verilog_model->cnt - 1,
@@ -2535,8 +2411,6 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
       /* Collect information of child pb_type */
       child_pb_num_reserved_conf_bits = cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_reserved_conf_bits;
       child_pb_num_conf_bits = cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_conf_bits;
-      child_pb_num_inpads = cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_inpads;
-      child_pb_num_outpads = cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_outpads;
       child_pb_num_iopads = cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_iopads;
 
       /* <formatted_subckt_prefix>mode[<mode_name>]_<child_pb_type_name>[<ipb>]
@@ -2570,22 +2444,6 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
        * NO SRAMs !!! They have already been fixed in the bottom level
        */
       dump_verilog_pb_type_ports(fp, child_pb_type_prefix, 0, &(cur_pb_type->modes[mode_index].pb_type_children[ipb]),FALSE, FALSE);
-      /* Print input pads */
-      dump_verilog_grid_common_port(fp, inpad_verilog_model,
-                                    gio_input_prefix, 
-                                    stamped_inpad_cnt,
-                                    stamped_inpad_cnt + child_pb_num_inpads - 1,
-                                    VERILOG_PORT_CONKT);
-      /* update stamped inpad counter */
-      stamped_inpad_cnt += child_pb_num_inpads;
-      /* Print output pads */
-      dump_verilog_grid_common_port(fp, outpad_verilog_model,
-                                    gio_output_prefix, 
-                                    stamped_outpad_cnt,
-                                    stamped_outpad_cnt + child_pb_num_outpads - 1,
-                                    VERILOG_PORT_CONKT);
-      /* update stamped outpad counter */
-      stamped_outpad_cnt += child_pb_num_outpads;
       /* Print I/O pads */
       dump_verilog_grid_common_port(fp, iopad_verilog_model,
                                     gio_inout_prefix, 
@@ -2615,7 +2473,7 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
     }
   }
   /* Print interconnections, set is_idle as TRUE*/
-  dump_verilog_pb_graph_interc(fp, subckt_name, cur_pb_graph_node, NULL, mode_index, 1);
+  dump_verilog_pb_graph_interc(fp, subckt_name, cur_pb_graph_node, NULL, mode_index, is_idle);
   /* Check each pins of pb_graph_node */ 
   /* Check and update stamped_sram_cnt */
   assert(!(stamped_sram_cnt > (stamped_sram_lsb + num_conf_bits)));
@@ -2628,8 +2486,6 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
   my_free(subckt_name);
 
   assert(stamped_sram_cnt == get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info)); 
-  assert(stamped_inpad_cnt == inpad_verilog_model->cnt); 
-  assert(stamped_outpad_cnt == outpad_verilog_model->cnt);
   assert(stamped_iopad_cnt == iopad_verilog_model->cnt);
 
   return;
@@ -2741,6 +2597,7 @@ void dump_verilog_physical_block(FILE* fp,
   mapped_block = search_mapped_block(x, y, z); 
   if (NULL != mapped_block) {
     top_pb = mapped_block->pb; 
+    assert(NULL != top_pb);
   }
 
   /* Recursively find all idle mode and print netlist*/
@@ -3358,15 +3215,7 @@ void dump_verilog_grid_blocks(FILE* fp,
   } else {
     dump_verilog_grid_pins(fp, ix, iy, 0, TRUE, FALSE);
   }
-  /* Print Input Pad and Output Pad */
-  dump_verilog_grid_common_port(fp, inpad_verilog_model, gio_input_prefix,
-                                inpad_verilog_model->grid_index_low[ix][iy],
-                                inpad_verilog_model->grid_index_high[ix][iy] - 1,
-                                VERILOG_PORT_INPUT); 
-  dump_verilog_grid_common_port(fp, outpad_verilog_model, gio_output_prefix, 
-                                outpad_verilog_model->grid_index_low[ix][iy],
-                                outpad_verilog_model->grid_index_high[ix][iy] - 1,
-                                VERILOG_PORT_INPUT); 
+ 
   /* IO PAD */
   dump_verilog_grid_common_port(fp, iopad_verilog_model, gio_inout_prefix, 
                                 iopad_verilog_model->grid_index_low[ix][iy],
@@ -3404,8 +3253,6 @@ void dump_verilog_grid_blocks(FILE* fp,
 
   /* Initialize temporary counter */
   temp_conf_bits_lsb = cur_num_mem_bit;
-  temp_inpad_lsb = inpad_verilog_model->grid_index_low[ix][iy];
-  temp_outpad_lsb = outpad_verilog_model->grid_index_low[ix][iy];
   temp_iopad_lsb = iopad_verilog_model->grid_index_low[ix][iy];
 
   /* Quote all the sub blocks*/
@@ -3431,27 +3278,13 @@ void dump_verilog_grid_blocks(FILE* fp,
     if (NULL == mapped_block) {
       temp_reserved_conf_bits_msb = grid[ix][iy].type->pb_type->default_mode_num_reserved_conf_bits;
       temp_conf_bits_msb = temp_conf_bits_lsb + grid[ix][iy].type->pb_type->default_mode_num_conf_bits;
-      temp_inpad_msb = temp_inpad_lsb + grid[ix][iy].type->pb_type->default_mode_num_inpads;
-      temp_outpad_msb = temp_outpad_lsb + grid[ix][iy].type->pb_type->default_mode_num_outpads;
       temp_iopad_msb = temp_iopad_lsb + grid[ix][iy].type->pb_type->default_mode_num_iopads;
     } else {
       temp_reserved_conf_bits_msb = mapped_block->pb->num_reserved_conf_bits;
       temp_conf_bits_msb = temp_conf_bits_lsb + mapped_block->pb->num_conf_bits;
-      temp_inpad_msb = temp_inpad_lsb + mapped_block->pb->num_inpads;
-      temp_outpad_msb = temp_outpad_lsb + mapped_block->pb->num_outpads;
       temp_iopad_msb = temp_iopad_lsb + mapped_block->pb->num_iopads;
     }
     /* Print Input Pad and Output Pad */
-    fprintf(fp, "\n//---- INPAD ----\n");
-    dump_verilog_grid_common_port(fp, inpad_verilog_model, gio_input_prefix,
-                                  temp_inpad_lsb,
-                                  temp_inpad_msb - 1,
-                                  VERILOG_PORT_CONKT); 
-    fprintf(fp, "\n//---- OUTPAD ----\n");
-    dump_verilog_grid_common_port(fp, outpad_verilog_model, gio_output_prefix,
-                                  temp_outpad_lsb,
-                                  temp_outpad_msb - 1,
-                                  VERILOG_PORT_CONKT); 
     fprintf(fp, "\n//---- IOPAD ----\n");
     dump_verilog_grid_common_port(fp, iopad_verilog_model, gio_inout_prefix,
                                   temp_iopad_lsb,
@@ -3485,8 +3318,6 @@ void dump_verilog_grid_blocks(FILE* fp,
   fprintf(fp, "//----- END Grid[%d][%d], Capactity: %d -----\n\n", ix, iy, capacity);
 
   assert(temp_conf_bits_msb == get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info)); 
-  assert(temp_inpad_msb == inpad_verilog_model->grid_index_high[ix][iy]);
-  assert(temp_outpad_msb == outpad_verilog_model->grid_index_high[ix][iy]);
 
   /* Free */
   my_free(subckt_name);
@@ -3574,15 +3405,7 @@ void dump_verilog_physical_grid_blocks(FILE* fp,
   } else {
     dump_verilog_grid_pins(fp, ix, iy, 0, TRUE, FALSE);
   }
-  /* Print Input Pad and Output Pad */
-  dump_verilog_grid_common_port(fp, inpad_verilog_model, gio_input_prefix,
-                                inpad_verilog_model->grid_index_low[ix][iy],
-                                inpad_verilog_model->grid_index_high[ix][iy] - 1,
-                                VERILOG_PORT_INPUT); 
-  dump_verilog_grid_common_port(fp, outpad_verilog_model, gio_output_prefix, 
-                                outpad_verilog_model->grid_index_low[ix][iy],
-                                outpad_verilog_model->grid_index_high[ix][iy] - 1,
-                                VERILOG_PORT_INPUT); 
+
   /* IO PAD */
   dump_verilog_grid_common_port(fp, iopad_verilog_model, gio_inout_prefix, 
                                 iopad_verilog_model->grid_index_low[ix][iy],
@@ -3616,8 +3439,6 @@ void dump_verilog_physical_grid_blocks(FILE* fp,
 
   /* Initialize temporary counter */
   temp_conf_bits_lsb = cur_num_mem_bit;
-  temp_inpad_lsb = inpad_verilog_model->grid_index_low[ix][iy];
-  temp_outpad_lsb = outpad_verilog_model->grid_index_low[ix][iy];
   temp_iopad_lsb = iopad_verilog_model->grid_index_low[ix][iy];
 
   /* Quote all the sub blocks*/
@@ -3640,20 +3461,9 @@ void dump_verilog_physical_grid_blocks(FILE* fp,
     /* Print configuration ports */
     temp_reserved_conf_bits_msb = grid[ix][iy].type->pb_type->physical_mode_num_reserved_conf_bits; 
     temp_conf_bits_msb = temp_conf_bits_lsb + grid[ix][iy].type->pb_type->physical_mode_num_conf_bits;
-    temp_inpad_msb = temp_inpad_lsb + grid[ix][iy].type->pb_type->physical_mode_num_inpads;
-    temp_outpad_msb = temp_outpad_lsb + grid[ix][iy].type->pb_type->physical_mode_num_outpads;
     temp_iopad_msb = temp_iopad_lsb + grid[ix][iy].type->pb_type->physical_mode_num_iopads;
     /* Print Input Pad and Output Pad */
-    fprintf(fp, "\n//---- INPAD ----\n");
-    dump_verilog_grid_common_port(fp, inpad_verilog_model, gio_input_prefix,
-                                  temp_inpad_lsb,
-                                  temp_inpad_msb - 1,
-                                  VERILOG_PORT_CONKT); 
-    fprintf(fp, "\n//---- OUTPAD ----\n");
-    dump_verilog_grid_common_port(fp, outpad_verilog_model, gio_output_prefix,
-                                  temp_outpad_lsb,
-                                  temp_outpad_msb - 1,
-                                  VERILOG_PORT_CONKT); 
+
     fprintf(fp, "\n//---- IOPAD ----\n");
     dump_verilog_grid_common_port(fp, iopad_verilog_model, gio_inout_prefix,
                                   temp_iopad_lsb,
@@ -3689,8 +3499,6 @@ void dump_verilog_physical_grid_blocks(FILE* fp,
 
   /* Check */
   assert(temp_conf_bits_msb == get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info)); 
-  assert(temp_inpad_msb == inpad_verilog_model->grid_index_high[ix][iy]);
-  assert(temp_outpad_msb == outpad_verilog_model->grid_index_high[ix][iy]);
   assert(temp_iopad_msb == iopad_verilog_model->grid_index_high[ix][iy]);
 
   /* Free */

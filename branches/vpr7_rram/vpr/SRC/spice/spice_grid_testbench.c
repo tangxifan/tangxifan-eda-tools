@@ -26,10 +26,9 @@
 #include "fpga_spice_globals.h"
 #include "spice_globals.h"
 #include "fpga_spice_utils.h"
-#include "spice_mux.h"
+#include "spice_utils.h"
 #include "spice_pbtypes.h"
 #include "spice_subckt.h"
-#include "spice_netlist_utils.h"
 #include "spice_grid_testbench.h"
 
 /* Global variable inside this C-source file*/

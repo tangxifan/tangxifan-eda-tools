@@ -23,7 +23,6 @@
 /* Include spice support headers*/
 #include "linkedlist.h"
 #include "fpga_spice_utils.h"
-#include "spice_lut.h"
 #include "fpga_spice_globals.h"
 
 /* Include verilog support headers*/

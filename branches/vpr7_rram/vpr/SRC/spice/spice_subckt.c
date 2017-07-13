@@ -24,6 +24,7 @@
 #include "fpga_spice_globals.h"
 #include "spice_globals.h"
 #include "fpga_spice_utils.h"
+#include "spice_utils.h"
 #include "spice_mux.h"
 #include "spice_lut.h"
 #include "spice_pbtypes.h"
@@ -143,6 +144,7 @@ int search_tapbuf_llist_same_settings(t_llist* head,
   return 0;
 }
 
+/* Generate the subckt for a normal tapered buffer */
 void generate_spice_subckt_tapbuf(FILE* fp, 
                                   t_spice_model_buffer* output_buf) {
   int istage, j;
@@ -183,8 +185,56 @@ void generate_spice_subckt_tapbuf(FILE* fp,
   /* End of subckt*/
   fprintf(fp, ".eom\n\n");
 
+
   return;
 }
+
+/* Generate the subckt for a power-gated tapered buffer */
+void generate_spice_subckt_powergated_tapbuf(FILE* fp, 
+                                             t_spice_model_buffer* output_buf) {
+  int istage, j;
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in create top SPICE netlist %s",__FILE__, __LINE__, basics_spice_file_name); 
+    exit(1);
+  } 
+
+  assert(NULL != output_buf);
+  assert(TRUE == output_buf->exist);
+  assert(TRUE == output_buf->tapered_buf);
+  assert(0 < output_buf->tap_buf_level);
+  assert(0 < output_buf->f_per_stage);
+
+  /* Definition line */
+  fprintf(fp, ".subckt pg_tapbuf_level%d_f%d en enb in out svdd sgnd\n", output_buf->tap_buf_level, output_buf->f_per_stage); 
+  /* Main body of tapered buffer */
+  if (0 == output_buf->tap_buf_level%2) {
+    fprintf(fp, "Xinv_in en enb in in_lvl0 svdd sgnd pg_inv size=1 pg_size=1\n");
+  } else {
+    fprintf(fp, "Rinv_in in in_lvl0 0\n");
+  }
+  /* Print each stage */
+  for (istage = 0; istage < output_buf->tap_buf_level; istage++) {
+    if (istage == (output_buf->tap_buf_level - 1)) {
+      for (j = 0; j < pow(output_buf->f_per_stage,istage); j++) {
+        fprintf(fp, "Xinv_lvl%d_no%d en enb in_lvl%d out svdd sgnd pg_inv size=1 pg_size=1\n",
+                istage, j, istage);
+      }
+      continue;
+    } 
+    for (j = 0; j < pow(output_buf->f_per_stage,istage); j++) {
+      fprintf(fp, "Xinv_lvl%d_no%d en enb in_lvl%d in_lvl%d svdd sgnd pg_inv size=1 pg_size=1\n",
+              istage, j, istage, istage + 1);
+    }
+  }
+  /* End of subckt*/
+  fprintf(fp, ".eom\n\n");
+
+  /* Generate a power-gated tap_buf */
+
+  return;
+}
+
 
 static 
 int generate_spice_basics(char* subckt_dir, t_spice spice) {
@@ -201,6 +251,11 @@ int generate_spice_basics(char* subckt_dir, t_spice spice) {
   } 
   fprint_spice_head(fp,"Inverter, Buffer, Trans. Gate");
  
+  /* TODO: support power-gated inverter and buffer ! 
+   * We have two options: 
+   * 1. Add power-gate transistors to each inverter/buffer
+   * 2. Add huge power-gate transistors to the VDD and GND of inverters
+   */
   /* Inverter */
   fprintf(fp,"* Inverter\n"); 
   fprintf(fp,".subckt inv in out svdd sgnd size=1\n");
@@ -208,6 +263,16 @@ int generate_spice_basics(char* subckt_dir, t_spice spice) {
   fprintf(fp,"Xp0_inv out in svdd svdd %s L=pl W=\'size*beta*wp\'\n",pmos_subckt_name);
   fprintf(fp,".eom inv\n");
   fprintf(fp,"\n");
+  /* Power-gated Inverter */
+  fprintf(fp,"* Powergated Inverter\n"); 
+  fprintf(fp,".subckt pg_inv en enb in out svdd sgnd size=1 pg_size=1\n");
+  fprintf(fp,"Xn0_inv out in sgnd_pg sgnd %s L=nl W=\'size*wn\'\n",nmos_subckt_name);
+  fprintf(fp,"Xp0_inv out in svdd_pg svdd %s L=pl W=\'size*beta*wp\'\n",pmos_subckt_name);
+  fprintf(fp,"Xn0_inv_pg sgnd_pg en sgnd sgnd %s L=nl W=\'pg_size*wn\'\n",nmos_subckt_name);
+  fprintf(fp,"Xp0_inv_pg svdd_pg enb svdd svdd %s L=pl W=\'pg_size*beta*wp\'\n",pmos_subckt_name);
+  fprintf(fp,".eom inv\n");
+  fprintf(fp,"\n");
+  
   /* Buffer */
   fprintf(fp,"* Buffer\n"); 
   fprintf(fp,".subckt buf in out svdd sgnd size=2\n");
@@ -215,6 +280,15 @@ int generate_spice_basics(char* subckt_dir, t_spice spice) {
   fprintf(fp,"Xinv1 mid out svdd sgnd inv size=size\n");
   fprintf(fp,".eom buf\n");
   fprintf(fp,"\n");
+
+  /* Power-gated Buffer */
+  fprintf(fp,"* Power-gated Buffer\n"); 
+  fprintf(fp,".subckt pg_buf en enb in out svdd sgnd size=2 pg_size=2\n");
+  fprintf(fp,"Xinv0 en enb in  mid svdd sgnd pg_inv size=1 pg_size=1\n");
+  fprintf(fp,"Xinv1 en enb mid out svdd sgnd pg_inv size=size pg_size=size\n");
+  fprintf(fp,".eom buf\n");
+  fprintf(fp,"\n");
+
   /* Transmission Gate*/
   fprintf(fp,"* Transmission Gate (Complementary Pass Transistor)\n"); 
   fprintf(fp,".subckt cpt in out sel sel_inv svdd sgnd nmos_size=1 pmos_size=1\n");
@@ -225,6 +299,12 @@ int generate_spice_basics(char* subckt_dir, t_spice spice) {
 
   /* Tapered buffered support */
   for (imodel = 0; imodel < spice.num_spice_model; imodel++) {
+    /* Bypass basic components */
+    if ((SPICE_MODEL_INVBUF == spice.spice_models[imodel].type)
+       ||(SPICE_MODEL_PASSGATE == spice.spice_models[imodel].type)) {
+      continue;
+    }
+    /* Otherwise, we need the buffer information */
     assert(NULL != spice.spice_models[imodel].input_buffer);
     assert(NULL != spice.spice_models[imodel].output_buffer);
     if ((TRUE == spice.spice_models[imodel].output_buffer->exist)

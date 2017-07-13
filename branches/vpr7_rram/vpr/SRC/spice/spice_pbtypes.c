@@ -24,250 +24,13 @@
 #include "fpga_spice_globals.h"
 #include "spice_globals.h"
 #include "fpga_spice_utils.h"
+#include "spice_utils.h"
 #include "spice_mux.h"
 #include "spice_lut.h"
 #include "spice_primitives.h"
 #include "spice_pbtypes.h"
 
 /***** Subroutines *****/
-
-int find_path_id_between_pb_rr_nodes(t_rr_node* local_rr_graph,
-                                     int src_node,
-                                     int des_node) {
-  int path_id = -1;
-  int prev_edge = -1;
-  int path_count = 0;
-  int iedge;
-  t_interconnect* cur_interc = NULL;
-
-  /* Check */
-  assert(NULL != local_rr_graph);
-  assert((0 == src_node)||(0 < src_node));
-  assert((0 == des_node)||(0 < des_node));
-
-  prev_edge = local_rr_graph[des_node].prev_edge;
-  check_pb_graph_edge(*(local_rr_graph[src_node].pb_graph_pin->output_edges[prev_edge]));
-  assert(local_rr_graph[src_node].pb_graph_pin->output_edges[prev_edge]->output_pins[0] == local_rr_graph[des_node].pb_graph_pin);
- 
-  cur_interc = local_rr_graph[src_node].pb_graph_pin->output_edges[prev_edge]->interconnect;
-  /* Search des_node input edges */ 
-  for (iedge = 0; iedge < local_rr_graph[des_node].pb_graph_pin->num_input_edges; iedge++) {
-    if (local_rr_graph[des_node].pb_graph_pin->input_edges[iedge]->input_pins[0] 
-        == local_rr_graph[src_node].pb_graph_pin) {
-      /* Strict check */
-      assert(local_rr_graph[src_node].pb_graph_pin->output_edges[prev_edge]
-              == local_rr_graph[des_node].pb_graph_pin->input_edges[iedge]);
-      path_id = path_count;
-      break;
-    }
-    if (cur_interc == local_rr_graph[des_node].pb_graph_pin->input_edges[iedge]->interconnect) {
-      path_count++;
-    }
-  }
-
-  return path_id; 
-}
-
-/* Find the interconnection type of pb_graph_pin edges*/
-enum e_interconnect find_pb_graph_pin_in_edges_interc_type(t_pb_graph_pin pb_graph_pin) {
-  enum e_interconnect interc_type;
-  int def_interc_type = 0;
-  int iedge;
-
-  for (iedge = 0; iedge < pb_graph_pin.num_input_edges; iedge++) {
-    /* Make sure all edges are legal: 1 input_pin, 1 output_pin*/
-    check_pb_graph_edge(*(pb_graph_pin.input_edges[iedge]));
-    /* Make sure all the edges interconnect type is the same*/
-    if (0 == def_interc_type) {
-      interc_type = pb_graph_pin.input_edges[iedge]->interconnect->type;
-    } else if (interc_type != pb_graph_pin.input_edges[iedge]->interconnect->type) {
-      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,LINE[%d])Interconnection type are not same for port(%s),pin(%d).\n",
-                 __FILE__, __LINE__, pb_graph_pin.port->name,pb_graph_pin.pin_number);
-      exit(1);
-    }
-  }
-
-  return interc_type;  
-}
-
-
-/* Find the interconnection type of pb_graph_pin edges*/
-t_spice_model* find_pb_graph_pin_in_edges_interc_spice_model(t_pb_graph_pin pb_graph_pin) {
-  t_spice_model* interc_spice_model;
-  int def_interc_model = 0;
-  int iedge;
-
-  for (iedge = 0; iedge < pb_graph_pin.num_input_edges; iedge++) {
-    /* Make sure all edges are legal: 1 input_pin, 1 output_pin*/
-    check_pb_graph_edge(*(pb_graph_pin.input_edges[iedge]));
-    /* Make sure all the edges interconnect type is the same*/
-    if (0 == def_interc_model) {
-      interc_spice_model= pb_graph_pin.input_edges[iedge]->interconnect->spice_model;
-    } else if (interc_spice_model != pb_graph_pin.input_edges[iedge]->interconnect->spice_model) {
-      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,LINE[%d])Interconnection spice_model are not same for port(%s),pin(%d).\n",
-                 __FILE__, __LINE__, pb_graph_pin.port->name,pb_graph_pin.pin_number);
-      exit(1);
-    }
-  }
-
-  return interc_spice_model;  
-}
-
-/* Recursively do statistics for the
- * multiplexer spice models inside pb_types
- */
-void stats_mux_spice_model_pb_type_rec(t_llist** muxes_head,
-                                       t_pb_type* cur_pb_type) {
-  
-  int imode, ichild, jinterc;
-  t_spice_model* interc_spice_model = NULL;
- 
-  if (NULL == cur_pb_type) {
-    vpr_printf(TIO_MESSAGE_WARNING,"(File:%s,LINE[%d])cur_pb_type is null pointor!\n",__FILE__,__LINE__);
-    return;
-  }
-
-  /* If there is spice_model_name, this is a leaf node!*/
-  if (NULL != cur_pb_type->spice_model_name) {
-    /* What annoys me is VPR create a sub pb_type for each lut which suppose to be a leaf node
-     * This may bring software convience but ruins SPICE modeling
-     */
-    assert(NULL != cur_pb_type->spice_model);
-    return;
-  }
-  /* Traversal the hierarchy*/
-  for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
-    /* Then we have to statisitic the interconnections*/
-    for (jinterc = 0; jinterc < cur_pb_type->modes[imode].num_interconnect; jinterc++) {
-      /* Check the num_mux and fan_in*/
-      assert((0 == cur_pb_type->modes[imode].interconnect[jinterc].num_mux)
-            ||(0 < cur_pb_type->modes[imode].interconnect[jinterc].num_mux));
-      if (0 == cur_pb_type->modes[imode].interconnect[jinterc].num_mux) {
-        continue;
-      }
-      interc_spice_model = cur_pb_type->modes[imode].interconnect[jinterc].spice_model;
-      assert(NULL != interc_spice_model); 
-      check_and_add_mux_to_linked_list(muxes_head,
-                                       cur_pb_type->modes[imode].interconnect[jinterc].fan_in,
-                                       interc_spice_model);
-    }
-    for (ichild = 0; ichild < cur_pb_type->modes[imode].num_pb_type_children; ichild++) {
-      stats_mux_spice_model_pb_type_rec(muxes_head,
-                                        &cur_pb_type->modes[imode].pb_type_children[ichild]);
-    }
-  }
-  return;
-}
-
-/* Statistics the MUX SPICE MODEL with the help of pb_graph
- * Not the most efficient function to finish the job 
- * Abandon it. But remains a good framework that could be re-used in connecting
- * spice components together
- */
-void stats_mux_spice_model_pb_node_rec(t_llist** muxes_head,
-                                       t_pb_graph_node* cur_pb_node) {
-  int imode, ipb, ichild, iport, ipin;
-  t_pb_type* cur_pb_type = cur_pb_node->pb_type;
-  t_spice_model* interc_spice_model = NULL;
-  enum e_interconnect pin_interc_type;
-  
-  if (NULL == cur_pb_node) {
-    vpr_printf(TIO_MESSAGE_WARNING,"(File:%s,LINE[%d])cur_pb_node is null pointor!\n",__FILE__,__LINE__);
-    return;
-  }
-
-  if (NULL == cur_pb_type) {
-    vpr_printf(TIO_MESSAGE_WARNING,"(File:%s,LINE[%d])cur_pb_type is null pointor!\n",__FILE__,__LINE__);
-    return;
-  }
-
-  /* If there is 0 mode, this is a leaf node!*/
-  if (NULL != cur_pb_type->blif_model) {
-    assert(0 == cur_pb_type->num_modes);
-    assert(NULL == cur_pb_type->modes);
-    /* Ensure there is blif_model, and spice_model*/
-    assert(NULL != cur_pb_type->model);
-    assert(NULL != cur_pb_type->spice_model_name);
-    assert(NULL != cur_pb_type->spice_model);
-    return;
-  }
-  /* Traversal the hierarchy*/
-  for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
-    /* Then we have to statisitic the interconnections*/
-    /* See the input ports*/
-    for (iport = 0; iport < cur_pb_node->num_input_ports; iport++) {
-      for (ipin = 0; ipin < cur_pb_node->num_input_pins[iport]; ipin++) {
-        /* Ensure this is an input port */
-        assert(IN_PORT == cur_pb_node->input_pins[iport][ipin].port->type);
-        /* See the edges, if the interconnetion type infer a MUX, we go next step*/
-        pin_interc_type = find_pb_graph_pin_in_edges_interc_type(cur_pb_node->input_pins[iport][ipin]);
-        if ((COMPLETE_INTERC != pin_interc_type)&&(MUX_INTERC != pin_interc_type)) {
-          continue;
-        }
-        /* We shoule check the size of inputs, in some case of complete, the input_edge is one...*/
-        if ((COMPLETE_INTERC == pin_interc_type)&&(1 == cur_pb_node->input_pins[iport][ipin].num_input_edges)) {
-          continue;
-        }
-        /* Note: i do care the input_edges only! They may infer multiplexers*/
-        interc_spice_model = find_pb_graph_pin_in_edges_interc_spice_model(cur_pb_node->input_pins[iport][ipin]);
-        check_and_add_mux_to_linked_list(muxes_head,
-                                         cur_pb_node->input_pins[iport][ipin].num_input_edges,
-                                         interc_spice_model);
-      }
-    }
-    /* See the output ports*/
-    for (iport = 0; iport < cur_pb_node->num_output_ports; iport++) {
-      for (ipin = 0; ipin < cur_pb_node->num_output_pins[iport]; ipin++) {
-        /* Ensure this is an input port */
-        assert(OUT_PORT == cur_pb_node->output_pins[iport][ipin].port->type);
-        /* See the edges, if the interconnetion type infer a MUX, we go next step*/
-        pin_interc_type = find_pb_graph_pin_in_edges_interc_type(cur_pb_node->output_pins[iport][ipin]);
-        if ((COMPLETE_INTERC != pin_interc_type)&&(MUX_INTERC != pin_interc_type)) {
-          continue;
-        }
-        /* We shoule check the size of inputs, in some case of complete, the input_edge is one...*/
-        if ((COMPLETE_INTERC == pin_interc_type)&&(1 == cur_pb_node->output_pins[iport][ipin].num_input_edges)) {
-          continue;
-        }
-        /* Note: i do care the input_edges only! They may infer multiplexers*/
-        interc_spice_model = find_pb_graph_pin_in_edges_interc_spice_model(cur_pb_node->output_pins[iport][ipin]);
-        check_and_add_mux_to_linked_list(muxes_head,
-                                         cur_pb_node->output_pins[iport][ipin].num_input_edges,
-                                         interc_spice_model);
-      }
-    }
-    /* See the clock ports*/
-    for (iport = 0; iport < cur_pb_node->num_clock_ports; iport++) {
-      for (ipin = 0; ipin < cur_pb_node->num_clock_pins[iport]; ipin++) {
-        /* Ensure this is an input port */
-        assert(IN_PORT == cur_pb_node->clock_pins[iport][ipin].port->type);
-        /* See the edges, if the interconnetion type infer a MUX, we go next step*/
-        pin_interc_type = find_pb_graph_pin_in_edges_interc_type(cur_pb_node->clock_pins[iport][ipin]);
-        if ((COMPLETE_INTERC != pin_interc_type)&&(MUX_INTERC != pin_interc_type)) {
-          continue;
-        }
-        /* We shoule check the size of inputs, in some case of complete, the input_edge is one...*/
-        if ((COMPLETE_INTERC == pin_interc_type)&&(1 == cur_pb_node->clock_pins[iport][ipin].num_input_edges)) {
-          continue;
-        }
-        /* Note: i do care the input_edges only! They may infer multiplexers*/
-        interc_spice_model = find_pb_graph_pin_in_edges_interc_spice_model(cur_pb_node->clock_pins[iport][ipin]);
-        check_and_add_mux_to_linked_list(muxes_head,
-                                         cur_pb_node->clock_pins[iport][ipin].num_input_edges,
-                                         interc_spice_model);
-      }
-    }
-    for (ichild = 0; ichild < cur_pb_type->modes[imode].num_pb_type_children; ichild++) {
-      /* num_pb is the number of such pb_type in a mode*/
-      for (ipb = 0; ipb < cur_pb_type->modes[imode].pb_type_children[ichild].num_pb; ipb++) {
-        /* child_pb_grpah_nodes: [0..num_modes-1][0..num_pb_type_in_mode-1][0..num_pb_type-1]*/
-        stats_mux_spice_model_pb_node_rec(muxes_head,
-                                          &cur_pb_node->child_pb_graph_nodes[imode][ichild][ipb]);
-      }
-    }
-  } 
-  return;  
-}
 
 /* Print ports of pb_types,
  * SRAM ports are not printed here!!! 
@@ -666,6 +429,7 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
   char* formatted_parent_pin_prefix = chomp_spice_node_prefix(parent_pin_prefix); /* Complete a "_" at the end if needed*/
   char* src_pin_prefix = NULL;
   char* des_pin_prefix = NULL;
+  char* sram_vdd_port_name = NULL;
 
   int num_sram_bits = 0;
   int* sram_bits = NULL;
@@ -791,7 +555,6 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
     assert(SPICE_MODEL_MUX == cur_interc->spice_model->type);
     /* Call the subckt that has already been defined before */
     fprintf(fp, "X%s_size%d[%d] ", cur_interc->spice_model->prefix, fan_in, cur_interc->spice_model->cnt);
-    cur_interc->spice_model->cnt++;
     /* Inputs */
     for (iedge = 0; iedge < des_pb_graph_pin->num_input_edges; iedge++) {
       if (cur_mode != des_pb_graph_pin->input_edges[iedge]->interconnect->parent_mode) {
@@ -863,25 +626,12 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
                  __FILE__, __LINE__, cur_interc->spice_model->name);
       exit(1);
     } 
-    num_sram = sram_spice_model->cnt;
+    cur_sram = get_sram_orgz_info_num_mem_bit(sram_spice_orgz_info); 
     /* Create wires to sram outputs*/
     for (ilevel = 0; ilevel < num_sram_bits; ilevel++) {
-      switch (sram_bits[ilevel]) {
-      /* the pull UP/down vdd/gnd should be connected to the local interc gvdd*/
-      /* TODO: we want to see the dynamic power of each multiplexer, we may split these global vdd*/
-      case 0: 
-        fprintf(fp, "%s[%d]->out %s[%d]->outb ", 
-                sram_spice_model->prefix, num_sram, sram_spice_model->prefix, num_sram); /* Outputs */
-        break;
-      case 1:
-        fprintf(fp, "%s[%d]->outb %s[%d]->out ", 
-                sram_spice_model->prefix, num_sram, sram_spice_model->prefix, num_sram); /* Outputs */
-        break;
-      default:
-        vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid sram_bit(=%d)! Should be [0|1].\n", __FILE__, __LINE__, sram_bits[ilevel]);
-        exit(1);
-      }
-      num_sram++;
+      assert( (0 == sram_bits[ilevel]) || (1 == sram_bits[ilevel]) );
+      fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, cur_sram + ilevel, sram_bits[ilevel]);
+      fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, cur_sram + ilevel, 1 - sram_bits[ilevel]);
     }
     /* Local vdd and gnd, TODO: we should have an independent VDD for all local interconnections*/
     fprintf(fp, "gvdd_local_interc sgnd ");
@@ -896,67 +646,31 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
     }
     fprintf(fp, "*****\n");
     /* Print all the srams*/
-    cur_sram = sram_spice_model->cnt; 
-    switch (sram_spice_orgz_type) {
-    case SPICE_SRAM_STANDALONE:
-    case SPICE_SRAM_MEMORY_BANK:
-      for (ilevel = 0; ilevel < num_sram_bits; ilevel++) {
-        fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, cur_sram); /* SRAM subckts*/
-        /* fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, cur_sram);*/ /* Input*/
-        fprintf(fp, "%s->in ", sram_spice_model->prefix); /* Input*/
-        fprintf(fp, "%s[%d]->out %s[%d]->outb ", 
-                sram_spice_model->prefix, cur_sram, sram_spice_model->prefix, cur_sram); /* Outputs */
-        fprintf(fp, "gvdd_sram_local_routing sgnd %s\n", sram_spice_model->name);  //
-        /* Add nodeset to help convergence */ 
-        fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, cur_sram);
-        fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, cur_sram);
-        cur_sram++;
-      }
-      break;
-    case SPICE_SRAM_SCAN_CHAIN:
-      for (ilevel = 0; ilevel < num_sram_bits; ilevel++) {
-        fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, cur_sram); /* SRAM subckts*/
-        fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, cur_sram); /* Input*/
-        fprintf(fp, "%s[%d]->out %s[%d]->outb ", 
-                sram_spice_model->prefix, cur_sram, sram_spice_model->prefix, cur_sram); /* Outputs */
-        fprintf(fp, "sc_clk sc_rst sc_set \n");
-        fprintf(fp, "gvdd_sram_local_routing sgnd %s\n", sram_spice_model->name);  //
-        /* Add nodeset to help convergence */ 
-        fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, cur_sram);
-        fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, cur_sram);
-        /* Connect to the tail of previous Scan-chain FF*/
-        fprintf(fp,"R%s[%d]_short %s[%d]->out %s[%d]->in 0\n", 
-                sram_spice_model->prefix, cur_sram, 
-                sram_spice_model->prefix, cur_sram, 
-                sram_spice_model->prefix, cur_sram + 1);
-        /* Specify this is a global signal*/
-        fprintf(fp, ".global %s[%d]->in\n", sram_spice_model->prefix, cur_sram);
-        cur_sram++;
-      }
-      /* Specify the head and tail of the scan-chain of this MUX */
-      fprintf(fp,"R%s[%d]_sc_head %s[%d]_sc_head %s[0]->in 0\n", 
-              cur_interc->spice_model->prefix, cur_interc->spice_model->cnt, 
-              cur_interc->spice_model->prefix, cur_interc->spice_model->cnt, sram_spice_model->prefix);
-      fprintf(fp,"R%s[%d]_sc_tail %s[%d]_sc_tail %s[%d]->in 0\n", 
-              cur_interc->spice_model->prefix, cur_interc->spice_model->cnt, 
-              cur_interc->spice_model->prefix, cur_interc->spice_model->cnt, sram_spice_model->prefix, cur_sram);
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Invalid SRAM organization type!\n",
-                 __FILE__, __LINE__);
-      exit(1);
+    cur_sram = get_sram_orgz_info_num_mem_bit(sram_spice_orgz_info); 
+    /* Give the VDD port name for SRAMs */
+    sram_vdd_port_name = (char*)my_malloc(sizeof(char)*
+                                         (strlen(spice_top_netlist_global_vdd_sram_port) 
+                                          + 1 + strlen("local_routing") 
+                                          + 1 ));
+    sprintf(sram_vdd_port_name, "%s_%s",
+                                spice_top_netlist_global_vdd_sram_port,
+                                "local_routing");
+    /* Now Print SRAMs one by one */
+    for (ilevel = 0; ilevel < num_sram_bits; ilevel++) {
+      fprint_spice_one_sram_subckt(fp, sram_spice_orgz_info, 
+                                   cur_interc->spice_model,
+                                   sram_vdd_port_name);
     }
-
-    assert(cur_sram == num_sram);
-    sram_spice_model->cnt = cur_sram;
-    //for (ilevel = 0; ilevel < mux_level; ilevel++) {
-    //  fprintf(fp, "X%s[%d] ", ); /* SRAM name*/
-    //  fprintf(fp, "sram_carry[%d] sram[%d]_out sram[%d]_outb %s gvdd_sram sgnd %s\n");
-    //}
+    /* Store the configuraion bit to linked-list */
+    add_sram_conf_bits_to_llist(sram_spice_orgz_info, cur_sram, 
+                                num_sram_bits, sram_bits);
+    /* Update spice_model counter */
+    cur_interc->spice_model->cnt++;
     /* Free */
     my_free(sram_bits);
     my_free(src_pin_prefix);
     my_free(des_pin_prefix);
+    my_free(sram_vdd_port_name);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid interconnection type for %s (Arch[LINE%d])!\n",
@@ -1301,8 +1015,7 @@ void fprint_pb_primitive_spice_model(FILE* fp,
     fprint_pb_primitive_ff(fp, subckt_prefix, mapped_logical_block, prim_pb_graph_node,
                            pb_index, spice_model);
     break;
-  case SPICE_MODEL_INPAD:
-  case SPICE_MODEL_OUTPAD:
+  case SPICE_MODEL_IOPAD:
     assert(NULL != spice_model->model_netlist);
     fprint_pb_primitive_io(fp, subckt_prefix, mapped_logical_block, prim_pb_graph_node,
                            pb_index, spice_model);
@@ -1376,109 +1089,111 @@ void fprint_spice_idle_pb_graph_node_rec(FILE* fp,
 
   /* Check if this has defined a spice_model*/
   if (NULL != cur_pb_type->spice_model) {
-    /* TODO: Consider the num_pb, create all the subckts*/
     fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
-                                    NULL, cur_pb_graph_node, pb_type_index, cur_pb_type->spice_model, 1);
-  } else {
-    /* Find the mode that define_idle_mode*/
-    mode_index = find_pb_type_idle_mode_index((*cur_pb_type));
-    /* Create a new subckt */
-    /* <formatted_subckt_prefix>mode[<mode_name>]
-     */
-    subckt_name = (char*)my_malloc(sizeof(char)*
-                  (strlen(formatted_subckt_prefix) + strlen(cur_pb_type->name) + 1 
-                  + strlen(my_itoa(pb_type_index)) + 7 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1)); 
-    /* Definition*/
-    sprintf(subckt_name, "%s%s[%d]_mode[%s]", 
-            formatted_subckt_prefix, cur_pb_type->name, pb_type_index, cur_pb_type->modes[mode_index].name);
-    fprintf(fp, ".subckt %s ", subckt_name);
-    /* Inputs, outputs, inouts, clocks */
-    subckt_port_prefix = (char*)my_malloc(sizeof(char)*
-                                         (5 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1));
-    sprintf(subckt_port_prefix, "mode[%s]", cur_pb_type->modes[mode_index].name);
-    /*
-    fprint_pb_type_ports(fp, subckt_name, 0, cur_pb_type);
-    */
-    /* Simplify the port prefix, make SPICE netlist readable */
-    fprint_pb_type_ports(fp, subckt_port_prefix, 0, cur_pb_type);
-    /* Finish with local vdd and gnd */
-    fprintf(fp, "svdd sgnd\n");
-    /* Definition ends*/
-
-    /* Specify the head of scan-chain */
-    if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
-      fprintf(fp, "***** Head of scan-chain *****\n");
-      fprintf(fp, "R%s_sc_head %s_sc_head %s[%d]->in 0\n",
-              subckt_name, subckt_name, sram_spice_model->prefix, sram_spice_model->cnt);
-    }
-
-    /* Quote all child pb_types */
-    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
-      /* Each child may exist multiple times in the hierarchy*/
-      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
-        /* we should make sure this placement index == child_pb_type[jpb]*/
-        assert(jpb == cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb].placement_index);
-        /* <formatted_subckt_prefix>mode[<mode_name>]_<child_pb_type_name>[<ipb>]
-         */
-        fprintf(fp, "X%s[%d] ", cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
-        /* Pass the SPICE mode prefix on, 
-         * <subckt_name>mode[<mode_name>]_<child_pb_type_name>[<jpb>]
-         * <child_pb_type_name>[<jpb>]
-         */
-        /*
-        child_pb_type_prefix = (char*)my_malloc(sizeof(char)*
-                                 (strlen(subckt_name) + 1 
-                                  + strlen(cur_pb_type->modes[imode].pb_type_children[ipb].name) + 1 
-                                  + strlen(my_itoa(jpb)) + 1 + 1));
-        sprintf(child_pb_type_prefix, "%s_%s[%d]", subckt_name,
-        cur_pb_type->modes[imode].pb_type_children[ipb].name, jpb);
-        */
-        /* Simplify the prefix! */
-        child_pb_type_prefix = (char*)my_malloc(sizeof(char)* 
-                                  (strlen(cur_pb_type->modes[mode_index].pb_type_children[ipb].name) + 1 
-                                   + strlen(my_itoa(jpb)) + 1 + 1));
-        sprintf(child_pb_type_prefix, "%s[%d]",
-                cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
-        /* Print inputs, outputs, inouts, clocks
-         * NO SRAMs !!! They have already been fixed in the bottom level
-         */
-        fprint_pb_type_ports(fp, child_pb_type_prefix, 0, &(cur_pb_type->modes[mode_index].pb_type_children[ipb]));
-        fprintf(fp, "svdd sgnd "); /* Local vdd and gnd*/
-
-        /* Find the pb_type_children mode */
-        if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) { /* Find the idle_mode_index, if this is not a leaf node  */
-          child_mode_index = find_pb_type_idle_mode_index(cur_pb_type->modes[mode_index].pb_type_children[ipb]);
-        }
-        /* If the pb_type_children is a leaf node, we don't use the mode to name it,
-         * else we can use the mode to name it 
-         */
-        if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) { /* Not a leaf node*/
-          fprintf(fp, "%s_%s[%d]_mode[%s]\n",
-                  subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb, 
-                  cur_pb_type->modes[mode_index].pb_type_children[ipb].modes[child_mode_index].name);
-        } else { /* Have a spice model definition, this is a leaf node*/
-          fprintf(fp, "%s_%s[%d]\n",
-                  subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb); 
-        }
-        my_free(child_pb_type_prefix);
-      }
-    }
-    /* Print interconnections, set is_idle as TRUE*/
-    fprint_spice_pb_graph_interc(fp, subckt_name, cur_pb_graph_node, NULL, mode_index, 1);
-    /* Check each pins of pb_graph_node */ 
-
-    /* Specify the Tail of scan-chain */
-    if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
-      fprintf(fp, "***** Tail of scan-chain *****\n");
-      fprintf(fp, "R%s_sc_tail %s_sc_tail %s[%d]->in 0\n",
-              subckt_name, subckt_name, sram_spice_model->prefix, sram_spice_model->cnt);
-    }
-
-    /* End the subckt */
-    fprintf(fp, ".eom\n");
-    /* Free subckt name*/
-    my_free(subckt_name);
+                                    NULL, cur_pb_graph_node, 
+                                    pb_type_index, cur_pb_type->spice_model, 1);
+    /* Finish the primitive node, we return */
+    return;
   }
+
+  /* Find the mode that define_idle_mode*/
+  mode_index = find_pb_type_idle_mode_index((*cur_pb_type));
+  /* Create a new subckt */
+  /* <formatted_subckt_prefix>mode[<mode_name>]
+   */
+  subckt_name = (char*)my_malloc(sizeof(char)*
+                (strlen(formatted_subckt_prefix) + strlen(cur_pb_type->name) + 1 
+                + strlen(my_itoa(pb_type_index)) + 7 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1)); 
+  /* Definition*/
+  sprintf(subckt_name, "%s%s[%d]_mode[%s]", 
+          formatted_subckt_prefix, cur_pb_type->name, pb_type_index, cur_pb_type->modes[mode_index].name);
+  fprintf(fp, ".subckt %s ", subckt_name);
+  /* Inputs, outputs, inouts, clocks */
+  subckt_port_prefix = (char*)my_malloc(sizeof(char)*
+                                       (5 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1));
+  sprintf(subckt_port_prefix, "mode[%s]", cur_pb_type->modes[mode_index].name);
+  /*
+  fprint_pb_type_ports(fp, subckt_name, 0, cur_pb_type);
+  */
+  /* Simplify the port prefix, make SPICE netlist readable */
+  fprint_pb_type_ports(fp, subckt_port_prefix, 0, cur_pb_type);
+  /* Finish with local vdd and gnd */
+  fprintf(fp, "svdd sgnd\n");
+  /* Definition ends*/
+
+  /* Specify the head of scan-chain */
+  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
+    fprintf(fp, "***** Head of scan-chain *****\n");
+    fprintf(fp, "R%s_sc_head %s_sc_head %s[%d]->in 0\n",
+            subckt_name, subckt_name, sram_spice_model->prefix, sram_spice_model->cnt);
+  }
+
+  /* Quote all child pb_types */
+  for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+    /* Each child may exist multiple times in the hierarchy*/
+    for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+      /* we should make sure this placement index == child_pb_type[jpb]*/
+      assert(jpb == cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb].placement_index);
+      /* <formatted_subckt_prefix>mode[<mode_name>]_<child_pb_type_name>[<ipb>]
+       */
+      fprintf(fp, "X%s[%d] ", cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
+      /* Pass the SPICE mode prefix on, 
+       * <subckt_name>mode[<mode_name>]_<child_pb_type_name>[<jpb>]
+       * <child_pb_type_name>[<jpb>]
+       */
+      /*
+      child_pb_type_prefix = (char*)my_malloc(sizeof(char)*
+                               (strlen(subckt_name) + 1 
+                                + strlen(cur_pb_type->modes[imode].pb_type_children[ipb].name) + 1 
+                                + strlen(my_itoa(jpb)) + 1 + 1));
+      sprintf(child_pb_type_prefix, "%s_%s[%d]", subckt_name,
+      cur_pb_type->modes[imode].pb_type_children[ipb].name, jpb);
+      */
+      /* Simplify the prefix! */
+      child_pb_type_prefix = (char*)my_malloc(sizeof(char)* 
+                                (strlen(cur_pb_type->modes[mode_index].pb_type_children[ipb].name) + 1 
+                                  + strlen(my_itoa(jpb)) + 1 + 1));
+      sprintf(child_pb_type_prefix, "%s[%d]",
+               cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
+      /* Print inputs, outputs, inouts, clocks
+        * NO SRAMs !!! They have already been fixed in the bottom level
+        */
+      fprint_pb_type_ports(fp, child_pb_type_prefix, 0, &(cur_pb_type->modes[mode_index].pb_type_children[ipb]));
+      fprintf(fp, "svdd sgnd "); /* Local vdd and gnd*/
+
+      /* Find the pb_type_children mode */
+      if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) { /* Find the idle_mode_index, if this is not a leaf node  */
+         child_mode_index = find_pb_type_idle_mode_index(cur_pb_type->modes[mode_index].pb_type_children[ipb]);
+      }
+      /* If the pb_type_children is a leaf node, we don't use the mode to name it,
+       * else we can use the mode to name it 
+        */
+      if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) { /* Not a leaf node*/
+        fprintf(fp, "%s_%s[%d]_mode[%s]\n",
+                 subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb, 
+                cur_pb_type->modes[mode_index].pb_type_children[ipb].modes[child_mode_index].name);
+      } else { /* Have a spice model definition, this is a leaf node*/
+        fprintf(fp, "%s_%s[%d]\n",
+                subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb); 
+      }
+      my_free(child_pb_type_prefix);
+    }
+  }
+  /* Print interconnections, set is_idle as TRUE*/
+  fprint_spice_pb_graph_interc(fp, subckt_name, cur_pb_graph_node, NULL, mode_index, 1);
+  /* Check each pins of pb_graph_node */ 
+
+  /* Specify the Tail of scan-chain */
+  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
+    fprintf(fp, "***** Tail of scan-chain *****\n");
+    fprintf(fp, "R%s_sc_tail %s_sc_tail %s[%d]->in 0\n",
+            subckt_name, subckt_name, sram_spice_model->prefix, sram_spice_model->cnt);
+  }
+
+  /* End the subckt */
+  fprintf(fp, ".eom\n");
+  /* Free subckt name*/
+  my_free(subckt_name);
 
   return;
 }
@@ -1546,121 +1261,300 @@ void fprint_spice_pb_graph_node_rec(FILE* fp,
   if (NULL != cur_pb_type->spice_model) {
     switch (cur_pb_type->class_type) {
     case LUT_CLASS: 
-      assert(1 == cur_pb_type->modes[mode_index].num_pb_type_children);
-      assert(1 == cur_pb_type->modes[mode_index].pb_type_children[0].num_pb);
-      /* Consider the num_pb, create all the subckts*/
-      for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
-        for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
-          /* Special care for LUT !!!
-           * Mapped logical block information is stored in child_pbs
-           */
-          fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
-                                          &(cur_pb->child_pbs[ipb][jpb]), cur_pb_graph_node, pb_type_index, cur_pb_type->spice_model, 0);
-        }
-      }
+      fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
+                                      &(cur_pb->child_pbs[ipb][jpb]), cur_pb_graph_node, 
+                                      pb_type_index, cur_pb_type->spice_model, 0);
       break;
     case LATCH_CLASS:
       assert(0 == cur_pb_type->num_modes);
       /* Consider the num_pb, create all the subckts*/
       fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
-                                      cur_pb, cur_pb_graph_node, pb_type_index, cur_pb_type->spice_model, 0);
+                                      cur_pb, cur_pb_graph_node, 
+                                      pb_type_index, cur_pb_type->spice_model, 0);
       break;
     case UNKNOWN_CLASS:
     case MEMORY_CLASS:
       /* Consider the num_pb, create all the subckts*/
       fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
-                                      cur_pb, cur_pb_graph_node, pb_type_index, cur_pb_type->spice_model, 0);
+                                      cur_pb, cur_pb_graph_node, 
+                                      pb_type_index, cur_pb_type->spice_model, 0);
       break; 
     default:
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Unknown class type of pb_type(%s)!\n",
                  __FILE__, __LINE__, cur_pb_type->name);
       exit(1);
     }
-  } else {
-    /* Create a new subckt */
-    /* <formatted_subckt_prefix>mode[<mode_name>]
-     */
-    subckt_name = (char*)my_malloc(sizeof(char)*
-                  (strlen(formatted_subckt_prefix) + strlen(cur_pb_type->name) + 1 
-                   + strlen(my_itoa(pb_type_index)) + 7 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1)); 
-    /* Definition*/
-    sprintf(subckt_name, "%s%s[%d]_mode[%s]", 
-            formatted_subckt_prefix, cur_pb_type->name, pb_type_index, cur_pb_type->modes[mode_index].name);
-    fprintf(fp, ".subckt %s ", subckt_name);
-    /* Inputs, outputs, inouts, clocks */
-    subckt_port_prefix = (char*)my_malloc(sizeof(char)*
-                          (5 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1));
-    sprintf(subckt_port_prefix, "mode[%s]", cur_pb_type->modes[mode_index].name);
-    /*
-    fprint_pb_type_ports(fp, subckt_name, 0, cur_pb_type);
-    */
-    /* Simplify the prefix! Make the SPICE netlist readable*/
-    fprint_pb_type_ports(fp, subckt_port_prefix, 0, cur_pb_type);
-    /* Finish with local vdd and gnd */
-    fprintf(fp, "svdd sgnd\n");
-    /* Definition ends*/
-    /* Quote all child pb_types */
-    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
-      /* Each child may exist multiple times in the hierarchy*/
-      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
-        /* we should make sure this placement index == child_pb_type[jpb]*/
-        assert(jpb == cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb].placement_index);
-        /* <formatted_subckt_prefix>mode[<mode_name>]_<child_pb_type_name>[<ipb>]
-         */
-        fprintf(fp, "X%s[%d] ", cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
-        /* Pass the SPICE mode prefix on, 
-         * <subckt_name>mode[<mode_name>]_<child_pb_type_name>[<jpb>]
-         */
-        /*
-        child_pb_type_prefix = (char*)my_malloc(sizeof(char)*
-                               (strlen(subckt_name) + 1 
-                                + strlen(cur_pb_type->modes[mode_index].pb_type_children[ipb].name) + 1 
-                                + strlen(my_itoa(jpb)) + 1 + 1));
-        sprintf(child_pb_type_prefix, "%s_%s[%d]", subckt_name,
-                cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
-        */
-        /* Simplify the prefix! Make the SPICE netlist readable*/
-        child_pb_type_prefix = (char*)my_malloc(sizeof(char)*
-                               (strlen(cur_pb_type->modes[mode_index].pb_type_children[ipb].name) + 1 
-                                + strlen(my_itoa(jpb)) + 1 + 1));
-        sprintf(child_pb_type_prefix, "%s[%d]", 
-                cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
-        /* Print inputs, outputs, inouts, clocks
-         * NO SRAMs !!! They have already been fixed in the bottom level
-         */
-        fprint_pb_type_ports(fp, child_pb_type_prefix, 0, &(cur_pb_type->modes[mode_index].pb_type_children[ipb]));
-        fprintf(fp, "svdd sgnd "); /* Local vdd and gnd*/
-        /* Find the pb_type_children mode */
-        if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
-          child_mode_index = cur_pb->child_pbs[ipb][jpb].mode; 
-        } else if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) { /* Find the idle_mode_index, if this is not a leaf node  */
-          child_mode_index = find_pb_type_idle_mode_index(cur_pb_type->modes[mode_index].pb_type_children[ipb]);
-        }
-        /* If the pb_type_children is a leaf node, we don't use the mode to name it,
-         * else we can use the mode to name it 
-         */
-        if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) { /* Not a leaf node*/
-          fprintf(fp, "%s_%s[%d]_mode[%s]\n",
-                  subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb, 
-                  cur_pb_type->modes[mode_index].pb_type_children[ipb].modes[child_mode_index].name);
-        } else { /* Have a spice model definition, this is a leaf node*/
-          fprintf(fp, "%s_%s[%d]\n",
-                  subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb); 
-        }
-        my_free(child_pb_type_prefix);
-      }
-    }
-    /* Print interconnections, set is_idle as TRUE*/
-    fprint_spice_pb_graph_interc(fp, subckt_name, cur_pb_graph_node, cur_pb, mode_index, 0);
-    /* Check each pins of pb_graph_node */ 
-    /* End the subckt */
-    fprintf(fp, ".eom\n");
-    /* Free subckt name*/
-    my_free(subckt_name);
+    /* Finish for primitive node, return  */
+    return;
   }
+
+  /* Create a new subckt */
+  /* <formatted_subckt_prefix>mode[<mode_name>]
+   */
+  subckt_name = (char*)my_malloc(sizeof(char)*
+                (strlen(formatted_subckt_prefix) + strlen(cur_pb_type->name) + 1 
+                 + strlen(my_itoa(pb_type_index)) + 7 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1)); 
+  /* Definition*/
+  sprintf(subckt_name, "%s%s[%d]_mode[%s]", 
+          formatted_subckt_prefix, cur_pb_type->name, pb_type_index, cur_pb_type->modes[mode_index].name);
+  fprintf(fp, ".subckt %s ", subckt_name);
+  /* Inputs, outputs, inouts, clocks */
+  subckt_port_prefix = (char*)my_malloc(sizeof(char)*
+                        (5 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1));
+  sprintf(subckt_port_prefix, "mode[%s]", cur_pb_type->modes[mode_index].name);
+  /*
+  fprint_pb_type_ports(fp, subckt_name, 0, cur_pb_type);
+  */
+  /* Simplify the prefix! Make the SPICE netlist readable*/
+  fprint_pb_type_ports(fp, subckt_port_prefix, 0, cur_pb_type);
+  /* Finish with local vdd and gnd */
+  fprintf(fp, "svdd sgnd\n");
+  /* Definition ends*/
+  /* Quote all child pb_types */
+  for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+    /* Each child may exist multiple times in the hierarchy*/
+    for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+      /* we should make sure this placement index == child_pb_type[jpb]*/
+      assert(jpb == cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb].placement_index);
+      /* <formatted_subckt_prefix>mode[<mode_name>]_<child_pb_type_name>[<ipb>]
+       */
+       fprintf(fp, "X%s[%d] ", cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
+      /* Pass the SPICE mode prefix on, 
+       * <subckt_name>mode[<mode_name>]_<child_pb_type_name>[<jpb>]
+       */
+      /*
+      child_pb_type_prefix = (char*)my_malloc(sizeof(char)*
+                             (strlen(subckt_name) + 1 
+                              + strlen(cur_pb_type->modes[mode_index].pb_type_children[ipb].name) + 1 
+                              + strlen(my_itoa(jpb)) + 1 + 1));
+      sprintf(child_pb_type_prefix, "%s_%s[%d]", subckt_name,
+              cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
+      */
+      /* Simplify the prefix! Make the SPICE netlist readable*/
+      child_pb_type_prefix = (char*)my_malloc(sizeof(char)*
+                             (strlen(cur_pb_type->modes[mode_index].pb_type_children[ipb].name) + 1 
+                              + strlen(my_itoa(jpb)) + 1 + 1));
+      sprintf(child_pb_type_prefix, "%s[%d]", 
+               cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
+      /* Print inputs, outputs, inouts, clocks
+       * NO SRAMs !!! They have already been fixed in the bottom level
+       */
+      fprint_pb_type_ports(fp, child_pb_type_prefix, 0, &(cur_pb_type->modes[mode_index].pb_type_children[ipb]));
+      fprintf(fp, "svdd sgnd "); /* Local vdd and gnd*/
+      /* Find the pb_type_children mode */
+      if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
+        child_mode_index = cur_pb->child_pbs[ipb][jpb].mode; 
+      } else if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) { /* Find the idle_mode_index, if this is not a leaf node  */
+         child_mode_index = find_pb_type_idle_mode_index(cur_pb_type->modes[mode_index].pb_type_children[ipb]);
+      }
+      /* If the pb_type_children is a leaf node, we don't use the mode to name it,
+       * else we can use the mode to name it 
+       */
+      if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) { /* Not a leaf node*/
+        fprintf(fp, "%s_%s[%d]_mode[%s]\n",
+                subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb, 
+                cur_pb_type->modes[mode_index].pb_type_children[ipb].modes[child_mode_index].name);
+      } else { /* Have a spice model definition, this is a leaf node*/
+        fprintf(fp, "%s_%s[%d]\n",
+                subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb); 
+      }
+      my_free(child_pb_type_prefix);
+    }
+  }
+  /* Print interconnections, set is_idle as TRUE*/
+  fprint_spice_pb_graph_interc(fp, subckt_name, cur_pb_graph_node, cur_pb, mode_index, 0);
+  /* Check each pins of pb_graph_node */ 
+  /* End the subckt */
+  fprintf(fp, ".eom\n");
+  /* Free subckt name*/
+  my_free(subckt_name);
 
   return;
 }
+
+/* Print SPICE netlist for each pb and corresponding pb_graph_node 
+ * at physical-level implementation */
+void fprint_spice_phy_pb_graph_node_rec(FILE* fp, 
+                                        char* subckt_prefix, 
+                                        t_pb* cur_pb, 
+                                        t_pb_graph_node* cur_pb_graph_node,
+                                        int pb_type_index) {
+  int mode_index, ipb, jpb, child_mode_index, is_idle;
+  t_pb_type* cur_pb_type = NULL;
+  char* subckt_name = NULL;
+  char* formatted_subckt_prefix = format_spice_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
+  char* pass_on_prefix = NULL;
+  char* child_pb_type_prefix = NULL;
+
+  char* subckt_port_prefix = NULL;
+  t_pb* child_pb = NULL;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+  /* Check cur_pb_graph_node*/
+  if (NULL == cur_pb_graph_node) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid cur_pb_graph_node.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+  cur_pb_type = cur_pb_graph_node->pb_type;
+
+  is_idle = 1;
+  if (NULL != cur_pb) {
+    is_idle = 0;
+  }
+
+  /* Recursively finish all the child pb_types*/
+  if (NULL == cur_pb_type->spice_model) { 
+    /* Find the mode that define_idle_mode*/
+    mode_index = find_pb_type_physical_mode_index((*cur_pb_type));
+    /* recursive for the child_pbs*/
+    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+        /* Pass the SPICE mode prefix on, 
+         * <subckt_name><pb_type_name>[<pb_index>]_mode[<mode_name>]_
+         */
+        pass_on_prefix = (char*)my_malloc(sizeof(char)*
+                          (strlen(formatted_subckt_prefix) + strlen(cur_pb_type->name) + 1 
+                           + strlen(my_itoa(pb_type_index)) + 7 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1 + 1));
+        sprintf(pass_on_prefix, "%s%s[%d]_mode[%s]_", 
+                formatted_subckt_prefix, cur_pb_type->name, pb_type_index, cur_pb_type->modes[mode_index].name);
+        /* Recursive*/
+        /* Refer to pack/output_clustering.c [LINE 392] */
+        /* Find the child pb that is mapped, and the mapping info is not stored in the physical mode ! */
+        child_pb = get_child_pb_for_phy_pb_graph_node(cur_pb, ipb, jpb);
+        fprint_spice_phy_pb_graph_node_rec(fp, pass_on_prefix, child_pb, 
+                                           &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]), jpb);
+        /* Free */
+        my_free(pass_on_prefix);
+      }
+    }
+  }
+
+  /* Check if this has defined a spice_model*/
+  if (NULL != cur_pb_type->spice_model) {
+    switch (cur_pb_type->class_type) {
+    case LUT_CLASS: 
+       /* Special care for LUT !!!
+        * Mapped logical block information is stored in child_pbs
+        */
+      fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
+                                      cur_pb, cur_pb_graph_node, 
+                                      pb_type_index, cur_pb_type->spice_model, is_idle);
+      break;
+    case LATCH_CLASS:
+      assert(0 == cur_pb_type->num_modes);
+      /* Consider the num_pb, create all the subckts*/
+      fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
+                                      cur_pb, cur_pb_graph_node, 
+                                      pb_type_index, cur_pb_type->spice_model, is_idle);
+      break;
+    case UNKNOWN_CLASS:
+    case MEMORY_CLASS:
+      /* Consider the num_pb, create all the subckts*/
+      fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
+                                      cur_pb, cur_pb_graph_node, 
+                                      pb_type_index, cur_pb_type->spice_model, is_idle);
+      break; 
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Unknown class type of pb_type(%s)!\n",
+                 __FILE__, __LINE__, cur_pb_type->name);
+      exit(1);
+    }
+    /* Finish for primitive node, return  */
+    return;
+  }
+
+  /* Find the mode that define_idle_mode*/
+  mode_index = find_pb_type_physical_mode_index((*cur_pb_type));
+  /* Create a new subckt */
+  /* <formatted_subckt_prefix>mode[<mode_name>]
+   */
+  subckt_name = (char*)my_malloc(sizeof(char)*
+                (strlen(formatted_subckt_prefix) + strlen(cur_pb_type->name) + 1 
+                 + strlen(my_itoa(pb_type_index)) + 7 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1)); 
+  /* Definition*/
+  sprintf(subckt_name, "%s%s[%d]_mode[%s]", 
+          formatted_subckt_prefix, cur_pb_type->name, pb_type_index, cur_pb_type->modes[mode_index].name);
+  fprintf(fp, ".subckt %s ", subckt_name);
+  /* Inputs, outputs, inouts, clocks */
+  subckt_port_prefix = (char*)my_malloc(sizeof(char)*
+                        (5 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1));
+  sprintf(subckt_port_prefix, "mode[%s]", cur_pb_type->modes[mode_index].name);
+  /*
+  fprint_pb_type_ports(fp, subckt_name, 0, cur_pb_type);
+  */
+  /* Simplify the prefix! Make the SPICE netlist readable*/
+  fprint_pb_type_ports(fp, subckt_port_prefix, 0, cur_pb_type);
+  /* Finish with local vdd and gnd */
+  fprintf(fp, "svdd sgnd\n");
+  /* Definition ends*/
+  /* Quote all child pb_types */
+  for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+    /* Each child may exist multiple times in the hierarchy*/
+    for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+      /* we should make sure this placement index == child_pb_type[jpb]*/
+      assert(jpb == cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb].placement_index);
+      /* <formatted_subckt_prefix>mode[<mode_name>]_<child_pb_type_name>[<ipb>]
+       */
+      fprintf(fp, "X%s[%d] ", cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
+      /* Pass the SPICE mode prefix on, 
+       * <subckt_name>mode[<mode_name>]_<child_pb_type_name>[<jpb>]
+        */
+      /*
+      child_pb_type_prefix = (char*)my_malloc(sizeof(char)*
+                             (strlen(subckt_name) + 1 
+                              + strlen(cur_pb_type->modes[mode_index].pb_type_children[ipb].name) + 1 
+                              + strlen(my_itoa(jpb)) + 1 + 1));
+      sprintf(child_pb_type_prefix, "%s_%s[%d]", subckt_name,
+              cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
+      */
+     /* Simplify the prefix! Make the SPICE netlist readable*/
+      child_pb_type_prefix = (char*)my_malloc(sizeof(char)*
+                             (strlen(cur_pb_type->modes[mode_index].pb_type_children[ipb].name) + 1 
+                              + strlen(my_itoa(jpb)) + 1 + 1));
+      sprintf(child_pb_type_prefix, "%s[%d]", 
+              cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
+      /* Print inputs, outputs, inouts, clocks
+       * NO SRAMs !!! They have already been fixed in the bottom level
+       */
+      fprint_pb_type_ports(fp, child_pb_type_prefix, 0, &(cur_pb_type->modes[mode_index].pb_type_children[ipb]));
+      fprintf(fp, "svdd sgnd "); /* Local vdd and gnd*/
+      /* Find the pb_type_children mode */
+      if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
+        child_mode_index = cur_pb->child_pbs[ipb][jpb].mode; 
+      } else if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) { /* Find the idle_mode_index, if this is not a leaf node  */
+        child_mode_index = find_pb_type_idle_mode_index(cur_pb_type->modes[mode_index].pb_type_children[ipb]);
+      }
+      /* If the pb_type_children is a leaf node, we don't use the mode to name it,
+       * else we can use the mode to name it 
+       */
+      if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) { /* Not a leaf node*/
+        fprintf(fp, "%s_%s[%d]_mode[%s]\n",
+                subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb, 
+                cur_pb_type->modes[mode_index].pb_type_children[ipb].modes[child_mode_index].name);
+      } else { /* Have a spice model definition, this is a leaf node*/
+        fprintf(fp, "%s_%s[%d]\n",
+                subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb); 
+      }
+      my_free(child_pb_type_prefix);
+    }
+  }
+  /* Print interconnections, set is_idle as TRUE*/
+  fprint_spice_pb_graph_interc(fp, subckt_name, cur_pb_graph_node, cur_pb, mode_index, is_idle);
+  /* Check each pins of pb_graph_node */ 
+  /* End the subckt */
+  fprintf(fp, ".eom\n");
+  /* Free subckt name*/
+  my_free(subckt_name);
+
+  return;
+}
+
 
 /* Print the SPICE netlist of a block that has been mapped */
 void fprint_spice_block(FILE* fp,
@@ -1732,6 +1626,48 @@ void fprint_spice_idle_block(FILE* fp,
 
   /* Recursively find all idle mode and print netlist*/
   fprint_spice_idle_pb_graph_node_rec(fp, subckt_name, top_pb_graph_node, z);
+
+  return;
+}
+
+/* Print the SPICE netlist of a block that has been mapped */
+void fprint_spice_physical_block(FILE* fp,
+                                 char* subckt_name, 
+                                 int x,
+                                 int y,
+                                 int z,
+                                 t_type_ptr type_descriptor) {
+  t_pb* top_pb = NULL; 
+  t_pb_graph_node* top_pb_graph_node = NULL;
+  t_block* mapped_block = NULL;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  /* check */
+  assert(NULL != type_descriptor);
+  top_pb_graph_node = type_descriptor->pb_graph_head;
+  assert(NULL != top_pb_graph_node);
+
+  /* Print SPICE netlist according to the hierachy of type descriptor recursively*/
+
+  mapped_block = search_mapped_block(x, y, z); 
+  /* Go for the pb_types*/
+  if (NULL != mapped_block) {
+    top_pb = mapped_block->pb; 
+    assert(NULL != top_pb);
+  }
+
+  /* Recursively find all mode and print netlist*/
+  /* IMPORTANT: type_descriptor just say we have a block that in global view, how it connects to global routing arch.
+   * Inside the type_descripor, there is a top_pb_graph_node(pb_graph_head), describe the top pb_type defined.
+   * The index of such top pb_type is always 0. 
+   */
+  fprint_spice_phy_pb_graph_node_rec(fp, subckt_name, top_pb, top_pb_graph_node, z);
 
   return;
 }
@@ -2093,6 +2029,121 @@ void fprint_io_grid_block_subckt_pins(FILE* fp,
   return;
 }
                                    
+/* Print the SPICE netlist for a physical grid blocks */
+void fprint_grid_physical_blocks(FILE* fp,
+                                 int ix,
+                                 int iy,
+                                 t_arch* arch) {
+  int subckt_name_str_len = 0;
+  char* subckt_name = NULL;
+  t_block* mapped_block = NULL;
+  int iz;
+  int cur_block_index = 0;
+  int capacity; 
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+  /* Check */
+  assert((!(0 > ix))&&(!(ix > (nx + 1)))); 
+  assert((!(0 > iy))&&(!(iy > (ny + 1)))); 
+
+  /* Update the grid_index_low for each spice_model */
+  update_spice_models_grid_index_low(ix, iy, arch->spice->num_spice_model, arch->spice->spice_models);
+
+  /* generate_grid_subckt, type_descriptor of each grid defines the capacity,
+   * for example, each grid may contains more than one top-level pb_types, such as I/O
+   */
+  if ((NULL == grid[ix][iy].type)||(0 != grid[ix][iy].offset)) {
+    /* Update the grid_index_high for each spice_model */
+    update_spice_models_grid_index_high(ix, iy, arch->spice->num_spice_model, arch->spice->spice_models);
+    return; 
+  }
+  capacity= grid[ix][iy].type->capacity;
+  assert(0 < capacity);
+
+  /* Make the sub-circuit name*/
+  /* Name format: grid[<ix>][<iy>]_*/ 
+  subckt_name_str_len = 4 + 1 + strlen(my_itoa(ix)) + 2 
+                        + strlen(my_itoa(iy)) + 1 + 1 + 1; /* Plus '0' at the end of string*/
+  subckt_name = (char*)my_malloc(sizeof(char)*subckt_name_str_len);
+  sprintf(subckt_name, "grid[%d][%d]_", ix, iy);
+
+  /* Specify the head of scan-chain */
+  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
+    fprintf(fp, "***** Head of scan-chain *****\n");
+    fprintf(fp, "Rgrid[%d][%d]_sc_head grid[%d][%d]_sc_head %s[%d]->in 0\n",
+            ix, iy, ix, iy, sram_spice_model->prefix, sram_spice_model->cnt);
+    fprintf(fp, ".global grid[%d][%d]_sc_head \n",
+            ix, iy);
+  }
+
+  cur_block_index = 0;
+  /* check capacity and if this has been mapped */
+  for (iz = 0; iz < capacity; iz++) {
+    /* Comments: Grid [x][y]*/
+    fprintf(fp, "***** Grid[%d][%d] type_descriptor: %s[%d] *****\n", ix, iy, grid[ix][iy].type->name, iz);
+    /* Print a physical logic block with specific configurations*/ 
+    fprint_spice_physical_block(fp, subckt_name, ix, iy, iz, grid[ix][iy].type);
+    fprintf(fp, "***** END *****\n\n");
+  } 
+
+  /* Specify the tail of scan-chain */
+  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
+    fprintf(fp, "***** Tail of scan-chain *****\n");
+    fprintf(fp, "Rgrid[%d][%d]_sc_tail grid[%d][%d]_sc_tail %s[%d]->in 0\n",
+            ix, iy, ix, iy, sram_spice_model->prefix, sram_spice_model->cnt);
+    fprintf(fp, ".global grid[%d][%d]_sc_tail \n",
+            ix, iy);
+  }
+
+  assert(cur_block_index == grid[ix][iy].usage);
+
+  /* Update the grid_index_high for each spice_model */
+  update_spice_models_grid_index_high(ix, iy, arch->spice->num_spice_model, arch->spice->spice_models);
+
+  fprintf(fp, "***** Grid[%d][%d], Capactity: %d *****\n", ix, iy, capacity);
+  fprintf(fp, "***** Top Protocol *****\n");
+  /* Definition */
+  fprintf(fp, ".subckt grid[%d][%d] \n", ix, iy);
+  /* Pins */
+  /* Special Care for I/O grid */
+  if (IO_TYPE == grid[ix][iy].type) {
+    fprint_io_grid_pins(fp, ix, iy, 0);
+  } else {
+    fprint_grid_pins(fp, ix, iy, 0);
+  }
+  /* Local Vdd and GND */
+  fprintf(fp, "+ svdd sgnd\n");
+
+  /* Quote all the sub blocks*/
+  for (iz = 0; iz < capacity; iz++) {
+    fprintf(fp, "Xgrid[%d][%d][%d] \n", ix, iy, iz);
+    /* Print all the pins */
+    /* Special Care for I/O grid */
+    if (IO_TYPE == grid[ix][iy].type) {
+      fprint_io_grid_block_subckt_pins(fp, ix, iy, iz, grid[ix][iy].type);
+    } else {
+      fprint_grid_block_subckt_pins(fp, iz, grid[ix][iy].type);
+    }
+    /* Check in all the blocks(clustered logic block), there is a match x,y,z*/
+    mapped_block = search_mapped_block(ix, iy, iz); 
+    /* Local Vdd and Gnd, subckt name*/
+    fprintf(fp, "+ svdd sgnd %s\n", get_grid_block_subckt_name(ix, iy, iz, subckt_name, mapped_block));
+  }
+
+  fprintf(fp, ".eom\n");
+
+  /* Free */
+  my_free(subckt_name);
+
+  return;
+}
+
+
 
 /* Print the SPICE netlist for a grid blocks */
 void fprint_grid_blocks(FILE* fp,
@@ -2270,6 +2321,7 @@ void generate_spice_logic_blocks(char* subckt_dir,
   for (iy = 1; iy < (ny + 1); iy++) {
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
+    /* TODO: replace with physical block generator */
     fprint_grid_blocks(fp, ix, iy, arch); 
   }
   /* Right side : x = nx + 1, y = 1 .. ny*/
@@ -2277,6 +2329,7 @@ void generate_spice_logic_blocks(char* subckt_dir,
   for (iy = 1; iy < (ny + 1); iy++) {
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
+    /* TODO: replace with physical block generator */
     fprint_grid_blocks(fp, ix, iy, arch); 
   }
   /* Bottom  side : x = 1 .. nx + 1, y = 0 */
@@ -2284,6 +2337,7 @@ void generate_spice_logic_blocks(char* subckt_dir,
   for (ix = 1; ix < (nx + 1); ix++) {
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
+    /* TODO: replace with physical block generator */
     fprint_grid_blocks(fp, ix, iy, arch); 
   }
   /* Top side : x = 1 .. nx + 1, y = nx + 1  */
@@ -2291,6 +2345,7 @@ void generate_spice_logic_blocks(char* subckt_dir,
   for (ix = 1; ix < (nx + 1); ix++) {
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
+    /* TODO: replace with physical block generator */
     fprint_grid_blocks(fp, ix, iy, arch); 
   }
 

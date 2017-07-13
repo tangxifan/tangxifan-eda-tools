@@ -15,6 +15,7 @@ char* io_nmos_subckt_name = "vpr_io_nmos";
 char* io_pmos_subckt_name = "vpr_io_pmos";
 char* cpt_subckt_name = "cpt";
 char* mux_basis_posfix = "_basis";
+char* mux_special_basis_posfix = "_special_basis";
 char* nmos_pmos_spice_file_name = "nmos_pmos.sp";
 char* basics_spice_file_name = "inv_buf_trans_gate.sp";
 char* muxes_spice_file_name = "muxes.sp";
@@ -56,4 +57,14 @@ int num_used_dff_tb = 0;
 t_llist* tb_head = NULL;
 /* linked-list for heads of scan-chain */
 t_llist* scan_chain_heads = NULL;
+
+/* Name of global ports used in all netlists */
+char* spice_top_netlist_global_vdd_port = "gvdd";
+char* spice_top_netlist_global_set_port = "gset";
+char* spice_top_netlist_global_reset_port = "greset";
+char* spice_top_netlist_global_vdd_localrouting_port = "gvdd_local_interc";
+char* spice_top_netlist_global_vdd_io_port = "gvdd_io";
+char* spice_top_netlist_global_vdd_hardlogic_port = "gvdd_hardlogic";
+char* spice_top_netlist_global_vdd_sram_port = "gvdd_sram";
+char* spice_top_netlist_global_clock_port = "gclock";
 

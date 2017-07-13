@@ -23,7 +23,6 @@
 #include "read_xml_spice_util.h"
 #include "linkedlist.h"
 #include "fpga_spice_utils.h"
-#include "spice_netlist_utils.h"
 #include "fpga_spice_backannotate_utils.h"
 #include "fpga_spice_globals.h"
 
@@ -357,40 +356,6 @@ void dump_verilog_top_module_ports(FILE* fp,
     fprintf(fp, "%c\n", split_sign);
   }
   /* Inputs and outputs of I/O pads */
-  /* Input Pads */
-  assert(NULL != inpad_verilog_model);
-  if ((NULL == inpad_verilog_model)
-    &&(inpad_verilog_model->cnt > 0)) {
-    /* Malloc and assign port_name */
-    port_name = (char*)my_malloc(sizeof(char)*(strlen(gio_input_prefix) + strlen(inpad_verilog_model->prefix) + 1));
-    sprintf(port_name, "%s%s", gio_input_prefix, inpad_verilog_model->prefix);
-    /* Dump a register port */
-    dump_verilog_generic_port(fp, dump_port_type, 
-                              port_name, inpad_verilog_model->cnt - 1, 0);
-    fprintf(fp, "%c //---FPGA inputs \n", split_sign); 
-    /* Free port_name */
-    my_free(port_name);
-  }
-
-  /* Output Pads */
-  assert(NULL != outpad_verilog_model);
-  if ((NULL == outpad_verilog_model)
-   ||(outpad_verilog_model->cnt > 0)) {
-    actual_dump_port_type = VERILOG_PORT_CONKT;
-    if (VERILOG_PORT_INPUT == dump_port_type) {
-      actual_dump_port_type = VERILOG_PORT_OUTPUT;
-    }
-    /* Malloc and assign port_name */
-    port_name = (char*)my_malloc(sizeof(char)*(strlen(gio_output_prefix) + strlen(outpad_verilog_model->prefix) + 1));
-    sprintf(port_name, "%s%s", gio_output_prefix, outpad_verilog_model->prefix);
-    /* Dump a register port */
-    dump_verilog_generic_port(fp, actual_dump_port_type, 
-                              port_name, outpad_verilog_model->cnt - 1, 0);
-    fprintf(fp, "%c //---FPGA outputs \n", split_sign); 
-    /* Free port_name */
-    my_free(port_name);
-  }
-
   /* Inout Pads */
   assert(NULL != iopad_verilog_model);
   if ((NULL == iopad_verilog_model)
@@ -506,15 +471,7 @@ void dump_verilog_defined_one_grid(FILE* fp,
   } else {
     dump_verilog_grid_pins(fp, ix, iy, 1, FALSE, FALSE);
   }
-  /* Print Input Pad and Output Pad */
-  dump_verilog_grid_common_port(fp, inpad_verilog_model, gio_input_prefix,
-                                inpad_verilog_model->grid_index_low[ix][iy],
-                                inpad_verilog_model->grid_index_high[ix][iy] - 1,
-                                VERILOG_PORT_CONKT); 
-  dump_verilog_grid_common_port(fp, outpad_verilog_model, gio_output_prefix, 
-                                outpad_verilog_model->grid_index_low[ix][iy],
-                                outpad_verilog_model->grid_index_high[ix][iy] - 1,
-                                VERILOG_PORT_CONKT); 
+ 
   /* IO PAD */
   dump_verilog_grid_common_port(fp, iopad_verilog_model, gio_inout_prefix, 
                                 iopad_verilog_model->grid_index_low[ix][iy],
@@ -1369,36 +1326,6 @@ void dump_verilog_top_testbench_ports(FILE* fp,
   /* TODO: dump each global signal as reg here */
 
   /* Inputs and outputs of I/O pads */
-  /* Input Pads */
-  assert(NULL != inpad_verilog_model);
-  if ((NULL == inpad_verilog_model)
-    &&(inpad_verilog_model->cnt > 0)) {
-    /* Malloc and assign port_name */
-    port_name = (char*)my_malloc(sizeof(char)*(strlen(gio_input_prefix) + strlen(inpad_verilog_model->prefix) + 1));
-    sprintf(port_name, "%s%s", gio_input_prefix, inpad_verilog_model->prefix);
-    /* Dump a register port */
-    dump_verilog_generic_port(fp, VERILOG_PORT_REG, 
-                              port_name, inpad_verilog_model->cnt - 1, 0);
-    fprintf(fp, "; //---FPGA inputs \n"); 
-    /* Free port_name */
-    my_free(port_name);
-  }
-
-  /* Output Pads */
-  assert(NULL != outpad_verilog_model);
-  if ((NULL == outpad_verilog_model)
-   ||(outpad_verilog_model->cnt > 0)) {
-    /* Malloc and assign port_name */
-    port_name = (char*)my_malloc(sizeof(char)*(strlen(gio_output_prefix) + strlen(outpad_verilog_model->prefix) + 1));
-    sprintf(port_name, "%s%s", gio_output_prefix, outpad_verilog_model->prefix);
-    /* Dump a wired port */
-    dump_verilog_generic_port(fp, VERILOG_PORT_WIRE, 
-                              port_name, outpad_verilog_model->cnt - 1, 0);
-    fprintf(fp, "; //---FPGA outputs \n"); 
-    /* Free port_name */
-    my_free(port_name);
-  }
-
   /* Inout Pads */
   assert(NULL != iopad_verilog_model);
   if ((NULL == iopad_verilog_model)
@@ -1515,32 +1442,6 @@ void dump_verilog_top_testbench_ports(FILE* fp,
       fprintf(fp, "assign %s_%s_%d_ = %s%s[%d];\n",
               logical_block[iblock].name, gio_inout_prefix, iopad_idx,
               gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx);
-    }
-    /* General INPUT*/
-    if (inpad_verilog_model == logical_block[iblock].mapped_spice_model) {
-      iopad_idx = logical_block[iblock].mapped_spice_model_index;
-      /* Make sure We find the correct logical block !*/
-      assert(VPACK_INPAD == logical_block[iblock].type);
-      fprintf(fp, "//----- Blif Benchmark input %s is mapped to FPGA IOPAD %s[%d] -----\n", 
-              logical_block[iblock].name, gio_input_prefix, iopad_idx);
-      fprintf(fp, "wire %s_%s_%d_;\n",
-              logical_block[iblock].name, gio_input_prefix, iopad_idx);
-      fprintf(fp, "assign %s_%s_%d_ = %s%s[%d];\n",
-              logical_block[iblock].name, gio_input_prefix, iopad_idx,
-              gio_input_prefix, inpad_verilog_model->prefix, iopad_idx);
-    }
-    /* General INPUT*/
-    if (outpad_verilog_model == logical_block[iblock].mapped_spice_model) {
-      iopad_idx = logical_block[iblock].mapped_spice_model_index;
-      /* Make sure We find the correct logical block !*/
-      assert(VPACK_OUTPAD == logical_block[iblock].type);
-      fprintf(fp, "//----- Blif Benchmark output %s is mapped to FPGA IOPAD %s[%d] -----\n", 
-              logical_block[iblock].name, gio_output_prefix, iopad_idx);
-      fprintf(fp, "wire %s_%s_%d_;\n",
-              logical_block[iblock].name, gio_output_prefix, iopad_idx);
-      fprintf(fp, "assign %s_%s_%d_ = %s%s[%d];\n",
-              logical_block[iblock].name, gio_output_prefix, iopad_idx,
-              gio_output_prefix, outpad_verilog_model->prefix, iopad_idx);
     }
   }
 
@@ -2292,11 +2193,11 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
       /* Make sure We find the correct logical block !*/
       if ((iopad_verilog_model == logical_block[iblock].mapped_spice_model)
          &&(iopad_idx == logical_block[iblock].mapped_spice_model_index)) {
-      /* Output PAD only need a short connection */
+        /* Output PAD only need a short connection */
         if (VPACK_OUTPAD == logical_block[iblock].type) {
           fprintf(fp, "//----- Output %s does not need a Stimuli ----\n", logical_block[iblock].name);
           fprintf(fp, "initial\n");
-          fprintf(fp, "  begin //--- Input %s[%d] GENERATOR\n", gio_input_prefix, iopad_idx);
+          fprintf(fp, "  begin //--- Input %s[%d] GENERATOR\n", gio_inout_prefix, iopad_idx);
           fprintf(fp, "    %s%s%s[%d] = 1'b%d;\n", 
                   gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx,
                   verilog_default_signal_init_value);
@@ -2346,13 +2247,13 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
     /* if we cannot find any mapped inpad from tech.-mapped netlist, give a default */
     if (0 == found_mapped_inpad) {
       /* Connect the reg to inouts */
-      fprintf(fp, "//----- Input %s[%d] Stimuli ----\n", gio_input_prefix, iopad_idx);
+      fprintf(fp, "//----- Input %s[%d] Stimuli ----\n", gio_inout_prefix, iopad_idx);
       fprintf(fp, "assign %s%s[%d] = %s%s%s[%d];\n",
               gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx,
               gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx);
       /* TODO: Give the net name in the blif file !*/
       fprintf(fp, "initial\n");
-      fprintf(fp, "  begin //--- Input %s[%d] GENERATOR\n", gio_input_prefix, iopad_idx);
+      fprintf(fp, "  begin //--- Input %s[%d] GENERATOR\n", gio_inout_prefix, iopad_idx);
       fprintf(fp, "    %s%s%s[%d] = 1'b%d;\n", 
               gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx,
               verilog_default_signal_init_value);

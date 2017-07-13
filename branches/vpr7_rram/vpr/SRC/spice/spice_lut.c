@@ -25,238 +25,13 @@
 #include "fpga_spice_globals.h"
 #include "spice_globals.h"
 #include "fpga_spice_utils.h"
+#include "spice_utils.h"
 #include "spice_mux.h"
 #include "spice_pbtypes.h"
 #include "spice_lut.h"
 
 
 /***** Subroutines *****/
-/* For LUTs without SPICE netlist defined, we can create a SPICE netlist
- * In this case, we need a MUX
- */
-void stats_lut_spice_mux(t_llist** muxes_head,
-                         t_spice_model* spice_model) {
-  int lut_mux_size = 0; 
-  int num_input_port = 0;
-  t_spice_model_port** input_ports = NULL;
-
-  if (NULL == spice_model) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid Spice_model pointer!\n",
-               __FILE__, __LINE__);
-    exit(1);
-  }
-
-  /* Check */
-  assert(SPICE_MODEL_LUT == spice_model->type); 
-
-  /* Get input ports */
-  input_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
-  assert(1 == num_input_port);
-  lut_mux_size = (int)pow(2.,(double)(input_ports[0]->size));
-
-  /* MUX size = 2^lut_size */
-  check_and_add_mux_to_linked_list(muxes_head, lut_mux_size, spice_model);
-
-  return;
-}
-
-char* complete_truth_table_line(int lut_size,
-                                char* input_truth_table_line) {
-  char* ret = NULL;
-  int num_token = 0;
-  char** tokens = NULL;
-  int cover_len = 0;
-  int j;
-
-  /* Due to the size of truth table may be less than the lut size.
-   * i.e. in LUT-6 architecture, there exists LUT1-6 in technology-mapped netlists
-   * So, in truth table line, there may be 10- 1
-   * In this case, we should complete it by --10- 1
-   */ 
-  /*Malloc the completed truth table, lut_size + space + truth_val + '\0'*/
-  ret = (char*)my_malloc(sizeof(char)*lut_size + 3);
-  /* Split one line of truth table line*/
-  tokens = my_strtok(input_truth_table_line, " ", &num_token); 
-  /* Check, only 2 tokens*/
-  /* Sometimes, the truth table is ' 0' or ' 1', which corresponds to a constant */
-  if (1 == num_token) {
-    /* restore the token[0]*/
-    tokens = (char**)realloc(tokens, 2*sizeof(char*));
-    tokens[1] = tokens[0];
-    tokens[0] = my_strdup("-");
-    num_token = 2;
-  }
-
-  /* In Most cases, there should be 2 tokens. */
-  assert(2 == num_token);
-  if ((0 != strcmp(tokens[1], "1"))&&(0 != strcmp(tokens[1], "0"))) {
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Last token of truth table line should be [0|1]!\n",
-               __FILE__, __LINE__); 
-    exit(1);
-  }
-  /* Complete the truth table line*/
-  cover_len = strlen(tokens[0]); 
-  assert((cover_len < lut_size)||(cover_len == lut_size));
-  /* Add the number of '-' we should add in the front*/
-  for (j = 0; j < (lut_size - cover_len); j++) {
-    ret[j] = '-';
-  }
-  /* Copy the original truth table line */ 
-  sprintf(ret + lut_size - cover_len, "%s %s", tokens[0], tokens[1]); 
-
-  /* Free */
-  for (j = 0; j < num_token; j++) {
-    my_free(tokens[j]);
-  }
-
-  return ret;
-}
-
-/* For each lut_bit_lines, we should recover the truth table,
- * and then set the sram bits to "1" if the truth table defines so.
- * Start_point: the position we start decode recursively
- */
-void configure_lut_sram_bits_per_line_rec(int** sram_bits, 
-                                          int lut_size,
-                                          char* truth_table_line,
-                                          int start_point) {
-  int i;
-  int num_sram_bit = (int)pow(2., (double)(lut_size));
-  char* temp_line = my_strdup(truth_table_line);
-  int do_config = 1;
-  int sram_id = 0;
-
-  /* Check the length of sram bits and truth table line */
-  //assert((sizeof(int)*num_sram_bit) == sizeof(*sram_bits)); /*TODO: fix this assert*/
-  assert((unsigned)(lut_size + 1 + 1)== strlen(truth_table_line)); /* lut_size + space + '1' */
-  /* End of truth_table_line should be "space" and "1" */ 
-  assert((0 == strcmp(" 1", truth_table_line + lut_size))||(0 == strcmp(" 0", truth_table_line + lut_size)));
-  /* Make sure before start point there is no '-' */
-  for (i = 0; i < start_point; i++) {
-    assert('-' != truth_table_line[i]);
-  }
-
-  /* Configure sram bits recursively */
-  for (i = start_point; i < lut_size; i++) {
-    if ('-' == truth_table_line[i]) {
-      do_config = 0;
-      /* if we find a dont_care, we don't do configure now but recursively*/
-      /* '0' branch */
-      temp_line[i] = '0'; 
-      configure_lut_sram_bits_per_line_rec(sram_bits, lut_size, temp_line, start_point + 1);
-      /* '1' branch */
-      temp_line[i] = '1'; 
-      configure_lut_sram_bits_per_line_rec(sram_bits, lut_size, temp_line, start_point + 1);
-      break; 
-    }
-  }
-
-  /* do_config*/
-  if (do_config) {
-    for (i = 0; i < lut_size; i++) {
-      /* Should be either '0' or '1' */
-      switch (truth_table_line[i]) {
-      case '0':
-        /* We assume the 1-lut pass sram1 when input = 0 */
-        sram_id += (int)pow(2., (double)(i));
-        break;
-      case '1':
-        /* We assume the 1-lut pass sram0 when input = 1 */
-        break;
-      case '-':
-        assert('-' != truth_table_line[i]); /* Make sure there is no dont_care */
-      default :
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid truth_table bit(%c), should be [0|1|'-]!\n",
-                   __FILE__, __LINE__, truth_table_line[i]); 
-        exit(1);
-      }
-    }
-    /* Set the sram bit to '1'*/
-    assert(sram_id < num_sram_bit);
-    if (0 == strcmp(" 1", truth_table_line + lut_size)) {
-      (*sram_bits)[sram_id] = 1; /* on set*/
-    } else if (0 == strcmp(" 0", truth_table_line + lut_size)) {
-      (*sram_bits)[sram_id] = 0; /* off set */
-    } else {
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid truth_table_line ending(=%s)!\n",
-                 __FILE__, __LINE__, truth_table_line + lut_size);
-      exit(1);
-    }
-  }
-  
-  /* Free */
-  my_free(temp_line);
-
-  return; 
-}
-
-int* generate_lut_sram_bits(int truth_table_len,
-                            char** truth_table,
-                            int lut_size) {
-  int num_sram = (int)pow(2.,(double)(lut_size));
-  int* ret = (int*)my_malloc(sizeof(int)*num_sram); 
-  char** completed_truth_table = (char**)my_malloc(sizeof(char*)*truth_table_len);
-  int on_set = 0;
-  int off_set = 0;
-  int i;
-
-  /* if No truth_table, do default*/
-  if (0 == truth_table_len) {
-    switch (default_signal_init_value) {
-    case 0:
-      off_set = 0;
-      on_set = 1;
-      break;
-    case 1:
-      off_set = 1;
-      on_set = 0;
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid default_signal_init_value(=%d)!\n",
-                 __FILE__, __LINE__, default_signal_init_value);
-      exit(1);
-    }
-  }
-
-  /* Read in truth table lines, decode one by one */
-  for (i = 0; i < truth_table_len; i++) {
-    /* Complete the truth table line by line*/
-    //printf("truth_table[%d] = %s\n", i, truth_table[i]);
-    completed_truth_table[i] = complete_truth_table_line(lut_size, truth_table[i]);
-    //printf("Completed_truth_table[%d] = %s\n", i, completed_truth_table[i]);
-    if (0 == strcmp(" 1", completed_truth_table[i] + lut_size)) {
-      on_set = 1;
-    } else if (0 == strcmp(" 0", completed_truth_table[i] + lut_size)) {
-      off_set = 1;
-    }
-  }
-  //printf("on_set=%d off_set=%d", on_set, off_set);
-  assert(1 == (on_set + off_set));
-
-  if (1 == on_set) {
-    /* Initial all sram bits to 0*/
-    for (i = 0 ; i < num_sram; i++) {
-      ret[i] = 0;
-    }
-  } else if (1 == off_set) {
-    /* Initial all sram bits to 1*/
-    for (i = 0 ; i < num_sram; i++) {
-      ret[i] = 1;
-    }
-  }
-
-  for (i = 0; i < truth_table_len; i++) {
-    /* Update the truth table, sram_bits */
-    configure_lut_sram_bits_per_line_rec(&ret, lut_size, completed_truth_table[i], 0);
-  }
-
-  /* Free */
-  for (i = 0; i < truth_table_len; i++) {
-    my_free(completed_truth_table[i]);
-  }
-
-  return ret;
-}
 
 void fprint_spice_lut_subckt(FILE* fp,
                              t_spice_model spice_model) {
@@ -376,97 +151,6 @@ void generate_spice_luts(char* subckt_dir,
   return;
 }
 
-char** assign_lut_truth_table(t_logical_block* mapped_logical_block,
-                              int* truth_table_length) {
-  char** truth_table = NULL;
-  t_linked_vptr* head = NULL;
-  int cur = 0;
-
-  if (NULL == mapped_logical_block) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid mapped_logical_block!\n",
-               __FILE__, __LINE__);
-    exit(1);
-  }
-  /* Count the lines of truth table*/
-  head = mapped_logical_block->truth_table;
-  while(head) {
-    (*truth_table_length)++;
-    head = head->next;
-  }
-  /* Allocate truth_tables */
-  truth_table = (char**)my_malloc(sizeof(char*)*(*truth_table_length));
-  /* Fill truth_tables*/
-  cur = 0;
-  head = mapped_logical_block->truth_table;
-  while(head) {
-    truth_table[cur] = my_strdup((char*)head->data_vptr);
-    head = head->next;
-    cur++;
-  }
-  assert(cur == (*truth_table_length));
-
-  return truth_table;
-}
-
-int get_lut_output_init_val(t_logical_block* lut_logical_block) {
-  int i;
-  int* sram_bits = NULL; /* decoded SRAM bits */ 
-  int truth_table_length = 0;
-  char** truth_table = NULL;
-  int lut_size = 0;
-  int input_net_index = OPEN;
-  int* input_init_val = NULL;
-  int init_path_id = 0;
-  int output_init_val = 0;
-
-  /* Ensure a valid file handler*/ 
-  if (NULL == lut_logical_block) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid LUT logical block!\n",
-               __FILE__, __LINE__);
-    exit(1);
-  }
-  /* Get the truth table */
-  truth_table = assign_lut_truth_table(lut_logical_block, &truth_table_length); 
-  lut_size = lut_logical_block->used_input_pins;
-  assert(!(0 > lut_size));
-  /* Special for LUT_size = 0 */
-  if (0 == lut_size) {
-    /* Generate sram bits*/
-    sram_bits = generate_lut_sram_bits(truth_table_length, truth_table, 1);
-    /* This is constant generator, SRAM bits should be the same */
-    output_init_val = sram_bits[0];
-    for (i = 0; i < (int)pow(2.,(double)lut_size); i++) { 
-      assert(sram_bits[i] == output_init_val);
-    } 
-  } else { 
-    /* Generate sram bits*/
-    sram_bits = generate_lut_sram_bits(truth_table_length, truth_table, lut_size);
-
-    assert(1 == lut_logical_block->pb->pb_graph_node->num_input_ports);
-    assert(1 == lut_logical_block->pb->pb_graph_node->num_output_ports);
-    /* Get the initial path id */
-    input_init_val = (int*)my_malloc(sizeof(int)*lut_size);
-    for (i = 0; i < lut_size; i++) {
-      input_net_index = lut_logical_block->input_nets[0][i]; 
-      input_init_val[i] = vpack_net[input_net_index].spice_net_info->init_val;
-    } 
-
-    init_path_id = determine_lut_path_id(lut_size, input_init_val);
-    /* Check */  
-    assert((!(0 > init_path_id))&&(init_path_id < (int)pow(2.,(double)lut_size)));
-    output_init_val = sram_bits[init_path_id]; 
-  }
-   
-  /*Free*/
-  for (i = 0; i < truth_table_length; i++) {
-    free(truth_table[i]);
-  }
-  free(truth_table);
-  my_free(sram_bits);
-
-  return output_init_val;
-}
-
 void fprint_pb_primitive_lut(FILE* fp,
                              char* subckt_prefix,
                              t_logical_block* mapped_logical_block,
@@ -474,6 +158,7 @@ void fprint_pb_primitive_lut(FILE* fp,
                              int index,
                              t_spice_model* spice_model) {
   int i;
+  int num_sram = 0;
   int* sram_bits = NULL; /* decoded SRAM bits */ 
   int truth_table_length = 0;
   char** truth_table = NULL;
@@ -488,8 +173,8 @@ void fprint_pb_primitive_lut(FILE* fp,
   char* formatted_subckt_prefix = format_spice_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
   t_pb_type* cur_pb_type = NULL;
   char* port_prefix = NULL;
-  int cur_sram = 0;
-  int num_sram = 0;
+  int cur_num_sram = 0;
+  char* sram_vdd_port_name = NULL;
 
   /* Ensure a valid file handler*/ 
   if (NULL == fp) {
@@ -526,6 +211,9 @@ void fprint_pb_primitive_lut(FILE* fp,
   assert(num_sram == sram_ports[0]->size);
   assert(1 == output_ports[0]->size);
 
+  /* Get current counter of mem_bits, bl and wl */
+  cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_spice_orgz_info); 
+
   /* Generate sram bits*/
   sram_bits = generate_lut_sram_bits(truth_table_length, truth_table, lut_size);
  
@@ -545,6 +233,11 @@ void fprint_pb_primitive_lut(FILE* fp,
                 (strlen(cur_pb_type->name) + 1 +
                  strlen(my_itoa(index)) + 1 + 1));
   sprintf(port_prefix, "%s[%d]", cur_pb_type->name, index);
+
+  /* Only dump the global ports belonging to a spice_model 
+   * Do not go recursive, we can freely define global ports anywhere in SPICE netlist
+   */
+  rec_fprint_spice_model_global_ports(fp, spice_model, FALSE); 
   
   fprint_pb_type_ports(fp, port_prefix, 0, cur_pb_type); 
   /* SRAM bits are fixed in this subckt, no need to define them here*/
@@ -568,61 +261,17 @@ void fprint_pb_primitive_lut(FILE* fp,
   fprintf(fp, "*****\n");
 
   /* Call SRAM subckts*/
-  cur_sram = sram_spice_model->cnt;
-  /* Depend on the type of SRAM organization */
-  switch (sram_spice_orgz_type) {
-  case SPICE_SRAM_STANDALONE:
-  case SPICE_SRAM_MEMORY_BANK:
-    for (i = 0; i < num_sram; i++) {
-      fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, cur_sram); /* SRAM subckts*/
-      /* fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, cur_sram);*/ /* Input*/
-      fprintf(fp, "%s->in ", sram_spice_model->prefix); /* Input*/
-      fprintf(fp, "%s[%d]->out %s[%d]->outb ", 
-              sram_spice_model->prefix, cur_sram, sram_spice_model->prefix, cur_sram); /* Outputs */
-      fprintf(fp, "gvdd_sram_luts sgnd %s\n", sram_spice_model->name);  //
-      /* Add nodeset to help convergence */ 
-      fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, cur_sram);
-      fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, cur_sram);
-      cur_sram++;
-    }
-    break;
-  case SPICE_SRAM_SCAN_CHAIN: 
-    for (i = 0; i < num_sram; i++) {
-      fprintf(fp, "X%s[%d] ", sram_spice_model->prefix, cur_sram); /* SRAM subckts*/
-      fprintf(fp, "%s[%d]->in ", sram_spice_model->prefix, cur_sram); /* Input*/
-      fprintf(fp, "%s[%d]->out %s[%d]->outb ", 
-              sram_spice_model->prefix, cur_sram, sram_spice_model->prefix, cur_sram); /* Outputs */
-      fprintf(fp, "sc_clk sc_rst sc_set \n");  //
-      fprintf(fp, "gvdd_sram_luts sgnd %s\n", sram_spice_model->name);  //
-      /* Add nodeset to help convergence */ 
-      fprintf(fp, ".nodeset V(%s[%d]->out) 0\n", sram_spice_model->prefix, cur_sram);
-      fprintf(fp, ".nodeset V(%s[%d]->outb) vsp\n", sram_spice_model->prefix, cur_sram);
-      /* Connect to the tail of previous Scan-chain FF*/
-      fprintf(fp,"R%s[%d]_short %s[%d]->out %s[%d]->in 0\n", 
-              sram_spice_model->prefix, cur_sram,
-              sram_spice_model->prefix, cur_sram,
-              sram_spice_model->prefix, cur_sram + 1);
-      /* Specify this is a global signal*/
-      fprintf(fp, ".global %s[%d]->in\n", sram_spice_model->prefix, cur_sram);
-      cur_sram++;
-    }
-    /* Specify the head and tail of the scan-chain of this LUT */
-    fprintf(fp,"R%s[%d]_sc_head %s[%d]_sc_head %s[%d]->in 0\n", 
-            spice_model->prefix, spice_model->cnt, 
-            spice_model->prefix, spice_model->cnt, 
-            sram_spice_model->prefix, sram_spice_model->cnt);
-    fprintf(fp,"R%s[%d]_sc_tail %s[%d]_sc_tail %s[%d]->in 0\n", 
-            spice_model->prefix, spice_model->cnt, 
-            spice_model->prefix, spice_model->cnt, 
-            sram_spice_model->prefix, cur_sram);
-    fprintf(fp,".global %s[%d]_sc_head %s[%d]_sc_tail\n",
-            spice_model->prefix, spice_model->cnt, 
-            spice_model->prefix, spice_model->cnt);
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Invalid SRAM organization type!\n",
-               __FILE__, __LINE__);
-    exit(1);
+  /* Give the VDD port name for SRAMs */
+  sram_vdd_port_name = (char*)my_malloc(sizeof(char)*
+                                       (strlen(spice_top_netlist_global_vdd_sram_port) 
+                                        + 1 + strlen("luts") 
+                                        + 1 ));
+  sprintf(sram_vdd_port_name, "%s_%s",
+                              spice_top_netlist_global_vdd_sram_port,
+                              "luts");
+  /* Now Print SRAMs one by one */
+  for (i = 0; i < num_sram; i++) {
+    fprint_spice_one_sram_subckt(fp, sram_spice_orgz_info, spice_model, sram_vdd_port_name);
   }
 
   /* Call LUT subckt*/
@@ -631,23 +280,11 @@ void fprint_pb_primitive_lut(FILE* fp,
   /* Connect outputs*/
   fprint_pb_type_ports(fp, port_prefix, 0, cur_pb_type); 
   /* Connect srams*/
-  cur_sram = sram_spice_model->cnt;
   for (i = 0; i < num_sram; i++) {
-    switch (sram_bits[i]) {
-    /* the pull UP/down vdd/gnd should be connected to the local interc gvdd*/
-    /* TODO: we want to see the dynamic power of each LUT, we may split these global vdd*/
-    case 0: 
-      fprintf(fp, "%s[%d]->out ", sram_spice_model->prefix, cur_sram); 
-      break;
-    case 1: 
-      fprintf(fp, "%s[%d]->outb ", sram_spice_model->prefix, cur_sram); 
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid sram_bit(=%d)! Should be [0|1]).\n", __FILE__, __LINE__, sram_bits[i]);
-      exit(1);
-    }
-    cur_sram++;
+    assert( (0 == sram_bits[i]) || (1 == sram_bits[i]) );
+    fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, cur_num_sram + i, sram_bits[i]);
   }
+
   /* vdd should be connected to special global wire gvdd_lut and gnd,
    * Every LUT has a special VDD for statistics
    */
@@ -656,9 +293,12 @@ void fprint_pb_primitive_lut(FILE* fp,
 
   /* End of subckt*/
   fprintf(fp, ".eom\n");
+
+  /* Store the configuraion bit to linked-list */
+  add_sram_conf_bits_to_llist(sram_spice_orgz_info, cur_num_sram,
+                              num_sram, sram_bits);
   
   spice_model->cnt++;
-  sram_spice_model->cnt = cur_sram;
 
   /*Free*/
   for (i = 0; i < truth_table_length; i++) {
@@ -671,6 +311,7 @@ void fprint_pb_primitive_lut(FILE* fp,
   my_free(sram_ports);
   my_free(sram_bits);
   my_free(port_prefix);
+  my_free(sram_vdd_port_name);
 
   return;
 }
