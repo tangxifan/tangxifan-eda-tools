@@ -149,6 +149,46 @@ int fprint_spice_global_ports(FILE* fp, t_llist* head) {
   return dumped_port_cnt;
 }
 
+void fprint_spice_generic_testbench_global_ports(FILE* fp, 
+                                                 t_sram_orgz_info* cur_sram_orgz_info,
+                                                 t_llist* head) {
+  t_spice_model* mem_model = NULL;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+  }
+
+  fprintf(fp, "***** Generic global ports ***** \n");
+  fprintf(fp, "***** VDD, Global set and reset ports ***** \n");
+  fprintf(fp, ".global %s %s %s\n", 
+              spice_top_netlist_global_vdd_port,
+              spice_top_netlist_global_set_port,
+              spice_top_netlist_global_reset_port);
+
+  /* Get memory spice model */
+  get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model);
+  fprintf(fp, "***** Global SRAM input ***** \n");
+  fprintf(fp, ".global %s->in\n", mem_model->prefix);
+
+  /* Print scan-chain global ports */
+  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
+  fprintf(fp, "***** Scan-chain FF: Global Clock, Set and Reset Signals *****\n");
+    fprintf(fp, "*.global sc_clk sc_set sc_rst\n");
+    fprintf(fp, "*.global %s[0]->in\n", sram_spice_model->prefix);
+  }
+
+  /* Define a global clock port if we need one*/
+  fprintf(fp, "***** Global Clock Signals *****\n");
+  fprintf(fp, ".global %s\n", spice_top_netlist_global_clock_port);
+
+  fprintf(fp, "***** User-defined global ports ****** \n");
+  fprintf(fp, ".global \n");
+  fprint_spice_global_ports(fp, head);
+
+  return;
+}
 
 /* Print a SRAM output port in SPICE format */
 void fprint_spice_sram_one_outport(FILE* fp,
@@ -510,8 +550,8 @@ void fprint_global_pad_ports_spice_model(FILE* fp,
       for (i = 0; i < spice.spice_models[imodel].cnt; i++) {
         fprintf(fp, "+ %s[%d]->in\n", spice.spice_models[imodel].prefix, i);
       }
-      */
       fprintf(fp, "+ %s->in\n", spice.spice_models[imodel].prefix);
+      */
       break;
     /* Other types we do not care*/
     case SPICE_MODEL_CHAN_WIRE:

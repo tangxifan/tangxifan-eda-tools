@@ -37,6 +37,7 @@ char* spice_cb_testbench_postfix = "_cb_testbench.sp";
 char* spice_sb_testbench_postfix = "_sb_testbench.sp";
 char* spice_lut_testbench_postfix = "_lut_testbench.sp";
 char* spice_dff_testbench_postfix = "_dff_testbench.sp";
+char* bitstream_spice_file_postfix = ".bitstream";
 
 /* SRAM SPICE MODEL should be set as global*/
 t_spice_model* sram_spice_model = NULL;

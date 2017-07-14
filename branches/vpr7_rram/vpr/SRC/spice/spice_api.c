@@ -24,10 +24,14 @@
 /* Include spice support headers*/
 #include "read_xml_spice_util.h"
 #include "linkedlist.h"
-#include "fpga_spice_globals.h"
-#include "spice_globals.h"
 #include "fpga_spice_utils.h"
 #include "fpga_spice_backannotate_utils.h"
+#include "fpga_spice_globals.h"
+#include "fpga_spice_bitstream.h"
+
+
+/* Include SPICE generator headers */
+#include "spice_globals.h"
 #include "spice_subckt.h"
 #include "spice_pbtypes.h"
 #include "spice_heads.h"
@@ -64,7 +68,8 @@ static
 void free_spice_tb_llist();
 
 /***** Subroutines *****/
-static 
+
+static
 void init_list_include_netlists(t_spice* spice) { 
   int i, j, cur;
   int to_include = 0;
@@ -136,6 +141,7 @@ void init_list_include_netlists(t_spice* spice) {
   return;
 }
 
+
 static 
 void free_spice_tb_llist() {
   t_llist* temp = tb_head;
@@ -180,6 +186,8 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   char* lut_testbench_dir_path = NULL;
   char* dff_testbench_dir_path = NULL;
   char* top_testbench_file = NULL;
+  char* bitstream_file_name = NULL;
+  char* bitstream_file_path = NULL;
 
   /* Check if the routing architecture we support*/
   if (UNI_DIRECTIONAL != vpr_setup.RoutingArch.directionality) {
@@ -337,6 +345,8 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   /* Print Netlists of the given FPGA*/
   if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.print_spice_top_testbench) {
     top_testbench_file = my_strcat(chomped_circuit_name, spice_top_testbench_postfix);
+    bitstream_file_name = my_strcat(chomped_circuit_name, bitstream_spice_file_postfix);
+    bitstream_file_path = my_strcat(spice_dir_formatted, bitstream_file_name);
     /* Process top_netlist_path */
     top_testbench_dir_path = my_strcat(spice_dir_formatted, spice_top_tb_dir_name); 
     create_dir_path(top_testbench_dir_path);
@@ -345,7 +355,10 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
                              include_dir_path, subckt_dir_path, 
                              num_rr_nodes, rr_node, rr_node_indices, num_clocks, *(Arch.spice), 
                              vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_leakage_only);
+    /* Dump bitstream file */
+    dump_fpga_spice_bitstream(bitstream_file_path, chomped_circuit_name, sram_spice_orgz_info);
   }
+
 
   /* Generate a shell script for running HSPICE simulations */
   fprint_run_hspice_shell_script(*(Arch.spice), spice_dir_formatted, subckt_dir_path);
@@ -359,6 +372,10 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   /* Free index low and high */
   free_spice_model_grid_index_low_high(Arch.spice->num_spice_model, Arch.spice->spice_models);
   free_spice_model_routing_index_low_high(Arch.spice->num_spice_model, Arch.spice->spice_models);
+  /* Free sram_orgz_info */
+  free_sram_orgz_info(sram_spice_orgz_info,
+                      sram_spice_orgz_info->type,
+                      nx + 2, ny + 2);
   /* Free tb_llist */
   free_spice_tb_llist(); 
   /* Free */

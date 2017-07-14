@@ -54,9 +54,9 @@ void dump_conf_bits_to_bitstream_file(FILE* fp,
  * In this file, the property of configuration bits will be shown as comments,
  * which is easy for developers to debug
  */
-void dump_verilog_bitstream(char* bitstream_file_name, 
-                            char* circuit_name,
-                            t_sram_orgz_info* cur_sram_orgz_info) {
+void dump_fpga_spice_bitstream(char* bitstream_file_name, 
+                               char* circuit_name,
+                               t_sram_orgz_info* cur_sram_orgz_info) {
   FILE* fp;
 
   /* Check if the path exists*/

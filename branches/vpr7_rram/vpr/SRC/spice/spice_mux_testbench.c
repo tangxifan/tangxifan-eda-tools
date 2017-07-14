@@ -163,16 +163,11 @@ void fprint_spice_mux_testbench_global_ports(FILE* fp,
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File Handler!\n",__FILE__, __LINE__); 
     exit(1);
   } 
-  /* Global nodes: Vdd for SRAMs, Logic Blocks(Include IO), Switch Boxes, Connection Boxes */
-  fprintf(fp, "*.global gvdd gset greset\n");
-  fprintf(fp, "*.global gvdd_sram\n");
-  fprintf(fp, "*.global gvdd_load\n");
-  fprintf(fp, "*.global %s->in\n", sram_spice_model->prefix);
-  /* Print scan-chain global ports */
-  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
-    fprintf(fp, "*.global sc_clk sc_set sc_rst\n");
-    fprintf(fp, "*.global %s[0]->in\n", sram_spice_model->prefix);
-  }
+
+  /* Print generic global ports*/
+  fprint_spice_generic_testbench_global_ports(fp, 
+                                              sram_spice_orgz_info,
+                                              global_ports_head); 
 
   return;
 }
@@ -2601,7 +2596,7 @@ int fprint_spice_mux_testbench_call_one_sb_tb(FILE* fp,
       chan_width[side] = chan_width_y[ix];
       /* Malloc */
       outport_name = (char*)my_malloc(sizeof(char)*(6 + strlen(my_itoa(ix)) + 2 
-                                      + strlen(my_itoa(iy)) + 5 
+                                      + strlen(my_itoa(iy)) + 6 
                                       + strlen(my_itoa(chan_width[side])) + 2));
       /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
       /* Collect rr_nodes for Tracks for top: chany[x][y+1] */
@@ -2654,7 +2649,7 @@ int fprint_spice_mux_testbench_call_one_sb_tb(FILE* fp,
       chan_width[side] = chan_width_x[iy];
       /* Malloc */
       outport_name = (char*)my_malloc(sizeof(char)*(6 + strlen(my_itoa(ix)) + 2 
-                                      + strlen(my_itoa(iy)) + 5
+                                      + strlen(my_itoa(iy)) + 6
                                       + strlen(my_itoa(chan_width[side])) + 2));
       /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
       for (itrack = 0; itrack < chan_width[side]; itrack++) {
@@ -2706,7 +2701,7 @@ int fprint_spice_mux_testbench_call_one_sb_tb(FILE* fp,
       chan_width[side] = chan_width_y[ix];
       /* Malloc */
       outport_name = (char*)my_malloc(sizeof(char)*(6 + strlen(my_itoa(ix)) + 2 
-                                      + strlen(my_itoa(iy)) + 65
+                                      + strlen(my_itoa(iy)) + 6
                                       + strlen(my_itoa(chan_width[side])) + 2));
       /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
       for (itrack = 0; itrack < chan_width[side]; itrack++) {
@@ -2759,7 +2754,7 @@ int fprint_spice_mux_testbench_call_one_sb_tb(FILE* fp,
       chan_width[side] = chan_width_x[iy];
       /* Malloc */
       outport_name = (char*)my_malloc(sizeof(char)*(6 + strlen(my_itoa(ix)) + 2 
-                                      + strlen(my_itoa(iy)) + 5 
+                                      + strlen(my_itoa(iy)) + 6 
                                       + strlen(my_itoa(chan_width[side])) + 2));
       /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
       for (itrack = 0; itrack < chan_width[side]; itrack++) {

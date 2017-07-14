@@ -26,8 +26,8 @@
 #include "linkedlist.h"
 #include "fpga_spice_utils.h"
 #include "fpga_spice_backannotate_utils.h"
-#include "spice_api.h"
 #include "fpga_spice_globals.h"
+#include "fpga_spice_bitstream.h"
 
 /* Include SynVerilog headers */
 #include "verilog_global.h"
@@ -36,7 +36,6 @@
 #include "verilog_decoder.h"
 #include "verilog_pbtypes.h"
 #include "verilog_routing.h"
-#include "verilog_bitstream.h"
 #include "verilog_top_netlist.h"
 
 /* Global Variants available only in this source file */
@@ -253,7 +252,7 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
                                     vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts, *(Arch.spice));
   
   /* Dump bitstream file */
-  dump_verilog_bitstream(bitstream_file_path, chomped_circuit_name, sram_verilog_orgz_info);
+  dump_fpga_spice_bitstream(bitstream_file_path, chomped_circuit_name, sram_verilog_orgz_info);
 
   /* End time count */
   t_end = clock();
@@ -270,7 +269,7 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   /* Free sram_orgz_info */
   free_sram_orgz_info(sram_verilog_orgz_info,
                       sram_verilog_orgz_info->type,
-                      nx + 1, ny + 1);
+                      nx + 2, ny + 2);
   /* Free */
   my_free(verilog_dir_formatted);
   my_free(lb_dir_path);

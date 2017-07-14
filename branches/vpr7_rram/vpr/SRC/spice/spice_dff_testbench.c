@@ -61,17 +61,11 @@ void fprint_spice_dff_testbench_global_ports(FILE* fp, int grid_x, int grid_y,
     exit(1);
   } 
   /* Global nodes: Vdd for SRAMs, Logic Blocks(Include IO), Switch Boxes, Connection Boxes */
-  fprintf(fp, ".global gvdd gset greset\n");
-  fprintf(fp, ".global gvdd_local_interc gvdd_hardlogic\n");
-  fprintf(fp, ".global gvdd_sram_local_routing gvdd_sram_luts\n");
-  fprintf(fp, ".global %s->in\n", sram_spice_model->prefix);
+  /* Print generic global ports*/
+  fprint_spice_generic_testbench_global_ports(fp, 
+                                              sram_spice_orgz_info, 
+                                              global_ports_head); 
   fprintf(fp, ".global gvdd_load\n");
-  fprintf(fp, "***** Global Clock Signals *****\n");
-  fprintf(fp, ".global gclock\n");
-  /* Print scan-chain global ports */
-  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
-    fprintf(fp, "*.global sc_clk sc_set sc_rst\n");
-  }
 
   /*Global Vdds for FFs*/
   fprint_grid_global_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_FF, spice);

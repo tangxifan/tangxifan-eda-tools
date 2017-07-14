@@ -27,6 +27,7 @@ extern char* spice_cb_testbench_postfix;
 extern char* spice_sb_testbench_postfix;
 extern char* spice_lut_testbench_postfix;
 extern char* spice_dff_testbench_postfix;
+extern char* bitstream_spice_file_postfix;
 /* RUN HSPICE Shell Script Name */
 /*
 extern char* run_hspice_shell_script_name;

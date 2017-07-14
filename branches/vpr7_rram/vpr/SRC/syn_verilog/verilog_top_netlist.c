@@ -25,13 +25,13 @@
 #include "fpga_spice_utils.h"
 #include "fpga_spice_backannotate_utils.h"
 #include "fpga_spice_globals.h"
+#include "fpga_spice_bitstream.h"
 
 /* Include verilog support headers*/
 #include "verilog_global.h"
 #include "verilog_utils.h"
 #include "verilog_routing.h"
 #include "verilog_pbtypes.h"
-#include "verilog_bitstream.h"
 #include "verilog_decoder.h"
 #include "verilog_top_netlist.h"
 

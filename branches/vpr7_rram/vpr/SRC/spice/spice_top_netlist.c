@@ -49,30 +49,22 @@ void fprint_top_netlist_global_ports(FILE* fp,
   }
 
   /* Global nodes: Vdd for SRAMs, Logic Blocks(Include IO), Switch Boxes, Connection Boxes */
-  fprintf(fp, ".global %s %s %s\n", 
-              spice_top_netlist_global_vdd_port,
-              spice_top_netlist_global_set_port,
-              spice_top_netlist_global_reset_port);
+  /* Print generic global ports*/
+  fprint_spice_generic_testbench_global_ports(fp, 
+                                              sram_spice_orgz_info, 
+                                              global_ports_head); 
+
   fprintf(fp, ".global %s %s %s\n",
               spice_top_netlist_global_vdd_localrouting_port,
               spice_top_netlist_global_vdd_io_port,
               spice_top_netlist_global_vdd_hardlogic_port);
 
-  /* Get memory spice model */
-  get_sram_orgz_info_mem_model(sram_spice_orgz_info, &mem_model);
   /* Print the VDD ports of SRAM belonging to other SPICE module */
   fprintf(fp, ".global gvdd_sram_local_routing gvdd_sram_luts gvdd_sram_cbs gvdd_sram_sbs\n");
   fprintf(fp, ".global gvdd_sram_ios\n");
 
-  fprintf(fp, ".global %s->in\n", mem_model->prefix);
-  /* Define a global clock port if we need one*/
-  fprintf(fp, "***** Global Clock Signals *****\n");
-  fprintf(fp, ".global %s\n", spice_top_netlist_global_clock_port);
-
-  /* Print scan-chain global ports */
-  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
-    fprintf(fp, ".global sc_clk sc_set sc_rst\n");
-  }
+  /* Get memory spice model */
+  get_sram_orgz_info_mem_model(sram_spice_orgz_info, &mem_model);
 
   /*Global Vdds for LUTs*/
   fprint_global_vdds_spice_model(fp, SPICE_MODEL_LUT, spice);
@@ -88,7 +80,6 @@ void fprint_top_netlist_global_ports(FILE* fp,
 
   /*Global ports for INPUTs of I/O PADS, SRAMs */
   fprint_global_pad_ports_spice_model(fp, spice);
-
 
   return; 
 }

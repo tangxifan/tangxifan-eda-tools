@@ -16,6 +16,10 @@ int rec_fprint_spice_model_global_ports(FILE* fp,
 
 int fprint_spice_global_ports(FILE* fp, t_llist* head);
 
+void fprint_spice_generic_testbench_global_ports(FILE* fp, 
+                                                 t_sram_orgz_info* cur_sram_orgz_info,
+                                                 t_llist* head);
+
 void fprint_spice_sram_one_outport(FILE* fp,
                                    t_sram_orgz_info* cur_sram_orgz_info,
                                    int cur_sram,
