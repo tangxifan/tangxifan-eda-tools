@@ -40,6 +40,15 @@ void match_pb_types_spice_model_rec(t_pb_type* cur_pb_type,
                                     t_spice_model* spice_models);
 
 static 
+void init_and_check_one_sram_inf_orgz(t_sram_inf_orgz* cur_sram_inf_orgz,
+                                      int num_spice_model,
+                                      t_spice_model* spice_models);
+
+static
+void init_and_check_sram_inf(t_arch* arch,
+                             t_det_routing_arch* routing_arch);
+
+static 
 t_llist* check_and_add_one_global_port_to_llist(t_llist* old_head, 
                                                 t_spice_model_port* candidate_port);
 
@@ -242,6 +251,104 @@ void match_pb_types_spice_model_rec(t_pb_type* cur_pb_type,
   return;  
 }
 
+static 
+void init_and_check_one_sram_inf_orgz(t_sram_inf_orgz* cur_sram_inf_orgz,
+                                      int num_spice_model,
+                                      t_spice_model* spice_models) {
+  /* If cur_sram_inf_orgz is not initialized, do nothing */
+  if (NULL == cur_sram_inf_orgz) {
+    return;
+  } 
+
+  /* For SRAM */
+  if (NULL == cur_sram_inf_orgz->spice_model_name) { 
+    cur_sram_inf_orgz->spice_model = get_default_spice_model(SPICE_MODEL_SRAM,
+                                                             num_spice_model, 
+                                                             spice_models);
+  } else {
+    cur_sram_inf_orgz->spice_model = 
+        find_name_matched_spice_model(cur_sram_inf_orgz->spice_model_name,
+                                      num_spice_model, 
+                                      spice_models); 
+  }
+
+  if (NULL == cur_sram_inf_orgz->spice_model) {
+    if (NULL == cur_sram_inf_orgz->spice_model_name) { 
+      vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d]) Cannot find any SRAM spice model!\n",
+                 __FILE__ ,__LINE__);
+      exit(1);
+    } else  {
+      vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d])Invalid SPICE model name(%s) of SRAM is undefined in SPICE models!\n",
+                 __FILE__ ,__LINE__, cur_sram_inf_orgz->spice_model_name);
+      exit(1);
+    }
+  }
+
+  /* Check the type of SRAM_SPICE_MODEL */
+  switch (cur_sram_inf_orgz->type) {
+  case SPICE_SRAM_STANDALONE:
+    vpr_printf(TIO_MESSAGE_INFO, "INFO: Checking if SRAM spice model fit standalone organization...\n");
+    if (SPICE_MODEL_SRAM != cur_sram_inf_orgz->spice_model->type) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Standalone SRAM organization requires a SPICE model(type=sram)!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+    /* TODO: check SRAM ports */
+    check_sram_spice_model_ports(cur_sram_inf_orgz->spice_model, FALSE);
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+    vpr_printf(TIO_MESSAGE_INFO, "INFO: Checking if SRAM spice model fit scan-chain organization...\n");
+    if (SPICE_MODEL_SCFF != cur_sram_inf_orgz->spice_model->type) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Scan-chain SRAM organization requires a SPICE model(type=sff)!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+    /* TODO: check Scan-chain Flip-flop ports */
+    check_ff_spice_model_ports(cur_sram_inf_orgz->spice_model, TRUE);
+    /* TODO: RRAM Scan-chain is not supported yet. Now just forbidden this option */
+    if (SPICE_MODEL_DESIGN_RRAM == cur_sram_inf_orgz->spice_model->design_tech) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) RRAM-based Scan-chain Flip-flop has not been supported yet!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+    break;
+  case SPICE_SRAM_MEMORY_BANK:
+    vpr_printf(TIO_MESSAGE_INFO, "INFO: Checking if SRAM spice model fit memory-bank organization...\n");
+    if (SPICE_MODEL_SRAM != cur_sram_inf_orgz->spice_model->type) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Memory-bank SRAM organization requires a SPICE model(type=sram)!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+    /* TODO: check if this one has bit lines and word lines */
+    check_sram_spice_model_ports(cur_sram_inf_orgz->spice_model, TRUE);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Invalid SRAM organization type!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  return;
+}                         
+
+static
+void init_and_check_sram_inf(t_arch* arch,
+                             t_det_routing_arch* routing_arch) {
+  /* We have two branches: 
+   * 1. SPICE SRAM organization information 
+   * 2. Verilog SRAM organization information 
+   */
+  init_and_check_one_sram_inf_orgz(arch->sram_inf.spice_sram_inf_orgz, 
+                                   arch->spice->num_spice_model,
+                                   arch->spice->spice_models);
+ 
+  init_and_check_one_sram_inf_orgz(arch->sram_inf.verilog_sram_inf_orgz, 
+                                   arch->spice->num_spice_model,
+                                   arch->spice->spice_models);
+                         
+
+  return;
+}
 
 /* Initialize and check spice models in architecture
  * Tasks:
@@ -354,64 +461,7 @@ void init_check_arch_spice_models(t_arch* arch,
   }
 
   /* Step C: Find SRAM Model*/
-  if (NULL == arch->sram_inf.spice_model_name) { 
-      arch->sram_inf.spice_model = get_default_spice_model(SPICE_MODEL_SRAM,
-                                                           arch->spice->num_spice_model, 
-                                                           arch->spice->spice_models);
-  } else {
-    arch->sram_inf.spice_model = 
-        find_name_matched_spice_model(arch->sram_inf.spice_model_name,
-                                      arch->spice->num_spice_model, 
-                                      arch->spice->spice_models); 
-  }
-  if (NULL == arch->sram_inf.spice_model) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d])Invalid SPICE model name(%s) of SRAM is undefined in SPICE models!\n",
-               __FILE__ ,__LINE__, arch->sram_inf.spice_model->name);
-    exit(1);
-  }
-  /* Check the type of SRAM_SPICE_MODEL */
-  switch (arch->sram_inf.orgz_type) {
-  case SPICE_SRAM_STANDALONE:
-    vpr_printf(TIO_MESSAGE_INFO, "INFO: Checking if SRAM spice model fit standalone organization...\n");
-    if (SPICE_MODEL_SRAM != arch->sram_inf.spice_model->type) {
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Standalone SRAM organization requires a SPICE model(type=sram)!\n",
-                 __FILE__, __LINE__);
-      exit(1);
-    }
-    /* TODO: check SRAM ports */
-    check_sram_spice_model_ports(arch->sram_inf.spice_model, FALSE);
-    break;
-  case SPICE_SRAM_SCAN_CHAIN:
-    vpr_printf(TIO_MESSAGE_INFO, "INFO: Checking if SRAM spice model fit scan-chain organization...\n");
-    if (SPICE_MODEL_SCFF != arch->sram_inf.spice_model->type) {
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Scan-chain SRAM organization requires a SPICE model(type=sff)!\n",
-                 __FILE__, __LINE__);
-      exit(1);
-    }
-    /* TODO: check Scan-chain Flip-flop ports */
-    check_ff_spice_model_ports(arch->sram_inf.spice_model, TRUE);
-    /* TODO: RRAM Scan-chain is not supported yet. Now just forbidden this option */
-    if (SPICE_MODEL_DESIGN_RRAM == arch->sram_inf.spice_model->design_tech) {
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) RRAM-based Scan-chain Flip-flop has not been supported yet!\n",
-                 __FILE__, __LINE__);
-      exit(1);
-    }
-    break;
-  case SPICE_SRAM_MEMORY_BANK:
-    vpr_printf(TIO_MESSAGE_INFO, "INFO: Checking if SRAM spice model fit memory-bank organization...\n");
-    if (SPICE_MODEL_SRAM != arch->sram_inf.spice_model->type) {
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Memory-bank SRAM organization requires a SPICE model(type=sram)!\n",
-                 __FILE__, __LINE__);
-      exit(1);
-    }
-    /* TODO: check if this one has bit lines and word lines */
-    check_sram_spice_model_ports(arch->sram_inf.spice_model, TRUE);
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Invalid SRAM organization type!\n",
-               __FILE__, __LINE__);
-    exit(1);
-  }
+  init_and_check_sram_inf(arch, routing_arch);
 
   /* Step D: Find the segment spice_model*/
   for (i = 0; i < arch->num_segments; i++) {
@@ -428,10 +478,16 @@ void init_check_arch_spice_models(t_arch* arch,
                                       arch->spice->spice_models); 
     }
     if (NULL == arch->Segments[i].spice_model) {
-      vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d])Invalid SPICE model name(%s) of Segment(Length:%d) is undefined in SPICE models!\n",__FILE__ ,__LINE__, arch->Segments[i].spice_model_name, arch->Segments[i].length);
+      vpr_printf(TIO_MESSAGE_ERROR, "(FILE:%s, LINE[%d])Invalid SPICE model name(%s) of Segment(Length:%d) is undefined in SPICE models!\n",
+                                    __FILE__ ,__LINE__, 
+                                    arch->Segments[i].spice_model_name, 
+                                    arch->Segments[i].length);
       exit(1);
     } else if (SPICE_MODEL_CHAN_WIRE != arch->Segments[i].spice_model->type) {
-      vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d])Invalid SPICE model(%s) type of Segment(Length:%d)! Should be chan_wire!\n",__FILE__ ,__LINE__, arch->Segments[i].spice_model_name, arch->Segments[i].length);
+      vpr_printf(TIO_MESSAGE_ERROR, "(FILE:%s, LINE[%d])Invalid SPICE model(%s) type of Segment(Length:%d)! Should be chan_wire!\n",
+                                    __FILE__ , __LINE__, 
+                                    arch->Segments[i].spice_model_name, 
+                                    arch->Segments[i].length);
       exit(1);
     }
   } 
@@ -468,11 +524,6 @@ void init_check_arch_spice_models(t_arch* arch,
           find_name_matched_spice_model(arch->spice->spice_models[i].ports[iport].spice_model_name,
                                         arch->spice->num_spice_model, 
                                         arch->spice->spice_models); 
-      } else {
-        /* If this port is a sram port, we need to find a spice_model ! Use the default one !*/
-        if (SPICE_MODEL_PORT_SRAM == arch->spice->spice_models[i].ports[iport].type) {
-          arch->spice->spice_models[i].ports[iport].spice_model = arch->sram_inf.spice_model;
-        }
       }
     }
   }

@@ -712,7 +712,8 @@ void fprint_routing_switch_box_subckt(FILE* fp, t_sb cur_sb_info,
     fprintf(fp, "***** %s side Multiplexers *****\n", 
             convert_side_index_to_string(side));
     for (itrack = 0; itrack < cur_sb_info.chan_width[side]; itrack++) {
-      assert(CHANY == cur_sb_info.chan_rr_node[side][itrack]->type);
+      assert((CHANX == cur_sb_info.chan_rr_node[side][itrack]->type)
+           ||(CHANY == cur_sb_info.chan_rr_node[side][itrack]->type));
       /* We care INC_DIRECTION tracks at this side*/
       if (OUT_PORT == cur_sb_info.chan_rr_node_direction[side][itrack]) {
         fprint_switch_box_interc(fp, cur_sb_info, side, cur_sb_info.chan_rr_node[side][itrack]);

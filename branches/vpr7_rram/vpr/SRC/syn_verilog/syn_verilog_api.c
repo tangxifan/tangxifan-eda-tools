@@ -181,11 +181,17 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   create_dir_path(submodule_dir_path);
 
   /* assign the global variable of SRAM model */
-  sram_verilog_model = Arch.sram_inf.spice_model;
-  sram_verilog_orgz_type = Arch.sram_inf.orgz_type;
+  assert(NULL != Arch.sram_inf.verilog_sram_inf_orgz); /* Check !*/
+  sram_verilog_model = Arch.sram_inf.verilog_sram_inf_orgz->spice_model;
+  sram_verilog_orgz_type = Arch.sram_inf.verilog_sram_inf_orgz->type;
   /* initialize the SRAM organization information struct */
   sram_verilog_orgz_info = alloc_one_sram_orgz_info();
   init_sram_orgz_info(sram_verilog_orgz_info, sram_verilog_orgz_type, sram_verilog_model, nx + 2, ny + 2);
+  /* Check all the SRAM port is using the correct SRAM SPICE MODEL */
+  config_spice_models_sram_port_spice_model(Arch.spice->num_spice_model, 
+                                            Arch.spice->spice_models,
+                                            Arch.sram_inf.verilog_sram_inf_orgz->spice_model);
+
   /* Assign global variables of input and output pads */
   iopad_verilog_model = find_iopad_spice_model(Arch.spice->num_spice_model, Arch.spice->spice_models);
   assert(NULL != iopad_verilog_model);

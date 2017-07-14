@@ -241,7 +241,7 @@ void fprint_spice_one_specific_sram_subckt(FILE* fp,
     fprintf(fp, "%s->in ", mem_model->prefix); /* Input*/
     fprintf(fp, "%s[%d]->out %s[%d]->outb ", 
             mem_model->prefix, cur_sram, mem_model->prefix, cur_sram); /* Outputs */
-    fprintf(fp, "gvdd_%s_%s sgnd ", 
+    fprintf(fp, "%s sgnd ", 
                 vdd_port_name);  //
     fprintf(fp, " %s\n", mem_model->name);  //
     /* Add nodeset to help convergence */ 
@@ -260,7 +260,7 @@ void fprint_spice_one_specific_sram_subckt(FILE* fp,
     fprintf(fp, "%s[%d]->out %s[%d]->outb ", 
             mem_model->prefix, cur_sram, mem_model->prefix, cur_sram); /* Outputs */
     fprintf(fp, "sc_clk sc_rst sc_set \n");  //
-    fprintf(fp, "gvdd_%s_%s sgnd ", 
+    fprintf(fp, "%s sgnd ", 
                  vdd_port_name);  //
     fprintf(fp, " %s\n", mem_model->name);  //
     /* Add nodeset to help convergence */ 
@@ -521,6 +521,8 @@ void fprint_global_pad_ports_spice_model(FILE* fp,
     case SPICE_MODEL_FF:
     case SPICE_MODEL_HARDLOGIC:
     case SPICE_MODEL_SCFF:
+    case SPICE_MODEL_INVBUF:
+    case SPICE_MODEL_PASSGATE: 
       break;
     default:
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Unknown type for spice model!\n",

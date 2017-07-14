@@ -75,9 +75,9 @@ void fprint_pb_primitive_ff(FILE* fp,
   }
 
   /* Find ports*/
-  input_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+  input_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, FALSE);
   output_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
-  clock_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_CLOCK, &num_clock_port, TRUE);
+  clock_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_CLOCK, &num_clock_port, FALSE);
 
   /* Asserts */
   assert(3 == num_input_port); /* D, Set and Reset*/
@@ -116,10 +116,10 @@ void fprint_pb_primitive_ff(FILE* fp,
 
   /* Call the dff subckt*/
   fprintf(fp, "X%s[%d] ", spice_model->prefix, spice_model->cnt);
+  /* Global ports */
+  rec_fprint_spice_model_global_ports(fp, spice_model, FALSE); 
   /* print ports*/
   fprint_pb_type_ports(fp, port_prefix, 1, prim_pb_type); /* Use global clock for each DFF...*/ 
-  /* print global set and reset */
-  fprintf(fp, "gset greset ");
   /* Local vdd and gnd, spice_model name
    * TODO: global vdd for ff
    */

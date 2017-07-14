@@ -1,7 +1,7 @@
 * Sub Circuits
 *
 * Static D Flip-flop
-.subckt static_dff D Q clk set rst svdd sgnd
+.subckt static_dff rst set D Q clk svdd sgnd
 * Input inverter
 Xinv_clk clk clk_b svdd sgnd inv
 Xinv_set set set_b svdd sgnd inv

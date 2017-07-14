@@ -98,7 +98,7 @@ void fprint_pb_type_ports(FILE* fp,
   }
 
   /* Free */
-  free(formatted_port_prefix);
+  my_free(formatted_port_prefix);
   my_free(pb_type_input_ports);
   my_free(pb_type_output_ports);
   my_free(pb_type_inout_ports);
@@ -992,6 +992,7 @@ void fprint_pb_primitive_spice_model(FILE* fp,
   /* Asserts*/
   assert(pb_index == prim_pb_graph_node->placement_index);
   assert(0 == strcmp(spice_model->name, prim_pb_type->spice_model->name));
+
   if (is_idle) {
     assert(NULL == prim_pb); 
   } else {
@@ -1261,9 +1262,19 @@ void fprint_spice_pb_graph_node_rec(FILE* fp,
   if (NULL != cur_pb_type->spice_model) {
     switch (cur_pb_type->class_type) {
     case LUT_CLASS: 
-      fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
-                                      &(cur_pb->child_pbs[ipb][jpb]), cur_pb_graph_node, 
-                                      pb_type_index, cur_pb_type->spice_model, 0);
+      assert(1 == cur_pb_type->modes[mode_index].num_pb_type_children);
+      assert(1 == cur_pb_type->modes[mode_index].pb_type_children[0].num_pb);
+      /* Consider the num_pb, create all the subckts*/
+      for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+        for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+          /* Special care for LUT !!!
+           * Mapped logical block information is stored in child_pbs
+           */
+          fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
+                                          &(cur_pb->child_pbs[ipb][jpb]), cur_pb_graph_node, 
+                                          pb_type_index, cur_pb_type->spice_model, 0);
+        }
+      }
       break;
     case LATCH_CLASS:
       assert(0 == cur_pb_type->num_modes);
@@ -1318,7 +1329,7 @@ void fprint_spice_pb_graph_node_rec(FILE* fp,
       assert(jpb == cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb].placement_index);
       /* <formatted_subckt_prefix>mode[<mode_name>]_<child_pb_type_name>[<ipb>]
        */
-       fprintf(fp, "X%s[%d] ", cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
+      fprintf(fp, "X%s[%d] ", cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
       /* Pass the SPICE mode prefix on, 
        * <subckt_name>mode[<mode_name>]_<child_pb_type_name>[<jpb>]
        */
@@ -1439,12 +1450,25 @@ void fprint_spice_phy_pb_graph_node_rec(FILE* fp,
   if (NULL != cur_pb_type->spice_model) {
     switch (cur_pb_type->class_type) {
     case LUT_CLASS: 
-       /* Special care for LUT !!!
-        * Mapped logical block information is stored in child_pbs
-        */
-      fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
-                                      cur_pb, cur_pb_graph_node, 
-                                      pb_type_index, cur_pb_type->spice_model, is_idle);
+      if (1 == is_idle) {
+        fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
+                                        NULL, cur_pb_graph_node, 
+                                        pb_type_index, cur_pb_type->spice_model, is_idle);
+      } else {
+        assert(1 == cur_pb_type->modes[mode_index].num_pb_type_children);
+        assert(1 == cur_pb_type->modes[mode_index].pb_type_children[0].num_pb);
+        /* Consider the num_pb, create all the subckts*/
+        for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+          for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+            /* Special care for LUT !!!
+             * Mapped logical block information is stored in child_pbs
+             */
+            fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
+                                            &(cur_pb->child_pbs[ipb][jpb]), cur_pb_graph_node, 
+                                            pb_type_index, cur_pb_type->spice_model, is_idle);
+          }
+        }
+      }
       break;
     case LATCH_CLASS:
       assert(0 == cur_pb_type->num_modes);
@@ -1499,21 +1523,11 @@ void fprint_spice_phy_pb_graph_node_rec(FILE* fp,
     for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
       /* we should make sure this placement index == child_pb_type[jpb]*/
       assert(jpb == cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb].placement_index);
-      /* <formatted_subckt_prefix>mode[<mode_name>]_<child_pb_type_name>[<ipb>]
+      /* If the pb_type_children is a leaf node, we don't use the mode to name it,
+       * else we can use the mode to name it 
        */
       fprintf(fp, "X%s[%d] ", cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
-      /* Pass the SPICE mode prefix on, 
-       * <subckt_name>mode[<mode_name>]_<child_pb_type_name>[<jpb>]
-        */
-      /*
-      child_pb_type_prefix = (char*)my_malloc(sizeof(char)*
-                             (strlen(subckt_name) + 1 
-                              + strlen(cur_pb_type->modes[mode_index].pb_type_children[ipb].name) + 1 
-                              + strlen(my_itoa(jpb)) + 1 + 1));
-      sprintf(child_pb_type_prefix, "%s_%s[%d]", subckt_name,
-              cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
-      */
-     /* Simplify the prefix! Make the SPICE netlist readable*/
+      /* Simplify the prefix! Make the SPICE netlist readable*/
       child_pb_type_prefix = (char*)my_malloc(sizeof(char)*
                              (strlen(cur_pb_type->modes[mode_index].pb_type_children[ipb].name) + 1 
                               + strlen(my_itoa(jpb)) + 1 + 1));
@@ -1525,15 +1539,11 @@ void fprint_spice_phy_pb_graph_node_rec(FILE* fp,
       fprint_pb_type_ports(fp, child_pb_type_prefix, 0, &(cur_pb_type->modes[mode_index].pb_type_children[ipb]));
       fprintf(fp, "svdd sgnd "); /* Local vdd and gnd*/
       /* Find the pb_type_children mode */
-      if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
-        child_mode_index = cur_pb->child_pbs[ipb][jpb].mode; 
-      } else if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) { /* Find the idle_mode_index, if this is not a leaf node  */
-        child_mode_index = find_pb_type_idle_mode_index(cur_pb_type->modes[mode_index].pb_type_children[ipb]);
-      }
       /* If the pb_type_children is a leaf node, we don't use the mode to name it,
        * else we can use the mode to name it 
        */
       if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) { /* Not a leaf node*/
+        child_mode_index = find_pb_type_idle_mode_index(cur_pb_type->modes[mode_index].pb_type_children[ipb]);
         fprintf(fp, "%s_%s[%d]_mode[%s]\n",
                 subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb, 
                 cur_pb_type->modes[mode_index].pb_type_children[ipb].modes[child_mode_index].name);
@@ -2100,8 +2110,6 @@ void fprint_grid_physical_blocks(FILE* fp,
             ix, iy);
   }
 
-  assert(cur_block_index == grid[ix][iy].usage);
-
   /* Update the grid_index_high for each spice_model */
   update_spice_models_grid_index_high(ix, iy, arch->spice->num_spice_model, arch->spice->spice_models);
 
@@ -2322,7 +2330,7 @@ void generate_spice_logic_blocks(char* subckt_dir,
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
     /* TODO: replace with physical block generator */
-    fprint_grid_blocks(fp, ix, iy, arch); 
+    fprint_grid_physical_blocks(fp, ix, iy, arch); 
   }
   /* Right side : x = nx + 1, y = 1 .. ny*/
   ix = nx + 1;
@@ -2330,7 +2338,7 @@ void generate_spice_logic_blocks(char* subckt_dir,
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
     /* TODO: replace with physical block generator */
-    fprint_grid_blocks(fp, ix, iy, arch); 
+    fprint_grid_physical_blocks(fp, ix, iy, arch); 
   }
   /* Bottom  side : x = 1 .. nx + 1, y = 0 */
   iy = 0;
@@ -2338,7 +2346,7 @@ void generate_spice_logic_blocks(char* subckt_dir,
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
     /* TODO: replace with physical block generator */
-    fprint_grid_blocks(fp, ix, iy, arch); 
+    fprint_grid_physical_blocks(fp, ix, iy, arch); 
   }
   /* Top side : x = 1 .. nx + 1, y = nx + 1  */
   iy = ny + 1;
@@ -2346,7 +2354,7 @@ void generate_spice_logic_blocks(char* subckt_dir,
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
     /* TODO: replace with physical block generator */
-    fprint_grid_blocks(fp, ix, iy, arch); 
+    fprint_grid_physical_blocks(fp, ix, iy, arch); 
   }
 
 

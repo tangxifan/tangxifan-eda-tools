@@ -1649,7 +1649,7 @@ int fprint_spice_mux_testbench_call_one_grid_cb_muxes(FILE* fp,
     }
     side_cnt++;
     assert(0 < cur_cb_info.num_ipin_rr_nodes[side]);
-    assert(NULL == cur_cb_info.ipin_rr_node[side]);
+    assert(NULL != cur_cb_info.ipin_rr_node[side]);
     for (inode = 0; inode < cur_cb_info.num_ipin_rr_nodes[side]; inode++) {
     /* Print multiplexers */
     /* Check if there is at least one rr_node with a net_name*/

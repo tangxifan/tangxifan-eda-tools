@@ -445,8 +445,10 @@ void fprint_spice_cmos_mux_multilevel_structure(FILE* fp,
   assert(0 == nextlevel);
   assert(0 == out_idx);
   assert((1 == mux_special_basis_cnt)||(0 == mux_special_basis_cnt));
+  /*
   assert((mux_basis_cnt + mux_special_basis_cnt) 
          == (int)((spice_mux_arch.num_input - 1)/(spice_mux_arch.num_input_basis - 1)) + 1);
+   */
 
   return;
 }
@@ -716,6 +718,8 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
             spice_model.name, mux_size, gen_str_spice_model_structure(spice_model.design_tech_info.structure));
     fprintf(fp, ".subckt %s_size%d ", spice_model.name, mux_size);
   }
+  /* Global ports */
+  rec_fprint_spice_model_global_ports(fp, &spice_model, FALSE); 
   /* Print input ports*/
   for (i = 0; i < mux_size; i++) {
     fprintf(fp, "%s%d ", input_port[0]->prefix, i);
@@ -947,6 +951,10 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
             spice_model.name, mux_size, gen_str_spice_model_structure(spice_model.design_tech_info.structure));
     fprintf(fp, ".subckt %s_size%d ", spice_model.name, mux_size);
   }
+
+  /* Global ports */
+  rec_fprint_spice_model_global_ports(fp, &spice_model, FALSE); 
+
   /* Print input ports*/
   for (i = 0; i < mux_size; i++) {
     fprintf(fp, "%s%d ", input_port[0]->prefix, i);

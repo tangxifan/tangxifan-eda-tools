@@ -45,6 +45,11 @@ static void ProcessSpiceTransistorType(ezxml_t Parent,
 static void ProcessSpiceTechLibTransistors(ezxml_t Parent,
                                            t_spice_tech_lib* spice_tech_lib);
 
+static 
+void ProcessSpiceSRAMOrganization(INOUTP ezxml_t Node, 
+                                  OUTP t_sram_inf_orgz* cur_sram_inf_orgz,
+                                  boolean required);
+
 /************ Subroutines***********/
 static void ProcessSpiceMeasParams(ezxml_t Parent,
                                    t_spice_meas_params* meas_params) {
@@ -755,6 +760,80 @@ static void ProcessSpiceModel(ezxml_t Parent,
 
   /* Initialize the counter*/
   spice_model->cnt = 0;
+
+  return;
+}
+
+/* Read XML under the Node of Organization */
+static 
+void ProcessSpiceSRAMOrganization(INOUTP ezxml_t Node, 
+                                  OUTP t_sram_inf_orgz* cur_sram_inf_orgz,
+                                  boolean required) {
+  const char *Prop;
+  ezxml_t Cur;
+
+  if (NULL == Node) {
+    return;
+  } 
+
+  cur_sram_inf_orgz->spice_model_name = my_strdup(FindProperty(Node, "spice_model_name", required));
+  cur_sram_inf_orgz->spice_model = NULL;
+  ezxml_set_attr(Node, "spice_model_name", NULL);
+
+  /* read organization type*/
+  Prop = FindProperty(Node, "organization", required);
+  if (NULL == Prop) {
+    cur_sram_inf_orgz->type = SPICE_SRAM_STANDALONE; /* Default */
+  } else if (0 == strcmp("scan-chain", Prop)) {
+    cur_sram_inf_orgz->type = SPICE_SRAM_SCAN_CHAIN;
+  } else if (0 == strcmp("memory_bank", Prop)) {
+    cur_sram_inf_orgz->type = SPICE_SRAM_MEMORY_BANK;
+   } else if (0 == strcmp("standalone", Prop)) {
+    cur_sram_inf_orgz->type = SPICE_SRAM_STANDALONE;
+  } else {
+    vpr_printf(TIO_MESSAGE_ERROR,
+			"[LINE %d] Unknown property %s for SRAM organization\n",
+ 			 Node->line, FindProperty(Node, "organization", required));
+    exit(1);
+  }
+  ezxml_set_attr(Node, "organization", NULL);
+
+  return;
+}
+
+/* Read XML under the Node of SRAM */
+void ProcessSpiceSRAM(INOUTP ezxml_t Node, OUTP struct s_arch* arch) {
+  const char *Prop;
+  ezxml_t Cur;
+
+  /* Process area */
+  if (NULL == Node) {
+    return;
+  } 
+
+  arch->sram_inf.area = GetFloatProperty(Node, "area", FALSE, 6);
+
+  /* Read the SPICE sram organization details */
+  Cur = FindElement(Node, "spice", arch->read_xml_spice);
+  if (NULL != Cur) {
+    /* Malloc */
+    arch->sram_inf.spice_sram_inf_orgz = (t_sram_inf_orgz*)my_malloc(sizeof(t_sram_inf_orgz));
+    ProcessSpiceSRAMOrganization(Cur, arch->sram_inf.spice_sram_inf_orgz, arch->read_xml_spice);
+    FreeNode(Cur);
+  } else {
+    arch->sram_inf.spice_sram_inf_orgz = NULL;
+  }
+
+  /* Read the SPICE sram organization details */
+  Cur = FindElement(Node, "verilog", arch->read_xml_spice);
+  if (NULL != Cur) {
+    /* Malloc */
+    arch->sram_inf.verilog_sram_inf_orgz = (t_sram_inf_orgz*)my_malloc(sizeof(t_sram_inf_orgz));
+    ProcessSpiceSRAMOrganization(Cur, arch->sram_inf.verilog_sram_inf_orgz, arch->read_xml_spice);
+    FreeNode(Cur);
+  } else {
+    arch->sram_inf.verilog_sram_inf_orgz = NULL;
+  }
 
   return;
 }

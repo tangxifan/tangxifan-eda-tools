@@ -95,6 +95,7 @@ typedef struct s_spice t_spice;
 typedef struct s_spice_mux_arch t_spice_mux_arch;
 typedef struct s_spice_mux_model t_spice_mux_model;
 typedef struct s_sram_inf t_sram_inf;
+typedef struct s_sram_inf_orgz t_sram_inf_orgz;
 typedef struct s_spice_net_info t_spice_net_info;
 typedef struct s_spicetb_info t_spicetb_info;
 typedef struct s_conf_bit_info t_conf_bit_info;
@@ -319,12 +320,16 @@ struct s_spice_mux_model {
   int cnt; /* Used in mux_testbench only*/
 };
 
+struct s_sram_inf_orgz {
+  char* spice_model_name; // Xifan TANG: Spice Support
+  t_spice_model* spice_model; // Xifan TANG: Spice Support
+  enum e_sram_orgz type;
+};
 
 struct s_sram_inf {
   float area; //Xifan TANG
-  char* spice_model_name; // Xifan TANG: Spice Support
-  t_spice_model* spice_model; // Xifan TANG: Spice Support
-  enum e_sram_orgz orgz_type;
+  t_sram_inf_orgz* verilog_sram_inf_orgz;
+  t_sram_inf_orgz* spice_sram_inf_orgz;
 };
 
 /* Xifan TANG: SPICE net information */

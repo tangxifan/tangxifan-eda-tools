@@ -204,11 +204,21 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   init_list_include_netlists(Arch.spice); 
 
   /* assign the global variable of SRAM model */
-  sram_spice_model = Arch.sram_inf.spice_model;
-  sram_spice_orgz_type = Arch.sram_inf.orgz_type;
+  assert(NULL != Arch.sram_inf.spice_sram_inf_orgz); /* Check !*/
+  sram_spice_model = Arch.sram_inf.spice_sram_inf_orgz->spice_model;
+  sram_spice_orgz_type = Arch.sram_inf.spice_sram_inf_orgz->type;
   /* initialize the SRAM organization information struct */
   sram_spice_orgz_info = alloc_one_sram_orgz_info();
   init_sram_orgz_info(sram_spice_orgz_info, sram_spice_orgz_type, sram_spice_model, nx + 2, ny + 2);
+  /* Report error: SPICE part only support standalone SRAMs */
+  if (SPICE_SRAM_STANDALONE != sram_spice_orgz_info->type) {
+    vpr_printf(TIO_MESSAGE_ERROR, "Currently FPGA SPICE netlist only support standalone SRAM organization!\n");
+    exit(1);
+  }
+  /* Check all the SRAM port is using the correct SRAM SPICE MODEL */
+  config_spice_models_sram_port_spice_model(Arch.spice->num_spice_model, 
+                                            Arch.spice->spice_models,
+                                            Arch.sram_inf.spice_sram_inf_orgz->spice_model);
   
   /* Initialize the number of configuration bits of all the grids */
   init_grids_num_conf_bits(sram_spice_orgz_info);
@@ -245,34 +255,6 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   create_dir_path(spice_dir_formatted);
   create_dir_path(include_dir_path);
   create_dir_path(subckt_dir_path);
-
-  /* determine the VPR clock frequency */
-  /* Move to the top-level function: vpr_fpga_spice_tool_suits */
-  /* 
-  vpr_crit_path_delay = get_critical_path_delay()/1e9;
-  assert(vpr_crit_path_delay > 0.);
-  */
-  /* if we don't have global clock, clock_freqency should be set to 0.*/
-  /*
-  num_clocks = count_netlist_clocks();
-  if (0 == num_clocks) {
-     vpr_clock_freq = 0.;
-  } else { 
-    assert(1 == num_clocks);
-    vpr_clock_freq = 1. / vpr_crit_path_delay; 
-  }
-  */
-
-  /* backannotation */  
-  /* Move to the top-level function: vpr_fpga_spice_tool_suits */
-  /*
-  spice_backannotate_vpr_post_route_info(vpr_setup.RoutingArch,
-                                         vpr_setup.SpiceOpts.fpga_spice_parasitic_net_estimation_off);
-  */
-
-  /* Auto check the density and recommend sim_num_clock_cylce */
-  /* Move to the top-level function: vpr_fpga_spice_tool_suits */
-  /* auto_select_num_sim_clock_cycle(Arch.spice); */
 
   /* Generate Header files */
   fprint_spice_headers(include_dir_path, vpr_crit_path_delay, num_clocks, *(Arch.spice));

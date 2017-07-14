@@ -906,6 +906,7 @@ void dump_verilog_cmos_mux_tree_structure(FILE* fp,
 
 void dump_verilog_cmos_mux_multilevel_structure(FILE* fp, 
                                                 char* mux_basis_subckt_name,
+                                                char* mux_special_basis_subckt_name,
                                                 t_spice_model spice_model,
                                                 t_spice_mux_arch spice_mux_arch,
                                                 int num_sram_port, t_spice_model_port** sram_port) {
@@ -914,14 +915,6 @@ void dump_verilog_cmos_mux_multilevel_structure(FILE* fp,
   int mux_basis_cnt = 0;
   int special_basis_cnt = 0;
   int cur_num_input_basis = 0;
-
-  char* special_basis_subckt_name = NULL;
-
-  special_basis_subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_model.name) + 5 
-                                           + strlen(my_itoa(spice_mux_arch.num_input)) + strlen(verilog_mux_special_basis_posfix) + 1)); 
-  sprintf(special_basis_subckt_name, "%s_size%d%s",
-          spice_model.name, spice_mux_arch.num_input, verilog_mux_special_basis_posfix);
-
 
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {
@@ -960,7 +953,7 @@ void dump_verilog_cmos_mux_multilevel_structure(FILE* fp,
         cur_num_input_basis = find_spice_mux_arch_special_basis_size(spice_mux_arch);
         if (0 < cur_num_input_basis) {
           /* Print the special basis */
-          fprintf(fp, "%s special_basis(", special_basis_subckt_name);
+          fprintf(fp, "%s special_basis(", mux_special_basis_subckt_name);
           /* Dump global ports */
           if  (0 < rec_dump_verilog_spice_model_global_ports(fp, &spice_model, FALSE, FALSE)) {
             fprintf(fp, ",\n");
@@ -999,7 +992,6 @@ void dump_verilog_cmos_mux_multilevel_structure(FILE* fp,
   assert(0 == out_idx);
   assert((1 == special_basis_cnt)||(0 == special_basis_cnt));
   /* assert((mux_basis_cnt + special_basis_cnt) == (int)((spice_mux_arch.num_input - 1)/(spice_mux_arch.num_input_basis - 1)) + 1); */
-  my_free(special_basis_subckt_name);
  
   return;
 }
@@ -1062,11 +1054,18 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
 
   /* Find the basis subckt*/
   char* mux_basis_subckt_name = NULL;
+  char* mux_special_basis_subckt_name = NULL;
 
   mux_basis_subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_model.name) + 5 
                                            + strlen(my_itoa(mux_size)) + strlen(verilog_mux_basis_posfix) + 1)); 
   sprintf(mux_basis_subckt_name, "%s_size%d%s",
           spice_model.name, mux_size, verilog_mux_basis_posfix);
+
+  mux_special_basis_subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_model.name) + 5 
+                                           + strlen(my_itoa(spice_mux_arch.num_input)) 
+                                           + strlen(verilog_mux_special_basis_posfix) + 1)); 
+  sprintf(mux_special_basis_subckt_name, "%s_size%d%s",
+          spice_model.name, spice_mux_arch.num_input, verilog_mux_special_basis_posfix);
 
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {
@@ -1139,13 +1138,16 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
   /* Print internal architecture*/ 
   switch (spice_model.design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
-    dump_verilog_cmos_mux_tree_structure(fp, mux_basis_subckt_name, spice_model, spice_mux_arch, num_sram_port, sram_port);
+    dump_verilog_cmos_mux_tree_structure(fp, mux_basis_subckt_name, 
+                                         spice_model, spice_mux_arch, num_sram_port, sram_port);
     break;
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
-    dump_verilog_cmos_mux_onelevel_structure(fp, mux_basis_subckt_name, spice_model, spice_mux_arch, num_sram_port, sram_port);
+    dump_verilog_cmos_mux_onelevel_structure(fp, mux_basis_subckt_name, 
+                                             spice_model, spice_mux_arch, num_sram_port, sram_port);
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-    dump_verilog_cmos_mux_multilevel_structure(fp, mux_basis_subckt_name, spice_model, spice_mux_arch, num_sram_port, sram_port);
+    dump_verilog_cmos_mux_multilevel_structure(fp, mux_basis_subckt_name, mux_special_basis_subckt_name,
+                                               spice_model, spice_mux_arch, num_sram_port, sram_port);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
@@ -1259,6 +1261,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
 
   /* Free */
   my_free(mux_basis_subckt_name);
+  my_free(mux_special_basis_subckt_name);
   my_free(input_port);
   my_free(output_port);
   my_free(sram_port);
@@ -1342,6 +1345,7 @@ void dump_verilog_rram_mux_tree_structure(FILE* fp,
 
 void dump_verilog_rram_mux_multilevel_structure(FILE* fp, 
                                                 char* mux_basis_subckt_name,
+                                                char* mux_special_basis_subckt_name,
                                                 t_spice_model spice_model,
                                                 t_spice_mux_arch spice_mux_arch,
                                                 int num_sram_port, t_spice_model_port** sram_port) {
@@ -1354,14 +1358,8 @@ void dump_verilog_rram_mux_multilevel_structure(FILE* fp,
   int cur_mem_lsb = 0;
   int cur_mem_msb = 0;
 
-  char* special_basis_subckt_name = NULL;
-
   assert(SPICE_MODEL_DESIGN_RRAM == spice_model.design_tech);
 
-  special_basis_subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_model.name) + 5 
-                                           + strlen(my_itoa(spice_mux_arch.num_input)) + strlen(verilog_mux_special_basis_posfix) + 1)); 
-  sprintf(special_basis_subckt_name, "%s_size%d%s",
-          spice_model.name, spice_mux_arch.num_input, verilog_mux_special_basis_posfix);
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
@@ -1401,7 +1399,7 @@ void dump_verilog_rram_mux_multilevel_structure(FILE* fp,
         cur_num_input_basis = find_spice_mux_arch_special_basis_size(spice_mux_arch);
         if (0 < cur_num_input_basis) {
           /* Print the special basis */
-          fprintf(fp, "%s special_basis(\n", special_basis_subckt_name);
+          fprintf(fp, "%s special_basis(\n", mux_special_basis_subckt_name);
           /* Dump global ports */
           if  (0 < rec_dump_verilog_spice_model_global_ports(fp, &spice_model, FALSE, FALSE)) {
             fprintf(fp, ",\n");
@@ -1442,7 +1440,6 @@ void dump_verilog_rram_mux_multilevel_structure(FILE* fp,
   /* assert((mux_basis_cnt + special_basis_cnt) == (int)((spice_mux_arch.num_input - 1)/(spice_mux_arch.num_input_basis - 1)) + 1); */
  
   /* Free */
-  my_free(special_basis_subckt_name);
 
   return;
 }
@@ -1500,10 +1497,18 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
 
   /* Find the basis subckt*/
   char* mux_basis_subckt_name = NULL;
+  char* mux_special_basis_subckt_name = NULL;
+
   mux_basis_subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_model.name) + 5 
                                            + strlen(my_itoa(mux_size)) + strlen(verilog_mux_basis_posfix) + 1)); 
   sprintf(mux_basis_subckt_name, "%s_size%d%s",
           spice_model.name, mux_size, verilog_mux_basis_posfix);
+
+  mux_special_basis_subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_model.name) + 5 
+                                           + strlen(my_itoa(spice_mux_arch.num_input)) 
+                                           + strlen(verilog_mux_special_basis_posfix) + 1)); 
+  sprintf(mux_special_basis_subckt_name, "%s_size%d%s",
+          spice_model.name, spice_mux_arch.num_input, verilog_mux_special_basis_posfix);
 
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {
@@ -1566,13 +1571,16 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
    */
   switch (spice_model.design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
-    dump_verilog_rram_mux_tree_structure(fp, mux_basis_subckt_name, spice_model, spice_mux_arch, num_sram_port, sram_port);
+    dump_verilog_rram_mux_tree_structure(fp, mux_basis_subckt_name, 
+                                         spice_model, spice_mux_arch, num_sram_port, sram_port);
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-    dump_verilog_rram_mux_multilevel_structure(fp, mux_basis_subckt_name, spice_model, spice_mux_arch, num_sram_port, sram_port);
+    dump_verilog_rram_mux_multilevel_structure(fp, mux_basis_subckt_name, mux_special_basis_subckt_name,
+                                               spice_model, spice_mux_arch, num_sram_port, sram_port);
     break;
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
-    dump_verilog_rram_mux_onelevel_structure(fp, mux_basis_subckt_name, spice_model, spice_mux_arch, num_sram_port, sram_port);
+    dump_verilog_rram_mux_onelevel_structure(fp, mux_basis_subckt_name, 
+                                             spice_model, spice_mux_arch, num_sram_port, sram_port);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
@@ -1686,6 +1694,7 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
 
   /* Free */
   my_free(mux_basis_subckt_name);
+  my_free(mux_special_basis_subckt_name);
   my_free(input_port);
   my_free(output_port);
   my_free(sram_port);

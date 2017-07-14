@@ -196,8 +196,20 @@ void FreeSpiceMuxArch(t_spice_mux_arch* spice_mux_arch) {
   return;
 }
 
+void FreeSramInfOrgz(t_sram_inf_orgz* sram_inf_orgz) {
+  my_free(sram_inf_orgz->spice_model_name);
+
+  return;
+}
+
 void FreeSramInf(t_sram_inf* sram_inf) {
-  my_free(sram_inf->spice_model_name);
+  if (NULL != sram_inf->spice_sram_inf_orgz) {
+    FreeSramInfOrgz(sram_inf->spice_sram_inf_orgz);
+  }
+
+  if (NULL != sram_inf->verilog_sram_inf_orgz) {
+    FreeSramInfOrgz(sram_inf->verilog_sram_inf_orgz);
+  }
 
   return;
 }

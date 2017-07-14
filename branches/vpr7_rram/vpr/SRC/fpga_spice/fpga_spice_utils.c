@@ -6383,3 +6383,36 @@ t_pb* get_child_pb_for_phy_pb_graph_node(t_pb* cur_pb, int ipb, int jpb) {
   return child_pb;
 }
 
+/* Check if all the SRAM ports have the correct SPICE MODEL */
+void config_spice_models_sram_port_spice_model(int num_spice_model,
+                                               t_spice_model* spice_models,
+                                               t_spice_model* default_sram_spice_model) {
+  int i, iport;
+
+  for (i = 0; i < num_spice_model; i++) {
+    for (iport = 0; iport < spice_models[i].num_port; iport++) {
+      /* Bypass non SRAM ports */
+      if (SPICE_MODEL_PORT_SRAM != spice_models[i].ports[iport].type) {
+        continue;
+      }
+      /* Write for the default SRAM SPICE model! */
+      spice_models[i].ports[iport].spice_model = default_sram_spice_model;
+      /* Only show warning when we try to override the given spice_model_name ! */ 
+      if (NULL == spice_models[i].ports[iport].spice_model_name) { 
+        continue;
+      }
+      /* Give a warning !!! */
+      if (0 != strcmp(default_sram_spice_model->name, spice_models[i].ports[iport].spice_model_name)) {
+        vpr_printf(TIO_MESSAGE_WARNING, 
+                   "(FILE:%s, LINE[%d]) Overwrite SRAM SPICE MODEL of SPICE model port (name:%s, port:%s) to be the correct one (name:%s)!\n",
+                   __FILE__ ,__LINE__, 
+                   spice_models[i].name,
+                   spice_models[i].ports[iport].prefix,
+                   default_sram_spice_model->name);
+      }
+    }
+  }
+
+  return;
+}
+

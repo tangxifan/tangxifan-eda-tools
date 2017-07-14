@@ -2298,9 +2298,25 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
     switch (cur_pb_type->class_type) {
     case LUT_CLASS: 
       /* Consider the num_pb, create all the subckts*/
-      dump_verilog_pb_primitive_verilog_model(fp, formatted_subckt_prefix, 
-                                              cur_pb, cur_pb_graph_node, pb_type_index, 
-                                              cur_pb_type->spice_model, is_idle); /* last param means idle */
+      if (1 == is_idle) {
+        dump_verilog_pb_primitive_verilog_model(fp, formatted_subckt_prefix, 
+                                                NULL, cur_pb_graph_node, pb_type_index, 
+                                                cur_pb_type->spice_model, is_idle); /* last param means idle */
+      } else {
+        assert(1 == cur_pb_type->modes[mode_index].num_pb_type_children);
+        assert(1 == cur_pb_type->modes[mode_index].pb_type_children[0].num_pb);
+        /* Consider the num_pb, create all the subckts*/
+        for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+          for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+            /* Special care for LUT !!!
+             * Mapped logical block information is stored in child_pbs
+             */
+            dump_verilog_pb_primitive_verilog_model(fp, formatted_subckt_prefix, 
+                                                    &(cur_pb->child_pbs[ipb][jpb]), cur_pb_graph_node, pb_type_index, 
+                                                    cur_pb_type->spice_model, is_idle); /* last param means idle */
+          }
+        }
+      }
     case LATCH_CLASS:
       assert(0 == cur_pb_type->num_modes);
       /* Consider the num_pb, create all the subckts*/
@@ -2473,7 +2489,7 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
     }
   }
   /* Print interconnections, set is_idle as TRUE*/
-  dump_verilog_pb_graph_interc(fp, subckt_name, cur_pb_graph_node, NULL, mode_index, is_idle);
+  dump_verilog_pb_graph_interc(fp, subckt_name, cur_pb_graph_node, cur_pb, mode_index, is_idle);
   /* Check each pins of pb_graph_node */ 
   /* Check and update stamped_sram_cnt */
   assert(!(stamped_sram_cnt > (stamped_sram_lsb + num_conf_bits)));

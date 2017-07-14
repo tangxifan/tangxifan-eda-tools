@@ -302,22 +302,6 @@
          <port type="output" prefix="Q" size="2"/>
          <port type="clock" prefix="prog_clk" size="1" is_global="true" default_val="0" is_prog="true" />
       </spice_model>
-      <spice_model type="inpad" name="inpad" prefix="inpad" spice_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/io.sp" verilog_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/io.v">
-        <design_technology type="cmos"/>
-        <input_buffer exist="on" spice_model_name="INVD1BWP"/>
-        <output_buffer exist="on" spice_model_name="INVD1BWP"/>
-        <pass_gate_logic spice_model_name="TGATE"/>
-        <port type="input" prefix="in" size="1"/>
-        <port type="output" prefix="out" size="1"/>
-      </spice_model>
-      <spice_model type="outpad" name="outpad" prefix="outpad" spice_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/io.sp" verilog_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/io.v">
-        <design_technology type="cmos"/>
-        <input_buffer exist="on" spice_model_name="INVD1BWP"/>
-        <output_buffer exist="on" spice_model_name="INVD1BWP"/>
-        <pass_gate_logic spice_model_name="TGATE"/>
-        <port type="input" prefix="in" size="1"/>
-        <port type="output" prefix="out" size="1"/>
-      </spice_model>
       <spice_model type="iopad" name="iopad" prefix="iopad" spice_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/io.sp" verilog_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/io.v">
         <design_technology type="cmos"/>
         <input_buffer exist="on" spice_model_name="INVD1BWP"/>
@@ -355,9 +339,9 @@
      	  area; set to 0 since we explicitly set the area of all blocks currently in this architecture file.
 	  -->
 	<area grid_logic_tile_area="0"/> 
-    <!--sram area="6" organization="standalone" spice_model_name="sram6T"-->
-    <sram area="6" organization="scan-chain" spice_model_name="sc_ff">
-    <!--sram area="6" organization="memory_bank" spice_model_name="sram6T_blwl"-->
+    <sram area="6">
+      <verilog organization="scan-chain" spice_model_name="sc_ff"/>
+      <spice organization="standalone" spice_model_name="sram6T" />
     </sram>
     <chan_width_distr>
       <io width="1.000000"/>

@@ -533,4 +533,6 @@ int find_path_id_between_pb_rr_nodes(t_rr_node* local_rr_graph,
 
 t_pb* get_child_pb_for_phy_pb_graph_node(t_pb* cur_pb, int ipb, int jpb);
 
-
+void config_spice_models_sram_port_spice_model(int num_spice_model,
+                                               t_spice_model* spice_models,
+                                               t_spice_model* default_sram_spice_model);
