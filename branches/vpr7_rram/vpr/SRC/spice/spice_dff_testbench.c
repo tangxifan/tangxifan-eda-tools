@@ -82,6 +82,7 @@ void fprint_spice_dff_testbench_global_ports(FILE* fp, int grid_x, int grid_y,
 
 void fprint_spice_dff_testbench_one_dff(FILE* fp, 
                                         char* subckt_name, 
+                                        t_spice_model* dff_spice_model,
                                         int num_inputs, int num_outputs,
                                         int* input_init_value, 
                                         float* input_density, 
@@ -94,6 +95,12 @@ void fprint_spice_dff_testbench_one_dff(FILE* fp,
   } 
   /* Call defined subckt */
   fprintf(fp, "Xdff[%d] ", tb_num_dffs);
+
+  /* Global ports */
+  if (0 < rec_fprint_spice_model_global_ports(fp, dff_spice_model, FALSE)) { 
+    fprintf(fp, "+ ");
+  }
+
   assert(1 == num_inputs);
   for (ipin = 0; ipin < num_inputs; ipin++) {
     fprintf(fp, "dff[%d]->in[%d] ", tb_num_dffs, ipin);
@@ -192,8 +199,10 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
     fprintf(fp,"***** DFF[%d]: logical_block_index[%d], gvdd_index[%d]*****\n", 
             tb_num_dffs, -1, -1);
   }
-  fprint_spice_dff_testbench_one_dff(fp, prefix, num_inputs, num_outputs,
+
+  fprint_spice_dff_testbench_one_dff(fp, prefix, pb_spice_model, num_inputs, num_outputs,
                                      input_init_value, input_density, input_probability);
+
   /* Add loads: Recursively */
   outport_name = (char*)my_malloc(sizeof(char)*( 4 + strlen(my_itoa(tb_num_dffs)) 
                                   + 6 + 1 ));

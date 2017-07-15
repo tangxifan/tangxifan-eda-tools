@@ -3017,20 +3017,7 @@ int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
         break;
       case SPICE_SRAM_SCAN_CHAIN:
       case SPICE_SRAM_STANDALONE:
-        /* 4T1R MUX requires more configuration bits */
-        if (SPICE_MODEL_STRUCTURE_TREE == cur_spice_model->design_tech_info.structure) {
-        /* For tree-structure: we need 3 times more config. bits */
-          num_conf_bits = 3 * num_conf_bits;
-        } else if (SPICE_MODEL_STRUCTURE_MULTILEVEL == cur_spice_model->design_tech_info.structure) {
-        /* For multi-level structure: we need 1 more config. bits for each level */
-          num_conf_bits += cur_spice_model->design_tech_info.mux_num_level;
-        } else {
-          num_conf_bits = (num_conf_bits + 1);
-        }
-        /* For 2:1 MUX, whatever structure, there is only one level */
-        if (2 == mux_size) {
-          num_conf_bits = 3;
-        } 
+        /* Currently we keep the same as CMOS MUX */
         break;
       default:
         vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid type of SRAM organization!\n",

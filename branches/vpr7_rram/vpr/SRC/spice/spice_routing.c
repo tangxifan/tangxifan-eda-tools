@@ -399,6 +399,10 @@ void fprint_switch_box_mux(FILE* fp,
   spice_model = switch_inf[switch_index].spice_model;
   /* Now it is the time print the SPICE netlist of MUX*/
   fprintf(fp, "X%s_size%d[%d] ", spice_model->prefix, mux_size, spice_model->cnt);
+  /* Global ports */
+  if (0 < rec_fprint_spice_model_global_ports(fp, spice_model, FALSE)) { 
+    fprintf(fp, "+ ");
+  }
   /* Input ports*/
   for (inode = 0; inode < mux_size; inode++) {
     switch (drive_rr_nodes[inode]->type) {
@@ -852,6 +856,12 @@ void fprint_connection_box_mux(FILE* fp,
 
   /* Call the MUX SPICE model */
   fprintf(fp, "X%s_size%d[%d] ", mux_spice_model->prefix, mux_size, mux_spice_model->cnt);
+
+  /* Global ports */
+  if (0 < rec_fprint_spice_model_global_ports(fp, mux_spice_model, FALSE)) { 
+    fprintf(fp, "+ ");
+  }
+
   /* Check drive_rr_nodes type, should be the same*/
   for (inode = 0; inode < mux_size; inode++) {
     if (NUM_RR_TYPES == drive_rr_node_type) { 
@@ -1045,7 +1055,6 @@ void fprint_routing_connection_box_subckt(FILE* fp, t_cb cur_cb_info,
     exit(1);
   }
   fprintf(fp, "\n");
-  fprintf(fp, "+ ");
 
   /* Print the ports of channels*/
   /*connect to the mid point of a track*/

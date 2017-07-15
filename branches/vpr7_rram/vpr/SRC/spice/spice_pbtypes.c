@@ -555,6 +555,10 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
     assert(SPICE_MODEL_MUX == cur_interc->spice_model->type);
     /* Call the subckt that has already been defined before */
     fprintf(fp, "X%s_size%d[%d] ", cur_interc->spice_model->prefix, fan_in, cur_interc->spice_model->cnt);
+    /* Global ports */
+    if (0 < rec_fprint_spice_model_global_ports(fp, cur_interc->spice_model, FALSE)) { 
+      fprintf(fp, "+ ");
+    }
     /* Inputs */
     for (iedge = 0; iedge < des_pb_graph_pin->num_input_edges; iedge++) {
       if (cur_mode != des_pb_graph_pin->input_edges[iedge]->interconnect->parent_mode) {

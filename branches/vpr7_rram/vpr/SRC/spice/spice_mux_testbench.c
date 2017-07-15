@@ -482,6 +482,10 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
 
   /* Call the subckt that has already been defined before */
   fprintf(fp, "X%s_size%d[%d] ", mux_spice_model->prefix, mux_size, testbench_mux_cnt);
+ /* Global ports */
+  if (0 < rec_fprint_spice_model_global_ports(fp, mux_spice_model, FALSE)) { 
+    fprintf(fp, "+ ");
+  }
   /* input port*/
   for (inode = 0; inode < mux_size; inode++) {
     fprintf(fp, "%s_size%d[%d]->in[%d] ", 

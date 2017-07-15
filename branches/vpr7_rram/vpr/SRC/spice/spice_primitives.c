@@ -117,7 +117,9 @@ void fprint_pb_primitive_ff(FILE* fp,
   /* Call the dff subckt*/
   fprintf(fp, "X%s[%d] ", spice_model->prefix, spice_model->cnt);
   /* Global ports */
-  rec_fprint_spice_model_global_ports(fp, spice_model, FALSE); 
+  if (0 < rec_fprint_spice_model_global_ports(fp, spice_model, FALSE)) {
+    fprintf(fp, "+ ");
+  }
   /* print ports*/
   fprint_pb_type_ports(fp, port_prefix, 1, prim_pb_type); /* Use global clock for each DFF...*/ 
   /* Local vdd and gnd, spice_model name

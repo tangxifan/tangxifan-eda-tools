@@ -645,9 +645,6 @@ int rec_dump_verilog_spice_model_global_ports(FILE* fp,
                __FILE__, __LINE__); 
   }
 
-  fprintf(fp, "//----- BEGIN Global ports of SPICE_MODEL(%s) -----\n",
-          cur_spice_model->name);
-
   for (iport = 0; iport < cur_spice_model->num_port; iport++) {
     /* if this spice model requires customized netlist to be included, we do not go recursively */
     if (TRUE == recursive) { 
@@ -676,6 +673,15 @@ int rec_dump_verilog_spice_model_global_ports(FILE* fp,
     if (FALSE == cur_spice_model->ports[iport].is_global) {
       continue;
     }
+
+    /* We have some port to dump ! 
+     * Print a comment line 
+     */
+    if (0 == dumped_port_cnt) {
+      fprintf(fp, "//----- BEGIN Global ports of SPICE_MODEL(%s) -----\n",
+                  cur_spice_model->name);
+    }
+
     /* Check if we need to dump a comma */
     if (TRUE == dump_comma) {
       fprintf(fp, ",\n");
@@ -696,9 +702,15 @@ int rec_dump_verilog_spice_model_global_ports(FILE* fp,
     dumped_port_cnt++;
   }
   
-  fprintf(fp, "\n");
-  fprintf(fp, "//----- END Global ports of SPICE_MODEL(%s)-----\n",
-          cur_spice_model->name);
+
+  /* We have dumped some port! 
+   * Print another comment line  
+   */
+  if (0 < dumped_port_cnt) {
+    fprintf(fp, "\n");
+    fprintf(fp, "//----- END Global ports of SPICE_MODEL(%s)-----\n",
+                cur_spice_model->name);
+  }
 
   return dumped_port_cnt;
 }

@@ -459,6 +459,7 @@ void fprint_spice_cmos_mux_onelevel_structure(FILE* fp, char* mux_basis_subckt_n
                                               int num_sram_port, t_spice_model_port** sram_port) {
   int k, mux_basis_cnt;
   int level, nextlevel, out_idx;
+  int num_sram_bits = 0;
 
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {
@@ -481,7 +482,9 @@ void fprint_spice_cmos_mux_onelevel_structure(FILE* fp, char* mux_basis_subckt_n
   }
   fprintf(fp, "mux2_l%d_in%d ", nextlevel, out_idx); /* output */
   /* Print number of sram bits for this basis */
-  for (k = 0; k < spice_mux_arch.num_input; k++) {
+  num_sram_bits = count_num_sram_bits_one_spice_model(&spice_model, 
+                                                      spice_mux_arch.num_input);
+  for (k = 0; k < num_sram_bits; k++) {
     fprintf(fp, "%s%d %s_inv%d ", sram_port[0]->prefix, k, sram_port[0]->prefix, k); /* sram sram_inv */
   }
   fprintf(fp, "svdd sgnd %s\n", mux_basis_subckt_name); /* subckt_name */
@@ -709,6 +712,14 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
   assert(1 == num_sram_port);
   assert(1 == output_port[0]->size);
 
+  /* We have two types of naming rules in terms of the usage of MUXes: 
+   * 1. MUXes, the naming rule is <mux_spice_model_name>_<structure>_size<input_size>
+   * 2. LUTs, the naming rule is <lut_spice_model_name>_mux_size<sram_port_size>
+   */
+  num_sram_bits = count_num_sram_bits_one_spice_model(&spice_model, 
+                                                      /* sram_verilog_orgz_info->type, */ 
+                                                      mux_size);
+
   if (SPICE_MODEL_LUT == spice_model.type) {
     /* Special for LUT MUX*/
     fprintf(fp, "***** CMOS MUX info: spice_model_name= %s_MUX, size=%d *****\n", spice_model.name, mux_size);
@@ -719,48 +730,20 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
     fprintf(fp, ".subckt %s_size%d ", spice_model.name, mux_size);
   }
   /* Global ports */
-  rec_fprint_spice_model_global_ports(fp, &spice_model, FALSE); 
+  if (0 < rec_fprint_spice_model_global_ports(fp, &spice_model, FALSE)) {
+    fprintf(fp, "+ ");
+  }
   /* Print input ports*/
   for (i = 0; i < mux_size; i++) {
     fprintf(fp, "%s%d ", input_port[0]->prefix, i);
   } 
   /* Print output ports*/
   fprintf(fp, "%s ", output_port[0]->prefix);
-  switch (spice_model.design_tech_info.structure) {
-  case SPICE_MODEL_STRUCTURE_TREE:
-    /* Print sram ports*/
-    for (i = 0; i < spice_mux_arch.num_level; i++) {
-      fprintf(fp, "%s%d ", sram_port[0]->prefix, i);
-      fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, i);
-    } 
-    break;
-  case SPICE_MODEL_STRUCTURE_ONELEVEL:
-    /* Print sram ports*/
-    /* Special for 2-input MUX */
-    if (2 == mux_size) {
-      num_sram_bits = 1;
-    } else {
-      num_sram_bits = mux_size;
-    }
-    for (i = 0; i < num_sram_bits; i++) {
-      fprintf(fp, "%s%d ", sram_port[0]->prefix, i);
-      fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, i);
-    } 
-    break;
-  case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-    /* Print sram ports*/
-    for (i = 0; i < spice_mux_arch.num_level; i++) {
-      for (j = 0; j < spice_mux_arch.num_input_basis; j++) {
-        fprintf(fp, "%s%d ", sram_port[0]->prefix, j + spice_mux_arch.num_input_basis * i);
-        fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, j + spice_mux_arch.num_input_basis * i);
-      }
-    } 
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
-               __FILE__, __LINE__, spice_model.name);
-    exit(1);
-  }
+  /* Print sram ports*/
+  for (i = 0; i < num_sram_bits; i++) {
+    fprintf(fp, "%s%d ", sram_port[0]->prefix, i);
+    fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, i);
+  } 
   /* Print local vdd and gnd*/
   fprintf(fp, "svdd sgnd");
   fprintf(fp, "\n");
@@ -897,6 +880,7 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
   t_spice_model_port** input_port = NULL;
   t_spice_model_port** output_port = NULL;
   t_spice_model_port** sram_port = NULL;
+  int num_sram_bits = 0;
 
   /* Find the basis subckt*/
   char* mux_basis_subckt_name = NULL;
@@ -935,6 +919,14 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
   assert(1 == num_sram_port);
   assert(1 == output_port[0]->size);
 
+  /* We have two types of naming rules in terms of the usage of MUXes: 
+   * 1. MUXes, the naming rule is <mux_spice_model_name>_<structure>_size<input_size>
+   * 2. LUTs, the naming rule is <lut_spice_model_name>_mux_size<sram_port_size>
+   */
+  num_sram_bits = count_num_conf_bits_one_spice_model(&spice_model, 
+                                                      sram_spice_orgz_info->type,  
+                                                      mux_size);
+
   /* Print the definition of subckt*/
   if (SPICE_MODEL_LUT == spice_model.type) {
     /* RRAM LUT is not supported now... */
@@ -953,7 +945,9 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
   }
 
   /* Global ports */
-  rec_fprint_spice_model_global_ports(fp, &spice_model, FALSE); 
+  if (0 < rec_fprint_spice_model_global_ports(fp, &spice_model, FALSE)) { 
+    fprintf(fp, "+ ");
+  }
 
   /* Print input ports*/
   for (i = 0; i < mux_size; i++) {
@@ -961,35 +955,11 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
   } 
   /* Print output ports*/
   fprintf(fp, "%s ", output_port[0]->prefix);
-  switch (spice_model.design_tech_info.structure) {
-  case SPICE_MODEL_STRUCTURE_TREE:
-    /* Print sram ports*/
-    for (i = 0; i < spice_mux_arch.num_level; i++) {
-      fprintf(fp, "%s%d ", sram_port[0]->prefix, spice_mux_arch.num_level-i-1);
-      fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, spice_mux_arch.num_level-i-1);
-    } 
-    break;
-  case SPICE_MODEL_STRUCTURE_ONELEVEL:
-    /* Print sram ports*/
-    for (i = 0; i < mux_size; i++) {
-      fprintf(fp, "%s%d ", sram_port[0]->prefix, mux_size - i - 1);
-      fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, mux_size - i - 1);
-    } 
-    break;
-  case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-    /* Print sram ports*/
-    for (i = 0; i < spice_mux_arch.num_level; i++) {
-      for (j = 0; j < spice_mux_arch.num_input_basis; j++) {
-        fprintf(fp, "%s%d ", sram_port[0]->prefix, j + spice_mux_arch.num_input_basis*i);
-        fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, j + spice_mux_arch.num_input_basis*i);
-      }
-    } 
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
-               __FILE__, __LINE__, spice_model.name);
-    exit(1);
-  }
+  /* Print sram ports*/
+  for (i = 0; i < num_sram_bits; i++) {
+    fprintf(fp, "%s%d ", sram_port[0]->prefix, i);
+    fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, i);
+  } 
   /* Print local vdd and gnd*/
   fprintf(fp, "svdd sgnd ");
   fprintf(fp, "ron=\'%g\' roff=\'%g\' ",
