@@ -153,4 +153,13 @@ void fprint_measure_vdds_logical_block_spice_model(FILE* fp,
                                                    int num_clock_cycle,
                                                    boolean leakage_only);
 
+void fprint_spice_testbench_wire_one_global_port_stimuli(FILE* fp, 
+                                                         t_spice_model_port* cur_global_port, 
+                                                         char* voltage_stimuli_port_name);
+
+void fprint_spice_testbench_global_ports_stimuli(FILE* fp, 
+                                                 t_llist* head);
+
+void fprint_spice_testbench_generic_global_ports_stimuli(FILE* fp,
+                                                         int num_clock);
 

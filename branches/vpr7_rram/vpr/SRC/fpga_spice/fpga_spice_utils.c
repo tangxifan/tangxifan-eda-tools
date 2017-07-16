@@ -1353,6 +1353,9 @@ char* generate_string_spice_model_type(enum e_spice_model_type spice_model_type)
   case SPICE_MODEL_HARDLOGIC:
     ret = "hard_logic";
     break;
+  case SPICE_MODEL_IOPAD:
+    ret = "iopad";
+    break;
   case SPICE_MODEL_SCFF:
     ret = "Scan-chain Flip-flop";
     break;
@@ -5123,7 +5126,8 @@ void configure_lut_sram_bits_per_line_rec(int** sram_bits,
 
 int* generate_lut_sram_bits(int truth_table_len,
                             char** truth_table,
-                            int lut_size) {
+                            int lut_size,
+                            int default_sram_bit_value) {
   int num_sram = (int)pow(2.,(double)(lut_size));
   int* ret = (int*)my_malloc(sizeof(int)*num_sram); 
   char** completed_truth_table = (char**)my_malloc(sizeof(char*)*truth_table_len);
@@ -5133,7 +5137,7 @@ int* generate_lut_sram_bits(int truth_table_len,
 
   /* if No truth_table, do default*/
   if (0 == truth_table_len) {
-    switch (default_signal_init_value) {
+    switch (default_sram_bit_value) {
     case 0:
       off_set = 0;
       on_set = 1;
@@ -5144,7 +5148,7 @@ int* generate_lut_sram_bits(int truth_table_len,
       break;
     default:
       vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid default_signal_init_value(=%d)!\n",
-                 __FILE__, __LINE__, default_signal_init_value);
+                 __FILE__, __LINE__, default_sram_bit_value);
       exit(1);
     }
   }
@@ -5232,12 +5236,27 @@ int get_lut_output_init_val(t_logical_block* lut_logical_block) {
   int init_path_id = 0;
   int output_init_val = 0;
 
+  t_spice_model* lut_spice_model = NULL;
+  int num_sram_port = 0;
+  t_spice_model_port** sram_ports = NULL;
+
   /* Ensure a valid file handler*/ 
   if (NULL == lut_logical_block) {
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid LUT logical block!\n",
                __FILE__, __LINE__);
     exit(1);
   }
+
+  /* Get SPICE model */
+  assert((NULL != lut_logical_block->pb)
+        && ( NULL != lut_logical_block->pb->pb_graph_node)
+        && ( NULL != lut_logical_block->pb->pb_graph_node->pb_type));
+  lut_spice_model = lut_logical_block->pb->pb_graph_node->pb_type->parent_mode->parent_pb_type->spice_model;
+  assert(SPICE_MODEL_LUT == lut_spice_model->type);
+  sram_ports = find_spice_model_ports(lut_spice_model, SPICE_MODEL_PORT_SRAM, 
+                                      &num_sram_port, TRUE);
+  assert(1 == num_sram_port);
+
   /* Get the truth table */
   truth_table = assign_lut_truth_table(lut_logical_block, &truth_table_length); 
   lut_size = lut_logical_block->used_input_pins;
@@ -5245,7 +5264,8 @@ int get_lut_output_init_val(t_logical_block* lut_logical_block) {
   /* Special for LUT_size = 0 */
   if (0 == lut_size) {
     /* Generate sram bits*/
-    sram_bits = generate_lut_sram_bits(truth_table_length, truth_table, 1);
+    sram_bits = generate_lut_sram_bits(truth_table_length, truth_table, 
+                                       1, sram_ports[0]->default_val);
     /* This is constant generator, SRAM bits should be the same */
     output_init_val = sram_bits[0];
     for (i = 0; i < (int)pow(2.,(double)lut_size); i++) { 
@@ -5253,7 +5273,8 @@ int get_lut_output_init_val(t_logical_block* lut_logical_block) {
     } 
   } else { 
     /* Generate sram bits*/
-    sram_bits = generate_lut_sram_bits(truth_table_length, truth_table, lut_size);
+    sram_bits = generate_lut_sram_bits(truth_table_length, truth_table,
+                                       lut_size, sram_ports[0]->default_val);
 
     assert(1 == lut_logical_block->pb->pb_graph_node->num_input_ports);
     assert(1 == lut_logical_block->pb->pb_graph_node->num_output_ports);
@@ -6401,5 +6422,16 @@ void config_spice_models_sram_port_spice_model(int num_spice_model,
   }
 
   return;
+}
+
+t_pb* get_lut_child_pb(t_pb* cur_lut_pb,
+                       int mode_index) {
+
+  assert(SPICE_MODEL_LUT == cur_lut_pb->pb_graph_node->pb_type->spice_model->type);
+
+  assert(1 == cur_lut_pb->pb_graph_node->pb_type->modes[mode_index].num_pb_type_children);
+  assert(1 == cur_lut_pb->pb_graph_node->pb_type->num_pb);
+
+  return (&(cur_lut_pb->child_pbs[0][0])); 
 }
 

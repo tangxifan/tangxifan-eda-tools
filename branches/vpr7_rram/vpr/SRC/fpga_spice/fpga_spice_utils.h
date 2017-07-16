@@ -402,7 +402,8 @@ void configure_lut_sram_bits_per_line_rec(int** sram_bits,
 
 int* generate_lut_sram_bits(int truth_table_len,
                             char** truth_table,
-                            int lut_size);
+                            int lut_size,
+                            int default_sram_bit_value);
 
 char** assign_lut_truth_table(t_logical_block* mapped_logical_block,
                               int* truth_table_length);
@@ -536,3 +537,5 @@ t_pb* get_child_pb_for_phy_pb_graph_node(t_pb* cur_pb, int ipb, int jpb);
 void config_spice_models_sram_port_spice_model(int num_spice_model,
                                                t_spice_model* spice_models,
                                                t_spice_model* default_sram_spice_model);
+t_pb* get_lut_child_pb(t_pb* cur_lut_pb,
+                       int mode_index);

@@ -214,8 +214,9 @@ void fprint_pb_primitive_lut(FILE* fp,
   /* Get current counter of mem_bits, bl and wl */
   cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_spice_orgz_info); 
 
-  /* Generate sram bits*/
-  sram_bits = generate_lut_sram_bits(truth_table_length, truth_table, lut_size);
+  /* Generate sram bits, use the default value of SRAM port */
+  sram_bits = generate_lut_sram_bits(truth_table_length, truth_table, 
+                                     lut_size, sram_ports[0]->default_val);
  
   /* Print the subckts*/ 
   cur_pb_type = cur_pb_graph_node->pb_type;
@@ -263,11 +264,10 @@ void fprint_pb_primitive_lut(FILE* fp,
   /* Call SRAM subckts*/
   /* Give the VDD port name for SRAMs */
   sram_vdd_port_name = (char*)my_malloc(sizeof(char)*
-                                       (strlen(spice_top_netlist_global_vdd_sram_port) 
-                                        + 1 + strlen("luts") 
+                                       (strlen(spice_tb_global_vdd_lut_sram_port_name) 
                                         + 1 ));
   sprintf(sram_vdd_port_name, "%s_%s",
-                              spice_top_netlist_global_vdd_sram_port,
+                              spice_tb_global_vdd_lut_sram_port_name,
                               "luts");
   /* Now Print SRAMs one by one */
   for (i = 0; i < num_sram; i++) {

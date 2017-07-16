@@ -60,12 +60,22 @@ t_llist* tb_head = NULL;
 t_llist* scan_chain_heads = NULL;
 
 /* Name of global ports used in all netlists */
-char* spice_top_netlist_global_vdd_port = "gvdd";
-char* spice_top_netlist_global_set_port = "gset";
-char* spice_top_netlist_global_reset_port = "greset";
-char* spice_top_netlist_global_vdd_localrouting_port = "gvdd_local_interc";
-char* spice_top_netlist_global_vdd_io_port = "gvdd_io";
-char* spice_top_netlist_global_vdd_hardlogic_port = "gvdd_hardlogic";
-char* spice_top_netlist_global_vdd_sram_port = "gvdd_sram";
-char* spice_top_netlist_global_clock_port = "gclock";
+char* spice_tb_global_vdd_port_name = "gvdd";
+char* spice_tb_global_gnd_port_name = "ggnd";
+char* spice_tb_global_config_done_port_name = "gconfig_done";
+char* spice_tb_global_set_port_name = "gset";
+char* spice_tb_global_reset_port_name = "greset";
+char* spice_tb_global_vdd_localrouting_port_name = "gvdd_local_interc";
+char* spice_tb_global_vdd_io_port_name = "gvdd_io";
+char* spice_tb_global_vdd_hardlogic_port_name = "gvdd_hardlogic";
+char* spice_tb_global_vdd_sram_port_name = "gvdd_sram";
+char* spice_tb_global_vdd_lut_sram_port_name = "gvdd_sram_luts";
+char* spice_tb_global_vdd_localrouting_sram_port_name = "gvdd_sram_local_routing";
+char* spice_tb_global_vdd_io_sram_port_name = "gvdd_sram_io";
+char* spice_tb_global_vdd_hardlogic_sram_port_name = "gvdd_sram_hardlogic";
+char* spice_tb_global_vdd_cb_sram_port_name = "gvdd_sram_cbs";
+char* spice_tb_global_vdd_sb_sram_port_name = "gvdd_sram_sbs";
+char* spice_tb_global_clock_port_name = "gclock";
+char* spice_tb_global_vdd_load_port_name = "gvdd_load";
+char* spice_tb_global_port_inv_postfix = "_inv";
 

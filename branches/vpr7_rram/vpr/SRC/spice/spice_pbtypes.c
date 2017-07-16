@@ -85,15 +85,20 @@ void fprint_pb_type_ports(FILE* fp,
     }
   }
   /* Clocks */
+  /* Identify if the clock port is a global signal */
   /* Find pb_type clock ports */
-  if (1 == use_global_clock) {
-    fprintf(fp, "gclock ");
-  } else {
-    pb_type_clk_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_CLOCK, &num_pb_type_clk_port); 
-    for (iport = 0; iport < num_pb_type_clk_port; iport++) {
-      for (ipin = 0; ipin < pb_type_clk_ports[iport]->num_pins; ipin++) {
-        fprintf(fp, "%s->%s[%d] ", formatted_port_prefix, pb_type_clk_ports[iport]->name, ipin);
+  pb_type_clk_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_CLOCK, &num_pb_type_clk_port); 
+  for (iport = 0; iport < num_pb_type_clk_port; iport++) {
+    /* only search mapped ports for primitive node */
+    if (NULL != cur_pb_type->spice_model) {
+      /* We need to bypass global ports */
+      assert(NULL != pb_type_clk_ports[iport]->spice_model_port);
+      if (TRUE == pb_type_clk_ports[iport]->spice_model_port->is_global) {
+        continue;
       }
+    }
+    for (ipin = 0; ipin < pb_type_clk_ports[iport]->num_pins; ipin++) {
+      fprintf(fp, "%s->%s[%d] ", formatted_port_prefix, pb_type_clk_ports[iport]->name, ipin);
     }
   }
 
@@ -634,8 +639,8 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
     /* Create wires to sram outputs*/
     for (ilevel = 0; ilevel < num_sram_bits; ilevel++) {
       assert( (0 == sram_bits[ilevel]) || (1 == sram_bits[ilevel]) );
-      fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, cur_sram + ilevel, sram_bits[ilevel]);
       fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, cur_sram + ilevel, 1 - sram_bits[ilevel]);
+      fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, cur_sram + ilevel, sram_bits[ilevel]);
     }
     /* Local vdd and gnd, TODO: we should have an independent VDD for all local interconnections*/
     fprintf(fp, "gvdd_local_interc sgnd ");
@@ -653,12 +658,10 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
     cur_sram = get_sram_orgz_info_num_mem_bit(sram_spice_orgz_info); 
     /* Give the VDD port name for SRAMs */
     sram_vdd_port_name = (char*)my_malloc(sizeof(char)*
-                                         (strlen(spice_top_netlist_global_vdd_sram_port) 
-                                          + 1 + strlen("local_routing") 
+                                         (strlen(spice_tb_global_vdd_localrouting_sram_port_name) 
                                           + 1 ));
-    sprintf(sram_vdd_port_name, "%s_%s",
-                                spice_top_netlist_global_vdd_sram_port,
-                                "local_routing");
+    sprintf(sram_vdd_port_name, "%s",
+                                spice_tb_global_vdd_localrouting_sram_port_name);
     /* Now Print SRAMs one by one */
     for (ilevel = 0; ilevel < num_sram_bits; ilevel++) {
       fprint_spice_one_sram_subckt(fp, sram_spice_orgz_info, 
@@ -1217,6 +1220,7 @@ void fprint_spice_pb_graph_node_rec(FILE* fp,
   char* child_pb_type_prefix = NULL;
 
   char* subckt_port_prefix = NULL;
+  t_pb* child_pb = NULL;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -1266,19 +1270,13 @@ void fprint_spice_pb_graph_node_rec(FILE* fp,
   if (NULL != cur_pb_type->spice_model) {
     switch (cur_pb_type->class_type) {
     case LUT_CLASS: 
-      assert(1 == cur_pb_type->modes[mode_index].num_pb_type_children);
-      assert(1 == cur_pb_type->modes[mode_index].pb_type_children[0].num_pb);
-      /* Consider the num_pb, create all the subckts*/
-      for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
-        for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
-          /* Special care for LUT !!!
-           * Mapped logical block information is stored in child_pbs
-           */
-          fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
-                                          &(cur_pb->child_pbs[ipb][jpb]), cur_pb_graph_node, 
-                                          pb_type_index, cur_pb_type->spice_model, 0);
-        }
-      }
+      /* Special care for LUT !!!
+       * Mapped logical block information is stored in child_pbs
+       */
+      child_pb = get_lut_child_pb(cur_pb, mode_index); 
+      fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
+                                      child_pb, cur_pb_graph_node, 
+                                      pb_type_index, cur_pb_type->spice_model, 0);
       break;
     case LATCH_CLASS:
       assert(0 == cur_pb_type->num_modes);
@@ -1459,19 +1457,13 @@ void fprint_spice_phy_pb_graph_node_rec(FILE* fp,
                                         NULL, cur_pb_graph_node, 
                                         pb_type_index, cur_pb_type->spice_model, is_idle);
       } else {
-        assert(1 == cur_pb_type->modes[mode_index].num_pb_type_children);
-        assert(1 == cur_pb_type->modes[mode_index].pb_type_children[0].num_pb);
-        /* Consider the num_pb, create all the subckts*/
-        for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
-          for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
-            /* Special care for LUT !!!
-             * Mapped logical block information is stored in child_pbs
-             */
-            fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
-                                            &(cur_pb->child_pbs[ipb][jpb]), cur_pb_graph_node, 
-                                            pb_type_index, cur_pb_type->spice_model, is_idle);
-          }
-        }
+        child_pb = get_lut_child_pb(cur_pb, mode_index); 
+        /* Special care for LUT !!!
+         * Mapped logical block information is stored in child_pbs
+         */
+        fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
+                                        child_pb, cur_pb_graph_node, 
+                                        pb_type_index, cur_pb_type->spice_model, is_idle);
       }
       break;
     case LATCH_CLASS:
@@ -1844,6 +1836,56 @@ char* get_grid_block_subckt_name(int x,
   return ret;
 }                        
 
+/* Physical mode subckt name */
+char* get_grid_phy_block_subckt_name(int x, int y, int z,
+                                     char* subckt_prefix,
+                                     t_block* mapped_block) {
+  char* ret = NULL;
+  int imode; 
+  t_type_ptr type_descriptor = NULL;
+  char* formatted_subckt_prefix = format_spice_node_prefix(subckt_prefix);
+  int num_physical_mode = 0;
+
+  /* Check */
+  assert((!(0 > x))&&(!(x > (nx + 1)))); 
+  assert((!(0 > y))&&(!(y > (ny + 1)))); 
+
+  type_descriptor = grid[x][y].type;
+  assert(NULL != type_descriptor);
+
+  if (NULL == mapped_block) {
+    /* This a NULL logic block... Find the idle mode*/
+    for (imode = 0; imode < type_descriptor->pb_type->num_modes; imode++) {
+      if (1 == type_descriptor->pb_type->modes[imode].define_physical_mode) {
+        num_physical_mode++;
+      }
+    } 
+    assert(1 == num_physical_mode);
+    for (imode = 0; imode < type_descriptor->pb_type->num_modes; imode++) {
+      if (1 == type_descriptor->pb_type->modes[imode].define_physical_mode) {
+        ret = (char*)my_malloc(sizeof(char)* 
+               (strlen(formatted_subckt_prefix) + strlen(type_descriptor->name) + 1
+                + strlen(my_itoa(z)) + 7 + strlen(type_descriptor->pb_type->modes[imode].name) + 1 + 1)); 
+        sprintf(ret, "%s%s[%d]_mode[%s]", formatted_subckt_prefix,
+                type_descriptor->name, z, type_descriptor->pb_type->modes[imode].name);
+        break;
+      }
+    } 
+  } else {
+    /* This is a logic block with specific configurations*/ 
+    assert(NULL != mapped_block->pb);
+    imode = mapped_block->pb->mode;
+    ret = (char*)my_malloc(sizeof(char)* 
+           (strlen(formatted_subckt_prefix) + strlen(type_descriptor->name) + 1
+            + strlen(my_itoa(z)) + 7 + strlen(type_descriptor->pb_type->modes[imode].name) + 1 + 1)); 
+    sprintf(ret, "%s%s[%d]_mode[%s]", formatted_subckt_prefix,
+            type_descriptor->name, z, type_descriptor->pb_type->modes[imode].name);
+  }
+
+  return ret;
+}                        
+
+
 /* Print the pins of grid subblocks */
 void fprint_grid_block_subckt_pins(FILE* fp,
                                    int z,
@@ -2144,7 +2186,7 @@ void fprint_grid_physical_blocks(FILE* fp,
     /* Check in all the blocks(clustered logic block), there is a match x,y,z*/
     mapped_block = search_mapped_block(ix, iy, iz); 
     /* Local Vdd and Gnd, subckt name*/
-    fprintf(fp, "+ svdd sgnd %s\n", get_grid_block_subckt_name(ix, iy, iz, subckt_name, mapped_block));
+    fprintf(fp, "+ svdd sgnd %s\n", get_grid_phy_block_subckt_name(ix, iy, iz, subckt_name, NULL));
   }
 
   fprintf(fp, ".eom\n");

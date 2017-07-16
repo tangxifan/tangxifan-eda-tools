@@ -137,7 +137,8 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   }
 
   /* Generate sram bits*/
-  sram_bits = generate_lut_sram_bits(truth_table_length, truth_table, lut_size);
+  sram_bits = generate_lut_sram_bits(truth_table_length, truth_table, 
+                                     lut_size, sram_ports[0]->default_val);
 
   /* Print the subckts*/ 
   cur_pb_type = cur_pb_graph_node->pb_type;

@@ -724,26 +724,42 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
     /* Special for LUT MUX*/
     fprintf(fp, "***** CMOS MUX info: spice_model_name= %s_MUX, size=%d *****\n", spice_model.name, mux_size);
     fprintf(fp, ".subckt %s_mux_size%d ", spice_model.name, mux_size);
+    /* Global ports */
+    if (0 < rec_fprint_spice_model_global_ports(fp, &spice_model, FALSE)) {
+      fprintf(fp, "+ ");
+    }
+    /* Print input ports*/
+    assert(mux_size == num_sram_bits);
+    for (i = 0; i < num_sram_bits; i++) {
+      fprintf(fp, "%s%d ", input_port[0]->prefix, i);
+    } 
+    /* Print output ports*/
+    fprintf(fp, "%s ", output_port[0]->prefix);
+    /* Print sram ports*/
+    for (i = 0; i < input_port[0]->size; i++) {
+      fprintf(fp, "%s%d ", sram_port[0]->prefix, i);
+      fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, i);
+    } 
   } else {
     fprintf(fp, "***** CMOS MUX info: spice_model_name=%s, size=%d, structure: %s *****\n", 
             spice_model.name, mux_size, gen_str_spice_model_structure(spice_model.design_tech_info.structure));
     fprintf(fp, ".subckt %s_size%d ", spice_model.name, mux_size);
+    /* Global ports */
+    if (0 < rec_fprint_spice_model_global_ports(fp, &spice_model, FALSE)) {
+      fprintf(fp, "+ ");
+    }
+    /* Print input ports*/
+    for (i = 0; i < mux_size; i++) {
+      fprintf(fp, "%s%d ", input_port[0]->prefix, i);
+    } 
+    /* Print output ports*/
+    fprintf(fp, "%s ", output_port[0]->prefix);
+    /* Print sram ports*/
+    for (i = 0; i < num_sram_bits; i++) {
+      fprintf(fp, "%s%d ", sram_port[0]->prefix, i);
+      fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, i);
+    } 
   }
-  /* Global ports */
-  if (0 < rec_fprint_spice_model_global_ports(fp, &spice_model, FALSE)) {
-    fprintf(fp, "+ ");
-  }
-  /* Print input ports*/
-  for (i = 0; i < mux_size; i++) {
-    fprintf(fp, "%s%d ", input_port[0]->prefix, i);
-  } 
-  /* Print output ports*/
-  fprintf(fp, "%s ", output_port[0]->prefix);
-  /* Print sram ports*/
-  for (i = 0; i < num_sram_bits; i++) {
-    fprintf(fp, "%s%d ", sram_port[0]->prefix, i);
-    fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, i);
-  } 
   /* Print local vdd and gnd*/
   fprintf(fp, "svdd sgnd");
   fprintf(fp, "\n");

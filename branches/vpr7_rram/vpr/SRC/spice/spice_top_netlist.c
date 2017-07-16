@@ -55,13 +55,21 @@ void fprint_top_netlist_global_ports(FILE* fp,
                                               global_ports_head); 
 
   fprintf(fp, ".global %s %s %s\n",
-              spice_top_netlist_global_vdd_localrouting_port,
-              spice_top_netlist_global_vdd_io_port,
-              spice_top_netlist_global_vdd_hardlogic_port);
+              spice_tb_global_vdd_localrouting_port_name,
+              spice_tb_global_vdd_io_port_name,
+              spice_tb_global_vdd_hardlogic_port_name);
 
   /* Print the VDD ports of SRAM belonging to other SPICE module */
-  fprintf(fp, ".global gvdd_sram_local_routing gvdd_sram_luts gvdd_sram_cbs gvdd_sram_sbs\n");
-  fprintf(fp, ".global gvdd_sram_ios\n");
+  fprintf(fp, ".global %s\n",
+          spice_tb_global_vdd_localrouting_sram_port_name);
+  fprintf(fp, ".global %s\n",
+          spice_tb_global_vdd_lut_sram_port_name);
+  fprintf(fp, ".global %s\n",
+          spice_tb_global_vdd_cb_sram_port_name);
+  fprintf(fp, ".global %s\n",
+          spice_tb_global_vdd_sb_sram_port_name);
+  fprintf(fp, ".global %s\n",
+          spice_tb_global_vdd_io_sram_port_name);
 
   /* Get memory spice model */
   get_sram_orgz_info_mem_model(sram_spice_orgz_info, &mem_model);
@@ -70,8 +78,10 @@ void fprint_top_netlist_global_ports(FILE* fp,
   fprint_global_vdds_spice_model(fp, SPICE_MODEL_LUT, spice);
   /*Global Vdds for FFs*/
   fprint_global_vdds_spice_model(fp, SPICE_MODEL_FF, spice);
+  /*Global Vdds for IOs*/
+  fprint_global_vdds_spice_model(fp, SPICE_MODEL_IOPAD, spice);
   /*Global Vdds for Hardlogics*/
-  /* fprint_global_vdds_spice_model(fp, SPICE_MODEL_HARDLOGIC, spice);*/
+  fprint_global_vdds_spice_model(fp, SPICE_MODEL_HARDLOGIC, spice);
   /* Global Vdds for Switch Boxes */
   fprint_spice_global_vdd_switch_boxes(fp);
 
@@ -109,31 +119,37 @@ void fprint_top_netlist_stimulations(FILE* fp,
                __FILE__, __LINE__); 
     exit(1);
   }
-  /* Global GND */
-  fprintf(fp, "***** Global VDD port *****\n");
-  fprintf(fp, "Vgvdd gvdd 0 0\n");
-  fprintf(fp, "***** Global GND port *****\n");
-  fprintf(fp, "*Rggnd ggnd 0 0\n");
-
-  /* Global set and reset */
-  fprintf(fp, "***** Global Net for reset signal *****\n");
-  fprintf(fp, "Vgvreset greset 0 0\n");
-  fprintf(fp, "***** Global Net for set signal *****\n");
-  fprintf(fp, "Vgvset gset 0 0\n");
+  /* Print generic stimuli */
+  fprint_spice_testbench_generic_global_ports_stimuli(fp, num_clock);
+  
+  /* Generate global ports stimuli */
+  fprint_spice_testbench_global_ports_stimuli(fp, global_ports_head);
 
   /* Global Vdd ports */
   fprintf(fp, "***** Global VDD for I/O pads *****\n");
-  fprintf(fp, "Vgvdd_io gvdd_io 0 vsp\n");
+  fprintf(fp, "V%s %s 0 vsp\n",
+              spice_tb_global_vdd_io_port_name,
+              spice_tb_global_vdd_io_port_name);
   fprintf(fp, "***** Global VDD for Local Interconnection *****\n");
-  fprintf(fp, "Vgvdd_local_interc gvdd_local_interc 0 vsp\n");
+  fprintf(fp, "V%s %s 0 vsp\n",
+              spice_tb_global_vdd_localrouting_port_name,
+              spice_tb_global_vdd_localrouting_port_name);
   fprintf(fp, "***** Global VDD for local routing SRAMs *****\n");
-  fprintf(fp, "Vgvdd_sram_local_routing gvdd_sram_local_routing 0 vsp\n");
+  fprintf(fp, "V%s %s 0 vsp\n",
+              spice_tb_global_vdd_localrouting_sram_port_name,
+              spice_tb_global_vdd_localrouting_sram_port_name);
   fprintf(fp, "***** Global VDD for LUTs SRAMs *****\n");
-  fprintf(fp, "Vgvdd_sram_luts gvdd_sram_luts 0 vsp\n");
+  fprintf(fp, "V%s %s 0 vsp\n",
+              spice_tb_global_vdd_lut_sram_port_name,
+              spice_tb_global_vdd_lut_sram_port_name);
   fprintf(fp, "***** Global VDD for Connection Boxes SRAMs *****\n");
-  fprintf(fp, "Vgvdd_sram_cbs gvdd_sram_cbs 0 vsp\n");
+  fprintf(fp, "V%s %s 0 vsp\n",
+              spice_tb_global_vdd_cb_sram_port_name,
+              spice_tb_global_vdd_cb_sram_port_name);
   fprintf(fp, "***** Global VDD for Switch Boxes SRAMs *****\n");
-  fprintf(fp, "Vgvdd_sram_sbs gvdd_sram_sbs 0 vsp\n");
+  fprintf(fp, "V%s %s 0 vsp\n",
+              spice_tb_global_vdd_sb_sram_port_name,
+              spice_tb_global_vdd_sb_sram_port_name);
 
   /* Every Hardlogic use an independent Voltage source */
   fprintf(fp, "***** Global VDD for Hard Logics *****\n");
@@ -193,17 +209,6 @@ void fprint_top_netlist_stimulations(FILE* fp,
     }
   }
 
-  /* Global clock if we need one */
-  if (1 == num_clock) {
-    /* First cycle reserved for measuring leakage */
-    fprintf(fp, "***** Global Clock signal *****\n");
-    fprintf(fp, "***** pulse(vlow vhigh tdelay trise tfall pulse_width period *****\n");
-    fprintf(fp, "Vgclock gclock 0 pulse(0 vsp 'clock_period'\n");
-    fprintf(fp, "+                      'clock_slew_pct_rise*clock_period' 'clock_slew_pct_fall*clock_period'\n");
-    fprintf(fp, "+                      '0.5*(1-clock_slew_pct_rise-clock_slew_pct_fall)*clock_period' 'clock_period')\n");
-  } else {
-    assert(0 == num_clock);
-  }
   
   /* For each input_signal
    * TODO: this part is low-efficent for run-time concern... Need improve

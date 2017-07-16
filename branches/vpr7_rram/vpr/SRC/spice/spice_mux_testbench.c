@@ -537,9 +537,9 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
   for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
     assert( (0 == mux_sram_bits[ilevel]) || (1 == mux_sram_bits[ilevel]) );
     fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, 
-                                  cur_num_sram + ilevel, mux_sram_bits[ilevel]);
-    fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, 
                                   cur_num_sram + ilevel, 1 - mux_sram_bits[ilevel]);
+    fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, 
+                                  cur_num_sram + ilevel, mux_sram_bits[ilevel]);
   }
 
   /* End with svdd and sgnd, subckt name*/
@@ -572,10 +572,10 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
   /* Call SRAM subckts*/
   /* Give the VDD port name for SRAMs */
   sram_vdd_port_name = (char*)my_malloc(sizeof(char)*
-                                       (strlen(spice_top_netlist_global_vdd_sram_port) 
+                                       (strlen(spice_tb_global_vdd_sram_port_name) 
                                         + 1 ));
   sprintf(sram_vdd_port_name, "%s",
-                              spice_top_netlist_global_vdd_sram_port);
+                              spice_tb_global_vdd_sram_port_name);
   /* Now Print SRAMs one by one */
   for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
     fprint_spice_one_specific_sram_subckt(fp, sram_spice_orgz_info, mux_spice_model, 
@@ -2392,79 +2392,6 @@ int fprint_spice_mux_testbench_call_one_cb_tb(FILE* fp,
     fprintf(fp, "\n");
   }
 
-  /* Print loads of output nodes */
-  /* Print the ports of grids*/
-  side_cnt = 0;
-  for (side = 0; side < 4; side++) {
-    switch (side) {
-    case 0: /* TOP */
-      switch(chan_type) { 
-      case CHANX:
-        fprint_grid_side_pins_voltage_pulses(fp, IPIN, x, y + 1, 2, LL_rr_node_indices, &average_cb_input_density);
-        side_cnt++;
-        break; 
-      case CHANY:
-        /* Nothing should be done */
-        break;
-      default: 
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
-        exit(1);
-      }
-      break;
-    case 1: /* RIGHT */
-      switch(chan_type) { 
-      case CHANX:
-        /* Nothing should be done */
-        break; 
-      case CHANY:
-        fprint_grid_side_pins_voltage_pulses(fp, IPIN, x + 1, y, 3, LL_rr_node_indices, &average_cb_input_density);
-        side_cnt++;
-        break;
-      default: 
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
-        exit(1);
-      }
-      break;
-    case 2: /* BOTTOM */
-      switch(chan_type) { 
-      case CHANX:
-        fprint_grid_side_pins_voltage_pulses(fp, IPIN, x, y, 0, LL_rr_node_indices, &average_cb_input_density);
-        side_cnt++;
-        break; 
-      case CHANY:
-        /* Nothing should be done */
-        break;
-      default: 
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
-        exit(1);
-      }
-      break;
-    case 3: /* LEFT */
-      switch(chan_type) { 
-      case CHANX:
-        /* Nothing should be done */
-        break; 
-      case CHANY:
-        fprint_grid_side_pins_voltage_pulses(fp, IPIN, x, y, 1, LL_rr_node_indices, &average_cb_input_density);
-        side_cnt++;
-        break;
-      default: 
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
-        exit(1);
-      }
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid side index!\n", __FILE__, __LINE__);
-      exit(1);
-    }
-  }
-  /* Check */
-  assert(2 == side_cnt);
-
-  /* Connect to VDD supply */
-  fprintf(fp, "***** Voltage supplies *****\n");
-  fprintf(fp, "Vgvdd_cb[%d][%d] gvdd_cb[%d][%d] 0 vsp\n", x, y, x, y);
-
   fprintf(fp, "***** Global Force for all SRAMs *****\n");
   if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
     fprintf(fp, "Vsc_clk sc_clk 0 0\n");
@@ -2472,10 +2399,16 @@ int fprint_spice_mux_testbench_call_one_cb_tb(FILE* fp,
     fprintf(fp, "Vsc_set sc_set 0 0\n");
     switch(chan_type) { 
     case CHANX:
+      /* Connect to VDD supply */
+      fprintf(fp, "***** Voltage supplies *****\n");
+      fprintf(fp, "Vgvdd_cbx[%d][%d] gvdd_cbx[%d][%d] 0 vsp\n", x, y, x, y);
       fprintf(fp, "Vcbx[%d][%d]_sc_head cbx[%d][%d]_sc_head 0 0\n", x, y, x, y);
       fprintf(fp, ".nodeset V(cbx[%d][%d]_sc_head) 0\n", x, y);
       break;
     case CHANY:
+      /* Connect to VDD supply */
+      fprintf(fp, "***** Voltage supplies *****\n");
+      fprintf(fp, "Vgvdd_cby[%d][%d] gvdd_cby[%d][%d] 0 vsp\n", x, y, x, y);
       fprintf(fp, "Vcby[%d][%d]_sc_head cby[%d][%d]_sc_head 0 0\n", x, y, x, y);
       fprintf(fp, ".nodeset V(cby[%d][%d]_sc_head) 0\n", x, y);
       break;

@@ -484,25 +484,31 @@ void fprint_spice_lut_testbench_stimulations(FILE* fp, int grid_x, int grid_y,
                                              int num_clock, 
                                              t_spice spice, 
                                              t_ivec*** LL_rr_node_indices) {
-  /* int i; */
-  /* Global GND */
-  fprintf(fp, "***** Global VDD port *****\n");
-  fprintf(fp, "Vgvdd gvdd 0 vsp\n");
-  fprintf(fp, "***** Global GND port *****\n");
-  fprintf(fp, "*Rggnd ggnd 0 0\n");
 
-  /* Global set and reset */
-  fprintf(fp, "***** Global Net for reset signal *****\n");
-  fprintf(fp, "Vgvreset greset 0 0\n");
-  fprintf(fp, "***** Global Net for set signal *****\n");
-  fprintf(fp, "Vgvset gset 0 0\n");
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  /* Print generic stimuli */
+  fprint_spice_testbench_generic_global_ports_stimuli(fp, num_clock);
+
+  /* Generate global ports stimuli */
+  fprint_spice_testbench_global_ports_stimuli(fp, global_ports_head);
+
   /* Global vdd load */
   fprintf(fp, "***** Global Net for load vdd *****\n");
-  fprintf(fp, "Vgvdd_load gvdd_load 0 vsp\n");
+  fprintf(fp, "V%s %s 0 vsp\n",
+              spice_tb_global_vdd_load_port_name,
+              spice_tb_global_vdd_load_port_name);
 
   /* Global Vdd ports */
   fprintf(fp, "***** Global VDD for LUTs SRAMs *****\n");
-  fprintf(fp, "Vgvdd_sram_luts gvdd_sram_luts 0 vsp\n");
+  fprintf(fp, "V%s %s 0 vsp\n",
+              spice_tb_global_vdd_lut_sram_port_name,
+              spice_tb_global_vdd_lut_sram_port_name);
 
   /* Every LUT use an independent Voltage source */
   fprintf(fp, "***** Global VDD for Look-Up Tables (LUTs) *****\n");

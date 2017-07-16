@@ -486,9 +486,9 @@ void fprint_switch_box_mux(FILE* fp,
   for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
     assert( (0 == mux_sram_bits[ilevel]) || (1 == mux_sram_bits[ilevel]) );
     fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, 
-                                  cur_num_sram + ilevel, mux_sram_bits[ilevel]);
-    fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, 
                                   cur_num_sram + ilevel, 1 - mux_sram_bits[ilevel]);
+    fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, 
+                                  cur_num_sram + ilevel, mux_sram_bits[ilevel]);
   }
 
   /* End with svdd and sgnd, subckt name*/
@@ -506,12 +506,10 @@ void fprint_switch_box_mux(FILE* fp,
   /* Call SRAM subckts*/
   /* Give the VDD port name for SRAMs */
   sram_vdd_port_name = (char*)my_malloc(sizeof(char)*
-                                       (strlen(spice_top_netlist_global_vdd_sram_port) 
-                                        + 1 + strlen("sbs") 
+                                       (strlen(spice_tb_global_vdd_sb_sram_port_name) 
                                         + 1 ));
-  sprintf(sram_vdd_port_name, "%s_%s",
-                              spice_top_netlist_global_vdd_sram_port,
-                              "sbs");
+  sprintf(sram_vdd_port_name, "%s",
+                              spice_tb_global_vdd_sb_sram_port_name);
   /* Now Print SRAMs one by one */
   for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
     fprint_spice_one_sram_subckt(fp, sram_spice_orgz_info, 
@@ -926,9 +924,9 @@ void fprint_connection_box_mux(FILE* fp,
   for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
     assert( (0 == mux_sram_bits[ilevel]) || (1 == mux_sram_bits[ilevel]) );
     fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, 
-                                  cur_num_sram + ilevel, mux_sram_bits[ilevel]);
-    fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, 
                                   cur_num_sram + ilevel, 1 - mux_sram_bits[ilevel]);
+    fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, 
+                                  cur_num_sram + ilevel,  mux_sram_bits[ilevel]);
   }
 
   /* End with svdd and sgnd, subckt name*/
@@ -946,12 +944,10 @@ void fprint_connection_box_mux(FILE* fp,
   /* Call SRAM subckts*/
   /* Give the VDD port name for SRAMs */
   sram_vdd_port_name = (char*)my_malloc(sizeof(char)*
-                                       (strlen(spice_top_netlist_global_vdd_sram_port) 
-                                        + 1 + strlen("cbs") 
+                                       (strlen(spice_tb_global_vdd_cb_sram_port_name) 
                                         + 1 ));
   sprintf(sram_vdd_port_name, "%s_%s",
-                              spice_top_netlist_global_vdd_sram_port,
-                              "cbs");
+                              spice_tb_global_vdd_cb_sram_port_name);
   /* Now Print SRAMs one by one */
   for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
     fprint_spice_one_sram_subckt(fp, sram_spice_orgz_info, 
@@ -1103,6 +1099,7 @@ void fprint_routing_connection_box_subckt(FILE* fp, t_cb cur_cb_info,
   assert(2 == side_cnt);
 
   /* subckt definition ends with svdd and sgnd*/
+  fprintf(fp, "+ ");
   fprintf(fp, "svdd sgnd\n");
 
   /* Specify the head of scan-chain */

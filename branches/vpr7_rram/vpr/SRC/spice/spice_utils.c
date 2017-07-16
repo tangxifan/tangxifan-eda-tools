@@ -100,9 +100,9 @@ int rec_fprint_spice_model_global_ports(FILE* fp,
       fprintf(fp, "\n");
       fprintf(fp, "***** BEGIN Global ports of SPICE_MODEL(%s) *****\n",
               cur_spice_model->name);
+      fprintf(fp, "+ ");
     }
     /* Check if we need to dump a comma */
-    fprintf(fp, "+ ");
     for (i = 0; i < cur_spice_model->ports[iport].size; i++) {
       fprintf(fp, " %s[%d] ", 
               cur_spice_model->ports[iport].prefix,
@@ -170,11 +170,26 @@ void fprint_spice_generic_testbench_global_ports(FILE* fp,
   }
 
   fprintf(fp, "***** Generic global ports ***** \n");
-  fprintf(fp, "***** VDD, Global set and reset ports ***** \n");
-  fprintf(fp, ".global %s %s %s\n", 
-              spice_top_netlist_global_vdd_port,
-              spice_top_netlist_global_set_port,
-              spice_top_netlist_global_reset_port);
+  fprintf(fp, "***** VDD, GND  ***** \n");
+  fprintf(fp, ".global %s\n", 
+              spice_tb_global_vdd_port_name);
+  fprintf(fp, ".global %s\n", 
+              spice_tb_global_gnd_port_name);
+  fprintf(fp, "***** Global set ports ***** \n");
+  fprintf(fp, ".global %s %s%s \n", 
+              spice_tb_global_set_port_name,
+              spice_tb_global_set_port_name,
+              spice_tb_global_port_inv_postfix);
+  fprintf(fp, "***** Global reset ports ***** \n");
+  fprintf(fp, ".global %s %s%s\n", 
+              spice_tb_global_reset_port_name,
+              spice_tb_global_reset_port_name,
+              spice_tb_global_port_inv_postfix);
+  fprintf(fp, "***** Configuration done ports ***** \n");
+  fprintf(fp, ".global %s %s%s\n", 
+              spice_tb_global_config_done_port_name,
+              spice_tb_global_config_done_port_name,
+              spice_tb_global_port_inv_postfix);
 
   /* Get memory spice model */
   get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model);
@@ -183,14 +198,17 @@ void fprint_spice_generic_testbench_global_ports(FILE* fp,
 
   /* Print scan-chain global ports */
   if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
-  fprintf(fp, "***** Scan-chain FF: Global Clock, Set and Reset Signals *****\n");
-    fprintf(fp, "*.global sc_clk sc_set sc_rst\n");
+  fprintf(fp, "***** Scan-chain FF: head of scan-chain *****\n");
     fprintf(fp, "*.global %s[0]->in\n", sram_spice_model->prefix);
   }
 
   /* Define a global clock port if we need one*/
   fprintf(fp, "***** Global Clock Signals *****\n");
-  fprintf(fp, ".global %s\n", spice_top_netlist_global_clock_port);
+  fprintf(fp, ".global %s\n", 
+              spice_tb_global_clock_port_name);
+  fprintf(fp, ".global %s%s\n", 
+              spice_tb_global_clock_port_name,
+              spice_tb_global_port_inv_postfix);
 
   fprintf(fp, "***** User-defined global ports ****** \n");
   fprintf(fp, ".global \n");
@@ -975,7 +993,6 @@ void fprint_call_defined_one_channel(FILE* fp,
       fprintf(fp, "\n");
       break;
     case DEC_DIRECTION:
-      fprintf(fp, "+ ");
       fprintf(fp, "%s[%d][%d]_in[%d] ", 
               convert_chan_type_to_string(chan_type),
               x, y, itrack);
@@ -1005,7 +1022,6 @@ void fprint_call_defined_one_channel(FILE* fp,
       fprintf(fp, "\n");
       break;
     case DEC_DIRECTION:
-      fprintf(fp, "+ ");
       fprintf(fp, "%s[%d][%d]_out[%d] ", 
               convert_chan_type_to_string(chan_type),
               x, y, itrack);
@@ -1246,6 +1262,7 @@ void fprint_call_defined_one_switch_box(FILE* fp,
       ix = cur_sb_info.x;
       iy = cur_sb_info.y;
     }
+    fprintf(fp, "+ ");
     for (itrack = 0; itrack < cur_sb_info.chan_width[side]; itrack++) {
       switch (cur_sb_info.chan_rr_node_direction[side][itrack]) {
       case OUT_PORT:
@@ -1274,13 +1291,12 @@ void fprint_call_defined_one_switch_box(FILE* fp,
                                             cur_sb_info.opin_rr_node[side][inode]->ylow); 
     } 
     fprintf(fp, "\n");
-    fprintf(fp, "+ ");
   }
 
 
   /* Connect to separate vdd port for each switch box??? */
   fprintf(fp, "+ ");
-  fprintf(fp, "gvdd_sb[%d][%d] 0 sb[%d][%d]\n", 
+  fprintf(fp, " gvdd_sb[%d][%d] 0 sb[%d][%d]\n", 
           cur_sb_info.x, cur_sb_info.y, cur_sb_info.x, cur_sb_info.y);
 
   /* Free */
@@ -2059,3 +2075,198 @@ void fprint_measure_vdds_logical_block_spice_model(FILE* fp,
   return;
 }
 
+/* Give voltage stimuli of one global port */
+void fprint_spice_testbench_wire_one_global_port_stimuli(FILE* fp, 
+                                                         t_spice_model_port* cur_global_port, 
+                                                         char* voltage_stimuli_port_name) {
+  int ipin;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  assert(NULL != cur_global_port);
+
+  for (ipin = 0; ipin < cur_global_port->size; ipin++) {
+    fprintf(fp, "Rshortwire%s[%d] %s[%d]  ",
+                cur_global_port->prefix, ipin,
+                cur_global_port->prefix, ipin);
+    assert((0 == cur_global_port->default_val)||(1 == cur_global_port->default_val));
+    fprintf(fp, "%s",
+                voltage_stimuli_port_name);
+    if (1 == cur_global_port->default_val) {
+      fprintf(fp, "%s ", 
+                  spice_tb_global_port_inv_postfix);
+    }
+    fprintf(fp, "0\n");
+  }
+
+  return;
+
+}
+
+/* Give voltage stimuli of global ports */
+void fprint_spice_testbench_global_ports_stimuli(FILE* fp, 
+                                                 t_llist* head) {
+  t_llist* temp = head;
+  t_spice_model_port* cur_global_port = NULL;
+  int ipin;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  fprintf(fp, "***** Connecting Global ports *****\n");
+  while(NULL != temp) {
+    cur_global_port = (t_spice_model_port*)(temp->dptr); 
+    /* Make sure this is a global port */
+    assert(TRUE == cur_global_port->is_global);
+    /* If this is a clock signal, connect to op_clock signal */
+    if (SPICE_MODEL_PORT_CLOCK == cur_global_port->type) {
+      /* Special for programming clock */
+      if (TRUE == cur_global_port->is_prog) {
+        /* We do need to program SRAMs/RRAM in spice netlist
+         * Just wire it to a constant GND/VDD 
+         */
+        fprint_spice_testbench_wire_one_global_port_stimuli(fp, cur_global_port, 
+                                                            spice_tb_global_config_done_port_name);
+      } else {
+        assert(FALSE == cur_global_port->is_prog);
+        fprint_spice_testbench_wire_one_global_port_stimuli(fp, cur_global_port, 
+                                                                spice_tb_global_clock_port_name);
+      }
+    /* If this is a config_enable signal, connect to config_done signal */
+    } else if (TRUE == cur_global_port->is_config_enable) {
+      fprint_spice_testbench_wire_one_global_port_stimuli(fp, cur_global_port, 
+                                                              spice_tb_global_config_done_port_name);
+    /* If this is a set/reset signal, connect to global reset and set signals */
+    } else if (TRUE == cur_global_port->is_reset) {
+      /* Special for programming reset */
+      if (TRUE == cur_global_port->is_prog) {
+        fprint_spice_testbench_wire_one_global_port_stimuli(fp, cur_global_port, 
+                                                                spice_tb_global_reset_port_name);
+      } else {
+        assert(FALSE == cur_global_port->is_prog);
+        fprint_spice_testbench_wire_one_global_port_stimuli(fp, cur_global_port, 
+                                                                spice_tb_global_reset_port_name);
+      }
+    /* If this is a set/reset signal, connect to global reset and set signals */
+    } else if (TRUE == cur_global_port->is_set) {
+      /* Special for programming reset */
+      if (TRUE == cur_global_port->is_prog) {
+        fprint_spice_testbench_wire_one_global_port_stimuli(fp, cur_global_port, 
+                                                                spice_tb_global_set_port_name);
+      } else {
+        assert(FALSE == cur_global_port->is_prog);
+        fprint_spice_testbench_wire_one_global_port_stimuli(fp, cur_global_port, 
+                                                                spice_tb_global_set_port_name);
+      }
+    } else {
+    /* Other global signals stuck at the default values */
+      for (ipin = 0; ipin < cur_global_port->size; ipin++) {
+        fprintf(fp, "R%s[%d] %s[%d] ", 
+                    cur_global_port->prefix, ipin, 
+                    cur_global_port->prefix, ipin); 
+        assert( (0 == cur_global_port->default_val)||(1 == cur_global_port->default_val) );
+        if ( 0 == cur_global_port->default_val ) {
+          /* Default value is 0: Connect to the global GND port */
+          fprintf(fp, " %s",
+                  spice_tb_global_gnd_port_name);
+        } else {
+          /* Default value is 1: Connect to the global VDD port */
+          fprintf(fp, " %s",
+                  spice_tb_global_vdd_port_name);
+        }
+       fprintf(fp, " 0\n");
+      }
+    }
+    /* Go to the next */
+    temp = temp->next;
+  }
+  fprintf(fp, "***** End Connecting Global ports *****\n");
+
+  return;
+}
+
+void fprint_spice_testbench_generic_global_ports_stimuli(FILE* fp,
+                                                          int num_clock) {
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  /* Global GND */
+  fprintf(fp, "***** Global VDD port *****\n");
+  fprintf(fp, "V%s %s 0 vsp\n",
+              spice_tb_global_vdd_port_name,
+              spice_tb_global_vdd_port_name);
+  fprintf(fp, "***** Global GND port *****\n");
+  fprintf(fp, "*V%s %s 0 0\n",
+              spice_tb_global_gnd_port_name,
+              spice_tb_global_gnd_port_name);
+
+  /* Global set and reset */
+  fprintf(fp, "***** Global Net for reset signal *****\n");
+  fprintf(fp, "V%s %s 0 0\n",
+              spice_tb_global_reset_port_name,
+              spice_tb_global_reset_port_name);
+  fprintf(fp, "V%s%s %s%s 0 vsp\n",
+              spice_tb_global_reset_port_name,
+              spice_tb_global_port_inv_postfix,
+              spice_tb_global_reset_port_name,
+              spice_tb_global_port_inv_postfix);
+  fprintf(fp, "***** Global Net for set signal *****\n");
+  fprintf(fp, "V%s %s 0 0\n",
+              spice_tb_global_set_port_name,
+              spice_tb_global_set_port_name);
+  fprintf(fp, "V%s%s %s%s 0 vsp\n",
+              spice_tb_global_set_port_name,
+              spice_tb_global_port_inv_postfix,
+              spice_tb_global_set_port_name,
+              spice_tb_global_port_inv_postfix);
+
+  /* Global config done */
+  fprintf(fp, "***** Global Net for configuration done signal *****\n");
+  fprintf(fp, "V%s %s 0 0\n",
+              spice_tb_global_config_done_port_name,
+              spice_tb_global_config_done_port_name);
+  fprintf(fp, "V%s%s %s%s 0 vsp\n",
+              spice_tb_global_config_done_port_name,
+              spice_tb_global_port_inv_postfix,
+              spice_tb_global_config_done_port_name,
+              spice_tb_global_port_inv_postfix);
+
+  /* Global clock if we need one */
+  if (1 == num_clock) {
+    /* First cycle reserved for measuring leakage */
+    fprintf(fp, "***** Global Clock signal *****\n");
+    fprintf(fp, "***** pulse(vlow vhigh tdelay trise tfall pulse_width period *****\n");
+    fprintf(fp, "V%s %s 0 pulse(0 vsp 'clock_period'\n", 
+                spice_tb_global_clock_port_name,
+                spice_tb_global_clock_port_name);
+    fprintf(fp, "+                      'clock_slew_pct_rise*clock_period' 'clock_slew_pct_fall*clock_period'\n");
+    fprintf(fp, "+                      '0.5*(1-clock_slew_pct_rise-clock_slew_pct_fall)*clock_period' 'clock_period')\n");
+    fprintf(fp, "\n");
+    fprintf(fp, "***** pulse(vlow vhigh tdelay trise tfall pulse_width period *****\n");
+    fprintf(fp, "V%s_inv %s%s 0 pulse(0 vsp 'clock_period'\n",
+                spice_tb_global_clock_port_name,
+                spice_tb_global_clock_port_name,
+                spice_tb_global_port_inv_postfix);
+    fprintf(fp, "+                              'clock_slew_pct_rise*clock_period' 'clock_slew_pct_fall*clock_period'\n");
+    fprintf(fp, "+                              '0.5*(1-clock_slew_pct_rise-clock_slew_pct_fall)*clock_period' 'clock_period')\n");
+  } else {
+    assert(0 == num_clock);
+  }
+
+
+  return;
+}

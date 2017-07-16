@@ -121,7 +121,7 @@ void fprint_pb_primitive_ff(FILE* fp,
     fprintf(fp, "+ ");
   }
   /* print ports*/
-  fprint_pb_type_ports(fp, port_prefix, 1, prim_pb_type); /* Use global clock for each DFF...*/ 
+  fprint_pb_type_ports(fp, port_prefix, 0, prim_pb_type); /* Use global clock for each DFF...*/ 
   /* Local vdd and gnd, spice_model name
    * TODO: global vdd for ff
    */
@@ -375,7 +375,9 @@ void fprint_pb_primitive_io(FILE* fp,
   /* Only dump the global ports belonging to a spice_model 
    * Do not go recursive, we can freely define global ports anywhere in SPICE netlist
    */
-  rec_fprint_spice_model_global_ports(fp, spice_model, FALSE); 
+  if (0 < rec_fprint_spice_model_global_ports(fp, spice_model, FALSE)) {
+    fprintf(fp, "+ ");
+  }
   /* print regular ports*/
   fprint_pb_type_ports(fp, port_prefix, 0, prim_pb_type); 
   /* Print inout port */
@@ -397,12 +399,10 @@ void fprint_pb_primitive_io(FILE* fp,
   /* Call SRAM subckts*/
   /* Give the VDD port name for SRAMs */
   sram_vdd_port_name = (char*)my_malloc(sizeof(char)*
-                                       (strlen(spice_top_netlist_global_vdd_sram_port) 
-                                        + 1 + strlen("ios") 
+                                       (strlen(spice_tb_global_vdd_io_sram_port_name) 
                                         + 1 ));
-  sprintf(sram_vdd_port_name, "%s_%s",
-                              spice_top_netlist_global_vdd_sram_port,
-                              "ios");
+  sprintf(sram_vdd_port_name, "%s",
+                              spice_tb_global_vdd_io_sram_port_name);
   /* Now Print SRAMs one by one */
   for (i = 0; i < num_sram; i++) {
     fprint_spice_one_sram_subckt(fp, sram_spice_orgz_info, spice_model, sram_vdd_port_name);

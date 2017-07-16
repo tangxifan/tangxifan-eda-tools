@@ -60,13 +60,22 @@ extern t_llist* tb_head;
 extern t_llist* scan_chain_heads;
 
 /* Name of global ports used in all netlists */
-extern char* spice_top_netlist_global_vdd_port;
-extern char* spice_top_netlist_global_set_port;
-extern char* spice_top_netlist_global_reset_port;
-extern char* spice_top_netlist_global_vdd_localrouting_port;
-extern char* spice_top_netlist_global_vdd_io_port;
-extern char* spice_top_netlist_global_vdd_hardlogic_port;
-extern char* spice_top_netlist_global_vdd_sram_port;
-extern char* spice_top_netlist_global_clock_port;
-
+extern char* spice_tb_global_vdd_port_name;
+extern char* spice_tb_global_gnd_port_name;
+extern char* spice_tb_global_config_done_port_name;
+extern char* spice_tb_global_set_port_name;
+extern char* spice_tb_global_reset_port_name;
+extern char* spice_tb_global_vdd_localrouting_port_name;
+extern char* spice_tb_global_vdd_io_port_name;
+extern char* spice_tb_global_vdd_hardlogic_port_name;
+extern char* spice_tb_global_vdd_sram_port_name;
+extern char* spice_tb_global_vdd_lut_sram_port_name;
+extern char* spice_tb_global_vdd_localrouting_sram_port_name;
+extern char* spice_tb_global_vdd_io_sram_port_name;
+extern char* spice_tb_global_vdd_hardlogic_sram_port_name;
+extern char* spice_tb_global_vdd_cb_sram_port_name;
+extern char* spice_tb_global_vdd_sb_sram_port_name;
+extern char* spice_tb_global_clock_port_name;
+extern char* spice_tb_global_vdd_load_port_name;
+extern char* spice_tb_global_port_inv_postfix;
 

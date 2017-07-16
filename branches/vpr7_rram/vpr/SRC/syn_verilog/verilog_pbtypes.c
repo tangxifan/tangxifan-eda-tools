@@ -1949,6 +1949,7 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
   int stamped_sram_lsb = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info); 
 
   int stamped_iopad_cnt = iopad_verilog_model->cnt;
+  t_pb* child_pb = NULL;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -1998,23 +1999,15 @@ void dump_verilog_pb_graph_node_rec(FILE* fp,
   if (NULL != cur_pb_type->spice_model) {
     switch (cur_pb_type->class_type) {
     case LUT_CLASS: 
-      assert(1 == cur_pb_type->modes[mode_index].num_pb_type_children);
-      assert(1 == cur_pb_type->modes[mode_index].pb_type_children[0].num_pb);
-      /* Consider the num_pb, create all the subckts*/
-      for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
-        for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
-          /* Special care for LUT !!!
-           * Mapped logical block information is stored in child_pbs
-           */
-          dump_verilog_pb_primitive_verilog_model(fp, formatted_subckt_prefix, 
-                                          &(cur_pb->child_pbs[ipb][jpb]), cur_pb_graph_node, pb_type_index, cur_pb_type->spice_model, 0);
-          /* update the number of SRAM, I/O pads */
-          /* update stamped iopad counter */
-          stamped_iopad_cnt += cur_pb->num_iopads;
-          /* update stamped sram counter */
-          stamped_sram_cnt += cur_pb->num_conf_bits;
-        }
-      }
+      child_pb = get_lut_child_pb(cur_pb, mode_index);
+      dump_verilog_pb_primitive_verilog_model(fp, formatted_subckt_prefix, 
+                                              child_pb, cur_pb_graph_node, 
+                                              pb_type_index, cur_pb_type->spice_model, 0);
+      /* update the number of SRAM, I/O pads */
+      /* update stamped iopad counter */
+      stamped_iopad_cnt += cur_pb->num_iopads;
+      /* update stamped sram counter */
+      stamped_sram_cnt += cur_pb->num_conf_bits;
       break;
     case LATCH_CLASS:
       assert(0 == cur_pb_type->num_modes);
@@ -2303,19 +2296,13 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
                                                 NULL, cur_pb_graph_node, pb_type_index, 
                                                 cur_pb_type->spice_model, is_idle); /* last param means idle */
       } else {
-        assert(1 == cur_pb_type->modes[mode_index].num_pb_type_children);
-        assert(1 == cur_pb_type->modes[mode_index].pb_type_children[0].num_pb);
-        /* Consider the num_pb, create all the subckts*/
-        for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
-          for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
-            /* Special care for LUT !!!
-             * Mapped logical block information is stored in child_pbs
-             */
-            dump_verilog_pb_primitive_verilog_model(fp, formatted_subckt_prefix, 
-                                                    &(cur_pb->child_pbs[ipb][jpb]), cur_pb_graph_node, pb_type_index, 
-                                                    cur_pb_type->spice_model, is_idle); /* last param means idle */
-          }
-        }
+        child_pb = get_lut_child_pb(cur_pb, mode_index); 
+        /* Special care for LUT !!!
+         * Mapped logical block information is stored in child_pbs
+         */
+        dump_verilog_pb_primitive_verilog_model(fp, formatted_subckt_prefix, 
+                                                child_pb, cur_pb_graph_node, pb_type_index, 
+                                                cur_pb_type->spice_model, is_idle); /* last param means idle */
       }
     case LATCH_CLASS:
       assert(0 == cur_pb_type->num_modes);
