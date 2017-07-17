@@ -1068,8 +1068,8 @@ static void ProcessSpiceTechLibTransistors(ezxml_t Parent,
     spice_tech_lib->nominal_vdd = GetFloatProperty(Node, "nominal_vdd", TRUE, 0.);
     ezxml_set_attr(Node, "nominal_vdd", NULL);
 
-    /* Norminal VDD for IO transistors*/
-    spice_tech_lib->io_vdd = GetFloatProperty(Node, "io_vdd", FALSE, 0.);
+    /* Norminal VDD for IO transistors : by default, give the value of nominal vdd */
+    spice_tech_lib->io_vdd = GetFloatProperty(Node, "io_vdd", FALSE, spice_tech_lib->nominal_vdd);
     ezxml_set_attr(Node, "io_vdd", NULL);
 
     /* Current Node search ends*/

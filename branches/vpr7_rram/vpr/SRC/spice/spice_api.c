@@ -203,13 +203,6 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   }
 #endif  
 
-  /* Initial Arch SPICE MODELS*/
-  /* zero the counter of each spice_model */
-  zero_spice_models_cnt(Arch.spice->num_spice_model, Arch.spice->spice_models);
-
-  /* Move to the top-level function: vpr_fpga_spice_tool_suits */
-  /* init_check_arch_spice_models(&Arch, &vpr_setup.RoutingArch); */
-  init_list_include_netlists(Arch.spice); 
 
   /* assign the global variable of SRAM model */
   assert(NULL != Arch.sram_inf.spice_sram_inf_orgz); /* Check !*/
@@ -227,6 +220,18 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   config_spice_models_sram_port_spice_model(Arch.spice->num_spice_model, 
                                             Arch.spice->spice_models,
                                             Arch.sram_inf.spice_sram_inf_orgz->spice_model);
+
+  /* Assign global variables of input and output pads */
+  iopad_spice_model = find_iopad_spice_model(Arch.spice->num_spice_model, Arch.spice->spice_models);
+  assert(NULL != iopad_spice_model);
+
+  /* Initial Arch SPICE MODELS*/
+  /* zero the counter of each spice_model */
+  zero_spice_models_cnt(Arch.spice->num_spice_model, Arch.spice->spice_models);
+
+  /* Move to the top-level function: vpr_fpga_spice_tool_suits */
+  /* init_check_arch_spice_models(&Arch, &vpr_setup.RoutingArch); */
+  init_list_include_netlists(Arch.spice); 
   
   /* Initialize the number of configuration bits of all the grids */
   init_grids_num_conf_bits(sram_spice_orgz_info);

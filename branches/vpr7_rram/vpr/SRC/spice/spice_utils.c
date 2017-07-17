@@ -440,8 +440,11 @@ void fprint_splited_vdds_spice_model(FILE* fp,
   for (imodel = 0; imodel < spice.num_spice_model; imodel++) {  
     if (spice_model_type == spice.spice_models[imodel].type) {
       for (i = 0; i < spice.spice_models[imodel].cnt; i++) {
-        fprintf(fp, "Vgvdd_%s[%d] gvdd_%s[%d] 0 vsp\n", 
-                spice.spice_models[imodel].prefix, i, spice.spice_models[imodel].prefix, i);
+        fprintf(fp, "V%s_%s[%d] %s_%s[%d] 0 vsp\n", 
+                spice_tb_global_vdd_port_name,
+                spice.spice_models[imodel].prefix, i, 
+                spice_tb_global_vdd_port_name,
+                spice.spice_models[imodel].prefix, i);
         /* For some gvdd maybe floating, I add a huge resistance to make their leakage power trival 
          * which does no change to the delay result.
          * The resistance value is co-related to the vsp, which produces a trival leakage current (1e-15).
@@ -506,7 +509,8 @@ void fprint_global_vdds_spice_model(FILE* fp,
   for (imodel = 0; imodel < spice.num_spice_model; imodel++) {  
     if (spice_model_type == spice.spice_models[imodel].type) {
       for (i = 0; i < spice.spice_models[imodel].cnt; i++) {
-        fprintf(fp, "+ gvdd_%s[%d]\n", 
+        fprintf(fp, "+ %s_%s[%d]\n", 
+                spice_tb_global_vdd_port_name,
                 spice.spice_models[imodel].prefix, i);
       }
     }
@@ -568,7 +572,7 @@ void fprint_global_pad_ports_spice_model(FILE* fp,
     /* Handle multiple INPAD/OUTPAD spice models*/
     case SPICE_MODEL_IOPAD:
       for (i = 0; i < spice.spice_models[imodel].cnt; i++) {
-        fprintf(fp, "+ %s[%d]_%s[%d]\n", gio_inout_prefix, i, spice.spice_models[imodel].prefix, i);
+        fprintf(fp, "+ %s%s[%d]\n", gio_inout_prefix, spice.spice_models[imodel].prefix, i);
       }
       break; 
     /* SRAM inputs*/
@@ -2095,13 +2099,13 @@ void fprint_spice_testbench_wire_one_global_port_stimuli(FILE* fp,
                 cur_global_port->prefix, ipin,
                 cur_global_port->prefix, ipin);
     assert((0 == cur_global_port->default_val)||(1 == cur_global_port->default_val));
-    fprintf(fp, "%s",
+    fprintf(fp, "%s ",
                 voltage_stimuli_port_name);
     if (1 == cur_global_port->default_val) {
       fprintf(fp, "%s ", 
                   spice_tb_global_port_inv_postfix);
     }
-    fprintf(fp, "0\n");
+    fprintf(fp, " 0\n");
   }
 
   return;
@@ -2257,16 +2261,25 @@ void fprint_spice_testbench_generic_global_ports_stimuli(FILE* fp,
     fprintf(fp, "+                      '0.5*(1-clock_slew_pct_rise-clock_slew_pct_fall)*clock_period' 'clock_period')\n");
     fprintf(fp, "\n");
     fprintf(fp, "***** pulse(vlow vhigh tdelay trise tfall pulse_width period *****\n");
-    fprintf(fp, "V%s_inv %s%s 0 pulse(0 vsp 'clock_period'\n",
+    fprintf(fp, "V%s%s %s%s 0 pulse(0 vsp 'clock_period'\n",
                 spice_tb_global_clock_port_name,
+                spice_tb_global_port_inv_postfix,
                 spice_tb_global_clock_port_name,
                 spice_tb_global_port_inv_postfix);
     fprintf(fp, "+                              'clock_slew_pct_rise*clock_period' 'clock_slew_pct_fall*clock_period'\n");
     fprintf(fp, "+                              '0.5*(1-clock_slew_pct_rise-clock_slew_pct_fall)*clock_period' 'clock_period')\n");
   } else {
     assert(0 == num_clock);
+    /* Give constant value */
+    fprintf(fp, "V%s %s 0 0\n", 
+                spice_tb_global_clock_port_name,
+                spice_tb_global_clock_port_name);
+    fprintf(fp, "V%s%s %s%s 0 vsp\n",
+                spice_tb_global_clock_port_name,
+                spice_tb_global_port_inv_postfix,
+                spice_tb_global_clock_port_name,
+                spice_tb_global_port_inv_postfix);
   }
-
 
   return;
 }

@@ -125,7 +125,11 @@ void fprint_pb_primitive_ff(FILE* fp,
   /* Local vdd and gnd, spice_model name
    * TODO: global vdd for ff
    */
-  fprintf(fp, "gvdd_%s[%d] sgnd %s\n", spice_model->prefix, spice_model->cnt, spice_model->name);
+  fprintf(fp, "%s_%s[%d] sgnd %s\n", 
+              spice_tb_global_vdd_port_name,
+              spice_model->prefix, 
+              spice_model->cnt, 
+              spice_model->name);
 
   /* Apply rising edge, and init value to the ff*/
   if (NULL != mapped_logical_block) {
@@ -381,20 +385,34 @@ void fprint_pb_primitive_io(FILE* fp,
   /* print regular ports*/
   fprint_pb_type_ports(fp, port_prefix, 0, prim_pb_type); 
   /* Print inout port */
-  fprintf(fp, " %s[%d]_%s[%d] ", 
+  fprintf(fp, " %s%s[%d] ", 
               gio_inout_prefix, 
-              spice_model->cnt, 
               spice_model->prefix, 
               spice_model->cnt);
   /* Print SRAM ports */
   for (i = 0; i < num_sram; i++) {
     fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, cur_num_sram + i, sram_bits[i]);
+    /* We need the invertered signal for better convergency */
+    fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, cur_num_sram + i, 1 - sram_bits[i]);
   }
 
   /* Local vdd and gnd, spice_model name, 
    * TODO: Global vdd for i/o pad to split?
    */
-  fprintf(fp, "gvdd_io sgnd %s\n", spice_model->name);
+  fprintf(fp, "%s_%s[%d] sgnd %s\n", 
+               spice_tb_global_vdd_port_name,
+               spice_model->prefix, 
+               spice_model->cnt,
+               spice_model->name);
+
+  /* Print the encoding in SPICE netlist for debugging */
+  fprintf(fp, "***** SRAM bits for IOPAD[%d] *****\n", 
+          spice_model->cnt);
+  fprintf(fp, "*****");
+  for (i = 0; i < num_sram; i++) {
+    fprintf(fp, "%d", sram_bits[i]);
+  }
+  fprintf(fp, "*****\n");
 
   /* Call SRAM subckts*/
   /* Give the VDD port name for SRAMs */

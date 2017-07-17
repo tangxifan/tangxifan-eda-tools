@@ -459,6 +459,9 @@ void dump_verilog_pb_primitive_io(FILE* fp,
   dump_verilog_sram_one_outport(fp, sram_verilog_orgz_info,
                                 cur_num_sram, cur_num_sram,
                                 0, VERILOG_PORT_CONKT);
+  dump_verilog_sram_one_outport(fp, sram_verilog_orgz_info,
+                                cur_num_sram, cur_num_sram,
+                                1, VERILOG_PORT_CONKT);
   
   /* Local vdd and gnd, verilog_model name, 
    * TODO: Global vdd for i/o pad to split?

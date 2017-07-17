@@ -46,6 +46,8 @@ extern t_spice_model* sram_spice_model;
 extern enum e_sram_orgz sram_spice_orgz_type;
 extern t_sram_orgz_info* sram_spice_orgz_info;
 
+extern t_spice_model* iopad_spice_model;
+
 extern int rram_design_tech;
 extern int num_used_grid_mux_tb;
 extern int num_used_cb_mux_tb;

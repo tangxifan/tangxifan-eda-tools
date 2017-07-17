@@ -266,9 +266,8 @@ void fprint_pb_primitive_lut(FILE* fp,
   sram_vdd_port_name = (char*)my_malloc(sizeof(char)*
                                        (strlen(spice_tb_global_vdd_lut_sram_port_name) 
                                         + 1 ));
-  sprintf(sram_vdd_port_name, "%s_%s",
-                              spice_tb_global_vdd_lut_sram_port_name,
-                              "luts");
+  sprintf(sram_vdd_port_name, "%s",
+                              spice_tb_global_vdd_lut_sram_port_name);
   /* Now Print SRAMs one by one */
   for (i = 0; i < num_sram; i++) {
     fprint_spice_one_sram_subckt(fp, sram_spice_orgz_info, spice_model, sram_vdd_port_name);

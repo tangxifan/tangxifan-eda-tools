@@ -40,7 +40,7 @@ void fprint_top_netlist_global_ports(FILE* fp,
                                      int num_clock,
                                      t_spice spice) {
   t_spice_model* mem_model = NULL;
-
+  int iblock, iopad_idx;
 
   /* A valid file handler */
   if (NULL == fp) {
@@ -71,6 +71,10 @@ void fprint_top_netlist_global_ports(FILE* fp,
   fprintf(fp, ".global %s\n",
           spice_tb_global_vdd_io_sram_port_name);
 
+  /* User-defined global ports */ 
+  fprintf(fp, ".global \n");
+  fprint_spice_global_ports(fp, global_ports_head);
+
   /* Get memory spice model */
   get_sram_orgz_info_mem_model(sram_spice_orgz_info, &mem_model);
 
@@ -90,6 +94,25 @@ void fprint_top_netlist_global_ports(FILE* fp,
 
   /*Global ports for INPUTs of I/O PADS, SRAMs */
   fprint_global_pad_ports_spice_model(fp, spice);
+
+  /* Add signals from blif benchmark and short-wire them to FPGA I/O PADs
+   * This brings convenience to checking functionality  
+   */
+  fprintf(fp, "***** Link Blif Benchmark inputs to FPGA IOPADs *****\n");
+  for (iblock = 0; iblock < num_logical_blocks; iblock++) {
+    /* General INOUT*/
+    if (iopad_spice_model == logical_block[iblock].mapped_spice_model) {
+      iopad_idx = logical_block[iblock].mapped_spice_model_index;
+      /* Make sure We find the correct logical block !*/
+      assert((VPACK_INPAD == logical_block[iblock].type)||(VPACK_OUTPAD == logical_block[iblock].type));
+      fprintf(fp, "***** Blif Benchmark inout %s is mapped to FPGA IOPAD %s[%d] *****\n", 
+              logical_block[iblock].name, gio_inout_prefix, iopad_idx);
+      fprintf(fp, "R%s_%s[%d] %s_%s[%d]  %s%s[%d]  0\n",
+              logical_block[iblock].name, gio_inout_prefix, iopad_idx,
+              logical_block[iblock].name, gio_inout_prefix, iopad_idx,
+              gio_inout_prefix, iopad_spice_model->prefix, iopad_idx);
+    }
+  }
 
   return; 
 }
@@ -163,6 +186,10 @@ void fprint_top_netlist_stimulations(FILE* fp,
   fprintf(fp, "***** Global VDD for Flip-flops (FFs) *****\n");
   fprint_splited_vdds_spice_model(fp, SPICE_MODEL_FF, spice);
 
+  /* Every FF use an independent Voltage source */
+  fprintf(fp, "***** Global VDD for Flip-flops (FFs) *****\n");
+  fprint_splited_vdds_spice_model(fp, SPICE_MODEL_IOPAD, spice);
+
   /* Every SRAM inputs should have a voltage source */
   fprintf(fp, "***** Global Inputs for SRAMs *****\n");
   /*
@@ -223,6 +250,7 @@ void fprint_top_netlist_stimulations(FILE* fp,
         /* Make sure We find the correct logical block !*/
         if (VPACK_OUTPAD == logical_block[iblock].type) {
           /* Bypass outputs */
+          found_mapped_iopad++;
           continue;
         }
         assert(VPACK_INPAD == logical_block[iblock].type);
@@ -240,35 +268,38 @@ void fprint_top_netlist_stimulations(FILE* fp,
         assert(!(1 < cur_spice_net_info->probability));
         /* Get the net information */
         /* First cycle reserved for measuring leakage */
-        fprintf(fp, "V%s[%d]_%s[%d] %s[%d]_%s[%d] 0 \n", 
+        fprintf(fp, "V%s%s[%d] %s%s[%d] 0 \n", 
                 gio_inout_prefix,
-                iopad_idx, iopad_spice_model->prefix, iopad_idx,
+                iopad_spice_model->prefix, iopad_idx,
                 gio_inout_prefix,
-                iopad_idx, iopad_spice_model->prefix, iopad_idx);
+                iopad_spice_model->prefix, iopad_idx);
         fprint_voltage_pulse_params(fp, cur_spice_net_info->init_val, cur_spice_net_info->density, cur_spice_net_info->probability);
+        /* Short wire to a another node, it is easier to identify in testbench */
         found_mapped_iopad++;
       }
     } 
     assert((0 == found_mapped_iopad)||(1 == found_mapped_iopad));
+    /* If we find one iopad already, we finished in this round here */
+    if (1 == found_mapped_iopad) {
+      continue;
+    }
     /* if we cannot find any mapped inpad from tech.-mapped netlist, give a default */
-    if (0 == found_mapped_iopad) {
-      fprintf(fp, "V%s[%d]_%s[%d] %s[%d]_%s[%d] 0 ",
-              gio_inout_prefix,
-              iopad_idx, iopad_spice_model->prefix, iopad_idx,
-              gio_inout_prefix,
-              iopad_idx, iopad_spice_model->prefix, iopad_idx);
-      switch (default_signal_init_value) {
-      case 0:
-        fprintf(fp, "0\n");
-        break;
-      case 1:
-        fprintf(fp, "vsp\n");
-        break;
-      default:
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid default_signal_init_value (=%d)!\n",
-                   __FILE__, __LINE__, default_signal_init_value);
-        exit(1);
-      }
+    fprintf(fp, "V%s%s[%d] %s%s[%d] 0 ",
+            gio_inout_prefix,
+            iopad_spice_model->prefix, iopad_idx,
+            gio_inout_prefix,
+            iopad_spice_model->prefix, iopad_idx);
+    switch (default_signal_init_value) {
+    case 0:
+      fprintf(fp, "0\n");
+      break;
+    case 1:
+      fprintf(fp, "vsp\n");
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid default_signal_init_value (=%d)!\n",
+                 __FILE__, __LINE__, default_signal_init_value);
+      exit(1);
     }
   }
 
@@ -561,6 +592,8 @@ void fprint_top_netlist_measurements(FILE* fp,
   fprint_measure_vdds_spice_model(fp, SPICE_MODEL_LUT, SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, spice, leakage_only);
   /* Leakage power of FFs*/
   fprint_measure_vdds_spice_model(fp, SPICE_MODEL_FF, SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, spice, leakage_only);
+  /* Leakage power of IOPADs */
+  fprint_measure_vdds_spice_model(fp, SPICE_MODEL_IOPAD, SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, spice, leakage_only);
   /* Leakage power of CBs */
   fprint_measure_vdds_cbs(fp, SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, leakage_only);
   /* Leakage power of SBs */
@@ -585,9 +618,7 @@ void fprint_top_netlist_measurements(FILE* fp,
   fprintf(fp, ".measure tran energy_per_cycle_sram_sbs \n ");
   fprintf(fp, "+ param='dynamic_power_sram_sbs*clock_period'\n");
   /* Dynamic power of I/O pads */
-  fprintf(fp, ".measure tran dynamic_power_io avg p(Vgvdd_io) from='clock_period' to='%d*clock_period'\n", num_clock_cycle);
-  fprintf(fp, ".measure tran energy_per_cycle_io \n ");
-  fprintf(fp, "+ param='dynamic_power_io*clock_period'\n");
+  fprint_measure_vdds_spice_model(fp, SPICE_MODEL_IOPAD, SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, spice, leakage_only);
   /* Dynamic power of Local Interconnections */
   fprintf(fp, ".measure tran dynamic_power_local_interc avg p(Vgvdd_local_interc) from='clock_period' to='%d*clock_period'\n", num_clock_cycle);
   fprintf(fp, ".measure tran energy_per_cycle_local_routing \n ");
@@ -667,7 +698,6 @@ void fprint_spice_top_netlist(char* circuit_name,
  
   /* Print all global wires*/
   fprint_top_netlist_global_ports(fp, num_clock, spice);
-  fprint_spice_global_ports(fp, global_ports_head);
  
   /* Print simulation temperature and other options for SPICE */
   fprint_spice_options(fp, spice.spice_params);

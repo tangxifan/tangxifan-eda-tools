@@ -43,6 +43,10 @@ char* bitstream_spice_file_postfix = ".bitstream";
 t_spice_model* sram_spice_model = NULL;
 enum e_sram_orgz sram_spice_orgz_type = SPICE_SRAM_STANDALONE;
 t_sram_orgz_info* sram_spice_orgz_info = NULL;
+
+/* Input and Output Pad spice model. should be set as global */
+t_spice_model* iopad_spice_model = NULL;
+
 /* Global counters */
 int rram_design_tech = 0;
 int num_used_grid_mux_tb = 0;

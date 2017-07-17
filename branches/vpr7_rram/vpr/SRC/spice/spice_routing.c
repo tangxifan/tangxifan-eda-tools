@@ -486,9 +486,9 @@ void fprint_switch_box_mux(FILE* fp,
   for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
     assert( (0 == mux_sram_bits[ilevel]) || (1 == mux_sram_bits[ilevel]) );
     fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, 
-                                  cur_num_sram + ilevel, 1 - mux_sram_bits[ilevel]);
-    fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, 
                                   cur_num_sram + ilevel, mux_sram_bits[ilevel]);
+    fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, 
+                                  cur_num_sram + ilevel, 1 - mux_sram_bits[ilevel]);
   }
 
   /* End with svdd and sgnd, subckt name*/
@@ -924,9 +924,9 @@ void fprint_connection_box_mux(FILE* fp,
   for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
     assert( (0 == mux_sram_bits[ilevel]) || (1 == mux_sram_bits[ilevel]) );
     fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, 
-                                  cur_num_sram + ilevel, 1 - mux_sram_bits[ilevel]);
+                                  cur_num_sram + ilevel, mux_sram_bits[ilevel]);
     fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, 
-                                  cur_num_sram + ilevel,  mux_sram_bits[ilevel]);
+                                  cur_num_sram + ilevel, 1 - mux_sram_bits[ilevel]);
   }
 
   /* End with svdd and sgnd, subckt name*/
@@ -946,7 +946,7 @@ void fprint_connection_box_mux(FILE* fp,
   sram_vdd_port_name = (char*)my_malloc(sizeof(char)*
                                        (strlen(spice_tb_global_vdd_cb_sram_port_name) 
                                         + 1 ));
-  sprintf(sram_vdd_port_name, "%s_%s",
+  sprintf(sram_vdd_port_name, "%s",
                               spice_tb_global_vdd_cb_sram_port_name);
   /* Now Print SRAMs one by one */
   for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {

@@ -537,9 +537,9 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
   for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
     assert( (0 == mux_sram_bits[ilevel]) || (1 == mux_sram_bits[ilevel]) );
     fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, 
-                                  cur_num_sram + ilevel, 1 - mux_sram_bits[ilevel]);
-    fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, 
                                   cur_num_sram + ilevel, mux_sram_bits[ilevel]);
+    fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, 
+                                  cur_num_sram + ilevel, 1 - mux_sram_bits[ilevel]);
   }
 
   /* End with svdd and sgnd, subckt name*/

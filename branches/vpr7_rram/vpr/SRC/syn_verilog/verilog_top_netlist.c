@@ -2201,7 +2201,7 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
           fprintf(fp, "    %s%s%s[%d] = 1'b%d;\n", 
                   gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx,
                   verilog_default_signal_init_value);
-           fprintf(fp, "end\n");
+          fprintf(fp, "end\n");
           found_mapped_inpad = 1;
           break;
         }
@@ -2244,21 +2244,23 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
       }
     } 
     assert((0 == found_mapped_inpad)||(1 == found_mapped_inpad));
-    /* if we cannot find any mapped inpad from tech.-mapped netlist, give a default */
-    if (0 == found_mapped_inpad) {
-      /* Connect the reg to inouts */
-      fprintf(fp, "//----- Input %s[%d] Stimuli ----\n", gio_inout_prefix, iopad_idx);
-      fprintf(fp, "assign %s%s[%d] = %s%s%s[%d];\n",
-              gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx,
-              gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx);
-      /* TODO: Give the net name in the blif file !*/
-      fprintf(fp, "initial\n");
-      fprintf(fp, "  begin //--- Input %s[%d] GENERATOR\n", gio_inout_prefix, iopad_idx);
-      fprintf(fp, "    %s%s%s[%d] = 1'b%d;\n", 
-              gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx,
-              verilog_default_signal_init_value);
-      fprintf(fp, "end\n");
+    /* If we find one iopad already, we finished in this round here */
+    if (1 == found_mapped_inpad) {
+      continue;
     }
+    /* if we cannot find any mapped inpad from tech.-mapped netlist, give a default */
+    /* Connect the reg to inouts */
+    fprintf(fp, "//----- Input %s[%d] Stimuli ----\n", gio_inout_prefix, iopad_idx);
+    fprintf(fp, "assign %s%s[%d] = %s%s%s[%d];\n",
+            gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx,
+            gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx);
+    /* TODO: Give the net name in the blif file !*/
+    fprintf(fp, "initial\n");
+    fprintf(fp, "  begin //--- Input %s[%d] GENERATOR\n", gio_inout_prefix, iopad_idx);
+    fprintf(fp, "    %s%s%s[%d] = 1'b%d;\n", 
+            gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx,
+            verilog_default_signal_init_value);
+    fprintf(fp, "end\n");
   }
 
   /* Finish */

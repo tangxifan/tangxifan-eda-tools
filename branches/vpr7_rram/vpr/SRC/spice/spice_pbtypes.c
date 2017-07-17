@@ -639,8 +639,8 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
     /* Create wires to sram outputs*/
     for (ilevel = 0; ilevel < num_sram_bits; ilevel++) {
       assert( (0 == sram_bits[ilevel]) || (1 == sram_bits[ilevel]) );
-      fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, cur_sram + ilevel, 1 - sram_bits[ilevel]);
       fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, cur_sram + ilevel, sram_bits[ilevel]);
+      fprint_spice_sram_one_outport(fp, sram_spice_orgz_info, cur_sram + ilevel, 1 - sram_bits[ilevel]);
     }
     /* Local vdd and gnd, TODO: we should have an independent VDD for all local interconnections*/
     fprintf(fp, "gvdd_local_interc sgnd ");
