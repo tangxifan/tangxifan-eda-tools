@@ -32,6 +32,7 @@
 
 /* local global variables */
 static int tb_num_luts = 0;
+static int testbench_load_cnt = 0;
 static int upbound_sim_num_clock_cycles = 2;
 static int max_sim_num_clock_cycles = 2;
 static int auto_select_max_sim_num_clock_cycles = TRUE;
@@ -202,12 +203,21 @@ void fprint_spice_lut_testbench_one_pb_graph_node_lut(FILE* fp,
   sprintf(outport_name, "lut[%d]->out",
                          tb_num_luts);
   if (OPEN != logical_block_index) {
-    fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(fp, x, y, &(cur_pb_graph_node->output_pins[0][0]), 
-                                                          logical_block[logical_block_index].pb, outport_name, 
-                                                          FALSE, LL_rr_node_indices); 
+    fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
+                                                      x, y, 
+                                                      &(cur_pb_graph_node->output_pins[0][0]), 
+                                                      logical_block[logical_block_index].pb, 
+                                                      outport_name, 
+                                                      FALSE, 
+                                                      LL_rr_node_indices); 
   } else {
-    fprint_spice_mux_testbench_pb_graph_pin_inv_loads_rec(fp, x, y, &(cur_pb_graph_node->output_pins[0][0]), 
-                                                          NULL, outport_name, FALSE, LL_rr_node_indices); 
+    fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
+                                                      x, y, 
+                                                      &(cur_pb_graph_node->output_pins[0][0]), 
+                                                      NULL, 
+                                                      outport_name, 
+                                                      FALSE, 
+                                                      LL_rr_node_indices); 
   }
 
   /* Calculate average density of this MUX */
@@ -640,6 +650,7 @@ int fprint_spice_one_lut_testbench(char* formatted_spice_dir,
   } 
   
   /*vpr_printf(TIO_MESSAGE_INFO, "Writing LUT Testbench for %s...\n", circuit_name);*/
+  testbench_load_cnt = 0;
  
   /* Print the title */
   fprint_spice_head(fp, title);

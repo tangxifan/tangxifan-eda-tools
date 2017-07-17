@@ -163,3 +163,27 @@ void fprint_spice_testbench_global_ports_stimuli(FILE* fp,
 void fprint_spice_testbench_generic_global_ports_stimuli(FILE* fp,
                                                          int num_clock);
 
+float find_spice_testbench_pb_pin_mux_load_inv_size(t_spice_model* fan_out_spice_model);
+
+float find_spice_testbench_rr_mux_load_inv_size(t_rr_node* load_rr_node,
+                                                int switch_index);
+
+void fprint_spice_testbench_pb_graph_pin_inv_loads_rec(FILE* fp, int* testbench_load_cnt, 
+                                                       int grid_x, int grid_y,
+                                                       t_pb_graph_pin* src_pb_graph_pin, 
+                                                       t_pb* src_pb, 
+                                                       char* outport_name,
+                                                       boolean consider_parent_node,
+                                                       t_ivec*** LL_rr_node_indices);
+
+char* fprint_spice_testbench_rr_node_load_version(FILE* fp, int* testbench_load_cnt,
+                                                  int num_segments,
+                                                  t_segment_inf* segments,
+                                                  int load_level,
+                                                  t_rr_node cur_rr_node, 
+                                                  char* outport_name);
+
+void fprint_spice_testbench_one_cb_mux_loads(FILE* fp, int* testbench_load_cnt,
+                                             t_rr_node* src_rr_node,
+                                             char* outport_name,
+                                             t_ivec*** LL_rr_node_indices);

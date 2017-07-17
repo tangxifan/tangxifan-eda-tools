@@ -4,6 +4,7 @@
 /***********************************/
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <time.h>
 #include <assert.h>
@@ -2283,3 +2284,403 @@ void fprint_spice_testbench_generic_global_ports_stimuli(FILE* fp,
 
   return;
 }
+
+/* Find the inverter size of a Programmable Logic Block Pin
+ *
+ */
+float find_spice_testbench_pb_pin_mux_load_inv_size(t_spice_model* fan_out_spice_model) {
+  float load_inv_size = 0;
+
+  /* Check */
+  assert(NULL != fan_out_spice_model);
+  assert(NULL != fan_out_spice_model->input_buffer);
+
+  /* Special: this is a LUT, we should consider more inv size */
+  if (SPICE_MODEL_LUT == fan_out_spice_model->type) {
+    assert(1 == fan_out_spice_model->lut_input_buffer->exist);
+    assert(SPICE_MODEL_BUF_INV == fan_out_spice_model->lut_input_buffer->type);
+    assert(TRUE == fan_out_spice_model->lut_input_buffer->tapered_buf);
+    assert(2 == fan_out_spice_model->lut_input_buffer->tap_buf_level);
+    load_inv_size = fan_out_spice_model->lut_input_buffer->size 
+                  + fan_out_spice_model->lut_input_buffer->f_per_stage;
+    return load_inv_size;
+  }
+
+  /* depend on the input_buffer type */
+  if (1 == fan_out_spice_model->input_buffer->exist) {
+    switch(fan_out_spice_model->input_buffer->type) {
+    case SPICE_MODEL_BUF_INV:
+      load_inv_size = fan_out_spice_model->input_buffer->size;
+      break;
+    case SPICE_MODEL_BUF_BUF:
+      load_inv_size = 1.;
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid fanout spice_model input_buffer type!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+  } else {
+    /* TODO: If there is no inv/buffer at input, we should traversal until there is one 
+     * However, now we just simply give a minimum sized inverter
+     */
+    load_inv_size = 1.;
+  }
+ 
+  return load_inv_size;
+}
+
+float find_spice_testbench_rr_mux_load_inv_size(t_rr_node* load_rr_node,
+                                                int switch_index) {
+  float load_inv_size = 0;
+  t_spice_model* fan_out_spice_model = NULL;
+
+  fan_out_spice_model = switch_inf[switch_index].spice_model;
+
+  /* Check */
+  assert(NULL != fan_out_spice_model);
+  assert(NULL != fan_out_spice_model->input_buffer);
+
+  /* depend on the input_buffer type */
+  if (1 == fan_out_spice_model->input_buffer->exist) {
+    switch(fan_out_spice_model->input_buffer->type) {
+    case SPICE_MODEL_BUF_INV:
+      load_inv_size = fan_out_spice_model->input_buffer->size;
+      break;
+    case SPICE_MODEL_BUF_BUF:
+      load_inv_size = 1;
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid fanout spice_model input_buffer type!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+  } else {
+    /* TODO: If there is no inv/buffer at input, we should traversal until there is one 
+     * However, now we just simply give a minimum sized inverter
+     */
+    load_inv_size = 1;
+  }
+ 
+  return load_inv_size;
+
+}
+
+void fprint_spice_testbench_pb_graph_pin_inv_loads_rec(FILE* fp, int* testbench_load_cnt, 
+                                                       int grid_x, int grid_y,
+                                                       t_pb_graph_pin* src_pb_graph_pin, 
+                                                       t_pb* src_pb, 
+                                                       char* outport_name,
+                                                       boolean consider_parent_node,
+                                                       t_ivec*** LL_rr_node_indices) {
+  int iedge, mode_index, ipb, jpb;
+  t_interconnect* cur_interc = NULL;
+  char* rec_outport_name = NULL;
+  t_pb* des_pb = NULL;
+  int src_rr_node_index = -1;
+  float load_inv_size = 0.;
+
+  /* A valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File Handler!\n",__FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  assert(NULL != src_pb_graph_pin);
+  
+  if (TRUE == consider_parent_node) {
+    if (NULL != src_pb_graph_pin->parent_node->pb_type->spice_model) {
+      load_inv_size = find_spice_testbench_pb_pin_mux_load_inv_size(src_pb_graph_pin->parent_node->pb_type->spice_model);
+      fprintf(fp, "Xload_inv[%d] %s %s_out[0] gvdd_load 0 inv size=%g\n",
+               (*testbench_load_cnt), outport_name, outport_name, load_inv_size);
+      (*testbench_load_cnt)++;
+      return;
+    }
+  }
+
+  /* Get the mode_index */
+  if (NULL == src_pb) {
+    mode_index = find_pb_type_idle_mode_index(*(src_pb_graph_pin->parent_node->pb_type)); 
+  } else {
+    mode_index = src_pb->mode;
+  }
+
+  /* If this pb belongs to a pb_graph_head, 
+   * the src_pb_graph_pin is a OPIN, we should find the rr_node */
+  if ((OUT_PORT == src_pb_graph_pin->port->type)
+     &&(NULL == src_pb_graph_pin->parent_node->parent_pb_graph_node)) {
+    /* Find the corresponding rr_node */
+    assert(grid[grid_x][grid_y].type->pb_graph_head == src_pb_graph_pin->parent_node);
+    src_rr_node_index = get_rr_node_index(grid_x, grid_y, OPIN, src_pb_graph_pin->pin_count_in_cluster, LL_rr_node_indices); 
+    for (iedge = 0; iedge < rr_node[src_rr_node_index].num_edges; iedge++) {
+      /* Detect its input buffers */
+      load_inv_size = find_spice_testbench_rr_mux_load_inv_size(&rr_node[rr_node[src_rr_node_index].edges[iedge]], 
+                                                                rr_node[src_rr_node_index].switches[iedge]);
+      /* Print an inverter */
+      fprintf(fp, "Xload_inv[%d] %s load_inv[%d]_out gvdd_load 0 inv size=%g\n",
+              (*testbench_load_cnt), outport_name, (*testbench_load_cnt), load_inv_size);
+      (*testbench_load_cnt)++;
+    }
+    return;
+  }
+
+  /* Search output edges */
+  for (iedge = 0; iedge < src_pb_graph_pin->num_output_edges; iedge++) {
+    check_pb_graph_edge(*(src_pb_graph_pin->output_edges[iedge])); 
+    /* We care only the edges in selected mode */
+    cur_interc = src_pb_graph_pin->output_edges[iedge]->interconnect;
+    assert(NULL != cur_interc);
+    if (mode_index == cur_interc->parent_mode_index) {
+      rec_outport_name = (char*)my_malloc(sizeof(char)* (strlen(outport_name) + 5 + strlen(my_itoa(iedge)) +2 ));
+      sprintf(rec_outport_name, "%s_out[%d]", outport_name, iedge);
+      /* check the interc has spice_model and if it is buffered */
+      assert(NULL != cur_interc->spice_model);
+      if (TRUE == cur_interc->spice_model->input_buffer->exist) {
+        /* Print a inverter, and we stop this branch */
+        load_inv_size = find_spice_testbench_pb_pin_mux_load_inv_size(cur_interc->spice_model);
+        fprintf(fp, "Xload_inv[%d] %s %s gvdd_load 0 inv size=%g\n",
+                (*testbench_load_cnt), outport_name, rec_outport_name, load_inv_size);
+        (*testbench_load_cnt)++;
+      } else {
+        /*
+        fprintf(fp, "R%s_to_%s %s %s 0\n",
+                outport_name, rec_outport_name,  
+                outport_name, rec_outport_name); 
+        */
+        /* Go recursively */
+        if (NULL == src_pb) {
+          des_pb = NULL;
+        } else {
+          if (IN_PORT == src_pb_graph_pin->port->type) {
+            ipb = src_pb_graph_pin->output_edges[iedge]->output_pins[0]->parent_node->pb_type 
+                  - src_pb_graph_pin->parent_node->pb_type->modes[mode_index].pb_type_children; 
+            jpb = src_pb_graph_pin->output_edges[iedge]->output_pins[0]->parent_node->placement_index; 
+            if ((NULL != src_pb->child_pbs[ipb])&&(NULL != src_pb->child_pbs[ipb][jpb].name)) {
+              des_pb = &(src_pb->child_pbs[ipb][jpb]);
+            } else {
+              des_pb = NULL;
+            }
+          } else if (OUT_PORT == src_pb_graph_pin->port->type) {
+            des_pb = src_pb->parent_pb;
+          } else if (INOUT_PORT == src_pb_graph_pin->port->type) {
+            des_pb = NULL; /* I don't know what to do...*/
+          }
+        }
+        fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, testbench_load_cnt, grid_x, grid_y,  
+                                                          src_pb_graph_pin->output_edges[iedge]->output_pins[0],
+                                                          des_pb, outport_name, TRUE, LL_rr_node_indices);
+        
+      }
+    }
+  }
+
+  return;
+}
+
+char* fprint_spice_testbench_rr_node_load_version(FILE* fp, int* testbench_load_cnt,
+                                                  int num_segments,
+                                                  t_segment_inf* segments,
+                                                  int load_level,
+                                                  t_rr_node cur_rr_node, 
+                                                  char* outport_name) {
+  char* ret_outport_name = NULL;
+  char* mid_outport_name = NULL;
+  int cost_index;
+  int iseg, i, iedge, chan_wire_length, cur_x, cur_y;
+  t_rr_node to_node;
+  t_spice_model* wire_spice_model = NULL;
+  float load_inv_size = 0.;
+
+  /* We only process CHANX or CHANY*/
+  if (!((CHANX == cur_rr_node.type)
+    ||(CHANY == cur_rr_node.type))) {
+    ret_outport_name = my_strdup(outport_name);
+    return ret_outport_name;
+  }
+
+  cost_index = cur_rr_node.cost_index;
+  iseg = rr_indexed_data[cost_index].seg_index;
+  assert((!(iseg < 0))&&(iseg < num_segments));
+  wire_spice_model = segments[iseg].spice_model;
+  assert(SPICE_MODEL_CHAN_WIRE == wire_spice_model->type);
+  chan_wire_length = cur_rr_node.xhigh - cur_rr_node.xlow 
+                   + cur_rr_node.yhigh - cur_rr_node.ylow;
+  assert((0 == cur_rr_node.xhigh - cur_rr_node.xlow)
+        ||(0 == cur_rr_node.yhigh - cur_rr_node.ylow));
+  for (i = 0; i < chan_wire_length + 1; i++) { 
+    ret_outport_name = (char*)my_malloc(sizeof(char)*( strlen(outport_name)
+                       + 9 + strlen(my_itoa(load_level + i)) + 6
+                       + 1 ));
+    sprintf(ret_outport_name,"%s_loadlvl[%d]_out",
+            outport_name, load_level + i);
+    mid_outport_name = (char*)my_malloc(sizeof(char)*( strlen(outport_name)
+                       + 9 + strlen(my_itoa(load_level + i)) + 9
+                       + 1 ));
+    sprintf(mid_outport_name,"%s_loadlvl[%d]_midout",
+            outport_name, load_level + i);
+    if (0 == i) {
+      fprintf(fp, "Xchan_%s %s %s %s gvdd_load 0 %s_seg%d\n",
+              ret_outport_name, outport_name, ret_outport_name, mid_outport_name, 
+              wire_spice_model->name, iseg); 
+    } else {
+      fprintf(fp, "Xchan_%s %s_loadlvl[%d]_out %s %s gvdd_load 0 %s_seg%d\n",
+              ret_outport_name, outport_name, load_level + i -1, ret_outport_name, mid_outport_name,
+              wire_spice_model->name, iseg); 
+    }
+    /* Print CB inv loads connected to the mid_out */
+    switch (cur_rr_node.type) {
+    case CHANX:
+      /* Update the cur_x & cur_y */
+      if (INC_DIRECTION == cur_rr_node.direction) { 
+        cur_x = cur_rr_node.xlow + i;
+        cur_y = cur_rr_node.ylow;
+      } else {
+        assert(DEC_DIRECTION == cur_rr_node.direction);
+        cur_x = cur_rr_node.xhigh - i;
+        cur_y = cur_rr_node.ylow;
+      }
+      for (iedge = 0; iedge < cur_rr_node.num_edges; iedge++) {
+        /*Identify if the des node is a IPIN and fit the current(x,y)*/
+        to_node = rr_node[cur_rr_node.edges[iedge]]; 
+        switch (to_node.type) {
+        case IPIN:
+          assert(to_node.xhigh == to_node.xlow);
+          assert(to_node.yhigh == to_node.ylow);
+          if (((cur_x == to_node.xlow)&&(cur_y == to_node.ylow))
+             ||((cur_x == to_node.xlow)&&((cur_y + 1) == to_node.ylow))) {
+            /* We find the CB! */
+            /* Detect its input buffers */
+            load_inv_size = find_spice_testbench_rr_mux_load_inv_size(&to_node, 
+                                                                      cur_rr_node.switches[iedge]);
+            assert(0. < load_inv_size);
+            /* Print an inverter */
+            fprintf(fp, "Xload_inv[%d] %s %s_out[%d] gvdd_load 0 inv size=%g\n",
+                    (*testbench_load_cnt), mid_outport_name, mid_outport_name, iedge,
+                    load_inv_size);
+            (*testbench_load_cnt)++;
+          }
+          break;
+        case CHANX:
+        case CHANY:
+          /* We find the CB! */
+          /* Detect its input buffers */
+          load_inv_size = find_spice_testbench_rr_mux_load_inv_size(&to_node, 
+                                                                    cur_rr_node.switches[iedge]);
+          assert(0. < load_inv_size);
+          /* Print an inverter */
+          fprintf(fp, "Xload_inv[%d] %s %s_out[%d] gvdd_load 0 inv size=%g\n",
+                  (*testbench_load_cnt), ret_outport_name, ret_outport_name, iedge,
+                  load_inv_size);
+          (*testbench_load_cnt)++;
+          break;
+        default:
+          vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid src_rr_node_type!\n",
+                     __FILE__, __LINE__);
+          exit(1);
+        }
+      }
+      break;
+    case CHANY:
+      /* Update the cur_x & cur_y */
+      if (INC_DIRECTION == cur_rr_node.direction) { 
+        cur_x = cur_rr_node.xlow;
+        cur_y = cur_rr_node.ylow + i;
+      } else {
+        assert(DEC_DIRECTION == cur_rr_node.direction);
+        cur_x = cur_rr_node.xlow;
+        cur_y = cur_rr_node.yhigh - i;
+      }
+      for (iedge = 0; iedge < cur_rr_node.num_edges; iedge++) {
+        /*Identify if the des node is a IPIN and fit the current(x,y)*/
+        to_node = rr_node[cur_rr_node.edges[iedge]]; 
+        switch (to_node.type) {
+        case IPIN:
+          assert(to_node.xhigh == to_node.xlow);
+          assert(to_node.yhigh == to_node.ylow);
+          if (((cur_y == to_node.ylow)&&(cur_x == to_node.xlow))
+             ||((cur_y == to_node.xlow)&&((cur_x + 1) == to_node.xlow))) {
+            /* We find the CB! */
+            /* Detect its input buffers */
+            load_inv_size = find_spice_testbench_rr_mux_load_inv_size(&to_node, 
+                                                                      cur_rr_node.switches[iedge]);
+            assert(0. < load_inv_size);
+            /* Print an inverter */
+            fprintf(fp, "Xload_inv[%d] %s %s_out[%d] gvdd_load 0 inv size=%g\n",
+                    (*testbench_load_cnt), mid_outport_name, mid_outport_name, iedge,
+                    load_inv_size);
+            (*testbench_load_cnt)++;
+          }
+          break;
+        case CHANX:
+        case CHANY:
+          /* We find the CB! */
+          /* Detect its input buffers */
+          load_inv_size = find_spice_testbench_rr_mux_load_inv_size(&to_node,
+                                                                    cur_rr_node.switches[iedge]);
+          assert(0. < load_inv_size);
+          /* Print an inverter */
+          fprintf(fp, "Xload_inv[%d] %s %s_out[%d] gvdd_load 0 inv size=%g\n",
+                  (*testbench_load_cnt), ret_outport_name, ret_outport_name, iedge,
+                  load_inv_size);
+          (*testbench_load_cnt)++;
+          break;
+        default:
+          vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid src_rr_node_type!\n",
+                     __FILE__, __LINE__);
+          exit(1);
+        }
+      }
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid src_rr_node_type!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    } 
+  }
+
+  return ret_outport_name;
+} 
+
+void fprint_spice_testbench_one_cb_mux_loads(FILE* fp, int* testbench_load_cnt,
+                                             t_rr_node* src_rr_node,
+                                             char* outport_name,
+                                             t_ivec*** LL_rr_node_indices) {
+  t_type_ptr cb_out_grid_type = NULL;
+  t_pb_graph_pin* cb_out_pb_graph_pin = NULL;              
+  t_pb* cb_out_pb = NULL;
+
+  assert(IPIN == src_rr_node->type);
+  assert(src_rr_node->xlow == src_rr_node->xhigh);
+  assert(src_rr_node->ylow == src_rr_node->yhigh);
+
+  cb_out_grid_type = grid[src_rr_node->xlow][src_rr_node->ylow].type; 
+  assert(NULL != cb_out_grid_type);
+
+  cb_out_pb_graph_pin = src_rr_node->pb_graph_pin;
+  assert(NULL != cb_out_pb_graph_pin);
+   
+  /* Get the pb ! Get the mode_index */
+  cb_out_pb = src_rr_node->pb;
+
+  if (IO_TYPE == cb_out_grid_type) {
+    fprintf(fp, "******* IO_TYPE loads *******\n");
+  } else {
+    fprintf(fp, "******* Normal TYPE loads *******\n");
+  }
+
+  /* Recursively find all the inv load inside pb_graph_node */
+  fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp,
+                                                    testbench_load_cnt, 
+                                                    src_rr_node->xlow, 
+                                                    src_rr_node->ylow, 
+                                                    cb_out_pb_graph_pin, 
+                                                    cb_out_pb, 
+                                                    outport_name, 
+                                                    TRUE, 
+                                                    LL_rr_node_indices);
+  
+
+  fprintf(fp, "******* END loads *******\n");
+  return;
+}
+

@@ -35,7 +35,8 @@
 #include "spice_mux_testbench.h"
 #include "spice_grid_testbench.h"
 #include "spice_lut_testbench.h"
-#include "spice_dff_testbench.h"
+#include "spice_hardlogic_testbench.h"
+#include "spice_routing_testbench.h"
 
 static char* run_hspice_shell_script_name = "run_hspice_sim.sh";
 static char* sim_results_dir_name = "results/";

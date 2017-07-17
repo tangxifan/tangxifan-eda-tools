@@ -1,6 +1,6 @@
 
 enum e_spice_mux_tb_type {
-  SPICE_CB_MUX_TB, SPICE_SB_MUX_TB, SPICE_PB_MUX_TB, SPICE_CB_TB, SPICE_SB_TB
+  SPICE_CB_MUX_TB, SPICE_SB_MUX_TB, SPICE_PB_MUX_TB 
 };
 
 void fprint_spice_mux_testbench(char* formatted_spice_dir,

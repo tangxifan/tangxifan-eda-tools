@@ -40,7 +40,8 @@
 #include "spice_mux_testbench.h"
 #include "spice_grid_testbench.h"
 #include "spice_lut_testbench.h"
-#include "spice_dff_testbench.h"
+#include "spice_routing_testbench.h"
+#include "spice_hardlogic_testbench.h"
 #include "spice_run_scripts.h"
 
 /* For mrFPGA */
@@ -307,19 +308,19 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.print_spice_cb_testbench) {
     cb_testbench_dir_path = my_strcat(spice_dir_formatted, spice_cb_tb_dir_name);
     create_dir_path(cb_testbench_dir_path);
-    fprint_spice_mux_testbench(cb_testbench_dir_path, chomped_circuit_name,
-                               include_dir_path, subckt_dir_path,
-                               rr_node_indices, num_clocks, Arch, SPICE_CB_TB, 
-                               vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_leakage_only);
+    fprint_spice_sb_testbench(cb_testbench_dir_path, chomped_circuit_name,
+                              include_dir_path, subckt_dir_path,
+                              rr_node_indices, num_clocks, Arch, 
+                              vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_leakage_only);
   }
 
   if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.print_spice_sb_testbench) {
     sb_testbench_dir_path = my_strcat(spice_dir_formatted, spice_sb_tb_dir_name);
     create_dir_path(sb_testbench_dir_path);
-    fprint_spice_mux_testbench(sb_testbench_dir_path, chomped_circuit_name, 
-                               include_dir_path, subckt_dir_path,
-                               rr_node_indices, num_clocks, Arch, SPICE_SB_TB, 
-                               vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_leakage_only);
+    fprint_spice_sb_testbench(sb_testbench_dir_path, chomped_circuit_name, 
+                              include_dir_path, subckt_dir_path,
+                              rr_node_indices, num_clocks, Arch, 
+                              vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_leakage_only);
   }
 
   if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.print_spice_lut_testbench) {
