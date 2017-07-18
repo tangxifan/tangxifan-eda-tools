@@ -61,24 +61,10 @@ void fprint_spice_mux_model_basis_cmos_subckt(FILE* fp, char* subckt_name,
     fprintf(fp, "in%d ", i);
   }
   fprintf(fp, "out ");
+
   /* General cases */
-  switch (spice_model.design_tech_info.structure) {
-  case SPICE_MODEL_STRUCTURE_TREE:
-    num_sram_bits = 1;
-    break;
-  case SPICE_MODEL_STRUCTURE_ONELEVEL:
-  case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-    num_sram_bits = num_input_per_level;
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
-               __FILE__, __LINE__, spice_model.name);
-    exit(1);
-  }
-  /* Special for 2-input MUX, whatever structure it is, only one SRAM bit */
-  if (2 == num_input_per_level) { 
-    num_sram_bits = 1;
-  }
+  num_sram_bits = determine_num_sram_bits_mux_basis_subckt(&spice_model, 
+                                                           num_input_per_level);
   
   for (i = 0; i < num_sram_bits; i++) {
     fprintf(fp, "sel%d sel_inv%d ", i, i); 
@@ -668,15 +654,9 @@ void fprint_spice_rram_mux_onelevel_structure(FILE* fp,
   fprintf(fp, "mux2_l%d_in%d ", nextlevel, out_idx); /* output */
 
   /* Print number of sram bits for this basis */
-  if (2 == spice_mux_arch.num_input) {
-    num_sram_bits = 1;
-  } else {
-    num_sram_bits = spice_mux_arch.num_input;
-  }
-  /*
-  num_sram_bits = count_num_sram_bits_one_spice_model(&spice_model, 
-                                                      spice_mux_arch.num_input);
-  */
+  num_sram_bits = determine_num_sram_bits_mux_basis_subckt(&spice_model, 
+                                                           spice_mux_arch.num_input);
+
   for (k = 0; k < num_sram_bits; k++) {
     fprintf(fp, "%s%d %s_inv%d ", sram_port[0]->prefix, k, sram_port[0]->prefix, k); /* sram sram_inv */
   }

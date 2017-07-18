@@ -196,33 +196,36 @@ void dump_verilog_top_netlist_memory_bank_internal_wires(FILE* fp) {
       cur_bl_msb = (icol + 1) * num_array_bl - 1; 
       /* Check if the msb exceeds the upbound of num_bl */
       if (cur_bl_msb > num_bl - 1) {
-        assert(icol == num_array_bl - 1);
         cur_bl_msb = num_bl - 1;
       }
       /* connect to the BLs of all the SRAMs in the column */
       fprintf(fp, "  assign %s%s[%d:%d] = %s[%d:%d];\n",
               mem_model->prefix, top_netlist_normal_bl_port_postfix, cur_bl_lsb, cur_bl_msb,
               top_netlist_array_bl_port_name, 0, cur_bl_msb - cur_bl_lsb);
+      /* Finish if MSB meets the upbound */
+      if (cur_bl_msb == num_bl - 1) {
+        break;
+      }
     }
     /* Connections for rows */
-    fprintf(fp, "  genvar i;\n");
-    fprintf(fp, "  generate\n");
     for (irow = 0; irow < num_array_wl; irow++) {
       cur_wl_lsb = irow * num_array_wl; 
       cur_wl_msb = (irow + 1) * num_array_wl - 1; 
       /* Check if the msb exceeds the upbound of num_bl */
       if (cur_wl_msb > num_wl - 1) {
-        assert(irow == num_array_wl - 1);
         cur_wl_msb = num_wl - 1;
       }
       /* connect to the BLs of all the SRAMs in the column */
-      fprintf(fp, "    for (i = %d; i < %d; i = i + 1) begin\n", cur_wl_lsb, cur_wl_msb + 1);
-      fprintf(fp, "      assign %s%s[i] = %s[%d];\n",
-              mem_model->prefix, top_netlist_normal_wl_port_postfix,
-              top_netlist_array_wl_port_name, irow);
-      fprintf(fp, "    end\n");
+      for (icol = cur_wl_lsb; icol < cur_wl_msb + 1; icol++) {
+        fprintf(fp, "    assign %s%s[%d] = %s[%d];\n",
+                mem_model->prefix, top_netlist_normal_wl_port_postfix, icol,
+                top_netlist_array_wl_port_name, irow);
+      }
+      /* Finish if MSB meets the upbound */
+      if (cur_wl_msb == num_wl - 1) {
+        break;
+      }
     }
-    fprintf(fp, "  endgenerate\n");
     break; 
   case SPICE_MODEL_DESIGN_RRAM: 
     /* Check: there should be reserved BLs and WLs */

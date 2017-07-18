@@ -845,6 +845,9 @@ int determine_num_sram_bits_mux_basis_subckt(t_spice_model* mux_spice_model,
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
     num_sram_bits = num_input_per_level;
+    if (2 == num_sram_bits) { 
+      num_sram_bits = 1;
+    }
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
