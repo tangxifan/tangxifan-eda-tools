@@ -66,6 +66,41 @@ void fprint_spice_routing_testbench_global_ports(FILE* fp,
   return;
 }
 
+static 
+void fprintf_spice_routing_testbench_generic_stimuli(FILE* fp,
+                                                     int num_clocks) {
+
+  /* Give global vdd, gnd, voltage sources*/
+  /* A valid file handler */
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /* Print generic stimuli */
+  fprint_spice_testbench_generic_global_ports_stimuli(fp, num_clocks);
+  
+  /* Generate global ports stimuli */
+  fprint_spice_testbench_global_ports_stimuli(fp, global_ports_head);
+
+  /* SRAM ports */
+  fprintf(fp, "***** Global Inputs for SRAMs *****\n");
+  fprint_spice_testbench_global_sram_inport_stimuli(fp, sram_spice_orgz_info);
+
+  fprintf(fp, "***** Global VDD for SRAMs *****\n");
+  fprint_spice_testbench_global_vdd_port_stimuli(fp,
+                                                 spice_tb_global_vdd_sram_port_name,
+                                                 "vsp");
+
+  fprintf(fp, "***** Global VDD for load inverters *****\n");
+  fprint_spice_testbench_global_vdd_port_stimuli(fp,
+                                                 spice_tb_global_vdd_load_port_name,
+                                                 "vsp");
+
+
+  return;
+}
+
 
 /** Print input voltage pulses/output loads in a sb/cb testbench
  * For OPIN: generate input voltage pulses
@@ -129,7 +164,7 @@ int fprint_grid_side_pins_voltage_pulses(FILE* fp,
         input_init_value = get_rr_node_net_init_value(rr_node[inode]);
         fprintf(fp, "***** Signal grid[%d][%d]_pin[%d][%d][%d] density = %g, probability=%g.*****\n",
                 x, y, height, side, ipin, input_density, input_probability);
-        fprintf(fp, "Vgrid[%d][%d]_pin[%d][%d][%d] grid[%d][%d]_pin[%d][%d][%d] \n", 
+        fprintf(fp, "Vgrid[%d][%d]_pin[%d][%d][%d] grid[%d][%d]_pin[%d][%d][%d] 0 \n", 
                 x, y, height, side, ipin, x, y, height, side, ipin);
         fprint_voltage_pulse_params(fp, input_init_value, input_density, input_probability);
         /* Update statistics */
@@ -761,7 +796,6 @@ int fprint_spice_one_cb_testbench(char* formatted_spice_dir,
   char* cb_tb_name = NULL;
   int used = 0;
   char* temp_include_file_path = NULL;
-  t_llist* temp = NULL;
 
   /* one cbx, one cby*/
   switch (cb_type) {
@@ -820,6 +854,9 @@ int fprint_spice_one_cb_testbench(char* formatted_spice_dir,
   fprintf(fp, ".include \'%s\'\n", temp_include_file_path);
   my_free(temp_include_file_path);
 
+  /* Generate SPICE routing testbench generic stimuli*/
+  fprintf_spice_routing_testbench_generic_stimuli(fp, num_clocks);
+
   /* one cbx, one cby*/
   switch (cb_type) {
   case CHANX:
@@ -831,18 +868,9 @@ int fprint_spice_one_cb_testbench(char* formatted_spice_dir,
     exit(1);
   }
 
-  /* Add the testbench filename to linked list */
-  if (NULL == tb_head) {
-    tb_head = create_llist(1);
-    tb_head->dptr = my_malloc(sizeof(t_spicetb_info));
-    ((t_spicetb_info*)(tb_head->dptr))->tb_name = my_strdup(cb_testbench_file_path);
-    ((t_spicetb_info*)(tb_head->dptr))->num_sim_clock_cycles = max_sim_num_clock_cycles;
-  } else {
-    temp = insert_llist_node(tb_head);
-    temp->dptr = my_malloc(sizeof(t_spicetb_info));
-    ((t_spicetb_info*)(temp->dptr))->tb_name = my_strdup(cb_testbench_file_path);
-    ((t_spicetb_info*)(temp->dptr))->num_sim_clock_cycles = max_sim_num_clock_cycles;
-  }
+  /* Push the testbench to the linked list */
+  tb_head = add_one_spice_tb_info_to_llist(tb_head, cb_testbench_file_path, 
+                                           max_sim_num_clock_cycles);
   used = 1;
 
   return used;
@@ -865,7 +893,6 @@ int fprint_spice_one_sb_testbench(char* formatted_spice_dir,
   char* sb_tb_name = NULL;
   int used = 0;
   char* temp_include_file_path = NULL;
-  t_llist* temp = NULL;
 
   sb_tb_name = "Switch Block ";
 
@@ -914,18 +941,9 @@ int fprint_spice_one_sb_testbench(char* formatted_spice_dir,
   my_free(temp_include_file_path);
   used = fprint_spice_routing_testbench_call_one_sb_tb(fp, grid_x, grid_y, LL_rr_node_indices);
 
-  /* Add the testbench filename to linked list */
-  if (NULL == tb_head) {
-    tb_head = create_llist(1);
-    tb_head->dptr = my_malloc(sizeof(t_spicetb_info));
-    ((t_spicetb_info*)(tb_head->dptr))->tb_name = my_strdup(sb_testbench_file_path);
-    ((t_spicetb_info*)(tb_head->dptr))->num_sim_clock_cycles = max_sim_num_clock_cycles;
-  } else {
-    temp = insert_llist_node(tb_head);
-    temp->dptr = my_malloc(sizeof(t_spicetb_info));
-    ((t_spicetb_info*)(temp->dptr))->tb_name = my_strdup(sb_testbench_file_path);
-    ((t_spicetb_info*)(temp->dptr))->num_sim_clock_cycles = max_sim_num_clock_cycles;
-  }
+  /* Push the testbench to the linked list */
+  tb_head = add_one_spice_tb_info_to_llist(tb_head, sb_testbench_file_path, 
+                                           max_sim_num_clock_cycles);
   used = 1;
 
 

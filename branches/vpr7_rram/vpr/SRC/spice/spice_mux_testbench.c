@@ -56,79 +56,6 @@ static float total_sb_mux_input_density = 0.;
 
 /***** Local Subroutines Declaration *****/
 
-static 
-void fprint_spice_mux_testbench_one_mux(FILE* fp,
-                                        char* meas_tag,
-                                        t_spice_model* mux_spice_model,
-                                        int mux_size,
-                                        int* input_init_value,
-                                        float* input_density,
-                                        float* input_probability,
-                                        int path_id);
-
-static 
-void fprint_spice_mux_testbench_pb_pin_mux(FILE* fp,
-                                           t_rr_node* pb_rr_nodes,
-                                           t_pb* des_pb,
-                                           t_mode* cur_mode,
-                                           t_pb_graph_pin* des_pb_graph_pin,
-                                           t_interconnect* cur_interc,
-                                           int fan_in,
-                                           int select_edge,
-                                           int grid_x, int grid_y,
-                                           t_ivec*** LL_rr_node_indices);
-
-static 
-void fprint_spice_mux_testbench_pb_pin_interc(FILE* fp,
-                                              t_rr_node* pb_rr_nodes,
-                                              t_pb* des_pb,
-                                              enum e_pin2pin_interc_type pin2pin_interc_type,
-                                              t_pb_graph_pin* des_pb_graph_pin,
-                                              t_mode* cur_mode,
-                                              int select_path_id,
-                                              int grid_x, int grid_y,
-                                              t_ivec*** LL_rr_node_indices);
-
-static 
-void fprint_spice_mux_testbench_pb_interc(FILE* fp,
-                                          t_pb* cur_pb,
-                                          int grid_x, int grid_y,
-                                          t_ivec*** LL_rr_node_indices);
-
-static 
-void fprint_spice_mux_testbench_pb_muxes_rec(FILE* fp,
-                                             t_pb* cur_pb,
-                                             int grid_x, int grid_y,
-                                             t_ivec*** LL_rr_node_indices);
-
-static 
-void fprint_spice_mux_testbench_cb_one_mux(FILE* fp,
-                                           t_cb cur_cb_info,
-                                           t_rr_node* src_rr_node,
-                                           t_ivec*** LL_rr_node_indices);
-
-static 
-void fprint_spice_mux_testbench_cb_interc(FILE* fp, 
-                                          t_cb cur_cb_info,
-                                          t_rr_node* src_rr_node,
-                                          t_ivec*** LL_rr_node_indices);
-
-static 
-int fprint_spice_mux_testbench_call_one_grid_cb_muxes(FILE* fp, 
-                                                      t_cb cur_cb_info,
-                                                      t_ivec*** LL_rr_node_indices);
-
-static 
-int fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
-                                          int switch_box_x, int switch_box_y,
-                                          int chan_side,
-                                          t_rr_node* src_rr_node);
-
-static 
-int fprint_spice_mux_testbench_call_one_grid_sb_muxes(FILE* fp, 
-                                                      t_sb cur_sb_info,
-                                                      t_ivec*** LL_rr_node_indices);
-
 /***** Local Subroutines *****/
 static void init_spice_mux_testbench_globals(t_spice spice) {
   testbench_mux_cnt = 0;
@@ -509,9 +436,6 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
     fprintf(fp, ".meas tran sum_energy_per_cycle_mux[0to%d] \n", testbench_mux_cnt);
     fprintf(fp, "+          param=\'sum_energy_per_cycle_mux[0to%d]+energy_per_cycle_%s\'\n", testbench_mux_cnt-1, meas_tag);
   }
-
-  /* Update the counter */
-  cur_mux->cnt++;
 
   /* Free */
   my_free(mux_sram_bits);
@@ -1585,7 +1509,7 @@ int fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
                                  + 6 + 1 ));
   sprintf(outport_name, "%s_size%d[%d]->out", mux_spice_model->prefix, mux_size, testbench_mux_cnt);
   rr_node_outport_name = fprint_spice_testbench_rr_node_load_version(fp, 
-                                                                     &testbench_mux_cnt,
+                                                                     &testbench_load_cnt,
                                                                      num_segments,
                                                                      segments,
                                                                      0, /* load size */
@@ -1714,7 +1638,7 @@ int fprint_spice_mux_testbench_call_one_grid_pb_muxes(FILE* fp, int ix, int iy,
 
 static 
 void fprint_spice_mux_testbench_stimulations(FILE* fp, 
-                                             t_spice spice) {
+                                             int num_clocks) {
   /* Voltage sources of Multiplexers are already generated during printing the netlist 
    * We just need global stimulations Here.
    */
@@ -1725,35 +1649,26 @@ void fprint_spice_mux_testbench_stimulations(FILE* fp,
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
     exit(1);
   }
-  /* Global GND */
-  fprintf(fp, "***** Global GND port *****\n");
-  fprintf(fp, "*Rggnd ggnd 0 0\n");
 
-  /* Global set and reset */
-  fprintf(fp, "***** Global Net for reset signal *****\n");
-  fprintf(fp, "*Vgvreset greset 0 0\n");
-  fprintf(fp, "***** Global Net for set signal *****\n");
-  fprintf(fp, "*Vgvset gset 0 0\n");
+  /* Print generic stimuli */
+  fprint_spice_testbench_generic_global_ports_stimuli(fp, num_clocks);
+  
+  /* Generate global ports stimuli */
+  fprint_spice_testbench_global_ports_stimuli(fp, global_ports_head);
 
-  /* Global Vdd ports */
-  fprintf(fp, "***** Global VDD ports *****\n");
-  fprintf(fp, "*Vgvdd gvdd 0 vsp\n");
+  /* SRAM ports */
+  fprintf(fp, "***** Global Inputs for SRAMs *****\n");
+  fprint_spice_testbench_global_sram_inport_stimuli(fp, sram_spice_orgz_info);
+
   fprintf(fp, "***** Global VDD for SRAMs *****\n");
-  fprintf(fp, "Vgvdd_sram gvdd_sram 0 vsp\n");
+  fprint_spice_testbench_global_vdd_port_stimuli(fp,
+                                                 spice_tb_global_vdd_sram_port_name,
+                                                 "vsp");
+
   fprintf(fp, "***** Global VDD for load inverters *****\n");
-  fprintf(fp, "Vgvdd_load gvdd_load 0 vsp\n");
-  fprintf(fp, "***** Global Force for all SRAMs *****\n");
-  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
-    fprintf(fp, "Vsc_clk sc_clk 0 0\n");
-    fprintf(fp, "Vsc_rst sc_rst 0 0\n");
-    fprintf(fp, "Vsc_set sc_set 0 0\n");
-    fprintf(fp, "V%s[0]->in %s[0]->in 0 0\n", sram_spice_model->prefix, sram_spice_model->prefix);
-    fprintf(fp, ".nodeset V(%s[0]->in) 0\n", sram_spice_model->prefix);
-  } else {
-    fprintf(fp, "V%s->in %s->in 0 0\n", 
-            sram_spice_model->prefix, sram_spice_model->prefix);
-    fprintf(fp, ".nodeset V(%s->in) 0\n", sram_spice_model->prefix);
-  }
+  fprint_spice_testbench_global_vdd_port_stimuli(fp,
+                                                 spice_tb_global_vdd_load_port_name,
+                                                 "vsp");
 
   return;
 }
@@ -1838,7 +1753,6 @@ int fprint_spice_one_mux_testbench(char* formatted_spice_dir,
   char* mux_tb_name = NULL;
   int used = 0;
   char* temp_include_file_path = NULL;
-  t_llist* temp = NULL;
 
   switch (mux_tb_type) {
   case SPICE_PB_MUX_TB:
@@ -1871,7 +1785,6 @@ int fprint_spice_one_mux_testbench(char* formatted_spice_dir,
   /* Load global vars in this source file */
   num_segments = arch.num_segments;
   segments = arch.Segments;
-  testbench_load_cnt = 0;
  
   /* Print the title */
   fprint_spice_head(fp, title);
@@ -1914,7 +1827,7 @@ int fprint_spice_one_mux_testbench(char* formatted_spice_dir,
     total_pb_mux_input_density = total_pb_mux_input_density/testbench_pb_mux_cnt;
     vpr_printf(TIO_MESSAGE_INFO,"Average density of PB MUX inputs is %.2g.\n", total_pb_mux_input_density);
     /* Add stimulations */
-    fprint_spice_mux_testbench_stimulations(fp, *(arch.spice));
+    fprint_spice_mux_testbench_stimulations(fp, num_clocks);
     /* Add measurements */  
     fprint_spice_mux_testbench_measurements(fp, mux_tb_type, *(arch.spice));
     break;
@@ -1935,7 +1848,7 @@ int fprint_spice_one_mux_testbench(char* formatted_spice_dir,
     total_cb_mux_input_density = total_cb_mux_input_density/testbench_cb_mux_cnt;
     vpr_printf(TIO_MESSAGE_INFO,"Average density of CB MUX inputs is %.2g.\n", total_cb_mux_input_density);
     /* Add stimulations */
-     fprint_spice_mux_testbench_stimulations(fp, *(arch.spice));
+     fprint_spice_mux_testbench_stimulations(fp, num_clocks);
     /* Add measurements */  
     fprint_spice_mux_testbench_measurements(fp, mux_tb_type, *(arch.spice));
     break;
@@ -1945,7 +1858,7 @@ int fprint_spice_one_mux_testbench(char* formatted_spice_dir,
     total_sb_mux_input_density = total_sb_mux_input_density/testbench_sb_mux_cnt;
     vpr_printf(TIO_MESSAGE_INFO,"Average density of SB MUX inputs is %.2g.\n", total_sb_mux_input_density);
     /* Add stimulations */
-    fprint_spice_mux_testbench_stimulations(fp, *(arch.spice));
+    fprint_spice_mux_testbench_stimulations(fp, num_clocks);
     /* Add measurements */  
     fprint_spice_mux_testbench_measurements(fp, mux_tb_type, *(arch.spice));
     break;
@@ -1969,17 +1882,8 @@ int fprint_spice_one_mux_testbench(char* formatted_spice_dir,
   if (0 < testbench_mux_cnt) {
     vpr_printf(TIO_MESSAGE_INFO, "Writing Grid[%d][%d] SPICE %s Test Bench for %s...\n", 
                grid_x, grid_y, mux_tb_name, circuit_name);
-    if (NULL == tb_head) {
-      tb_head = create_llist(1);
-      tb_head->dptr = my_malloc(sizeof(t_spicetb_info));
-      ((t_spicetb_info*)(tb_head->dptr))->tb_name = my_strdup(mux_testbench_file_path);
-      ((t_spicetb_info*)(tb_head->dptr))->num_sim_clock_cycles = max_sim_num_clock_cycles;
-    } else {
-      temp = insert_llist_node(tb_head);
-      temp->dptr = my_malloc(sizeof(t_spicetb_info));
-      ((t_spicetb_info*)(temp->dptr))->tb_name = my_strdup(mux_testbench_file_path);
-      ((t_spicetb_info*)(temp->dptr))->num_sim_clock_cycles = max_sim_num_clock_cycles;
-    }
+    /* Push the testbench to the linked list */
+    tb_head = add_one_spice_tb_info_to_llist(tb_head, mux_testbench_file_path, max_sim_num_clock_cycles); 
     used = 1;
   } else {
     /* Remove the file generated */

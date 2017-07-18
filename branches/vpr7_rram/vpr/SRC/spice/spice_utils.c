@@ -536,18 +536,20 @@ void fprint_grid_global_vdds_spice_model(FILE* fp, int x, int y,
   fprintf(fp, ".global \n");
 
   for (imodel = 0; imodel < spice.num_spice_model; imodel++) {  
-    if (spice_model_type == spice.spice_models[imodel].type) {
-      /* Bypass zero-usage spice_model in this grid*/
-      if (spice.spice_models[imodel].grid_index_low[x][y]
-          == spice.spice_models[imodel].grid_index_high[x][y]) {
-        continue;
-      }
-      for (i = spice.spice_models[imodel].grid_index_low[x][y]; 
-           i < spice.spice_models[imodel].grid_index_high[x][y]; 
-           i++) {
-        fprintf(fp, "+ gvdd_%s[%d]\n", 
-                spice.spice_models[imodel].prefix, i);
-      }
+    /* Bypass non-matched SPICE model */
+    if (spice_model_type != spice.spice_models[imodel].type) {
+       continue;
+    }
+    /* Bypass zero-usage spice_model in this grid*/
+    if (spice.spice_models[imodel].grid_index_low[x][y]
+        == spice.spice_models[imodel].grid_index_high[x][y]) {
+      continue;
+    }
+    for (i = spice.spice_models[imodel].grid_index_low[x][y]; 
+         i < spice.spice_models[imodel].grid_index_high[x][y]; 
+         i++) {
+      fprintf(fp, "+ gvdd_%s[%d]\n", 
+              spice.spice_models[imodel].prefix, i);
     }
   }
   
@@ -2100,7 +2102,7 @@ void fprint_spice_testbench_wire_one_global_port_stimuli(FILE* fp,
                 cur_global_port->prefix, ipin,
                 cur_global_port->prefix, ipin);
     assert((0 == cur_global_port->default_val)||(1 == cur_global_port->default_val));
-    fprintf(fp, "%s ",
+    fprintf(fp, "%s",
                 voltage_stimuli_port_name);
     if (1 == cur_global_port->default_val) {
       fprintf(fp, "%s ", 
@@ -2199,8 +2201,49 @@ void fprint_spice_testbench_global_ports_stimuli(FILE* fp,
   return;
 }
 
+void fprint_spice_testbench_global_vdd_port_stimuli(FILE* fp,
+                                                    char* global_vdd_port_name,
+                                                    char* voltage_level) {
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+  
+  /* Print a Voltage Stimuli */
+  fprintf(fp, "V%s %s 0 %s\n",
+             global_vdd_port_name,
+             global_vdd_port_name,
+             voltage_level);
+  return;
+} 
+
+void fprint_spice_testbench_global_sram_inport_stimuli(FILE* fp,
+                                                       t_sram_orgz_info* cur_sram_orgz_info) {
+  t_spice_model* mem_model = NULL;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  /* Get memory spice model */
+  get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model);
+
+  /* Print the voltage stimuli for SRAM model */
+  fprintf(fp, "V%s->in %s->in 0 0\n", 
+          mem_model->prefix, mem_model->prefix);
+  fprintf(fp, ".nodeset V(%s->in) 0\n", mem_model->prefix);
+
+  return;
+}
+
 void fprint_spice_testbench_generic_global_ports_stimuli(FILE* fp,
-                                                          int num_clock) {
+                                                         int num_clock) {
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -2684,3 +2727,23 @@ void fprint_spice_testbench_one_cb_mux_loads(FILE* fp, int* testbench_load_cnt,
   return;
 }
 
+/* Add one SPICE TB information to linked list */
+t_llist* add_one_spice_tb_info_to_llist(t_llist* cur_head, 
+                                        char* tb_file_path, 
+                                        int num_sim_clock_cycles) {
+  t_llist* new_head = NULL;
+
+  if (NULL == cur_head) {
+    new_head = create_llist(1);
+    new_head->dptr = my_malloc(sizeof(t_spicetb_info));
+    ((t_spicetb_info*)(new_head->dptr))->tb_name = my_strdup(tb_file_path);
+    ((t_spicetb_info*)(new_head->dptr))->num_sim_clock_cycles = num_sim_clock_cycles;
+  } else {
+    new_head = insert_llist_node_before_head(cur_head);
+    new_head->dptr = my_malloc(sizeof(t_spicetb_info));
+    ((t_spicetb_info*)(new_head->dptr))->tb_name = my_strdup(tb_file_path);
+    ((t_spicetb_info*)(new_head->dptr))->num_sim_clock_cycles = num_sim_clock_cycles;
+  }
+
+  return new_head;
+}

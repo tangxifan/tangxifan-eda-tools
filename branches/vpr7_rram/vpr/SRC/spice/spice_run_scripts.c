@@ -99,7 +99,7 @@ void fprint_run_hspice_shell_script(t_spice spice,
             testbench_file, sim_results_dir_path, chomped_testbench_name);
     temp = temp->next;
     if (1 == rram_design_tech) {
-      fprintf(fp, "-hdlpath /softs/synopsys/hspice/2013.12/hspice/include\n");
+      fprintf(fp, "-hdlpath /softs/synopsys/hspice/2017.03/hspice/include\n");
     } else { 
       fprintf(fp, "\n");
     }

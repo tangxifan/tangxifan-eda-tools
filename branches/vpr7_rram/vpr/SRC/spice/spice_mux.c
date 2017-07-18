@@ -143,6 +143,8 @@ void fprint_spice_mux_model_basis_rram_subckt(FILE* fp, char* subckt_name,
   int i, num_sram_bits;
   char* prog_pmos_subckt_name = NULL;
   char* prog_nmos_subckt_name = NULL;
+  char* prog_wp = NULL;
+  char* prog_wn = NULL;
 
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {
@@ -176,10 +178,19 @@ void fprint_spice_mux_model_basis_rram_subckt(FILE* fp, char* subckt_name,
   if (TRUE == spice_model.design_tech_info.advanced_rram_design) {
     prog_pmos_subckt_name = pmos_subckt_name;
     prog_nmos_subckt_name = nmos_subckt_name;
+    prog_wp = "wp";
+    prog_wn = "wn";
   } else {
     prog_pmos_subckt_name = io_pmos_subckt_name;
     prog_nmos_subckt_name = io_nmos_subckt_name;
+    prog_wp = "io_wp";
+    prog_wn = "io_wn";
   } 
+
+  /* Special for 2-input MUX, whatever structure it is, only one SRAM bit */
+  if (2 == num_input_per_level) { 
+    num_sram_bits = 1;
+  }
 
   fprintf(fp, ".subckt %s ", subckt_name);
   for (i = 0; i < num_input_per_level; i++) {
@@ -192,10 +203,16 @@ void fprint_spice_mux_model_basis_rram_subckt(FILE* fp, char* subckt_name,
   fprintf(fp, "svdd sgnd ");
   fprintf(fp, "ron=\'%g\' roff=\'%g\' ",
                spice_model.design_tech_info.ron, spice_model.design_tech_info.roff);
-  fprintf(fp, "wprog_set_nmos=\'%g*io_wn\' wprog_reset_nmos=\'%g*io_wn\' ",
-               spice_model.design_tech_info.wprog_set_nmos, spice_model.design_tech_info.wprog_reset_nmos);
-  fprintf(fp, "wprog_set_pmos=\'%g*io_wp\' wprog_reset_pmos=\'%g*io_wp\' \n",
-               spice_model.design_tech_info.wprog_set_pmos, spice_model.design_tech_info.wprog_reset_pmos);
+  fprintf(fp, "wprog_set_nmos=\'%g*%s\' wprog_reset_nmos=\'%g*%s\' ",
+               spice_model.design_tech_info.wprog_set_nmos, 
+               prog_wn,
+               spice_model.design_tech_info.wprog_reset_nmos,
+               prog_wn);
+  fprintf(fp, "wprog_set_pmos=\'%g*%s\' wprog_reset_pmos=\'%g*%s\' \n",
+               spice_model.design_tech_info.wprog_set_pmos, 
+               prog_wp,
+               spice_model.design_tech_info.wprog_reset_pmos,
+               prog_wp);
   /* Print the new 2T1R structure */ 
   /* Switch case: 
    * when there is only 1 SRAM bit */
@@ -627,7 +644,7 @@ void fprint_spice_rram_mux_onelevel_structure(FILE* fp,
                                               t_spice_mux_arch spice_mux_arch,
                                               int num_sram_port, t_spice_model_port** sram_port) {
   int k, mux_basis_cnt;
-  int level, nextlevel, out_idx;
+  int level, nextlevel, out_idx, num_sram_bits;
 
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {
@@ -649,8 +666,18 @@ void fprint_spice_rram_mux_onelevel_structure(FILE* fp,
     fprintf(fp, "mux2_l%d_in%d ", level, k); /* input0 input1 */
   }
   fprintf(fp, "mux2_l%d_in%d ", nextlevel, out_idx); /* output */
+
   /* Print number of sram bits for this basis */
-  for (k = 0; k < spice_mux_arch.num_input; k++) {
+  if (2 == spice_mux_arch.num_input) {
+    num_sram_bits = 1;
+  } else {
+    num_sram_bits = spice_mux_arch.num_input;
+  }
+  /*
+  num_sram_bits = count_num_sram_bits_one_spice_model(&spice_model, 
+                                                      spice_mux_arch.num_input);
+  */
+  for (k = 0; k < num_sram_bits; k++) {
     fprintf(fp, "%s%d %s_inv%d ", sram_port[0]->prefix, k, sram_port[0]->prefix, k); /* sram sram_inv */
   }
   fprintf(fp, "svdd sgnd %s\n", mux_basis_subckt_name); /* subckt_name */

@@ -34,19 +34,19 @@
 /* local global variables */
 static int tb_num_dffs = 0;
 static int testbench_load_cnt = 0;
-static int upbound_num_sim_clock_cycles = 2;
-static int max_num_sim_clock_cycles = 2;
-static int auto_select_max_num_sim_clock_cycles = TRUE;
+static int upbound_sim_num_clock_cycles = 2;
+static int max_sim_num_clock_cycles = 2;
+static int auto_select_max_sim_num_clock_cycles = TRUE;
 
 /* Subroutines in this source file*/
 static void init_spice_dff_testbench_globals(t_spice spice) {
   tb_num_dffs = 0;
-  auto_select_max_num_sim_clock_cycles = spice.spice_params.meas_params.auto_select_sim_num_clk_cycle;
-  upbound_num_sim_clock_cycles = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
-  if (FALSE == auto_select_max_num_sim_clock_cycles) {
-    max_num_sim_clock_cycles = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
+  auto_select_max_sim_num_clock_cycles = spice.spice_params.meas_params.auto_select_sim_num_clk_cycle;
+  upbound_sim_num_clock_cycles = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
+  if (FALSE == auto_select_max_sim_num_clock_cycles) {
+    max_sim_num_clock_cycles = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
   } else {
-    max_num_sim_clock_cycles = 2;
+    max_sim_num_clock_cycles = 2;
   }
 }
 
@@ -60,22 +60,32 @@ void fprint_spice_dff_testbench_global_ports(FILE* fp, int grid_x, int grid_y,
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File Handler!\n",__FILE__, __LINE__); 
     exit(1);
   } 
+
+  /* Print generic global ports*/
+  fprint_spice_generic_testbench_global_ports(fp, 
+                                              sram_spice_orgz_info,
+                                              global_ports_head); 
   /* Global nodes: Vdd for SRAMs, Logic Blocks(Include IO), Switch Boxes, Connection Boxes */
   /* Print generic global ports*/
   fprint_spice_generic_testbench_global_ports(fp, 
                                               sram_spice_orgz_info, 
                                               global_ports_head); 
-  fprintf(fp, ".global gvdd_load\n");
+  /* VDD Load port name */
+  fprintf(fp, ".global %s\n",
+               spice_tb_global_vdd_load_port_name);
 
   /*Global Vdds for FFs*/
   fprint_grid_global_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_FF, spice);
-  /* 
-  for (i = 0; i < spice.num_spice_model; i++) {
-    if (SPICE_MODEL_FF == spice.spice_models[i].type) {
-      fprint_global_vdds_logical_block_spice_model(fp, &(spice.spice_models[i]));
-    }
-  }
-  */
+
+  /*Global Vdds for Hardlogics*/
+  fprint_grid_global_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_HARDLOGIC, spice);
+
+  /*Global Vdds for IOPADs*/
+  fprint_grid_global_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_IOPAD, spice);
+
+  /* Global VDDs for SRAMs of IOPADs */
+  fprintf(fp, ".global %s\n",
+               spice_tb_global_vdd_io_sram_port_name);
 
   return;
 }
@@ -249,18 +259,18 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
     assert(0. < average_density);
     num_sim_clock_cycles = (int)(1/average_density) + 1;
   }
-  if (TRUE == auto_select_max_num_sim_clock_cycles) {
+  if (TRUE == auto_select_max_sim_num_clock_cycles) {
     /* for idle blocks, 2 clock cycle is well enough... */
     if (2 < num_sim_clock_cycles) {
-      num_sim_clock_cycles = upbound_num_sim_clock_cycles;
+      num_sim_clock_cycles = upbound_sim_num_clock_cycles;
     } else {
       num_sim_clock_cycles = 2;
     }
-    if (max_num_sim_clock_cycles < num_sim_clock_cycles) {
-      max_num_sim_clock_cycles = num_sim_clock_cycles;
+    if (max_sim_num_clock_cycles < num_sim_clock_cycles) {
+      max_sim_num_clock_cycles = num_sim_clock_cycles;
     }
   } else {
-    num_sim_clock_cycles = max_num_sim_clock_cycles;
+    num_sim_clock_cycles = max_sim_num_clock_cycles;
   }
 
   /* Mark temporary used */
@@ -455,75 +465,55 @@ void fprint_spice_dff_testbench_call_defined_dffs(FILE* fp, t_ivec*** LL_rr_node
   return;
 }
 
-void fprint_spice_dff_testbench_stimulations(FILE* fp, int grid_x, int grid_y, 
-                                             int num_clock, 
-                                             t_spice spice, 
-                                             t_ivec*** LL_rr_node_indices) {
-  /* int i; */
-  /* Global GND */
-  fprintf(fp, "***** Global VDD port *****\n");
-  fprintf(fp, "Vgvdd gvdd 0 vsp\n");
-  fprintf(fp, "***** Global GND port *****\n");
-  fprintf(fp, "*Rggnd ggnd 0 0\n");
+static 
+void fprint_spice_hardlogic_testbench_stimulations(FILE* fp, int grid_x, int grid_y, 
+                                                   int num_clocks, 
+                                                   t_spice spice, 
+                                                   t_ivec*** LL_rr_node_indices) {
+  /* Print generic stimuli */
+  fprint_spice_testbench_generic_global_ports_stimuli(fp, num_clocks);
+  
+  /* Generate global ports stimuli */
+  fprint_spice_testbench_global_ports_stimuli(fp, global_ports_head);
 
-  /* Global set and reset */
-  fprintf(fp, "***** Global Net for reset signal *****\n");
-  fprintf(fp, "Vgvreset greset 0 0\n");
-  fprintf(fp, "***** Global Net for set signal *****\n");
-  fprintf(fp, "Vgvset gset 0 0\n");
-  /* Global vdd load */
-  fprintf(fp, "***** Global Net for load vdd *****\n");
-  fprintf(fp, "Vgvdd_load gvdd_load 0 vsp\n");
+  /* SRAM ports */
+  fprintf(fp, "***** Global Inputs for SRAMs *****\n");
+  fprint_spice_testbench_global_sram_inport_stimuli(fp, sram_spice_orgz_info);
 
-  /* Global Vdd ports */
-  fprintf(fp, "***** Global VDD for LUTs SRAMs *****\n");
-  fprintf(fp, "Vgvdd_sram_luts gvdd_sram_luts 0 vsp\n");
+  fprintf(fp, "***** Global VDD for SRAMs *****\n");
+  fprint_spice_testbench_global_vdd_port_stimuli(fp,
+                                                 spice_tb_global_vdd_sram_port_name,
+                                                 "vsp");
+
+  fprintf(fp, "***** Global VDD for load inverters *****\n");
+  fprint_spice_testbench_global_vdd_port_stimuli(fp,
+                                                 spice_tb_global_vdd_load_port_name,
+                                                 "vsp");
+
+  fprintf(fp, "***** Global VDD for IOPADs *****\n");
+  fprint_spice_testbench_global_vdd_port_stimuli(fp,
+                                                 spice_tb_global_vdd_io_port_name,
+                                                 "vsp");
+
+  fprintf(fp, "***** Global VDD for IOPAD SRAMs *****\n");
+  fprint_spice_testbench_global_vdd_port_stimuli(fp,
+                                                 spice_tb_global_vdd_io_sram_port_name,
+                                                 "vsp");
 
   /* Every LUT use an independent Voltage source */
   fprintf(fp, "***** Global VDD for FFs *****\n");
   fprint_grid_splited_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_FF, spice);
-  /*
-  for (i = 0; i < spice.num_spice_model; i++) {
-    if (SPICE_MODEL_FF == spice.spice_models[i].type) {
-      fprint_splited_vdds_logical_block_spice_model(fp, &(spice.spice_models[i]));
-    }
-  }
-  */
-
-  /* Every SRAM inputs should have a voltage source */
-  fprintf(fp, "***** Global Inputs for SRAMs *****\n");
-  /*
-  for (i = 0; i < sram_spice_model->cnt; i++) {
-    fprintf(fp, "V%s[%d]->in %s[%d]->in 0 0\n", 
-            sram_spice_model->prefix, i, sram_spice_model->prefix, i);
-  }
-  */
-  fprintf(fp, "V%s->in %s->in 0 0\n", 
-          sram_spice_model->prefix, sram_spice_model->prefix);
-  fprintf(fp, ".nodeset V(%s->in) 0\n", sram_spice_model->prefix);
-
-  fprintf(fp, "***** Global Clock signal *****\n");
-  if (0 < num_clock) {
-    /* First cycle reserved for measuring leakage */
-    fprintf(fp, "***** pulse(vlow vhigh tdelay trise tfall pulse_width period *****\n");
-    fprintf(fp, "Vgclock gclock 0 pulse(0 vsp 'clock_period'\n");
-    fprintf(fp, "+                      'clock_slew_pct_rise*clock_period' 'clock_slew_pct_fall*clock_period'\n");
-    fprintf(fp, "+                      '0.5*(1-clock_slew_pct_rise-clock_slew_pct_fall)*clock_period' 'clock_period')\n");
-  } else {
-    assert(0 == num_clock);
-    fprintf(fp, "***** clock off *****\n");
-    fprintf(fp, "Vgclock gclock 0 0\n");
-  }
+ 
   return;
 }
 
-void fprint_spice_dff_testbench_measurements(FILE* fp, int grid_x, int grid_y, 
-                                             t_spice spice, 
-                                             boolean leakage_only) {
+void fprint_spice_hardlogic_testbench_measurements(FILE* fp, int grid_x, int grid_y, 
+                                                   t_spice spice, 
+                                                   boolean leakage_only) {
  
   /* int i; */
   /* First cycle reserved for measuring leakage */
-  int num_clock_cycle = max_num_sim_clock_cycles;
+  int num_clock_cycle = max_sim_num_clock_cycles;
   
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -540,13 +530,7 @@ void fprint_spice_dff_testbench_measurements(FILE* fp, int grid_x, int grid_y,
   /* Leakage ( the first cycle is reserved for leakage measurement) */
   /* Leakage power of FFs*/
   fprint_measure_grid_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_FF, SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, spice, leakage_only);
-  /*
-  for (i = 0; i < spice.num_spice_model; i++) {
-    if (SPICE_MODEL_FF == spice.spice_models[i].type) {
-      fprint_measure_vdds_logical_block_spice_model(fp, &(spice.spice_models[i]), SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, leakage_only);
-    }
-  }
-  */
+
   if (TRUE == leakage_only) {
     return;
   }
@@ -554,13 +538,14 @@ void fprint_spice_dff_testbench_measurements(FILE* fp, int grid_x, int grid_y,
   /* Dynamic power */
   /* Dynamic power of FFs */
   fprint_measure_grid_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_FF, SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, spice, leakage_only);
-  /*
-  for (i = 0; i < spice.num_spice_model; i++) {
-    if (SPICE_MODEL_FF == spice.spice_models[i].type) {
-      fprint_measure_vdds_logical_block_spice_model(fp, &(spice.spice_models[i]), SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, leakage_only);
-    }
-  }
-  */
+
+  /* Dynamic power of Hardlogics */
+  fprint_measure_grid_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_HARDLOGIC, SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, spice, leakage_only);
+
+  /* Dynamic power of IOPAD */
+  fprint_measure_grid_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_IOPAD, SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, spice, leakage_only);
+
+  /* TODO: Dynamic power of SRAMs of IOPAD */
 
   return;
 }
@@ -581,7 +566,6 @@ int fprint_spice_one_dff_testbench(char* formatted_spice_dir,
   char* temp_include_file_path = NULL;
   char* title = my_strcat("FPGA DFF Testbench for Design: ", circuit_name);
   char* dff_testbench_file_path = my_strcat(formatted_spice_dir, dff_testbench_name);
-  t_llist* temp = NULL;
   int used;
 
   /* Check if the path exists*/
@@ -638,10 +622,10 @@ int fprint_spice_one_dff_testbench(char* formatted_spice_dir,
    */
 
   /* Add stimulations */
-  fprint_spice_dff_testbench_stimulations(fp, grid_x, grid_y, num_clock, (*arch.spice), LL_rr_node_indices);
+  fprint_spice_hardlogic_testbench_stimulations(fp, grid_x, grid_y, num_clock, (*arch.spice), LL_rr_node_indices);
 
   /* Add measurements */  
-  fprint_spice_dff_testbench_measurements(fp, grid_x, grid_y, (*arch.spice), leakage_only);
+  fprint_spice_hardlogic_testbench_measurements(fp, grid_x, grid_y, (*arch.spice), leakage_only);
 
   /* SPICE ends*/
   fprintf(fp, ".end\n");
@@ -652,17 +636,9 @@ int fprint_spice_one_dff_testbench(char* formatted_spice_dir,
   if (0 < tb_num_dffs) {
     vpr_printf(TIO_MESSAGE_INFO, "Writing Grid[%d][%d] SPICE DFF Testbench for %s...\n",
                grid_x, grid_y, circuit_name);
-    if (NULL == tb_head) {
-      tb_head = create_llist(1);
-      tb_head->dptr = my_malloc(sizeof(t_spicetb_info));
-      ((t_spicetb_info*)(tb_head->dptr))->tb_name = my_strdup(dff_testbench_file_path);
-      ((t_spicetb_info*)(tb_head->dptr))->num_sim_clock_cycles = max_num_sim_clock_cycles;
-    } else {
-      temp = insert_llist_node(tb_head);
-      temp->dptr = my_malloc(sizeof(t_spicetb_info));
-      ((t_spicetb_info*)(temp->dptr))->tb_name = my_strdup(dff_testbench_file_path);
-      ((t_spicetb_info*)(temp->dptr))->num_sim_clock_cycles = max_num_sim_clock_cycles;
-    }
+    /* Push the testbench to the linked list */
+    tb_head = add_one_spice_tb_info_to_llist(tb_head, dff_testbench_file_path, 
+                                             max_sim_num_clock_cycles);
     used = 1;
   } else {
     /* Remove the file generated */

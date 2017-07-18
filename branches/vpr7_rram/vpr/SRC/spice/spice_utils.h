@@ -157,6 +157,13 @@ void fprint_spice_testbench_wire_one_global_port_stimuli(FILE* fp,
                                                          t_spice_model_port* cur_global_port, 
                                                          char* voltage_stimuli_port_name);
 
+void fprint_spice_testbench_global_sram_inport_stimuli(FILE* fp,
+                                                       t_sram_orgz_info* cur_sram_orgz_info);
+
+void fprint_spice_testbench_global_vdd_port_stimuli(FILE* fp,
+                                                    char* global_vdd_port_name,
+                                                    char* voltage_level);
+
 void fprint_spice_testbench_global_ports_stimuli(FILE* fp, 
                                                  t_llist* head);
 
@@ -187,3 +194,7 @@ void fprint_spice_testbench_one_cb_mux_loads(FILE* fp, int* testbench_load_cnt,
                                              t_rr_node* src_rr_node,
                                              char* outport_name,
                                              t_ivec*** LL_rr_node_indices);
+
+t_llist* add_one_spice_tb_info_to_llist(t_llist* cur_head, 
+                                        char* tb_file_path, 
+                                        int num_sim_clock_cycles);

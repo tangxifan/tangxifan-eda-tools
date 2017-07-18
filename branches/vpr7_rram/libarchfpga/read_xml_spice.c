@@ -770,7 +770,6 @@ void ProcessSpiceSRAMOrganization(INOUTP ezxml_t Node,
                                   OUTP t_sram_inf_orgz* cur_sram_inf_orgz,
                                   boolean required) {
   const char *Prop;
-  ezxml_t Cur;
 
   if (NULL == Node) {
     return;
@@ -803,7 +802,6 @@ void ProcessSpiceSRAMOrganization(INOUTP ezxml_t Node,
 
 /* Read XML under the Node of SRAM */
 void ProcessSpiceSRAM(INOUTP ezxml_t Node, OUTP struct s_arch* arch) {
-  const char *Prop;
   ezxml_t Cur;
 
   /* Process area */

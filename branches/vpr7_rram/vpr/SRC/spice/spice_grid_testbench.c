@@ -70,11 +70,37 @@ void fprint_spice_grid_testbench_global_ports(FILE* fp, int x, int y,
   fprint_spice_generic_testbench_global_ports(fp, 
                                               sram_spice_orgz_info,
                                               global_ports_head);
+  /* Global routing Vdds */
+  fprint_spice_testbench_global_vdd_port_stimuli(fp, 
+                                                 spice_tb_global_vdd_localrouting_port_name,
+                                                 "vsp");
+
+  fprint_spice_testbench_global_sram_inport_stimuli(fp,
+                                                    sram_spice_orgz_info);
+  /* Global Vdds for SRAMs */
+  fprint_spice_testbench_global_vdd_port_stimuli(fp, 
+                                                 spice_tb_global_vdd_lut_sram_port_name,
+                                                 "vsp");
+
+  fprint_spice_testbench_global_vdd_port_stimuli(fp, 
+                                                 spice_tb_global_vdd_localrouting_sram_port_name,
+                                                 "vsp");
+  
+  fprint_spice_testbench_global_vdd_port_stimuli(fp, 
+                                                 spice_tb_global_vdd_io_sram_port_name,
+                                                 "vsp");
 
   /*Global Vdds for LUTs*/
   fprint_grid_global_vdds_spice_model(fp, x, y, SPICE_MODEL_LUT, spice);
+
   /*Global Vdds for FFs*/
   fprint_grid_global_vdds_spice_model(fp, x, y, SPICE_MODEL_FF, spice);
+
+  /*Global Vdds for IOPADs*/
+  fprint_grid_global_vdds_spice_model(fp, x, y, SPICE_MODEL_IOPAD, spice);
+
+  /*Global Vdds for Hardlogics*/
+  fprint_grid_global_vdds_spice_model(fp, x, y, SPICE_MODEL_HARDLOGIC, spice);
 
   return;
 }
@@ -563,17 +589,9 @@ int fprint_spice_one_grid_testbench(char* formatted_spice_dir,
 
   if (0 < tb_num_grid) {
     vpr_printf(TIO_MESSAGE_INFO, "Writing Grid[%d][%d] Testbench for %s...\n", grid_x, grid_y, circuit_name);
-    if (NULL == tb_head) {
-      tb_head = create_llist(1);
-      tb_head->dptr = my_malloc(sizeof(t_spicetb_info));
-      ((t_spicetb_info*)(tb_head->dptr))->tb_name = my_strdup(grid_testbench_file_path);
-      ((t_spicetb_info*)(tb_head->dptr))->num_sim_clock_cycles = max_sim_num_clock_cycles;
-    } else {
-      temp = insert_llist_node(tb_head);
-      temp->dptr = my_malloc(sizeof(t_spicetb_info));
-      ((t_spicetb_info*)(temp->dptr))->tb_name = my_strdup(grid_testbench_file_path);
-      ((t_spicetb_info*)(temp->dptr))->num_sim_clock_cycles = max_sim_num_clock_cycles;
-    }
+    /* Push the testbench to the linked list */
+    tb_head = add_one_spice_tb_info_to_llist(tb_head, grid_testbench_file_path, 
+                                             max_sim_num_clock_cycles);
     used = 1;
   } else {
     my_remove_file(grid_testbench_file_path);

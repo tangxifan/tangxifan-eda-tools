@@ -192,12 +192,6 @@ void fprint_top_netlist_stimulations(FILE* fp,
 
   /* Every SRAM inputs should have a voltage source */
   fprintf(fp, "***** Global Inputs for SRAMs *****\n");
-  /*
-  for (i = 0; i < sram_spice_model->cnt; i++) {
-    fprintf(fp, "V%s[%d]->in %s[%d]->in 0 0\n", 
-            sram_spice_model->prefix, i, sram_spice_model->prefix, i);
-  }
-  */
   if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
     fprintf(fp, "Vsc_clk sc_clk 0 0\n");
     fprintf(fp, "Vsc_rst sc_rst 0 0\n");
@@ -652,7 +646,6 @@ void fprint_spice_top_netlist(char* circuit_name,
   char* formatted_subckt_dir_path = format_dir_path(subckt_dir_path);
   char* temp_include_file_path = NULL;
   char* title = my_strcat("FPGA SPICE Netlist for Design: ", circuit_name);
-  t_llist* temp = NULL;
 
   /* Check if the path exists*/
   fp = fopen(top_netlist_name,"w");
@@ -727,20 +720,13 @@ void fprint_spice_top_netlist(char* circuit_name,
   /* Close the file*/
   fclose(fp);
 
+  /* Push the testbench to the linked list */
+  tb_head = add_one_spice_tb_info_to_llist(tb_head, top_netlist_name, 
+                                           spice.spice_params.meas_params.sim_num_clock_cycle + 1);
+
   /* Free */
   //my_free(title);
   //my_free(formatted_subckt_dir_path);
-  if (NULL == tb_head) {
-    tb_head = create_llist(1);
-    tb_head->dptr = my_malloc(sizeof(t_spicetb_info));
-    ((t_spicetb_info*)(tb_head->dptr))->tb_name = my_strdup(top_netlist_name);
-    ((t_spicetb_info*)(tb_head->dptr))->num_sim_clock_cycles = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
-  } else {
-    temp = insert_llist_node(tb_head);
-    temp->dptr = my_malloc(sizeof(t_spicetb_info));
-    ((t_spicetb_info*)(temp->dptr))->tb_name = my_strdup(top_netlist_name);
-    ((t_spicetb_info*)(temp->dptr))->num_sim_clock_cycles = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
-  }
 
   return;
 }
