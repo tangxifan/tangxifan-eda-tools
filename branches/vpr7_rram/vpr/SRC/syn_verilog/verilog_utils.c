@@ -978,9 +978,13 @@ void dump_verilog_sram_one_port(FILE* fp,
     mem_model = cur_sram_orgz_info->mem_bank_info->mem_model;
     if (0 == port_type_index) {
       port_name = "bl";
-    } else {
-      assert(1 == port_type_index);
+    } else if (1 == port_type_index) {
       port_name = "wl";
+    /* Create inverted BL and WL signals */
+    } else if (2 == port_type_index) {
+      port_name = "blb";
+    } else if (3 == port_type_index) {
+      port_name = "wlb";
     }
     break;
   default:
@@ -1007,6 +1011,12 @@ void dump_verilog_sram_ports(FILE* fp,
                              t_sram_orgz_info* cur_sram_orgz_info,
                              int sram_lsb, int sram_msb,
                              enum e_dump_verilog_port_type dump_port_type) {
+  /* Need to dump inverted BL/WL if needed */
+  int num_blb_ports, num_wlb_ports;
+  t_spice_model_port** blb_port = NULL;
+  t_spice_model_port** wlb_port = NULL;
+  t_spice_model* cur_sram_verilog_model = NULL;
+
   /* Check the file handler*/ 
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
@@ -1033,6 +1043,25 @@ void dump_verilog_sram_ports(FILE* fp,
   dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
                              sram_lsb, sram_msb, 
                              1, dump_port_type);
+
+  /* Find the BLB and WLB port, if there is any */
+  get_sram_orgz_info_mem_model(cur_sram_orgz_info, &cur_sram_verilog_model);
+  find_blb_wlb_ports_spice_model(cur_sram_verilog_model, 
+                                 &num_blb_ports, &blb_port, &num_wlb_ports, &wlb_port); 
+  /* BL inverted port */
+  if (1 == num_blb_ports) {
+    fprintf(fp, ",\n");
+    dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
+                               sram_lsb, sram_msb, 
+                               2, dump_port_type);
+  }
+  /* WL inverted port */
+  if (1 == num_wlb_ports) {
+    fprintf(fp, ",\n");
+    dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
+                               sram_lsb, sram_msb, 
+                               3, dump_port_type);
+  }
   
   return;
 }
@@ -1126,9 +1155,14 @@ void dump_verilog_reserved_sram_ports(FILE* fp,
 void dump_verilog_mux_sram_submodule(FILE* fp, t_sram_orgz_info* cur_sram_orgz_info,
                                      t_spice_model* cur_mux_verilog_model, int mux_size,
                                      t_spice_model* cur_sram_verilog_model) {
-  int cur_bl, cur_wl, num_bl_ports, num_wl_ports, cur_num_sram;
+  int cur_bl, cur_wl, cur_num_sram;
+  int num_bl_ports, num_wl_ports;
   t_spice_model_port** bl_port = NULL;
   t_spice_model_port** wl_port = NULL;
+  int num_blb_ports, num_wlb_ports;
+  t_spice_model_port** blb_port = NULL;
+  t_spice_model_port** wlb_port = NULL;
+
   int num_bl_per_sram = 0;
   int num_wl_per_sram = 0;
 
@@ -1156,6 +1190,19 @@ void dump_verilog_mux_sram_submodule(FILE* fp, t_sram_orgz_info* cur_sram_orgz_i
     assert(1 == num_wl_ports);
     num_bl_per_sram = bl_port[0]->size; 
     num_wl_per_sram = wl_port[0]->size; 
+    /* Find the BLB and WLB port, if there is any */
+    find_blb_wlb_ports_spice_model(cur_sram_verilog_model, 
+                                   &num_blb_ports, &blb_port, &num_wlb_ports, &wlb_port); 
+    if (1 == num_blb_ports) {
+      assert(num_bl_per_sram == blb_port[0]->size);
+    } else {
+      assert(0 == num_blb_ports);
+    }
+    if (1 == num_wlb_ports) {
+      assert(num_wl_per_sram == wlb_port[0]->size);
+    } else {
+      assert(0 == num_wlb_ports);
+    }
 
     /* SRAM subckts*/
     fprintf(fp, "%s %s_%d_ (", cur_sram_verilog_model->name, cur_sram_verilog_model->prefix, 
@@ -1187,6 +1234,20 @@ void dump_verilog_mux_sram_submodule(FILE* fp, t_sram_orgz_info* cur_sram_orgz_i
     fprintf(fp, "%s_size%d_%d_configbus1[%d:%d] ", 
             cur_mux_verilog_model->prefix, mux_size, cur_mux_verilog_model->cnt, 
             cur_num_sram, cur_num_sram + num_wl_per_sram - 1); /* Outputs */
+    /* If we have a BLB or WLB, we need to dump inverted config_bus */
+    if (1 == num_blb_ports) { 
+      fprintf(fp, ", ");
+      fprintf(fp, "%s_size%d_%d_configbus0_b[%d:%d] ", 
+              cur_mux_verilog_model->prefix, mux_size, cur_mux_verilog_model->cnt, 
+              cur_num_sram, cur_num_sram + num_bl_per_sram - 1); 
+    }
+    if (1 == num_wlb_ports) { 
+      fprintf(fp, ", ");
+      fprintf(fp, "%s_size%d_%d_configbus1_b[%d:%d] ", 
+              cur_mux_verilog_model->prefix, mux_size, cur_mux_verilog_model->cnt, 
+              cur_num_sram, cur_num_sram + num_wl_per_sram - 1); 
+    }
+
     fprintf(fp, ");\n");  //
     /* Update the counter */
     update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info,
@@ -1260,9 +1321,14 @@ void dump_verilog_mux_sram_submodule(FILE* fp, t_sram_orgz_info* cur_sram_orgz_i
 /* Dump a verilog submodule of SRAM, according to SRAM organization type */
 void dump_verilog_sram_submodule(FILE* fp, t_sram_orgz_info* cur_sram_orgz_info,
                                  t_spice_model* cur_sram_verilog_model) {
-  int cur_bl, cur_wl, num_bl_ports, num_wl_ports, cur_num_sram;
+  int cur_bl, cur_wl, cur_num_sram;
+  int num_bl_ports, num_wl_ports;
   t_spice_model_port** bl_port = NULL;
   t_spice_model_port** wl_port = NULL;
+  int num_blb_ports, num_wlb_ports;
+  t_spice_model_port** blb_port = NULL;
+  t_spice_model_port** wlb_port = NULL;
+
   int num_bl_per_sram = 0;
   int num_wl_per_sram = 0;
 
@@ -1290,6 +1356,19 @@ void dump_verilog_sram_submodule(FILE* fp, t_sram_orgz_info* cur_sram_orgz_info,
     assert(1 == num_wl_ports);
     num_bl_per_sram = bl_port[0]->size; 
     num_wl_per_sram = wl_port[0]->size; 
+    /* Find the BLB and WLB port, if there is any */
+    find_blb_wlb_ports_spice_model(cur_sram_verilog_model, 
+                                   &num_blb_ports, &blb_port, &num_wlb_ports, &wlb_port); 
+    if (1 == num_blb_ports) {
+      assert(num_bl_per_sram == blb_port[0]->size);
+    } else {
+      assert(0 == num_blb_ports);
+    }
+    if (1 == num_wlb_ports) {
+      assert(num_wl_per_sram == wlb_port[0]->size);
+    } else {
+      assert(0 == num_wlb_ports);
+    }
 
     /* SRAM subckts*/
     fprintf(fp, "%s %s_%d_ (", cur_sram_verilog_model->name, cur_sram_verilog_model->prefix, 
@@ -1310,6 +1389,18 @@ void dump_verilog_sram_submodule(FILE* fp, t_sram_orgz_info* cur_sram_orgz_info,
     fprintf(fp, "%s_%d_configbus1[%d:%d] ", 
             cur_sram_verilog_model->prefix, cur_sram_verilog_model->cnt, 
             cur_wl, cur_wl + num_wl_per_sram - 1); /* Outputs */
+    if (1 == num_blb_ports) {
+      fprintf(fp, ", ");
+      fprintf(fp, "%s_%d_configbus0_b[%d:%d] ", 
+              cur_sram_verilog_model->prefix, cur_sram_verilog_model->cnt, 
+              cur_bl, cur_bl + num_bl_per_sram - 1); 
+    }
+    if (1 == num_wlb_ports) {
+      fprintf(fp, ", ");
+      fprintf(fp, "%s_%d_configbus1_b[%d:%d] ", 
+              cur_sram_verilog_model->prefix, cur_sram_verilog_model->cnt, 
+              cur_wl, cur_wl + num_wl_per_sram - 1); /* Outputs */
+    }
     fprintf(fp, ");\n");  //
     /* Update the counter */
     update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info,
@@ -1416,6 +1507,10 @@ void dump_verilog_mem_config_bus(FILE* fp, t_spice_model* mem_spice_model,
                                  int cur_num_sram,
                                  int num_mem_reserved_conf_bits,
                                  int num_mem_conf_bits) { 
+  int num_blb_ports, num_wlb_ports;
+  t_spice_model_port** blb_port = NULL;
+  t_spice_model_port** wlb_port = NULL;
+
   /* Check the file handler*/ 
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
@@ -1443,6 +1538,9 @@ void dump_verilog_mem_config_bus(FILE* fp, t_spice_model* mem_spice_model,
      */ 
     break;
   case SPICE_SRAM_MEMORY_BANK:
+    /* Find the BLB and WLB port, if there is any */
+    find_blb_wlb_ports_spice_model(mem_spice_model, 
+                                   &num_blb_ports, &blb_port, &num_wlb_ports, &wlb_port); 
     /* configuration wire bus */
     if (0 < (num_mem_reserved_conf_bits + num_mem_conf_bits)) {
       /* First bus is for sram_out in CMOS MUX or BL in RRAM MUX */
@@ -1455,6 +1553,18 @@ void dump_verilog_mem_config_bus(FILE* fp, t_spice_model* mem_spice_model,
               cur_num_sram,
               cur_num_sram + num_mem_reserved_conf_bits + num_mem_conf_bits - 1,
               mem_spice_model->prefix, mem_spice_model->cnt);
+      if (1 == num_blb_ports) {
+        fprintf(fp, "wire [%d:%d] %s_%d_configbus0_b;\n",
+                cur_num_sram,
+                cur_num_sram + num_mem_reserved_conf_bits + num_mem_conf_bits - 1,
+                mem_spice_model->prefix, mem_spice_model->cnt);
+      }
+      if (1 == num_wlb_ports) {
+        fprintf(fp, "wire [%d:%d] %s_%d_configbus1_b;\n",
+                cur_num_sram,
+                cur_num_sram + num_mem_reserved_conf_bits + num_mem_conf_bits - 1,
+                mem_spice_model->prefix, mem_spice_model->cnt);
+      }
     }
     /* Connect wires to config bus */
     /* reserved configuration bits */
@@ -1494,6 +1604,27 @@ void dump_verilog_mem_config_bus(FILE* fp, t_spice_model* mem_spice_model,
                                  cur_num_sram, cur_num_sram + num_mem_conf_bits - 1,
                                  1, VERILOG_PORT_CONKT);
       fprintf(fp, ";\n");
+      /* Dump inverted config_bus if needed */
+      if (1 == num_blb_ports) {
+        fprintf(fp, "assign %s_%d_configbus0_b[%d:%d] = ",
+                mem_spice_model->prefix, mem_spice_model->cnt,
+                cur_num_sram + num_mem_reserved_conf_bits,
+                cur_num_sram + num_mem_reserved_conf_bits + num_mem_conf_bits - 1);
+        dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
+                                   cur_num_sram, cur_num_sram + num_mem_conf_bits - 1,
+                                   2, VERILOG_PORT_CONKT);
+        fprintf(fp, ";\n");
+      }
+      if (1 == num_wlb_ports) {
+        fprintf(fp, "assign %s_%d_configbus1_b[%d:%d] = ",
+                mem_spice_model->prefix,  mem_spice_model->cnt,
+                cur_num_sram + num_mem_reserved_conf_bits,
+                cur_num_sram + num_mem_reserved_conf_bits + num_mem_conf_bits - 1);
+        dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
+                                   cur_num_sram, cur_num_sram + num_mem_conf_bits - 1,
+                                   3, VERILOG_PORT_CONKT);
+        fprintf(fp, ";\n");
+      }
     }
       break;
   default:
@@ -1511,6 +1642,11 @@ void dump_verilog_cmos_mux_config_bus(FILE* fp, t_spice_model* mux_spice_model,
                                       int mux_size, int cur_num_sram,
                                       int num_mux_reserved_conf_bits,
                                       int num_mux_conf_bits) { 
+  int num_blb_ports, num_wlb_ports;
+  t_spice_model_port** blb_port = NULL;
+  t_spice_model_port** wlb_port = NULL;
+  t_spice_model* cur_sram_verilog_model = NULL;
+
   /* Check the file handler*/ 
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
@@ -1572,6 +1708,35 @@ void dump_verilog_cmos_mux_config_bus(FILE* fp, t_spice_model* mux_spice_model,
                                cur_num_sram, cur_num_sram + num_mux_conf_bits - 1,
                                1, VERILOG_PORT_CONKT);
     fprintf(fp, ";\n");
+    /* Find the BLB and WLB port, if there is any */
+    get_sram_orgz_info_mem_model(cur_sram_orgz_info, &cur_sram_verilog_model);
+    find_blb_wlb_ports_spice_model(cur_sram_verilog_model, 
+                                   &num_blb_ports, &blb_port, &num_wlb_ports, &wlb_port); 
+    /* Dump inverted config_bus if needed */
+    if (1 == num_blb_ports) {
+      fprintf(fp, "wire [%d:%d] %s_size%d_%d_configbus0_b;\n",
+                  cur_num_sram, cur_num_sram + num_mux_conf_bits - 1,
+                  mux_spice_model->prefix, mux_size, mux_spice_model->cnt);
+      fprintf(fp, "assign %s_size%d_%d_configbus0_b[%d:%d] = ",
+                  mux_spice_model->prefix, mux_size, mux_spice_model->cnt,
+                  cur_num_sram, cur_num_sram + num_mux_conf_bits - 1);
+       dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
+                                  cur_num_sram, cur_num_sram + num_mux_conf_bits - 1,
+                                  2, VERILOG_PORT_CONKT);
+      fprintf(fp, ";\n");
+    }
+    if (1 == num_wlb_ports) {
+    fprintf(fp, "wire [%d:%d] %s_size%d_%d_configbus1_b;\n",
+                cur_num_sram, cur_num_sram + num_mux_conf_bits - 1,
+                mux_spice_model->prefix, mux_size, mux_spice_model->cnt);
+      fprintf(fp, "assign %s_size%d_%d_configbus1_b[%d:%d] = ",
+              mux_spice_model->prefix, mux_size, mux_spice_model->cnt,
+              cur_num_sram, cur_num_sram + num_mux_conf_bits - 1);
+      dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
+                                 cur_num_sram, cur_num_sram + num_mux_conf_bits - 1,
+                                 3, VERILOG_PORT_CONKT);
+      fprintf(fp, ";\n");
+    }
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid SRAM organization!\n", 

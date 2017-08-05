@@ -399,6 +399,10 @@ void init_check_arch_spice_models(t_arch* arch,
   config_spice_model_input_output_buffers_pass_gate(arch->spice->num_spice_model, 
                                                     arch->spice->spice_models);
 
+  /* Find inversion spice_model for ports */
+  config_spice_model_port_inv_spice_model(arch->spice->num_spice_model, 
+                                          arch->spice->spice_models);
+
   /* 1. Link the spice model defined in pb_types and routing switches */
   /* Step A:  Check routing switches, connection blocks*/
   if ((0 == arch->num_cb_switch)||(0 > arch->num_cb_switch)) {

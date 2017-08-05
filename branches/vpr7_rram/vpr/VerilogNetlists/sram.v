@@ -8,7 +8,8 @@ input din, // Data input
 output dout, // Data output
 output doutb, // Data output
 input bl, // Bit line control signal
-input wl // Word line control signal
+input wl, // Word line control signal
+input blb // Inverted Bit line control signal
 );
   //----- local variable need to be registered
   reg a;

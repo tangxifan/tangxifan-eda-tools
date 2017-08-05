@@ -386,6 +386,10 @@ void find_bl_wl_ports_spice_model(t_spice_model* cur_spice_model,
                                   int* num_bl_ports, t_spice_model_port*** bl_ports,
                                   int* num_wl_ports, t_spice_model_port*** wl_ports);
 
+void find_blb_wlb_ports_spice_model(t_spice_model* cur_spice_model,
+                                    int* num_blb_ports, t_spice_model_port*** blb_ports,
+                                    int* num_wlb_ports, t_spice_model_port*** wlb_ports);
+
 int* decode_mode_bits(char* mode_bits, int* num_sram_bits);
 
 /* Useful functions for LUT decoding */
@@ -533,6 +537,9 @@ int find_path_id_between_pb_rr_nodes(t_rr_node* local_rr_graph,
                                      int des_node);
 
 t_pb* get_child_pb_for_phy_pb_graph_node(t_pb* cur_pb, int ipb, int jpb);
+
+void config_spice_model_port_inv_spice_model(int num_spice_models, 
+                                             t_spice_model* spice_model);
 
 void config_spice_models_sram_port_spice_model(int num_spice_model,
                                                t_spice_model* spice_models,

@@ -81,6 +81,8 @@ void dump_verilog_decoder(char* submodule_dir) {
   int bl_decoder_size, wl_decoder_size;
   FILE* fp = NULL;
   t_spice_model* mem_model = NULL;
+  boolean bl_inverted = FALSE;
+  boolean wl_inverted = FALSE;
 
   char* verilog_name = my_strcat(submodule_dir, decoders_verilog_file_name);
   
@@ -107,6 +109,10 @@ void dump_verilog_decoder(char* submodule_dir) {
 
   /* Different design technology requires different BL decoder logic */
   get_sram_orgz_info_mem_model(sram_verilog_orgz_info, &mem_model); 
+  /* Find if we need an inversion of the BL */
+  check_mem_model_blwl_inverted(mem_model, SPICE_MODEL_PORT_BL, &bl_inverted); 
+  check_mem_model_blwl_inverted(mem_model, SPICE_MODEL_PORT_WL, &wl_inverted); 
+
   switch (mem_model->design_tech) {
   case SPICE_MODEL_DESIGN_CMOS: /* CMOS SRAM*/
     /* SRAM technology requires its BL decoder has an additional input called data_in 
@@ -125,11 +131,10 @@ void dump_verilog_decoder(char* submodule_dir) {
                num_array_bl - 1);
     fprintf(fp, ");\n");
   
+    /* Wee need to know the default value of bl port and wl port */
+
     /* Internal logics */
-    /*
-    fprintf(fp, "assign decoder_out = (enable) ? (1 << binary_in):%d'b0;\n",
-          num_bl);
-    */
+
     fprintf(fp, "always@(addr_out,addr_in,enable, data_in)\n");
     fprintf(fp, "begin\n");
     fprintf(fp, "\taddr_out = %d'bz;\n", num_array_bl);
@@ -155,15 +160,21 @@ void dump_verilog_decoder(char* submodule_dir) {
     fprintf(fp, ");\n");
   
     /* Internal logics */
-    /*
-    fprintf(fp, "assign decoder_out = (enable) ? (1 << binary_in):%d'b0;\n",
-          num_bl);
-    */
     fprintf(fp, "always@(addr_out,addr_in,enable)\n");
     fprintf(fp, "begin\n");
-    fprintf(fp, "\taddr_out = %d'b0;\n", num_array_bl);
+    if (TRUE == bl_inverted) {
+      fprintf(fp, "\taddr_out = %d'b1;\n", num_array_bl);
+    } else {
+      assert (FALSE == bl_inverted);
+      fprintf(fp, "\taddr_out = %d'b0;\n", num_array_bl);
+    }
     fprintf(fp, "\tif (1'b1 == enable) begin\n");
-    fprintf(fp, "\t\taddr_out[addr_in] = 1'b1;\n");
+    if (TRUE == bl_inverted) {
+      fprintf(fp, "\t\taddr_out[addr_in] = 1'b0;\n");
+    } else {
+      assert (FALSE == bl_inverted);
+      fprintf(fp, "\t\taddr_out[addr_in] = 1'b1;\n");
+    }
     fprintf(fp, "\tend\n");
     fprintf(fp, "end\n");
 
@@ -189,15 +200,21 @@ void dump_verilog_decoder(char* submodule_dir) {
   fprintf(fp, ");\n");
   
   /* Internal logics */
-  /*
-  fprintf(fp, "assign decoder_out = (enable) ? (1 << binary_in):%d'b0;\n",
-          num_bl);
-  */
   fprintf(fp, "always@(addr_out,addr_in,enable)\n");
   fprintf(fp, "begin\n");
-  fprintf(fp, "\taddr_out = %d'b0;\n", num_array_wl);
+  if (TRUE == wl_inverted) {
+    fprintf(fp, "\taddr_out = %d'b1;\n", num_array_wl);
+  } else {
+    assert (FALSE == wl_inverted);
+    fprintf(fp, "\taddr_out = %d'b0;\n", num_array_wl);
+  }
   fprintf(fp, "\tif (1'b1 == enable) begin\n");
-  fprintf(fp, "\t\taddr_out[addr_in] = 1'b1;\n");
+  if (TRUE == wl_inverted) {
+    fprintf(fp, "\t\taddr_out[addr_in] = 1'b0;\n");
+  } else {
+    assert (FALSE == wl_inverted);
+    fprintf(fp, "\t\taddr_out[addr_in] = 1'b1;\n");
+  }
   fprintf(fp, "\tend\n");
   fprintf(fp, "end\n");
 

@@ -289,6 +289,50 @@ t_spice_model* get_default_spice_model(enum e_spice_model_type default_spice_mod
 }
 
 /* Tasks: 
+ * 1. Search the inv_spice_model_name of each ports of a spice_model
+ * 2. Copy the information from inverter spice model to higher level spice_models 
+ */
+void config_spice_model_port_inv_spice_model(int num_spice_models, 
+                                             t_spice_model* spice_model) {
+  int i, iport;
+  t_spice_model* inv_spice_model = NULL;
+
+  for (i = 0; i < num_spice_models; i++) {
+    /* By pass inverters and buffers  */
+    if (SPICE_MODEL_INVBUF == spice_model[i].type) {
+      continue;
+    }
+    for (iport = 0; iport < spice_model[i].num_port; iport++) {
+      /* Now we bypass non BL/WL ports */
+      if ((SPICE_MODEL_PORT_BL != spice_model[i].ports[iport].type) 
+           && (SPICE_MODEL_PORT_BLB != spice_model[i].ports[iport].type) 
+           && (SPICE_MODEL_PORT_WL != spice_model[i].ports[iport].type) 
+           && (SPICE_MODEL_PORT_WLB != spice_model[i].ports[iport].type)) {
+        continue;
+      }
+      if (NULL == spice_model[i].ports[iport].inv_spice_model_name) {
+        inv_spice_model = get_default_spice_model(SPICE_MODEL_INVBUF,
+                                                  num_spice_models, spice_model);
+      } else {
+        inv_spice_model = find_name_matched_spice_model(spice_model[i].ports[iport].inv_spice_model_name,
+                                                        num_spice_models, spice_model);
+        /* We should find a buffer spice_model*/
+        if (NULL == inv_spice_model) {
+          vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Fail to find inv_spice_model to the port(name=%s) of spice_model(name=%s)!\n",
+                     __FILE__, __LINE__, spice_model[i].ports[iport].prefix, spice_model[i].name);
+          exit(1);
+        }
+      }
+      /* Config */
+      spice_model[i].ports[iport].inv_spice_model = inv_spice_model;
+    }
+  }
+  return;
+}
+
+
+
+/* Tasks: 
  * 1. Search the spice_model_name of input and output buffer and link to the spice_model
  * 2. Copy the information from input/output buffer spice model to higher level spice_models 
  */
@@ -4905,6 +4949,9 @@ add_sram_conf_bits_to_llist(t_sram_orgz_info* cur_sram_orgz_info, int mem_index,
 void find_bl_wl_ports_spice_model(t_spice_model* cur_spice_model,
                                   int* num_bl_ports, t_spice_model_port*** bl_ports,
                                   int* num_wl_ports, t_spice_model_port*** wl_ports) {
+  int i;
+
+  /* Check */
   assert(NULL != cur_spice_model); 
 
   /* Find BL ports */
@@ -4913,29 +4960,51 @@ void find_bl_wl_ports_spice_model(t_spice_model* cur_spice_model,
   (*wl_ports) = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_WL, num_wl_ports, TRUE);
 
   /* port size of BL/WL should be at least 1 !*/
-  assert(1 == (*num_bl_ports));
-  assert(0 < (*bl_ports)[0]->size);
-  assert(1 == (*num_wl_ports));
-  assert(0 < (*wl_ports)[0]->size);
+  assert((*num_bl_ports) == (*num_wl_ports));
 
   /* Check the size of BL/WL ports */
   switch (cur_spice_model->design_tech) {
   case SPICE_MODEL_DESIGN_RRAM:
     /* This check may be too tight */
-    assert((*bl_ports)[0]->size == (*wl_ports)[0]->size);
-    assert(0 < (*bl_ports)[0]->size);
-    assert(0 < (*wl_ports)[0]->size);
+    for (i = 0; i < (*num_bl_ports); i++) {
+      assert(0 < (*bl_ports)[i]->size);
+    }
+    for (i = 0; i < (*num_wl_ports); i++) {
+      assert(0 < (*wl_ports)[i]->size);
+    }
     break;
   case SPICE_MODEL_DESIGN_CMOS:
-    assert((*bl_ports)[0]->size == (*wl_ports)[0]->size);
-    assert(1 == (*bl_ports)[0]->size);
-    assert(1 == (*wl_ports)[0]->size);
+    for (i = 0; i < (*num_bl_ports); i++) {
+      assert(0 < (*bl_ports)[i]->size);
+    }
+    for (i = 0; i < (*num_wl_ports); i++) {
+      assert(0 < (*wl_ports)[i]->size);
+    }
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of MUX(name: %s)\n",
                __FILE__, __LINE__, cur_spice_model->name); 
     exit(1);
   }
+  
+  return;
+}
+
+/* Find BL and WL ports for a SRAM model.
+ * And check if the number of BL/WL satisfy the technology needs
+ */
+void find_blb_wlb_ports_spice_model(t_spice_model* cur_spice_model,
+                                    int* num_blb_ports, t_spice_model_port*** blb_ports,
+                                    int* num_wlb_ports, t_spice_model_port*** wlb_ports) {
+  int i;
+
+  /* Check */
+  assert(NULL != cur_spice_model); 
+
+  /* Find BL ports */
+  (*blb_ports) = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_BLB, num_blb_ports, TRUE);
+  /* Find WL ports */
+  (*wlb_ports) = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_WLB, num_wlb_ports, TRUE);
   
   return;
 }

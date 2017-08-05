@@ -115,7 +115,8 @@ void fprint_spice_dff_testbench_one_dff(FILE* fp,
   for (ipin = 0; ipin < num_inputs; ipin++) {
     fprintf(fp, "dff[%d]->in[%d] ", tb_num_dffs, ipin);
   }
-  fprintf(fp, "dff[%d]->out 0 gvdd 0 %s\n", tb_num_dffs, subckt_name);
+  fprintf(fp, "dff[%d]->out gvdd 0 ", tb_num_dffs);
+  fprintf(fp, "%s\n", dff_spice_model->name);
   /* Stimulates */ 
   for (ipin = 0; ipin < num_inputs; ipin++) {
     fprintf(fp, "Vdff[%d]->in[%d] dff[%d]->in[%d] 0 \n",

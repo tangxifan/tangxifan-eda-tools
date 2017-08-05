@@ -44,10 +44,14 @@ static char* top_netlist_addr_bl_port_name = "addr_bl";
 static char* top_netlist_addr_wl_port_name = "addr_wl";
 static char* top_netlist_array_bl_port_name = "bl_bus";
 static char* top_netlist_array_wl_port_name = "wl_bus";
+static char* top_netlist_array_blb_port_name = "blb_bus";
+static char* top_netlist_array_wlb_port_name = "wlb_bus";
 static char* top_netlist_reserved_bl_port_postfix = "_reserved_bl";
 static char* top_netlist_reserved_wl_port_postfix = "_reserved_wl";
 static char* top_netlist_normal_bl_port_postfix = "_bl";
 static char* top_netlist_normal_wl_port_postfix = "_wl";
+static char* top_netlist_normal_blb_port_postfix = "_blb";
+static char* top_netlist_normal_wlb_port_postfix = "_wlb";
 static char* top_netlist_scan_chain_head_prefix = "sc_in";
 
 static float verilog_sim_timescale = 1e-9; // Verilog Simulation time scale (minimum time unit) : 1ns
@@ -142,7 +146,12 @@ void dump_verilog_top_netlist_memory_bank_internal_wires(FILE* fp) {
   int cur_bl_lsb, cur_wl_lsb;
   int cur_bl_msb, cur_wl_msb;
   int bl_decoder_size, wl_decoder_size;
-
+  int num_blb_ports, num_wlb_ports;
+  t_spice_model_port** blb_port = NULL;
+  t_spice_model_port** wlb_port = NULL;
+  t_spice_model* blb_inv_spice_model = NULL;
+  t_spice_model* wlb_inv_spice_model = NULL;
+  
   /* Check */
   assert (sram_verilog_orgz_info->type == SPICE_SRAM_MEMORY_BANK);
 
@@ -164,6 +173,11 @@ void dump_verilog_top_netlist_memory_bank_internal_wires(FILE* fp) {
   determine_verilog_blwl_decoder_size(sram_verilog_orgz_info,
                                       &num_array_bl, &num_array_wl, &bl_decoder_size, &wl_decoder_size);
 
+  /* Get BLB and WLB ports */
+  find_blb_wlb_ports_spice_model(mem_model, &num_blb_ports, &blb_port,
+                                 &num_wlb_ports, &wlb_port);
+  /* Get inverter spice_model */
+
   /* Important!!!:
    * BL/WL should always start from LSB to MSB!
    * In order to follow this convention in primitive nodes. 
@@ -175,6 +189,16 @@ void dump_verilog_top_netlist_memory_bank_internal_wires(FILE* fp) {
   dump_verilog_generic_port(fp, VERILOG_PORT_WIRE,
                             top_netlist_array_wl_port_name, 0, num_array_wl - 1);
   fprintf(fp, "; //--- Array Bit lines bus \n");
+  if (1 == num_blb_ports) {
+    dump_verilog_generic_port(fp, VERILOG_PORT_WIRE,
+                              top_netlist_array_blb_port_name, 0, num_array_bl - 1);
+    fprintf(fp, "; //--- Inverted Array Bit lines bus \n");
+  }
+  if (1 == num_wlb_ports) {
+    dump_verilog_generic_port(fp, VERILOG_PORT_WIRE,
+                              top_netlist_array_wlb_port_name, 0, num_array_wl - 1);
+    fprintf(fp, "; //--- Inverted Array Word lines bus \n");
+  }
   fprintf(fp, "\n");
 
   switch (mem_model->design_tech) {
@@ -190,6 +214,31 @@ void dump_verilog_top_netlist_memory_bank_internal_wires(FILE* fp) {
             0, num_bl - 1, mem_model->prefix, top_netlist_normal_bl_port_postfix);
     fprintf(fp, "  wire [%d:%d] %s%s; //---- Normal Word lines \n",
             0, num_wl - 1, mem_model->prefix, top_netlist_normal_wl_port_postfix);
+    /* Declare inverted wires if needed */
+    if (1 == num_blb_ports) {
+      fprintf(fp, "  wire [%d:%d] %s%s; //---- Inverted Normal Bit lines \n",
+              0, num_bl - 1, mem_model->prefix, top_netlist_normal_blb_port_postfix);
+      /* get inv_spice_model */
+      blb_inv_spice_model = blb_port[0]->inv_spice_model;
+      /* Make an inversion of the BL */
+      fprintf(fp, " %s %s_blb [0:%d] (%s, %s);\n",
+              blb_inv_spice_model->name, blb_inv_spice_model->prefix, 
+              num_array_bl - 1, 
+              top_netlist_array_bl_port_name,
+              top_netlist_array_blb_port_name);
+    }
+    if (1 == num_wlb_ports) {
+      fprintf(fp, "  wire [%d:%d] %s%s; //---- Inverted Normal Word lines \n",
+              0, num_wl - 1, mem_model->prefix, top_netlist_normal_wlb_port_postfix);
+      /* get inv_spice_model */
+      wlb_inv_spice_model = wlb_port[0]->inv_spice_model;
+      /* Make an inversion of the WL */
+      fprintf(fp, " %s %s_wlb [0:%d] (%s, %s);\n",
+              wlb_inv_spice_model->name, wlb_inv_spice_model->prefix, 
+              num_array_wl - 1, 
+              top_netlist_array_wl_port_name,
+              top_netlist_array_wlb_port_name);
+    }
     /* Connections for columns */
     for (icol = 0; icol < num_array_bl; icol++) {
       cur_bl_lsb = icol * num_array_bl; 
@@ -202,6 +251,11 @@ void dump_verilog_top_netlist_memory_bank_internal_wires(FILE* fp) {
       fprintf(fp, "  assign %s%s[%d:%d] = %s[%d:%d];\n",
               mem_model->prefix, top_netlist_normal_bl_port_postfix, cur_bl_lsb, cur_bl_msb,
               top_netlist_array_bl_port_name, 0, cur_bl_msb - cur_bl_lsb);
+      if (1 == num_blb_ports) {
+        fprintf(fp, "  assign %s%s[%d:%d] = %s[%d:%d];\n",
+                mem_model->prefix, top_netlist_normal_blb_port_postfix, cur_bl_lsb, cur_bl_msb,
+                top_netlist_array_blb_port_name, 0, cur_bl_msb - cur_bl_lsb);
+      }
       /* Finish if MSB meets the upbound */
       if (cur_bl_msb == num_bl - 1) {
         break;
@@ -220,6 +274,11 @@ void dump_verilog_top_netlist_memory_bank_internal_wires(FILE* fp) {
         fprintf(fp, "    assign %s%s[%d] = %s[%d];\n",
                 mem_model->prefix, top_netlist_normal_wl_port_postfix, icol,
                 top_netlist_array_wl_port_name, irow);
+        if (1 == num_wlb_ports) {
+          fprintf(fp, "    assign %s%s[%d] = %s[%d];\n",
+                  mem_model->prefix, top_netlist_normal_wlb_port_postfix, icol,
+                  top_netlist_array_wlb_port_name, irow);
+        }
       }
       /* Finish if MSB meets the upbound */
       if (cur_wl_msb == num_wl - 1) {
@@ -1082,8 +1141,6 @@ void dump_verilog_configuration_circuits_memory_bank(FILE* fp,
   int bl_decoder_size, wl_decoder_size;
   int num_array_bl, num_array_wl;
   t_spice_model* mem_model = NULL;
-  boolean bl_inverted = FALSE;
-  boolean wl_inverted = TRUE;
 
   /* Check */
   assert(SPICE_SRAM_MEMORY_BANK == cur_sram_orgz_info->type);
@@ -1107,8 +1164,6 @@ void dump_verilog_configuration_circuits_memory_bank(FILE* fp,
   /* Two huge decoders
    * TODO: divide to a number of small decoders ?
    */
-  /* Check if the BL of mem_model requires inverted or not */
-  check_mem_model_blwl_inverted(mem_model, SPICE_MODEL_PORT_BL, &bl_inverted); 
   /* Bit lines decoder */
   fprintf(fp, "bl_decoder%dto%d mem_bank_bl_decoder (",
           bl_decoder_size, num_array_bl);
@@ -1130,25 +1185,16 @@ void dump_verilog_configuration_circuits_memory_bank(FILE* fp,
                __FILE__, __LINE__);
     exit(1);
   }
-  /* Rest of port map is the same */
-  if (TRUE == bl_inverted) {
-    fprintf(fp, "~");
-  }
   fprintf(fp, "%s[0:%d]", 
           top_netlist_array_bl_port_name, num_array_bl - 1);
   fprintf(fp, ");\n");
 
-  /* Check if the WL of mem_model requires inverted or not */
-  check_mem_model_blwl_inverted(mem_model, SPICE_MODEL_PORT_WL, &wl_inverted); 
   /* Word lines decoder is the same for both technology */
   fprintf(fp, "wl_decoder%dto%d mem_bank_wl_decoder (",
           wl_decoder_size, num_array_wl);
   fprintf(fp, "%s, %s[%d:0], ",
           top_netlist_wl_enable_port_name,
           top_netlist_addr_wl_port_name, wl_decoder_size - 1); 
-  if (TRUE == wl_inverted) {
-    fprintf(fp, "~");
-  }
   fprintf(fp, "%s[0:%d]", 
           top_netlist_array_wl_port_name, num_array_wl - 1);
   fprintf(fp, ");\n");

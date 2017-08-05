@@ -63,7 +63,9 @@ enum e_spice_model_port_type {
   SPICE_MODEL_PORT_CLOCK, 
   SPICE_MODEL_PORT_SRAM,
   SPICE_MODEL_PORT_BL,
-  SPICE_MODEL_PORT_WL
+  SPICE_MODEL_PORT_BLB,
+  SPICE_MODEL_PORT_WL,
+  SPICE_MODEL_PORT_WLB
 };
 
 /* For SRAM */
@@ -154,6 +156,8 @@ struct s_spice_model_port {
   boolean is_prog;
   char* spice_model_name;
   t_spice_model* spice_model;
+  char* inv_spice_model_name;
+  t_spice_model* inv_spice_model;
 };
 
 struct s_spice_model_wire_param {

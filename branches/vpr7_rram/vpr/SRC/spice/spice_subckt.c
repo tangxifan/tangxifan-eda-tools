@@ -374,17 +374,18 @@ void generate_spice_rram_veriloga(char* subckt_dir,
   /* Model */
   fprintf(fp, "\n");
   fprintf(fp, "module rram_behavior(TE, BE, SRAM, SRAM_INV);\n");
-  fprintf(fp, "inout TE, BE, SRAM, SRAM_INV;\n");
+  fprintf(fp, "input SRAM, SRAM_INV;\n");
+  fprintf(fp, "inout TE, BE;\n");
   fprintf(fp, "electrical TE, BE, SRAM, SRAM_INV;\n");
   fprintf(fp, "// Design Parameters\n");
-  fprintf(fp, "parameter integer initial_state = 1 from [0:1];\n");
+  fprintf(fp, "parameter integer initial_state = 0 from [0:1];\n");
   fprintf(fp, "parameter real switch_thres = 1.8 from (0:inf);\n");
   fprintf(fp, "parameter real ron = 1e3 from (0:inf);\n");
   fprintf(fp, "parameter real roff = 1e6 from (0:inf);\n");
   fprintf(fp, "// Local Parameters\n");
-  fprintf(fp, "real res = 1e3;\n");
+  fprintf(fp, "real res = roff;\n");
   fprintf(fp, "real voltage_tolerence = 0;\n");
-  fprintf(fp, "integer state = 1;\n");
+  fprintf(fp, "integer state = 0;\n");
   fprintf(fp, "\n");
   fprintf(fp, "analog begin\n");
   fprintf(fp, "  // Initial\n");

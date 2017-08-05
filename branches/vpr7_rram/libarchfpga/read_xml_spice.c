@@ -440,6 +440,10 @@ static void ProcessSpiceModelPort(ezxml_t Node,
     port->type = SPICE_MODEL_PORT_BL;
   } else if (0 == strcmp(FindProperty(Node,"type",TRUE),"wl")) {
     port->type = SPICE_MODEL_PORT_WL;
+  } else if (0 == strcmp(FindProperty(Node,"type",TRUE),"blb")) {
+    port->type = SPICE_MODEL_PORT_BLB;
+  } else if (0 == strcmp(FindProperty(Node,"type",TRUE),"wlb")) {
+    port->type = SPICE_MODEL_PORT_WLB;
   } else if (0 == strcmp(FindProperty(Node,"type",TRUE),"inout")) {
     port->type = SPICE_MODEL_PORT_INOUT;
   } else {
@@ -487,6 +491,15 @@ static void ProcessSpiceModelPort(ezxml_t Node,
   /* Check if this port is linked to another spice_model*/
   port->spice_model_name = my_strdup(FindProperty(Node,"spice_model_name",FALSE));
   ezxml_set_attr(Node, "spice_model_name", NULL);
+
+  /* For BL/WL, BLB/WLB ports, we need to get the spice_model for inverters */
+  if ((SPICE_MODEL_PORT_BL == port->type)
+    ||(SPICE_MODEL_PORT_WL == port->type) 
+    ||(SPICE_MODEL_PORT_BLB == port->type) 
+    ||(SPICE_MODEL_PORT_WLB == port->type)) {
+    port->inv_spice_model_name = my_strdup(FindProperty(Node, "inv_spice_model_name", FALSE));
+    ezxml_set_attr(Node, "inv_spice_model_name", NULL);
+  }
  
   return;
 }

@@ -2341,7 +2341,8 @@ float find_spice_testbench_pb_pin_mux_load_inv_size(t_spice_model* fan_out_spice
   /* Special: this is a LUT, we should consider more inv size */
   if (SPICE_MODEL_LUT == fan_out_spice_model->type) {
     assert(1 == fan_out_spice_model->lut_input_buffer->exist);
-    assert(SPICE_MODEL_BUF_INV == fan_out_spice_model->lut_input_buffer->type);
+    assert((SPICE_MODEL_BUF_INV == fan_out_spice_model->lut_input_buffer->type)
+          ||(SPICE_MODEL_BUF_BUF == fan_out_spice_model->lut_input_buffer->type));
     assert(TRUE == fan_out_spice_model->lut_input_buffer->tapered_buf);
     assert(2 == fan_out_spice_model->lut_input_buffer->tap_buf_level);
     load_inv_size = fan_out_spice_model->lut_input_buffer->size 

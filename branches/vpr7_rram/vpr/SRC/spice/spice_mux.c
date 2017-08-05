@@ -987,10 +987,6 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
   fprintf(fp, "svdd sgnd ");
   fprintf(fp, "ron=\'%g\' roff=\'%g\' ",
           spice_model.design_tech_info.ron, spice_model.design_tech_info.roff);
-  fprintf(fp, "wprog_set_nmos=\'%g*io_wn\' wprog_set_pmos=\'%g*io_wp\' ",
-          spice_model.design_tech_info.wprog_set_nmos, spice_model.design_tech_info.wprog_set_pmos);
-  fprintf(fp, "wprog_reset_nmos=\'%g*io_wn\' wprog_reset_pmos=\'%g*io_wp\'", 
-          spice_model.design_tech_info.wprog_reset_nmos, spice_model.design_tech_info.wprog_reset_pmos);
   fprintf(fp, "\n");
   
   /* Print internal architecture*/ 
