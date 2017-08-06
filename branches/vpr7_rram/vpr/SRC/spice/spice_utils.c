@@ -285,7 +285,6 @@ void fprint_spice_one_specific_sram_subckt(FILE* fp,
                                           char* vdd_port_name,
                                           int sram_index) {
   t_spice_model* mem_model = NULL;
-  char* port_name = NULL;
   int cur_sram = 0;
   
   /* Get memory model */
@@ -1774,7 +1773,6 @@ void fprint_stimulate_dangling_one_grid_pin(FILE* fp,
 void fprint_stimulate_dangling_io_grid_pins(FILE* fp,
                                             int x, int y) {
   int iheight, side, ipin; 
-  int side_pin_index;
   t_type_ptr type_descriptor = grid[x][y].type;
   int capacity = grid[x][y].type->capacity;
 
@@ -1797,7 +1795,6 @@ void fprint_stimulate_dangling_io_grid_pins(FILE* fp,
   side = determine_io_grid_side(x,y);
 
   /* Count the number of pins */
-  side_pin_index = 0;
   //for (iz = 0; iz < capacity; iz++) {
   for (iheight = 0; iheight < type_descriptor->height; iheight++) {
     for (ipin = 0; ipin < type_descriptor->num_pins; ipin++) {
@@ -1814,7 +1811,6 @@ void fprint_stimulate_dangling_io_grid_pins(FILE* fp,
 void fprint_stimulate_dangling_normal_grid_pins(FILE* fp,
                                                 int x, int y) {
   int iheight, side, ipin; 
-  int side_pin_index;
   t_type_ptr type_descriptor = grid[x][y].type;
   int capacity = grid[x][y].type->capacity;
 
@@ -1833,7 +1829,6 @@ void fprint_stimulate_dangling_normal_grid_pins(FILE* fp,
 
   for (side = 0; side < 4; side++) {
     /* Count the number of pins */
-    side_pin_index = 0;
     for (iheight = 0; iheight < type_descriptor->height; iheight++) {
       for (ipin = 0; ipin < type_descriptor->num_pins; ipin++) {
         if (1 == type_descriptor->pinloc[iheight][side][ipin]) {
@@ -2727,6 +2722,126 @@ void fprint_spice_testbench_one_cb_mux_loads(FILE* fp, int* testbench_load_cnt,
   fprintf(fp, "******* END loads *******\n");
   return;
 }
+
+void fprint_spice_testbench_one_grid_pin_stimulation(FILE* fp, int x, int y, 
+                                                     int height, int side, 
+                                                     int ipin,
+                                                     t_ivec*** LL_rr_node_indices) {
+  int ipin_rr_node_index;
+  float ipin_density, ipin_probability;
+  int ipin_init_value;
+  int class_id;
+  t_rr_type grid_pin_rr_node_type;
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /* Check */
+  assert((!(0 > x))&&(!(x > (nx + 1)))); 
+  assert((!(0 > y))&&(!(y > (ny + 1)))); 
+
+  /* Identify the type of rr_node */
+  class_id = grid[x][y].type->pin_class[ipin];
+  if (DRIVER == grid[x][y].type->class_inf[class_id].type) {
+    grid_pin_rr_node_type = OPIN;
+  } else if (RECEIVER == grid[x][y].type->class_inf[class_id].type) {
+    grid_pin_rr_node_type = IPIN;
+  } else {
+    /* Error */
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Unknown pin type for grid(x=%d, y=%d, pin_index=%d)!\n",
+               __FILE__, __LINE__,
+               x, y, ipin);
+    exit(1);
+  }
+
+  /* Print a voltage source according to density and probability */
+  ipin_rr_node_index = get_rr_node_index(x, y, grid_pin_rr_node_type, ipin, LL_rr_node_indices);
+  /* Get density and probability */
+  ipin_density = get_rr_node_net_density(rr_node[ipin_rr_node_index]); 
+  ipin_probability = get_rr_node_net_probability(rr_node[ipin_rr_node_index]); 
+  ipin_init_value = get_rr_node_net_init_value(rr_node[ipin_rr_node_index]); 
+  /* Print voltage source */
+  fprintf(fp, "Vgrid[%d][%d]_pin[%d][%d][%d] grid[%d][%d]_pin[%d][%d][%d] 0 \n",
+          x, y, height, side, ipin, x, y, height, side, ipin);
+  fprint_voltage_pulse_params(fp, ipin_init_value, ipin_density, ipin_probability);
+
+  return;
+}
+
+void fprint_spice_testbench_one_grid_pin_loads(FILE* fp, int x, int y, 
+                                               int height, int side, 
+                                               int ipin,
+                                               t_ivec*** LL_rr_node_indices) {
+
+  int ipin_rr_node_index;
+  int iedge, iswitch;
+  char* prefix = NULL;
+  t_spice_model* switch_spice_model = NULL;
+  int inv_cnt = 0;
+  int class_id;
+  t_rr_type grid_pin_rr_node_type;
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /* Check */
+  assert((!(0 > x))&&(!(x > (nx + 1)))); 
+  assert((!(0 > y))&&(!(y > (ny + 1)))); 
+  
+  /* Identify the type of rr_node */
+  class_id = grid[x][y].type->pin_class[ipin];
+  if (DRIVER == grid[x][y].type->class_inf[class_id].type) {
+    grid_pin_rr_node_type = OPIN;
+  } else if (RECEIVER == grid[x][y].type->class_inf[class_id].type) {
+    grid_pin_rr_node_type = IPIN;
+  } else {
+    /* Error */
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Unknown pin type for grid(x=%d, y=%d, pin_index=%d)!\n",
+               __FILE__, __LINE__,
+               x, y, ipin);
+    exit(1);
+  }
+
+  /* Print a voltage source according to density and probability */
+  ipin_rr_node_index = get_rr_node_index(x, y, grid_pin_rr_node_type, ipin, LL_rr_node_indices);
+  /* Generate prefix */
+  prefix = (char*)my_malloc(sizeof(char)*(5 + strlen(my_itoa(x))
+             + 2 + strlen(my_itoa(y)) + 6 + strlen(my_itoa(height))
+             + 2 + strlen(my_itoa(side)) + 2 + strlen(my_itoa(ipin))
+             + 2 + 1));
+  sprintf(prefix, "grid[%d][%d]_pin[%d][%d][%d]",
+          x, y, height, side, ipin);
+
+  /* Print all the inverter load now*/
+  for (iedge = 0; iedge < rr_node[ipin_rr_node_index].num_edges; iedge++) {
+    /* Get the switch spice model */
+    /* inode = rr_node[ipin_rr_node_index].edges[iedge]; */
+    iswitch = rr_node[ipin_rr_node_index].switches[iedge]; 
+    switch_spice_model = switch_inf[iswitch].spice_model;
+    if (NULL == switch_spice_model) {
+      continue;
+    }
+    /* Add inv/buf here */
+    fprintf(fp, "X%s_inv[%d] %s %s_out[%d] gvdd_load 0 inv size=%g\n",
+            prefix, iedge, 
+            prefix, prefix, iedge, 
+            switch_spice_model->input_buffer->size);
+    inv_cnt++;
+  }
+ 
+  /* TODO: Generate loads recursively */
+  /*fprint_rr_node_loads_rec(fp, rr_node[ipin_rr_node_index],prefix);*/
+
+  /*Free */
+  my_free(prefix);
+
+  return;
+}
+
 
 /* Add one SPICE TB information to linked list */
 t_llist* add_one_spice_tb_info_to_llist(t_llist* cur_head, 

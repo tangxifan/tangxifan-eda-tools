@@ -6507,3 +6507,26 @@ t_pb* get_lut_child_pb(t_pb* cur_lut_pb,
   return (&(cur_lut_pb->child_pbs[0][0])); 
 }
 
+int get_grid_pin_height(int grid_x, int grid_y, int pin_index) {
+  int pin_height;
+  t_type_ptr grid_type = NULL;
+
+  /* Get type */
+  grid_type = grid[grid_x][grid_y].type;
+
+  /* Return if this is an empty type */
+  if ((NULL == grid_type)
+     ||(EMPTY_TYPE == grid_type)) {
+    pin_height = 0;
+    return pin_height;
+  }
+
+  /* Check if the pin index is in the range */
+  assert ( ((0 == pin_index) || (0 < pin_index))
+          &&(pin_index < grid_type->num_pins) );
+
+  /* Find the pin_height */
+  pin_height = grid_type->pin_height[pin_index];
+  
+  return pin_height;
+}

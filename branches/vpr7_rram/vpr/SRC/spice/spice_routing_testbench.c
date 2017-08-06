@@ -101,105 +101,6 @@ void fprintf_spice_routing_testbench_generic_stimuli(FILE* fp,
   return;
 }
 
-
-/** Print input voltage pulses/output loads in a sb/cb testbench
- * For OPIN: generate input voltage pulses
- * For IPIN: generate output loads
- */
-int fprint_grid_side_pins_voltage_pulses(FILE* fp,
-                                         t_rr_type pin_type,
-                                         int x, int y, int side,
-                                         t_ivec*** LL_rr_node_indices,
-                                         float* average_input_density) {
-  int height, ipin, class_id, inode;
-  t_type_ptr type = NULL;
-  enum e_pin_type pin_class_type;
-
-  char* outport_name = NULL;
-
-  float input_density;
-  float input_probability;
-  int input_init_value;
-  int avg_density_cnt = 0;
-  
-  /* Check the file handler*/ 
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
-               __FILE__, __LINE__); 
-    exit(1);
-  }
-  /* Check */
-  assert((!(0 > x))&&(!(x > (nx + 1)))); 
-  assert((!(0 > y))&&(!(y > (ny + 1)))); 
-  type = grid[x][y].type;
-  assert(NULL != type);
- 
-  /* Assign the type of PIN*/ 
-  switch (pin_type) {
-  case IPIN:
-  /* case SINK: */
-    pin_class_type = RECEIVER; /* This is the end of a route path*/ 
-    break;
-  /* case SOURCE: */
-  case OPIN:
-    pin_class_type = DRIVER; /* This is the start of a route path */ 
-    break;
-  /* SINK and SOURCE are hypothesis nodes */
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid pin_type!\n", __FILE__, __LINE__);
-    exit(1); 
-  }
-
-  /* Output the pins on the side*/ 
-  height = grid[x][y].offset;
-  for (ipin = 0; ipin < type->num_pins; ipin++) {
-    class_id = type->pin_class[ipin];
-    if ((1 == type->pinloc[height][side][ipin])&&(pin_class_type == type->class_inf[class_id].type)) {
-      inode = get_rr_node_index(x, y, pin_type, ipin, LL_rr_node_indices);
-      switch (pin_class_type) {
-      case DRIVER:
-        /* Add input voltage pulses*/
-        input_density = get_rr_node_net_density(rr_node[inode]);
-        input_probability = get_rr_node_net_probability(rr_node[inode]);
-        input_init_value = get_rr_node_net_init_value(rr_node[inode]);
-        fprintf(fp, "***** Signal grid[%d][%d]_pin[%d][%d][%d] density = %g, probability=%g.*****\n",
-                x, y, height, side, ipin, input_density, input_probability);
-        fprintf(fp, "Vgrid[%d][%d]_pin[%d][%d][%d] grid[%d][%d]_pin[%d][%d][%d] 0 \n", 
-                x, y, height, side, ipin, x, y, height, side, ipin);
-        fprint_voltage_pulse_params(fp, input_init_value, input_density, input_probability);
-        /* Update statistics */
-        (*average_input_density) += input_density;
-        if (0. < input_density) {
-          avg_density_cnt++;
-        }
-        break;
-      case RECEIVER:
-        /* Malloc */
-        outport_name = (char*)my_malloc(sizeof(char)*(5 + strlen(my_itoa(x)) + 2 
-                                        + strlen(my_itoa(y)) + 6 
-                                        + strlen(my_itoa(height)) + 2 
-                                        + strlen(my_itoa(side)) + 2 
-                                        + strlen(my_itoa(ipin)) + 2));
-        /* Add downstream components as loads*/
-        fprintf(fp, "***** Downstream loads of grid[%d][%d]_pin[%d][%d][%d]*****\n",
-                x, y, height, side, ipin);
-        sprintf(outport_name, "grid[%d][%d]_pin[%d][%d][%d]", x, y, height, side, ipin);
-        fprint_spice_testbench_one_cb_mux_loads(fp, &testbench_load_cnt, 
-                                                &rr_node[inode], outport_name, 
-                                                LL_rr_node_indices);
-        my_free(outport_name);
-        break;
-      default:
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid pin_type!\n", __FILE__, __LINE__);
-        exit(1); 
-      }
-    }
-  } 
-  
-  return avg_density_cnt;
-}
-
-
 /** In a testbench, we call the subckt of defined connection box (cbx[x][y] or cby[x][y])
  *  For each input of connection box (channel track rr_nodes), 
  *  we find their activities and generate input voltage pulses.
@@ -210,9 +111,10 @@ int fprint_spice_routing_testbench_call_one_cb_tb(FILE* fp,
                                                   t_rr_type chan_type,
                                                   int x, int y,
                                                   t_ivec*** LL_rr_node_indices) {
-  int itrack, inode, side, chan_width;
+  int itrack, inode, side, ipin_height;
   int side_cnt = 0;
   int used = 0;
+  t_cb cur_cb_info;
 
   float input_density;
   float input_probability;
@@ -234,65 +136,116 @@ int fprint_spice_routing_testbench_call_one_cb_tb(FILE* fp,
 
   /* call the defined switch block sb[x][y]*/
   fprintf(fp, "***** Call defined Connection Box[%d][%d] *****\n", x, y);
-
   switch(chan_type) { 
   case CHANX:
-    chan_width = chan_width_x[y];
-    fprint_call_defined_one_connection_box(fp, cbx_info[x][y]);
+    cur_cb_info = cbx_info[x][y];
     break;
   case CHANY:
-    chan_width = chan_width_y[x];
-    fprint_call_defined_one_connection_box(fp, cby_info[x][y]);
+    cur_cb_info = cby_info[x][y];
+    break;
+  default: 
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+  fprint_call_defined_one_connection_box(fp, cur_cb_info);
+
+  /* Print input voltage pulses */
+  /* connect to the mid point of a track*/
+  side_cnt = 0;
+  for (side = 0; side < cur_cb_info.num_sides; side++) {
+    /* Bypass side with zero channel width */
+    if (0 == cur_cb_info.chan_width[side]) {
+      continue;
+    }
+    assert (0 < cur_cb_info.chan_width[side]);
+    side_cnt++;
+    for (itrack = 0; itrack < cur_cb_info.chan_width[side]; itrack++) {
+      /* Add input voltage pulses*/
+      input_density = get_rr_node_net_density(*cur_cb_info.chan_rr_node[side][itrack]);
+      input_probability = get_rr_node_net_probability(*cur_cb_info.chan_rr_node[side][itrack]);
+      input_init_value = get_rr_node_net_init_value(*cur_cb_info.chan_rr_node[side][itrack]);
+      fprintf(fp, "***** Signal %s[%d][%d]_midout[%d] density = %g, probability=%g.*****\n",
+              convert_chan_type_to_string(cur_cb_info.type),
+              cur_cb_info.x, cur_cb_info.y, itrack,
+              input_density, input_probability);
+      fprintf(fp, "V%s[%d][%d]_midout[%d] %s[%d][%d]_midout[%d] 0 \n", 
+              convert_chan_type_to_string(cur_cb_info.type),
+              cur_cb_info.x, cur_cb_info.y, itrack,
+              convert_chan_type_to_string(cur_cb_info.type),
+              cur_cb_info.x, cur_cb_info.y, itrack);
+      fprint_voltage_pulse_params(fp, input_init_value, input_density, input_probability);
+      /* Update statistics */
+      average_cb_input_density += input_density;
+      if (0. < input_density) {
+        avg_density_cnt++;
+      }
+    }
+  }
+  /*check side_cnt */
+  assert(1 == side_cnt);
+
+  /* Add loads */
+  side_cnt = 0;
+  /* Print the ports of grids*/
+  /* only check ipin_rr_nodes of cur_cb_info */
+  for (side = 0; side < cur_cb_info.num_sides; side++) {
+    /* Bypass side with zero IPINs*/
+    if (0 == cur_cb_info.num_ipin_rr_nodes[side]) {
+      continue;
+    }
+    side_cnt++;
+    assert(0 < cur_cb_info.num_ipin_rr_nodes[side]);
+    assert(NULL != cur_cb_info.ipin_rr_node[side]);
+    for (inode = 0; inode < cur_cb_info.num_ipin_rr_nodes[side]; inode++) {
+      /* Print each INPUT Pins of a grid */
+      ipin_height = get_grid_pin_height(cur_cb_info.ipin_rr_node[side][inode]->xlow,
+                                        cur_cb_info.ipin_rr_node[side][inode]->ylow,
+                                        cur_cb_info.ipin_rr_node[side][inode]->ptc_num);
+      fprint_spice_testbench_one_grid_pin_loads(fp,  
+                                                cur_cb_info.ipin_rr_node[side][inode]->xlow,
+                                                cur_cb_info.ipin_rr_node[side][inode]->ylow, 
+                                                ipin_height,
+                                                cur_cb_info.ipin_rr_node_grid_side[side][inode],
+                                                cur_cb_info.ipin_rr_node[side][inode]->ptc_num,
+                                                LL_rr_node_indices); 
+      fprintf(fp, "\n");
+      /* Get signal activity */
+      input_density = get_rr_node_net_density(*cur_cb_info.ipin_rr_node[side][inode]);
+      input_probability = get_rr_node_net_probability(*cur_cb_info.ipin_rr_node[side][inode]);
+      input_init_value = get_rr_node_net_init_value(*cur_cb_info.ipin_rr_node[side][inode]);
+      /* Update statistics */
+      average_cb_input_density += input_density;
+      if (0. < input_density) {
+        avg_density_cnt++;
+      }
+    }
+  }
+  /* Make sure only 2 sides of IPINs are printed */
+  assert(2 == side_cnt);
+
+  /* Voltage stilumli */
+  /* Connect to VDD supply */
+  fprintf(fp, "***** Voltage supplies *****\n");
+  switch(chan_type) { 
+  case CHANX:
+    /* Connect to VDD supply */
+    fprintf(fp, "***** Voltage supplies *****\n");
+    fprintf(fp, "Vgvdd_cbx[%d][%d] gvdd_cbx[%d][%d] 0 vsp\n", x, y, x, y);
+    break;
+  case CHANY:
+    /* Connect to VDD supply */
+    fprintf(fp, "***** Voltage supplies *****\n");
+    fprintf(fp, "Vgvdd_cby[%d][%d] gvdd_cby[%d][%d] 0 vsp\n", x, y, x, y);
     break;
   default: 
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
     exit(1);
   }
 
-  /* Print input voltage pulses */
-  /* connect to the mid point of a track*/
-  for (itrack = 0; itrack < chan_width; itrack++) {
-    switch(chan_type) { 
-    case CHANX:
-      inode = get_rr_node_index(x, y, CHANX, itrack, LL_rr_node_indices);
-      /* Add input voltage pulses*/
-      input_density = get_rr_node_net_density(rr_node[inode]);
-      input_probability = get_rr_node_net_probability(rr_node[inode]);
-      input_init_value = get_rr_node_net_init_value(rr_node[inode]);
-      fprintf(fp, "***** Signal chanx[%d][%d]_midout[%d] density = %g, probability=%g.*****\n",
-              x, y, itrack, input_density, input_probability);
-      fprintf(fp, "Vchanx[%d][%d]_midout[%d] chanx[%d][%d]_midout[%d] 0 \n", 
-              x, y, itrack, x, y, itrack);
-      fprint_voltage_pulse_params(fp, input_init_value, input_density, input_probability);
-      /* Update statistics */
-      average_cb_input_density += input_density;
-      if (0. < input_density) {
-        avg_density_cnt++;
-      }
-      break;
-    case CHANY:
-      inode = get_rr_node_index(x, y, CHANY, itrack, LL_rr_node_indices);
-      /* Add input voltage pulses*/
-      input_density = get_rr_node_net_density(rr_node[inode]);
-      input_probability = get_rr_node_net_probability(rr_node[inode]);
-      input_init_value = get_rr_node_net_init_value(rr_node[inode]);
-      fprintf(fp, "***** Signal chany[%d][%d]_midout[%d] density = %g, probability=%g.*****\n",
-              x, y, itrack, input_density, input_probability);
-      fprintf(fp, "Vchany[%d][%d]_midout[%d] chany[%d][%d]_midout[%d] 0 \n", 
-              x, y, itrack, x, y, itrack);
-      fprint_voltage_pulse_params(fp, input_init_value, input_density, input_probability);
-      /* Update statistics */
-      average_cb_input_density += input_density;
-      if (0. < input_density) {
-        avg_density_cnt++;
-      }
-      break;
-    default: 
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
-      exit(1);
-    }
-    fprintf(fp, "\n");
-  }
+  /* Add load vdd */
+  fprintf(fp, "V%s %s 0 vsp\n", 
+          spice_tb_global_vdd_load_port_name,
+          spice_tb_global_vdd_load_port_name);
 
   fprintf(fp, "***** Global Force for all SRAMs *****\n");
   if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
@@ -301,16 +254,10 @@ int fprint_spice_routing_testbench_call_one_cb_tb(FILE* fp,
     fprintf(fp, "Vsc_set sc_set 0 0\n");
     switch(chan_type) { 
     case CHANX:
-      /* Connect to VDD supply */
-      fprintf(fp, "***** Voltage supplies *****\n");
-      fprintf(fp, "Vgvdd_cbx[%d][%d] gvdd_cbx[%d][%d] 0 vsp\n", x, y, x, y);
       fprintf(fp, "Vcbx[%d][%d]_sc_head cbx[%d][%d]_sc_head 0 0\n", x, y, x, y);
       fprintf(fp, ".nodeset V(cbx[%d][%d]_sc_head) 0\n", x, y);
       break;
     case CHANY:
-      /* Connect to VDD supply */
-      fprintf(fp, "***** Voltage supplies *****\n");
-      fprintf(fp, "Vgvdd_cby[%d][%d] gvdd_cby[%d][%d] 0 vsp\n", x, y, x, y);
       fprintf(fp, "Vcby[%d][%d]_sc_head cby[%d][%d]_sc_head 0 0\n", x, y, x, y);
       fprintf(fp, ".nodeset V(cby[%d][%d]_sc_head) 0\n", x, y);
       break;
@@ -387,9 +334,9 @@ static
 int fprint_spice_routing_testbench_call_one_sb_tb(FILE* fp, 
                                                   int x, int y, 
                                                   t_ivec*** LL_rr_node_indices) {
-  int itrack, inode, side, ix, iy;
-  int* chan_width = (int*)my_malloc(sizeof(int)*4); /* 4 sides */
+  int itrack, inode, side, ipin_height;
   int used = 0;
+  t_sb cur_sb_info;
 
   char* outport_name = NULL;
   char* rr_node_outport_name = NULL;
@@ -416,306 +363,98 @@ int fprint_spice_routing_testbench_call_one_sb_tb(FILE* fp,
   fprintf(fp, "***** Call defined Switch Box[%d][%d] *****\n", x, y);
   fprint_call_defined_one_switch_box(fp, sb_info[x][y]);
 
+  cur_sb_info = sb_info[x][y];
+
   /* For each input of switch block, we generate a input voltage pulse
    * For each output of switch block, we generate downstream loads 
    */
   /* Find all rr_nodes of channels */
-  for (side = 0; side < 4; side++) {
-    switch (side) {
-    case 0:
-      /* For the bording, we should take special care */
-      if (y == ny) {
-        chan_width[side] = 0;
+  for (side = 0; side < cur_sb_info.num_sides; side++) {
+    for (itrack = 0; itrack < cur_sb_info.chan_width[side]; itrack++) {
+      /* Get signal activity */
+      input_density = get_rr_node_net_density(*cur_sb_info.chan_rr_node[side][itrack]);
+      input_probability = get_rr_node_net_probability(*cur_sb_info.chan_rr_node[side][itrack]);
+      input_init_value = get_rr_node_net_init_value(*cur_sb_info.chan_rr_node[side][itrack]);
+      /* Update statistics */
+      average_sb_input_density += input_density;
+      if (0. < input_density) {
+       avg_density_cnt++;
+      }
+      /* Print voltage stimuli and loads */
+      switch (cur_sb_info.chan_rr_node_direction[side][itrack]) {
+      case OUT_PORT:
+        /* Output port requires loads*/
+        outport_name = (char*)my_malloc(sizeof(char)*(
+                strlen(convert_chan_type_to_string(cur_sb_info.chan_rr_node[side][itrack]->type))
+                + 1 + strlen(my_itoa(cur_sb_info.x)) + 2 + strlen(my_itoa(cur_sb_info.y))
+                + 6 + strlen(my_itoa(itrack))
+                + 2 + 1));
+        sprintf(outport_name, "%s[%d][%d]_out[%d] ", 
+                convert_chan_type_to_string(cur_sb_info.chan_rr_node[side][itrack]->type), 
+                cur_sb_info.x, cur_sb_info.y, itrack);
+        rr_node_outport_name = fprint_spice_testbench_rr_node_load_version(fp, &testbench_load_cnt,
+                                                                           num_segments, 
+                                                                           segments, 
+                                                                           0, 
+                                                                           *cur_sb_info.chan_rr_node[side][itrack],
+                                                                           outport_name); 
+        /* Free */
+        my_free(rr_node_outport_name);
         break;
-      }
-      /* Routing channels*/
-      ix = x; 
-      iy = y + 1;
-      /* Channel width */
-      chan_width[side] = chan_width_y[ix];
-      /* Malloc */
-      outport_name = (char*)my_malloc(sizeof(char)*(6 + strlen(my_itoa(ix)) + 2 
-                                      + strlen(my_itoa(iy)) + 6 
-                                      + strlen(my_itoa(chan_width[side])) + 2));
-      /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
-      /* Collect rr_nodes for Tracks for top: chany[x][y+1] */
-      for (itrack = 0; itrack < chan_width[side]; itrack++) {
-        inode = get_rr_node_index(ix, iy, CHANY, itrack, LL_rr_node_indices);
-        /* Get direction of each rr_node and determine it is an input or output :*/
-        switch (rr_node[inode].direction) {
-        case INC_DIRECTION: /* Output */
-          /* Add downstream components as loads*/
-          sprintf(outport_name, "chany[%d][%d]_in[%d]", ix, iy, itrack);
-          rr_node_outport_name = fprint_spice_testbench_rr_node_load_version(fp, &testbench_load_cnt,
-                                                                             num_segments, 
-                                                                             segments, 
-                                                                             0, 
-                                                                             rr_node[inode], 
-                                                                             outport_name); 
-          /* Free */
-          my_free(rr_node_outport_name);
-          break;
-        case DEC_DIRECTION: /* Input */
-          /* Add input voltage pulses*/
-          input_density = get_rr_node_net_density(rr_node[inode]);
-          input_probability = get_rr_node_net_probability(rr_node[inode]);
-          input_init_value = get_rr_node_net_init_value(rr_node[inode]);
-          fprintf(fp, "***** Signal chany[%d][%d]_out[%d] density = %g, probability=%g.*****\n",
-                  ix, iy, itrack, input_density, input_probability);
-          fprintf(fp, "Vchany[%d][%d]_out[%d] chany[%d][%d]_out[%d] 0 \n", 
-                  ix, iy, itrack, ix, iy, itrack);
-          fprint_voltage_pulse_params(fp, input_init_value, input_density, input_probability);
-          /* Update statistics */
-          average_sb_input_density += input_density;
-          if (0. < input_density) {
-           avg_density_cnt++;
-          }
-          break;
-        default: /* Error Out */
-          vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of chany[%d][%d]_track[%d]!\n",
-                      __FILE__, __LINE__, ix, iy, itrack);
-          exit(1);
-        }
-      }
-      /* Free */
-      my_free(outport_name);
-      break;
-    case 1:
-      /* For the bording, we should take speical care */
-      if (x == nx) {
-        chan_width[side] = 0;
+      case IN_PORT:
+        /* Input port requires a voltage stimuli */
+        /* Add input voltage pulses*/
+        fprintf(fp, "***** Signal %s[%d][%d]_in[%d] density = %g, probability=%g.*****\n",
+                convert_chan_type_to_string(cur_sb_info.chan_rr_node[side][itrack]->type), 
+                cur_sb_info.x, cur_sb_info.y, itrack,
+                input_density, input_probability);
+        fprintf(fp, "V%s[%d][%d]_in[%d] %s[%d][%d]_in[%d] 0 \n", 
+                convert_chan_type_to_string(cur_sb_info.chan_rr_node[side][itrack]->type), 
+                cur_sb_info.x, cur_sb_info.y, itrack,
+                convert_chan_type_to_string(cur_sb_info.chan_rr_node[side][itrack]->type), 
+                cur_sb_info.x, cur_sb_info.y, itrack);
+        fprint_voltage_pulse_params(fp, input_init_value, input_density, input_probability);
         break;
+      default:
+        vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of sb[%d][%d] side[%d] track[%d]!\n",
+                   __FILE__, __LINE__, cur_sb_info.x, cur_sb_info.y, side, itrack);
+        exit(1);
       }
-      /* Routing channels*/
-      ix = x + 1; 
-      iy = y;
-      /* Channel width */
-      chan_width[side] = chan_width_x[iy];
-      /* Malloc */
-      outport_name = (char*)my_malloc(sizeof(char)*(6 + strlen(my_itoa(ix)) + 2 
-                                      + strlen(my_itoa(iy)) + 6
-                                      + strlen(my_itoa(chan_width[side])) + 2));
-      /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
-      for (itrack = 0; itrack < chan_width[side]; itrack++) {
-        inode = get_rr_node_index(ix, iy, CHANX, itrack, LL_rr_node_indices);
-        /* Get direction of each rr_node and determine it is an input or output :*/
-        switch (rr_node[inode].direction) {
-        case INC_DIRECTION: /* Output */
-          /* Add downstream components as loads*/
-          sprintf(outport_name, "chanx[%d][%d]_in[%d]", ix, iy, itrack);
-          rr_node_outport_name = fprint_spice_testbench_rr_node_load_version(fp, &testbench_load_cnt,
-                                                                             num_segments, 
-                                                                             segments, 
-                                                                             0, 
-                                                                             rr_node[inode], 
-                                                                             outport_name); 
-          /* Free */
-          my_free(rr_node_outport_name);
-          break;
-        case DEC_DIRECTION: /* Input */
-          /* Add input voltage pulses*/
-          input_density = get_rr_node_net_density(rr_node[inode]);
-          input_probability = get_rr_node_net_probability(rr_node[inode]);
-          input_init_value = get_rr_node_net_init_value(rr_node[inode]);
-          fprintf(fp, "***** Signal chanx[%d][%d]_out[%d] density = %g, probability=%g.*****\n",
-                  ix, iy, itrack, input_density, input_probability);
-          fprintf(fp, "Vchanx[%d][%d]_out[%d] chanx[%d][%d]_out[%d] 0 \n", 
-                  ix, iy, itrack, ix, iy, itrack);
-          fprint_voltage_pulse_params(fp, input_init_value, input_density, input_probability);
-          /* Update statistics */
-          average_sb_input_density += input_density;
-          if (0. < input_density) {
-           avg_density_cnt++;
-          }
-          break;
-        default: /* Error Out */
-          vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of chanx[%d][%d]_track[%d]!\n",
-                      __FILE__, __LINE__, ix, iy, itrack);
-          exit(1);
-        }
-      }
-      /* Free */
-      my_free(outport_name);
-      break;
-    case 2:
-      /* For the bording, we should take speical care */
-      if (y == 0) {
-        chan_width[side] = 0;
-        break;
-      }
-      /* Routing channels*/
-      ix = x; 
-      iy = y;
-      /* Channel width */
-      chan_width[side] = chan_width_y[ix];
-      /* Malloc */
-      outport_name = (char*)my_malloc(sizeof(char)*(6 + strlen(my_itoa(ix)) + 2 
-                                      + strlen(my_itoa(iy)) + 6
-                                      + strlen(my_itoa(chan_width[side])) + 2));
-      /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
-      for (itrack = 0; itrack < chan_width[side]; itrack++) {
-        inode = get_rr_node_index(ix, iy, CHANY, itrack, LL_rr_node_indices);
-        /* Get direction of each rr_node and determine it is an input or output :*/
-        switch (rr_node[inode].direction) {
-        case INC_DIRECTION: /* Input */
-          /* Add input voltage pulses*/
-          input_density = get_rr_node_net_density(rr_node[inode]);
-          input_probability = get_rr_node_net_probability(rr_node[inode]);
-          input_init_value = get_rr_node_net_init_value(rr_node[inode]);
-          fprintf(fp, "***** Signal chany[%d][%d]_in[%d] density = %g, probability=%g.*****\n",
-                  ix, iy, itrack, input_density, input_probability);
-          fprintf(fp, "Vchany[%d][%d]_in[%d] chany[%d][%d]_in[%d] 0 \n", 
-                  ix, iy, itrack, ix, iy, itrack);
-          fprint_voltage_pulse_params(fp, input_init_value, input_density, input_probability);
-          /* Update statistics */
-          average_sb_input_density += input_density;
-          if (0. < input_density) {
-           avg_density_cnt++;
-          }
-          break;
-        case DEC_DIRECTION: /* Output */
-          /* Add downstream components as loads*/
-          sprintf(outport_name, "chany[%d][%d]_out[%d]", ix, iy, itrack);
-          rr_node_outport_name = fprint_spice_testbench_rr_node_load_version(fp, &testbench_load_cnt,
-                                                                             num_segments, 
-                                                                             segments, 
-                                                                             0, 
-                                                                             rr_node[inode], 
-                                                                             outport_name); 
-          /* Free */
-          my_free(rr_node_outport_name);
-          break;
-        default: /* Error Out */
-          vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of chany[%d][%d]_track[%d]!\n",
-                      __FILE__, __LINE__, ix, iy, itrack);
-          exit(1);
-        }
-      }
-      /* Free */
-      my_free(outport_name);
-      /* Print MUXes of BOTTOM side */
-      break;
-    case 3:
-      /* For the bording, we should take speical care */
-      if (x == 0) {
-        chan_width[side] = 0;
-        break;
-      }
-      /* Routing channels*/
-      ix = x; 
-      iy = y;
-      /* Channel width */
-      chan_width[side] = chan_width_x[iy];
-      /* Malloc */
-      outport_name = (char*)my_malloc(sizeof(char)*(6 + strlen(my_itoa(ix)) + 2 
-                                      + strlen(my_itoa(iy)) + 6 
-                                      + strlen(my_itoa(chan_width[side])) + 2));
-      /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
-      for (itrack = 0; itrack < chan_width[side]; itrack++) {
-        inode = get_rr_node_index(ix, iy, CHANX, itrack, LL_rr_node_indices);
-        /* Get direction of each rr_node and determine it is an input or output :*/
-        switch (rr_node[inode].direction) {
-        case INC_DIRECTION: /* Input */
-          /* Add input voltage pulses*/
-          input_density = get_rr_node_net_density(rr_node[inode]);
-          input_probability = get_rr_node_net_probability(rr_node[inode]);
-          input_init_value = get_rr_node_net_init_value(rr_node[inode]);
-          fprintf(fp, "***** Signal chanx[%d][%d]_in[%d] density = %g, probability=%g.*****\n",
-                  ix, iy, itrack, input_density, input_probability);
-          fprintf(fp, "Vchanx[%d][%d]_in[%d] chanx[%d][%d]_in[%d] 0 \n", 
-                  ix, iy, itrack, ix, iy, itrack);
-          fprint_voltage_pulse_params(fp, input_init_value, input_density, input_probability);
-          /* Update statistics */
-          average_sb_input_density += input_density;
-          if (0. < input_density) {
-           avg_density_cnt++;
-          }
-          break;
-        case DEC_DIRECTION: /* Output */
-          /* Add downstream components as loads*/
-          sprintf(outport_name, "chanx[%d][%d]_out[%d]", ix, iy, itrack);
-          rr_node_outport_name = fprint_spice_testbench_rr_node_load_version(fp, &testbench_load_cnt,
-                                                                             num_segments, 
-                                                                             segments, 
-                                                                             0, 
-                                                                             rr_node[inode], 
-                                                                             outport_name); 
-          /* Free */
-          my_free(rr_node_outport_name);
-          break;
-        default: /* Error Out */
-          vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of chanx[%d][%d]_track[%d]!\n",
-                      __FILE__, __LINE__, ix, iy, itrack);
-          exit(1);
-        }
-      }
-      /* Free */
-      my_free(outport_name);
-      /* Print MUXes of LEFT side */
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid side index!\n", __FILE__, __LINE__);
-      exit(1);
     }
-  }
-
-  /* Add input voltage pulses for CLB OPINs (input of a switch block) */
-  /* Considering the border */
-  if (ny != y) {
-    /* 5. Grid[x][y+1] Right side outputs pins */
-    avg_density_cnt += 
-      fprint_grid_side_pins_voltage_pulses(fp, OPIN, x, y+1, 1, 
-                                           LL_rr_node_indices, &average_sb_input_density);
-  }
-  if (0 != x) {
-    /* 6. Grid[x][y+1] Bottom side outputs pins */
-    avg_density_cnt += 
-      fprint_grid_side_pins_voltage_pulses(fp, OPIN, x, y+1, 2,
-                                           LL_rr_node_indices, &average_sb_input_density);
-  }
-
-  if (ny != y) {
-    /* 7. Grid[x+1][y+1] Left side output pins */
-    avg_density_cnt += 
-      fprint_grid_side_pins_voltage_pulses(fp, OPIN, x+1, y+1, 3,
-                                           LL_rr_node_indices, &average_sb_input_density);
-  }
-  if (nx != x) {
-    /* 8. Grid[x+1][y+1] Bottom side output pins */
-    avg_density_cnt += 
-      fprint_grid_side_pins_voltage_pulses(fp, OPIN, x+1, y+1, 2,
-                                           LL_rr_node_indices, &average_sb_input_density);
-  }
-
-  if (nx != x) {
-    /* 9. Grid[x+1][y] Top side output pins */
-    avg_density_cnt += 
-      fprint_grid_side_pins_voltage_pulses(fp, OPIN, x+1, y, 0,
-                                           LL_rr_node_indices, &average_sb_input_density);
-  }
-  if (0 != y) {
-    /* 10. Grid[x+1][y] Left side output pins */
-    avg_density_cnt += 
-      fprint_grid_side_pins_voltage_pulses(fp, OPIN, x+1, y, 3,
-                                           LL_rr_node_indices, &average_sb_input_density);
-  }
-
-  if (0 != y) {
-    /* 11. Grid[x][y] Right side output pins */
-    avg_density_cnt += 
-      fprint_grid_side_pins_voltage_pulses(fp, OPIN, x, y, 1,
-                                           LL_rr_node_indices, &average_sb_input_density);
-  } 
-  if (0 != x) {
-    /* 12. Grid[x][y] Top side output pins */
-    avg_density_cnt += 
-      fprint_grid_side_pins_voltage_pulses(fp, OPIN, x, y, 0,
-                                           LL_rr_node_indices, &average_sb_input_density);
+    /* OPINs of adjacent CLBs are inputs and requires a voltage stimuli */
+    /* Input port requires a voltage stimuli */
+    for (inode = 0; inode < cur_sb_info.num_opin_rr_nodes[side]; inode++) {
+      /* Print voltage stimuli of each OPIN */
+      ipin_height = get_grid_pin_height(cur_sb_info.opin_rr_node[side][inode]->xlow,
+                                        cur_sb_info.opin_rr_node[side][inode]->ylow,
+                                        cur_sb_info.opin_rr_node[side][inode]->ptc_num);
+      fprint_spice_testbench_one_grid_pin_stimulation(fp,  
+                                                      cur_sb_info.opin_rr_node[side][inode]->xlow,
+                                                      cur_sb_info.opin_rr_node[side][inode]->ylow,
+                                                      ipin_height,
+                                                      cur_sb_info.opin_rr_node_grid_side[side][inode],
+                                                      cur_sb_info.opin_rr_node[side][inode]->ptc_num,
+                                                      LL_rr_node_indices);
+      /* Get signal activity */
+      input_density = get_rr_node_net_density(*cur_sb_info.opin_rr_node[side][inode]);
+      input_probability = get_rr_node_net_probability(*cur_sb_info.opin_rr_node[side][inode]);
+      input_init_value = get_rr_node_net_init_value(*cur_sb_info.opin_rr_node[side][inode]);
+      /* Update statistics */
+      average_sb_input_density += input_density;
+      if (0. < input_density) {
+       avg_density_cnt++;
+      }
+    } 
+    fprintf(fp, "\n");
   }
 
   /* Connect to VDD supply */
   fprintf(fp, "***** Voltage supplies *****\n");
   fprintf(fp, "Vgvdd_sb[%d][%d] gvdd_sb[%d][%d] 0 vsp\n", x, y, x, y);
+  /* Add load vdd */
+  fprintf(fp, "V%s %s 0 vsp\n", 
+          spice_tb_global_vdd_load_port_name,
+          spice_tb_global_vdd_load_port_name);
 
   fprintf(fp, "***** Global Force for all SRAMs *****\n");
   if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
@@ -774,7 +513,6 @@ int fprint_spice_routing_testbench_call_one_sb_tb(FILE* fp,
   vpr_printf(TIO_MESSAGE_INFO,"Average density of SB[%d][%d] inputs is %.2g.\n", x, y, average_sb_input_density);
 
   /* Free */
-  my_free(chan_width);
  
   return used;
 }

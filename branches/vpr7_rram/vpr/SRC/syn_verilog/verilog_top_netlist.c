@@ -139,7 +139,7 @@ void dump_verilog_top_netlist_memory_bank_ports(FILE* fp,
 static 
 void dump_verilog_top_netlist_memory_bank_internal_wires(FILE* fp) {
   t_spice_model* mem_model = NULL;
-  int icol, irow;
+  int iinv, icol, irow;
   int num_bl, num_wl;
   int num_array_bl, num_array_wl;
   int num_reserved_bl, num_reserved_wl;
@@ -221,11 +221,13 @@ void dump_verilog_top_netlist_memory_bank_internal_wires(FILE* fp) {
       /* get inv_spice_model */
       blb_inv_spice_model = blb_port[0]->inv_spice_model;
       /* Make an inversion of the BL */
-      fprintf(fp, " %s %s_blb [0:%d] (%s, %s);\n",
-              blb_inv_spice_model->name, blb_inv_spice_model->prefix, 
-              num_array_bl - 1, 
-              top_netlist_array_bl_port_name,
-              top_netlist_array_blb_port_name);
+      for (iinv = 0; iinv < num_array_bl - 1; iinv++) {
+        fprintf(fp, " %s %s_blb_%d (%s[%d], %s[%d]);\n",
+                blb_inv_spice_model->name, blb_inv_spice_model->prefix, 
+                iinv, 
+                top_netlist_array_bl_port_name, iinv,
+                top_netlist_array_blb_port_name, iinv);
+      }
     }
     if (1 == num_wlb_ports) {
       fprintf(fp, "  wire [%d:%d] %s%s; //---- Inverted Normal Word lines \n",
@@ -233,11 +235,13 @@ void dump_verilog_top_netlist_memory_bank_internal_wires(FILE* fp) {
       /* get inv_spice_model */
       wlb_inv_spice_model = wlb_port[0]->inv_spice_model;
       /* Make an inversion of the WL */
-      fprintf(fp, " %s %s_wlb [0:%d] (%s, %s);\n",
-              wlb_inv_spice_model->name, wlb_inv_spice_model->prefix, 
-              num_array_wl - 1, 
-              top_netlist_array_wl_port_name,
-              top_netlist_array_wlb_port_name);
+      for (iinv = 0; iinv < num_array_wl - 1; iinv++) {
+        fprintf(fp, " %s %s_wlb_%d (%s[%d], %s[%d]);\n",
+                wlb_inv_spice_model->name, wlb_inv_spice_model->prefix, 
+                iinv, 
+                top_netlist_array_wl_port_name, iinv,
+                top_netlist_array_wlb_port_name, iinv);
+      }
     }
     /* Connections for columns */
     for (icol = 0; icol < num_array_bl; icol++) {

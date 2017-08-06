@@ -153,93 +153,6 @@ void fprint_spice_grid_testbench_call_one_defined_grid(FILE* fp, int ix, int iy)
   return;
 }
 
-void fprint_grid_testbench_one_grid_pin_stimulation(FILE* fp, int x, int y, 
-                                                    int height, int side, 
-                                                    int ipin,
-                                                    t_ivec*** LL_rr_node_indices) {
-  int ipin_rr_node_index;
-  float ipin_density, ipin_probability;
-  int ipin_init_value;
-
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
-    exit(1);
-  }
-
-  /* Check */
-  assert((!(0 > x))&&(!(x > (nx + 1)))); 
-  assert((!(0 > y))&&(!(y > (ny + 1)))); 
-
-  /* Print a voltage source according to density and probability */
-  ipin_rr_node_index = get_rr_node_index(x, y, IPIN, ipin, LL_rr_node_indices);
-  /* Get density and probability */
-  ipin_density = get_rr_node_net_density(rr_node[ipin_rr_node_index]); 
-  ipin_probability = get_rr_node_net_probability(rr_node[ipin_rr_node_index]); 
-  ipin_init_value = get_rr_node_net_init_value(rr_node[ipin_rr_node_index]); 
-  /* Print voltage source */
-  fprintf(fp, "Vgrid[%d][%d]_pin[%d][%d][%d] grid[%d][%d]_pin[%d][%d][%d] 0 \n",
-          x, y, height, side, ipin, x, y, height, side, ipin);
-  fprint_voltage_pulse_params(fp, ipin_init_value, ipin_density, ipin_probability);
-
-  return;
-}
-
-void fprint_grid_testbench_one_grid_pin_loads(FILE* fp, int x, int y, 
-                                              int height, int side, 
-                                              int ipin,
-                                              t_ivec*** LL_rr_node_indices) {
-
-  int ipin_rr_node_index;
-  int iedge, iswitch, inode;
-  char* prefix = NULL;
-  t_spice_model* switch_spice_model = NULL;
-  int inv_cnt = 0;
-
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
-    exit(1);
-  }
-
-  /* Check */
-  assert((!(0 > x))&&(!(x > (nx + 1)))); 
-  assert((!(0 > y))&&(!(y > (ny + 1)))); 
-
-  /* Print a voltage source according to density and probability */
-  ipin_rr_node_index = get_rr_node_index(x, y, OPIN, ipin, LL_rr_node_indices);
-  /* Generate prefix */
-  prefix = (char*)my_malloc(sizeof(char)*(5 + strlen(my_itoa(x))
-             + 2 + strlen(my_itoa(y)) + 6 + strlen(my_itoa(height))
-             + 2 + strlen(my_itoa(side)) + 2 + strlen(my_itoa(ipin))
-             + 2 + 1));
-  sprintf(prefix, "grid[%d][%d]_pin[%d][%d][%d]",
-          x, y, height, side, ipin);
-
-  /* Print all the inverter load now*/
-  for (iedge = 0; iedge < rr_node[ipin_rr_node_index].num_edges; iedge++) {
-    /* Get the switch spice model */
-    inode = rr_node[ipin_rr_node_index].edges[iedge];
-    iswitch = rr_node[ipin_rr_node_index].switches[iedge]; 
-    switch_spice_model = switch_inf[iswitch].spice_model;
-    if (NULL == switch_spice_model) {
-      continue;
-    }
-    /* Add inv/buf here */
-    fprintf(fp, "X%s_inv[%d] %s %s_out[%d] gvdd_load 0 inv size=%g\n",
-            prefix, iedge, 
-            prefix, prefix, iedge, 
-            switch_spice_model->input_buffer->size);
-    inv_cnt++;
-  }
- 
-  /* TODO: Generate loads recursively */
-  /*fprint_rr_node_loads_rec(fp, rr_node[ipin_rr_node_index],prefix);*/
-
-  /*Free */
-  my_free(prefix);
-
-  return;
-}
-
 int get_grid_testbench_one_grid_num_sim_clock_cycles(FILE* fp, 
                                                      t_spice spice,
                                                      t_ivec*** LL_rr_node_indices,
@@ -342,9 +255,9 @@ void fprint_grid_testbench_one_grid_stimulation(FILE* fp,
         if (1 == type->pinloc[iheight][side][ipin]) {
           class_id = type->pin_class[ipin];
           if (RECEIVER == type->class_inf[class_id].type) { 
-            fprint_grid_testbench_one_grid_pin_stimulation(fp, x, y, iheight, side, ipin, LL_rr_node_indices);
+            fprint_spice_testbench_one_grid_pin_stimulation(fp, x, y, iheight, side, ipin, LL_rr_node_indices);
           } else if (DRIVER == type->class_inf[class_id].type) { 
-            fprint_grid_testbench_one_grid_pin_loads(fp, x, y, iheight, side, ipin, LL_rr_node_indices);
+            fprint_spice_testbench_one_grid_pin_loads(fp, x, y, iheight, side, ipin, LL_rr_node_indices);
           } else {
             fprint_stimulate_dangling_one_grid_pin(fp, x, y, iheight, side, ipin, LL_rr_node_indices);
           }

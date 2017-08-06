@@ -195,6 +195,16 @@ void fprint_spice_testbench_one_cb_mux_loads(FILE* fp, int* testbench_load_cnt,
                                              char* outport_name,
                                              t_ivec*** LL_rr_node_indices);
 
+void fprint_spice_testbench_one_grid_pin_stimulation(FILE* fp, int x, int y, 
+                                                    int height, int side, 
+                                                    int ipin,
+                                                    t_ivec*** LL_rr_node_indices);
+
+void fprint_spice_testbench_one_grid_pin_loads(FILE* fp, int x, int y, 
+                                              int height, int side, 
+                                              int ipin,
+                                              t_ivec*** LL_rr_node_indices);
+
 t_llist* add_one_spice_tb_info_to_llist(t_llist* cur_head, 
                                         char* tb_file_path, 
                                         int num_sim_clock_cycles);

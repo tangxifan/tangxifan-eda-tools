@@ -546,3 +546,5 @@ void config_spice_models_sram_port_spice_model(int num_spice_model,
                                                t_spice_model* default_sram_spice_model);
 t_pb* get_lut_child_pb(t_pb* cur_lut_pb,
                        int mode_index);
+
+int get_grid_pin_height(int grid_x, int grid_y, int pin_index);
