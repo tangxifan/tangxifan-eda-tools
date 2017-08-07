@@ -108,6 +108,7 @@ void fprintf_spice_routing_testbench_generic_stimuli(FILE* fp,
  */
 static 
 int fprint_spice_routing_testbench_call_one_cb_tb(FILE* fp,
+                                                  t_spice spice, 
                                                   t_rr_type chan_type,
                                                   int x, int y,
                                                   t_ivec*** LL_rr_node_indices) {
@@ -242,35 +243,6 @@ int fprint_spice_routing_testbench_call_one_cb_tb(FILE* fp,
     exit(1);
   }
 
-  /* Add load vdd */
-  fprintf(fp, "V%s %s 0 vsp\n", 
-          spice_tb_global_vdd_load_port_name,
-          spice_tb_global_vdd_load_port_name);
-
-  fprintf(fp, "***** Global Force for all SRAMs *****\n");
-  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
-    fprintf(fp, "Vsc_clk sc_clk 0 0\n");
-    fprintf(fp, "Vsc_rst sc_rst 0 0\n");
-    fprintf(fp, "Vsc_set sc_set 0 0\n");
-    switch(chan_type) { 
-    case CHANX:
-      fprintf(fp, "Vcbx[%d][%d]_sc_head cbx[%d][%d]_sc_head 0 0\n", x, y, x, y);
-      fprintf(fp, ".nodeset V(cbx[%d][%d]_sc_head) 0\n", x, y);
-      break;
-    case CHANY:
-      fprintf(fp, "Vcby[%d][%d]_sc_head cby[%d][%d]_sc_head 0 0\n", x, y, x, y);
-      fprintf(fp, ".nodeset V(cby[%d][%d]_sc_head) 0\n", x, y);
-      break;
-    default: 
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
-      exit(1);
-    }
-  } else {
-    fprintf(fp, "V%s->in %s->in 0 0\n", 
-            sram_spice_model->prefix, sram_spice_model->prefix);
-    fprintf(fp, ".nodeset V(%s->in) 0\n", sram_spice_model->prefix);
-  }
-
   /* Calculate the num_sim_clock_cycle for this MUX, update global max_sim_clock_cycle in this testbench */
   if (0 < avg_density_cnt) {
     average_cb_input_density = average_cb_input_density/avg_density_cnt;
@@ -297,6 +269,7 @@ int fprint_spice_routing_testbench_call_one_cb_tb(FILE* fp,
   }
 
   /* Measurements */
+  fprint_spice_netlist_transient_setting(fp, spice, num_sim_clock_cycles, FALSE);
   /* Measure the delay of MUX */
   fprintf(fp, "***** Measurements *****\n");
   /* Measure the leakage power of MUX */
@@ -332,6 +305,7 @@ int fprint_spice_routing_testbench_call_one_cb_tb(FILE* fp,
  */
 static 
 int fprint_spice_routing_testbench_call_one_sb_tb(FILE* fp, 
+                                                  t_spice spice, 
                                                   int x, int y, 
                                                   t_ivec*** LL_rr_node_indices) {
   int itrack, inode, side, ipin_height;
@@ -388,8 +362,8 @@ int fprint_spice_routing_testbench_call_one_sb_tb(FILE* fp,
                 strlen(convert_chan_type_to_string(cur_sb_info.chan_rr_node[side][itrack]->type))
                 + 1 + strlen(my_itoa(cur_sb_info.x)) + 2 + strlen(my_itoa(cur_sb_info.y))
                 + 6 + strlen(my_itoa(itrack))
-                + 2 + 1));
-        sprintf(outport_name, "%s[%d][%d]_out[%d] ", 
+                + 1 + 1));
+        sprintf(outport_name, "%s[%d][%d]_out[%d]", 
                 convert_chan_type_to_string(cur_sb_info.chan_rr_node[side][itrack]->type), 
                 cur_sb_info.x, cur_sb_info.y, itrack);
         rr_node_outport_name = fprint_spice_testbench_rr_node_load_version(fp, &testbench_load_cnt,
@@ -451,24 +425,6 @@ int fprint_spice_routing_testbench_call_one_sb_tb(FILE* fp,
   /* Connect to VDD supply */
   fprintf(fp, "***** Voltage supplies *****\n");
   fprintf(fp, "Vgvdd_sb[%d][%d] gvdd_sb[%d][%d] 0 vsp\n", x, y, x, y);
-  /* Add load vdd */
-  fprintf(fp, "V%s %s 0 vsp\n", 
-          spice_tb_global_vdd_load_port_name,
-          spice_tb_global_vdd_load_port_name);
-
-  fprintf(fp, "***** Global Force for all SRAMs *****\n");
-  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
-    fprintf(fp, "Vsc_clk sc_clk 0 0\n");
-    fprintf(fp, "Vsc_rst sc_rst 0 0\n");
-    fprintf(fp, "Vsc_set sc_set 0 0\n");
-    fprintf(fp, "Vsb[%d][%d]_sc_head sb[%d][%d]_sc_head 0 0\n", 
-            x, y, x, y);
-    fprintf(fp, ".nodeset V(%s[0]->in) 0\n", sram_spice_model->prefix);
-  } else {
-    fprintf(fp, "V%s->in %s->in 0 0\n", 
-            sram_spice_model->prefix, sram_spice_model->prefix);
-    fprintf(fp, ".nodeset V(%s->in) 0\n", sram_spice_model->prefix);
-  }
 
   /* Calculate the num_sim_clock_cycle for this MUX, update global max_sim_clock_cycle in this testbench */
   if (0 < avg_density_cnt) {
@@ -496,6 +452,7 @@ int fprint_spice_routing_testbench_call_one_sb_tb(FILE* fp,
   }
 
   /* Measurements */
+  fprint_spice_netlist_transient_setting(fp, spice, num_sim_clock_cycles, FALSE);
   /* Measure the delay of MUX */
   fprintf(fp, "***** Measurements *****\n");
   /* Measure the leakage power of MUX */
@@ -599,12 +556,18 @@ int fprint_spice_one_cb_testbench(char* formatted_spice_dir,
   switch (cb_type) {
   case CHANX:
   case CHANY:
-    used = fprint_spice_routing_testbench_call_one_cb_tb(fp, cb_type, grid_x, grid_y, LL_rr_node_indices);
+    used = fprint_spice_routing_testbench_call_one_cb_tb(fp, *(arch.spice), cb_type, grid_x, grid_y, LL_rr_node_indices);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d]) Invalid connection_box_type!\n", __FILE__, __LINE__);
     exit(1);
   }
+
+  /* SPICE ends*/
+  fprintf(fp, ".end\n");
+
+  /* Close the file*/
+  fclose(fp);
 
   /* Push the testbench to the linked list */
   tb_head = add_one_spice_tb_info_to_llist(tb_head, cb_testbench_file_path, 
@@ -677,13 +640,18 @@ int fprint_spice_one_sb_testbench(char* formatted_spice_dir,
   temp_include_file_path = my_strcat(formatted_subckt_dir_path, routing_spice_file_name);
   fprintf(fp, ".include \'%s\'\n", temp_include_file_path);
   my_free(temp_include_file_path);
-  used = fprint_spice_routing_testbench_call_one_sb_tb(fp, grid_x, grid_y, LL_rr_node_indices);
+  used = fprint_spice_routing_testbench_call_one_sb_tb(fp, *(arch.spice), grid_x, grid_y, LL_rr_node_indices);
+
+  /* SPICE ends*/
+  fprintf(fp, ".end\n");
+
+  /* Close the file*/
+  fclose(fp);
 
   /* Push the testbench to the linked list */
   tb_head = add_one_spice_tb_info_to_llist(tb_head, sb_testbench_file_path, 
                                            max_sim_num_clock_cycles);
   used = 1;
-
 
   return used;
 }
