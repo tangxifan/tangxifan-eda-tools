@@ -709,10 +709,11 @@ void fprint_spice_lut_testbench(char* formatted_spice_dir,
   for (ix = 1; ix < (nx+1); ix++) {
     for (iy = 1; iy < (ny+1); iy++) {
       lut_testbench_name = (char*)my_malloc(sizeof(char)*( strlen(circuit_name) 
-                                            + 6 + strlen(my_itoa(cnt)) + 1
+                                            + 6 + strlen(my_itoa(ix)) + 1 
+                                            + strlen(my_itoa(iy)) + 1 
                                             + strlen(spice_lut_testbench_postfix)  + 1 ));
-      sprintf(lut_testbench_name, "%s_grid%d%s",
-              circuit_name, cnt, spice_lut_testbench_postfix);
+      sprintf(lut_testbench_name, "%s_grid%d_%d%s",
+              circuit_name, ix, iy, spice_lut_testbench_postfix);
       used = fprint_spice_one_lut_testbench(formatted_spice_dir, circuit_name, lut_testbench_name, 
                                             include_dir_path, subckt_dir_path, LL_rr_node_indices,
                                             num_clock, arch, ix, iy, 

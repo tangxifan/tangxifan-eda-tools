@@ -1752,7 +1752,6 @@ int fprint_spice_one_mux_testbench(char* formatted_spice_dir,
   char* mux_testbench_file_path = my_strcat(formatted_spice_dir, mux_testbench_name);
   char* mux_tb_name = NULL;
   int used = 0;
-  char* temp_include_file_path = NULL;
 
   switch (mux_tb_type) {
   case SPICE_PB_MUX_TB:
@@ -1915,10 +1914,11 @@ void fprint_spice_mux_testbench(char* formatted_spice_dir,
     for (ix = 1; ix < (nx+1); ix++) {
       for (iy = 1; iy < (ny+1); iy++) {
         mux_testbench_name = (char*)my_malloc(sizeof(char)*( strlen(circuit_name) 
-                                              + 6 + strlen(my_itoa(cnt)) + 1
+                                              + 5 + strlen(my_itoa(ix)) + 1
+                                              + strlen(my_itoa(iy)) + 1
                                               + strlen(spice_pb_mux_testbench_postfix)  + 1 ));
-        sprintf(mux_testbench_name, "%s_grid%d%s",
-                circuit_name, cnt, spice_pb_mux_testbench_postfix);
+        sprintf(mux_testbench_name, "%s_grid%d_%d%s",
+                circuit_name, ix, iy, spice_pb_mux_testbench_postfix);
         used = fprint_spice_one_mux_testbench(formatted_spice_dir, circuit_name, mux_testbench_name, 
                                               include_dir_path, subckt_dir_path, LL_rr_node_indices,
                                               num_clocks, arch, ix, iy, NUM_RR_TYPES, SPICE_PB_MUX_TB, 
@@ -1941,7 +1941,7 @@ void fprint_spice_mux_testbench(char* formatted_spice_dir,
         mux_testbench_name = (char*)my_malloc(sizeof(char)*( strlen(circuit_name) 
                                               + 4 + strlen(my_itoa(ix)) + 2 + strlen(my_itoa(iy)) + 1
                                               + strlen(spice_cb_mux_testbench_postfix)  + 1 ));
-        sprintf(mux_testbench_name, "%s_cb%d_%d%s",
+        sprintf(mux_testbench_name, "%s_cbx%d_%d%s",
                 circuit_name, ix, iy, spice_cb_mux_testbench_postfix);
         used = fprint_spice_one_mux_testbench(formatted_spice_dir, circuit_name, mux_testbench_name, 
                                               include_dir_path, subckt_dir_path, LL_rr_node_indices,
@@ -1959,7 +1959,7 @@ void fprint_spice_mux_testbench(char* formatted_spice_dir,
         mux_testbench_name = (char*)my_malloc(sizeof(char)*( strlen(circuit_name) 
                                               + 4 + strlen(my_itoa(ix)) + 2 + strlen(my_itoa(iy)) + 1
                                               + strlen(spice_cb_mux_testbench_postfix)  + 1 ));
-        sprintf(mux_testbench_name, "%s_cb%d_%d%s",
+        sprintf(mux_testbench_name, "%s_cby%d_%d%s",
                 circuit_name, ix, iy, spice_cb_mux_testbench_postfix);
         used = fprint_spice_one_mux_testbench(formatted_spice_dir, circuit_name, mux_testbench_name, 
                                               include_dir_path, subckt_dir_path, LL_rr_node_indices,

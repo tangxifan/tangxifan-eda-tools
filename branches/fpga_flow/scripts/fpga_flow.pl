@@ -138,10 +138,9 @@ sub print_usage()
   print "      -fix_route_chan_width : turn on routing with a fixed route_chan_width, defined in benchmark configuration file.\n";
   print "      -multi_task <int>: turn on the mutli-task mode\n";
   print "      -vpr_fpga_spice <task_file> : turn on SPICE netlists print-out in VPR, specify a task file\n";
-  print "      -vpr_fpga_spice_print_cbsbtb : print CB&SB testbench in VPR FPGA SPICE\n";
-  print "      -vpr_fpga_spice_print_pbtb : print PB component-level testbench in VPR FPGA SPICE\n";
-  print "      -vpr_fpga_spice_print_gridtb : print Grid testbench in VPR FPGA SPICE\n";
-  print "      -vpr_fpga_spice_print_toptb : print full-chip testbench in VPR FPGA SPICE\n";
+  print "      -vpr_fpga_spice_print_component_tb : print component-level testbenches in VPR FPGA SPICE\n";
+  print "      -vpr_fpga_spice_print_grid_tb : print Grid-level testbenches in VPR FPGA SPICE\n";
+  print "      -vpr_fpga_spice_print_top_tb : print full-chip testbench in VPR FPGA SPICE\n";
   print "      -vpr_fpga_spice_leakage_only : turn on leakage_only mode in VPR FPGA SPICE\n";
   print "      -vpr_fpga_spice_parasitic_net_estimation_off : turn off parasitic_net_estimation in VPR FPGA SPICE\n";
   print "      -vpr_fpga_spice_verilog_generator : turn on Verilog Generator of VPR FPGA SPICE\n";
@@ -305,10 +304,9 @@ sub opts_read()
   # FPGA-SPICE options
   # Read Opt into Hash(opt_ptr) : "opt_name","with_val","mandatory"
   &read_opt_into_hash("vpr_fpga_spice","on","off");
-  &read_opt_into_hash("vpr_fpga_spice_print_cbsbtb","off","off");
-  &read_opt_into_hash("vpr_fpga_spice_print_pbtb","off","off");
-  &read_opt_into_hash("vpr_fpga_spice_print_gridtb","off","off");
-  &read_opt_into_hash("vpr_fpga_spice_print_toptb","off","off");
+  &read_opt_into_hash("vpr_fpga_spice_print_component_tb","off","off");
+  &read_opt_into_hash("vpr_fpga_spice_print_grid_tb","off","off");
+  &read_opt_into_hash("vpr_fpga_spice_print_top_tb","off","off");
   &read_opt_into_hash("vpr_fpga_spice_leakage_only","off","off");
   &read_opt_into_hash("vpr_fpga_spice_parasitic_net_estimation_off","off","off");
   &read_opt_into_hash("vpr_fpga_spice_verilog_generator","off","off");
@@ -1038,19 +1036,22 @@ sub run_std_vpr($ $ $ $ $ $ $ $ $)
   my ($vpr_spice_opts) = ("");
   if (("on" eq $opt_ptr->{power})&&("on" eq $opt_ptr->{vpr_fpga_spice})) {
     $vpr_spice_opts = "--fpga_spice";
-    if ("on" eq $opt_ptr->{vpr_fpga_spice_print_cbsbtb}) {
+    if ("on" eq $opt_ptr->{vpr_fpga_spice_rename_illegal_port}) {
+      $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_rename_illegal_port";
+    }
+    if ("on" eq $opt_ptr->{vpr_fpga_spice_print_component_tb}) {
+      $vpr_spice_opts = $vpr_spice_opts." --print_spice_lut_testbench";
+      $vpr_spice_opts = $vpr_spice_opts." --print_spice_dff_testbench";
+      $vpr_spice_opts = $vpr_spice_opts." --print_spice_pb_mux_testbench";
       $vpr_spice_opts = $vpr_spice_opts." --print_spice_cb_mux_testbench";
       $vpr_spice_opts = $vpr_spice_opts." --print_spice_sb_mux_testbench";
     }
-    if ("on" eq $opt_ptr->{vpr_fpga_spice_print_pbtb}) {
-      $vpr_spice_opts = $vpr_spice_opts." --print_spice_pb_mux_testbench";
-      $vpr_spice_opts = $vpr_spice_opts." --print_spice_lut_testbench";
-      $vpr_spice_opts = $vpr_spice_opts." --print_spice_dff_testbench";
-    }
-    if ("on" eq $opt_ptr->{vpr_fpga_spice_print_gridtb}) {
+    if ("on" eq $opt_ptr->{vpr_fpga_spice_print_grid_tb}) {
       $vpr_spice_opts = $vpr_spice_opts." --print_spice_grid_testbench";
+      $vpr_spice_opts = $vpr_spice_opts." --print_spice_cb_testbench";
+      $vpr_spice_opts = $vpr_spice_opts." --print_spice_sb_testbench";
     }
-    if ("on" eq $opt_ptr->{vpr_fpga_spice_print_toptb}) {
+    if ("on" eq $opt_ptr->{vpr_fpga_spice_print_top_tb}) {
       $vpr_spice_opts = $vpr_spice_opts." --print_spice_top_testbench";
     }
     if ("on" eq $opt_ptr->{vpr_fpga_spice_leakage_only}) {
@@ -1062,9 +1063,6 @@ sub run_std_vpr($ $ $ $ $ $ $ $ $)
   }
   if ("on" eq $opt_ptr->{vpr_fpga_spice_verilog_generator}) {
     $vpr_spice_opts = $vpr_spice_opts." --fpga_syn_verilog";
-    if ("on" eq $opt_ptr->{vpr_fpga_spice_rename_illegal_port}) {
-      $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_rename_illegal_port";
-    }
   }
   
   my ($other_opt) = ("");

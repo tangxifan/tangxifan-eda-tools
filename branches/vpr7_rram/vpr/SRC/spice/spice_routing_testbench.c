@@ -48,6 +48,26 @@ static void init_spice_routing_testbench_globals(t_spice spice) {
   }
 }
 
+static 
+void fprint_spice_cb_testbench_global_ports(FILE* fp,
+                                            t_spice spice) {
+  /* Declare the global SRAM ports */
+  fprintf(fp, ".global %s\n",
+          spice_tb_global_vdd_cb_sram_port_name);
+
+  return;
+}
+
+static 
+void fprint_spice_sb_testbench_global_ports(FILE* fp,
+                                            t_spice spice) {
+  /* Declare the global SRAM ports */
+  fprintf(fp, ".global %s\n",
+          spice_tb_global_vdd_sb_sram_port_name);
+
+  return;
+}
+
 
 static 
 void fprint_spice_routing_testbench_global_ports(FILE* fp,
@@ -231,17 +251,21 @@ int fprint_spice_routing_testbench_call_one_cb_tb(FILE* fp,
   case CHANX:
     /* Connect to VDD supply */
     fprintf(fp, "***** Voltage supplies *****\n");
-    fprintf(fp, "Vgvdd_cbx[%d][%d] gvdd_cbx[%d][%d] 0 vsp\n", x, y, x, y);
+    fprintf(fp, "Vgvdd_cb[%d][%d] gvdd_cbx[%d][%d] 0 vsp\n", x, y, x, y);
     break;
   case CHANY:
     /* Connect to VDD supply */
     fprintf(fp, "***** Voltage supplies *****\n");
-    fprintf(fp, "Vgvdd_cby[%d][%d] gvdd_cby[%d][%d] 0 vsp\n", x, y, x, y);
+    fprintf(fp, "Vgvdd_cb[%d][%d] gvdd_cby[%d][%d] 0 vsp\n", x, y, x, y);
     break;
   default: 
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
     exit(1);
   }
+  /* SRAM Voltage stimulit */
+  fprintf(fp, "V%s %s 0 vsp\n",
+          spice_tb_global_vdd_cb_sram_port_name,
+          spice_tb_global_vdd_cb_sram_port_name);
 
   /* Calculate the num_sim_clock_cycle for this MUX, update global max_sim_clock_cycle in this testbench */
   if (0 < avg_density_cnt) {
@@ -274,16 +298,23 @@ int fprint_spice_routing_testbench_call_one_cb_tb(FILE* fp,
   fprintf(fp, "***** Measurements *****\n");
   /* Measure the leakage power of MUX */
   fprintf(fp, "***** Leakage Power Measurement *****\n");
-  fprintf(fp, ".meas tran cb[%d][%d]_leakage_power avg p(Vgvdd_cb[%d][%d]) from=0 to='clock_period'\n",
-          x, y, x, y);
+  fprintf(fp, ".meas tran leakage_power_cb avg p(Vgvdd_cb[%d][%d]) from=0 to='clock_period'\n",
+          x, y);
+  /* Measure the leakage power of SRAMs */
+  fprintf(fp, ".meas tran leakage_power_sram_cb avg p(V%s) from=0 to='clock_period'\n",
+          spice_tb_global_vdd_cb_sram_port_name);
   /* Measure the dynamic power of MUX */
   fprintf(fp, "***** Dynamic Power Measurement *****\n");
-  fprintf(fp, ".meas tran cb[%d][%d]_dynamic_power avg p(Vgvdd_cb[%d][%d]) from='clock_period' to='%d*clock_period'\n",
-          x, y, x, y, num_sim_clock_cycles);
-  fprintf(fp, ".meas tran cb[%d][%d]_energy_per_cycle param='cb[%d][%d]_dynamic_power*clock_period'\n",
-          x, y, x, y);
+  fprintf(fp, ".meas tran dynamic_power_cb avg p(Vgvdd_cb[%d][%d]) from='clock_period' to='%d*clock_period'\n",
+          x, y, num_sim_clock_cycles);
+  fprintf(fp, ".meas tran energy_per_cycle_cb param='dynamic_power_cb*clock_period'\n");
+  /* Measure the dynamic power of SRAMs */
+  fprintf(fp, ".meas tran dynamic_power_sram_cb avg p(V%s) from='clock_period' to='%d*clock_period'\n",
+          spice_tb_global_vdd_cb_sram_port_name,
+          num_sim_clock_cycles);
+  fprintf(fp, ".meas tran energy_per_cycle_sram_cb param='dynamic_power_sram_cb*clock_period'\n");
 
-  /* print average sb input density */
+  /* print average cb input density */
   switch(chan_type) { 
   case CHANX:
     vpr_printf(TIO_MESSAGE_INFO,"Average density of CBX[%d][%d] inputs is %.2g.\n", x, y, average_cb_input_density);
@@ -425,6 +456,10 @@ int fprint_spice_routing_testbench_call_one_sb_tb(FILE* fp,
   /* Connect to VDD supply */
   fprintf(fp, "***** Voltage supplies *****\n");
   fprintf(fp, "Vgvdd_sb[%d][%d] gvdd_sb[%d][%d] 0 vsp\n", x, y, x, y);
+  /* SRAM Voltage stimulit */
+  fprintf(fp, "V%s %s 0 vsp\n",
+          spice_tb_global_vdd_sb_sram_port_name,
+          spice_tb_global_vdd_sb_sram_port_name);
 
   /* Calculate the num_sim_clock_cycle for this MUX, update global max_sim_clock_cycle in this testbench */
   if (0 < avg_density_cnt) {
@@ -457,14 +492,21 @@ int fprint_spice_routing_testbench_call_one_sb_tb(FILE* fp,
   fprintf(fp, "***** Measurements *****\n");
   /* Measure the leakage power of MUX */
   fprintf(fp, "***** Leakage Power Measurement *****\n");
-  fprintf(fp, ".meas tran sb[%d][%d]_leakage_power avg p(Vgvdd_sb[%d][%d]) from=0 to='clock_period'\n",
-          x, y, x, y);
+  fprintf(fp, ".meas tran leakage_power_sb avg p(Vgvdd_sb[%d][%d]) from=0 to='clock_period'\n",
+          x, y);
+  /* Measure the leakage power of SRAMs */
+  fprintf(fp, ".meas tran leakage_power_sram_sb avg p(V%s) from=0 to='clock_period'\n",
+          spice_tb_global_vdd_sb_sram_port_name);
   /* Measure the dynamic power of MUX */
   fprintf(fp, "***** Dynamic Power Measurement *****\n");
-  fprintf(fp, ".meas tran sb[%d][%d]_dynamic_power avg p(Vgvdd_sb[%d][%d]) from='clock_period' to='%d*clock_period'\n",
-          x, y, x, y, num_sim_clock_cycles);
-  fprintf(fp, ".meas tran sb[%d][%d]_energy_per_cycle param='sb[%d][%d]_dynamic_power*clock_period'\n",
-          x, y, x, y);
+  fprintf(fp, ".meas tran dynamic_power_sb avg p(Vgvdd_sb[%d][%d]) from='clock_period' to='%d*clock_period'\n",
+          x, y, num_sim_clock_cycles);
+  fprintf(fp, ".meas tran energy_per_cycle_sb param='dynamic_power_sb*clock_period'\n");
+  /* Measure the dynamic power of SRAMs */
+  fprintf(fp, ".meas tran dynamic_power_sram_sb avg p(V%s) from='clock_period' to='%d*clock_period'\n",
+          spice_tb_global_vdd_sb_sram_port_name,
+          num_sim_clock_cycles);
+  fprintf(fp, ".meas tran energy_per_cycle_sram_sb param='dynamic_power_sram_sb*clock_period'\n");
 
   /* print average sb input density */
   vpr_printf(TIO_MESSAGE_INFO,"Average density of SB[%d][%d] inputs is %.2g.\n", x, y, average_sb_input_density);
@@ -540,6 +582,7 @@ int fprint_spice_one_cb_testbench(char* formatted_spice_dir,
 
   /* Global nodes: Vdd for SRAMs, Logic Blocks(Include IO), Switch Boxes, Connection Boxes */
   fprint_spice_routing_testbench_global_ports(fp, *(arch.spice));
+  fprint_spice_cb_testbench_global_ports(fp, *(arch.spice));
  
   /* Quote defined Logic blocks subckts (Grids) */
   init_spice_routing_testbench_globals(*(arch.spice));
@@ -632,6 +675,7 @@ int fprint_spice_one_sb_testbench(char* formatted_spice_dir,
 
   /* Global nodes: Vdd for SRAMs, Logic Blocks(Include IO), Switch Boxes, Connection Boxes */
   fprint_spice_routing_testbench_global_ports(fp, *(arch.spice));
+  fprint_spice_sb_testbench_global_ports(fp, *(arch.spice));
  
   /* Quote defined Logic blocks subckts (Grids) */
   init_spice_routing_testbench_globals(*(arch.spice));
@@ -675,7 +719,7 @@ void fprint_spice_cb_testbench(char* formatted_spice_dir,
       cb_testbench_name = (char*)my_malloc(sizeof(char)*( strlen(circuit_name) 
                                             + 4 + strlen(my_itoa(ix)) + 2 + strlen(my_itoa(iy)) + 1
                                             + strlen(spice_cb_testbench_postfix)  + 1 ));
-      sprintf(cb_testbench_name, "%s_cb%d_%d%s",
+      sprintf(cb_testbench_name, "%s_cbx%d_%d%s",
               circuit_name, ix, iy, spice_cb_testbench_postfix);
       used = fprint_spice_one_cb_testbench(formatted_spice_dir, circuit_name, cb_testbench_name, 
                                             include_dir_path, subckt_dir_path, LL_rr_node_indices,
@@ -693,7 +737,7 @@ void fprint_spice_cb_testbench(char* formatted_spice_dir,
       cb_testbench_name = (char*)my_malloc(sizeof(char)*( strlen(circuit_name) 
                                             + 4 + strlen(my_itoa(ix)) + 2 + strlen(my_itoa(iy)) + 1
                                             + strlen(spice_cb_testbench_postfix)  + 1 ));
-      sprintf(cb_testbench_name, "%s_cb%d_%d%s",
+      sprintf(cb_testbench_name, "%s_cby%d_%d%s",
                circuit_name, ix, iy, spice_cb_testbench_postfix);
       used = fprint_spice_one_cb_testbench(formatted_spice_dir, circuit_name, cb_testbench_name, 
                                             include_dir_path, subckt_dir_path, LL_rr_node_indices,

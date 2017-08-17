@@ -667,10 +667,11 @@ void fprint_spice_dff_testbench(char* formatted_spice_dir,
   for (ix = 1; ix < (nx+1); ix++) {
     for (iy = 1; iy < (ny+1); iy++) {
       dff_testbench_name = (char*)my_malloc(sizeof(char)*( strlen(circuit_name) 
-                                            + 6 + strlen(my_itoa(cnt)) + 1
+                                            + 6 + strlen(my_itoa(ix)) + 1
+                                            + strlen(my_itoa(iy)) + 1
                                             + strlen(spice_dff_testbench_postfix)  + 1 ));
-      sprintf(dff_testbench_name, "%s_grid%d%s",
-              circuit_name, cnt, spice_dff_testbench_postfix);
+      sprintf(dff_testbench_name, "%s_grid%d_%d%s",
+              circuit_name, ix, iy, spice_dff_testbench_postfix);
       used = fprint_spice_one_dff_testbench(formatted_spice_dir, circuit_name, dff_testbench_name, 
                                             include_dir_path, subckt_dir_path, LL_rr_node_indices,
                                             num_clock, arch, ix, iy, 

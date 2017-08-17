@@ -3215,14 +3215,20 @@ sub gen_1level_mux_subckt($ $ $ $ $ $ $) {
   for (my $i = 0; $i < $mux_size; $i++) {
     # Exception for 2-input MUX
     if ((2 == $mux_size)&&(1 == $i)) {
-      for (my $iwcpt = 0; $iwcpt < $w_cpt; $iwcpt++) {
+      my ($iwcpt);
+      for ($iwcpt = 0; $iwcpt < $w_cpt - 2; $iwcpt++) {
         &tab_print($spfh, "Xmux1level_$i\_wcpt$iwcpt mux1level_in$i mux1level_out $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$i $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$i svdd sgnd $mux1level_subckt\n",0);
       }
+      my ($cur_w_cpt_size) = ($w_cpt - $iwcpt);
+      &tab_print($spfh, "Xmux1level_$i\_wcpt$iwcpt mux1level_in$i mux1level_out $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$i $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$i svdd sgnd $mux1level_subckt size=$cur_w_cpt_size\n",0);
     } else {
       # Call defined 1level Subckt 
-      for (my $iwcpt = 0; $iwcpt < $w_cpt; $iwcpt++) {
+      my ($iwcpt);
+      for ($iwcpt = 0; $iwcpt < $w_cpt - 2; $iwcpt++) {
         &tab_print($spfh, "Xmux1level_$i\_wcpt$iwcpt mux1level_in$i mux1level_out $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$i $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$i svdd sgnd $mux1level_subckt\n",0);
       }
+      my ($cur_w_cpt_size) = ($w_cpt - $iwcpt);
+      &tab_print($spfh, "Xmux1level_$i\_wcpt$iwcpt mux1level_in$i mux1level_out $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$i $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$i svdd sgnd $mux1level_subckt size=$cur_w_cpt_size\n",0);
     }
   }
 
@@ -4225,24 +4231,14 @@ sub gen_multilevel_mux_subckt($ $ $ $ $ $ $)
     for (my $j=0; $j < $num_input_cur_level; $j++) {
       my ($nextj) = ($j + 1);
       my ($out_idx) = int($j/2);
-      for (my $iwcpt = 0; $iwcpt < $w_cpt; $iwcpt++) {
+      my ($iwcpt);
+      for ($iwcpt = 0; $iwcpt < $w_cpt - 2; $iwcpt++) {
         &tab_print($spfh,"Xmux2_no$mux2_cnt\_wcpt$iwcpt $mux2_in$j $mux2_in$nextj $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$nextlevel $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$nextlevel $mux2_out$out_idx svdd sgnd $mux2_subckt ",0); 
-        if ($rram_enhance) {
-          &tab_print($spfh,"ron=\'ron\' wprog=\'wprog\'",0);
-        }
         &tab_print($spfh,"\n",0);
       }
-      if ($rram_enhance) {
-        my ($nextnextj) = ($nextj + 1);
-        if (0 == $j) { 
-          &tab_print($spfh,"Xprog_extral$i $mux2_in$j sgnd sgnd sgnd elc_nmos L=$conf_ptr->{general_settings}->{nl}->{val} W=\'wprog*$conf_ptr->{general_settings}->{min_wn}->{val}\'\n",0);
-        }
-        if ($nextnextj < $num_input_cur_level) {
-          &tab_print($spfh,"Xprog_no$mux2_cnt $mux2_in$nextj gnd $mux2_in$nextnextj sgnd elc_nmos L=$conf_ptr->{general_settings}->{nl}->{val} W=\'wprog*$conf_ptr->{general_settings}->{min_wn}->{val}\'\n",0);
-        } else {
-          &tab_print($spfh,"Xprog_no$mux2_cnt $mux2_in$nextj sgnd sgnd sgnd elc_nmos L=$conf_ptr->{general_settings}->{nl}->{val} W=\'wprog*$conf_ptr->{general_settings}->{min_wn}->{val}\'\n",0);
-        }
-      }
+      my ($cur_wcpt_size) = ($w_cpt - $iwcpt);
+      &tab_print($spfh,"Xmux2_no$mux2_cnt\_wcpt$iwcpt $mux2_in$j $mux2_in$nextj $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$nextlevel $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$nextlevel $mux2_out$out_idx svdd sgnd $mux2_subckt size=$cur_wcpt_size",0); 
+      &tab_print($spfh,"\n",0);
       $j = $nextj;
       $mux2_cnt++;
     } 
@@ -4272,11 +4268,6 @@ sub gen_multilevel_mux_subckt($ $ $ $ $ $ $)
     &tab_print($spfh,"Vout mux2_l0_in0 ",0); 
     &tab_print($spfh,"$conf_ptr->{mux_settings}->{OUT_port_name}->{val} 0\n",0);
   } 
-
-  # Add programming transistor at the output
-  if ($rram_enhance) {
-    &tab_print($spfh,"Xprog_out mux2_l0_in0 sgnd sgnd sgnd elc_nmos L=$conf_ptr->{general_settings}->{nl}->{val} W=\'wprog*$conf_ptr->{general_settings}->{min_wn}->{val}\'\n",0);
-  }
 
   # Print end of subckt
   &tab_print($spfh,".eom $subckt_name\n",0);
