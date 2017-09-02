@@ -42,6 +42,8 @@ void fprint_spice_lut_subckt(FILE* fp,
   t_spice_model_port** output_ports = NULL;
   int num_sram_port = 0;
   t_spice_model_port** sram_ports = NULL;
+  float total_width;
+  int width_cnt;
 
   /* Ensure a valid file handler*/ 
   if (NULL == fp) {
@@ -79,18 +81,36 @@ void fprint_spice_lut_subckt(FILE* fp,
 
   /* Input buffers */
   for (i = 0; i < input_ports[0]->size; i++) {
-    /* For postive input of LUT MUX*/
-    fprintf(fp, "Xinv0_in%d %s%d midinv_in%d svdd sgnd inv size=\'%g\'",
-            i, input_ports[0]->prefix, i, i, spice_model.lut_input_buffer->size);
-    fprintf(fp, "\n");
-    fprintf(fp, "Xinv0mid_in%d midinv_in%d lut_mux_in%d svdd sgnd inv size=\'%g\'",
-            i, i, i, 
-            spice_model.lut_input_buffer->size*spice_model.lut_input_buffer->f_per_stage);
-    fprintf(fp, "\n");
     /* For negative input of LUT MUX*/
-    fprintf(fp, "Xinv1_in%d %s%d lut_mux_in%d_inv svdd sgnd inv size=\'%g\'",
-            i, input_ports[0]->prefix, i, i, 
-            spice_model.lut_input_buffer->size*spice_model.lut_input_buffer->f_per_stage);
+    /* Output inverter with maximum size allowed 
+     * until the rest of width is smaller than threshold */
+    total_width = spice_model.lut_input_buffer->size * spice_model.lut_input_buffer->f_per_stage;
+    width_cnt = 0;
+    while (total_width > max_width_per_trans) { 
+      fprintf(fp, "Xinv0_in%d_no%d %s%d lut_mux_in%d_inv svdd sgnd inv size=\'%g\'",
+              i, width_cnt, 
+              input_ports[0]->prefix, i, 
+              i, max_width_per_trans);
+      fprintf(fp, "\n");
+      /* Update */
+      total_width = total_width - max_width_per_trans;
+      width_cnt++;
+    }
+    /* Print if we still have to */
+    if (total_width > 0) {
+      fprintf(fp, "Xinv0_in%d_no%d %s%d lut_mux_in%d_inv svdd sgnd inv size=\'%g\'",
+              i, width_cnt, 
+              input_ports[0]->prefix, i, 
+              i, total_width);
+      fprintf(fp, "\n");
+    }
+    /* For postive input of LUT MUX, we use the tapered_buffer subckt directly */
+    assert(1 == spice_model.lut_input_buffer->tapered_buf);
+    fprintf(fp, "X%s_in%d %s%d lut_mux_in%d svdd sgnd tapbuf_level%d_f%d\n",
+            spice_model.lut_input_buffer->spice_model->prefix, i,
+            input_ports[0]->prefix, i, i,
+            spice_model.lut_input_buffer->tap_buf_level, 
+            spice_model.lut_input_buffer->f_per_stage); 
     fprintf(fp, "\n");
   }
 

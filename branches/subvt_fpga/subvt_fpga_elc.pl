@@ -1267,7 +1267,7 @@ sub gen_inv_buf_subckt($ $ $) {
     }
   } else {
     &tab_print($spfh,"Xinv0 in out ",0); 
-    &tab_print($spfh,"svdd sgnd $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'$inv_size_in\'\n",0);
+    &tab_print($spfh,"svdd sgnd $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'$inv_size_out\'\n",0);
   }
   # End of subckt
   &tab_print($spfh, ".eom\n", 0);
@@ -1288,7 +1288,7 @@ sub gen_inv_buf_subckt($ $ $) {
     }
   } else {
     &tab_print($spfh,"Xinv0 in out ",0); 
-    &tab_print($spfh,"svdd_out sgnd_out $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'$inv_size_in\'\n",0);
+    &tab_print($spfh,"svdd_out sgnd_out $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=\'$inv_size_out\'\n",0);
     &tab_print($spfh, "* Power-gate transistors \n", 0);
     # Maximum Width of each power-gating transistor: some technology does not support large W.
     # I divide them into a group of transistors separately
@@ -1306,8 +1306,8 @@ sub gen_inv_buf_subckt($ $ $) {
   &tab_print($spfh, ".eom\n", 0);
 }
 
-sub gen_auto_out_tapered_buffer($ $ $) {
-  my ($spfh, $fan_out, $f_inv) = @_;
+sub gen_auto_out_tapered_buffer($ $ $ $) {
+  my ($spfh, $fan_out, $inv_size_out, $f_inv) = @_;
   my ($num_level_tapered_buf) = int(0.5 + log($fan_out)/log($f_inv));
   my ($cur_level_f, $i, $nexti);
   my ($wpg_inv_in, $wpg_inv_out) = ($conf_ptr->{general_settings}->{w_power_gate_trans}->{val}, $conf_ptr->{general_settings}->{w_power_gate_trans}->{val});
@@ -1318,7 +1318,7 @@ sub gen_auto_out_tapered_buffer($ $ $) {
     $cur_level_f = $f_inv**$i;
     $nexti = $i + 1;
     for (my $j = 0; $j < $cur_level_f; $j++) {
-      &tab_print($spfh, "Xinvlvl$i\_no$j\_tapbuf in_lvl$i in_lvl$nexti svdd sgnd $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=1\n", 0);
+      &tab_print($spfh, "Xinvlvl$i\_no$j\_tapbuf in_lvl$i in_lvl$nexti svdd sgnd $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size='$inv_size_out'\n", 0);
     }
   }
   if (1 == $i%2) {
@@ -1326,7 +1326,7 @@ sub gen_auto_out_tapered_buffer($ $ $) {
     &tab_print($spfh, "Rin in in_lvl0 0\n", 0);
   } else {
     # Add one more inverter 
-    &tab_print($spfh, "Xinv_in in in_lvl0 svdd sgnd $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=1\n", 0);
+    &tab_print($spfh, "Xinv_in in in_lvl0 svdd sgnd $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size='$inv_size_out'\n", 0);
   }
   # Short connected output
   &tab_print($spfh, "Rout in_lvl$i out 0\n", 0);
@@ -1340,7 +1340,7 @@ sub gen_auto_out_tapered_buffer($ $ $) {
     $cur_level_f = $f_inv**$i;
     $nexti = $i + 1;
     for (my $j = 0; $j < $cur_level_f; $j++) {
-      &tab_print($spfh, "Xinvlvl$i\_no$j\_tapbuf in_lvl$i in_lvl$nexti svdd_out sgnd_out $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=1\n", 0);
+      &tab_print($spfh, "Xinvlvl$i\_no$j\_tapbuf in_lvl$i in_lvl$nexti svdd_out sgnd_out $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size='$inv_size_out'\n", 0);
       for (my $k = 0; $k < $wpg_inv_out*$cur_level_f; $k++) {
         &tab_print($spfh, "* Power-gate transistors: no. $k \n", 0);
         &tab_print($spfh, "Xpg_pmos$k svdd_out enb svdd svdd $elc_pmos_subckt_name L=\'pl\' W=\'wp*beta\'\n",0);
@@ -1353,7 +1353,7 @@ sub gen_auto_out_tapered_buffer($ $ $) {
     &tab_print($spfh, "Rin in in_lvl0 0\n", 0);
   } else {
     # Add one more inverter 
-    &tab_print($spfh, "Xinv_in in in_lvl0 svdd_out sgnd_out $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size=1\n", 0);
+    &tab_print($spfh, "Xinv_in in in_lvl0 svdd_out sgnd_out $conf_ptr->{inv_settings}->{inv_subckt_name}->{val} size='$inv_size_out'\n", 0);
     for (my $k = 0; $k < $wpg_inv_out; $k++) {
       &tab_print($spfh, "* Power-gate transistors:$k\n", 0);
       &tab_print($spfh, "Xpg_pmos_in$k svdd_out enb svdd svdd $elc_pmos_subckt_name L=\'pl\' W=\'wp*beta\'\n",0);
@@ -1591,7 +1591,7 @@ sub gen_mux_sp_common($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
     #if ($conf_ptr->{mux_settings}->{load_type}->{val} =~ m/inv/) {
       $eq_inv_load_num += $conf_ptr->{mux_settings}->{load_inv_num}->{val};
     #}
-    &gen_auto_out_tapered_buffer($spfh, 4**$opt_ptr->{auto_out_tapered_buffer_val}, 4);
+    &gen_auto_out_tapered_buffer($spfh, 4**$opt_ptr->{auto_out_tapered_buffer_val}, $inv_size_out, 4);
     #&gen_auto_out_tapered_buffer($spfh, $eq_inv_load_num, 4);
   } 
 
@@ -3217,10 +3217,10 @@ sub gen_1level_mux_subckt($ $ $ $ $ $ $) {
     if ((2 == $mux_size)&&(1 == $i)) {
       my ($iwcpt);
       for ($iwcpt = 0; $iwcpt < $w_cpt - 2; $iwcpt++) {
-        &tab_print($spfh, "Xmux1level_$i\_wcpt$iwcpt mux1level_in$i mux1level_out $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$i $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$i svdd sgnd $mux1level_subckt\n",0);
+        &tab_print($spfh, "Xmux1level_$i\_wcpt$iwcpt mux1level_in$i mux1level_out $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}0 $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}0 svdd sgnd $mux1level_subckt\n",0);
       }
       my ($cur_w_cpt_size) = ($w_cpt - $iwcpt);
-      &tab_print($spfh, "Xmux1level_$i\_wcpt$iwcpt mux1level_in$i mux1level_out $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}$i $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}$i svdd sgnd $mux1level_subckt size=$cur_w_cpt_size\n",0);
+      &tab_print($spfh, "Xmux1level_$i\_wcpt$iwcpt mux1level_in$i mux1level_out $conf_ptr->{mux_settings}->{invert_SRAM_port_prefix}->{val}0 $conf_ptr->{mux_settings}->{SRAM_port_prefix}->{val}0 svdd sgnd $mux1level_subckt size=$cur_w_cpt_size\n",0);
     } else {
       # Call defined 1level Subckt 
       my ($iwcpt);

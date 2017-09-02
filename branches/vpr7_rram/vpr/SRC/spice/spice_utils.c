@@ -2418,6 +2418,8 @@ void fprint_spice_testbench_pb_graph_pin_inv_loads_rec(FILE* fp, int* testbench_
   t_pb* des_pb = NULL;
   int src_rr_node_index = -1;
   float load_inv_size = 0.;
+  float total_width;
+  int width_cnt;
 
   /* A valid file handler*/
   if (NULL == fp) {
@@ -2430,9 +2432,21 @@ void fprint_spice_testbench_pb_graph_pin_inv_loads_rec(FILE* fp, int* testbench_
   if (TRUE == consider_parent_node) {
     if (NULL != src_pb_graph_pin->parent_node->pb_type->spice_model) {
       load_inv_size = find_spice_testbench_pb_pin_mux_load_inv_size(src_pb_graph_pin->parent_node->pb_type->spice_model);
-      fprintf(fp, "Xload_inv[%d] %s %s_out[0] gvdd_load 0 inv size=%g\n",
-               (*testbench_load_cnt), outport_name, outport_name, load_inv_size);
-      (*testbench_load_cnt)++;
+      /* Print inverters by considering maximum width */
+      total_width = load_inv_size;
+      width_cnt = 0;
+      while (total_width > max_width_per_trans) {
+        fprintf(fp, "Xload_inv[%d]_no%d %s %s_out[0] gvdd_load 0 inv size=%g\n",
+                    (*testbench_load_cnt), width_cnt,  outport_name, outport_name, max_width_per_trans);
+        /* Update counter */
+        total_width = total_width - max_width_per_trans;
+        width_cnt++; 
+      }
+      if (total_width > 0) {
+        fprintf(fp, "Xload_inv[%d]_no%d %s %s_out[0] gvdd_load 0 inv size=%g\n",
+                    (*testbench_load_cnt), width_cnt,  outport_name, outport_name, total_width);
+        (*testbench_load_cnt)++;
+      }
       return;
     }
   }
@@ -2455,9 +2469,22 @@ void fprint_spice_testbench_pb_graph_pin_inv_loads_rec(FILE* fp, int* testbench_
       /* Detect its input buffers */
       load_inv_size = find_spice_testbench_rr_mux_load_inv_size(&rr_node[rr_node[src_rr_node_index].edges[iedge]], 
                                                                 rr_node[src_rr_node_index].switches[iedge]);
-      /* Print an inverter */
-      fprintf(fp, "Xload_inv[%d] %s load_inv[%d]_out gvdd_load 0 inv size=%g\n",
-              (*testbench_load_cnt), outport_name, (*testbench_load_cnt), load_inv_size);
+      /* Print inverters by considering maximum width */
+      total_width = load_inv_size;
+      width_cnt = 0;
+      while (total_width > max_width_per_trans) {
+        fprintf(fp, "Xload_inv[%d]_no%d %s load_inv[%d]_out gvdd_load 0 inv size=%g\n",
+                    (*testbench_load_cnt), width_cnt, outport_name, 
+                    (*testbench_load_cnt), max_width_per_trans);
+        /* Update counter */
+        total_width = total_width - max_width_per_trans;
+        width_cnt++; 
+      }
+      if (total_width > 0) {
+        fprintf(fp, "Xload_inv[%d]_no%d %s load_inv[%d]_out gvdd_load 0 inv size=%g\n",
+                (*testbench_load_cnt), width_cnt, outport_name, 
+                (*testbench_load_cnt), total_width);
+      }
       (*testbench_load_cnt)++;
     }
     return;
@@ -2477,8 +2504,20 @@ void fprint_spice_testbench_pb_graph_pin_inv_loads_rec(FILE* fp, int* testbench_
       if (TRUE == cur_interc->spice_model->input_buffer->exist) {
         /* Print a inverter, and we stop this branch */
         load_inv_size = find_spice_testbench_pb_pin_mux_load_inv_size(cur_interc->spice_model);
-        fprintf(fp, "Xload_inv[%d] %s %s gvdd_load 0 inv size=%g\n",
-                (*testbench_load_cnt), outport_name, rec_outport_name, load_inv_size);
+        /* Print inverters by considering maximum width */
+        total_width = load_inv_size;
+        width_cnt = 0;
+        while (total_width > max_width_per_trans) {
+          fprintf(fp, "Xload_inv[%d]_no%d %s %s gvdd_load 0 inv size=%g\n",
+                  (*testbench_load_cnt), width_cnt, outport_name, rec_outport_name, max_width_per_trans);
+          /* Update counter */
+          total_width = total_width - max_width_per_trans;
+          width_cnt++; 
+        }
+        if (total_width > 0) {
+          fprintf(fp, "Xload_inv[%d]_no%d %s %s gvdd_load 0 inv size=%g\n",
+                  (*testbench_load_cnt), width_cnt, outport_name, rec_outport_name, total_width);
+        }
         (*testbench_load_cnt)++;
       } else {
         /*
@@ -2529,6 +2568,8 @@ char* fprint_spice_testbench_rr_node_load_version(FILE* fp, int* testbench_load_
   t_rr_node to_node;
   t_spice_model* wire_spice_model = NULL;
   float load_inv_size = 0.;
+  float total_width;
+  int  width_cnt;
 
   /* We only process CHANX or CHANY*/
   if (!((CHANX == cur_rr_node.type)
@@ -2593,9 +2634,21 @@ char* fprint_spice_testbench_rr_node_load_version(FILE* fp, int* testbench_load_
                                                                       cur_rr_node.switches[iedge]);
             assert(0. < load_inv_size);
             /* Print an inverter */
-            fprintf(fp, "Xload_inv[%d] %s %s_out[%d] gvdd_load 0 inv size=%g\n",
-                    (*testbench_load_cnt), mid_outport_name, mid_outport_name, iedge,
-                    load_inv_size);
+            total_width = load_inv_size;
+            width_cnt = 0;
+            while (total_width > max_width_per_trans) { 
+              fprintf(fp, "Xload_inv[%d]_no%d %s %s_out[%d] gvdd_load 0 inv size=%g\n",
+                      (*testbench_load_cnt), width_cnt, mid_outport_name, mid_outport_name, iedge,
+                      max_width_per_trans);
+              /* Update */
+              total_width = total_width - max_width_per_trans;
+              width_cnt++;
+            }
+            if (total_width > 0) {
+              fprintf(fp, "Xload_inv[%d]_no%d %s %s_out[%d] gvdd_load 0 inv size=%g\n",
+                      (*testbench_load_cnt), width_cnt, mid_outport_name, mid_outport_name, iedge,
+                      total_width);
+            }
             (*testbench_load_cnt)++;
           }
           break;
@@ -2607,9 +2660,21 @@ char* fprint_spice_testbench_rr_node_load_version(FILE* fp, int* testbench_load_
                                                                     cur_rr_node.switches[iedge]);
           assert(0. < load_inv_size);
           /* Print an inverter */
-          fprintf(fp, "Xload_inv[%d] %s %s_out[%d] gvdd_load 0 inv size=%g\n",
-                  (*testbench_load_cnt), ret_outport_name, ret_outport_name, iedge,
-                  load_inv_size);
+          total_width = load_inv_size;
+          width_cnt = 0;
+          while (total_width > max_width_per_trans) { 
+            fprintf(fp, "Xload_inv[%d]_no%d %s %s_out[%d] gvdd_load 0 inv size=%g\n",
+                    (*testbench_load_cnt), width_cnt, ret_outport_name, ret_outport_name, iedge,
+                    max_width_per_trans);
+            /* Update */
+            total_width = total_width - max_width_per_trans;
+            width_cnt++;
+          }
+          if (total_width > 0) {
+            fprintf(fp, "Xload_inv[%d]_no%d %s %s_out[%d] gvdd_load 0 inv size=%g\n",
+                    (*testbench_load_cnt), width_cnt, ret_outport_name, ret_outport_name, iedge,
+                    total_width);
+          }
           (*testbench_load_cnt)++;
           break;
         default:
@@ -2644,9 +2709,21 @@ char* fprint_spice_testbench_rr_node_load_version(FILE* fp, int* testbench_load_
                                                                       cur_rr_node.switches[iedge]);
             assert(0. < load_inv_size);
             /* Print an inverter */
-            fprintf(fp, "Xload_inv[%d] %s %s_out[%d] gvdd_load 0 inv size=%g\n",
-                    (*testbench_load_cnt), mid_outport_name, mid_outport_name, iedge,
-                    load_inv_size);
+            total_width = load_inv_size;
+            width_cnt = 0;
+            while (total_width > max_width_per_trans) { 
+              fprintf(fp, "Xload_inv[%d]_no%d %s %s_out[%d] gvdd_load 0 inv size=%g\n",
+                      (*testbench_load_cnt), width_cnt, mid_outport_name, mid_outport_name, iedge,
+                      max_width_per_trans);
+              /* Update */
+              total_width = total_width - max_width_per_trans;
+              width_cnt++;
+            }
+            if (total_width > 0) {
+              fprintf(fp, "Xload_inv[%d]_no%d %s %s_out[%d] gvdd_load 0 inv size=%g\n",
+                      (*testbench_load_cnt), width_cnt, mid_outport_name, mid_outport_name, iedge,
+                      total_width);
+            }
             (*testbench_load_cnt)++;
           }
           break;
@@ -2658,9 +2735,21 @@ char* fprint_spice_testbench_rr_node_load_version(FILE* fp, int* testbench_load_
                                                                     cur_rr_node.switches[iedge]);
           assert(0. < load_inv_size);
           /* Print an inverter */
-          fprintf(fp, "Xload_inv[%d] %s %s_out[%d] gvdd_load 0 inv size=%g\n",
-                  (*testbench_load_cnt), ret_outport_name, ret_outport_name, iedge,
-                  load_inv_size);
+          total_width = load_inv_size;
+          width_cnt = 0;
+          while (total_width > max_width_per_trans) { 
+            fprintf(fp, "Xload_inv[%d]_no%d %s %s_out[%d] gvdd_load 0 inv size=%g\n",
+                    (*testbench_load_cnt), width_cnt, ret_outport_name, ret_outport_name, iedge,
+                    total_width);
+            /* Update */
+            total_width = total_width - max_width_per_trans;
+            width_cnt++;
+          }
+          if (total_width > 0) {
+            fprintf(fp, "Xload_inv[%d]_no%d %s %s_out[%d] gvdd_load 0 inv size=%g\n",
+                    (*testbench_load_cnt), width_cnt, ret_outport_name, ret_outport_name, iedge,
+                    total_width);
+          }
           (*testbench_load_cnt)++;
           break;
         default:

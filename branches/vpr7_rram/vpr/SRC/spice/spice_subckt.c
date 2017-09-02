@@ -128,12 +128,10 @@ int search_tapbuf_llist_same_settings(t_llist* head,
     return 0;
   }
   assert(NULL != output_buf);
-  assert(TRUE == output_buf->exist);
   assert(TRUE == output_buf->tapered_buf);
 
   while(temp) {
     cur_out_buf = (t_spice_model_buffer*)(temp->dptr);
-    assert(TRUE == cur_out_buf->exist);
     assert(TRUE == cur_out_buf->tapered_buf);
     if ((cur_out_buf->tap_buf_level == output_buf->tap_buf_level)
        &&(cur_out_buf->f_per_stage == output_buf->f_per_stage)) { 
@@ -155,7 +153,6 @@ void generate_spice_subckt_tapbuf(FILE* fp,
   } 
 
   assert(NULL != output_buf);
-  assert(TRUE == output_buf->exist);
   assert(TRUE == output_buf->tapered_buf);
   assert(0 < output_buf->tap_buf_level);
   assert(0 < output_buf->f_per_stage);
@@ -300,22 +297,19 @@ int generate_spice_basics(char* subckt_dir, t_spice spice) {
   /* Tapered buffered support */
   for (imodel = 0; imodel < spice.num_spice_model; imodel++) {
     /* Bypass basic components */
-    if ((SPICE_MODEL_INVBUF == spice.spice_models[imodel].type)
-       ||(SPICE_MODEL_PASSGATE == spice.spice_models[imodel].type)) {
+    if (SPICE_MODEL_INVBUF != spice.spice_models[imodel].type) {
       continue;
     }
-    /* Otherwise, we need the buffer information */
-    assert(NULL != spice.spice_models[imodel].input_buffer);
-    assert(NULL != spice.spice_models[imodel].output_buffer);
-    if ((TRUE == spice.spice_models[imodel].output_buffer->exist)
-      &&(TRUE == spice.spice_models[imodel].output_buffer->tapered_buf)) {
-      if (NULL == tapered_bufs_head) {
-        tapered_bufs_head = create_llist(1);
-        tapered_bufs_head->dptr = (void*)spice.spice_models[imodel].output_buffer;
-      } else if (FALSE == search_tapbuf_llist_same_settings(tapered_bufs_head, spice.spice_models[imodel].output_buffer)) {
-        temp = insert_llist_node(tapered_bufs_head);
-        temp->dptr = (void*)spice.spice_models[imodel].output_buffer;
-      } 
+    /* Bypass un tapered buffers */
+    if (TRUE != spice.spice_models[imodel].design_tech_info.buffer_info->tapered_buf) {
+      continue;
+    }
+    if (NULL == tapered_bufs_head) {
+      tapered_bufs_head = create_llist(1);
+      tapered_bufs_head->dptr = (void*)spice.spice_models[imodel].design_tech_info.buffer_info;
+    } else if (FALSE == search_tapbuf_llist_same_settings(tapered_bufs_head, spice.spice_models[imodel].design_tech_info.buffer_info)) {
+      temp = insert_llist_node(tapered_bufs_head);
+      temp->dptr = (void*)spice.spice_models[imodel].design_tech_info.buffer_info;
     }
   }
   /* Print all the tapered_buf */

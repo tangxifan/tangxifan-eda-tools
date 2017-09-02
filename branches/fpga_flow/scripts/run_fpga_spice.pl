@@ -28,9 +28,12 @@ my $opt_ptr = \%opt_h;
 # configurate file hash
 my %conf_h;
 my $conf_ptr = \%conf_h;
-# reports has
+# reports hash
 my %rpt_h;
 my $rpt_ptr = \%rpt_h; 
+# tb_names hash
+my %tb_names_h;
+my $tb_names_ptr = \%tb_names_h; 
 
 # Benchmarks
 my @benchmark_names;
@@ -698,6 +701,7 @@ sub check_one_fpga_spice_task_lis($ $ $) {
 
   if ("on" eq $opt_ptr->{parse_pb_mux_tb}) {
     # generate measure results paths 
+    @pb_mux_tb_names = split (',', $tb_names_ptr->{$benchmark}->{pb_mux_tb_names});
     foreach my $tb_sp_filename (@pb_mux_tb_names) {
       $lis_file_path = &convert_fpga_tb_names_to_measure_names($tb_sp_filename, $spice_dir);
       $lis_file_path =~ s/\.mt0/.lis/;
@@ -707,6 +711,7 @@ sub check_one_fpga_spice_task_lis($ $ $) {
 
   if ("on" eq $opt_ptr->{parse_cb_mux_tb}) {
     # generate measure results paths 
+    @cb_mux_tb_names = split (',', $tb_names_ptr->{$benchmark}->{cb_mux_tb_names});
     foreach my $tb_sp_filename (@cb_mux_tb_names) {
       $lis_file_path = &convert_fpga_tb_names_to_measure_names($tb_sp_filename, $spice_dir);
       $lis_file_path =~ s/\.mt0/.lis/;
@@ -716,6 +721,7 @@ sub check_one_fpga_spice_task_lis($ $ $) {
 
   if ("on" eq $opt_ptr->{parse_sb_mux_tb}) {
     # generate measure results paths 
+    @sb_mux_tb_names = split (',', $tb_names_ptr->{$benchmark}->{sb_mux_tb_names});
     foreach my $tb_sp_filename (@sb_mux_tb_names) {
       $lis_file_path = &convert_fpga_tb_names_to_measure_names($tb_sp_filename, $spice_dir);
       $lis_file_path =~ s/\.mt0/.lis/;
@@ -725,6 +731,7 @@ sub check_one_fpga_spice_task_lis($ $ $) {
 
   if ("on" eq $opt_ptr->{parse_lut_tb}) {
     # generate measure results paths 
+    @lut_tb_names = split (',', $tb_names_ptr->{$benchmark}->{lut_tb_names});
     foreach my $tb_sp_filename (@lut_tb_names) {
       $lis_file_path = &convert_fpga_tb_names_to_measure_names($tb_sp_filename, $spice_dir);
       $lis_file_path =~ s/\.mt0/.lis/;
@@ -735,6 +742,7 @@ sub check_one_fpga_spice_task_lis($ $ $) {
   if (0 == $conf_ptr->{task_conf}->{num_dff_tb}->{val}) {
   } elsif ("on" eq $opt_ptr->{parse_dff_tb}) {
     # generate measure results paths 
+    @dff_tb_names = split (',', $tb_names_ptr->{$benchmark}->{dff_tb_names});
     foreach my $tb_sp_filename (@dff_tb_names) {
       $lis_file_path = &convert_fpga_tb_names_to_measure_names($tb_sp_filename, $spice_dir);
       $lis_file_path =~ s/\.mt0/.lis/;
@@ -744,6 +752,7 @@ sub check_one_fpga_spice_task_lis($ $ $) {
 
   if ("on" eq $opt_ptr->{parse_grid_tb}) {
     # generate measure results paths 
+    @grid_tb_names = split (',', $tb_names_ptr->{$benchmark}->{grid_tb_names});
     foreach my $tb_sp_filename (@grid_tb_names) {
       $lis_file_path = &convert_fpga_tb_names_to_measure_names($tb_sp_filename, $spice_dir);
       $lis_file_path =~ s/\.mt0/.lis/;
@@ -753,6 +762,7 @@ sub check_one_fpga_spice_task_lis($ $ $) {
 
   if ("on" eq $opt_ptr->{parse_cb_tb}) {
     # generate measure results paths 
+    @cb_tb_names = split (',', $tb_names_ptr->{$benchmark}->{cb_tb_names});
     foreach my $tb_sp_filename (@cb_tb_names) {
       $lis_file_path = &convert_fpga_tb_names_to_measure_names($tb_sp_filename, $spice_dir);
       $lis_file_path =~ s/\.mt0/.lis/;
@@ -762,6 +772,7 @@ sub check_one_fpga_spice_task_lis($ $ $) {
 
   if ("on" eq $opt_ptr->{parse_sb_tb}) {
     # generate measure results paths 
+    @sb_tb_names = split (',', $tb_names_ptr->{$benchmark}->{sb_tb_names});
     foreach my $tb_sp_filename (@sb_tb_names) {
       $lis_file_path = &convert_fpga_tb_names_to_measure_names($tb_sp_filename, $spice_dir);
       $lis_file_path =~ s/\.mt0/.lis/;
@@ -898,12 +909,16 @@ sub get_tb_file_names($) {
   print "Getting testbench file names for $tb_dir ...\n";
   closedir($dh);
 
-  return @ret_file_names;
+  # join the names together
+  my ($ret) = join(",", @ret_file_names);
+
+  return $ret;
 }
 
-sub auto_check_tb_num($) {
-  my ($spice_dir) = @_;
+sub auto_check_tb_num($ $ $) {
+  my ($benchmark, $spice_netlist_prefix, $spice_dir) = @_;
   my ($formatted_spice_dir) = &format_dir_path($spice_dir);
+  my ($tb_dir);
   
   print "Autocheck Results:\n";
 
@@ -943,6 +958,62 @@ sub auto_check_tb_num($) {
   $conf_ptr->{task_conf}->{num_top_tb}->{val} = &count_num_tb_one_folder($formatted_spice_dir.$conf_ptr->{dir_path}->{top_tb_dir_name}->{val});
   print "INFO: No. of Top-level testbench = $conf_ptr->{task_conf}->{num_top_tb}->{val}\n";
 
+  my ($toptb_sp_path) = &gen_fpga_spice_netlists_path($formatted_spice_dir.$conf_ptr->{dir_path}->{top_tb_dir_name}->{val}, $spice_netlist_prefix, $conf_ptr->{dir_path}->{top_tb_postfix}->{val});
+    
+  if (("on" eq $opt_ptr->{parse_top_tb})&&(!(-e $toptb_sp_path))) {
+    die "ERROR: File($toptb_sp_path) does not exist!";
+  } 
+
+  if ("on" eq $opt_ptr->{parse_pb_mux_tb}) {
+    $tb_dir = $formatted_spice_dir.$conf_ptr->{dir_path}->{pb_mux_tb_dir_name}->{val};
+    $tb_names_ptr->{$benchmark}->{pb_mux_tb_names} = &get_tb_file_names($tb_dir);
+  }
+
+  if ("on" eq $opt_ptr->{parse_cb_mux_tb}) {
+    # Search all the sp files matching the name  
+    $tb_dir = $formatted_spice_dir.$conf_ptr->{dir_path}->{cb_mux_tb_dir_name}->{val};
+    $tb_names_ptr->{$benchmark}->{cb_mux_tb_names} = &get_tb_file_names($tb_dir);
+  }
+
+  if ("on" eq $opt_ptr->{parse_sb_mux_tb}) {
+    $tb_dir = $formatted_spice_dir.$conf_ptr->{dir_path}->{sb_mux_tb_dir_name}->{val};
+    $tb_names_ptr->{$benchmark}->{sb_mux_tb_names} = &get_tb_file_names($tb_dir);
+  }
+
+  if ("on" eq $opt_ptr->{parse_lut_tb}) {
+    # Search all the sp files matching the name  
+    $tb_dir = $formatted_spice_dir.$conf_ptr->{dir_path}->{lut_tb_dir_name}->{val};
+    $tb_names_ptr->{$benchmark}->{lut_tb_names} = &get_tb_file_names($tb_dir);
+  }
+
+  # Special, if there is no dff, this is comb circuit, we don't collect the information
+  if (0 == $conf_ptr->{task_conf}->{num_dff_tb}->{val}) {
+    print "INFO: None DFF testbenches detected... This may caused by a combinational circuit!\n";
+  } elsif ("on" eq $opt_ptr->{parse_dff_tb}) {
+    # Search all the sp files matching the name  
+    $tb_dir = $formatted_spice_dir.$conf_ptr->{dir_path}->{dff_tb_dir_name}->{val};
+    $tb_names_ptr->{$benchmark}->{dff_tb_names} = &get_tb_file_names($tb_dir);
+  }
+
+  if ("on" eq $opt_ptr->{parse_grid_tb}) {
+    # Search all the sp files matching the name  
+    $tb_dir = $formatted_spice_dir.$conf_ptr->{dir_path}->{grid_tb_dir_name}->{val};
+    $tb_names_ptr->{$benchmark}->{grid_tb_names} = &get_tb_file_names($tb_dir);
+  }
+
+  if ("on" eq $opt_ptr->{parse_cb_tb}) {
+    # Search all the sp files matching the name  
+    $tb_dir = $formatted_spice_dir.$conf_ptr->{dir_path}->{cb_tb_dir_name}->{val};
+    $tb_names_ptr->{$benchmark}->{cb_tb_names} = &get_tb_file_names($tb_dir);
+  }
+
+  if ("on" eq $opt_ptr->{parse_sb_tb}) {
+    # Search all the sp files matching the name  
+    $tb_dir = $formatted_spice_dir.$conf_ptr->{dir_path}->{sb_tb_dir_name}->{val};
+    $tb_names_ptr->{$benchmark}->{sb_tb_names} = &get_tb_file_names($tb_dir);
+  }
+
+
   return;
 }
 
@@ -952,9 +1023,7 @@ sub parse_one_fpga_spice_task_results($ $ $) {
   my ($shell_script_path) = $formatted_spice_dir.$conf_ptr->{dir_path}->{shell_script_name}->{val};
   my ($itb, $mt_file_path, $lis_file_path);
 
-  if ("on" eq $conf_ptr->{task_conf}->{auto_check}->{val}) {
-    &auto_check_tb_num($spice_dir);
-  }
+  &auto_check_tb_num($benchmark, $spice_netlist_prefix, $spice_dir);
 
   if ("on" eq $opt_ptr->{parse_top_tb}) {
     my ($top_mt_path) = &gen_fpga_spice_measure_results_path($spice_dir, $spice_netlist_prefix,$conf_ptr->{dir_path}->{top_tb_postfix}->{val});
@@ -965,6 +1034,7 @@ sub parse_one_fpga_spice_task_results($ $ $) {
 
   if ("on" eq $opt_ptr->{parse_pb_mux_tb}) {
     # generate measure results paths 
+    @pb_mux_tb_names = split (',', $tb_names_ptr->{$benchmark}->{pb_mux_tb_names});
     foreach my $tb_sp_filename (@pb_mux_tb_names) {
       $mt_file_path = &convert_fpga_tb_names_to_measure_names($tb_sp_filename, $spice_dir);
       $lis_file_path = $mt_file_path;
@@ -975,6 +1045,7 @@ sub parse_one_fpga_spice_task_results($ $ $) {
 
   if ("on" eq $opt_ptr->{parse_cb_mux_tb}) {
     # generate measure results paths 
+    @cb_mux_tb_names = split (',', $tb_names_ptr->{$benchmark}->{cb_mux_tb_names});
     foreach my $tb_sp_filename (@cb_mux_tb_names) {
       $mt_file_path = &convert_fpga_tb_names_to_measure_names($tb_sp_filename, $spice_dir);
       $lis_file_path = $mt_file_path;
@@ -985,6 +1056,7 @@ sub parse_one_fpga_spice_task_results($ $ $) {
 
   if ("on" eq $opt_ptr->{parse_sb_mux_tb}) {
     # generate measure results paths 
+    @sb_mux_tb_names = split (',', $tb_names_ptr->{$benchmark}->{sb_mux_tb_names});
     foreach my $tb_sp_filename (@sb_mux_tb_names) {
       $mt_file_path = &convert_fpga_tb_names_to_measure_names($tb_sp_filename, $spice_dir);
       $lis_file_path = $mt_file_path;
@@ -995,6 +1067,7 @@ sub parse_one_fpga_spice_task_results($ $ $) {
 
   if ("on" eq $opt_ptr->{parse_lut_tb}) {
     # generate measure results paths 
+    @lut_tb_names = split (',', $tb_names_ptr->{$benchmark}->{lut_tb_names});
     foreach my $tb_sp_filename (@lut_tb_names) {
       $mt_file_path = &convert_fpga_tb_names_to_measure_names($tb_sp_filename, $spice_dir);
       $lis_file_path = $mt_file_path;
@@ -1007,6 +1080,7 @@ sub parse_one_fpga_spice_task_results($ $ $) {
     &init_one_fpga_spice_task_one_tb_results($benchmark,"dff_tb",$conf_ptr->{csv_tags}->{dff_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{dff_tb_dynamic_power_tags}->{val});
   } elsif ("on" eq $opt_ptr->{parse_dff_tb}) {
     # generate measure results paths 
+    @dff_tb_names = split (',', $tb_names_ptr->{$benchmark}->{dff_tb_names});
     foreach my $tb_sp_filename (@dff_tb_names) {
       $mt_file_path = &convert_fpga_tb_names_to_measure_names($tb_sp_filename, $spice_dir);
       $lis_file_path = $mt_file_path;
@@ -1017,6 +1091,7 @@ sub parse_one_fpga_spice_task_results($ $ $) {
 
   if ("on" eq $opt_ptr->{parse_grid_tb}) {
     # generate measure results paths 
+    @grid_tb_names = split (',', $tb_names_ptr->{$benchmark}->{grid_tb_names});
     foreach my $tb_sp_filename (@grid_tb_names) {
       $mt_file_path = &convert_fpga_tb_names_to_measure_names($tb_sp_filename, $spice_dir);
       $lis_file_path = $mt_file_path;
@@ -1027,6 +1102,7 @@ sub parse_one_fpga_spice_task_results($ $ $) {
 
   if ("on" eq $opt_ptr->{parse_cb_tb}) {
     # generate measure results paths 
+    @cb_tb_names = split (',', $tb_names_ptr->{$benchmark}->{cb_tb_names});
     foreach my $tb_sp_filename (@cb_tb_names) {
       $mt_file_path = &convert_fpga_tb_names_to_measure_names($tb_sp_filename, $spice_dir);
       $lis_file_path = $mt_file_path;
@@ -1037,6 +1113,7 @@ sub parse_one_fpga_spice_task_results($ $ $) {
 
   if ("on" eq $opt_ptr->{parse_sb_tb}) {
     # generate measure results paths 
+    @sb_tb_names = split (',', $tb_names_ptr->{$benchmark}->{sb_tb_names});
     foreach my $tb_sp_filename (@sb_tb_names) {
       $mt_file_path = &convert_fpga_tb_names_to_measure_names($tb_sp_filename, $spice_dir);
       $lis_file_path = $mt_file_path;
@@ -1044,8 +1121,6 @@ sub parse_one_fpga_spice_task_results($ $ $) {
       &parse_one_fpga_spice_task_one_tb_results($benchmark,"sb_tb", $lis_file_path, $mt_file_path, $conf_ptr->{csv_tags}->{sb_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{sb_mux_tb_dynamic_power_tags}->{val});
     }
   }
-
-
 
   return;
 }
@@ -1061,64 +1136,7 @@ sub run_one_fpga_spice_task($ $ $) {
   chdir $spice_dir;
   # Check all the SPICE netlists and shell scripts exist
 
-  if ("on" eq $conf_ptr->{task_conf}->{auto_check}->{val}) {
-    &auto_check_tb_num($spice_dir);
-  }
-
-  my ($toptb_sp_path) = &gen_fpga_spice_netlists_path($formatted_spice_dir.$conf_ptr->{dir_path}->{top_tb_dir_name}->{val}, $spice_netlist_prefix, $conf_ptr->{dir_path}->{top_tb_postfix}->{val});
-    
-  if (("on" eq $opt_ptr->{parse_top_tb})&&(!(-e $toptb_sp_path))) {
-    die "ERROR: File($toptb_sp_path) does not exist!";
-  } 
-
-  if ("on" eq $opt_ptr->{parse_pb_mux_tb}) {
-    $tb_dir = $formatted_spice_dir.$conf_ptr->{dir_path}->{pb_mux_tb_dir_name}->{val};
-    @pb_mux_tb_names = &get_tb_file_names($tb_dir);
-  }
-
-  if ("on" eq $opt_ptr->{parse_cb_mux_tb}) {
-    # Search all the sp files matching the name  
-    $tb_dir = $formatted_spice_dir.$conf_ptr->{dir_path}->{cb_mux_tb_dir_name}->{val};
-    @cb_mux_tb_names = &get_tb_file_names($tb_dir);
-  }
-
-  if ("on" eq $opt_ptr->{parse_sb_mux_tb}) {
-    $tb_dir = $formatted_spice_dir.$conf_ptr->{dir_path}->{sb_mux_tb_dir_name}->{val};
-    @sb_mux_tb_names = &get_tb_file_names($tb_dir);
-  }
-
-  if ("on" eq $opt_ptr->{parse_lut_tb}) {
-    # Search all the sp files matching the name  
-    $tb_dir = $formatted_spice_dir.$conf_ptr->{dir_path}->{lut_tb_dir_name}->{val};
-    @lut_tb_names = &get_tb_file_names($tb_dir);
-  }
-
-  # Special, if there is no dff, this is comb circuit, we don't collect the information
-  if (0 == $conf_ptr->{task_conf}->{num_dff_tb}->{val}) {
-    print "INFO: None DFF testbenches detected... This may caused by a combinational circuit!\n";
-  } elsif ("on" eq $opt_ptr->{parse_dff_tb}) {
-    # Search all the sp files matching the name  
-    $tb_dir = $formatted_spice_dir.$conf_ptr->{dir_path}->{dff_tb_dir_name}->{val};
-    @dff_tb_names = &get_tb_file_names($tb_dir);
-  }
-
-  if ("on" eq $opt_ptr->{parse_grid_tb}) {
-    # Search all the sp files matching the name  
-    $tb_dir = $formatted_spice_dir.$conf_ptr->{dir_path}->{grid_tb_dir_name}->{val};
-    @grid_tb_names = &get_tb_file_names($tb_dir);
-  }
-
-  if ("on" eq $opt_ptr->{parse_cb_tb}) {
-    # Search all the sp files matching the name  
-    $tb_dir = $formatted_spice_dir.$conf_ptr->{dir_path}->{cb_tb_dir_name}->{val};
-    @cb_tb_names = &get_tb_file_names($tb_dir);
-  }
-
-  if ("on" eq $opt_ptr->{parse_sb_tb}) {
-    # Search all the sp files matching the name  
-    $tb_dir = $formatted_spice_dir.$conf_ptr->{dir_path}->{sb_tb_dir_name}->{val};
-    @sb_tb_names = &get_tb_file_names($tb_dir);
-  }
+  &auto_check_tb_num($benchmark, $spice_netlist_prefix, $spice_dir);
 
   if (!(-e $shell_script_path)) {
     die "ERROR: File($shell_script_path) does not exist!";
@@ -1139,12 +1157,16 @@ sub run_one_fpga_spice_task($ $ $) {
 }
 
 sub parse_all_tasks_results() {
+  print "Parsing all the results...\n";
   foreach my $benchmark(@benchmark_names) {
     if ("done" eq $task_status_ptr->{$benchmark}->{status}) {
+      print "Parsing simulation results for benchmark($benchmark)...\n";
       &parse_one_fpga_spice_task_results($benchmark,$benchmarks_ptr->{$benchmark}->{spice_netlist_prefix},$benchmarks_ptr->{$benchmark}->{spice_dir});
     } else {
       die "ERROR: found unfinished tasks when try to parse results!\n";
     }
+    # Remove results to avoid storage overflow
+    #&remove_fpga_spice_results($benchmarks_ptr->{$benchmark}->{spice_dir});
   } 
 }
 
@@ -1248,7 +1270,7 @@ sub plan_run_tasks() {
 
   if (("on" eq $opt_ptr->{multi_thread})
      &&(1 < $opt_ptr->{multi_thread_val})
-     &&(1 < $#benchmark_names)) {
+     &&(1 < ($#benchmark_names + 1))) {
     &multi_thread_run_fpga_spice_tasks($opt_ptr->{multi_thread_val});
   } else { 
     if ("on" eq $opt_ptr->{multi_thread}) {

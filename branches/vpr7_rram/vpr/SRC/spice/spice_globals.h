@@ -1,4 +1,6 @@
 /* global parameters for SPICE support*/
+extern float max_width_per_trans;
+
 extern char* nmos_subckt_name;
 extern char* pmos_subckt_name;
 extern char* io_nmos_subckt_name;

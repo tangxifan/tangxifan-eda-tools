@@ -9,6 +9,9 @@
 #include "fpga_spice_globals.h"
 #include "spice_globals.h"
 
+/* Threshold of max transistor width for each transistor */
+float max_width_per_trans = 5.;
+
 char* nmos_subckt_name = "vpr_nmos";
 char* pmos_subckt_name = "vpr_pmos";
 char* io_nmos_subckt_name = "vpr_io_nmos";

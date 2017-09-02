@@ -2,10 +2,10 @@
 *.include './PTM45nm_tech.sp'
 .include '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/spice/inv_buf.sp'
 * LUT input buffers
-.subckt lut_in_buf in in_buf inbar_buf
-Xbuf0 in in_buf vdd gnd buf size=2
-Xinv0 in in_inv vdd gnd inv size=1
-Xbuf1 in_inv inbar_buf vdd gnd buf size=2
+.subckt lut_in_buf in in_buf inbar_buf size=1
+Xinv0_inbuf in inbar_buf vdd gnd inv size='4*size'
+Xinv0 in in_inv vdd gnd inv size='size'
+Xinv1 in_inv in_buf vdd gnd inv size='4*size'
 .eom
 * 1-LUT
 .subckt lut1 sram0 sram1 in out
@@ -77,15 +77,16 @@ Rout out_lvl2 out 0
 .eom
 
 * LUT 6
-.subckt lut6 sram0 sram1 sram2 sram3 sram4 sram5 sram6 sram7 sram8 sram9 sram10 sram11 sram12 sram13 sram14 sram15 sram16 sram17 sram18 sram19 sram20 sram21 sram22 sram23 sram24 sram25 sram26 sram27 sram28 sram29 sram30 sram31 sram32 sram33 sram34 sram35 sram36 sram37 sram38 sram39 sram40 sram41 sram42 sram43 sram44 sram45 sram46 sram47 sram48 sram49 sram50 sram51 sram52 sram53 sram54 sram55 sram56 sram57 sram58 sram59 sram60 sram61 sram62 sram63 in0 in1 in2 in3 in4 in5 out size=1
-Xin_buf0 in0 in_buf0 inbar_buf0 lut_in_buf
-Xin_buf1 in1 in_buf1 inbar_buf1 lut_in_buf
-Xin_buf2 in2 in_buf2 inbar_buf2 lut_in_buf
-Xin_buf3 in3 in_buf3 inbar_buf3 lut_in_buf
-Xin_buf4 in4 in_buf4 inbar_buf4 lut_in_buf
-Xin_buf5 in5 in_buf5 inbar_buf5 lut_in_buf
-Xmux64to1 sram0 sram1 sram2 sram3 sram4 sram5 sram6 sram7 sram8 sram9 sram10 sram11 sram12 sram13 sram14 sram15 sram16 sram17 sram18 sram19 sram20 sram21 sram22 sram23 sram24 sram25 sram26 sram27 sram28 sram29 sram30 sram31 sram32 sram33 sram34 sram35 sram36 sram37 sram38 sram39 sram40 sram41 sram42 sram43 sram44 sram45 sram46 sram47 sram48 sram49 sram50 sram51 sram52 sram53 sram54 sram55 sram56 sram57 sram58 sram59 sram60 sram61 sram62 sram63 in_buf0 inbar_buf0 in_buf1 inbar_buf1 in_buf2 inbar_buf2 in_buf3 inbar_buf3 in_buf4 inbar_buf4 in_buf5 inbar_buf5 out_lvl0 mux64to1 size=1
-Xinv_out1 out_lvl0 out_lvl1 vdd gnd inv size=1
-Xinv_out2 out_lvl1 out_lvl2 vdd gnd inv size=1
+.subckt lut6 sram0 sram1 sram2 sram3 sram4 sram5 sram6 sram7 sram8 sram9 sram10 sram11 sram12 sram13 sram14 sram15 sram16 sram17 sram18 sram19 sram20 sram21 sram22 sram23 sram24 sram25 sram26 sram27 sram28 sram29 sram30 sram31 sram32 sram33 sram34 sram35 sram36 sram37 sram38 sram39 sram40 sram41 sram42 sram43 sram44 sram45 sram46 sram47 sram48 sram49 sram50 sram51 sram52 sram53 sram54 sram55 sram56 sram57 sram58 sram59 sram60 sram61 sram62 sram63 in0 in1 in2 in3 in4 in5 out size=3
+Xin_buf0 in0 in_buf0 inbar_buf0 lut_in_buf size=size
+Xin_buf1 in1 in_buf1 inbar_buf1 lut_in_buf size=size
+Xin_buf2 in2 in_buf2 inbar_buf2 lut_in_buf size=size
+Xin_buf3 in3 in_buf3 inbar_buf3 lut_in_buf size=size
+Xin_buf4 in4 in_buf4 inbar_buf4 lut_in_buf size=size
+Xin_buf5 in5 in_buf5 inbar_buf5 lut_in_buf size=size
+Xinv_in0 out_lvl0 out_lvl1 vdd gnd inv size=size
+Xmux64to1 sram0 sram1 sram2 sram3 sram4 sram5 sram6 sram7 sram8 sram9 sram10 sram11 sram12 sram13 sram14 sram15 sram16 sram17 sram18 sram19 sram20 sram21 sram22 sram23 sram24 sram25 sram26 sram27 sram28 sram29 sram30 sram31 sram32 sram33 sram34 sram35 sram36 sram37 sram38 sram39 sram40 sram41 sram42 sram43 sram44 sram45 sram46 sram47 sram48 sram49 sram50 sram51 sram52 sram53 sram54 sram55 sram56 sram57 sram58 sram59 sram60 sram61 sram62 sram63 in_buf0 inbar_buf0 in_buf1 inbar_buf1 in_buf2 inbar_buf2 in_buf3 inbar_buf3 in_buf4 inbar_buf4 in_buf5 inbar_buf5 out_lvl0 mux64to1 size=size
+Xinv_out1 out_lvl0 out_lvl1 vdd gnd inv size=size
+Xinv_out2 out_lvl1 out_lvl2 vdd gnd inv size=size
 Rout out_lvl2 out 0
 .eom
