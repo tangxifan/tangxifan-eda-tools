@@ -160,28 +160,17 @@ void generate_spice_subckt_tapbuf(FILE* fp,
   /* Definition line */
   fprintf(fp, ".subckt tapbuf_level%d_f%d in out svdd sgnd\n", output_buf->tap_buf_level, output_buf->f_per_stage); 
   /* Main body of tapered buffer */
-  if (0 == output_buf->tap_buf_level%2) {
-    fprintf(fp, "Xinv_in in in_lvl0 svdd sgnd inv size=1\n");
-  } else {
-    fprintf(fp, "Rinv_in in in_lvl0 0\n");
-  }
+  fprintf(fp, "Rinv_in in in_lvl0 0\n");
   /* Print each stage */
   for (istage = 0; istage < output_buf->tap_buf_level; istage++) {
-    if (istage == (output_buf->tap_buf_level - 1)) {
-      for (j = 0; j < pow(output_buf->f_per_stage,istage); j++) {
-        fprintf(fp, "Xinv_lvl%d_no%d in_lvl%d out svdd sgnd inv size=1\n",
-                istage, j, istage);
-      }
-      continue;
-    } 
-    for (j = 0; j < pow(output_buf->f_per_stage,istage); j++) {
-      fprintf(fp, "Xinv_lvl%d_no%d in_lvl%d in_lvl%d svdd sgnd inv size=1\n",
+    for (j = 0; j < output_buf->size * pow(output_buf->f_per_stage,istage); j++) {
+      fprintf(fp, "Xinv_lvl%d_no%d in_lvl%d in_lvl%d svdd sgnd inv\n",
               istage, j, istage, istage + 1);
     }
   }
+  fprintf(fp, "Rinv_out in_lvl%d out 0\n", output_buf->tap_buf_level);
   /* End of subckt*/
   fprintf(fp, ".eom\n\n");
-
 
   return;
 }
@@ -205,25 +194,15 @@ void generate_spice_subckt_powergated_tapbuf(FILE* fp,
   /* Definition line */
   fprintf(fp, ".subckt pg_tapbuf_level%d_f%d en enb in out svdd sgnd\n", output_buf->tap_buf_level, output_buf->f_per_stage); 
   /* Main body of tapered buffer */
-  if (0 == output_buf->tap_buf_level%2) {
-    fprintf(fp, "Xinv_in en enb in in_lvl0 svdd sgnd pg_inv size=1 pg_size=1\n");
-  } else {
-    fprintf(fp, "Rinv_in in in_lvl0 0\n");
-  }
+  fprintf(fp, "Rinv_in in in_lvl0 0\n");
   /* Print each stage */
   for (istage = 0; istage < output_buf->tap_buf_level; istage++) {
-    if (istage == (output_buf->tap_buf_level - 1)) {
-      for (j = 0; j < pow(output_buf->f_per_stage,istage); j++) {
-        fprintf(fp, "Xinv_lvl%d_no%d en enb in_lvl%d out svdd sgnd pg_inv size=1 pg_size=1\n",
-                istage, j, istage);
-      }
-      continue;
-    } 
-    for (j = 0; j < pow(output_buf->f_per_stage,istage); j++) {
+    for (j = 0; j < output_buf->size * pow(output_buf->f_per_stage,istage); j++) {
       fprintf(fp, "Xinv_lvl%d_no%d en enb in_lvl%d in_lvl%d svdd sgnd pg_inv size=1 pg_size=1\n",
               istage, j, istage, istage + 1);
     }
   }
+  fprintf(fp, "Rinv_out in_lvl%d out 0\n", output_buf->tap_buf_level);
   /* End of subckt*/
   fprintf(fp, ".eom\n\n");
 
@@ -272,9 +251,9 @@ int generate_spice_basics(char* subckt_dir, t_spice spice) {
   
   /* Buffer */
   fprintf(fp,"* Buffer\n"); 
-  fprintf(fp,".subckt buf in out svdd sgnd size=2\n");
-  fprintf(fp,"Xinv0 in  mid svdd sgnd inv\n");
-  fprintf(fp,"Xinv1 mid out svdd sgnd inv size=size\n");
+  fprintf(fp,".subckt buf in out svdd sgnd size=2 base_size=1\n");
+  fprintf(fp,"Xinv0 in  mid svdd sgnd inv base_size='base_size'\n");
+  fprintf(fp,"Xinv1 mid out svdd sgnd inv size='size*base_size'\n");
   fprintf(fp,".eom buf\n");
   fprintf(fp,"\n");
 

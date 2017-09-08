@@ -165,8 +165,8 @@
           <fall slew_time="20e-12" slew_type="abs"/>
         </clock>
         <input>
-          <rise slew_time="100e-12" slew_type="abs"/>
-          <fall slew_time="100e-12" slew_type="abs"/>
+          <rise slew_time="25e-12" slew_type="abs"/>
+          <fall slew_time="25e-12" slew_type="abs"/>
         </input>
       </stimulate>      
     </parameters>
@@ -201,7 +201,7 @@
         <port type="output" prefix="out" size="1"/>
       </spice_model>
       <spice_model type="pass_gate" name="TGATE" prefix="TGATE" is_default="1">
-        <design_technology type="cmos" topology="transmission_gate" nmos_size="3" pmos_size="6"/>
+        <design_technology type="cmos" topology="transmission_gate" nmos_size="1" pmos_size="2"/>
         <input_buffer exist="off"/>
         <output_buffer exist="off"/>
         <port type="input" prefix="in" size="1"/>
@@ -227,7 +227,7 @@
       </spice_model>
       <spice_model type="mux" name="mux_1level" prefix="mux_1level" is_default="1" dump_structural_verilog="false">
         <!--design_technology type="cmos" structure="one-level"/-->
-        <design_technology type="rram" ron="4e3" roff="90e6" wprog_set_nmos="1.5" wprog_reset_nmos="1.6" wprog_set_pmos="3" wprog_reset_pmos="3.2" structure="one-level" advanced_rram_design="true"/>
+        <design_technology type="rram" ron="4.8e3" roff="90e6" wprog_set_nmos="1.5" wprog_reset_nmos="1.6" wprog_set_pmos="3" wprog_reset_pmos="3.2" structure="one-level" advanced_rram_design="true"/>
         <input_buffer exist="on" spice_model_name="INVTX1"/>
         <output_buffer exist="on" spice_model_name="INVD1BWP"/>
         <!--mux2to1 subckt_name="mux2to1"/-->
@@ -240,7 +240,7 @@
       </spice_model>
       <spice_model type="mux" name="mux_1level_tapbuf4" prefix="mux_1level_tapbuf4" is_default="0" dump_structural_verilog="false">
         <!--design_technology type="cmos" structure="one-level"/-->
-        <design_technology type="rram" ron="4e3" roff="90e6" wprog_set_nmos="1.5" wprog_reset_nmos="1.6" wprog_set_pmos="3" wprog_reset_pmos="3.2" structure="one-level" advanced_rram_design="true"/>
+        <design_technology type="rram" ron="4.8e3" roff="90e6" wprog_set_nmos="1.5" wprog_reset_nmos="1.6" wprog_set_pmos="3" wprog_reset_pmos="3.2" structure="one-level" advanced_rram_design="true"/>
         <input_buffer exist="on" spice_model_name="INVTX1"/>
         <output_buffer exist="on" spice_model_name="tap_buf4"/>
         <!--mux2to1 subckt_name="mux2to1"/-->
@@ -351,7 +351,7 @@
 			     4x minimum drive strength buffer. -->
    
     <sizing R_minW_nmos="8926" R_minW_pmos="16067" ipin_mux_trans_size="3"/>
-    <timing C_ipin_cblock="596e-18" T_ipin_cblock="37.7e-12"/>
+    <timing C_ipin_cblock="596e-18" T_ipin_cblock="45.54e-12"/>
 
     <!-- The grid_logic_tile_area below will be used for all blocks that do not explicitly set their own (non-routing)
      	  area; set to 0 since we explicitly set the area of all blocks currently in this architecture file.
@@ -372,7 +372,7 @@
   </device>
 
   <cblocks>
-    <switch type="mux" name="cb_mux" R="596e-12" Cin="0e-15" Cout="0" Tdel="37.7e-12" mux_trans_size="1.5" buf_size="4" spice_model_name="mux_1level_tapbuf4" structure="one-level" num_level="1">
+    <switch type="mux" name="cb_mux" R="0" Cin="596e-18" Cout="0" Tdel="45.54e-12" mux_trans_size="1.5" buf_size="4" spice_model_name="mux_1level_tapbuf4" structure="one-level" num_level="1">
     </switch>
   </cblocks>
   <switchlist>
@@ -389,7 +389,7 @@
 	       2.5x when looking up in Jeff's tables.
 	       Finally, we choose a switch delay (58 ps) that leads to length 4 wires having a delay equal to that of SIV of 126 ps.
 	       This also leads to the switch being 46% of the total wire delay, which is reasonable. -->
-    <switch type="mux" name="0" R="94.08" Cin="596e-18" Cout="15.54e-15" Tdel="31.6e-12" mux_trans_size="1.5" buf_size="27.645901" spice_model_name="mux_1level_tapbuf4" structure="one-level" num_level="1">
+    <switch type="mux" name="0" R="106.38" Cin="596e-18" Cout="15.54e-15" Tdel="34.1e-12" mux_trans_size="1.5" buf_size="27.645901" spice_model_name="mux_1level_tapbuf4" structure="one-level" num_level="1">
     </switch>
     <!-- Unbuffered switch  -->
     <!--switch type="unbuf_mux" name="1" R="551" Cin=".77e-15" Cout="1e-15" Tdel="58e-12" mux_trans_size="2.630740" spice_model_name="mux_unbuffered">
@@ -439,10 +439,10 @@
         </pb_type>
         <interconnect>
           <direct name="inpad" input="iopad.inpad" output="io.inpad">
-            <delay_constant max="4.243e-11" in_port="iopad.inpad" out_port="io.inpad"/>
+            <delay_constant max="0e-11" in_port="iopad.inpad" out_port="io.inpad"/>
           </direct>
           <direct name="outpad" input="io.outpad" output="iopad.outpad">
-            <delay_constant max="1.394e-11" in_port="io.outpad" out_port="iopad.outpad"/>
+            <delay_constant max="0e-11" in_port="io.outpad" out_port="iopad.outpad"/>
           </direct>
         </interconnect>
       </mode>
@@ -458,7 +458,7 @@
         </pb_type>
         <interconnect>
           <direct name="inpad" input="inpad.inpad" output="io.inpad">
-            <delay_constant max="4.243e-11" in_port="inpad.inpad" out_port="io.inpad"/>
+            <delay_constant max="0e-11" in_port="inpad.inpad" out_port="io.inpad"/>
           </direct>
         </interconnect>
       </mode>
@@ -468,7 +468,7 @@
         </pb_type>
         <interconnect>
           <direct name="outpad" input="io.outpad" output="outpad.outpad">
-            <delay_constant max="1.394e-11" in_port="io.outpad" out_port="outpad.outpad"/>
+            <delay_constant max="0e-11" in_port="io.outpad" out_port="outpad.outpad"/>
           </direct>
         </interconnect>
       </mode>
@@ -549,12 +549,12 @@
                   397e-12
                   -->
               <delay_matrix type="max" in_port="lut6.in" out_port="lut6.out">
-                139e-12
-                139e-12
-                139e-12
-                139e-12
-                139e-12
-                139e-12
+                137e-12
+                137e-12
+                137e-12
+                137e-12
+                137e-12
+                137e-12
               </delay_matrix>
             </pb_type>
 
@@ -576,8 +576,8 @@
               <direct name="direct3" input="ble6.clk" output="ff.clk"/>                    
               <mux name="mux1" input="ff.Q lut6.out" output="ble6.out" spice_model_name="mux_1level">
                 <!-- LUT to output is faster than FF to output on a Stratix IV -->
-                <delay_constant max="41.7e-12" in_port="lut6.out" out_port="ble6.out" />
-                <delay_constant max="41.7e-12" in_port="ff.Q" out_port="ble6.out" />
+                <delay_constant max="42.24e-12" in_port="lut6.out" out_port="ble6.out" />
+                <delay_constant max="42.24e-12" in_port="ff.Q" out_port="ble6.out" />
               </mux>
             </interconnect>
           </pb_type>
@@ -600,8 +600,8 @@
 		     25 ps to do so, we subtract 25 ps from the 100 ps delay of a feedback
 		     to get the part that should be marked on the crossbar.	 -->
         <complete name="crossbar" input="clb.I fle[9:0].out" output="fle[9:0].in" spice_model_name="mux_1level">
-          <delay_constant max="17e-12" in_port="clb.I" out_port="fle[9:0].in" />
-          <delay_constant max="17e-12" in_port="fle[9:0].out" out_port="fle[9:0].in" />
+          <delay_constant max="21.4e-12" in_port="clb.I" out_port="fle[9:0].in" />
+          <delay_constant max="21.4e-12" in_port="fle[9:0].out" out_port="fle[9:0].in" />
         </complete>
         <complete name="clks" input="clb.clk" output="fle[9:0].clk">
         </complete>

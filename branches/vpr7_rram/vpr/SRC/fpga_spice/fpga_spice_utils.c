@@ -972,7 +972,8 @@ int multilevel_mux_last_level_input_num(int num_level, int num_input_per_unit,
                                         int mux_size) {
   int ret = 0;
   int num_basis_last_level = (int)(mux_size/num_input_per_unit);
-  int differ = 0;
+  int num_potential_special_inputs = 0;
+  int num_special_basis = 0;
   int num_input_special_basis = 0;
   
   ret = mux_size - num_basis_last_level * num_input_per_unit; 
@@ -982,11 +983,19 @@ int multilevel_mux_last_level_input_num(int num_level, int num_input_per_unit,
     /* Check if we need a special basis at last level,
      * differ : the number of input of the last-2 level will be used 
      */
-    differ = (num_basis_last_level + ret) -  pow((double)(num_input_per_unit), (double)(num_level-1));
+    num_potential_special_inputs = (num_basis_last_level + ret) -  pow((double)(num_input_per_unit), (double)(num_level-1));
     /* should be smaller than the num_input_per_unit */
-    assert((!(0 > differ))&&(differ < num_input_per_unit));
+    assert((!(0 > num_potential_special_inputs))&&(num_potential_special_inputs < num_input_per_unit));
     /* We need a speical basis */
-    num_input_special_basis = differ;
+    num_special_basis = pow((double)(num_input_per_unit), (double)(num_level-1)) - num_basis_last_level;
+    if (ret == num_special_basis) {
+      num_input_special_basis = 0;
+    } else if (1 == num_special_basis) {
+      num_input_special_basis = ret;
+    } else {
+      assert ( 1 < num_special_basis );
+      num_input_special_basis = ret - 1;
+    }
     ret = num_input_special_basis + num_basis_last_level * num_input_per_unit;
   } else {
     ret = mux_size;

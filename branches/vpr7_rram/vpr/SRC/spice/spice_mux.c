@@ -693,8 +693,8 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
   mux_special_basis_subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_model.name) + 5 
                                                                + strlen(my_itoa(mux_size)) 
                                                                + strlen(mux_special_basis_posfix) + 1)); 
-  sprintf(mux_basis_subckt_name, "%s_size%d%s",
-          spice_model.name, mux_size, mux_basis_posfix);
+  sprintf(mux_special_basis_subckt_name, "%s_size%d%s",
+          spice_model.name, mux_size, mux_special_basis_posfix);
 
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {

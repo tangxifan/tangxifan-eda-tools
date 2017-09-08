@@ -88,7 +88,7 @@ hold on
 %title('Delay-Wprog of 32-input Multiplexer, UMC 0.18um','FontSize',18)
 xlabel('R_{HRS}({M\Omega})','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
 %ylabel('Dynamic Power (mW)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
-ylabel('Normalized Total Power','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('Normalized Energy Per Clock Cycle','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'xlim',[0.5 length(rhrs_list)+0.5],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'XTick',xindex);
 set(gca,'XTickLabel',rhrs_list);

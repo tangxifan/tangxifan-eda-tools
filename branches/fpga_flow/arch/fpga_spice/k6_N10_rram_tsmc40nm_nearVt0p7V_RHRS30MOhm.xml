@@ -165,8 +165,8 @@
           <fall slew_time="20e-12" slew_type="abs"/>
         </clock>
         <input>
-          <rise slew_time="100e-12" slew_type="abs"/>
-          <fall slew_time="100e-12" slew_type="abs"/>
+          <rise slew_time="25e-12" slew_type="abs"/>
+          <fall slew_time="25e-12" slew_type="abs"/>
         </input>
       </stimulate>      
     </parameters>

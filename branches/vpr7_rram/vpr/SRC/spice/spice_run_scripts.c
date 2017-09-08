@@ -95,7 +95,7 @@ void fprint_run_hspice_shell_script(t_spice spice,
             progress_cnt, total_num_sim-progress_cnt, total_num_sim);
     progress_cnt++;
    
-    fprintf(fp, "hspice64 -mt 8 -i %s -o %s%s.lis ", 
+    fprintf(fp, "hspice64 -mt 6 -i %s -o %s%s.lis ", 
             testbench_file, sim_results_dir_path, chomped_testbench_name);
     temp = temp->next;
     if (1 == rram_design_tech) {
