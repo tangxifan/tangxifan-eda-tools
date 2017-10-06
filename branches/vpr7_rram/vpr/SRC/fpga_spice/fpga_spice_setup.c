@@ -441,7 +441,7 @@ void init_check_arch_spice_models(t_arch* arch,
       exit(1);
     }
     /* Check the spice model structure is matched with the structure in switch_inf */
-    if (FALSE == check_spice_model_structure_match_switch_inf(arch->cb_switches[i])) {
+    if (FALSE == check_spice_model_structure_match_switch_inf(arch->Switches[i])) {
       exit(1);
     }
   } 

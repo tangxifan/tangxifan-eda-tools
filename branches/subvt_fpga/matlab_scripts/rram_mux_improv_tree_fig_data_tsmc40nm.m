@@ -2322,10 +2322,17 @@ rram_mux_improve_tree_xl(:,:,25,3) = [
 rram_mux_improve_tree_best_delay = zeros(num_merits + 1, num_swept_input_size, num_VDD); % Plus 1 flags:  X_opt and delete the 1st flag: Ron
 rram_mux_improve_tree_best_power = zeros(num_merits + 1, num_swept_input_size, num_VDD); % Plus 1 flags:  X_opt and delete the 1st flag: Ron 
 rram_mux_improve_tree_best_pdp = zeros(num_merits + 1, num_swept_input_size, num_VDD); % Plus 1 flags:  X_opt and delete the 1st flag: Ron
-% Search each input size, find the best Wprog and X_opt
-for isize = 1:1:num_swept_input_size
-  % Traverse VDD 
-  for ivdd = 1:1:num_VDD 
+% Traverse VDD 
+for ivdd = 1:1:num_VDD 
+  % Initialize best_XXX_index
+  rram_mux_improve_tree_x0_min_best_delay_index = 1;
+  rram_mux_improve_tree_x0_min_best_power_index = 1;
+  rram_mux_improve_tree_x0_min_best_pdp_index = 1;
+  rram_mux_improve_tree_xl_min_best_delay_index = 1;
+  rram_mux_improve_tree_xl_min_best_power_index = 1;
+  rram_mux_improve_tree_xl_min_best_pdp_index = 1;
+  % Search each input size, find the best Wprog and X_opt
+  for isize = 1:1:num_swept_input_size
     % Compare the PDP or delay or power!
     % case: x = 0
     [best_delay_x0, best_delay_x0_index] = min(rram_mux_improve_tree_x0(:,3,isize,ivdd)); % the third column is delay
@@ -2335,6 +2342,53 @@ for isize = 1:1:num_swept_input_size
     [best_delay_xl, best_delay_xl_index] = min(rram_mux_improve_tree_xl(:,3,isize,ivdd)); % the third column is delay
     [best_power_xl, best_power_xl_index] = min(rram_mux_improve_tree_xl(:,5,isize,ivdd)); % the fifth column is power
     [best_pdp_xl, best_pdp_xl_index]     = min(rram_mux_improve_tree_xl(:,6,isize,ivdd)); % the sixth column is PDP
+
+    % To smooth the curve
+    % Check if the wprog of current input size is smaller the previous one, 
+    % If so, we force the wprog to be the same as the previous one
+    % For best delay purpose
+    % case: x = 0
+    if (rram_mux_improve_tree_x0(best_delay_x0_index, 2, isize, ivdd) < rram_mux_improve_tree_x0(rram_mux_improve_tree_x0_min_best_delay_index, 2, isize, ivdd)) 
+      best_delay_x0 = rram_mux_improve_tree_x0(rram_mux_improve_tree_x0_min_best_delay_index, 3, isize, ivdd); 
+      best_delay_x0_index = rram_mux_improve_tree_x0_min_best_delay_index;
+    end
+    % case: x = L
+    if (rram_mux_improve_tree_xl(best_delay_xl_index, 2, isize, ivdd) < rram_mux_improve_tree_xl(rram_mux_improve_tree_xl_min_best_delay_index, 2, isize, ivdd)) 
+      best_delay_xl = rram_mux_improve_tree_xl(rram_mux_improve_tree_xl_min_best_delay_index, 3, isize, ivdd); 
+      best_delay_xl_index = rram_mux_improve_tree_xl_min_best_delay_index;
+    end
+    % update the best_delay_index
+    rram_mux_improve_tree_x0_min_best_delay_index = best_delay_x0_index;
+    rram_mux_improve_tree_xl_min_best_delay_index = best_delay_xl_index;
+    % For best power purpose
+    % case: x = 0
+    if (rram_mux_improve_tree_x0(best_power_x0_index, 2, isize, ivdd) < rram_mux_improve_tree_x0(rram_mux_improve_tree_x0_min_best_power_index, 2, isize, ivdd)) 
+      best_power_x0 = rram_mux_improve_tree_x0(rram_mux_improve_tree_x0_min_best_power_index, 5, isize, ivdd); 
+      best_power_x0_index = rram_mux_improve_tree_x0_min_best_power_index;
+    end
+    % case: x = L
+    if (rram_mux_improve_tree_xl(best_power_xl_index, 2, isize, ivdd) < rram_mux_improve_tree_xl(rram_mux_improve_tree_xl_min_best_power_index, 2, isize, ivdd)) 
+      best_power_xl = rram_mux_improve_tree_xl(rram_mux_improve_tree_xl_min_best_power_index, 5, isize, ivdd); 
+      best_power_xl_index = rram_mux_improve_tree_xl_min_best_power_index;
+    end
+    % update the best_power_index
+    rram_mux_improve_tree_x0_min_best_power_index = best_power_x0_index;
+    rram_mux_improve_tree_xl_min_best_power_index = best_power_xl_index;
+    % For best pdp purpose
+    % case: x = 0
+    if (rram_mux_improve_tree_x0(best_pdp_x0_index, 2, isize, ivdd) < rram_mux_improve_tree_x0(rram_mux_improve_tree_x0_min_best_pdp_index, 2, isize, ivdd)) 
+      best_pdp_x0 = rram_mux_improve_tree_x0(rram_mux_improve_tree_x0_min_best_pdp_index, 6, isize, ivdd); 
+      best_pdp_x0_index = rram_mux_improve_tree_x0_min_best_pdp_index;
+    end
+    % case: x = L
+    if (rram_mux_improve_tree_xl(best_pdp_xl_index, 2, isize, ivdd) < rram_mux_improve_tree_xl(rram_mux_improve_tree_xl_min_best_pdp_index, 2, isize, ivdd)) 
+      best_pdp_xl = rram_mux_improve_tree_xl(rram_mux_improve_tree_xl_min_best_pdp_index, 6, isize, ivdd); 
+      best_pdp_xl_index = rram_mux_improve_tree_xl_min_best_pdp_index;
+    end
+    % update the best_pdp_index
+    rram_mux_improve_tree_x0_min_best_pdp_index = best_pdp_x0_index;
+    rram_mux_improve_tree_xl_min_best_pdp_index = best_pdp_xl_index;
+
     % determine which is the best and fill the data
     % best delay 
     rram_mux_improve_tree_x0_best_delay (:,isize, ivdd) = [ rram_mux_improve_tree_x0(best_delay_x0_index,1:7,isize,ivdd) ]; % 0 indicates this is x=0

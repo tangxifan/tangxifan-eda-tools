@@ -135,7 +135,7 @@
 
   <!-- Physical descriptions begin -->
   <!--layout auto="1.0"/-->
-  <layout width="2" height="2"/>
+  <layout width="1" height="1"/>
 
   <!--mrFPGA_settings--> 
     <!-- below is the timing parameters for a single memristor device (or so called RRAM) -->
@@ -183,12 +183,12 @@
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="1"/>
       </spice_model>
-      <spice_model type="inv_buf" name="buf4" prefix="buf4" is_default="1">
+      <spice_model type="inv_buf" name="buf4" prefix="buf4" is_default="0">
         <design_technology type="cmos" topology="buffer" size="4" tapered="off"/>
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="1"/>
       </spice_model>
-      <spice_model type="inv_buf" name="tap_buf4" prefix="tap_buf4" is_default="1">
+      <spice_model type="inv_buf" name="tap_buf4" prefix="tap_buf4" is_default="0">
         <design_technology type="cmos" topology="buffer" size="1" tapered="on" tap_buf_level="2" f_per_stage="4"/>
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="1"/>
@@ -270,7 +270,7 @@
         <pass_gate_logic spice_model_name="TGATE"/>
         <port type="input" prefix="in" size="6"/>
         <port type="output" prefix="out" size="1"/>
-        <port type="sram" prefix="sram" size="64"/>
+        <port type="sram" prefix="sram" size="64" spice_model_name="sc_dff_compact" default_val="1"/>
       </spice_model>
       <spice_model type="sram" name="sram6T" prefix="sram" spice_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/sram.sp" verilog_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/sram.v" >
         <design_technology type="cmos"/>
@@ -291,16 +291,17 @@
         <port type="wl" prefix="wl" size="1" default_val="0"/>
       </spice_model>
       <!--Scan-chain DFF subckt ports should be defined as <D> <Q> <Qb> <CLK> <RESET> <SET>  -->
-      <spice_model type="sff" name="sc_ff" prefix="scff" spice_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/ff.sp" verilog_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/ff.v">
+      <spice_model type="sff" name="sc_dff_compact" prefix="scff" spice_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/ff.sp" verilog_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/ff.v">
          <design_technology type="cmos"/>
          <input_buffer exist="on" spice_model_name="INVD1BWP"/>
          <output_buffer exist="on" spice_model_name="INVD1BWP"/>
          <pass_gate_logic spice_model_name="TGATE"/>
          <port type="input" prefix="D" size="1"/>
-         <port type="input" prefix="pSet" size="1" is_global="true" default_val="0" is_set="true" is_prog="true"/>
+         <!--port type="input" prefix="pSet" size="1" is_global="true" default_val="0" is_set="true" is_prog="true"/-->
          <port type="input" prefix="pReset" size="1" is_global="true" default_val="0" is_reset="true" is_prog="true"/>
          <port type="output" prefix="Q" size="2"/>
          <port type="clock" prefix="prog_clk" size="1" is_global="true" default_val="0" is_prog="true" />
+         <port type="clock" prefix="prog_clkb" size="1" is_global="true" default_val="1" is_prog="true" />
       </spice_model>
       <spice_model type="iopad" name="iopad" prefix="iopad" spice_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/io.sp" verilog_netlist="/home/xitang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/io.v">
         <design_technology type="cmos"/>
@@ -308,7 +309,7 @@
         <output_buffer exist="on" spice_model_name="INVD1BWP"/>
         <pass_gate_logic spice_model_name="TGATE"/>
         <port type="inout" prefix="pad" size="1"/>
-        <port type="sram" prefix="en" size="1" mode_select="true" spice_model_name="sc_ff" default_val="1"/>
+        <port type="sram" prefix="en" size="1" mode_select="true" spice_model_name="sc_dff_compact" default_val="1"/>
         <port type="input" prefix="outpad" size="1"/>
         <port type="input" prefix="zin" size="1" is_global="true" default_val="0" />
         <port type="output" prefix="inpad" size="1"/>
@@ -340,7 +341,7 @@
 	  -->
 	<area grid_logic_tile_area="0"/> 
     <sram area="6">
-      <verilog organization="scan-chain" spice_model_name="sc_ff"/>
+      <verilog organization="scan-chain" spice_model_name="sc_dff_compact"/>
       <spice organization="standalone" spice_model_name="sram6T" />
     </sram>
     <chan_width_distr>
@@ -379,16 +380,16 @@
     <!--- VB & JL: using ITRS metal stack data, 96 nm half pitch wires, which are intermediate metal width/space.  
 			     With the 96 nm half pitch, such wires would take 60 um of height, vs. a 90 nm high (approximated as square) Stratix IV tile so this seems
 			     reasonable. Using a tile length of 90 nm, corresponding to the length of a Stratix IV tile if it were square. -->
-    <!--segment freq="1" length="4" type="unidir" Rmetal="101" Cmetal="22.5e-15" spice_model_name="chan_segment">
+    <segment freq="1" length="4" type="unidir" Rmetal="101" Cmetal="22.5e-15" spice_model_name="chan_segment">
       <mux name="0"/>
-      <sb type="pattern">0 1 0 1 0</sb>
+      <sb type="pattern">1 1 1 1 1</sb>
       <cb type="pattern">1 1 1 1</cb>
-    </segment-->
-    <segment freq="1" length="2" type="unidir" Rmetal="101" Cmetal="22.5e-15" spice_model_name="chan_segment">
-      <mux name="0"/>
-      <sb type="pattern">0 1 0</sb>
-      <cb type="pattern">1 1 </cb>
     </segment>
+    <!--segment freq="1" length="2" type="unidir" Rmetal="101" Cmetal="22.5e-15" spice_model_name="chan_segment">
+      <mux name="0"/>
+      <sb type="pattern">1 1 1</sb>
+      <cb type="pattern">1 1 </cb>
+    </segment-->
     <!--segment freq="0.5" length="1" type="unidir" Rmetal="101" Cmetal="22.5e-15" spice_model_name="chan_segment">
       <mux name="0"/>
       <sb type="pattern">1 1</sb>

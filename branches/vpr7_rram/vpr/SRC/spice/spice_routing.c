@@ -1096,7 +1096,7 @@ void fprint_routing_connection_box_subckt(FILE* fp, t_cb cur_cb_info,
     }
   }
   /* Make sure only 2 sides of IPINs are printed */
-  assert(2 == side_cnt);
+  assert((1 == side_cnt)||(2 == side_cnt));
 
   /* subckt definition ends with svdd and sgnd*/
   fprintf(fp, "+ ");
@@ -1137,7 +1137,7 @@ void fprint_routing_connection_box_subckt(FILE* fp, t_cb cur_cb_info,
     }
   }
   /* Make sure only 2 sides of IPINs are printed */
-  assert(2 == side_cnt);
+  assert((1 == side_cnt)||(2 == side_cnt));
 
   /* Specify the tail of scan-chain */
   if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {

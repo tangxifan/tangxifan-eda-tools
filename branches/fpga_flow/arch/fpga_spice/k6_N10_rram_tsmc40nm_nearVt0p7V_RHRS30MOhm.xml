@@ -351,7 +351,7 @@
 			     4x minimum drive strength buffer. -->
    
     <sizing R_minW_nmos="8926" R_minW_pmos="16067" ipin_mux_trans_size="3"/>
-    <timing C_ipin_cblock="596e-18" T_ipin_cblock="60e-12"/>
+    <timing C_ipin_cblock="596e-18" T_ipin_cblock="71.8e-12"/>
 
     <!-- The grid_logic_tile_area below will be used for all blocks that do not explicitly set their own (non-routing)
      	  area; set to 0 since we explicitly set the area of all blocks currently in this architecture file.
@@ -372,7 +372,7 @@
   </device>
 
   <cblocks>
-    <switch type="mux" name="cb_mux" R="0" Cin="596e-18" Cout="0" Tdel="60e-12" mux_trans_size="1.5" buf_size="4" spice_model_name="mux_1level_tapbuf4" structure="one-level" num_level="1">
+    <switch type="mux" name="cb_mux" R="0" Cin="596e-18" Cout="0" Tdel="71.8e-12" mux_trans_size="1.5" buf_size="4" spice_model_name="mux_1level_tapbuf4" structure="one-level" num_level="1">
     </switch>
   </cblocks>
   <switchlist>
@@ -389,31 +389,32 @@
 	       2.5x when looking up in Jeff's tables.
 	       Finally, we choose a switch delay (58 ps) that leads to length 4 wires having a delay equal to that of SIV of 126 ps.
 	       This also leads to the switch being 46% of the total wire delay, which is reasonable. -->
-    <switch type="mux" name="0" R="150.04" Cin="596e-18" Cout="15.54e-15" Tdel="52.3e-12" mux_trans_size="1.5" buf_size="27.645901" spice_model_name="mux_1level_tapbuf4" structure="one-level" num_level="1">
+    <switch type="mux" name="sb_mux_L4" R="172" Cin="596e-18" Cout="0e-15" Tdel="57.7e-12" mux_trans_size="1.5" buf_size="27.645901" spice_model_name="mux_1level_tapbuf4" structure="one-level" num_level="1">
     </switch>
-    <!-- Unbuffered switch  -->
-    <!--switch type="unbuf_mux" name="1" R="551" Cin=".77e-15" Cout="1e-15" Tdel="58e-12" mux_trans_size="2.630740" spice_model_name="mux_unbuffered">
-    </switch-->
+    <switch type="mux" name="sb_mux_L2" R="198" Cin="596e-18" Cout="0e-15" Tdel="57.7e-12" mux_trans_size="1.5" buf_size="27.645901" spice_model_name="mux_1level_tapbuf4" structure="one-level" num_level="1">
+    </switch>
+    <switch type="mux" name="sb_mux_L1" R="258" Cin="596e-18" Cout="0e-15" Tdel="57.7e-12" mux_trans_size="1.5" buf_size="27.645901" spice_model_name="mux_1level_tapbuf4" structure="one-level" num_level="1">
+    </switch>
   </switchlist>
   <segmentlist>
     <!--- VB & JL: using ITRS metal stack data, 96 nm half pitch wires, which are intermediate metal width/space.  
 			     With the 96 nm half pitch, such wires would take 60 um of height, vs. a 90 nm high (approximated as square) Stratix IV tile so this seems
 			     reasonable. Using a tile length of 90 nm, corresponding to the length of a Stratix IV tile if it were square. -->
-    <!--segment freq="1" length="4" type="unidir" Rmetal="101" Cmetal="22.5e-15" spice_model_name="chan_segment">
-      <mux name="0"/>
-      <sb type="pattern">0 1 0 1 0</sb>
-      <cb type="pattern">1 1 1 1</cb>
-    </segment-->
-    <segment freq="1" length="4" type="unidir" Rmetal="101" Cmetal="22.5e-15" spice_model_name="chan_segment">
-      <mux name="0"/>
+    <segment freq="0.4" length="4" type="unidir" Rmetal="101" Cmetal="22.5e-15" spice_model_name="chan_segment">
+      <mux name="sb_mux_L4"/>
       <sb type="pattern">1 1 1 1 1</sb>
       <cb type="pattern">1 1 1 1</cb>
     </segment>
-    <!--segment freq="0.5" length="1" type="unidir" Rmetal="101" Cmetal="22.5e-15" spice_model_name="chan_segment">
-      <mux name="0"/>
+    <segment freq="0.3" length="2" type="unidir" Rmetal="101" Cmetal="22.5e-15" spice_model_name="chan_segment">
+      <mux name="sb_mux_L4"/>
+      <sb type="pattern">1 1 1</sb>
+      <cb type="pattern">1 1</cb>
+    </segment>
+    <segment freq="0.3" length="1" type="unidir" Rmetal="101" Cmetal="22.5e-15" spice_model_name="chan_segment">
+      <mux name="sb_mux_L4"/>
       <sb type="pattern">1 1</sb>
       <cb type="pattern">1</cb>
-    </segment-->
+    </segment>
   </segmentlist>
   <!--switch_segment_patterns>
     <pattern type="unbuf_sb" seg_length="1" seg_type="unidir" pattern_length="2"> 
@@ -439,10 +440,10 @@
         </pb_type>
         <interconnect>
           <direct name="inpad" input="iopad.inpad" output="io.inpad">
-            <delay_constant max="4.243e-11" in_port="iopad.inpad" out_port="io.inpad"/>
+            <delay_constant max="0e-11" in_port="iopad.inpad" out_port="io.inpad"/>
           </direct>
           <direct name="outpad" input="io.outpad" output="iopad.outpad">
-            <delay_constant max="1.394e-11" in_port="io.outpad" out_port="iopad.outpad"/>
+            <delay_constant max="0e-11" in_port="io.outpad" out_port="iopad.outpad"/>
           </direct>
         </interconnect>
       </mode>
@@ -458,7 +459,7 @@
         </pb_type>
         <interconnect>
           <direct name="inpad" input="inpad.inpad" output="io.inpad">
-            <delay_constant max="4.243e-11" in_port="inpad.inpad" out_port="io.inpad"/>
+            <delay_constant max="0e-11" in_port="inpad.inpad" out_port="io.inpad"/>
           </direct>
         </interconnect>
       </mode>
@@ -468,7 +469,7 @@
         </pb_type>
         <interconnect>
           <direct name="outpad" input="io.outpad" output="outpad.outpad">
-            <delay_constant max="1.394e-11" in_port="io.outpad" out_port="outpad.outpad"/>
+            <delay_constant max="0e-11" in_port="io.outpad" out_port="outpad.outpad"/>
           </direct>
         </interconnect>
       </mode>
@@ -549,12 +550,12 @@
                   397e-12
                   -->
               <delay_matrix type="max" in_port="lut6.in" out_port="lut6.out">
-                277e-12
-                277e-12
-                277e-12
-                277e-12
-                277e-12
-                277e-12
+                249e-12
+                249e-12
+                249e-12
+                249e-12
+                249e-12
+                249e-12
               </delay_matrix>
             </pb_type>
 
@@ -600,8 +601,8 @@
 		     25 ps to do so, we subtract 25 ps from the 100 ps delay of a feedback
 		     to get the part that should be marked on the crossbar.	 -->
         <complete name="crossbar" input="clb.I fle[9:0].out" output="fle[9:0].in" spice_model_name="mux_1level">
-          <delay_constant max="27e-12" in_port="clb.I" out_port="fle[9:0].in" />
-          <delay_constant max="27e-12" in_port="fle[9:0].out" out_port="fle[9:0].in" />
+          <delay_constant max="31e-12" in_port="clb.I" out_port="fle[9:0].in" />
+          <delay_constant max="31e-12" in_port="fle[9:0].out" out_port="fle[9:0].in" />
         </complete>
         <complete name="clks" input="clb.clk" output="fle[9:0].clk">
         </complete>
@@ -618,7 +619,12 @@
       <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
       <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
 
-      <pinlocations pattern="spread"/>
+      <!--pinlocations pattern="spread"/-->
+      <pinlocations pattern="custom">
+        <loc side="top">clb.clk </loc>
+        <loc side="right">clb.I[19:0] clb.O[4:0] </loc>
+        <loc side="bottom">clb.I[39:20] clb.O[9:5] </loc>
+      </pinlocations>
 
       <!-- Place this general purpose logic block in any unspecified column -->
       <gridlocations>

@@ -1594,7 +1594,7 @@ int count_verilog_connection_box_conf_bits(t_cb* cur_cb_info) {
     num_conf_bits += count_verilog_connection_box_one_side_conf_bits(cur_cb_info->num_ipin_rr_nodes[side], cur_cb_info->ipin_rr_node[side]);
   }
   /* Make sure only 2 sides of IPINs are printed */
-  assert(2 == side_cnt);
+  assert((1 == side_cnt)||(2 == side_cnt));
 
   return num_conf_bits;
 }
@@ -1622,7 +1622,7 @@ int count_verilog_connection_box_reserved_conf_bits(t_cb* cur_cb_info) {
     }
   }
   /* Make sure only 2 sides of IPINs are printed */
-  assert(2 == side_cnt);
+  assert((1 == side_cnt)||(2 == side_cnt));
 
   return num_reserved_conf_bits;
 }
@@ -1716,7 +1716,7 @@ void dump_verilog_routing_connection_box_subckt(FILE* fp, t_cb* cur_cb_info,
     }
   }
   /*check side_cnt */
-  assert(1 == side_cnt);
+  assert((1 == side_cnt)||(2 == side_cnt));
 
   side_cnt = 0;
   /* Print the ports of grids*/
@@ -1742,7 +1742,7 @@ void dump_verilog_routing_connection_box_subckt(FILE* fp, t_cb* cur_cb_info,
     }
   }
   /* Make sure only 2 sides of IPINs are printed */
-  assert(2 == side_cnt);
+  assert((1 == side_cnt)||(2 == side_cnt));
 
   /* Count the number of configuration bits */
   /* Count the number of configuration bits to be consumed by this Switch block */

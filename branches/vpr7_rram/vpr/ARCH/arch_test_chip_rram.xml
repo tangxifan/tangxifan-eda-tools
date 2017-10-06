@@ -185,17 +185,17 @@
         <port type="input" prefix="ENB" size="1" is_global="true" default_val="1" is_config_enable="true"/>
         <port type="output" prefix="out" size="1"/>
       </spice_model>
-      <spice_model type="inv_buf" name="INVD1BWP" prefix="INVD1BWP" is_default="1">
+      <spice_model type="inv_buf" name="INVD1BWP" prefix="INVD1BWP" is_default="0">
         <design_technology type="cmos" topology="inverter" size="4" tapered="off" power_gated="false"/>
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="1"/>
       </spice_model>
-      <spice_model type="inv_buf" name="buf4" prefix="buf4" is_default="1">
+      <spice_model type="inv_buf" name="buf4" prefix="buf4" is_default="0">
         <design_technology type="cmos" topology="buffer" size="4" tapered="off"/>
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="1"/>
       </spice_model>
-      <spice_model type="inv_buf" name="tap_buf4" prefix="tap_buf4" is_default="1">
+      <spice_model type="inv_buf" name="tap_buf4" prefix="tap_buf4" is_default="0">
         <design_technology type="cmos" topology="buffer" size="1" tapered="on" tap_buf_level="2" f_per_stage="4"/>
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="1"/>

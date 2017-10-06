@@ -393,3 +393,30 @@ hleg = legend([{'CMOS MUX (V_{DD}=0.7V)'}, {'CMOS MUX (V_{DD}=0.9V)'}, {'4T1R MU
 set(fig_handle13, 'Position', [1 1 650 500]);
 grid on
 
+% Fig. 14 - Delay and CP
+fig_handle14 = figure;
+% best SRAM MUX, VDD = 0.9V, in terms of delay
+plot(mux_size_list, sram_mux_best_delay(2,:,3)/1e-12,'c-s','LineWidth', 2, 'MarkerSize',10);
+hold on
+% 1-level 4T1R MUX, VDD = 0.7V, in terms of delay
+plot(mux_size_list, rram_mux_improve_1level_xl_sweep_Cp_best_delay(3,:,1)/1e-12,'r-*','LineWidth', 2, 'MarkerSize',10);
+hold on
+% 1-level 4T1R MUX, VDD = 0.8V, in terms of delay
+plot(mux_size_list, rram_mux_improve_1level_xl_sweep_Cp_best_delay(3,:,2)/1e-12,'b-+','LineWidth', 2, 'MarkerSize',10);
+hold on
+% 1-level 4T1R MUX, VDD = 0.9V, in terms of delay
+plot(mux_size_list, rram_mux_improve_1level_xl_sweep_Cp_best_delay(3,:,3)/1e-12,'g-s','LineWidth', 2, 'MarkerSize',10);
+hold on
+%title('Delay (ps) and MUX size N','FontSize',18)
+xlabel('MUX size','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('Delay (ps)','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+%set(gca,'xlim',[0.1 1],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+set(gca,'XTick',mux_size_list);
+%set(gca,'ylim',[15 60],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+set(gca, 'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+hleg = legend([{'CMOS MUX'}, {'1-level 4T1R MUX (C_{P}=13.2aF)'}, {'1-level 4T1R MUX (C_{P}=39.6aF)'}, {'1-level 4T1R MUX (C_{P}=118.8aF)'}]);
+%hleg = legend([{'1-level 4T1R MUX (C_{P}=13.2aF)'}, {'1-level 4T1R MUX (C_{P}=26.4aF)'}, {'1-level 4T1R MUX (C_{P}=39.6aF)'}]);
+set(fig_handle9, 'Position', [1 1 650 500]);
+grid on
+
+

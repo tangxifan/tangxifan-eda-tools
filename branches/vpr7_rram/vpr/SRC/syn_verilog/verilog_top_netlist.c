@@ -887,7 +887,7 @@ void dump_verilog_defined_one_connection_box(FILE* fp,
     }
   }
   /* Make sure only 2 sides of IPINs are printed */
-  assert(2 == side_cnt);
+  assert((1 == side_cnt)||(2 == side_cnt));
  
   /* Configuration ports */
   /* Reserved sram ports */
@@ -918,7 +918,7 @@ void dump_verilog_defined_one_connection_box(FILE* fp,
   }
 
   /* Check */
-  assert(2 == side_cnt);
+  assert((1 == side_cnt)||(2 == side_cnt));
  
   return;
 }

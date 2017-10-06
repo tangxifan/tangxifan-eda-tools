@@ -22,7 +22,9 @@ Xmux1_0 out0_0 out0_1 sram1 sram1_inv out vdd gnd mux2to1 size=size
 .subckt mux8to1 in0 in1 in2 in3 in4 in5 in6 in7 sram0 sram0_inv sram1 sram1_inv sram2 sram2_inv out size=1
 Xmux0_0 in0 in1 in2 in3 sram0 sram0_inv sram1 sram1_inv out0_0 mux4to1 size=size
 Xmux0_1 in4 in5 in6 in7 sram0 sram0_inv sram1 sram1_inv out0_1 mux4to1 size=size
-Xmux1_0 out0_0 out0_1 sram2 sram2_inv out vdd gnd mux2to1 size=size
+Xmux1_0 out0_0 out0_1 sram2 sram2_inv out_buf0 vdd gnd mux2to1 size=size
+Xinv0 out_buf0 out_buf1 vdd gnd inv size=size
+Xinv1 out_buf1 out      vdd gnd inv size=size
 .eom
 * 16:1 MUX 
 .subckt mux16to1 in0 in1 in2 in3 in4 in5 in6 in7 in8 in9 in10 in11 in12 in13 in14 in15 sram0 sram0_inv sram1 sram1_inv sram2 sram2_inv sram3 sram3_inv out size=1

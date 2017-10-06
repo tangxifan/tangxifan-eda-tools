@@ -1396,7 +1396,7 @@ int fprint_spice_mux_testbench_call_one_grid_cb_muxes(FILE* fp,
     }
   }
   /* Make sure only 2 sides of IPINs are printed */
-  assert(2 == side_cnt);
+  assert((1 == side_cnt)||(2 == side_cnt));
 
   /* Free */
 

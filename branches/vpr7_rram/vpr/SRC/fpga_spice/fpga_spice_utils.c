@@ -4392,6 +4392,7 @@ void check_sram_spice_model_ports(t_spice_model* cur_spice_model,
 
 void check_ff_spice_model_ports(t_spice_model* cur_spice_model,
                                 boolean is_scff) {
+  int iport;
   int num_input_ports;
   t_spice_model_port** input_ports = NULL;
   int num_output_ports;
@@ -4409,25 +4410,42 @@ void check_ff_spice_model_ports(t_spice_model* cur_spice_model,
   }
   /* Check if we have D, Set and Reset */
   input_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_INPUT, &num_input_ports, FALSE);
-  if (3 != num_input_ports) {
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) [FF|SCFF] SPICE MODEL should have only 3 input port!\n",
-               __FILE__, __LINE__);
-    num_err++;
-    if ((1 != input_ports[0]->size) 
-      || (1 != input_ports[1]->size)
-      || (1 != input_ports[2]->size)) {
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) [FF|SCFF] SPICE MODEL: each input port with size 1!\n",
+  if (TRUE == is_scff) {
+   if (1 > num_input_ports) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) SCFF SPICE MODEL should at least have an input port!\n",
                  __FILE__, __LINE__);
       num_err++;
+    }
+    for (iport = 0; iport < num_input_ports; iport++) { 
+      if (1 != input_ports[iport]->size) { 
+        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) SCFF SPICE MODEL: each input port with size 1!\n",
+                 __FILE__, __LINE__);
+        num_err++;
+      }
+    }
+  } else {
+    if (3 != num_input_ports) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) FF SPICE MODEL should have only 3 input port!\n",
+                 __FILE__, __LINE__);
+      num_err++;
+    } 
+    for (iport = 0; iport < num_input_ports; iport++) { 
+      if (1 != input_ports[iport]->size) {
+        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) FF SPICE MODEL: each input port with size 1!\n",
+                   __FILE__, __LINE__);
+        num_err++;
+      }
     }
   }
   /* Check if we have clock */
   clock_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_CLOCK, &num_clock_ports, FALSE);
-  if (1 != num_clock_ports) {
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) [FF|SCFF] SPICE MODEL should have only 1 clock port!\n",
+  if (1 > num_clock_ports) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) [FF|SCFF] SPICE MODEL should have at least 1 clock port!\n",
                __FILE__, __LINE__);
     num_err++;
-    if (1 != clock_ports[0]->size) {
+  }
+  for (iport = 0; iport < num_clock_ports; iport++) { 
+    if (1 != clock_ports[iport]->size) {
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) [FF|SCFF] SPICE MODEL: 1 clock port with size 1!\n",
                  __FILE__, __LINE__);
       num_err++;
