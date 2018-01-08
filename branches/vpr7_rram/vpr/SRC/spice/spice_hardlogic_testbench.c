@@ -32,15 +32,17 @@
 #include "spice_subckt.h"
 
 /* local global variables */
-static int tb_num_dffs = 0;
+static int tb_num_hardlogic = 0;
 static int testbench_load_cnt = 0;
 static int upbound_sim_num_clock_cycles = 2;
 static int max_sim_num_clock_cycles = 2;
 static int auto_select_max_sim_num_clock_cycles = TRUE;
 
 /* Subroutines in this source file*/
-static void init_spice_dff_testbench_globals(t_spice spice) {
-  tb_num_dffs = 0;
+/* Initialize the global parameters in this source file */
+static 
+void init_spice_hardlogic_testbench_globals(t_spice spice) {
+  tb_num_hardlogic = 0;
   auto_select_max_sim_num_clock_cycles = spice.spice_params.meas_params.auto_select_sim_num_clk_cycle;
   upbound_sim_num_clock_cycles = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
   if (FALSE == auto_select_max_sim_num_clock_cycles) {
@@ -50,10 +52,11 @@ static void init_spice_dff_testbench_globals(t_spice spice) {
   }
 }
 
+/* Print Common global ports in the testbench */
 static 
-void fprint_spice_dff_testbench_global_ports(FILE* fp, int grid_x, int grid_y, 
-                                             int num_clock, 
-                                             t_spice spice) {
+void fprint_spice_hardlogic_testbench_global_ports(FILE* fp, int grid_x, int grid_y, 
+                                                   int num_clock, 
+                                                   t_spice spice) {
   /* int i; */
   /* A valid file handler*/
   if (NULL == fp) {
@@ -61,10 +64,7 @@ void fprint_spice_dff_testbench_global_ports(FILE* fp, int grid_x, int grid_y,
     exit(1);
   } 
 
-  /* Print generic global ports*/
-  fprint_spice_generic_testbench_global_ports(fp, 
-                                              sram_spice_orgz_info,
-                                              global_ports_head); 
+ 
   /* Global nodes: Vdd for SRAMs, Logic Blocks(Include IO), Switch Boxes, Connection Boxes */
   /* Print generic global ports*/
   fprint_spice_generic_testbench_global_ports(fp, 
@@ -74,13 +74,13 @@ void fprint_spice_dff_testbench_global_ports(FILE* fp, int grid_x, int grid_y,
   fprintf(fp, ".global %s\n",
                spice_tb_global_vdd_load_port_name);
 
-  /*Global Vdds for FFs*/
+  /*Global Vdds for FFs: TODO: TO BE REMOVED */
   fprint_grid_global_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_FF, spice);
 
-  /*Global Vdds for Hardlogics*/
+  /*Global Vdds for hardlogic */
   fprint_grid_global_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_HARDLOGIC, spice);
 
-  /*Global Vdds for IOPADs*/
+  /*Global Vdds for IOPADs (TODO: TO BE MOVED TO IO_TB SOURCE FILE */
   fprint_grid_global_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_IOPAD, spice);
 
   /* Global VDDs for SRAMs of IOPADs */
@@ -90,47 +90,81 @@ void fprint_spice_dff_testbench_global_ports(FILE* fp, int grid_x, int grid_y,
   return;
 }
 
-void fprint_spice_dff_testbench_one_dff(FILE* fp, 
-                                        char* subckt_name, 
-                                        t_spice_model* dff_spice_model,
-                                        int num_inputs, int num_outputs,
-                                        int* input_init_value, 
-                                        float* input_density, 
-                                        float* input_probability) {
+/* Dump the subckt of a hardlogic and also the input stimuli */
+void fprint_spice_hardlogic_testbench_one_hardlogic(FILE* fp, 
+                                                    char* subckt_name, 
+                                                    t_spice_model* hardlogic_spice_model,
+                                                    int num_inputs, int num_outputs,
+                                                    int* input_init_value, 
+                                                    float* input_density, 
+                                                    float* input_probability) {
   int ipin;
+
   /* A valid file handler*/
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File Handler!\n",__FILE__, __LINE__); 
     exit(1);
   } 
-  /* Call defined subckt */
-  fprintf(fp, "Xdff[%d] ", tb_num_dffs);
 
-  /* Global ports */
-  if (0 < rec_fprint_spice_model_global_ports(fp, dff_spice_model, FALSE)) { 
+  /* identify the type of spice model */
+  /* Call defined subckt */
+  fprintf(fp, "Xhardlogic[%d] \n", tb_num_hardlogic);
+
+  /* Sequence in dumping ports: 
+   * 1. Global ports
+   * 2. Input ports
+   * 3. Output ports
+   * 4. Inout ports
+   * 5. Configuration ports    
+   * 6. VDD and GND ports 
+   */
+
+  /* 1. Global ports */
+  if (0 < rec_fprint_spice_model_global_ports(fp, hardlogic_spice_model, FALSE)) { 
     fprintf(fp, "+ ");
   }
 
-  assert(1 == num_inputs);
+  /* 2. Input ports (TODO: check the number of inputs matches the spice model definition) */
+  fprintf(fp, "**** Input ports *****\n");
   for (ipin = 0; ipin < num_inputs; ipin++) {
-    fprintf(fp, "dff[%d]->in[%d] ", tb_num_dffs, ipin);
+    fprintf(fp, "hardlogic[%d]->in[%d] ", tb_num_hardlogic, ipin);
   }
-  fprintf(fp, "dff[%d]->out gvdd 0 ", tb_num_dffs);
-  fprintf(fp, "%s\n", dff_spice_model->name);
-  /* Stimulates */ 
+
+  /* 3. Output ports */
+  fprintf(fp, "**** Output ports *****\n");
+  for (ipin = 0; ipin < num_outputs; ipin++) {
+    fprintf(fp, "hardlogic[%d]->out[%d] ",
+                 tb_num_hardlogic, ipin);
+  }
+
+  /* 4. Inout ports */
+
+  /* 5. Configuration ports */
+  /* Generate SRAMs? */
+
+  /* 6. VDD and GND ports */
+  fprintf(fp, "%s %s ",
+          spice_tb_global_vdd_port_name,
+          spice_tb_global_gnd_port_name);
+
+  /* Call the name of subckt */
+  fprintf(fp, "%s\n", hardlogic_spice_model->name);
+
+  /* Input stimulates */ 
   for (ipin = 0; ipin < num_inputs; ipin++) {
-    fprintf(fp, "Vdff[%d]->in[%d] dff[%d]->in[%d] 0 \n",
-            tb_num_dffs, ipin, tb_num_dffs, ipin);
+    fprintf(fp, "Vhardlogic[%d]->in[%d] hardlogic[%d]->in[%d] 0 \n",
+            tb_num_hardlogic, ipin, tb_num_hardlogic, ipin);
     fprint_voltage_pulse_params(fp, input_init_value[ipin], input_density[ipin], input_probability[ipin]);
   }
+
   return; 
 }
 
-void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp, 
-                                                      t_pb_graph_node* cur_pb_graph_node, 
-                                                      char* prefix,
-                                                      int x, int y,
-                                                      t_ivec*** LL_rr_node_indices) {
+void fprint_spice_hardlogic_testbench_one_pb_graph_node_hardlogic(FILE* fp, 
+                                                                  t_pb_graph_node* cur_pb_graph_node, 
+                                                                  char* prefix,
+                                                                  int x, int y,
+                                                                  t_ivec*** LL_rr_node_indices) {
   int logical_block_index = OPEN;
   t_spice_model* pb_spice_model = NULL;
   t_pb_type* cur_pb_type = NULL;
@@ -157,7 +191,7 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
   logical_block_index = find_grid_mapped_logical_block(x, y, 
                                                        pb_spice_model, prefix);
 
-  /*
+  /* UNCOMMENT THIS, IF YOU DO NOT WANT SIMULATE THE IDLE ELEMENTS
   if (OPEN == logical_block_index) {
     return;
   }
@@ -204,21 +238,21 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
  
   /* Call the subckt and give stimulates, measurements */
   if (OPEN != logical_block_index) {
-    fprintf(fp,"***** DFF[%d]: logical_block_index[%d], gvdd_index[%d]*****\n", 
-            tb_num_dffs, logical_block_index, logical_block[logical_block_index].mapped_spice_model_index);
+    fprintf(fp,"***** Hardlogic[%d]: logical_block_index[%d], gvdd_index[%d]*****\n", 
+            tb_num_hardlogic, logical_block_index, logical_block[logical_block_index].mapped_spice_model_index);
   } else {
-    fprintf(fp,"***** DFF[%d]: logical_block_index[%d], gvdd_index[%d]*****\n", 
-            tb_num_dffs, -1, -1);
+    fprintf(fp,"***** Hardlogic[%d]: logical_block_index[%d], gvdd_index[%d]*****\n", 
+            tb_num_hardlogic, -1, -1);
   }
 
-  fprint_spice_dff_testbench_one_dff(fp, prefix, pb_spice_model, num_inputs, num_outputs,
-                                     input_init_value, input_density, input_probability);
+  fprint_spice_hardlogic_testbench_one_hardlogic(fp, prefix, pb_spice_model, num_inputs, num_outputs,
+                                                 input_init_value, input_density, input_probability);
 
   /* Add loads: Recursively */
-  outport_name = (char*)my_malloc(sizeof(char)*( 4 + strlen(my_itoa(tb_num_dffs)) 
+  outport_name = (char*)my_malloc(sizeof(char)*( 4 + strlen(my_itoa(tb_num_hardlogic)) 
                                   + 6 + 1 ));
-  sprintf(outport_name, "dff[%d]->out",
-                         tb_num_dffs);
+  sprintf(outport_name, "hardlogic[%d]->out",
+                         tb_num_hardlogic);
   if (OPEN != logical_block_index) {
     fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
                                                       x, y, 
@@ -237,7 +271,7 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
                                                       LL_rr_node_indices); 
   }
 
-  /* Calculate average density of this MUX */
+  /* Calculate average density of this hardlogic */
   average_density = 0.;
   avg_density_cnt = 0;
   for (ipin = 0; ipin < num_inputs; ipin++) {
@@ -278,7 +312,7 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
   if (OPEN != logical_block_index) {
     logical_block[logical_block_index].temp_used = 1;
   }
-  tb_num_dffs++;
+  tb_num_hardlogic++;
 
   /* Free */
   my_free(input_net_num);
@@ -289,11 +323,11 @@ void fprint_spice_dff_testbench_one_pb_graph_node_dff(FILE* fp,
   return; 
 }
 
-void fprint_spice_dff_testbench_rec_pb_graph_node_dffs(FILE* fp,
-                                                       t_pb_graph_node* cur_pb_graph_node, 
-                                                       char* prefix,
-                                                       int x, int y,
-                                                       t_ivec*** LL_rr_node_indices) {
+void fprint_spice_hardlogic_testbench_rec_pb_graph_node_hardlogics(FILE* fp,
+                                                                  t_pb_graph_node* cur_pb_graph_node, 
+                                                                  char* prefix,
+                                                                  int x, int y,
+                                                                  t_ivec*** LL_rr_node_indices) {
   char* formatted_prefix = format_spice_node_prefix(prefix); 
   int ipb, jpb, mode_index; 
   t_pb_type* cur_pb_type = NULL;
@@ -314,8 +348,8 @@ void fprint_spice_dff_testbench_rec_pb_graph_node_dffs(FILE* fp,
                    + 1 + 1));
     sprintf(rec_prefix, "%s%s[%d]",
             formatted_prefix, cur_pb_type->name, cur_pb_graph_node->placement_index);
-    /* Print a dff tb: call spice_model, stimulates */
-    fprint_spice_dff_testbench_one_pb_graph_node_dff(fp, cur_pb_graph_node, rec_prefix, x, y, LL_rr_node_indices);
+    /* Print a hardlogic tb: call spice_model, stimulates */
+    fprint_spice_hardlogic_testbench_one_pb_graph_node_hardlogic(fp, cur_pb_graph_node, rec_prefix, x, y, LL_rr_node_indices);
     my_free(rec_prefix);
     return;
   }
@@ -333,8 +367,8 @@ void fprint_spice_dff_testbench_rec_pb_graph_node_dffs(FILE* fp,
               formatted_prefix, cur_pb_type->name, cur_pb_graph_node->placement_index,
               cur_pb_type->modes[mode_index].name);
       /* Go recursively */
-      fprint_spice_dff_testbench_rec_pb_graph_node_dffs(fp, &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]),
-                                                        rec_prefix, x, y, LL_rr_node_indices);
+      fprint_spice_hardlogic_testbench_rec_pb_graph_node_hardlogics(fp, &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]),
+                                                                    rec_prefix, x, y, LL_rr_node_indices);
       my_free(rec_prefix);
     }
   }
@@ -342,10 +376,10 @@ void fprint_spice_dff_testbench_rec_pb_graph_node_dffs(FILE* fp,
   return;
 }
 
-void fprint_spice_dff_testbench_rec_pb_dffs(FILE* fp, 
-                                            t_pb* cur_pb, char* prefix, 
-                                            int x, int y,
-                                            t_ivec*** LL_rr_node_indices) {
+void fprint_spice_hardlogic_testbench_rec_pb_hardlogics(FILE* fp, 
+                                                        t_pb* cur_pb, char* prefix, 
+                                                        int x, int y,
+                                                        t_ivec*** LL_rr_node_indices) {
   char* formatted_prefix = format_spice_node_prefix(prefix); 
   int ipb, jpb;
   int mode_index;
@@ -362,7 +396,8 @@ void fprint_spice_dff_testbench_rec_pb_dffs(FILE* fp,
 
   /* If we touch the leaf, there is no need print interc*/
   if (NULL != cur_pb->pb_graph_node->pb_type->spice_model) {
-    if (SPICE_MODEL_FF != cur_pb->pb_graph_node->pb_type->spice_model->type) {
+    if ((SPICE_MODEL_HARDLOGIC != cur_pb->pb_graph_node->pb_type->spice_model->type)
+       &&(SPICE_MODEL_FF != cur_pb->pb_graph_node->pb_type->spice_model->type)) {
       return;
     }
     /* Generate rec_prefix */
@@ -373,7 +408,7 @@ void fprint_spice_dff_testbench_rec_pb_dffs(FILE* fp,
     sprintf(rec_prefix, "%s%s[%d]",
             formatted_prefix, cur_pb->pb_graph_node->pb_type->name, cur_pb->pb_graph_node->placement_index);
     /* Print a lut tb: call spice_model, stimulates */
-    fprint_spice_dff_testbench_one_pb_graph_node_dff(fp, cur_pb->pb_graph_node, rec_prefix, x, y, LL_rr_node_indices);
+    fprint_spice_hardlogic_testbench_one_pb_graph_node_hardlogic(fp, cur_pb->pb_graph_node, rec_prefix, x, y, LL_rr_node_indices);
     my_free(rec_prefix);
     return;
   }
@@ -396,11 +431,11 @@ void fprint_spice_dff_testbench_rec_pb_dffs(FILE* fp,
               cur_pb->pb_graph_node->pb_type->modes[mode_index].name);
       /* Refer to pack/output_clustering.c [LINE 392] */
       if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
-        fprint_spice_dff_testbench_rec_pb_dffs(fp, &(cur_pb->child_pbs[ipb][jpb]), rec_prefix, x, y, LL_rr_node_indices);
+        fprint_spice_hardlogic_testbench_rec_pb_hardlogics(fp, &(cur_pb->child_pbs[ipb][jpb]), rec_prefix, x, y, LL_rr_node_indices);
       } else {
         /* Print idle graph_node muxes */
         /* Bypass unused blocks */
-        fprint_spice_dff_testbench_rec_pb_graph_node_dffs(fp, cur_pb->child_pbs[ipb][jpb].pb_graph_node, 
+        fprint_spice_hardlogic_testbench_rec_pb_graph_node_hardlogics(fp, cur_pb->child_pbs[ipb][jpb].pb_graph_node, 
                                                           rec_prefix, x, y, LL_rr_node_indices);
       }
     }
@@ -409,9 +444,9 @@ void fprint_spice_dff_testbench_rec_pb_dffs(FILE* fp,
   return;
 }
 
-void fprint_spice_dff_testbench_call_one_grid_defined_dffs(FILE* fp,
-                                                           int ix, int iy,
-                                                           t_ivec*** LL_rr_node_indices) {
+void fprint_spice_hardlogic_testbench_call_one_grid_defined_hardlogics(FILE* fp,
+                                                                       int ix, int iy,
+                                                                       t_ivec*** LL_rr_node_indices) {
   int iblk;
   char* prefix = NULL;
  
@@ -436,7 +471,9 @@ void fprint_spice_dff_testbench_call_one_grid_defined_dffs(FILE* fp,
     assert(NULL != block[grid[ix][iy].blocks[iblk]].pb);
     /* Mark the temporary net_num for the type pins*/
     mark_grid_type_pb_graph_node_pins_temp_net_num(ix, iy);
-    fprint_spice_dff_testbench_rec_pb_dffs(fp, block[grid[ix][iy].blocks[iblk]].pb, prefix, ix, iy, LL_rr_node_indices);
+    /* Go into the hierachy and dump hardlogics */
+    fprint_spice_hardlogic_testbench_rec_pb_hardlogics(fp, block[grid[ix][iy].blocks[iblk]].pb, prefix, ix, iy, LL_rr_node_indices);
+    /* Free */
     my_free(prefix);
   }
   /* Bypass unused blocks */
@@ -447,19 +484,22 @@ void fprint_spice_dff_testbench_call_one_grid_defined_dffs(FILE* fp,
     assert(NULL != grid[ix][iy].type->pb_graph_head);
     /* Mark the temporary net_num for the type pins*/
     mark_grid_type_pb_graph_node_pins_temp_net_num(ix, iy);
-    fprint_spice_dff_testbench_rec_pb_graph_node_dffs(fp, grid[ix][iy].type->pb_graph_head, prefix, ix, iy, LL_rr_node_indices); 
+    /* Go into the hierachy and dump hardlogics */
+    fprint_spice_hardlogic_testbench_rec_pb_graph_node_hardlogics(fp, grid[ix][iy].type->pb_graph_head, prefix, ix, iy, LL_rr_node_indices); 
+    /* Free */
     my_free(prefix);
   }
 
   return;
 }
 
-void fprint_spice_dff_testbench_call_defined_dffs(FILE* fp, t_ivec*** LL_rr_node_indices) {
+void fprint_spice_hardlogic_testbench_call_defined_hardlogics(FILE* fp, 
+                                                              t_ivec*** LL_rr_node_indices) {
   int ix, iy;
  
   for (ix = 1; ix < (nx + 1); ix++) {
     for (iy = 1; iy < (ny + 1); iy++) {
-      fprint_spice_dff_testbench_call_one_grid_defined_dffs(fp, ix, iy, LL_rr_node_indices);
+      fprint_spice_hardlogic_testbench_call_one_grid_defined_hardlogics(fp, ix, iy, LL_rr_node_indices);
     }
   }
 
@@ -552,27 +592,28 @@ void fprint_spice_hardlogic_testbench_measurements(FILE* fp, int grid_x, int gri
 }
 
 /* Top-level function in this source file */
-int fprint_spice_one_dff_testbench(char* formatted_spice_dir,
-                                   char* circuit_name,
-                                   char* dff_testbench_name,
-                                   char* include_dir_path,
-                                   char* subckt_dir_path,
-                                   t_ivec*** LL_rr_node_indices,
-                                   int num_clock,
-                                   t_arch arch,
-                                   int grid_x, int grid_y,
-                                   boolean leakage_only) {
+int fprint_spice_one_hardlogic_testbench(char* formatted_spice_dir,
+                                         char* circuit_name,
+                                         char* hardlogic_testbench_name,
+                                         char* include_dir_path,
+                                         char* subckt_dir_path,
+                                         t_ivec*** LL_rr_node_indices,
+                                         int num_clock,
+                                         t_arch arch,
+                                         int grid_x, int grid_y,
+                                         boolean leakage_only) {
   FILE* fp = NULL;
   char* formatted_subckt_dir_path = format_dir_path(subckt_dir_path);
   char* temp_include_file_path = NULL;
-  char* title = my_strcat("FPGA DFF Testbench for Design: ", circuit_name);
-  char* dff_testbench_file_path = my_strcat(formatted_spice_dir, dff_testbench_name);
+  char* title = my_strcat("FPGA Hard Logic Testbench for Design: ", circuit_name);
+  char* hardlogic_testbench_file_path = my_strcat(formatted_spice_dir, hardlogic_testbench_name);
   int used;
 
   /* Check if the path exists*/
-  fp = fopen(dff_testbench_file_path,"w");
+  fp = fopen(hardlogic_testbench_file_path,"w");
   if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in create DFF Testbench SPICE netlist %s!",__FILE__, __LINE__, dff_testbench_file_path); 
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in create DFF Testbench SPICE netlist %s!",__FILE__, __LINE__, 
+               hardlogic_testbench_file_path); 
     exit(1);
   } 
   
@@ -595,28 +636,19 @@ int fprint_spice_one_dff_testbench(char* formatted_spice_dir,
   /* Include user-defined sub-circuit netlist */
   init_include_user_defined_netlists(*(arch.spice));
   fprint_include_user_defined_netlists(fp, *(arch.spice));
-  
-  /* Special subckts for Top-level SPICE netlist */
-  fprintf(fp, "****** Include subckt netlists: Look-Up Tables (LUTs) *****\n");
-  temp_include_file_path = my_strcat(formatted_subckt_dir_path, luts_spice_file_name);
-  fprintf(fp, ".include \'%s\'\n", temp_include_file_path);
-  my_free(temp_include_file_path);
-
-  fprintf(fp, "****** Include subckt netlists: Logic Blocks *****\n");
-  temp_include_file_path = my_strcat(formatted_subckt_dir_path, logic_block_spice_file_name);
-  fprintf(fp, ".include \'%s\'\n", temp_include_file_path);
-  my_free(temp_include_file_path);
 
   /* Print simulation temperature and other options for SPICE */
   fprint_spice_options(fp, arch.spice->spice_params);
 
   /* Global nodes: Vdd for SRAMs, Logic Blocks(Include IO), Switch Boxes, Connection Boxes */
-  fprint_spice_dff_testbench_global_ports(fp, grid_x, grid_y, num_clock, (*arch.spice));
+  fprint_spice_hardlogic_testbench_global_ports(fp, grid_x, grid_y, num_clock, (*arch.spice));
  
   /* Quote defined Logic blocks subckts (Grids) */
-  init_spice_dff_testbench_globals(*(arch.spice));
+  init_spice_hardlogic_testbench_globals(*(arch.spice));
   init_logical_block_spice_model_type_temp_used(arch.spice->num_spice_model, arch.spice->spice_models, SPICE_MODEL_FF);
-  fprint_spice_dff_testbench_call_one_grid_defined_dffs(fp, grid_x, grid_y, LL_rr_node_indices);
+
+  /* Now start our job formally: dump hard logic circuit one by one */
+  fprint_spice_hardlogic_testbench_call_one_grid_defined_hardlogics(fp, grid_x, grid_y, LL_rr_node_indices);
 
   /* Back-anotate activity information to each routing resource node 
    * (We should have activity of each Grid port) 
@@ -634,16 +666,16 @@ int fprint_spice_one_dff_testbench(char* formatted_spice_dir,
   /* Close the file*/
   fclose(fp);
 
-  if (0 < tb_num_dffs) {
-    vpr_printf(TIO_MESSAGE_INFO, "Writing Grid[%d][%d] SPICE DFF Testbench for %s...\n",
+  if (0 < tb_num_hardlogic) {
+    vpr_printf(TIO_MESSAGE_INFO, "Writing Grid[%d][%d] SPICE Hard Logic Testbench for %s...\n",
                grid_x, grid_y, circuit_name);
     /* Push the testbench to the linked list */
-    tb_head = add_one_spice_tb_info_to_llist(tb_head, dff_testbench_file_path, 
+    tb_head = add_one_spice_tb_info_to_llist(tb_head, hardlogic_testbench_file_path, 
                                              max_sim_num_clock_cycles);
     used = 1;
   } else {
     /* Remove the file generated */
-    my_remove_file(dff_testbench_file_path);
+    my_remove_file(hardlogic_testbench_file_path);
     used = 0;
   }
 
@@ -651,41 +683,44 @@ int fprint_spice_one_dff_testbench(char* formatted_spice_dir,
 }
 
 /* Top-level function in this source file */
-void fprint_spice_dff_testbench(char* formatted_spice_dir,
-                                char* circuit_name,
-                                char* include_dir_path,
-                                char* subckt_dir_path,
-                                t_ivec*** LL_rr_node_indices,
-                                int num_clock,
-                                t_arch arch,
-                                boolean leakage_only) {
-  char* dff_testbench_name = NULL;
+void fprint_spice_hardlogic_testbench(char* formatted_spice_dir,
+                                      char* circuit_name,
+                                      char* include_dir_path,
+                                      char* subckt_dir_path,
+                                      t_ivec*** LL_rr_node_indices,
+                                      int num_clock,
+                                      t_arch arch,
+                                      boolean leakage_only) {
+  char* hardlogic_testbench_name = NULL;
   int ix, iy;
   int cnt = 0;
   int used = 0;
 
   for (ix = 1; ix < (nx+1); ix++) {
     for (iy = 1; iy < (ny+1); iy++) {
-      dff_testbench_name = (char*)my_malloc(sizeof(char)*( strlen(circuit_name) 
+      /* Name the testbench */
+      hardlogic_testbench_name = (char*)my_malloc(sizeof(char)*( strlen(circuit_name) 
                                             + 6 + strlen(my_itoa(ix)) + 1
                                             + strlen(my_itoa(iy)) + 1
-                                            + strlen(spice_dff_testbench_postfix)  + 1 ));
-      sprintf(dff_testbench_name, "%s_grid%d_%d%s",
-              circuit_name, ix, iy, spice_dff_testbench_postfix);
-      used = fprint_spice_one_dff_testbench(formatted_spice_dir, circuit_name, dff_testbench_name, 
-                                            include_dir_path, subckt_dir_path, LL_rr_node_indices,
-                                            num_clock, arch, ix, iy, 
-                                            leakage_only);
+                                            + strlen(spice_hardlogic_testbench_postfix)  + 1 ));
+      sprintf(hardlogic_testbench_name, "%s_grid%d_%d%s",
+              circuit_name, ix, iy, spice_hardlogic_testbench_postfix);
+      /* Start building one testbench */
+      used = fprint_spice_one_hardlogic_testbench(formatted_spice_dir, circuit_name, hardlogic_testbench_name, 
+                                                  include_dir_path, subckt_dir_path, LL_rr_node_indices,
+                                                  num_clock, arch, ix, iy, 
+                                                  leakage_only);
       if (1 == used) {
         cnt += used;
       }
       /* free */
-      my_free(dff_testbench_name);
+      my_free(hardlogic_testbench_name);
     }  
   } 
   /* Update the global counter */
-  num_used_dff_tb = cnt;
-  vpr_printf(TIO_MESSAGE_INFO,"No. of generated FF testbench = %d\n", num_used_dff_tb);
+  num_used_hardlogic_tb = cnt;
+  vpr_printf(TIO_MESSAGE_INFO,"No. of generated hard logic testbench = %d\n", num_used_hardlogic_tb);
 
   return;
 }
+

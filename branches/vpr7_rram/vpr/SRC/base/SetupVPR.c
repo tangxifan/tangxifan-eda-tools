@@ -958,7 +958,7 @@ static void SetupSpiceOpts(t_options Options,
   spice_opts->print_spice_cb_testbench = FALSE;
   spice_opts->print_spice_sb_testbench = FALSE;
   spice_opts->print_spice_lut_testbench = FALSE;
-  spice_opts->print_spice_dff_testbench = FALSE;
+  spice_opts->print_spice_hardlogic_testbench = FALSE;
   spice_opts->print_spice_grid_testbench = FALSE;
   spice_opts->fpga_spice_leakage_only = FALSE;
   spice_opts->fpga_spice_parasitic_net_estimation_off = FALSE;
@@ -994,8 +994,8 @@ static void SetupSpiceOpts(t_options Options,
     if (Options.Count[OT_PRINT_SPICE_LUT_TESTBENCH]) {
       spice_opts->print_spice_lut_testbench = TRUE;
     }
-    if (Options.Count[OT_PRINT_SPICE_DFF_TESTBENCH]) {
-      spice_opts->print_spice_dff_testbench = TRUE;
+    if (Options.Count[OT_PRINT_SPICE_HARDLOGIC_TESTBENCH]) {
+      spice_opts->print_spice_hardlogic_testbench = TRUE;
     }
     if (Options.Count[OT_FPGA_SPICE_LEAKAGE_ONLY]) {
       spice_opts->fpga_spice_leakage_only = TRUE;
@@ -1014,12 +1014,12 @@ static void SetupSpiceOpts(t_options Options,
     &&(FALSE == spice_opts->print_spice_cb_testbench)
     &&(FALSE == spice_opts->print_spice_sb_testbench)
     &&(FALSE == spice_opts->print_spice_lut_testbench)
-    &&(FALSE == spice_opts->print_spice_dff_testbench)) {
+    &&(FALSE == spice_opts->print_spice_hardlogic_testbench)) {
     spice_opts->print_spice_pb_mux_testbench = TRUE;
     spice_opts->print_spice_cb_mux_testbench = TRUE;
     spice_opts->print_spice_sb_mux_testbench = TRUE;
     spice_opts->print_spice_lut_testbench = TRUE;
-    spice_opts->print_spice_dff_testbench = TRUE;
+    spice_opts->print_spice_hardlogic_testbench = TRUE;
   }
 
   /* If spice option is selected*/

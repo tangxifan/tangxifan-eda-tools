@@ -29,6 +29,8 @@ extern char* spice_cb_testbench_postfix;
 extern char* spice_sb_testbench_postfix;
 extern char* spice_lut_testbench_postfix;
 extern char* spice_dff_testbench_postfix;
+extern char* spice_hardlogic_testbench_postfix;
+extern char* spice_io_testbench_postfix;
 extern char* bitstream_spice_file_postfix;
 /* RUN HSPICE Shell Script Name */
 /*
@@ -59,6 +61,8 @@ extern int num_used_cb_tb;
 extern int num_used_sb_tb;
 extern int num_used_lut_tb;
 extern int num_used_dff_tb;
+extern int num_used_hardlogic_tb;
+extern int num_used_io_tb;
 extern t_llist* tb_head;
 /* Heads of scan-chain */
 extern t_llist* scan_chain_heads;

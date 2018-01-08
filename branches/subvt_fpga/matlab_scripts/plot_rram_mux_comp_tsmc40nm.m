@@ -416,7 +416,24 @@ set(gca,'XTick',mux_size_list);
 set(gca, 'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 hleg = legend([{'CMOS MUX'}, {'1-level 4T1R MUX (C_{P}=13.2aF)'}, {'1-level 4T1R MUX (C_{P}=39.6aF)'}, {'1-level 4T1R MUX (C_{P}=118.8aF)'}]);
 %hleg = legend([{'1-level 4T1R MUX (C_{P}=13.2aF)'}, {'1-level 4T1R MUX (C_{P}=26.4aF)'}, {'1-level 4T1R MUX (C_{P}=39.6aF)'}]);
-set(fig_handle9, 'Position', [1 1 650 500]);
+set(fig_handle14, 'Position', [1 1 650 500]);
 grid on
 
+% Figures for CRC book chapter 2017
+% Fig. 15 - Delay and best Wprog, Sweep VDD from 0.7V from 0.9V? 
+%  Wprog,opt, x = L, VDD = 0.9V 
+fig_handle15 = figure;
+% 1-level 4T1R MUX, VDD = 0.9V, input size = 16   
+plot(wprog_list, rram_mux_improve_1level_xl(:,3,25,3)/max(rram_mux_improve_1level_xl(:,3,25,3)),'k-s','LineWidth', 2, 'MarkerSize',10);
+hold on
+%title('Power (uW) and Wprog','FontSize',18)
+xlabel('W_{prog} (Minimum Transistor Width)','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
+ylabel('Normalized Delay','FontSize',18, 'FontWeight','bold', 'FontName', 'Times');
+%set(gca,'xlim',[0.1 1],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+set(gca,'XTick',wprog_list);
+%set(gca,'ylim',[10 22],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+set(gca, 'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
+hleg = legend([{'1-level 4T1R MUX (V_{DD}=0.9V)'}]);
+set(fig_handle15, 'Position', [1 1 650 500]);
+grid on
 

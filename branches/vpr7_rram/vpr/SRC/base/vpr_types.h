@@ -1167,7 +1167,7 @@ struct s_spice_opts {
   boolean print_spice_cb_mux_testbench; 
   boolean print_spice_sb_mux_testbench; 
   boolean print_spice_lut_testbench; 
-  boolean print_spice_dff_testbench; 
+  boolean print_spice_hardlogic_testbench; 
   boolean fpga_spice_leakage_only;
   boolean fpga_spice_parasitic_net_estimation_off;
  

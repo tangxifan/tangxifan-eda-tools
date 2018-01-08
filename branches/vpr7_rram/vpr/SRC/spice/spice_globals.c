@@ -40,6 +40,8 @@ char* spice_cb_testbench_postfix = "_cb_testbench.sp";
 char* spice_sb_testbench_postfix = "_sb_testbench.sp";
 char* spice_lut_testbench_postfix = "_lut_testbench.sp";
 char* spice_dff_testbench_postfix = "_dff_testbench.sp";
+char* spice_hardlogic_testbench_postfix = "_hardlogic_testbench.sp";
+char* spice_io_testbench_postfix = "_io_testbench.sp";
 char* bitstream_spice_file_postfix = ".bitstream";
 
 /* SRAM SPICE MODEL should be set as global*/
@@ -60,6 +62,8 @@ int num_used_cb_mux_tb = 0;
 int num_used_sb_mux_tb = 0;
 int num_used_lut_tb = 0;
 int num_used_dff_tb = 0;
+int num_used_hardlogic_tb = 0;
+int num_used_io_tb = 0;
 
 /* linked-list for all the testbenches */
 t_llist* tb_head = NULL;
