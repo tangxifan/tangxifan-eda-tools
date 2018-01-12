@@ -93,18 +93,28 @@ void fprint_spice_hardlogic_testbench_global_ports(FILE* fp, int grid_x, int gri
 /* Dump the subckt of a hardlogic and also the input stimuli */
 void fprint_spice_hardlogic_testbench_one_hardlogic(FILE* fp, 
                                                     char* subckt_name, 
-                                                    t_spice_model* hardlogic_spice_model,
-                                                    int num_inputs, int num_outputs,
-                                                    int* input_init_value, 
-                                                    float* input_density, 
-                                                    float* input_probability) {
-  int ipin;
+                                                    t_spice_model* hardlogic_spice_model) {
+  int iport, ipin;
+  int num_input_port = 0;
+  t_spice_model_port** input_ports = NULL;
+
+  int num_output_port = 0;
+  t_spice_model_port** output_ports = NULL;
+
+  int num_inout_port = 0;
+  t_spice_model_port** inout_ports = NULL;
+
+  int num_clk_port = 0;
+  t_spice_model_port** clk_ports = NULL;
 
   /* A valid file handler*/
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File Handler!\n",__FILE__, __LINE__); 
     exit(1);
   } 
+
+  /* Check */
+  assert(NULL != hardlogic_spice_model);
 
   /* identify the type of spice model */
   /* Call defined subckt */
@@ -125,19 +135,59 @@ void fprint_spice_hardlogic_testbench_one_hardlogic(FILE* fp,
   }
 
   /* 2. Input ports (TODO: check the number of inputs matches the spice model definition) */
-  fprintf(fp, "**** Input ports *****\n");
-  for (ipin = 0; ipin < num_inputs; ipin++) {
-    fprintf(fp, "hardlogic[%d]->in[%d] ", tb_num_hardlogic, ipin);
+  /* Find pb_type input ports */
+  input_ports = find_spice_model_ports(hardlogic_spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+  for (iport = 0; iport < num_input_port; iport++) {
+    for (ipin = 0; ipin < input_ports[iport]->size; ipin++) {
+      fprintf(fp, "hardlogic[%d]->%s[%d] ", 
+              tb_num_hardlogic, input_ports[iport]->prefix, ipin);
+    }
+  }
+  if (NULL != input_ports) {
+    fprintf(fp, "\n");
+    fprintf(fp, "+ ");
   }
 
   /* 3. Output ports */
-  fprintf(fp, "**** Output ports *****\n");
-  for (ipin = 0; ipin < num_outputs; ipin++) {
-    fprintf(fp, "hardlogic[%d]->out[%d] ",
-                 tb_num_hardlogic, ipin);
+  /* Find pb_type output ports */
+  output_ports = find_spice_model_ports(hardlogic_spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
+  for (iport = 0; iport < num_output_port; iport++) {
+    for (ipin = 0; ipin < output_ports[iport]->size; ipin++) {
+      fprintf(fp, "hardlogic[%d]->%s[%d] ", tb_num_hardlogic, output_ports[iport]->prefix, ipin);
+    }
+  }
+  if (NULL != output_ports) {
+    fprintf(fp, "\n");
+    fprintf(fp, "+ ");
   }
 
   /* 4. Inout ports */
+  /* INOUT ports */
+  /* Find pb_type inout ports */
+  inout_ports = find_spice_model_ports(hardlogic_spice_model, SPICE_MODEL_PORT_INOUT, &num_inout_port, TRUE);
+  for (iport = 0; iport < num_inout_port; iport++) {
+    for (ipin = 0; ipin < inout_ports[iport]->size; ipin++) {
+      fprintf(fp, "hardlogic[%d]->%s[%d] ", tb_num_hardlogic, inout_ports[iport]->prefix, ipin);
+    }
+  }
+  if (NULL != inout_ports) {
+    fprintf(fp, "\n");
+    fprintf(fp, "+ ");
+  }
+
+  /* Clocks */
+  /* Identify if the clock port is a global signal */
+  /* Find pb_type clock ports */
+  clk_ports = find_spice_model_ports(hardlogic_spice_model, SPICE_MODEL_PORT_CLOCK, &num_clk_port, TRUE);
+  for (iport = 0; iport < num_clk_port; iport++) {
+    for (ipin = 0; ipin < clk_ports[iport]->size; ipin++) {
+      fprintf(fp, "hardlogic[%d]->%s[%d] ", tb_num_hardlogic, clk_ports[iport]->prefix, ipin);
+    }
+  }
+  if (NULL != clk_ports) {
+    fprintf(fp, "\n");
+    fprintf(fp, "+ ");
+  }
 
   /* 5. Configuration ports */
   /* Generate SRAMs? */
@@ -146,16 +196,17 @@ void fprint_spice_hardlogic_testbench_one_hardlogic(FILE* fp,
   fprintf(fp, "%s %s ",
           spice_tb_global_vdd_port_name,
           spice_tb_global_gnd_port_name);
+  fprintf(fp, "\n");
+  fprintf(fp, "+ ");
 
   /* Call the name of subckt */
   fprintf(fp, "%s\n", hardlogic_spice_model->name);
 
-  /* Input stimulates */ 
-  for (ipin = 0; ipin < num_inputs; ipin++) {
-    fprintf(fp, "Vhardlogic[%d]->in[%d] hardlogic[%d]->in[%d] 0 \n",
-            tb_num_hardlogic, ipin, tb_num_hardlogic, ipin);
-    fprint_voltage_pulse_params(fp, input_init_value[ipin], input_density[ipin], input_probability[ipin]);
-  }
+  /* Free */
+  my_free(input_ports);
+  my_free(output_ports);
+  my_free(inout_ports);
+  my_free(clk_ports);
 
   return; 
 }
@@ -168,12 +219,21 @@ void fprint_spice_hardlogic_testbench_one_pb_graph_node_hardlogic(FILE* fp,
   int logical_block_index = OPEN;
   t_spice_model* pb_spice_model = NULL;
   t_pb_type* cur_pb_type = NULL;
-  float* input_density = NULL;
-  float* input_probability = NULL;
-  int* input_init_value = NULL;
-  int* input_net_num = NULL;
   int iport, ipin, cur_pin;
   int num_inputs, num_outputs, num_clock_pins;
+
+  /* For pb_spice_model */
+  int num_input_port;
+  t_spice_model_port** input_ports;
+  int num_output_port;
+  t_spice_model_port** output_ports;
+
+  /* Two-dimension arrays, corresponding to the port map [port_id][pin_id] */
+  float** input_density = NULL;
+  float** input_probability = NULL;
+  int** input_init_value = NULL;
+  int** input_net_num = NULL;
+
   char* outport_name = NULL;
   t_rr_node* local_rr_graph = NULL;
   float average_density = 0.;
@@ -186,6 +246,15 @@ void fprint_spice_hardlogic_testbench_one_pb_graph_node_hardlogic(FILE* fp,
   cur_pb_type = cur_pb_graph_node->pb_type;
   assert(NULL != cur_pb_type);
   pb_spice_model = cur_pb_type->spice_model; 
+
+  /* Just a double check*/
+  if ((SPICE_MODEL_HARDLOGIC != pb_spice_model->type)
+     &&(SPICE_MODEL_FF != pb_spice_model->type)) {
+    vpr_printf(TIO_MESSAGE_ERROR, 
+               "(File:%s, [LINE%d]) Type of SPICE models should be either Flip-Flop or Hard Logic!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
  
   /* Try to find the mapped logic block index */
   logical_block_index = find_grid_mapped_logical_block(x, y, 
@@ -196,45 +265,6 @@ void fprint_spice_hardlogic_testbench_one_pb_graph_node_hardlogic(FILE* fp,
     return;
   }
   */
-
-  /* Allocate input_density and probability */
-  stats_pb_graph_node_port_pin_numbers(cur_pb_graph_node,&num_inputs,&num_outputs, &num_clock_pins);
-  assert(1 == num_clock_pins);
-  assert(1 == num_outputs);
-  assert(1 == num_inputs);
-
-  input_density = (float*)my_malloc(sizeof(float)*num_inputs); 
-  input_probability = (float*)my_malloc(sizeof(float)*num_inputs); 
-  input_init_value = (int*)my_malloc(sizeof(int)*num_inputs); 
-  input_net_num = (int*)my_malloc(sizeof(int)*num_inputs); 
-
-  /* Get activity information */
-  assert(1 == cur_pb_graph_node->num_input_ports);
-  cur_pin = 0;
-  for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
-    for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
-      /* if we find a mapped logic block */
-      if (OPEN != logical_block_index) {
-        local_rr_graph = logical_block[logical_block_index].pb->parent_pb->rr_graph;
-      } else {
-        local_rr_graph = NULL;
-      }
-      input_net_num[cur_pin] = pb_pin_net_num(local_rr_graph, &(cur_pb_graph_node->input_pins[iport][ipin]));
-      input_density[cur_pin] = pb_pin_density(local_rr_graph, &(cur_pb_graph_node->input_pins[iport][ipin]));
-      input_probability[cur_pin] = pb_pin_probability(local_rr_graph, &(cur_pb_graph_node->input_pins[iport][ipin]));
-      input_init_value[cur_pin] =  pb_pin_init_value(local_rr_graph, &(cur_pb_graph_node->input_pins[iport][ipin]));
-      cur_pin++;
-    } 
-    assert(cur_pin == num_inputs);
-  }
-  /* Check lut pin net num consistency */
-  if (OPEN != logical_block_index) {
-    if (0 == check_consistency_logical_block_net_num(&(logical_block[logical_block_index]), num_inputs, input_net_num)) {
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])FF(name:%s) consistency check fail!\n",
-                 __FILE__, __LINE__, logical_block[logical_block_index].name);
-      exit(1);
-    }
-  }
  
   /* Call the subckt and give stimulates, measurements */
   if (OPEN != logical_block_index) {
@@ -245,40 +275,103 @@ void fprint_spice_hardlogic_testbench_one_pb_graph_node_hardlogic(FILE* fp,
             tb_num_hardlogic, -1, -1);
   }
 
-  fprint_spice_hardlogic_testbench_one_hardlogic(fp, prefix, pb_spice_model, num_inputs, num_outputs,
-                                                 input_init_value, input_density, input_probability);
+  /* Now, we print the SPICE subckt of a hard logic */
+  fprint_spice_hardlogic_testbench_one_hardlogic(fp, prefix, pb_spice_model);
+
+  /* Malloc */
+  /* First dimension */
+  input_density = (float**)my_malloc(sizeof(float*) * cur_pb_graph_node->num_input_ports); 
+  input_probability = (float**)my_malloc(sizeof(float*) * cur_pb_graph_node->num_input_ports); 
+  input_init_value = (int**)my_malloc(sizeof(int*) * cur_pb_graph_node->num_input_ports); 
+  input_net_num = (int**)my_malloc(sizeof(int*) * cur_pb_graph_node->num_input_ports); 
+  /* Second dimension */
+  for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
+    input_density[iport] = (float*)my_malloc(sizeof(float) * cur_pb_graph_node->num_input_pins[iport]);
+    input_probability[iport] = (float*)my_malloc(sizeof(float) * cur_pb_graph_node->num_input_pins[iport]);
+    input_init_value[iport] = (int*)my_malloc(sizeof(int) * cur_pb_graph_node->num_input_pins[iport]);
+    input_net_num[iport] = (int*)my_malloc(sizeof(int) * cur_pb_graph_node->num_input_pins[iport]);
+  }
+
+  /* Get activity information */
+  cur_pin = 0;
+  for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
+      /* if we find a mapped logic block */
+      if (OPEN != logical_block_index) {
+        local_rr_graph = logical_block[logical_block_index].pb->parent_pb->rr_graph;
+      } else {
+        local_rr_graph = NULL;
+      }
+      input_net_num[iport][ipin] = pb_pin_net_num(local_rr_graph, &(cur_pb_graph_node->input_pins[iport][ipin]));
+      input_density[iport][ipin] = pb_pin_density(local_rr_graph, &(cur_pb_graph_node->input_pins[iport][ipin]));
+      input_probability[iport][ipin] = pb_pin_probability(local_rr_graph, &(cur_pb_graph_node->input_pins[iport][ipin]));
+      input_init_value[iport][ipin] =  pb_pin_init_value(local_rr_graph, &(cur_pb_graph_node->input_pins[iport][ipin]));
+    } 
+  }
+
+  /* Add Input stimulates */ 
+  /* Get the input port list of spice model */
+  input_ports = find_spice_model_ports(pb_spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+  /* Check if the port map of current pb_graph_node matches that of the spice model !!!*/
+  assert(num_input_port == cur_pb_graph_node->num_input_ports);
+  for (iport = 0; iport < num_input_port; iport++) {
+    assert(input_ports[iport]->size == cur_pb_graph_node->num_input_pins[iport]); 
+    for (ipin = 0; ipin < input_ports[iport]->size; ipin++) {
+      /* Check the port size should match!*/
+      fprintf(fp, "Vhardlogic[%d]->%s[%d][%d] hardlogic[%d]->%s[%d][%d] 0 \n",
+              tb_num_hardlogic, 
+              cur_pb_graph_node->input_pins[iport]->port->name,
+              iport, ipin, 
+              tb_num_hardlogic, 
+              input_ports[iport]->prefix,
+              iport, ipin);
+      fprint_voltage_pulse_params(fp, input_init_value[iport][ipin], input_density[iport][ipin], input_probability[iport][ipin]);
+    }
+  }
 
   /* Add loads: Recursively */
-  outport_name = (char*)my_malloc(sizeof(char)*( 4 + strlen(my_itoa(tb_num_hardlogic)) 
-                                  + 6 + 1 ));
-  sprintf(outport_name, "hardlogic[%d]->out",
-                         tb_num_hardlogic);
-  if (OPEN != logical_block_index) {
-    fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
-                                                      x, y, 
-                                                      &(cur_pb_graph_node->output_pins[0][0]), 
-                                                      logical_block[logical_block_index].pb, 
-                                                      outport_name, 
-                                                      FALSE, 
-                                                      LL_rr_node_indices); 
-  } else {
-    fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
-                                                      x, y, 
-                                                      &(cur_pb_graph_node->output_pins[0][0]), 
-                                                      NULL, 
-                                                      outport_name, 
-                                                      FALSE, 
-                                                      LL_rr_node_indices); 
+  /* Get the output port list of spice model */
+  output_ports = find_spice_model_ports(pb_spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
+  for (iport = 0; iport < num_output_port; iport++) {
+    for (ipin = 0; ipin < output_ports[iport]->size; ipin++) {
+      outport_name = (char*)my_malloc(sizeof(char)*( 9 + strlen(my_itoa(tb_num_hardlogic)) 
+                                      + 3 + strlen(output_ports[iport]->prefix) 
+                                      + strlen(my_itoa(iport)) + 2
+                                      + strlen(my_itoa(ipin)) + 2 ));
+      sprintf(outport_name, "hardlogic[%d]->%s[%d][%d]",
+                            tb_num_hardlogic, output_ports[iport]->prefix, iport, ipin);
+      if (OPEN != logical_block_index) {
+        fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
+                                                          x, y, 
+                                                          &(cur_pb_graph_node->output_pins[0][0]), 
+                                                          logical_block[logical_block_index].pb, 
+                                                          outport_name, 
+                                                          FALSE, 
+                                                          LL_rr_node_indices); 
+      } else {
+        fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
+                                                          x, y, 
+                                                          &(cur_pb_graph_node->output_pins[0][0]), 
+                                                          NULL, 
+                                                          outport_name, 
+                                                          FALSE, 
+                                                          LL_rr_node_indices); 
+      }
+      /* Free outport_name in each iteration */
+      my_free(outport_name);
+    }
   }
 
   /* Calculate average density of this hardlogic */
   average_density = 0.;
   avg_density_cnt = 0;
-  for (ipin = 0; ipin < num_inputs; ipin++) {
-    assert(!(0 > input_density[ipin]));
-    if (0. < input_density[ipin]) {
-      average_density += input_density[ipin];
-      avg_density_cnt++;
+  for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
+      assert(!(0 > input_density[iport][ipin]));
+      if (0. < input_density[iport][ipin]) {
+        average_density += input_density[iport][ipin];
+        avg_density_cnt++;
+      }
     }
   }
   /* Calculate the num_sim_clock_cycle for this MUX, update global max_sim_clock_cycle in this testbench */
@@ -315,10 +408,18 @@ void fprint_spice_hardlogic_testbench_one_pb_graph_node_hardlogic(FILE* fp,
   tb_num_hardlogic++;
 
   /* Free */
+  for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
+    my_free(input_net_num[iport]);
+    my_free(input_init_value[iport]);
+    my_free(input_density[iport]);
+    my_free(input_probability[iport]);
+  }
   my_free(input_net_num);
   my_free(input_init_value);
   my_free(input_density);
   my_free(input_probability);
+  my_free(input_ports);
+  my_free(output_ports);
   
   return; 
 }
@@ -530,7 +631,7 @@ void fprint_spice_hardlogic_testbench_stimulations(FILE* fp, int grid_x, int gri
   fprint_spice_testbench_global_vdd_port_stimuli(fp,
                                                  spice_tb_global_vdd_load_port_name,
                                                  "vsp");
-
+  /*
   fprintf(fp, "***** Global VDD for IOPADs *****\n");
   fprint_spice_testbench_global_vdd_port_stimuli(fp,
                                                  spice_tb_global_vdd_io_port_name,
@@ -540,10 +641,13 @@ void fprint_spice_hardlogic_testbench_stimulations(FILE* fp, int grid_x, int gri
   fprint_spice_testbench_global_vdd_port_stimuli(fp,
                                                  spice_tb_global_vdd_io_sram_port_name,
                                                  "vsp");
+  */
 
   /* Every LUT use an independent Voltage source */
   fprintf(fp, "***** Global VDD for FFs *****\n");
   fprint_grid_splited_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_FF, spice);
+  fprintf(fp, "***** Global VDD for Hardlogics *****\n");
+  fprint_grid_splited_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_HARDLOGIC, spice);
  
   return;
 }
@@ -571,6 +675,8 @@ void fprint_spice_hardlogic_testbench_measurements(FILE* fp, int grid_x, int gri
   /* Leakage ( the first cycle is reserved for leakage measurement) */
   /* Leakage power of FFs*/
   fprint_measure_grid_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_FF, SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, spice, leakage_only);
+  /* Leakage power of Hardlogic */
+  fprint_measure_grid_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_HARDLOGIC, SPICE_MEASURE_LEAKAGE_POWER, num_clock_cycle, spice, leakage_only);
 
   if (TRUE == leakage_only) {
     return;
@@ -582,11 +688,6 @@ void fprint_spice_hardlogic_testbench_measurements(FILE* fp, int grid_x, int gri
 
   /* Dynamic power of Hardlogics */
   fprint_measure_grid_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_HARDLOGIC, SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, spice, leakage_only);
-
-  /* Dynamic power of IOPAD */
-  fprint_measure_grid_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_IOPAD, SPICE_MEASURE_DYNAMIC_POWER, num_clock_cycle, spice, leakage_only);
-
-  /* TODO: Dynamic power of SRAMs of IOPAD */
 
   return;
 }

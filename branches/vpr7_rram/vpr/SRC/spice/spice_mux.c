@@ -35,7 +35,8 @@
 static 
 void fprint_spice_mux_model_basis_cmos_subckt(FILE* fp, char* subckt_name,
                                               int num_input_per_level,
-                                              t_spice_model spice_model) {
+                                              t_spice_model spice_model,
+                                              boolean special_basis) {
   char* pgl_name = NULL;
   int num_sram_bits = 0;
   int i;
@@ -65,6 +66,10 @@ void fprint_spice_mux_model_basis_cmos_subckt(FILE* fp, char* subckt_name,
   /* General cases */
   num_sram_bits = determine_num_sram_bits_mux_basis_subckt(&spice_model, 
                                                            num_input_per_level);
+  /* For special cases: overide the results */
+  if (TRUE == special_basis) {
+    num_sram_bits = num_input_per_level;
+  }
   
   for (i = 0; i < num_sram_bits; i++) {
     fprintf(fp, "sel%d sel_inv%d ", i, i); 
@@ -125,7 +130,8 @@ void fprint_spice_mux_model_basis_cmos_subckt(FILE* fp, char* subckt_name,
 static 
 void fprint_spice_mux_model_basis_rram_subckt(FILE* fp, char* subckt_name,
                                               int num_input_per_level,
-                                              t_spice_model spice_model) {
+                                              t_spice_model spice_model,
+                                              boolean special_basis) {
   int i, num_sram_bits;
   char* prog_pmos_subckt_name = NULL;
   char* prog_nmos_subckt_name = NULL;
@@ -157,6 +163,11 @@ void fprint_spice_mux_model_basis_rram_subckt(FILE* fp, char* subckt_name,
    * 2-input basis in tree-like MUX only requires 1 memory bit */
   num_sram_bits = determine_num_sram_bits_mux_basis_subckt(&spice_model, num_input_per_level);
 
+  /* For special cases: overide the results */
+  if (TRUE == special_basis) {
+    num_sram_bits = num_input_per_level;
+  }
+
   /* Consider advanced RRAM multiplexer design 
    * Advanced design employ normal logic transistors
    * Basic design employ IO transistors
@@ -172,11 +183,6 @@ void fprint_spice_mux_model_basis_rram_subckt(FILE* fp, char* subckt_name,
     prog_wp = "io_wp";
     prog_wn = "io_wn";
   } 
-
-  /* Special for 2-input MUX, whatever structure it is, only one SRAM bit */
-  if (2 == num_input_per_level) { 
-    num_sram_bits = 1;
-  }
 
   fprintf(fp, ".subckt %s ", subckt_name);
   for (i = 0; i < num_input_per_level; i++) {
@@ -298,12 +304,15 @@ void fprint_spice_mux_model_basis_subckt(FILE* fp,
   case SPICE_MODEL_DESIGN_CMOS:
     /* Give the subckt name*/
     fprint_spice_mux_model_basis_cmos_subckt(fp, mux_basis_subckt_name, 
-                                             num_input_basis_subckt, *(spice_mux_model->spice_model));
+                                             num_input_basis_subckt, 
+                                             *(spice_mux_model->spice_model),
+                                             FALSE);
     /* Dump subckt of special basis if required */
     if (0 < num_input_special_basis_subckt) {
       fprint_spice_mux_model_basis_cmos_subckt(fp, mux_special_basis_subckt_name, 
                                                num_input_special_basis_subckt, 
-                                               (*spice_mux_model->spice_model));
+                                               (*spice_mux_model->spice_model), 
+                                               TRUE);
     }
     break;
   case SPICE_MODEL_DESIGN_RRAM:
@@ -314,11 +323,15 @@ void fprint_spice_mux_model_basis_subckt(FILE* fp,
       exit(1);
     }
     fprint_spice_mux_model_basis_rram_subckt(fp, mux_basis_subckt_name, 
-                                             num_input_basis_subckt, *(spice_mux_model->spice_model));
+                                             num_input_basis_subckt, 
+                                             *(spice_mux_model->spice_model),
+                                             FALSE);
     /* Dump subckt of special basis if required */
     if (0 < num_input_special_basis_subckt) {
       fprint_spice_mux_model_basis_rram_subckt(fp, mux_special_basis_subckt_name, 
-                                               num_input_special_basis_subckt, (*spice_mux_model->spice_model));
+                                               num_input_special_basis_subckt, 
+                                               (*spice_mux_model->spice_model),
+                                               TRUE);
     }
     break;
   default:

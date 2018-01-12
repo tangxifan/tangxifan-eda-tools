@@ -728,7 +728,7 @@ t_port** find_pb_type_ports_match_spice_model_port_type(t_pb_type* pb_type,
   (*port_num) = 0;
   for (iport = 0; iport < pb_type->num_ports; iport++) {
     switch (port_type) {
-    case SPICE_MODEL_PORT_INPUT : /* TODO: support is_non_clock_global*/ 
+    case SPICE_MODEL_PORT_INPUT: /* TODO: support is_non_clock_global*/ 
       if ((IN_PORT == pb_type->ports[iport].type)
         &&(0 == pb_type->ports[iport].is_clock)) {
         (*port_num)++;

@@ -212,7 +212,9 @@ void fprint_spice_generic_testbench_global_ports(FILE* fp,
               spice_tb_global_port_inv_postfix);
 
   fprintf(fp, "***** User-defined global ports ****** \n");
-  fprintf(fp, ".global \n");
+  if (NULL != head) {
+    fprintf(fp, ".global \n");
+  }
   fprint_spice_global_ports(fp, head);
 
   return;
@@ -532,7 +534,6 @@ void fprint_grid_global_vdds_spice_model(FILE* fp, int x, int y,
   }
 
   fprintf(fp, "***** Global VDD ports of %s *****\n", generate_string_spice_model_type(spice_model_type));
-  fprintf(fp, ".global \n");
 
   for (imodel = 0; imodel < spice.num_spice_model; imodel++) {  
     /* Bypass non-matched SPICE model */
@@ -544,6 +545,7 @@ void fprint_grid_global_vdds_spice_model(FILE* fp, int x, int y,
         == spice.spice_models[imodel].grid_index_high[x][y]) {
       continue;
     }
+    fprintf(fp, ".global \n");
     for (i = spice.spice_models[imodel].grid_index_low[x][y]; 
          i < spice.spice_models[imodel].grid_index_high[x][y]; 
          i++) {
@@ -1169,7 +1171,7 @@ void fprint_call_defined_one_connection_box(FILE* fp,
     }
   }
   /* Make sure only 2 sides of IPINs are printed */
-  assert(2 == side_cnt);
+  assert((1 == side_cnt)||(2 == side_cnt));
   
   fprintf(fp, "+ ");
   /* Identify the type of connection box */
@@ -2229,10 +2231,19 @@ void fprint_spice_testbench_global_sram_inport_stimuli(FILE* fp,
   /* Get memory spice model */
   get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model);
 
-  /* Print the voltage stimuli for SRAM model */
-  fprintf(fp, "V%s->in %s->in 0 0\n", 
-          mem_model->prefix, mem_model->prefix);
-  fprintf(fp, ".nodeset V(%s->in) 0\n", mem_model->prefix);
+  /* Every SRAM inputs should have a voltage source */
+  fprintf(fp, "***** Global Inputs for SRAMs *****\n");
+  if (SPICE_SRAM_SCAN_CHAIN == cur_sram_orgz_info->type) {
+    fprintf(fp, "Vsc_clk sc_clk 0 0\n");
+    fprintf(fp, "Vsc_rst sc_rst 0 0\n");
+    fprintf(fp, "Vsc_set sc_set 0 0\n");
+    fprintf(fp, "V%s[0]->in %s[0]->in 0 0\n", mem_model->prefix, mem_model->prefix);
+    fprintf(fp, ".nodeset V(%s[0]->in) 0\n", mem_model->prefix);
+  } else {
+    fprintf(fp, "V%s->in %s->in 0 0\n", 
+            mem_model->prefix, mem_model->prefix);
+    fprintf(fp, ".nodeset V(%s->in) 0\n", mem_model->prefix);
+  }
 
   return;
 }

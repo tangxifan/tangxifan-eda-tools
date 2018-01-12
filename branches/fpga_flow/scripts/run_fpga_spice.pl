@@ -47,7 +47,7 @@ my @pb_mux_tb_names;
 my @cb_mux_tb_names;
 my @sb_mux_tb_names;
 my @lut_tb_names;
-my @dff_tb_names;
+my @hardlogic_tb_names;
 my @grid_tb_names;
 my @cb_tb_names;
 my @sb_tb_names;
@@ -70,7 +70,7 @@ my @sctgy;
                 "top_tb_dir_name",
                 "grid_tb_dir_name",
                 "lut_tb_dir_name",
-                "dff_tb_dir_name",
+                "hardlogic_tb_dir_name",
                 "pb_mux_tb_dir_name",
                 "cb_mux_tb_dir_name",
                 "sb_mux_tb_dir_name",
@@ -81,7 +81,7 @@ my @sctgy;
                 "cb_mux_tb_prefix",
                 "sb_mux_tb_prefix",
                 "lut_tb_prefix",
-                "dff_tb_prefix",
+                "hardlogic_tb_prefix",
                 "grid_tb_prefix",
                 "cb_tb_prefix",
                 "sb_tb_prefix",
@@ -90,7 +90,7 @@ my @sctgy;
                 "cb_mux_tb_postfix",
                 "sb_mux_tb_postfix",
                 "lut_tb_postfix",
-                "dff_tb_postfix",
+                "hardlogic_tb_postfix",
                 "grid_tb_postfix",
                 "cb_tb_postfix",
                 "sb_tb_postfix",
@@ -101,7 +101,7 @@ my @sctgy;
                 "num_cb_mux_tb",
                 "num_sb_mux_tb",
                 "num_lut_mux_tb",
-                "num_dff_mux_tb",
+                "num_hardlogic_tb",
                 "num_grid_mux_tb",
                 "num_top_tb",
                 "num_cb_tb",
@@ -118,8 +118,8 @@ my @sctgy;
                 "sb_mux_tb_dynamic_power_tags",
                 "lut_tb_leakage_power_tags",
                 "lut_tb_dynamic_power_tags",
-                "dff_tb_leakage_power_tags",
-                "dff_tb_dynamic_power_tags",
+                "hardlogic_tb_leakage_power_tags",
+                "hardlogic_tb_dynamic_power_tags",
                 "grid_tb_leakage_power_tags",
                 "grid_tb_dynamic_power_tags",
                 "cb_tb_leakage_power_tags",
@@ -167,7 +167,7 @@ sub print_usage()
   print "      -parse_cb_mux_tb: parse the results in cb_mux_testbench\n";
   print "      -parse_sb_mux_tb: parse the results in sb_mux_testbench\n";
   print "      -parse_lut_tb: parse the results in lut_testbench\n";
-  print "      -parse_dff_tb: parse the results in dff_testbench\n";
+  print "      -parse_hardlogic_tb: parse the results in hardlogic_testbench\n";
   print "      -parse_grid_tb: parse the results in grid_testbench\n";
   print "      -parse_cb_tb: parse the results in cb_testbench\n";
   print "      -parse_sb_tb: parse the results in sb_testbench\n";
@@ -280,7 +280,7 @@ sub opts_read() {
   &read_opt_into_hash("parse_cb_mux_tb","off","off");
   &read_opt_into_hash("parse_sb_mux_tb","off","off");
   &read_opt_into_hash("parse_lut_tb","off","off");
-  &read_opt_into_hash("parse_dff_tb","off","off");
+  &read_opt_into_hash("parse_hardlogic_tb","off","off");
   &read_opt_into_hash("parse_grid_tb","off","off");
   &read_opt_into_hash("parse_cb_tb","off","off");
   &read_opt_into_hash("parse_sb_tb","off","off");
@@ -739,11 +739,11 @@ sub check_one_fpga_spice_task_lis($ $ $) {
     }
   }
 
-  if (0 == $conf_ptr->{task_conf}->{num_dff_tb}->{val}) {
-  } elsif ("on" eq $opt_ptr->{parse_dff_tb}) {
+  if (0 == $conf_ptr->{task_conf}->{num_hardlogic_tb}->{val}) {
+  } elsif ("on" eq $opt_ptr->{parse_hardlogic_tb}) {
     # generate measure results paths 
-    @dff_tb_names = split (',', $tb_names_ptr->{$benchmark}->{dff_tb_names});
-    foreach my $tb_sp_filename (@dff_tb_names) {
+    @hardlogic_tb_names = split (',', $tb_names_ptr->{$benchmark}->{hardlogic_tb_names});
+    foreach my $tb_sp_filename (@hardlogic_tb_names) {
       $lis_file_path = &convert_fpga_tb_names_to_measure_names($tb_sp_filename, $spice_dir);
       $lis_file_path =~ s/\.mt0/.lis/;
       &check_one_spice_lis_error($lis_file_path);
@@ -938,9 +938,9 @@ sub auto_check_tb_num($ $ $) {
   $conf_ptr->{task_conf}->{num_lut_tb}->{val} = &count_num_tb_one_folder($formatted_spice_dir.$conf_ptr->{dir_path}->{lut_tb_dir_name}->{val});
   print "INFO: No. of LUT testbenches = $conf_ptr->{task_conf}->{num_lut_tb}->{val}\n";
 
-  # count dff_tb
-  $conf_ptr->{task_conf}->{num_dff_tb}->{val} = &count_num_tb_one_folder($formatted_spice_dir.$conf_ptr->{dir_path}->{dff_tb_dir_name}->{val});
-  print "INFO: No. of FF testbenches = $conf_ptr->{task_conf}->{num_dff_tb}->{val}\n";
+  # count hardlogic_tb
+  $conf_ptr->{task_conf}->{num_hardlogic_tb}->{val} = &count_num_tb_one_folder($formatted_spice_dir.$conf_ptr->{dir_path}->{hardlogic_tb_dir_name}->{val});
+  print "INFO: No. of FF testbenches = $conf_ptr->{task_conf}->{num_hardlogic_tb}->{val}\n";
 
   # count grid_tb
   $conf_ptr->{task_conf}->{num_grid_tb}->{val} = &count_num_tb_one_folder($formatted_spice_dir.$conf_ptr->{dir_path}->{grid_tb_dir_name}->{val});
@@ -986,13 +986,13 @@ sub auto_check_tb_num($ $ $) {
     $tb_names_ptr->{$benchmark}->{lut_tb_names} = &get_tb_file_names($tb_dir);
   }
 
-  # Special, if there is no dff, this is comb circuit, we don't collect the information
-  if (0 == $conf_ptr->{task_conf}->{num_dff_tb}->{val}) {
+  # Special, if there is no hardlogic, this is comb circuit, we don't collect the information
+  if (0 == $conf_ptr->{task_conf}->{num_hardlogic_tb}->{val}) {
     print "INFO: None DFF testbenches detected... This may caused by a combinational circuit!\n";
-  } elsif ("on" eq $opt_ptr->{parse_dff_tb}) {
+  } elsif ("on" eq $opt_ptr->{parse_hardlogic_tb}) {
     # Search all the sp files matching the name  
-    $tb_dir = $formatted_spice_dir.$conf_ptr->{dir_path}->{dff_tb_dir_name}->{val};
-    $tb_names_ptr->{$benchmark}->{dff_tb_names} = &get_tb_file_names($tb_dir);
+    $tb_dir = $formatted_spice_dir.$conf_ptr->{dir_path}->{hardlogic_tb_dir_name}->{val};
+    $tb_names_ptr->{$benchmark}->{hardlogic_tb_names} = &get_tb_file_names($tb_dir);
   }
 
   if ("on" eq $opt_ptr->{parse_grid_tb}) {
@@ -1076,16 +1076,16 @@ sub parse_one_fpga_spice_task_results($ $ $) {
     }
   }
 
-  if (0 == $conf_ptr->{task_conf}->{num_dff_tb}->{val}) {
-    &init_one_fpga_spice_task_one_tb_results($benchmark,"dff_tb",$conf_ptr->{csv_tags}->{dff_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{dff_tb_dynamic_power_tags}->{val});
-  } elsif ("on" eq $opt_ptr->{parse_dff_tb}) {
+  if (0 == $conf_ptr->{task_conf}->{num_hardlogic_tb}->{val}) {
+    &init_one_fpga_spice_task_one_tb_results($benchmark,"hardlogic_tb",$conf_ptr->{csv_tags}->{hardlogic_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{hardlogic_tb_dynamic_power_tags}->{val});
+  } elsif ("on" eq $opt_ptr->{parse_hardlogic_tb}) {
     # generate measure results paths 
-    @dff_tb_names = split (',', $tb_names_ptr->{$benchmark}->{dff_tb_names});
-    foreach my $tb_sp_filename (@dff_tb_names) {
+    @hardlogic_tb_names = split (',', $tb_names_ptr->{$benchmark}->{hardlogic_tb_names});
+    foreach my $tb_sp_filename (@hardlogic_tb_names) {
       $mt_file_path = &convert_fpga_tb_names_to_measure_names($tb_sp_filename, $spice_dir);
       $lis_file_path = $mt_file_path;
       $lis_file_path =~ s/\.mt0$/.lis/;
-      &parse_one_fpga_spice_task_one_tb_results($benchmark,"dff_tb", $lis_file_path, $mt_file_path, $conf_ptr->{csv_tags}->{dff_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{dff_tb_dynamic_power_tags}->{val});
+      &parse_one_fpga_spice_task_one_tb_results($benchmark,"hardlogic_tb", $lis_file_path, $mt_file_path, $conf_ptr->{csv_tags}->{hardlogic_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{hardlogic_tb_dynamic_power_tags}->{val});
     }
   }
 
@@ -1118,7 +1118,7 @@ sub parse_one_fpga_spice_task_results($ $ $) {
       $mt_file_path = &convert_fpga_tb_names_to_measure_names($tb_sp_filename, $spice_dir);
       $lis_file_path = $mt_file_path;
       $lis_file_path =~ s/\.mt0$/.lis/;
-      &parse_one_fpga_spice_task_one_tb_results($benchmark,"sb_tb", $lis_file_path, $mt_file_path, $conf_ptr->{csv_tags}->{sb_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{sb_mux_tb_dynamic_power_tags}->{val});
+      &parse_one_fpga_spice_task_one_tb_results($benchmark,"sb_tb", $lis_file_path, $mt_file_path, $conf_ptr->{csv_tags}->{sb_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{sb_tb_dynamic_power_tags}->{val});
     }
   }
 
@@ -1318,9 +1318,6 @@ sub gen_csv_rpt($) {
   my ($rpt_file) = @_;
   my ($RPTFH) = FileHandle->new;
 
-  # Recover the dff_tb !
-  $opt_ptr->{parse_dff_tb} = "on";
-
   if ($RPTFH->open("> $rpt_file")) {
     print "INFO: print CVS report($rpt_file)...\n";
   } else {
@@ -1351,9 +1348,9 @@ sub gen_csv_rpt($) {
     print $RPTFH "\n";
   }
 
-  if ("on" eq $opt_ptr->{parse_dff_tb}) {
-    print $RPTFH "***** dff_tb Results Table *****\n";
-    &gen_csv_rpt_one_tb($RPTFH, "dff_tb", $conf_ptr->{csv_tags}->{dff_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{dff_tb_dynamic_power_tags}->{val});
+  if ("on" eq $opt_ptr->{parse_hardlogic_tb}) {
+    print $RPTFH "***** hardlogic_tb Results Table *****\n";
+    &gen_csv_rpt_one_tb($RPTFH, "hardlogic_tb", $conf_ptr->{csv_tags}->{hardlogic_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{hardlogic_tb_dynamic_power_tags}->{val});
     print $RPTFH "\n";
   }
 
@@ -1370,7 +1367,7 @@ sub gen_csv_rpt($) {
   }
 
   if ("on" eq $opt_ptr->{parse_sb_tb}) {
-    print $RPTFH "***** cb_tb Results Table *****\n";
+    print $RPTFH "***** sb_tb Results Table *****\n";
     &gen_csv_rpt_one_tb($RPTFH, "sb_tb", $conf_ptr->{csv_tags}->{sb_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{sb_tb_dynamic_power_tags}->{val});
     print $RPTFH "\n";
   }

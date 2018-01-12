@@ -1041,7 +1041,7 @@ sub run_std_vpr($ $ $ $ $ $ $ $ $)
     }
     if ("on" eq $opt_ptr->{vpr_fpga_spice_print_component_tb}) {
       $vpr_spice_opts = $vpr_spice_opts." --print_spice_lut_testbench";
-      $vpr_spice_opts = $vpr_spice_opts." --print_spice_dff_testbench";
+      $vpr_spice_opts = $vpr_spice_opts." --print_spice_hardlogic_testbench";
       $vpr_spice_opts = $vpr_spice_opts." --print_spice_pb_mux_testbench";
       $vpr_spice_opts = $vpr_spice_opts." --print_spice_cb_mux_testbench";
       $vpr_spice_opts = $vpr_spice_opts." --print_spice_sb_mux_testbench";
@@ -1109,7 +1109,7 @@ sub run_vpr_route($ $ $ $ $ $ $ $ $)
     if ("on" eq $opt_ptr->{vpr_fpga_spice_print_pbtb}) {
       $vpr_spice_opts = $vpr_spice_opts." --print_spice_pb_mux_testbench";
       $vpr_spice_opts = $vpr_spice_opts." --print_spice_lut_testbench";
-      $vpr_spice_opts = $vpr_spice_opts." --print_spice_dff_testbench";
+      $vpr_spice_opts = $vpr_spice_opts." --print_spice_hardlogic_testbench";
     }
     if ("on" eq $opt_ptr->{vpr_fpga_spice_print_gridtb}) {
       $vpr_spice_opts = $vpr_spice_opts." --print_spice_grid_testbench";

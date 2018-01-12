@@ -70,26 +70,20 @@ void fprint_spice_grid_testbench_global_ports(FILE* fp, int x, int y,
   fprint_spice_generic_testbench_global_ports(fp, 
                                               sram_spice_orgz_info,
                                               global_ports_head);
-  /* Global routing Vdds */
-  fprint_spice_testbench_global_vdd_port_stimuli(fp, 
-                                                 spice_tb_global_vdd_localrouting_port_name,
-                                                 "vsp");
 
-  fprint_spice_testbench_global_sram_inport_stimuli(fp,
-                                                    sram_spice_orgz_info);
-  /* Global Vdds for SRAMs */
-  fprint_spice_testbench_global_vdd_port_stimuli(fp, 
-                                                 spice_tb_global_vdd_lut_sram_port_name,
-                                                 "vsp");
+  fprintf(fp, ".global %s %s %s\n",
+              spice_tb_global_vdd_localrouting_port_name,
+              spice_tb_global_vdd_io_port_name,
+              spice_tb_global_vdd_hardlogic_port_name);
 
-  fprint_spice_testbench_global_vdd_port_stimuli(fp, 
-                                                 spice_tb_global_vdd_localrouting_sram_port_name,
-                                                 "vsp");
-  
-  fprint_spice_testbench_global_vdd_port_stimuli(fp, 
-                                                 spice_tb_global_vdd_io_sram_port_name,
-                                                 "vsp");
-
+  /* Print the VDD ports of SRAM belonging to other SPICE module */
+  fprintf(fp, ".global %s\n",
+          spice_tb_global_vdd_localrouting_sram_port_name);
+  fprintf(fp, ".global %s\n",
+          spice_tb_global_vdd_lut_sram_port_name);
+  fprintf(fp, ".global %s\n",
+          spice_tb_global_vdd_io_sram_port_name);
+ 
   /*Global Vdds for LUTs*/
   fprint_grid_global_vdds_spice_model(fp, x, y, SPICE_MODEL_LUT, spice);
 
@@ -292,13 +286,25 @@ void fprint_spice_grid_testbench_stimulations(FILE* fp,
   fprintf(fp, "***** Global Net for load vdd *****\n");
   fprintf(fp, "Vgvdd_load gvdd_load 0 vsp\n");
 
-  /* Global Vdd ports */
-  fprintf(fp, "***** Global VDD for Local Interconnection *****\n");
-  fprintf(fp, "Vgvdd_local_interc gvdd_local_interc 0 vsp\n");
-  fprintf(fp, "***** Global VDD for local routing SRAMs *****\n");
-  fprintf(fp, "Vgvdd_sram_local_routing gvdd_sram_local_routing 0 vsp\n");
-  fprintf(fp, "***** Global VDD for LUTs SRAMs *****\n");
-  fprintf(fp, "Vgvdd_sram_luts gvdd_sram_luts 0 vsp\n");
+  /* Global routing Vdds */
+  fprint_spice_testbench_global_vdd_port_stimuli(fp, 
+                                                 spice_tb_global_vdd_localrouting_port_name,
+                                                 "vsp");
+
+  fprint_spice_testbench_global_sram_inport_stimuli(fp,
+                                                    sram_spice_orgz_info);
+  /* Global Vdds for SRAMs */
+  fprint_spice_testbench_global_vdd_port_stimuli(fp, 
+                                                 spice_tb_global_vdd_lut_sram_port_name,
+                                                 "vsp");
+
+  fprint_spice_testbench_global_vdd_port_stimuli(fp, 
+                                                 spice_tb_global_vdd_localrouting_sram_port_name,
+                                                 "vsp");
+  
+  fprint_spice_testbench_global_vdd_port_stimuli(fp, 
+                                                 spice_tb_global_vdd_io_sram_port_name,
+                                                 "vsp");
 
   /* Every Hardlogic use an independent Voltage source */
   fprintf(fp, "***** Global VDD for Hard Logics *****\n");
@@ -311,30 +317,7 @@ void fprint_spice_grid_testbench_stimulations(FILE* fp,
   /* Every FF use an independent Voltage source */
   fprintf(fp, "***** Global VDD for Flip-flops (FFs) *****\n");
   fprint_grid_splited_vdds_spice_model(fp, grid_x, grid_y,SPICE_MODEL_FF, spice);
-
-  /* Every SRAM inputs should have a voltage source */
-  fprintf(fp, "***** Global Inputs for SRAMs *****\n");
-  /*
-  for (i = 0; i < sram_spice_model->cnt; i++) {
-    fprintf(fp, "V%s[%d]->in %s[%d]->in 0 0\n", 
-            sram_spice_model->prefix, i, sram_spice_model->prefix, i);
-  }
-  */
-  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
-    fprintf(fp, "Vsc_clk sc_clk 0 0\n");
-    fprintf(fp, "Vsc_rst sc_rst 0 0\n");
-    fprintf(fp, "Vsc_set sc_set 0 0\n");
-    /* Find the head of scan-chain in this grid */
-    fprintf(fp, "***** Head of scan-chain in grid[%d][%d] *****\n", grid_x, grid_y);
-    fprintf(fp, "Vgrid[%d][%d]_sc_head grid[%d][%d]_sc_head 0 0\n", 
-            grid_x, grid_y, grid_x, grid_y);
-    fprintf(fp, ".nodeset Vgrid[%d][%d]_sc_head) 0\n", grid_x, grid_y);
-  } else {
-    fprintf(fp, "V%s->in %s->in 0 0\n", 
-            sram_spice_model->prefix, sram_spice_model->prefix);
-    fprintf(fp, ".nodeset V(%s->in) 0\n", sram_spice_model->prefix);
-  }
-
+ 
   fprintf(fp, "***** Global Clock signal *****\n");
   if (0 < num_clock) {
     /* First cycle reserved for measuring leakage */
