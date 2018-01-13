@@ -39,7 +39,7 @@ void fprint_routing_chan_subckt(FILE* fp,
                                 int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                 t_ivec*** LL_rr_node_indices,
                                 int num_segment, t_segment_inf* segments) {
-  int itrack, inode, iseg, cost_index;
+  int itrack, iseg, cost_index;
   char* chan_prefix = NULL;
   int chan_width = 0;
   t_rr_node** chan_rr_nodes = NULL;
@@ -471,9 +471,15 @@ void fprint_switch_box_mux(FILE* fp,
     }
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-    mux_level = spice_model->design_tech_info.mux_num_level;
-    num_mux_sram_bits = determine_num_input_basis_multilevel_mux(mux_size, mux_level) * mux_level;
-    mux_sram_bits = decode_multilevel_mux_sram_bits(mux_size, mux_level, path_id); 
+    /* Take care of corner case: MUX size = 2 */
+    if (2 == mux_size) {
+      num_mux_sram_bits = 1;
+      mux_sram_bits = decode_tree_mux_sram_bits(mux_size, 1, path_id); 
+    } else {
+      mux_level = spice_model->design_tech_info.mux_num_level;
+      num_mux_sram_bits = determine_num_input_basis_multilevel_mux(mux_size, mux_level) * mux_level;
+      mux_sram_bits = decode_multilevel_mux_sram_bits(mux_size, mux_level, path_id); 
+    }
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
@@ -908,9 +914,15 @@ void fprint_connection_box_mux(FILE* fp,
     }
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-    mux_level = mux_spice_model->design_tech_info.mux_num_level;
-    num_mux_sram_bits = determine_num_input_basis_multilevel_mux(mux_size, mux_level) * mux_level;
-    mux_sram_bits = decode_multilevel_mux_sram_bits(mux_size, mux_level, path_id); 
+    /* Take care of corner case: MUX size = 2 */
+    if (2 == mux_size) {
+      num_mux_sram_bits = 1;
+      mux_sram_bits = decode_tree_mux_sram_bits(mux_size, 1, path_id); 
+    } else {
+      mux_level = mux_spice_model->design_tech_info.mux_num_level;
+      num_mux_sram_bits = determine_num_input_basis_multilevel_mux(mux_size, mux_level) * mux_level;
+      mux_sram_bits = decode_multilevel_mux_sram_bits(mux_size, mux_level, path_id); 
+    }
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",

@@ -273,11 +273,13 @@ void fprint_spice_mux_model_basis_subckt(FILE* fp,
   init_spice_mux_arch(spice_mux_model->spice_model, spice_mux_model->spice_mux_arch, spice_mux_model->size);
 
   /* Corner case: Error out  MUX_SIZE = 2, automatcially give a one-level structure */
+  /*
   if ((2 == spice_mux_model->size)&&(SPICE_MODEL_STRUCTURE_ONELEVEL != spice_mux_model->spice_model->design_tech_info.structure)) {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Structure of SPICE model (%s) should be one-level because it is linked to a 2:1 MUX!\n",
                __FILE__, __LINE__, spice_mux_model->spice_model->name);
     exit(1);
   }
+  */
 
   /* Prepare the basis subckt name */
   mux_basis_subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_mux_model->spice_model->name) + 5 
@@ -684,7 +686,7 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
                                         int mux_size,
                                         t_spice_model spice_model,
                                         t_spice_mux_arch spice_mux_arch) {
-  int i, j;
+  int i;
   int num_input_port = 0;
   int num_output_port = 0;
   int num_sram_port = 0;
@@ -693,9 +695,12 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
   t_spice_model_port** sram_port = NULL;
   int num_sram_bits = 0;
 
+  enum e_spice_model_structure cur_mux_structure;
+
   /* Find the basis subckt*/
   char* mux_basis_subckt_name = NULL;
   char* mux_special_basis_subckt_name = NULL;
+
   /* Basis is always needed */
   mux_basis_subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_model.name) + 5 
                                                        + strlen(my_itoa(mux_size)) 
@@ -783,9 +788,16 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
   /* Print local vdd and gnd*/
   fprintf(fp, "svdd sgnd");
   fprintf(fp, "\n");
+
+  /* Handle the corner case: input size = 2  */
+  if (2 == mux_size) {
+    cur_mux_structure = SPICE_MODEL_STRUCTURE_ONELEVEL;
+  } else {
+    cur_mux_structure = spice_model.design_tech_info.structure;
+  }
   
   /* Print internal architecture*/ 
-  switch (spice_model.design_tech_info.structure) {
+  switch (cur_mux_structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     fprint_spice_cmos_mux_tree_structure(fp, mux_basis_subckt_name, 
                                          spice_model, spice_mux_arch, num_sram_port, sram_port);
@@ -909,7 +921,7 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
                                         int mux_size,
                                         t_spice_model spice_model,
                                         t_spice_mux_arch spice_mux_arch) {
-  int i, j;
+  int i;
   int num_input_port = 0;
   int num_output_port = 0;
   int num_sram_port = 0;
@@ -917,6 +929,8 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
   t_spice_model_port** output_port = NULL;
   t_spice_model_port** sram_port = NULL;
   int num_sram_bits = 0;
+
+  enum e_spice_model_structure cur_mux_structure;
 
   /* Find the basis subckt*/
   char* mux_basis_subckt_name = NULL;
@@ -1003,10 +1017,16 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
   fprintf(fp, "\n");
   
   /* Print internal architecture*/ 
+  /* Handle the corner case: input size = 2  */
+  if (2 == mux_size) {
+    cur_mux_structure = SPICE_MODEL_STRUCTURE_ONELEVEL;
+  } else {
+    cur_mux_structure = spice_model.design_tech_info.structure;
+  }
   /* RRAM MUX is optimal in terms of area, delay and power for one-level structure.
    * Hence, we do not support the multi-level or tree-like RRAM MUX.
    */
-  switch (spice_model.design_tech_info.structure) {
+  switch (cur_mux_structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     fprint_spice_rram_mux_tree_structure(fp, mux_basis_subckt_name, 
                                          spice_model, spice_mux_arch, num_sram_port, sram_port);
@@ -1147,11 +1167,13 @@ void fprint_spice_mux_model_subckt(FILE* fp,
   }
 
   /* Corner case: Error out  MUX_SIZE = 2, automatcially give a one-level structure */
+  /*
   if ((2 == spice_mux_model->size)&&(SPICE_MODEL_STRUCTURE_ONELEVEL != spice_mux_model->spice_model->design_tech_info.structure)) {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Structure of SPICE model (%s) should be one-level because it is linked to a 2:1 MUX!\n",
                __FILE__, __LINE__, spice_mux_model->spice_model->name);
     exit(1);
   }
+  */
 
   /* Print the definition of subckt*/
 
