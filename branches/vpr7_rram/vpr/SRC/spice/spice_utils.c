@@ -2598,6 +2598,12 @@ char* fprint_spice_testbench_rr_node_load_version(FILE* fp, int* testbench_load_
                    + cur_rr_node.yhigh - cur_rr_node.ylow;
   assert((0 == cur_rr_node.xhigh - cur_rr_node.xlow)
         ||(0 == cur_rr_node.yhigh - cur_rr_node.ylow));
+
+  fprintf(fp, "**** Loads for rr_node: xlow=%d, ylow=%d, xhigh=%d, yhigh=%d, ptc_num=%d, type=%d *****\n", 
+          cur_rr_node.xlow, cur_rr_node.ylow,
+          cur_rr_node.xhigh, cur_rr_node.yhigh,
+          cur_rr_node.ptc_num, cur_rr_node.type);
+
   for (i = 0; i < chan_wire_length + 1; i++) { 
     ret_outport_name = (char*)my_malloc(sizeof(char)*( strlen(outport_name)
                        + 9 + strlen(my_itoa(load_level + i)) + 6

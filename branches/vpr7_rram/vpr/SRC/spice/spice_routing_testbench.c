@@ -376,19 +376,17 @@ int fprint_spice_routing_testbench_call_one_sb_tb(FILE* fp,
   /* Find all rr_nodes of channels */
   for (side = 0; side < cur_sb_info.num_sides; side++) {
     for (itrack = 0; itrack < cur_sb_info.chan_width[side]; itrack++) {
-      /* Get signal activity */
-      input_density = get_rr_node_net_density(*cur_sb_info.chan_rr_node[side][itrack]);
-      input_probability = get_rr_node_net_probability(*cur_sb_info.chan_rr_node[side][itrack]);
-      input_init_value = get_rr_node_net_init_value(*cur_sb_info.chan_rr_node[side][itrack]);
-      /* Update statistics */
-      average_sb_input_density += input_density;
-      if (0. < input_density) {
-       avg_density_cnt++;
-      }
       /* Print voltage stimuli and loads */
       switch (cur_sb_info.chan_rr_node_direction[side][itrack]) {
       case OUT_PORT:
         /* Output port requires loads*/
+        /* We should not add any loads to those outputs that are driven simply by a wire in this switch box!
+         */
+        if (1 == is_sb_interc_between_segments(cur_sb_info.x, cur_sb_info.y, 
+                                               cur_sb_info.chan_rr_node[side][itrack], side)) {
+          break;
+        }
+        /* Only consider the outputs that are driven by a multiplexer */
         outport_name = (char*)my_malloc(sizeof(char)*(
                 strlen(convert_chan_type_to_string(cur_sb_info.chan_rr_node[side][itrack]->type))
                 + 1 + strlen(my_itoa(cur_sb_info.x)) + 2 + strlen(my_itoa(cur_sb_info.y))
@@ -397,6 +395,7 @@ int fprint_spice_routing_testbench_call_one_sb_tb(FILE* fp,
         sprintf(outport_name, "%s[%d][%d]_out[%d]", 
                 convert_chan_type_to_string(cur_sb_info.chan_rr_node[side][itrack]->type), 
                 cur_sb_info.x, cur_sb_info.y, itrack);
+        fprintf(fp, "**** Load for rr_node[%d] *****\n", cur_sb_info.chan_rr_node[side][itrack] - rr_node);
         rr_node_outport_name = fprint_spice_testbench_rr_node_load_version(fp, &testbench_load_cnt,
                                                                            num_segments, 
                                                                            segments, 
@@ -407,6 +406,15 @@ int fprint_spice_routing_testbench_call_one_sb_tb(FILE* fp,
         my_free(rr_node_outport_name);
         break;
       case IN_PORT:
+        /* Get signal activity */
+        input_density = get_rr_node_net_density(*cur_sb_info.chan_rr_node[side][itrack]);
+        input_probability = get_rr_node_net_probability(*cur_sb_info.chan_rr_node[side][itrack]);
+        input_init_value = get_rr_node_net_init_value(*cur_sb_info.chan_rr_node[side][itrack]);
+        /* Update statistics */
+        average_sb_input_density += input_density;
+        if (0. < input_density) {
+         avg_density_cnt++;
+        }
         /* Input port requires a voltage stimuli */
         /* Add input voltage pulses*/
         fprintf(fp, "***** Signal %s[%d][%d]_in[%d] density = %g, probability=%g.*****\n",

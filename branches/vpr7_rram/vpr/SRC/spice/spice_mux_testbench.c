@@ -256,7 +256,7 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
     /* Special for 2-input MUX */
     if (2 == mux_size) {
       num_mux_sram_bits = 1;
-      mux_sram_bits = decode_tree_mux_sram_bits(mux_size, mux_level, path_id); 
+      mux_sram_bits = decode_tree_mux_sram_bits(mux_size, 1, path_id); 
     } else {
       mux_level = mux_spice_model->design_tech_info.mux_num_level;
       num_mux_sram_bits = determine_num_input_basis_multilevel_mux(mux_size, mux_level) * mux_level;
@@ -1437,14 +1437,12 @@ int fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
     return 0;
   }
 
-  /* ignore idle sb mux */
+  /* ignore idle sb mux 
   if (OPEN == src_rr_node->net_num) {
-    //return used;
+    return used;
   }
-  /*
-  find_drive_rr_nodes_switch_box(switch_box_x, switch_box_y, src_rr_node, chan_side, 0, 
-                                 &num_drive_rr_nodes, &drive_rr_nodes, &switch_index);
   */
+
   /* Determine if the interc lies inside a channel wire, that is interc between segments */
   if (1 == is_sb_interc_between_segments(switch_box_x, switch_box_y, src_rr_node, chan_side)) {
     num_drive_rr_nodes = 0;
@@ -1514,6 +1512,7 @@ int fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
                                  + strlen(my_itoa(testbench_mux_cnt))
                                  + 6 + 1 ));
   sprintf(outport_name, "%s_size%d[%d]->out", mux_spice_model->prefix, mux_size, testbench_mux_cnt);
+  fprintf(fp, "***** Load for rr_node[%d] *****\n", src_rr_node - rr_node);
   rr_node_outport_name = fprint_spice_testbench_rr_node_load_version(fp, 
                                                                      &testbench_load_cnt,
                                                                      num_segments,
@@ -1540,7 +1539,7 @@ static
 int fprint_spice_mux_testbench_call_one_grid_sb_muxes(FILE* fp, 
                                                       t_sb cur_sb_info,
                                                       t_ivec*** LL_rr_node_indices) {
-  int itrack, inode, side, ix, iy;
+  int itrack, inode, side;
   int used = 0;
 
   /* Check the file handler*/ 
@@ -1557,23 +1556,6 @@ int fprint_spice_mux_testbench_call_one_grid_sb_muxes(FILE* fp,
   /* print all the rr_nodes in the switch boxes if there is at least one rr_node with a net_num */
   used = 0;
   for (side = 0; side < cur_sb_info.num_sides; side++) {
-    if (0 == side) {
-      /* 1. Channel Y [x][y+1] inputs */
-      ix = cur_sb_info.x;
-      iy = cur_sb_info.y + 1;
-    } else if (1 == side) {
-      /* 2. Channel X [x+1][y] inputs */
-      ix = cur_sb_info.x + 1;
-      iy = cur_sb_info.y;
-    } else if (2 == side) {
-      /* 3. Channel Y [x][y] inputs */
-      ix = cur_sb_info.x;
-      iy = cur_sb_info.y;
-    } else if (3 == side) {
-      /* 4. Channel X [x][y] inputs */
-      ix = cur_sb_info.x;
-      iy = cur_sb_info.y;
-    }
     for (itrack = 0; itrack < cur_sb_info.chan_width[side]; itrack++) {
       switch (cur_sb_info.chan_rr_node_direction[side][itrack]) {
       case OUT_PORT:
