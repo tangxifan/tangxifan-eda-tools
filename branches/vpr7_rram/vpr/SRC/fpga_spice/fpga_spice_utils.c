@@ -6557,3 +6557,46 @@ int get_grid_pin_height(int grid_x, int grid_y, int pin_index) {
   
   return pin_height;
 }
+
+void determine_sb_port_coordinator(t_sb cur_sb_info, int side, 
+                                   int* port_x, int* port_y) {
+   /* Check */
+   assert ((-1 < side) && (side < 4));
+   /* Initialize */
+   (*port_x) = -1;
+   (*port_y) = -1;
+
+  switch (side) {
+  case TOP:
+    /* (0 == side) */
+    /* 1. Channel Y [x][y+1] inputs */
+    (*port_x) = cur_sb_info.x;
+    (*port_y) = cur_sb_info.y + 1;
+    break;
+  case RIGHT:
+    /* 1 == side */
+    /* 2. Channel X [x+1][y] inputs */
+    (*port_x) = cur_sb_info.x + 1;
+    (*port_y) = cur_sb_info.y;
+    break;
+  case BOTTOM:
+    /* 2 == side */
+    /* 3. Channel Y [x][y] inputs */
+    (*port_x) = cur_sb_info.x;
+    (*port_y) = cur_sb_info.y;
+    break;
+  case LEFT:
+    /* 3 == side */
+    /* 4. Channel X [x][y] inputs */
+    (*port_x) = cur_sb_info.x;
+    (*port_y) = cur_sb_info.y;
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid side of sb[%d][%d]!\n",
+               __FILE__, __LINE__, cur_sb_info.x, cur_sb_info.y, side);
+    exit(1);
+  }
+
+  return;
+}
+

@@ -655,25 +655,11 @@ void fprint_routing_switch_box_subckt(FILE* fp, t_sb cur_sb_info,
   fprintf(fp, "***** Switch Box[%d][%d] Sub-Circuit *****\n", cur_sb_info.x, cur_sb_info.y);
   fprintf(fp, ".subckt sb[%d][%d] ", cur_sb_info.x, cur_sb_info.y);
   fprintf(fp, "\n");
-  fprintf(fp, "+ ");
   for (side = 0; side < cur_sb_info.num_sides; side++) {
-    if (0 == side) {
-      /* 1. Channel Y [x][y+1] inputs */
-      ix = cur_sb_info.x;
-      iy = cur_sb_info.y + 1;
-    } else if (1 == side) {
-      /* 2. Channel X [x+1][y] inputs */
-      ix = cur_sb_info.x + 1;
-      iy = cur_sb_info.y;
-    } else if (2 == side) {
-      /* 3. Channel Y [x][y] inputs */
-      ix = cur_sb_info.x;
-      iy = cur_sb_info.y;
-    } else if (3 == side) {
-      /* 4. Channel X [x][y] inputs */
-      ix = cur_sb_info.x;
-      iy = cur_sb_info.y;
-    }
+    fprintf(fp, "***** Inputs/outputs of %s side *****\n",convert_side_index_to_string(side));
+    determine_sb_port_coordinator(cur_sb_info, side, &ix, &iy); 
+    fprintf(fp, "+ ");
+
     for (itrack = 0; itrack < cur_sb_info.chan_width[side]; itrack++) {
       switch (cur_sb_info.chan_rr_node_direction[side][itrack]) {
       case OUT_PORT:

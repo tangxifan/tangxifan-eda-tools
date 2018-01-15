@@ -339,7 +339,7 @@ int fprint_spice_routing_testbench_call_one_sb_tb(FILE* fp,
                                                   t_spice spice, 
                                                   int x, int y, 
                                                   t_ivec*** LL_rr_node_indices) {
-  int itrack, inode, side, ipin_height;
+  int itrack, inode, side, ipin_height, ix, iy;
   int used = 0;
   t_sb cur_sb_info;
 
@@ -375,17 +375,19 @@ int fprint_spice_routing_testbench_call_one_sb_tb(FILE* fp,
    */
   /* Find all rr_nodes of channels */
   for (side = 0; side < cur_sb_info.num_sides; side++) {
+    determine_sb_port_coordinator(cur_sb_info, side, &ix, &iy); 
+
     for (itrack = 0; itrack < cur_sb_info.chan_width[side]; itrack++) {
       /* Print voltage stimuli and loads */
       switch (cur_sb_info.chan_rr_node_direction[side][itrack]) {
       case OUT_PORT:
         /* Output port requires loads*/
         /* We should not add any loads to those outputs that are driven simply by a wire in this switch box!
-         */
         if (1 == is_sb_interc_between_segments(cur_sb_info.x, cur_sb_info.y, 
                                                cur_sb_info.chan_rr_node[side][itrack], side)) {
           break;
         }
+        */
         /* Only consider the outputs that are driven by a multiplexer */
         outport_name = (char*)my_malloc(sizeof(char)*(
                 strlen(convert_chan_type_to_string(cur_sb_info.chan_rr_node[side][itrack]->type))
@@ -394,8 +396,8 @@ int fprint_spice_routing_testbench_call_one_sb_tb(FILE* fp,
                 + 1 + 1));
         sprintf(outport_name, "%s[%d][%d]_out[%d]", 
                 convert_chan_type_to_string(cur_sb_info.chan_rr_node[side][itrack]->type), 
-                cur_sb_info.x, cur_sb_info.y, itrack);
-        fprintf(fp, "**** Load for rr_node[%d] *****\n", cur_sb_info.chan_rr_node[side][itrack] - rr_node);
+                ix, iy, itrack);
+        fprintf(fp, "**** Load for rr_node[%ld] *****\n", cur_sb_info.chan_rr_node[side][itrack] - rr_node);
         rr_node_outport_name = fprint_spice_testbench_rr_node_load_version(fp, &testbench_load_cnt,
                                                                            num_segments, 
                                                                            segments, 
@@ -419,13 +421,13 @@ int fprint_spice_routing_testbench_call_one_sb_tb(FILE* fp,
         /* Add input voltage pulses*/
         fprintf(fp, "***** Signal %s[%d][%d]_in[%d] density = %g, probability=%g.*****\n",
                 convert_chan_type_to_string(cur_sb_info.chan_rr_node[side][itrack]->type), 
-                cur_sb_info.x, cur_sb_info.y, itrack,
+                ix, iy, itrack,
                 input_density, input_probability);
         fprintf(fp, "V%s[%d][%d]_in[%d] %s[%d][%d]_in[%d] 0 \n", 
                 convert_chan_type_to_string(cur_sb_info.chan_rr_node[side][itrack]->type), 
-                cur_sb_info.x, cur_sb_info.y, itrack,
+                ix, iy, itrack,
                 convert_chan_type_to_string(cur_sb_info.chan_rr_node[side][itrack]->type), 
-                cur_sb_info.x, cur_sb_info.y, itrack);
+                ix, iy, itrack);
         fprint_voltage_pulse_params(fp, input_init_value, input_density, input_probability);
         break;
       default:

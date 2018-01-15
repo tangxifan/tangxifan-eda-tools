@@ -548,3 +548,6 @@ t_pb* get_lut_child_pb(t_pb* cur_lut_pb,
                        int mode_index);
 
 int get_grid_pin_height(int grid_x, int grid_y, int pin_index);
+
+void determine_sb_port_coordinator(t_sb cur_sb_info, int side, 
+                                   int* port_x, int* port_y);

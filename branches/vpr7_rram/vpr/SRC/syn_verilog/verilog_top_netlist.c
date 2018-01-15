@@ -987,23 +987,8 @@ void dump_verilog_defined_one_switch_box(FILE* fp,
   }
 
   for (side = 0; side < cur_sb_info.num_sides; side++) {
-    if (0 == side) {
-      /* 1. Channel Y [x][y+1] inputs */
-      ix = x;
-      iy = y + 1;
-    } else if (1 == side) {
-      /* 2. Channel X [x+1][y] inputs */
-      ix = x + 1;
-      iy = y;
-    } else if (2 == side) {
-      /* 3. Channel Y [x][y] inputs */
-      ix = x;
-      iy = y;
-    } else if (3 == side) {
-      /* 4. Channel X [x][y] inputs */
-      ix = x;
-      iy = y;
-    }
+    determine_sb_port_coordinator(cur_sb_info, side, &ix, &iy); 
+
     fprintf(fp, "//----- %s side channel ports-----\n", convert_side_index_to_string(side));
     for (itrack = 0; itrack < cur_sb_info.chan_width[side]; itrack++) {
       switch (cur_sb_info.chan_rr_node_direction[side][itrack]) {
