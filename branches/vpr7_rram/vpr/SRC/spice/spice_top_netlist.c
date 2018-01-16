@@ -153,6 +153,10 @@ void fprint_top_netlist_stimulations(FILE* fp,
   fprintf(fp, "V%s %s 0 vsp\n",
               spice_tb_global_vdd_io_port_name,
               spice_tb_global_vdd_io_port_name);
+  fprintf(fp, "***** Global VDD for I/O pads SRAMs *****\n");
+  fprintf(fp, "V%s %s 0 vsp\n",
+              spice_tb_global_vdd_io_sram_port_name,
+              spice_tb_global_vdd_io_sram_port_name);
   fprintf(fp, "***** Global VDD for Local Interconnection *****\n");
   fprintf(fp, "V%s %s 0 vsp\n",
               spice_tb_global_vdd_localrouting_port_name,

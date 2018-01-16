@@ -2383,7 +2383,7 @@ float find_spice_testbench_rr_mux_load_inv_size(t_rr_node* load_rr_node,
       load_inv_size = fan_out_spice_model->input_buffer->size;
       break;
     case SPICE_MODEL_BUF_BUF:
-      load_inv_size = 1;
+      load_inv_size = fan_out_spice_model->input_buffer->size;
       break;
     default:
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid fanout spice_model input_buffer type!\n",
@@ -2393,6 +2393,14 @@ float find_spice_testbench_rr_mux_load_inv_size(t_rr_node* load_rr_node,
   } else {
     /* TODO: If there is no inv/buffer at input, we should traversal until there is one 
      * However, now we just simply give a minimum sized inverter
+     *   fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
+                                                      x, y, 
+                                                      &(cur_pb_graph_node->output_pins[0][0]), 
+                                                      logical_block[logical_block_index].pb, 
+                                                      outport_name, 
+                                                      FALSE, 
+                                                      LL_rr_node_indices); 
+
      */
     load_inv_size = 1;
   }
@@ -2574,15 +2582,27 @@ char* fprint_spice_testbench_rr_node_load_version(FILE* fp, int* testbench_load_
     return ret_outport_name;
   }
 
+  /* Important: 
+   * As the cur_rr_node can only be channel wires 
+   * and channel wires can only be driven at the starting point,
+   * in this function,
+   * the loads to be added will always starts from the starting point of a channel wire.
+   * We will consider the length of channel wires when adding the loads.
+   * For example, a length-4 wire will introduce 4 levels of channel segments to the loads.
+   * To handle the corner case, we will consider the border when adding channel segments
+   * If the length of wire exceeds the borderline of FPGA, 
+   * we will adapt the number of channel segments.
+   */
   cost_index = cur_rr_node.cost_index;
   iseg = rr_indexed_data[cost_index].seg_index;
   assert((!(iseg < 0))&&(iseg < num_segments));
   wire_spice_model = segments[iseg].spice_model;
   assert(SPICE_MODEL_CHAN_WIRE == wire_spice_model->type);
-  chan_wire_length = cur_rr_node.xhigh - cur_rr_node.xlow 
-                   + cur_rr_node.yhigh - cur_rr_node.ylow;
+  /* Check if the coordinate is correct */
   assert((0 == cur_rr_node.xhigh - cur_rr_node.xlow)
         ||(0 == cur_rr_node.yhigh - cur_rr_node.ylow));
+  chan_wire_length = cur_rr_node.xhigh - cur_rr_node.xlow 
+                   + cur_rr_node.yhigh - cur_rr_node.ylow;
 
   fprintf(fp, "**** Loads for rr_node: xlow=%d, ylow=%d, xhigh=%d, yhigh=%d, ptc_num=%d, type=%d *****\n", 
           cur_rr_node.xlow, cur_rr_node.ylow,
@@ -2630,10 +2650,19 @@ char* fprint_spice_testbench_rr_node_load_version(FILE* fp, int* testbench_load_
           assert(to_node.yhigh == to_node.ylow);
           if (((cur_x == to_node.xlow)&&(cur_y == to_node.ylow))
              ||((cur_x == to_node.xlow)&&((cur_y + 1) == to_node.ylow))) {
-            /* We find the CB! */
+            /* We find a CB! */
             /* Detect its input buffers */
             load_inv_size = find_spice_testbench_rr_mux_load_inv_size(&to_node, 
                                                                       cur_rr_node.switches[iedge]);
+            /* TODO: Need to find the downsteam inv_loads if it is not bufferred  
+            fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
+                                                      x, y, 
+                                                      &(cur_pb_graph_node->output_pins[0][0]), 
+                                                      logical_block[logical_block_index].pb, 
+                                                      outport_name, 
+                                                      FALSE, 
+                                                      LL_rr_node_indices); 
+            */
             assert(0. < load_inv_size);
             /* Print an inverter */
             total_width = load_inv_size;
@@ -2656,7 +2685,7 @@ char* fprint_spice_testbench_rr_node_load_version(FILE* fp, int* testbench_load_
           break;
         case CHANX:
         case CHANY:
-          /* We find the CB! */
+          /* We find a SB! */
           /* Detect its input buffers */
           load_inv_size = find_spice_testbench_rr_mux_load_inv_size(&to_node, 
                                                                     cur_rr_node.switches[iedge]);
@@ -2705,7 +2734,7 @@ char* fprint_spice_testbench_rr_node_load_version(FILE* fp, int* testbench_load_
           assert(to_node.yhigh == to_node.ylow);
           if (((cur_y == to_node.ylow)&&(cur_x == to_node.xlow))
              ||((cur_y == to_node.xlow)&&((cur_x + 1) == to_node.xlow))) {
-            /* We find the CB! */
+            /* We find a CB! */
             /* Detect its input buffers */
             load_inv_size = find_spice_testbench_rr_mux_load_inv_size(&to_node, 
                                                                       cur_rr_node.switches[iedge]);
@@ -2731,7 +2760,7 @@ char* fprint_spice_testbench_rr_node_load_version(FILE* fp, int* testbench_load_
           break;
         case CHANX:
         case CHANY:
-          /* We find the CB! */
+          /* We find a SB! */
           /* Detect its input buffers */
           load_inv_size = find_spice_testbench_rr_mux_load_inv_size(&to_node,
                                                                     cur_rr_node.switches[iedge]);
