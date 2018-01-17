@@ -118,7 +118,9 @@ void fprint_spice_hardlogic_testbench_one_hardlogic(FILE* fp,
 
   /* identify the type of spice model */
   /* Call defined subckt */
-  fprintf(fp, "Xhardlogic[%d] \n", tb_num_hardlogic);
+  fprintf(fp, "Xhardlogic_%s[%d] \n", 
+          hardlogic_spice_model->prefix,
+          hardlogic_spice_model->tb_cnt);
 
   /* Sequence in dumping ports: 
    * 1. Global ports
@@ -139,8 +141,10 @@ void fprint_spice_hardlogic_testbench_one_hardlogic(FILE* fp,
   input_ports = find_spice_model_ports(hardlogic_spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
   for (iport = 0; iport < num_input_port; iport++) {
     for (ipin = 0; ipin < input_ports[iport]->size; ipin++) {
-      fprintf(fp, "hardlogic[%d]->%s[%d] ", 
-              tb_num_hardlogic, input_ports[iport]->prefix, ipin);
+      fprintf(fp, "hardlogic_%s[%d]->%s[%d] ", 
+                  hardlogic_spice_model->prefix,
+                  hardlogic_spice_model->tb_cnt, 
+                  input_ports[iport]->prefix, ipin);
     }
   }
   if (NULL != input_ports) {
@@ -153,7 +157,10 @@ void fprint_spice_hardlogic_testbench_one_hardlogic(FILE* fp,
   output_ports = find_spice_model_ports(hardlogic_spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
   for (iport = 0; iport < num_output_port; iport++) {
     for (ipin = 0; ipin < output_ports[iport]->size; ipin++) {
-      fprintf(fp, "hardlogic[%d]->%s[%d] ", tb_num_hardlogic, output_ports[iport]->prefix, ipin);
+      fprintf(fp, "hardlogic_%s[%d]->%s[%d] ", 
+                  hardlogic_spice_model->prefix,
+                  hardlogic_spice_model->tb_cnt, 
+                  output_ports[iport]->prefix, ipin);
     }
   }
   if (NULL != output_ports) {
@@ -167,7 +174,10 @@ void fprint_spice_hardlogic_testbench_one_hardlogic(FILE* fp,
   inout_ports = find_spice_model_ports(hardlogic_spice_model, SPICE_MODEL_PORT_INOUT, &num_inout_port, TRUE);
   for (iport = 0; iport < num_inout_port; iport++) {
     for (ipin = 0; ipin < inout_ports[iport]->size; ipin++) {
-      fprintf(fp, "hardlogic[%d]->%s[%d] ", tb_num_hardlogic, inout_ports[iport]->prefix, ipin);
+      fprintf(fp, "hardlogic_%s[%d]->%s[%d] ", 
+                  hardlogic_spice_model->prefix,
+                  hardlogic_spice_model->tb_cnt, 
+                  inout_ports[iport]->prefix, ipin);
     }
   }
   if (NULL != inout_ports) {
@@ -181,7 +191,10 @@ void fprint_spice_hardlogic_testbench_one_hardlogic(FILE* fp,
   clk_ports = find_spice_model_ports(hardlogic_spice_model, SPICE_MODEL_PORT_CLOCK, &num_clk_port, TRUE);
   for (iport = 0; iport < num_clk_port; iport++) {
     for (ipin = 0; ipin < clk_ports[iport]->size; ipin++) {
-      fprintf(fp, "hardlogic[%d]->%s[%d] ", tb_num_hardlogic, clk_ports[iport]->prefix, ipin);
+      fprintf(fp, "hardlogic_%s[%d]->%s[%d] ", 
+                  hardlogic_spice_model->prefix,
+                  hardlogic_spice_model->tb_cnt, 
+                  clk_ports[iport]->prefix, ipin);
     }
   }
   if (NULL != clk_ports) {
@@ -193,8 +206,8 @@ void fprint_spice_hardlogic_testbench_one_hardlogic(FILE* fp,
   /* Generate SRAMs? */
 
   /* 6. VDD and GND ports */
-  fprintf(fp, "%s %s ",
-          spice_tb_global_vdd_port_name,
+  fprintf(fp, "%s_%s[%d] %s ",
+          spice_tb_global_vdd_port_name, hardlogic_spice_model->prefix, hardlogic_spice_model->tb_cnt,
           spice_tb_global_gnd_port_name);
   fprintf(fp, "\n");
   fprintf(fp, "+ ");
@@ -269,10 +282,10 @@ void fprint_spice_hardlogic_testbench_one_pb_graph_node_hardlogic(FILE* fp,
   /* Call the subckt and give stimulates, measurements */
   if (OPEN != logical_block_index) {
     fprintf(fp,"***** Hardlogic[%d]: logical_block_index[%d], gvdd_index[%d]*****\n", 
-            tb_num_hardlogic, logical_block_index, logical_block[logical_block_index].mapped_spice_model_index);
+            pb_spice_model->cnt, logical_block_index, logical_block[logical_block_index].mapped_spice_model_index);
   } else {
     fprintf(fp,"***** Hardlogic[%d]: logical_block_index[%d], gvdd_index[%d]*****\n", 
-            tb_num_hardlogic, -1, -1);
+            pb_spice_model->cnt, -1, -1);
   }
 
   /* Now, we print the SPICE subckt of a hard logic */
@@ -318,13 +331,15 @@ void fprint_spice_hardlogic_testbench_one_pb_graph_node_hardlogic(FILE* fp,
     assert(input_ports[iport]->size == cur_pb_graph_node->num_input_pins[iport]); 
     for (ipin = 0; ipin < input_ports[iport]->size; ipin++) {
       /* Check the port size should match!*/
-      fprintf(fp, "Vhardlogic[%d]->%s[%d][%d] hardlogic[%d]->%s[%d][%d] 0 \n",
-              tb_num_hardlogic, 
+      fprintf(fp, "Vhardlogic_%s[%d]->%s[%d] hardlogic_%s[%d]->%s[%d] 0 \n",
+              pb_spice_model->prefix, 
+              pb_spice_model->tb_cnt, 
               cur_pb_graph_node->input_pins[iport]->port->name,
-              iport, ipin, 
-              tb_num_hardlogic, 
+              ipin, 
+              pb_spice_model->prefix, 
+              pb_spice_model->tb_cnt, 
               input_ports[iport]->prefix,
-              iport, ipin);
+              ipin);
       fprint_voltage_pulse_params(fp, input_init_value[iport][ipin], input_density[iport][ipin], input_probability[iport][ipin]);
     }
   }
@@ -334,12 +349,16 @@ void fprint_spice_hardlogic_testbench_one_pb_graph_node_hardlogic(FILE* fp,
   output_ports = find_spice_model_ports(pb_spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
   for (iport = 0; iport < num_output_port; iport++) {
     for (ipin = 0; ipin < output_ports[iport]->size; ipin++) {
-      outport_name = (char*)my_malloc(sizeof(char)*( 9 + strlen(my_itoa(tb_num_hardlogic)) 
-                                      + 3 + strlen(output_ports[iport]->prefix) 
-                                      + strlen(my_itoa(iport)) + 2
+      outport_name = (char*)my_malloc(sizeof(char)*( 10 + 
+                                      + strlen(pb_spice_model->prefix) + 1 
+                                      + strlen(my_itoa(pb_spice_model->tb_cnt)) 
+                                      + 3 + strlen(output_ports[iport]->prefix) + 1 
                                       + strlen(my_itoa(ipin)) + 2 ));
-      sprintf(outport_name, "hardlogic[%d]->%s[%d][%d]",
-                            tb_num_hardlogic, output_ports[iport]->prefix, iport, ipin);
+      sprintf(outport_name, "hardlogic_%s[%d]->%s[%d]",
+                            pb_spice_model->prefix,
+                            pb_spice_model->tb_cnt,
+                            output_ports[iport]->prefix,
+                            ipin);
       if (OPEN != logical_block_index) {
         fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
                                                           x, y, 
@@ -405,6 +424,9 @@ void fprint_spice_hardlogic_testbench_one_pb_graph_node_hardlogic(FILE* fp,
   if (OPEN != logical_block_index) {
     logical_block[logical_block_index].temp_used = 1;
   }
+
+  /* Increment the counter of the hardlogic spice model */
+  pb_spice_model->tb_cnt++;
   tb_num_hardlogic++;
 
   /* Free */
@@ -717,6 +739,9 @@ int fprint_spice_one_hardlogic_testbench(char* formatted_spice_dir,
                hardlogic_testbench_file_path); 
     exit(1);
   } 
+
+  /* Reset tb_cnt for all the spice models */
+  init_spice_models_grid_tb_cnt(arch.spice->num_spice_model, arch.spice->spice_models, grid_x, grid_y);
   
   /* vpr_printf(TIO_MESSAGE_INFO, "Writing DFF Testbench for %s...\n", circuit_name); */
   testbench_load_cnt = 0;
@@ -747,6 +772,7 @@ int fprint_spice_one_hardlogic_testbench(char* formatted_spice_dir,
   /* Quote defined Logic blocks subckts (Grids) */
   init_spice_hardlogic_testbench_globals(*(arch.spice));
   init_logical_block_spice_model_type_temp_used(arch.spice->num_spice_model, arch.spice->spice_models, SPICE_MODEL_FF);
+  init_logical_block_spice_model_type_temp_used(arch.spice->num_spice_model, arch.spice->spice_models, SPICE_MODEL_HARDLOGIC);
 
   /* Now start our job formally: dump hard logic circuit one by one */
   fprint_spice_hardlogic_testbench_call_one_grid_defined_hardlogics(fp, grid_x, grid_y, LL_rr_node_indices);
@@ -754,6 +780,10 @@ int fprint_spice_one_hardlogic_testbench(char* formatted_spice_dir,
   /* Back-anotate activity information to each routing resource node 
    * (We should have activity of each Grid port) 
    */
+
+  /* Check if the all hardlogic located in this grid have been printed */
+  check_spice_models_grid_tb_cnt(arch.spice->num_spice_model, arch.spice->spice_models, grid_x, grid_y, SPICE_MODEL_FF);
+  check_spice_models_grid_tb_cnt(arch.spice->num_spice_model, arch.spice->spice_models, grid_x, grid_y, SPICE_MODEL_HARDLOGIC);
 
   /* Add stimulations */
   fprint_spice_hardlogic_testbench_stimulations(fp, grid_x, grid_y, num_clock, (*arch.spice), LL_rr_node_indices);

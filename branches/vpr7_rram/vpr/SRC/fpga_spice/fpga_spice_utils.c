@@ -919,6 +919,11 @@ int determine_tree_mux_level(int mux_size) {
 int determine_num_input_basis_multilevel_mux(int mux_size,
                                              int mux_level) {
   int num_input_per_unit = 2;
+
+  /* Special Case: mux_size = 2 */
+  if (2 == mux_size) {
+    return mux_size; 
+  }
   
   if (1 == mux_level) {
     return mux_size;
@@ -978,6 +983,11 @@ int multilevel_mux_last_level_input_num(int num_level, int num_input_per_unit,
   
   ret = mux_size - num_basis_last_level * num_input_per_unit; 
   assert((0 == ret)||(0 < ret));
+
+  /* Special Case: mux_size = 2 */
+  if (2 == mux_size) {
+    return mux_size; 
+  }
 
   if (0 < ret) {
     /* Check if we need a special basis at last level,
@@ -1884,7 +1894,9 @@ int recommend_num_sim_clock_cycle() {
   /* Get the median */
   median_density = vpack_net[sort_index[(int)net_cnt/2]].spice_net_info->density;
   
-  recmd_num_sim_clock_cycle = (int)(1/avg_density); 
+  /* recmd_num_sim_clock_cycle = (int)(1/avg_density); */
+  /* It may be more reasonable to use median */
+  recmd_num_sim_clock_cycle = (int)(1/median_density); 
   vpr_printf(TIO_MESSAGE_INFO, "Average net density: %.2g\n", avg_density);
   vpr_printf(TIO_MESSAGE_INFO, "Net density median: %.2g\n", median_density);
   vpr_printf(TIO_MESSAGE_INFO, "Recommend no. of clock cycles: %d\n", recmd_num_sim_clock_cycle);
@@ -5946,7 +5958,12 @@ void init_spice_mux_arch(t_spice_model* spice_model,
     spice_mux_arch->num_input_last_level = mux_size;
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-    spice_mux_arch->num_level = spice_model->design_tech_info.mux_num_level;
+    /* Handle speical case: input size is 2 */
+    if (2 == mux_size) { 
+      spice_mux_arch->num_level = 1;
+    } else {
+      spice_mux_arch->num_level = spice_model->design_tech_info.mux_num_level;
+    }
     spice_mux_arch->num_input_basis = determine_num_input_basis_multilevel_mux(mux_size, spice_mux_arch->num_level);
     /* Determine the level and index of per MUX inputs*/
     spice_mux_arch->num_input_last_level = multilevel_mux_last_level_input_num(spice_mux_arch->num_level, spice_mux_arch->num_input_basis, mux_size);
@@ -6600,3 +6617,41 @@ void determine_sb_port_coordinator(t_sb cur_sb_info, int side,
   return;
 }
 
+void init_spice_models_tb_cnt(int num_spice_models,
+                              t_spice_model* spice_model) {
+  int imodel;
+
+  for (imodel = 0; imodel < num_spice_models; imodel++) {
+    spice_model[imodel].tb_cnt = 0;
+  }
+
+  return;
+}
+
+void init_spice_models_grid_tb_cnt(int num_spice_models,
+                                   t_spice_model* spice_model,
+                                   int grid_x, int grid_y) {
+  int imodel;
+
+  for (imodel = 0; imodel < num_spice_models; imodel++) {
+    spice_model[imodel].tb_cnt = spice_model[imodel].grid_index_low[grid_x][grid_y];
+  }
+
+  return;
+}
+
+void check_spice_models_grid_tb_cnt(int num_spice_models,
+                                    t_spice_model* spice_model,
+                                    int grid_x, int grid_y,
+                                    enum e_spice_model_type spice_model_type_to_check) {
+  int imodel;
+
+  for (imodel = 0; imodel < num_spice_models; imodel++) {
+    if (spice_model_type_to_check != spice_model[imodel].type) {
+      continue;
+    }
+    assert(spice_model[imodel].tb_cnt = spice_model[imodel].grid_index_high[grid_x][grid_y]);
+  }
+
+  return;
+}

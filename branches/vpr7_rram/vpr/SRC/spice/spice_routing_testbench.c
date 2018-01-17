@@ -228,6 +228,7 @@ int fprint_spice_routing_testbench_call_one_cb_tb(FILE* fp,
                                                 ipin_height,
                                                 cur_cb_info.ipin_rr_node_grid_side[side][inode],
                                                 cur_cb_info.ipin_rr_node[side][inode]->ptc_num,
+                                                &testbench_load_cnt,
                                                 LL_rr_node_indices); 
       fprintf(fp, "\n");
       /* Get signal activity */
@@ -602,9 +603,6 @@ int fprint_spice_one_cb_testbench(char* formatted_spice_dir,
   fprintf(fp, ".include \'%s\'\n", temp_include_file_path);
   my_free(temp_include_file_path);
 
-  /* Generate SPICE routing testbench generic stimuli*/
-  fprintf_spice_routing_testbench_generic_stimuli(fp, num_clocks);
-
   /* one cbx, one cby*/
   switch (cb_type) {
   case CHANX:
@@ -615,6 +613,10 @@ int fprint_spice_one_cb_testbench(char* formatted_spice_dir,
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d]) Invalid connection_box_type!\n", __FILE__, __LINE__);
     exit(1);
   }
+
+
+  /* Generate SPICE routing testbench generic stimuli*/
+  fprintf_spice_routing_testbench_generic_stimuli(fp, num_clocks);
 
   /* SPICE ends*/
   fprintf(fp, ".end\n");

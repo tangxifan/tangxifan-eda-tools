@@ -551,3 +551,15 @@ int get_grid_pin_height(int grid_x, int grid_y, int pin_index);
 
 void determine_sb_port_coordinator(t_sb cur_sb_info, int side, 
                                    int* port_x, int* port_y);
+
+void init_spice_models_tb_cnt(int num_spice_models,
+                              t_spice_model* spice_model);
+
+void init_spice_models_grid_tb_cnt(int num_spice_models,
+                                   t_spice_model* spice_model,
+                                   int grid_x, int grid_y);
+
+void check_spice_models_grid_tb_cnt(int num_spice_models,
+                                    t_spice_model* spice_model,
+                                    int grid_x, int grid_y,
+                                    enum e_spice_model_type spice_model_type_to_check);

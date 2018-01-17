@@ -203,6 +203,7 @@ void fprint_spice_testbench_one_grid_pin_stimulation(FILE* fp, int x, int y,
 void fprint_spice_testbench_one_grid_pin_loads(FILE* fp, int x, int y, 
                                               int height, int side, 
                                               int ipin,
+                                              int* testbench_load_cnt,
                                               t_ivec*** LL_rr_node_indices);
 
 t_llist* add_one_spice_tb_info_to_llist(t_llist* cur_head, 

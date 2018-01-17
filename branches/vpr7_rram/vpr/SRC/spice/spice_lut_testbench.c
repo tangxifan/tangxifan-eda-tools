@@ -616,6 +616,9 @@ int fprint_spice_one_lut_testbench(char* formatted_spice_dir,
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in create LUT Testbench SPICE netlist %s!",__FILE__, __LINE__, lut_testbench_file_path); 
     exit(1);
   } 
+
+  /* Reset tb_cnt for all the spice models */
+  init_spice_models_tb_cnt(arch.spice->num_spice_model, arch.spice->spice_models);
   
   /*vpr_printf(TIO_MESSAGE_INFO, "Writing LUT Testbench for %s...\n", circuit_name);*/
   testbench_load_cnt = 0;
@@ -662,6 +665,9 @@ int fprint_spice_one_lut_testbench(char* formatted_spice_dir,
   /* Back-anotate activity information to each routing resource node 
    * (We should have activity of each Grid port) 
    */
+
+  /* Check if the all hardlogic located in this grid have been printed */
+  check_spice_models_grid_tb_cnt(arch.spice->num_spice_model, arch.spice->spice_models, grid_x, grid_y, SPICE_MODEL_LUT);
 
   /* Add stimulations */
   fprint_spice_lut_testbench_stimulations(fp, grid_x, grid_y,  num_clock, (*arch.spice), LL_rr_node_indices);

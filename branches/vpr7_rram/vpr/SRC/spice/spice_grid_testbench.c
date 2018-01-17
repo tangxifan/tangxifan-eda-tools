@@ -37,6 +37,7 @@ static int num_inv_load = 0;
 static int num_noninv_load = 0;
 static int num_grid_load = 0;
 */
+static int testbench_load_cnt = 0;
 static int tb_num_grid = 0;
 static int max_sim_num_clock_cycles = 2;
 static int upbound_sim_num_clock_cycles = 2;
@@ -45,6 +46,7 @@ static int auto_select_max_sim_num_clock_cycles = TRUE;
 /* Local subroutines only accessible in this C-source file */
 static 
 void init_spice_grid_testbench_globals(t_spice spice) {
+  testbench_load_cnt = 0;
   tb_num_grid = 0;
   auto_select_max_sim_num_clock_cycles = spice.spice_params.meas_params.auto_select_sim_num_clk_cycle;
   upbound_sim_num_clock_cycles = spice.spice_params.meas_params.sim_num_clock_cycle + 1;
@@ -251,7 +253,7 @@ void fprint_grid_testbench_one_grid_stimulation(FILE* fp,
           if (RECEIVER == type->class_inf[class_id].type) { 
             fprint_spice_testbench_one_grid_pin_stimulation(fp, x, y, iheight, side, ipin, LL_rr_node_indices);
           } else if (DRIVER == type->class_inf[class_id].type) { 
-            fprint_spice_testbench_one_grid_pin_loads(fp, x, y, iheight, side, ipin, LL_rr_node_indices);
+            fprint_spice_testbench_one_grid_pin_loads(fp, x, y, iheight, side, ipin, &testbench_load_cnt, LL_rr_node_indices);
           } else {
             fprint_stimulate_dangling_one_grid_pin(fp, x, y, iheight, side, ipin, LL_rr_node_indices);
           }

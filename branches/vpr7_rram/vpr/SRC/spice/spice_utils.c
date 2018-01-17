@@ -2249,7 +2249,7 @@ void fprint_spice_testbench_generic_global_ports_stimuli(FILE* fp,
               spice_tb_global_vdd_port_name,
               spice_tb_global_vdd_port_name);
   fprintf(fp, "***** Global GND port *****\n");
-  fprintf(fp, "*V%s %s 0 0\n",
+  fprintf(fp, "V%s %s 0 0\n",
               spice_tb_global_gnd_port_name,
               spice_tb_global_gnd_port_name);
 
@@ -2893,6 +2893,7 @@ void fprint_spice_testbench_one_grid_pin_stimulation(FILE* fp, int x, int y,
 void fprint_spice_testbench_one_grid_pin_loads(FILE* fp, int x, int y, 
                                                int height, int side, 
                                                int ipin,
+                                               int* testbench_load_cnt,
                                                t_ivec*** LL_rr_node_indices) {
 
   int ipin_rr_node_index;
@@ -2936,23 +2937,37 @@ void fprint_spice_testbench_one_grid_pin_loads(FILE* fp, int x, int y,
   sprintf(prefix, "grid[%d][%d]_pin[%d][%d][%d]",
           x, y, height, side, ipin);
 
-  /* Print all the inverter load now*/
-  for (iedge = 0; iedge < rr_node[ipin_rr_node_index].num_edges; iedge++) {
-    /* Get the switch spice model */
-    /* inode = rr_node[ipin_rr_node_index].edges[iedge]; */
-    iswitch = rr_node[ipin_rr_node_index].switches[iedge]; 
-    switch_spice_model = switch_inf[iswitch].spice_model;
-    if (NULL == switch_spice_model) {
-      continue;
+  /* Depending on the type of this pin */
+  /* For OPIN, we search the rr_node graph */
+  if (OPIN == grid_pin_rr_node_type) {
+    /* Print all the inverter load now*/
+    for (iedge = 0; iedge < rr_node[ipin_rr_node_index].num_edges; iedge++) {
+      /* Get the switch spice model */
+      /* inode = rr_node[ipin_rr_node_index].edges[iedge]; */
+      iswitch = rr_node[ipin_rr_node_index].switches[iedge]; 
+      switch_spice_model = switch_inf[iswitch].spice_model;
+      if (NULL == switch_spice_model) {
+        continue;
+      }
+      /* Add inv/buf here */
+      fprintf(fp, "X%s_inv[%d] %s %s_out[%d] gvdd_load 0 inv size=%g\n",
+              prefix, iedge, 
+              prefix, prefix, iedge, 
+              switch_spice_model->input_buffer->size);
+      inv_cnt++;
     }
-    /* Add inv/buf here */
-    fprintf(fp, "X%s_inv[%d] %s %s_out[%d] gvdd_load 0 inv size=%g\n",
-            prefix, iedge, 
-            prefix, prefix, iedge, 
-            switch_spice_model->input_buffer->size);
-    inv_cnt++;
-  }
- 
+    /* TODO: go recursively ? */
+  /* For IPIN, we should search the internal rr_graph of the grid */
+  } else if (IPIN == grid_pin_rr_node_type) {
+    fprint_spice_testbench_one_cb_mux_loads(fp, testbench_load_cnt, &rr_node[ipin_rr_node_index], 
+                                            prefix, LL_rr_node_indices);
+  } else {
+    /* Error */
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Unknown pin type for grid(x=%d, y=%d, pin_index=%d)!\n",
+               __FILE__, __LINE__,
+               x, y, ipin);
+    exit(1);
+  } 
   /* TODO: Generate loads recursively */
   /*fprint_rr_node_loads_rec(fp, rr_node[ipin_rr_node_index],prefix);*/
 
@@ -2983,3 +2998,4 @@ t_llist* add_one_spice_tb_info_to_llist(t_llist* cur_head,
 
   return new_head;
 }
+
