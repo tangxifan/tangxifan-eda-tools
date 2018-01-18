@@ -372,8 +372,10 @@ void dump_verilog_submodule_essentials(char* submodule_dir,
 /* Dump a CMOS MUX basis module */
 void dump_verilog_cmos_mux_one_basis_module(FILE* fp, 
                                             char* mux_basis_subckt_name, 
+                                            int mux_size, 
                                             int num_input_basis_subckt, 
-                                            t_spice_model* cur_spice_model) { 
+                                            t_spice_model* cur_spice_model,
+                                            boolean special_basis) { 
   int cur_mem, i;
   int num_mem = num_input_basis_subckt;
 
@@ -386,7 +388,7 @@ void dump_verilog_cmos_mux_one_basis_module(FILE* fp,
   /* Determine the number of memory bit
    * The function considers a special case :
    * 2-input basis in tree-like MUX only requires 1 memory bit */
-  num_mem = determine_num_sram_bits_mux_basis_subckt(cur_spice_model, num_input_basis_subckt);
+  num_mem = determine_num_sram_bits_mux_basis_subckt(cur_spice_model, mux_size, num_input_basis_subckt, special_basis);
 
   /* Comment lines */
   fprintf(fp, "//---- CMOS MUX basis module: %s -----\n", mux_basis_subckt_name);
@@ -463,8 +465,10 @@ void dump_verilog_cmos_mux_one_basis_module(FILE* fp,
 static 
 void dump_verilog_cmos_mux_one_basis_module_structural(FILE* fp, 
                                                        char* mux_basis_subckt_name, 
+                                                       int mux_size, 
                                                        int num_input_basis_subckt, 
-                                                       t_spice_model* cur_spice_model) { 
+                                                       t_spice_model* cur_spice_model,
+                                                       boolean special_basis) { 
   int cur_mem, i;
   int num_mem = num_input_basis_subckt;
   /* Get the tgate module name */
@@ -480,7 +484,7 @@ void dump_verilog_cmos_mux_one_basis_module_structural(FILE* fp,
   /* Determine the number of memory bit
    * The function considers a special case :
    * 2-input basis in tree-like MUX only requires 1 memory bit */
-  num_mem = determine_num_sram_bits_mux_basis_subckt(cur_spice_model, num_input_basis_subckt);
+  num_mem = determine_num_sram_bits_mux_basis_subckt(cur_spice_model, mux_size, num_input_basis_subckt, special_basis);
 
   /* Comment lines */
   fprintf(fp, "//---- Structural Verilog for CMOS MUX basis module: %s -----\n", mux_basis_subckt_name);
@@ -722,8 +726,10 @@ void dump_verilog_rram_mux_one_basis_module(FILE* fp,
 /* Print a basis submodule */
 void dump_verilog_mux_one_basis_module(FILE* fp, 
                                        char* mux_basis_subckt_name, 
+                                       int mux_size,
                                        int num_input_basis_subckt, 
-                                       t_spice_model* cur_spice_model) { 
+                                       t_spice_model* cur_spice_model,
+                                       boolean special_basis) { 
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
@@ -734,12 +740,16 @@ void dump_verilog_mux_one_basis_module(FILE* fp,
   case SPICE_MODEL_DESIGN_CMOS:
     if (TRUE == cur_spice_model->dump_structural_verilog) {
       dump_verilog_cmos_mux_one_basis_module_structural(fp, mux_basis_subckt_name,
+                                                        mux_size,
                                                         num_input_basis_subckt,
-                                                        cur_spice_model);
+                                                        cur_spice_model,
+                                                        special_basis);
     } else {
       dump_verilog_cmos_mux_one_basis_module(fp, mux_basis_subckt_name,
+                                             mux_size,
                                              num_input_basis_subckt,
-                                             cur_spice_model);
+                                             cur_spice_model,
+                                             special_basis);
     }
     break;
   case SPICE_MODEL_DESIGN_RRAM:
@@ -818,8 +828,9 @@ void dump_verilog_mux_basis_module(FILE* fp,
   num_input_basis_subckt = spice_mux_model->spice_mux_arch->num_input_basis;
 
   /* Print the basis subckt*/
-  dump_verilog_mux_one_basis_module(fp, mux_basis_subckt_name, 
-                                num_input_basis_subckt, spice_mux_model->spice_model);
+  dump_verilog_mux_one_basis_module(fp, mux_basis_subckt_name, spice_mux_model->size,
+                                    num_input_basis_subckt, spice_mux_model->spice_model, 
+                                    FALSE);
   /* See if we need a special basis */
   switch (spice_mux_model->spice_model->design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
@@ -828,8 +839,9 @@ void dump_verilog_mux_basis_module(FILE* fp,
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
     num_input_special_basis_subckt = find_spice_mux_arch_special_basis_size(*(spice_mux_model->spice_mux_arch));
     if (0 < num_input_special_basis_subckt) {
-      dump_verilog_mux_one_basis_module(fp, special_basis_subckt_name, 
-                                        num_input_special_basis_subckt, spice_mux_model->spice_model);
+      dump_verilog_mux_one_basis_module(fp, special_basis_subckt_name, spice_mux_model->size,
+                                        num_input_special_basis_subckt, spice_mux_model->spice_model,
+                                        FALSE);
     } 
     break;
   default:

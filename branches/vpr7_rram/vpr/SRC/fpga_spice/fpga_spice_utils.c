@@ -878,7 +878,9 @@ int* my_decimal2binary(int decimal,
  * When multiplexing structure is tree-like, there should be only 1 SRAM bit
  */
 int determine_num_sram_bits_mux_basis_subckt(t_spice_model* mux_spice_model,
-                                             int num_input_per_level) {
+                                             int mux_size, 
+                                             int num_input_per_level,
+                                             boolean special_basis) {
   int num_sram_bits; 
 
   /* General cases */
@@ -889,7 +891,7 @@ int determine_num_sram_bits_mux_basis_subckt(t_spice_model* mux_spice_model,
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
     num_sram_bits = num_input_per_level;
-    if (2 == num_sram_bits) { 
+    if ((2 == num_sram_bits)&&(2 == mux_size)) { 
       num_sram_bits = 1;
     }
     break;
@@ -898,6 +900,12 @@ int determine_num_sram_bits_mux_basis_subckt(t_spice_model* mux_spice_model,
                __FILE__, __LINE__, mux_spice_model->name);
     exit(1);
   }
+
+  /* For special cases: overide the results */
+  if (TRUE == special_basis) {
+    num_sram_bits = num_input_per_level;
+  }
+
   return num_sram_bits;
 }
 
@@ -1894,9 +1902,10 @@ int recommend_num_sim_clock_cycle() {
   /* Get the median */
   median_density = vpack_net[sort_index[(int)net_cnt/2]].spice_net_info->density;
   
-  /* recmd_num_sim_clock_cycle = (int)(1/avg_density); */
-  /* It may be more reasonable to use median */
+  recmd_num_sim_clock_cycle = (int)(1/avg_density);
+  /* It may be more reasonable to use median 
   recmd_num_sim_clock_cycle = (int)(1/median_density); 
+   */
   vpr_printf(TIO_MESSAGE_INFO, "Average net density: %.2g\n", avg_density);
   vpr_printf(TIO_MESSAGE_INFO, "Net density median: %.2g\n", median_density);
   vpr_printf(TIO_MESSAGE_INFO, "Recommend no. of clock cycles: %d\n", recmd_num_sim_clock_cycle);

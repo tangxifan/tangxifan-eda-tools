@@ -78,8 +78,12 @@ boolean is_verilog_and_spice_syntax_conflict_char(t_llist* LL_reserved_syntax_ch
                                                   char ref_char);
 
 static 
-int check_and_rename_io_logical_block_names(t_llist* LL_reserved_syntax_char_head, boolean rename_illegal_port,
-                                            int LL_num_logical_blocks, t_logical_block* LL_logical_block);
+int check_and_rename_logical_block_and_net_names(t_llist* LL_reserved_syntax_char_head, 
+                                                 char* circuit_name,
+                                                 boolean rename_illegal_port,
+                                                 int LL_num_logical_blocks, t_logical_block* LL_logical_block,
+                                                 int LL_num_clb_nets, t_net* LL_clb_net,
+                                                 int LL_num_vpack_nets, t_net* LL_vpack_net);
 
 /***** Subroutines *****/
 
@@ -946,52 +950,159 @@ boolean is_verilog_and_spice_syntax_conflict_char(t_llist* LL_reserved_syntax_ch
  * if the current name violates syntax of SPICE or Verilog 
  */
 static 
-int check_and_rename_io_logical_block_names(t_llist* LL_reserved_syntax_char_head, boolean rename_illegal_port,
-                                            int LL_num_logical_blocks, t_logical_block* LL_logical_block) {
-  int iblock, ichar, name_str_len, num_violations;
+int check_and_rename_logical_block_and_net_names(t_llist* LL_reserved_syntax_char_head, 
+                                                 char* circuit_name,
+                                                 boolean rename_illegal_port,
+                                                 int LL_num_logical_blocks, t_logical_block* LL_logical_block,
+                                                 int LL_num_clb_nets, t_net* LL_clb_net,
+                                                 int LL_num_vpack_nets, t_net* LL_vpack_net) {
+  FILE* fp = NULL;
+  int iblock, inet, ichar, name_str_len, num_violations;
   char renamed_char = '_';
   boolean io_renamed = FALSE;
+  boolean io_violate_syntax = FALSE;
   char* temp_io_name = NULL;
+  char* renaming_report_file_path = NULL;
 
   vpr_printf(TIO_MESSAGE_INFO, "Check IO pad names, to avoid violate SPICE or Verilog Syntax...\n");
 
   num_violations = 0;
 
+  /* Check if the path exists*/
+  renaming_report_file_path = my_strcat(circuit_name, renaming_report_postfix); 
+  fp = fopen(renaming_report_file_path,"w");
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in create renaming report %s!",
+               __FILE__, __LINE__, renaming_report_file_path); 
+    exit(1);
+  } 
+
+  fprintf(fp, "------- Logical block renaming report BEGIN ----------\n");
   for (iblock = 0; iblock < LL_num_logical_blocks; iblock++) {
     /* Bypass non-IO logical blocks */
+    /*
     if ((VPACK_INPAD != logical_block[iblock].type)&&(VPACK_OUTPAD != logical_block[iblock].type)) {
       continue;
     }
+    */
     /* initialize the flag */
     io_renamed = FALSE;
+    io_violate_syntax = FALSE;
     /* Keep a copy of previous name */
-    temp_io_name = my_strdup(logical_block[iblock].name);
+    temp_io_name = my_strdup(LL_logical_block[iblock].name);
     /* Check names character by charcter */
-    name_str_len = strlen(logical_block[iblock].name); /* exclude the last character: \0, which does require to be checked */
+    name_str_len = strlen(LL_logical_block[iblock].name); /* exclude the last character: \0, which does require to be checked */
     for (ichar = 0; ichar < name_str_len; ichar++) {
       /* Check syntax senstive list, if violates, rename it to be '_' */
-      if (TRUE == is_verilog_and_spice_syntax_conflict_char(LL_reserved_syntax_char_head, logical_block[iblock].name[ichar])) {
+      if (TRUE == is_verilog_and_spice_syntax_conflict_char(LL_reserved_syntax_char_head, LL_logical_block[iblock].name[ichar])) {
         num_violations++;
+        io_violate_syntax = TRUE;
         if ( TRUE == rename_illegal_port) {
-          logical_block[iblock].name[ichar] = renamed_char;
+          LL_logical_block[iblock].name[ichar] = renamed_char;
           io_renamed = TRUE;
         }
       }
     } 
     /* Print a warning if */
     if (TRUE == io_renamed) {
-      vpr_printf(TIO_MESSAGE_WARNING, "I/O is renamed from %s to %s\n",
-                                      temp_io_name, logical_block[iblock].name);
-    } else {
-      vpr_printf(TIO_MESSAGE_WARNING, "I/O name %s violates syntax rules \n",
-                                      temp_io_name);
+      fprintf(fp, "[RENAMING%d] Logical block (Name: %s) is renamed to %s\n",
+                  num_violations,
+                  temp_io_name, LL_logical_block[iblock].name);
+    } else if (TRUE == io_violate_syntax) {
+      fprintf(fp, "[RENAMING%d] Logical block name %s violates syntax rules \n",
+                  num_violations,
+                  temp_io_name);
     }
+    /* Free */
+    my_free(temp_io_name);
   } 
+
+  fprintf(fp, "-------Logical block renaming report END ----------\n\n");
+
+  fprintf(fp, "-------CLB_NET renaming report BEGIN ----------\n");
+  /* Change the net name in the clb_net and vpack_net info as well !!! */
+  for (inet = 0; inet < LL_num_clb_nets; inet++) {
+    /* initialize the flag */
+    io_renamed = FALSE;
+    io_violate_syntax = FALSE;
+    /* Keep a copy of previous name */
+    temp_io_name = my_strdup(LL_clb_net[inet].name);
+    /* Check names character by charcter */
+    name_str_len = strlen(LL_clb_net[inet].name); /* exclude the last character: \0, which does require to be checked */
+    for (ichar = 0; ichar < name_str_len; ichar++) {
+      /* Check syntax senstive list, if violates, rename it to be '_' */
+      if (TRUE == is_verilog_and_spice_syntax_conflict_char(LL_reserved_syntax_char_head, LL_clb_net[inet].name[ichar])) {
+        num_violations++;
+        io_violate_syntax = TRUE;
+        if ( TRUE == rename_illegal_port) {
+          LL_clb_net[inet].name[ichar] = renamed_char;
+          io_renamed = TRUE;
+        }
+      }
+    } 
+    /* Print a warning if */
+    if (TRUE == io_renamed) {
+      fprintf(fp, "[RENAMING%d] clb_net (Name: %s) is renamed to %s\n",
+                  num_violations,
+                  temp_io_name, LL_clb_net[inet].name);
+    } else if (TRUE == io_violate_syntax) {
+      fprintf(fp, "[RENAMING%d] clb_net name %s violates syntax rules \n",
+                  num_violations,
+                  temp_io_name);
+    }
+    /* Free */
+    my_free(temp_io_name);
+  } 
+
+  fprintf(fp, "-------CLB_NET renaming report END ----------\n\n");
+
+  fprintf(fp, "-------VPACK_NET renaming report BEGIN ----------\n");
+
+  for (inet = 0; inet < LL_num_vpack_nets; inet++) {
+    /* initialize the flag */
+    io_renamed = FALSE;
+    io_violate_syntax = FALSE;
+    /* Keep a copy of previous name */
+    temp_io_name = my_strdup(LL_vpack_net[inet].name);
+    /* Check names character by charcter */
+    name_str_len = strlen(LL_vpack_net[inet].name); /* exclude the last character: \0, which does require to be checked */
+    for (ichar = 0; ichar < name_str_len; ichar++) {
+      /* Check syntax senstive list, if violates, rename it to be '_' */
+      if (TRUE == is_verilog_and_spice_syntax_conflict_char(LL_reserved_syntax_char_head, LL_vpack_net[inet].name[ichar])) {
+        num_violations++;
+        io_violate_syntax = TRUE;
+        if ( TRUE == rename_illegal_port) {
+          LL_vpack_net[inet].name[ichar] = renamed_char;
+          io_renamed = TRUE;
+        }
+      }
+    } 
+    /* Print a warning if */
+    if (TRUE == io_renamed) {
+      fprintf(fp, "[RENAMING%d] vpack_net (Name: %s) is renamed to %s\n",
+                  num_violations,
+                  temp_io_name, LL_vpack_net[inet].name);
+    } else if (TRUE == io_violate_syntax) {
+      fprintf(fp, "[RENAMING%d] vpack_net name %s violates syntax rules \n",
+                  num_violations,
+                  temp_io_name);
+    }
+    /* Free */
+    my_free(temp_io_name);
+  } 
+
+  fprintf(fp, "-------VPACK_NET renaming report END ----------\n");
 
   if ((0 < num_violations) && ( FALSE == rename_illegal_port )) {
     vpr_printf(TIO_MESSAGE_ERROR, "Detect %d port violate syntax rules while renaming port is disabled\n", num_violations);
     exit(1);
   }
+
+  /* close fp */
+  fclose(fp);
+ 
+  vpr_printf(TIO_MESSAGE_INFO, "Renaming report is generated in %s\n",
+                               renaming_report_file_path); 
 
   return num_violations;
 }
@@ -1025,11 +1136,17 @@ void fpga_spice_setup(t_vpr_setup vpr_setup,
   check_keywords_conflict(*Arch);
   /* TODO: check spice_model names conflict with SPICE or Verilog syntax */
   vpr_printf(TIO_MESSAGE_INFO, "Checking spice_model compatible with syntax chars...\n"); 
-  check_spice_model_name_conflict_syntax_char(*Arch, reserved_syntax_char_head);
+  check_spice_model_name_conflict_syntax_char(*Arch, 
+                                              reserved_syntax_char_head);
+
 
   /* Check and rename io names to avoid violating SPICE or Verilog syntax */
-  check_and_rename_io_logical_block_names(reserved_syntax_char_head, vpr_setup.FPGA_SPICE_Opts.rename_illegal_port,
-                                          num_logical_blocks, logical_block);
+  check_and_rename_logical_block_and_net_names(reserved_syntax_char_head, 
+                                               vpr_setup.FileNameOpts.CircuitName,
+                                               vpr_setup.FPGA_SPICE_Opts.rename_illegal_port,
+                                               num_logical_blocks, logical_block,
+                                               num_nets, clb_net,
+                                               num_logical_nets, vpack_net);
 
   /* Check Activity file is valid */
   if (TRUE == vpr_setup.FPGA_SPICE_Opts.read_act_file) {

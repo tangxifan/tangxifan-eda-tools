@@ -38,3 +38,5 @@ int default_signal_init_value = 0;
 /* Default do parasitic net estimation !!!*/
 int run_parasitic_net_estimation = 1;
 
+char* renaming_report_postfix = "_io_renaming.rpt";
+

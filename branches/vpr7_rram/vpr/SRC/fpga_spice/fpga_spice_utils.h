@@ -66,7 +66,9 @@ t_block* search_mapped_block(int x, int y, int z);
 
 
 int determine_num_sram_bits_mux_basis_subckt(t_spice_model* mux_spice_model,
-                                             int num_input_per_level);
+                                             int mux_size,
+                                             int num_input_per_level,
+                                             boolean special_basis);
 
 int determine_tree_mux_level(int mux_size);
 

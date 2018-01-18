@@ -34,3 +34,5 @@ enum e_pin2pin_interc_type {
  INPUT2INPUT_INTERC, OUTPUT2OUTPUT_INTERC
 };
 
+
+extern char* renaming_report_postfix;

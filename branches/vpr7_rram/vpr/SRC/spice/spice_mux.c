@@ -36,6 +36,7 @@ static
 void fprint_spice_mux_model_basis_cmos_subckt(FILE* fp, char* subckt_name,
                                               int num_input_per_level,
                                               t_spice_model spice_model,
+                                              int mux_size,
                                               boolean special_basis) {
   char* pgl_name = NULL;
   int num_sram_bits = 0;
@@ -64,12 +65,8 @@ void fprint_spice_mux_model_basis_cmos_subckt(FILE* fp, char* subckt_name,
   fprintf(fp, "out ");
 
   /* General cases */
-  num_sram_bits = determine_num_sram_bits_mux_basis_subckt(&spice_model, 
-                                                           num_input_per_level);
-  /* For special cases: overide the results */
-  if (TRUE == special_basis) {
-    num_sram_bits = num_input_per_level;
-  }
+  num_sram_bits = determine_num_sram_bits_mux_basis_subckt(&spice_model, mux_size, 
+                                                           num_input_per_level, special_basis);
   
   for (i = 0; i < num_sram_bits; i++) {
     fprintf(fp, "sel%d sel_inv%d ", i, i); 
@@ -129,6 +126,7 @@ void fprint_spice_mux_model_basis_cmos_subckt(FILE* fp, char* subckt_name,
 
 static 
 void fprint_spice_mux_model_basis_rram_subckt(FILE* fp, char* subckt_name,
+                                              int mux_size,
                                               int num_input_per_level,
                                               t_spice_model spice_model,
                                               boolean special_basis) {
@@ -161,12 +159,7 @@ void fprint_spice_mux_model_basis_rram_subckt(FILE* fp, char* subckt_name,
   /* Determine the number of memory bit
    * The function considers a special case :
    * 2-input basis in tree-like MUX only requires 1 memory bit */
-  num_sram_bits = determine_num_sram_bits_mux_basis_subckt(&spice_model, num_input_per_level);
-
-  /* For special cases: overide the results */
-  if (TRUE == special_basis) {
-    num_sram_bits = num_input_per_level;
-  }
+  num_sram_bits = determine_num_sram_bits_mux_basis_subckt(&spice_model, mux_size, num_input_per_level, special_basis);
 
   /* Consider advanced RRAM multiplexer design 
    * Advanced design employ normal logic transistors
@@ -308,12 +301,14 @@ void fprint_spice_mux_model_basis_subckt(FILE* fp,
     fprint_spice_mux_model_basis_cmos_subckt(fp, mux_basis_subckt_name, 
                                              num_input_basis_subckt, 
                                              *(spice_mux_model->spice_model),
+                                             spice_mux_model->size, 
                                              FALSE);
     /* Dump subckt of special basis if required */
     if (0 < num_input_special_basis_subckt) {
       fprint_spice_mux_model_basis_cmos_subckt(fp, mux_special_basis_subckt_name, 
                                                num_input_special_basis_subckt, 
                                                (*spice_mux_model->spice_model), 
+                                               spice_mux_model->size, 
                                                TRUE);
     }
     break;
@@ -325,12 +320,14 @@ void fprint_spice_mux_model_basis_subckt(FILE* fp,
       exit(1);
     }
     fprint_spice_mux_model_basis_rram_subckt(fp, mux_basis_subckt_name, 
+                                             spice_mux_model->size, 
                                              num_input_basis_subckt, 
                                              *(spice_mux_model->spice_model),
                                              FALSE);
     /* Dump subckt of special basis if required */
     if (0 < num_input_special_basis_subckt) {
       fprint_spice_mux_model_basis_rram_subckt(fp, mux_special_basis_subckt_name, 
+                                               spice_mux_model->size, 
                                                num_input_special_basis_subckt, 
                                                (*spice_mux_model->spice_model),
                                                TRUE);
@@ -669,8 +666,9 @@ void fprint_spice_rram_mux_onelevel_structure(FILE* fp,
   fprintf(fp, "mux2_l%d_in%d ", nextlevel, out_idx); /* output */
 
   /* Print number of sram bits for this basis */
-  num_sram_bits = determine_num_sram_bits_mux_basis_subckt(&spice_model, 
-                                                           spice_mux_arch.num_input);
+  num_sram_bits = determine_num_sram_bits_mux_basis_subckt(&spice_model, spice_mux_arch.num_input, 
+                                                           spice_mux_arch.num_input,
+                                                           FALSE);
 
   for (k = 0; k < num_sram_bits; k++) {
     fprintf(fp, "%s%d %s_inv%d ", sram_port[0]->prefix, k, sram_port[0]->prefix, k); /* sram sram_inv */
