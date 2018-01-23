@@ -1,7 +1,7 @@
 * Sub Circuits
 *
 * Static D Flip-flop
-.subckt static_dff rst set clk D Q svdd sgnd size=3
+.subckt static_dff set rst clk D Q svdd sgnd size=1
 * Input inverter
 Xinv_clk clk clk_b svdd sgnd inv size=size
 Xinv_set set set_b svdd sgnd inv size=size

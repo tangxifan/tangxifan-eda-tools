@@ -273,28 +273,34 @@ void fprint_spice_grid_testbench_stimulations(FILE* fp,
                                               t_ivec*** LL_rr_node_indices) {
   /* int ix, iy; */
 
-  /* Global GND */
-  fprintf(fp, "***** Global VDD port *****\n");
-  fprintf(fp, "Vgvdd gvdd 0 vsp\n");
-  fprintf(fp, "***** Global GND port *****\n");
-  fprintf(fp, "*Rggnd ggnd 0 0\n");
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
 
-  /* Global set and reset */
-  fprintf(fp, "***** Global Net for reset signal *****\n");
-  fprintf(fp, "Vgvreset greset 0 0\n");
-  fprintf(fp, "***** Global Net for set signal *****\n");
-  fprintf(fp, "Vgvset gset 0 0\n");
-  /* Global vdd load */
-  fprintf(fp, "***** Global Net for load vdd *****\n");
-  fprintf(fp, "Vgvdd_load gvdd_load 0 vsp\n");
+  /* Print generic stimuli */
+  fprint_spice_testbench_generic_global_ports_stimuli(fp, num_clock);
+  
+  /* Generate global ports stimuli */
+  fprint_spice_testbench_global_ports_stimuli(fp, global_ports_head);
+
+  /* SRAM ports */
+  /* Every SRAM inputs should have a voltage source */
+  fprintf(fp, "***** Global Inputs for SRAMs *****\n");
+  fprint_spice_testbench_global_sram_inport_stimuli(fp, sram_spice_orgz_info);
+
+  fprintf(fp, "***** Global VDD for SRAMs *****\n");
+  fprint_spice_testbench_global_vdd_port_stimuli(fp,
+                                                 spice_tb_global_vdd_sram_port_name,
+                                                 "vsp");
 
   /* Global routing Vdds */
   fprint_spice_testbench_global_vdd_port_stimuli(fp, 
                                                  spice_tb_global_vdd_localrouting_port_name,
                                                  "vsp");
 
-  fprint_spice_testbench_global_sram_inport_stimuli(fp,
-                                                    sram_spice_orgz_info);
   /* Global Vdds for SRAMs */
   fprint_spice_testbench_global_vdd_port_stimuli(fp, 
                                                  spice_tb_global_vdd_lut_sram_port_name,
@@ -308,6 +314,11 @@ void fprint_spice_grid_testbench_stimulations(FILE* fp,
                                                  spice_tb_global_vdd_io_sram_port_name,
                                                  "vsp");
 
+  fprintf(fp, "***** Global VDD for load inverters *****\n");
+  fprint_spice_testbench_global_vdd_port_stimuli(fp,
+                                                 spice_tb_global_vdd_load_port_name,
+                                                 "vsp");
+
   /* Every Hardlogic use an independent Voltage source */
   fprintf(fp, "***** Global VDD for Hard Logics *****\n");
   fprint_grid_splited_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_HARDLOGIC, spice);
@@ -318,20 +329,7 @@ void fprint_spice_grid_testbench_stimulations(FILE* fp,
 
   /* Every FF use an independent Voltage source */
   fprintf(fp, "***** Global VDD for Flip-flops (FFs) *****\n");
-  fprint_grid_splited_vdds_spice_model(fp, grid_x, grid_y,SPICE_MODEL_FF, spice);
- 
-  fprintf(fp, "***** Global Clock signal *****\n");
-  if (0 < num_clock) {
-    /* First cycle reserved for measuring leakage */
-    fprintf(fp, "***** pulse(vlow vhigh tdelay trise tfall pulse_width period *****\n");
-    fprintf(fp, "Vgclock gclock 0 pulse(0 vsp 'clock_period'\n");
-    fprintf(fp, "+                      'clock_slew_pct_rise*clock_period' 'clock_slew_pct_fall*clock_period'\n");
-    fprintf(fp, "+                      '0.5*(1-clock_slew_pct_rise-clock_slew_pct_fall)*clock_period' 'clock_period')\n");
-  } else {
-    assert(0 == num_clock);
-    fprintf(fp, "***** clock off *****\n");
-    fprintf(fp, "Vgclock gclock 0 0\n");
-  }
+  fprint_grid_splited_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_FF, spice);
 
   /* For each grid input port, we generate the voltage pulses  */
   fprint_grid_testbench_one_grid_stimulation(fp, spice, LL_rr_node_indices,

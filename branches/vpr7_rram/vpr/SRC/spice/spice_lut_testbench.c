@@ -508,13 +508,15 @@ void fprint_spice_lut_testbench_stimulations(FILE* fp, int grid_x, int grid_y,
   /* Generate global ports stimuli */
   fprint_spice_testbench_global_ports_stimuli(fp, global_ports_head);
 
+  /* SRAM ports */
+  /* Every SRAM inputs should have a voltage source */
+  fprintf(fp, "***** Global Inputs for SRAMs *****\n");
+  fprint_spice_testbench_global_sram_inport_stimuli(fp, sram_spice_orgz_info);
+
   fprintf(fp, "***** Global VDD for LUTs SRAMs *****\n");
   fprint_spice_testbench_global_vdd_port_stimuli(fp,
                                                  spice_tb_global_vdd_lut_sram_port_name,
                                                  "vsp");
- 
-  fprintf(fp, "***** Global Inputs for SRAMs *****\n");
-  fprint_spice_testbench_global_sram_inport_stimuli(fp, sram_spice_orgz_info);
 
   fprintf(fp, "***** Global VDD for SRAMs *****\n");
   fprint_spice_testbench_global_vdd_port_stimuli(fp,

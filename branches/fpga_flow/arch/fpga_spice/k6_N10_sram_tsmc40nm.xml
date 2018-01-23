@@ -148,7 +148,7 @@
 
   <spice_settings>
     <parameters>
-      <options sim_temp="25" post="on" captab="off" fast="on"/>
+      <options sim_temp="25" post="off" captab="off" fast="on"/>
       <measure sim_num_clock_cycle="auto" accuracy="1e-13" accuracy_type="abs">
         <slew>
           <rise upper_thres_pct="0.95" lower_thres_pct="0.05"/>

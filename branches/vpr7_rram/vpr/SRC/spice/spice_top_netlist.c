@@ -71,10 +71,6 @@ void fprint_top_netlist_global_ports(FILE* fp,
   fprintf(fp, ".global %s\n",
           spice_tb_global_vdd_io_sram_port_name);
 
-  /* User-defined global ports */ 
-  fprintf(fp, ".global \n");
-  fprint_spice_global_ports(fp, global_ports_head);
-
   /* Get memory spice model */
   get_sram_orgz_info_mem_model(sram_spice_orgz_info, &mem_model);
 
@@ -148,35 +144,51 @@ void fprint_top_netlist_stimulations(FILE* fp,
   /* Generate global ports stimuli */
   fprint_spice_testbench_global_ports_stimuli(fp, global_ports_head);
 
+  /* SRAM ports */
+  /* Every SRAM inputs should have a voltage source */
+  fprintf(fp, "***** Global Inputs for SRAMs *****\n");
+  fprint_spice_testbench_global_sram_inport_stimuli(fp, sram_spice_orgz_info);
+
+  fprintf(fp, "***** Global VDD for SRAMs *****\n");
+  fprint_spice_testbench_global_vdd_port_stimuli(fp,
+                                                 spice_tb_global_vdd_sram_port_name,
+                                                 "vsp");
+
   /* Global Vdd ports */
   fprintf(fp, "***** Global VDD for I/O pads *****\n");
-  fprintf(fp, "V%s %s 0 vsp\n",
-              spice_tb_global_vdd_io_port_name,
-              spice_tb_global_vdd_io_port_name);
+  fprint_spice_testbench_global_vdd_port_stimuli(fp, 
+                                                 spice_tb_global_vdd_io_port_name,
+                                                 "vsp");
+
   fprintf(fp, "***** Global VDD for I/O pads SRAMs *****\n");
-  fprintf(fp, "V%s %s 0 vsp\n",
-              spice_tb_global_vdd_io_sram_port_name,
-              spice_tb_global_vdd_io_sram_port_name);
+  fprint_spice_testbench_global_vdd_port_stimuli(fp, 
+                                                 spice_tb_global_vdd_io_sram_port_name,
+                                                 "vsp");
+
   fprintf(fp, "***** Global VDD for Local Interconnection *****\n");
-  fprintf(fp, "V%s %s 0 vsp\n",
-              spice_tb_global_vdd_localrouting_port_name,
-              spice_tb_global_vdd_localrouting_port_name);
+  fprint_spice_testbench_global_vdd_port_stimuli(fp, 
+                                                 spice_tb_global_vdd_localrouting_port_name,
+                                                 "vsp");
+
   fprintf(fp, "***** Global VDD for local routing SRAMs *****\n");
-  fprintf(fp, "V%s %s 0 vsp\n",
-              spice_tb_global_vdd_localrouting_sram_port_name,
-              spice_tb_global_vdd_localrouting_sram_port_name);
+  fprint_spice_testbench_global_vdd_port_stimuli(fp, 
+                                                 spice_tb_global_vdd_localrouting_sram_port_name,
+                                                 "vsp");
+
   fprintf(fp, "***** Global VDD for LUTs SRAMs *****\n");
-  fprintf(fp, "V%s %s 0 vsp\n",
-              spice_tb_global_vdd_lut_sram_port_name,
-              spice_tb_global_vdd_lut_sram_port_name);
+  fprint_spice_testbench_global_vdd_port_stimuli(fp, 
+                                                 spice_tb_global_vdd_lut_sram_port_name,
+                                                 "vsp");
+
   fprintf(fp, "***** Global VDD for Connection Boxes SRAMs *****\n");
-  fprintf(fp, "V%s %s 0 vsp\n",
-              spice_tb_global_vdd_cb_sram_port_name,
-              spice_tb_global_vdd_cb_sram_port_name);
+  fprint_spice_testbench_global_vdd_port_stimuli(fp, 
+                                                 spice_tb_global_vdd_cb_sram_port_name,
+                                                 "vsp");
+
   fprintf(fp, "***** Global VDD for Switch Boxes SRAMs *****\n");
-  fprintf(fp, "V%s %s 0 vsp\n",
-              spice_tb_global_vdd_sb_sram_port_name,
-              spice_tb_global_vdd_sb_sram_port_name);
+  fprint_spice_testbench_global_vdd_port_stimuli(fp, 
+                                                 spice_tb_global_vdd_sb_sram_port_name,
+                                                 "vsp");
 
   /* Every Hardlogic use an independent Voltage source */
   fprintf(fp, "***** Global VDD for Hard Logics *****\n");
@@ -194,20 +206,6 @@ void fprint_top_netlist_stimulations(FILE* fp,
   fprintf(fp, "***** Global VDD for Flip-flops (FFs) *****\n");
   fprint_splited_vdds_spice_model(fp, SPICE_MODEL_IOPAD, spice);
 
-  /* Every SRAM inputs should have a voltage source */
-  fprintf(fp, "***** Global Inputs for SRAMs *****\n");
-  if (SPICE_SRAM_SCAN_CHAIN == sram_spice_orgz_type) {
-    fprintf(fp, "Vsc_clk sc_clk 0 0\n");
-    fprintf(fp, "Vsc_rst sc_rst 0 0\n");
-    fprintf(fp, "Vsc_set sc_set 0 0\n");
-    fprintf(fp, "V%s[0]->in %s[0]->in 0 0\n", sram_spice_model->prefix, sram_spice_model->prefix);
-    fprintf(fp, ".nodeset V(%s[0]->in) 0\n", sram_spice_model->prefix);
-  } else {
-    fprintf(fp, "V%s->in %s->in 0 0\n", 
-            sram_spice_model->prefix, sram_spice_model->prefix);
-    fprintf(fp, ".nodeset V(%s->in) 0\n", sram_spice_model->prefix);
-  }
-  
   /* Every Switch Box (SB) use an independent Voltage source */
   fprintf(fp, "***** Global VDD for Switch Boxes(SBs) *****\n");
   for (ix = 0; ix < (nx + 1); ix++) {

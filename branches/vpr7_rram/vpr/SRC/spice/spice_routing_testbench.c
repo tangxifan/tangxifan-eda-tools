@@ -698,6 +698,9 @@ int fprint_spice_one_sb_testbench(char* formatted_spice_dir,
   my_free(temp_include_file_path);
   used = fprint_spice_routing_testbench_call_one_sb_tb(fp, *(arch.spice), grid_x, grid_y, LL_rr_node_indices);
 
+  /* Generate SPICE routing testbench generic stimuli*/
+  fprintf_spice_routing_testbench_generic_stimuli(fp, num_clocks);
+
   /* SPICE ends*/
   fprintf(fp, ".end\n");
 
