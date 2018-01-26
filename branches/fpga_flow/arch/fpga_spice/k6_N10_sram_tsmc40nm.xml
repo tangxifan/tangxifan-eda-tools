@@ -135,7 +135,7 @@
 
   <!-- Physical descriptions begin -->
   <layout auto="1.0"/>
-  <!--layout width="2" height="2"/-->
+  <!--layout width="5" height="5"/-->
 
   <!--mrFPGA_settings--> 
     <!-- below is the timing parameters for a single memristor device (or so called RRAM) -->
