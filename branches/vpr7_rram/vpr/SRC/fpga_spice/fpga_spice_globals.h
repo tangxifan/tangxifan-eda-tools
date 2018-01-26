@@ -36,3 +36,4 @@ enum e_pin2pin_interc_type {
 
 
 extern char* renaming_report_postfix;
+extern int min_num_sim_clock_cycle;

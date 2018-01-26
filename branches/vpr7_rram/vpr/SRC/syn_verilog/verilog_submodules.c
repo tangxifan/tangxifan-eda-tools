@@ -902,7 +902,7 @@ void dump_verilog_cmos_mux_tree_structure(FILE* fp,
       }
       fprintf(fp, "mux2_l%d_in[%d:%d], ", level, j, nextj); /* input0 input1 */
       fprintf(fp, "mux2_l%d_in[%d], ", nextlevel, out_idx); /* output */
-      fprintf(fp, "%s[%d], %s_inv[%d]);\n", sram_port[0]->prefix, nextlevel, sram_port[0]->prefix, nextlevel); /* sram sram_inv */
+      fprintf(fp, "%s[%d], %s_inv[%d]);\n", sram_port[0]->prefix, i, sram_port[0]->prefix, i); /* sram sram_inv */
       /* Update the counter */
       j = nextj;
       mux_basis_cnt++;

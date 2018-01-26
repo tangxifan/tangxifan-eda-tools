@@ -374,7 +374,8 @@ void fprint_spice_cmos_mux_tree_structure(FILE* fp, char* mux_basis_subckt_name,
       fprintf(fp, "Xmux_basis_no%d ", mux_basis_cnt); /* given_name */
       fprintf(fp, "mux2_l%d_in%d mux2_l%d_in%d ", level, j, level, nextj); /* input0 input1 */
       fprintf(fp, "mux2_l%d_in%d ", nextlevel, out_idx); /* output */
-      fprintf(fp, "%s%d %s_inv%d ", sram_port[0]->prefix, nextlevel, sram_port[0]->prefix, nextlevel); /* sram sram_inv */
+      /* fprintf(fp, "%s%d %s_inv%d ", sram_port[0]->prefix, nextlevel, sram_port[0]->prefix, nextlevel);*/ /* sram sram_inv */
+      fprintf(fp, "%s%d %s_inv%d ", sram_port[0]->prefix, i, sram_port[0]->prefix, i); /* sram sram_inv */
       fprintf(fp, "svdd sgnd %s\n", mux_basis_subckt_name); /* subckt_name */
       /* Update the counter */
       j = nextj;
@@ -540,7 +541,7 @@ void fprint_spice_rram_mux_tree_structure(FILE* fp, char* mux_basis_subckt_name,
       fprintf(fp, "Xmux_basis_no%d ", mux_basis_cnt); /* given_name */
       fprintf(fp, "mux2_l%d_in%d mux2_l%d_in%d ", level, j, level, nextj); /* input0 input1 */
       fprintf(fp, "mux2_l%d_in%d ", nextlevel, out_idx); /* output */
-      fprintf(fp, "%s%d %s_inv%d ", sram_port[0]->prefix, nextlevel, sram_port[0]->prefix, nextlevel); /* sram sram_inv */
+      fprintf(fp, "%s%d %s_inv%d ", sram_port[0]->prefix, i, sram_port[0]->prefix, i); /* sram sram_inv */
       fprintf(fp, "svdd sgnd %s\n", mux_basis_subckt_name); /* subckt_name */
       /* Update the counter */
       j = nextj;

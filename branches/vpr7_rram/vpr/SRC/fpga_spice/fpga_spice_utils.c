@@ -1900,12 +1900,18 @@ int recommend_num_sim_clock_cycle() {
   /* Sort the density */
   quicksort_float_index(net_cnt, sort_index, density_value);
   /* Get the median */
-  median_density = vpack_net[sort_index[(int)net_cnt/2]].spice_net_info->density;
+  median_density = vpack_net[sort_index[(int)net_cnt/2] + 1].spice_net_info->density;
   
   recmd_num_sim_clock_cycle = (int)(1/avg_density);
   /* It may be more reasonable to use median 
   recmd_num_sim_clock_cycle = (int)(1/median_density); 
    */
+ 
+  /* test at least 10 clock cycles. to be fair ?*/
+  if (min_num_sim_clock_cycle > recmd_num_sim_clock_cycle) {
+    recmd_num_sim_clock_cycle = min_num_sim_clock_cycle;
+  }
+  
   vpr_printf(TIO_MESSAGE_INFO, "Average net density: %.2g\n", avg_density);
   vpr_printf(TIO_MESSAGE_INFO, "Net density median: %.2g\n", median_density);
   vpr_printf(TIO_MESSAGE_INFO, "Recommend no. of clock cycles: %d\n", recmd_num_sim_clock_cycle);
@@ -5151,12 +5157,18 @@ char* complete_truth_table_line(int lut_size,
   /* Complete the truth table line*/
   cover_len = strlen(tokens[0]); 
   assert((cover_len < lut_size)||(cover_len == lut_size));
-  /* Add the number of '-' we should add in the front*/
-  for (j = 0; j < (lut_size - cover_len); j++) {
+
+  /* Copy the original truth table line */ 
+  for (j = 0; j < cover_len; j++) {
+    ret[j] = tokens[0][j];
+  }
+  /* Add the number of '-' we should add in the back !!! */
+  for (j = cover_len; j < lut_size; j++) {
     ret[j] = '-';
   }
+
   /* Copy the original truth table line */ 
-  sprintf(ret + lut_size - cover_len, "%s %s", tokens[0], tokens[1]); 
+  sprintf(ret + lut_size, " %s", tokens[1]);
 
   /* Free */
   for (j = 0; j < num_token; j++) {
