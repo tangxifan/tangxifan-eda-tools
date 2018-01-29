@@ -104,6 +104,12 @@ void dump_verilog_pb_primitive_ff(FILE* fp,
                 (strlen(prim_pb_type->name) + 1
                  + strlen(my_itoa(index)) + 1 + 1));
   sprintf(port_prefix, "%s_%d_", prim_pb_type->name, index);
+
+
+  if (NULL != mapped_logical_block) {
+    fprintf(fp, "//----- Flip-flop Verilog module: %s -----\n", 
+                mapped_logical_block->name);
+  }
   /* Comment lines */
   fprintf(fp, "//----- Flip-flop Verilog module: %s%s -----\n", 
           formatted_subckt_prefix, port_prefix);

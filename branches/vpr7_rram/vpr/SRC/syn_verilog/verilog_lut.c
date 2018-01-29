@@ -270,6 +270,10 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   fprintf(fp, ");\n");
 
   /* Print the encoding in SPICE netlist for debugging */
+  if (NULL != mapped_logical_block) {
+    fprintf(fp, "//----- Truth Table for LUT node (%s). -----\n", 
+                mapped_logical_block->name);
+  }
   fprintf(fp, "//----- Truth Table for LUT[%d], size=%d. -----\n", 
           verilog_model->cnt, lut_size);
   for (i = 0; i < truth_table_length; i++) {

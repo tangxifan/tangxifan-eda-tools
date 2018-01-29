@@ -2147,7 +2147,7 @@ void dump_verilog_top_testbench_stimuli_serial_version(FILE* fp,
   fprintf(fp, "  begin //--- OP_CLOCK INITIALIZATION\n");
   fprintf(fp, "    %s%s = 1'b0;\n", top_tb_op_clock_port_name, top_tb_clock_reg_postfix);
   fprintf(fp, "  end\n");
-  fprintf(fp, "always wait(%s)\n", top_tb_config_done_port_name); 
+  fprintf(fp, "always wait(~%s)\n", top_tb_reset_port_name); 
   fprintf(fp, "  begin //--- OP_CLOCK GENERATOR\n");
   fprintf(fp, "    #%.2f %s%s = ~%s%s;\n", 
               0.5*op_clock_period / verilog_sim_timescale,
@@ -2414,7 +2414,7 @@ void dump_verilog_input_blif_testbench_stimuli(FILE* fp,
                                                t_spice spice) {
   int iblock, inet;
   t_spice_net_info* cur_spice_net_info = NULL;
-  float op_clock_period = 1./spice.spice_params.stimulate_params.prog_clock_freq;
+  float op_clock_period = 1./spice.spice_params.stimulate_params.op_clock_freq;
 
   fprintf(fp, "//----- Operation clock period: %.2g -----\n", op_clock_period);
 
@@ -2425,8 +2425,9 @@ void dump_verilog_input_blif_testbench_stimuli(FILE* fp,
   fprintf(fp, " %s = 1'b1;\n", top_tb_reset_port_name);
   /* Reset is enabled until the first clock cycle in operation phase */
   fprintf(fp, "//----- Reset signal is enabled until the first clock cycle in operation phase ----\n");
-  fprintf(fp, "#%.2g greset = 1'b0;\n", 
-              (1 * op_clock_period) / verilog_sim_timescale);
+  fprintf(fp, "#%.2f %s = 1'b0;\n", 
+              (1 * op_clock_period) / verilog_sim_timescale,
+              top_tb_reset_port_name);
   fprintf(fp, "end\n");
   fprintf(fp, "\n");
 
@@ -2458,7 +2459,7 @@ void dump_verilog_input_blif_testbench_stimuli(FILE* fp,
       fprintf(fp, "end\n");
       fprintf(fp, "always wait (~%s)\n", top_tb_reset_port_name);
       fprintf(fp, "  begin \n");
-      fprintf(fp, "    #%.2g %s = ~%s;\n", 
+      fprintf(fp, "    #%.2f %s = ~%s;\n", 
               (op_clock_period * cur_spice_net_info->density * 2. / cur_spice_net_info->probability) / verilog_sim_timescale, 
               logical_block[iblock].name,
               logical_block[iblock].name);

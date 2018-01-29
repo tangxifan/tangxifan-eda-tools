@@ -5238,7 +5238,7 @@ void configure_lut_sram_bits_per_line_rec(int** sram_bits,
       }
     }
     /* Set the sram bit to '1'*/
-    assert(sram_id < num_sram_bit);
+    assert((-1 < sram_id) && (sram_id < num_sram_bit));
     if (0 == strcmp(" 1", truth_table_line + lut_size)) {
       (*sram_bits)[sram_id] = 1; /* on set*/
     } else if (0 == strcmp(" 0", truth_table_line + lut_size)) {
