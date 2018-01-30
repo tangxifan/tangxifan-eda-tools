@@ -1107,6 +1107,27 @@ int check_and_rename_logical_block_and_net_names(t_llist* LL_reserved_syntax_cha
   return num_violations;
 }
 
+
+static 
+void spice_net_info_add_density_weight(float signal_density_weight) {
+  int inet;
+
+  /* a weight of 1. means no change. directly return */
+  if ( 1. == signal_density_weight ) {
+    return;
+  }
+
+  for (inet = 0; inet < num_logical_nets; inet++) {
+    assert( NULL != vpack_net[inet].spice_net_info );
+    vpack_net[inet].spice_net_info->density *= signal_density_weight;
+  }
+
+  for (inet = 0; inet < num_nets; inet++) {
+    assert( NULL != clb_net[inet].spice_net_info );
+    clb_net[inet].spice_net_info->density *= signal_density_weight;
+  }
+}
+
 /* Top-level function of FPGA-SPICE setup */
 void fpga_spice_setup(t_vpr_setup vpr_setup,
                       t_arch* Arch) {
@@ -1164,6 +1185,11 @@ void fpga_spice_setup(t_vpr_setup vpr_setup,
   spice_backannotate_vpr_post_route_info(vpr_setup.RoutingArch,
                                          vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_parasitic_net_estimation_off);
 
+  /* Add weights to spice_net density */ 
+  vpr_printf(TIO_MESSAGE_INFO, "Add %.2f weight to signal density...\n", 
+             vpr_setup.FPGA_SPICE_Opts.signal_density_weight); 
+  spice_net_info_add_density_weight(vpr_setup.FPGA_SPICE_Opts.signal_density_weight);
+
   /* Auto check the density and recommend sim_num_clock_cylce */
   vpr_crit_path_delay = get_critical_path_delay()/1e9;
   assert(vpr_crit_path_delay > 0.);
@@ -1179,7 +1205,7 @@ void fpga_spice_setup(t_vpr_setup vpr_setup,
   Arch->spice->spice_params.stimulate_params.num_clocks = num_clocks;
   Arch->spice->spice_params.stimulate_params.vpr_crit_path_delay = vpr_crit_path_delay;
   vpr_clock_period = 1./vpr_clock_freq;
-  auto_select_num_sim_clock_cycle(Arch->spice);
+  auto_select_num_sim_clock_cycle(Arch->spice, vpr_setup.FPGA_SPICE_Opts.sim_window_size);
 
  /* Determine the clock period */
   if (OPEN == Arch->spice->spice_params.stimulate_params.op_clock_freq) {

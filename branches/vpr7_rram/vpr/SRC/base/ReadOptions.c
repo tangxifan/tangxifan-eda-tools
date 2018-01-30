@@ -510,6 +510,10 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
       return Args;
     case OT_FPGA_SPICE_RENAME_ILLEGAL_PORT:
       return Args;
+    case OT_FPGA_SPICE_SIGNAL_DENSITY_WEIGHT:
+	  return ReadFloat(Args, &Options->signal_density_weight);
+    case OT_FPGA_SPICE_SIM_WINDOW_SIZE:
+	  return ReadFloat(Args, &Options->sim_window_size);
     /* mrFPGA: Xifan TANG */
     case OT_SHOW_SRAM:
     case OT_SHOW_PASS_TRANS:

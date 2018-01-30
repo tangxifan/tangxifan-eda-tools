@@ -1859,7 +1859,7 @@ void stats_pb_graph_node_port_pin_numbers(t_pb_graph_node* cur_pb_graph_node,
   return;
 }
 
-int recommend_num_sim_clock_cycle() {
+int recommend_num_sim_clock_cycle(float sim_window_size) {
   float avg_density = 0.;
   float median_density = 0.;
   int recmd_num_sim_clock_cycle = 0;
@@ -1869,6 +1869,10 @@ int recommend_num_sim_clock_cycle() {
   int* sort_index = NULL;
   int* net_to_sort_index_mapping = NULL;
 
+  float weighted_avg_density = 0.;
+  float net_weight = 0.;
+  int weighted_net_cnt = 0;
+
   /* get the average density of all the nets */
   for (inet = 0; inet < num_logical_nets; inet++) {
     assert(NULL != vpack_net[inet].spice_net_info);
@@ -1877,9 +1881,20 @@ int recommend_num_sim_clock_cycle() {
      &&(0. != vpack_net[inet].spice_net_info->density)) {
       avg_density += vpack_net[inet].spice_net_info->density; 
       net_cnt++;
+      /* Consider the weight of fan-out */
+      if (0 == vpack_net[inet].num_sinks) {
+        net_weight = 1;
+      } else {
+        assert( 0 < vpack_net[inet].num_sinks );
+        net_weight = vpack_net[inet].num_sinks;
+      }
+      weighted_avg_density += vpack_net[inet].spice_net_info->density * net_weight;
+      weighted_net_cnt += net_weight;
     }
   }
   avg_density = avg_density/net_cnt; 
+  weighted_avg_density = weighted_avg_density/weighted_net_cnt; 
+
   /* Fill the array to be sorted */
   density_value = (float*)my_malloc(sizeof(float)*net_cnt);
   sort_index = (int*)my_malloc(sizeof(int)*net_cnt);
@@ -1900,20 +1915,21 @@ int recommend_num_sim_clock_cycle() {
   /* Sort the density */
   quicksort_float_index(net_cnt, sort_index, density_value);
   /* Get the median */
-  median_density = vpack_net[sort_index[(int)net_cnt/2] + 1].spice_net_info->density;
+  median_density = vpack_net[sort_index[(int)(net_cnt*(1-sim_window_size))]].spice_net_info->density;
   
   recmd_num_sim_clock_cycle = (int)(1/avg_density);
   /* It may be more reasonable to use median 
   recmd_num_sim_clock_cycle = (int)(1/median_density); 
-   */
- 
-  /* test at least 10 clock cycles. to be fair ?*/
-  if (min_num_sim_clock_cycle > recmd_num_sim_clock_cycle) {
-    recmd_num_sim_clock_cycle = min_num_sim_clock_cycle;
-  }
+
+  if (median_density > avg_density) {
+    recmd_num_sim_clock_cycle = (int)(1/avg_density);
+  } 
+  */
   
   vpr_printf(TIO_MESSAGE_INFO, "Average net density: %.2g\n", avg_density);
-  vpr_printf(TIO_MESSAGE_INFO, "Net density median: %.2g\n", median_density);
+  vpr_printf(TIO_MESSAGE_INFO, "Weighted Average net density: %.2g\n", weighted_avg_density);
+  vpr_printf(TIO_MESSAGE_INFO, "Window size set for Simulation: %.2g\n", sim_window_size);
+  vpr_printf(TIO_MESSAGE_INFO, "Net density after weighting: %.2g\n", median_density);
   vpr_printf(TIO_MESSAGE_INFO, "Recommend no. of clock cycles: %d\n", recmd_num_sim_clock_cycle);
 
   /* Free */
@@ -1924,8 +1940,9 @@ int recommend_num_sim_clock_cycle() {
   return recmd_num_sim_clock_cycle; 
 }
 
-void auto_select_num_sim_clock_cycle(t_spice* spice) {
-  int recmd_num_sim_clock_cycle = recommend_num_sim_clock_cycle();
+void auto_select_num_sim_clock_cycle(t_spice* spice,
+                                     float sim_window_size) {
+  int recmd_num_sim_clock_cycle = recommend_num_sim_clock_cycle(sim_window_size);
 
   /* Auto select number of simulation clock cycles*/
   if (-1 == spice->spice_params.meas_params.sim_num_clock_cycle) {

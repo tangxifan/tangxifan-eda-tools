@@ -130,6 +130,8 @@ sub print_usage()
   print "      -remove_designs: remove all the old results.\n";
   print "      -abc_scl : run ABC optimization for sequential circuits, mandatory when VTR flow is selected.\n";
   print "      -abc_verilog_rewrite : run ABC to convert a blif netlist to a Verilog netlist.\n";
+  print "      -ace_p <float> : specify the default signal probablity of PIs in ACE2.\n";
+  print "      -ace_d <float> : specify the default signal density of PIs in ACE2.\n";
   print "      -vpr_timing_pack_off : turn off the timing-driven pack for vpr.\n";
   print "      -vpr_place_clb_pin_remap: turn on place_clb_pin_remap in VPR.\n";
   print "      -vpr_max_router_iteration <int> : specify the max router iteration in VPR.\n";
@@ -145,6 +147,8 @@ sub print_usage()
   print "      -vpr_fpga_spice_parasitic_net_estimation_off : turn off parasitic_net_estimation in VPR FPGA SPICE\n";
   print "      -vpr_fpga_spice_verilog_generator : turn on Verilog Generator of VPR FPGA SPICE\n";
   print "      -vpr_fpga_spice_rename_illegal_port : turn on renaming illegal ports option of VPR FPGA SPICE\n";
+  print "      -vpr_fpga_spice_signal_density_weight <float>: specify the option signal_density_weight of VPR FPGA SPICE\n";
+  print "      -vpr_fpga_spice_sim_window_size <float>: specify the option sim_window_size of VPR FPGA SPICE\n";
   print "      -multi_thread <int>: turn on the mutli-thread mode, specify the number of threads\n";
   print "      -parse_results_only : only parse the flow results and write CSV report.\n";
   print "      -min_hard_adder_size: min. size of hard adder in carry chain defined in Arch XML.(Default:1)\n";
@@ -286,6 +290,8 @@ sub opts_read()
   &read_opt_into_hash("remove_designs","off","off");
   &read_opt_into_hash("abc_scl","off","off");
   &read_opt_into_hash("abc_verilog_rewrite","off","off");
+  &read_opt_into_hash("ace_p","on","off");
+  &read_opt_into_hash("ace_d","on","off");
   &read_opt_into_hash("vpr_timing_pack_off","off","off");
   &read_opt_into_hash("vpr_route_breadthfirst","off","off");
   &read_opt_into_hash("min_route_chan_width","on","off");
@@ -311,6 +317,8 @@ sub opts_read()
   &read_opt_into_hash("vpr_fpga_spice_parasitic_net_estimation_off","off","off");
   &read_opt_into_hash("vpr_fpga_spice_verilog_generator","off","off");
   &read_opt_into_hash("vpr_fpga_spice_rename_illegal_port","off","off");
+  &read_opt_into_hash("vpr_fpga_spice_signal_density_weight","on","off");
+  &read_opt_into_hash("vpr_fpga_spice_sim_window_size","on","off");
 
   &print_opts(); 
 
@@ -1000,9 +1008,18 @@ sub run_odin2($ $ $) {
 sub run_ace($ $ $ $) {
   my ($mpack_vpr_blif,$act_file,$ace_new_blif,$log) = @_;
   my ($ace_dir,$ace_name) = &split_prog_path($conf_ptr->{dir_path}->{ace_path}->{val});
+  my ($ace_customized_opts) = (""); 
+
+  if ("on" eq $opt_ptr->{ace_d}) {
+    $ace_customized_opts .= " -d $opt_ptr->{ace_d_val}";
+  }
+
+  if ("on" eq $opt_ptr->{ace_p}) {
+    $ace_customized_opts .= " -p $opt_ptr->{ace_p_val}";
+  }
   
   chdir $ace_dir;
-  `csh -cx './$ace_name -b $mpack_vpr_blif -o $act_file -n $ace_new_blif > $log'`;
+  `csh -cx './$ace_name -b $mpack_vpr_blif -o $act_file -n $ace_new_blif $ace_customized_opts > $log'`;
 
   if (!(-e $ace_new_blif)) {
     die "ERROR: Fail ACE for benchmark $mpack_vpr_blif.\n";
@@ -1038,6 +1055,12 @@ sub run_std_vpr($ $ $ $ $ $ $ $ $)
     $vpr_spice_opts = "--fpga_spice";
     if ("on" eq $opt_ptr->{vpr_fpga_spice_rename_illegal_port}) {
       $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_rename_illegal_port";
+    }
+    if ("on" eq $opt_ptr->{vpr_fpga_spice_signal_density_weight}) {
+      $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_signal_density_weight $opt_ptr->{vpr_fpga_spice_signal_density_weight_val}";
+    }
+    if ("on" eq $opt_ptr->{vpr_fpga_spice_sim_window_size}) {
+      $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_sim_window_size $opt_ptr->{vpr_fpga_spice_sim_window_size_val}";
     }
     if ("on" eq $opt_ptr->{vpr_fpga_spice_print_component_tb}) {
       $vpr_spice_opts = $vpr_spice_opts." --print_spice_lut_testbench";

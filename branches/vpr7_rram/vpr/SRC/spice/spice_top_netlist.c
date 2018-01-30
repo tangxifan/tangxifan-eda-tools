@@ -261,7 +261,7 @@ void fprint_top_netlist_stimulations(FILE* fp,
         assert(NULL != cur_spice_net_info);
         }
         assert(!(0 > cur_spice_net_info->density));
-        assert(!(1 < cur_spice_net_info->density));
+        /* assert(!(2 < cur_spice_net_info->density)); */
         assert(!(0 > cur_spice_net_info->probability));
         assert(!(1 < cur_spice_net_info->probability));
         /* Get the net information */

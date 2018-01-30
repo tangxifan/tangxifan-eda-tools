@@ -1081,6 +1081,18 @@ static void SetupFpgaSpiceOpts(t_options Options,
     fpga_spice_opts->rename_illegal_port = TRUE;
   }
 
+  /* Assign the weight of signal density */
+  fpga_spice_opts->signal_density_weight = 1.;
+  if (Options.Count[OT_FPGA_SPICE_SIGNAL_DENSITY_WEIGHT]) { 
+    fpga_spice_opts->signal_density_weight = Options.signal_density_weight;
+  }
+
+  /* Assign the weight of signal density */
+  fpga_spice_opts->sim_window_size = 0.5;
+  if (Options.Count[OT_FPGA_SPICE_SIM_WINDOW_SIZE]) { 
+    fpga_spice_opts->sim_window_size = Options.sim_window_size;
+  }
+
   /* Decide if we need to do FPGA-SPICE */
   fpga_spice_opts->do_fpga_spice = FALSE;
   if (( TRUE == fpga_spice_opts->SpiceOpts.do_spice)

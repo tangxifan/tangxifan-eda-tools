@@ -451,49 +451,21 @@ void rec_backannotate_rr_node_net_num(int LL_num_rr_nodes,
 /***** Backannotate activity information to nets *****/
 /* Mark mapped rr_nodes with net_num*/
 static 
-void backannotate_rr_nodes_net_info() {
-  int iblk, ipin, class_id, pin_global_rr_node_id;
-  t_rr_node* pb_rr_graph = NULL;
+void backannotate_rr_nodes_parasitic_net_info() {
+  int inode;
  
-  /* Start from all the pb OPINs, and forward to all the rr_nodes */
-  for (iblk = 0; iblk < num_blocks; iblk++) {
-    assert(NULL != block[iblk].pb);
-    /* load pb_rr_graph */
-    pb_rr_graph = block[iblk].pb->rr_graph;
-    /* For each output pin, we find the pb net_num */
-    for (ipin = 0; ipin < block[iblk].type->num_pins; ipin++) {
-      class_id = block[iblk].type->pin_class[ipin];
-      /* Bypass not OPINs*/
-      if (DRIVER != block[iblk].type->class_inf[class_id].type) {
-        continue;
-      }
-      /* get the global rr_node */ 
-      pin_global_rr_node_id = get_rr_node_index(block[iblk].x, block[iblk].y, OPIN, ipin, rr_node_indices);
-      /* Give IO_TYPE vpack_net_num */
-      if (IO_TYPE == block[iblk].type) {
-        if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
-          rr_node[pin_global_rr_node_id].net_num = OPEN;
-          rr_node[pin_global_rr_node_id].vpack_net_num = OPEN;
-        } else if (OPEN == block[iblk].nets[ipin]){
-          rr_node[pin_global_rr_node_id].net_num = OPEN;
-          rr_node[pin_global_rr_node_id].vpack_net_num = OPEN;
-        } else {
-          rr_node[pin_global_rr_node_id].net_num = block[iblk].nets[ipin];
-          rr_node[pin_global_rr_node_id].vpack_net_num = clb_to_vpack_net_mapping[block[iblk].nets[ipin]];
-        }
-      } else {
-        assert(rr_node[pin_global_rr_node_id].vpack_net_num == pb_rr_graph[ipin].vpack_net_num);
-      }
-      /* Bypass unmapped pins */
-      if (OPEN == rr_node[pin_global_rr_node_id].vpack_net_num) {
-        continue;
-      }
-      //printf("Updating all traces with vpack_net_num(name:%s)...\n", 
-      //       vpack_net[rr_node[pin_global_rr_node_id].vpack_net_num].name); 
-      //assert(rr_node[pin_global_rr_node_id].net_num == vpack_to_clb_net_mapping[pb_rr_graph[ipin].net_num]);
-      /* Forward to all the downstream rr_nodes */
-      rec_backannotate_rr_node_net_num(num_rr_nodes, rr_node, pin_global_rr_node_id); 
+  /* Start from all the SOURCEs */
+  for (inode = 0; inode < num_rr_nodes; inode++) {
+    if (SOURCE !=  rr_node[inode].type) {
+      continue;
     }
+    /* Bypass unmapped pins */
+    if (OPEN == rr_node[inode].vpack_net_num) {
+      continue;
+    }
+    assert(OPEN != rr_node[inode].net_num);
+    /* Forward to all the downstream rr_nodes */
+    rec_backannotate_rr_node_net_num(num_rr_nodes, rr_node, inode); 
   }
  
   return;
@@ -1424,8 +1396,8 @@ void update_grid_pb_pins_parasitic_nets() {
   int ix, iy;
   t_type_ptr type = NULL;
 
-  for (ix = 1; ix < (nx + 1); ix++) {
-    for (iy = 1; iy < (ny + 1); iy++) {
+  for (ix = 0; ix < (nx + 2); ix++) {
+    for (iy = 0; iy < (ny + 2); iy++) {
       type = grid[ix][iy].type;
       if (NULL != type) {
         /* Backup the packing prev_node and prev_edge */
@@ -2238,7 +2210,7 @@ void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
   /* Build Array for each Switch block and Connection block */ 
   vpr_printf(TIO_MESSAGE_INFO, "Collecting detailed information for each Switch block...\n");
   alloc_and_build_switch_blocks_info(RoutingArch, num_rr_nodes, rr_node, rr_node_indices);
-  vpr_printf(TIO_MESSAGE_INFO, "Collecting detailed infromation for each to Connection block...\n");
+  vpr_printf(TIO_MESSAGE_INFO, "Collecting detailed information for each to Connection block...\n");
   alloc_and_build_connection_blocks_info(RoutingArch, num_rr_nodes, rr_node, rr_node_indices);
 
   /* This function should go very first because it gives all the net_num */
@@ -2257,8 +2229,8 @@ void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
   if (FALSE == parasitic_net_estimation_off) {
     vpr_printf(TIO_MESSAGE_INFO, "Update CLB pins parasitic nets (1st time: for output pins)...\n");
     update_grid_pb_pins_parasitic_nets();
-    vpr_printf(TIO_MESSAGE_INFO, "Backannoating global routing net...\n");
-    backannotate_rr_nodes_net_info();
+    vpr_printf(TIO_MESSAGE_INFO, "Backannoating global routing parasitic net...\n");
+    backannotate_rr_nodes_parasitic_net_info();
     vpr_printf(TIO_MESSAGE_INFO, "Update CLB pins parasitic nets (2nd time: for input pins)...\n");
     update_grid_pb_pins_parasitic_nets();
   } else {
@@ -2302,8 +2274,8 @@ void backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch) {
   /* Backannotate activity information, initialize the waveform information */
   vpr_printf(TIO_MESSAGE_INFO, "Update logic block pins parasitic nets (1st time: for output pins)...\n");
   update_grid_pb_pins_parasitic_nets();
-  vpr_printf(TIO_MESSAGE_INFO, "Backannoating global routing net...\n");
-  backannotate_rr_nodes_net_info();
+  vpr_printf(TIO_MESSAGE_INFO, "Backannoating global routing parasitic net...\n");
+  backannotate_rr_nodes_parasitic_net_info();
   /* Parasitic Net Activity Estimation */
   vpr_printf(TIO_MESSAGE_INFO, "Update logic block pins parasitic nets (2nd time: for input pins)...\n");
   update_grid_pb_pins_parasitic_nets();

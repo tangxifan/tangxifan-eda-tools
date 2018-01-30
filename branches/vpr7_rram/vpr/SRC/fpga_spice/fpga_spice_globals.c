@@ -39,4 +39,3 @@ int default_signal_init_value = 0;
 int run_parasitic_net_estimation = 1;
 
 char* renaming_report_postfix = "_io_renaming.rpt";
-int min_num_sim_clock_cycle = 10;

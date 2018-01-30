@@ -167,6 +167,8 @@ void vpr_print_usage(void) {
     /* Xifan TANG: FPGA-SPICE Support*/
 	vpr_printf(TIO_MESSAGE_INFO, "FPGA-SPICE tool suite Options:\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_rename_illegal_port\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_signal_density_weight <float>\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_sim_window_size <float>\n");
 	vpr_printf(TIO_MESSAGE_INFO, "SPICE Support Options:\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--spice_dir <directory_path_output_spice_netlists>\n");

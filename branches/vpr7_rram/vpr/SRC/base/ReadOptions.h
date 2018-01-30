@@ -95,6 +95,9 @@ struct s_options {
     char* spice_dir;
     /* Xifan TANG: Synthesizable Verilog */
     char* syn_verilog_dir;
+    /* Xifan TANG: signal weight in FPGA_SPICE simulation */
+    float signal_density_weight;
+    float sim_window_size;
 };
 
 enum e_echo_files {

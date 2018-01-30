@@ -184,7 +184,8 @@ void map_clb_pins_to_pb_graph_pins();
 
 int recommend_num_sim_clock_cycle();
 
-void auto_select_num_sim_clock_cycle(t_spice* spice);
+void auto_select_num_sim_clock_cycle(t_spice* spice,
+                                     float signal_density_weight);
 
 void alloc_spice_model_grid_index_low_high(t_spice_model* cur_spice_model);
 

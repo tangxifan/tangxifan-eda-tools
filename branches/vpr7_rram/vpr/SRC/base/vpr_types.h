@@ -1192,6 +1192,10 @@ struct s_fpga_spice_opts {
   boolean rename_illegal_port; /* Rename illegal port names that is not compatible with verilog/SPICE syntax */
   t_spice_opts SpiceOpts; /* Xifan TANG: SPICE Support*/
   t_syn_verilog_opts SynVerilogOpts; /* Xifan TANG: Synthesizable verilog dumping*/
+
+  /* Signal Density */
+  float signal_density_weight;
+  float sim_window_size;
 };
 
 /* Power estimation options */
