@@ -379,7 +379,7 @@ void fprint_spice_lut_testbench_rec_pb_luts(FILE* fp,
         fprint_spice_lut_testbench_rec_pb_luts(fp, &(cur_pb->child_pbs[ipb][jpb]), rec_prefix, x, y, LL_rr_node_indices);
       } else {
         /* Print idle graph_node muxes */
-        /* Bypass unused LUTs */
+        /* Then we go on */
         fprint_spice_lut_testbench_rec_pb_graph_node_luts(fp, cur_pb->child_pbs[ipb][jpb].pb_graph_node, 
                                                           rec_prefix, x, y, LL_rr_node_indices);
       }
@@ -415,7 +415,7 @@ void fprint_spice_lut_testbench_call_one_grid_defined_luts(FILE* fp, int ix, int
     /* Only for mapped block */
     assert(NULL != block[grid[ix][iy].blocks[iblk]].pb);
     /* Mark the temporary net_num for the type pins*/
-    mark_grid_type_pb_graph_node_pins_temp_net_num(ix, iy);
+    mark_one_pb_parasitic_nets(block[grid[ix][iy].blocks[iblk]].pb);
     fprint_spice_lut_testbench_rec_pb_luts(fp, block[grid[ix][iy].blocks[iblk]].pb, prefix, ix, iy, LL_rr_node_indices);
     my_free(prefix);
   }

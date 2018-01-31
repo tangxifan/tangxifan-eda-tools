@@ -223,7 +223,39 @@ int find_pb_type_physical_mode_index(t_pb_type cur_pb_type);
 
 void mark_grid_type_pb_graph_node_pins_temp_net_num(int x, int y);
 
+void assign_pb_graph_node_pin_temp_net_num_by_mode_index(t_pb_graph_pin* cur_pb_graph_pin,
+                                                         int mode_index);
+
+void mark_pb_graph_node_input_pins_temp_net_num(t_pb_graph_node* cur_pb_graph_node,
+                                                int mode_index);
+
+void mark_pb_graph_node_clock_pins_temp_net_num(t_pb_graph_node* cur_pb_graph_node,
+                                                int mode_index);
+
+void mark_pb_graph_node_output_pins_temp_net_num(t_pb_graph_node* cur_pb_graph_node,
+                                                int mode_index);
+
 void rec_mark_pb_graph_node_temp_net_num(t_pb_graph_node* cur_pb_graph_node);
+
+void load_one_pb_graph_pin_temp_net_num_from_pb(t_pb* cur_pb,
+                                                t_pb_graph_pin* cur_pb_graph_pin);
+
+void load_pb_graph_node_temp_net_num_from_pb(t_pb* cur_pb);
+
+void rec_mark_one_pb_unused_pb_graph_node_temp_net_num(t_pb* cur_pb);
+
+void update_pb_vpack_net_num_from_temp_net_num(t_pb* cur_pb, 
+                                               t_pb_graph_pin* cur_pb_graph_pin);
+
+void update_pb_graph_node_temp_net_num_to_pb(t_pb_graph_node* cur_pb_graph_node,
+                                             t_pb* cur_pb);
+
+void rec_load_unused_pb_graph_node_temp_net_num_to_pb(t_pb* cur_pb);
+
+void mark_one_pb_parasitic_nets(t_pb* cur_pb);
+
+void init_rr_nodes_vpack_net_num_changed(int LL_num_rr_nodes,
+                                         t_rr_node* LL_rr_node);
 
 int check_consistency_logical_block_net_num(t_logical_block* lgk_blk, 
                                             int num_inputs, int* input_net_num);

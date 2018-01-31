@@ -1202,7 +1202,6 @@ void fprint_spice_mux_testbench_pb_muxes_rec(FILE* fp,
         fprint_spice_mux_testbench_pb_muxes_rec(fp, &(cur_pb->child_pbs[ipb][jpb]), grid_x, grid_y, LL_rr_node_indices);
       } else {
         /* Print idle muxes */
-        /* Bypass idle muxes */
         fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec(fp, 
                                                                 cur_pb->child_pbs[ipb][jpb].pb_graph_node, 
                                                                 grid_x, grid_y, 
@@ -1604,7 +1603,7 @@ int fprint_spice_mux_testbench_call_one_grid_pb_muxes(FILE* fp, int ix, int iy,
     /* Only for mapped block */
     assert(NULL != block[grid[ix][iy].blocks[iblk]].pb);
     /* Mark the temporary net_num for the type pins*/
-    mark_grid_type_pb_graph_node_pins_temp_net_num(ix, iy);
+    mark_one_pb_parasitic_nets(block[grid[ix][iy].blocks[iblk]].pb);
     fprint_spice_mux_testbench_pb_muxes_rec(fp, 
                                             block[grid[ix][iy].blocks[iblk]].pb, 
                                             ix, iy, 

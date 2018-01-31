@@ -129,7 +129,6 @@ void fprint_top_netlist_stimulations(FILE* fp,
   int ix, iy;
   int found_mapped_iopad = 0;
   /* Find Input Pad Spice model */
-  t_spice_model* iopad_spice_model = find_iopad_spice_model(spice.num_spice_model, spice.spice_models);
   t_spice_net_info* cur_spice_net_info = NULL;
 
   /* Check the file handler*/ 

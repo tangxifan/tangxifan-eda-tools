@@ -232,8 +232,7 @@ void fprint_spice_hardlogic_testbench_one_pb_graph_node_hardlogic(FILE* fp,
   int logical_block_index = OPEN;
   t_spice_model* pb_spice_model = NULL;
   t_pb_type* cur_pb_type = NULL;
-  int iport, ipin, cur_pin;
-  int num_inputs, num_outputs, num_clock_pins;
+  int iport, ipin;
 
   /* For pb_spice_model */
   int num_input_port;
@@ -306,7 +305,6 @@ void fprint_spice_hardlogic_testbench_one_pb_graph_node_hardlogic(FILE* fp,
   }
 
   /* Get activity information */
-  cur_pin = 0;
   for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
     for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
       /* if we find a mapped logic block */
@@ -556,10 +554,9 @@ void fprint_spice_hardlogic_testbench_rec_pb_hardlogics(FILE* fp,
       if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
         fprint_spice_hardlogic_testbench_rec_pb_hardlogics(fp, &(cur_pb->child_pbs[ipb][jpb]), rec_prefix, x, y, LL_rr_node_indices);
       } else {
-        /* Print idle graph_node muxes */
-        /* Bypass unused blocks */
+        /* Then we go on */
         fprint_spice_hardlogic_testbench_rec_pb_graph_node_hardlogics(fp, cur_pb->child_pbs[ipb][jpb].pb_graph_node, 
-                                                          rec_prefix, x, y, LL_rr_node_indices);
+                                                                      rec_prefix, x, y, LL_rr_node_indices);
       }
     }
   }
@@ -593,7 +590,7 @@ void fprint_spice_hardlogic_testbench_call_one_grid_defined_hardlogics(FILE* fp,
     /* Only for mapped block */
     assert(NULL != block[grid[ix][iy].blocks[iblk]].pb);
     /* Mark the temporary net_num for the type pins*/
-    mark_grid_type_pb_graph_node_pins_temp_net_num(ix, iy);
+    mark_one_pb_parasitic_nets(block[grid[ix][iy].blocks[iblk]].pb);
     /* Go into the hierachy and dump hardlogics */
     fprint_spice_hardlogic_testbench_rec_pb_hardlogics(fp, block[grid[ix][iy].blocks[iblk]].pb, prefix, ix, iy, LL_rr_node_indices);
     /* Free */

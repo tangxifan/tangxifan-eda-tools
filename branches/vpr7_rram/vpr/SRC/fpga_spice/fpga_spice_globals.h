@@ -21,7 +21,7 @@ extern char* gio_output_prefix;
 extern char* gio_inout_prefix;
 
 extern int default_signal_init_value;
-extern int run_parasitic_net_estimation;
+extern boolean run_parasitic_net_estimation;
 
 /* Linked list for global ports */
 extern t_llist* global_ports_head;

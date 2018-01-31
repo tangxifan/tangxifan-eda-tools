@@ -439,6 +439,10 @@ void rec_backannotate_rr_node_net_num(int LL_num_rr_nodes,
       /* assert(LL_rr_node[src_node_index].net_num == LL_rr_node[to_node].net_num); */
       /* Propagate the net_num */
       LL_rr_node[to_node].net_num = LL_rr_node[src_node_index].net_num; 
+      /* Make the flag which indicates a changing has been made */
+      if (LL_rr_node[to_node].vpack_net_num != LL_rr_node[src_node_index].vpack_net_num) {
+        LL_rr_node[to_node].vpack_net_num_changed = TRUE;
+      }
       LL_rr_node[to_node].vpack_net_num = LL_rr_node[src_node_index].vpack_net_num; 
       /* Go recursively */ 
       rec_backannotate_rr_node_net_num(LL_num_rr_nodes, LL_rr_node, to_node);
@@ -1328,69 +1332,143 @@ void update_grid_pbs_post_route_rr_graph() {
   return;
 }
 
+/* In this function, we update the vpack_net_num in global rr_graph
+ * from the temp_net_num stored in the top_pb_graph_head
+ */
+void update_one_unused_grid_output_pins_parasitic_nets(int ix, int iy) {
+  int iport, ipin; 
+  int pin_global_rr_node_id, class_id, type_pin_index;
+  t_type_ptr type = NULL;
+  t_pb_graph_node* top_pb_graph_node = NULL;
+
+  /* Assert */
+  assert((!(ix < 0))&&(ix < (nx + 2)));  
+  assert((!(iy < 0))&&(iy < (ny + 2)));  
+
+  type = grid[ix][iy].type;
+  /* Bypass IO_TYPE*/
+  if ((EMPTY_TYPE == type)||(IO_TYPE == type)) {
+    return;
+  }   
+
+  /* Use the temp_net_num of each pb_graph_pin at the top-level
+   * Update the global rr_graph
+   */
+  top_pb_graph_node = type->pb_graph_head;
+  assert(NULL != top_pb_graph_node);
+
+  /* We only care the outputs, since the inputs are updated in function
+   * mark_grid_type_pb_graph_node_pins_temp_net_num(ix, iy);
+   */
+  for (iport = 0; iport < top_pb_graph_node->num_output_ports; iport++) {
+    for (ipin = 0; ipin < top_pb_graph_node->num_output_pins[iport]; ipin++) {
+      top_pb_graph_node->output_pins[iport][ipin].temp_net_num = OPEN;
+      type_pin_index = top_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
+      class_id = type->pin_class[type_pin_index];
+      assert(DRIVER == type->class_inf[class_id].type);
+      /* Find the pb net_num and update OPIN net_num */
+      pin_global_rr_node_id = get_rr_node_index(ix, iy, OPIN, type_pin_index, rr_node_indices);
+      /* Avoid mistakenly overwrite */
+      if (OPEN != rr_node[pin_global_rr_node_id].vpack_net_num) {
+        continue;
+      }
+      rr_node[pin_global_rr_node_id].vpack_net_num = top_pb_graph_node->output_pins[iport][ipin].temp_net_num;
+    } 
+  }
+ 
+  return;
+}
+
+
 /* SPEICAL: to assign parasitic nets, I modify the net_num in global
  * global routing nets to be vpack_net_num. The reason is some vpack nets 
  * are absorbed into CLBs during packing, therefore they are invisible in 
  * clb_nets. But indeed, they exist in global routing as parasitic nets.
  */
-void update_one_grid_pb_pins_parasitic_nets(int x, int y) {
-  int iblk, blk_id, ipin; 
+void update_one_used_grid_pb_pins_parasitic_nets(t_pb* cur_pb,
+                                                 int ix, int iy) {
+  int ipin; 
   int pin_global_rr_node_id,class_id;
   t_type_ptr type = NULL;
-  t_pb* pb = NULL;
   t_rr_node* local_rr_graph = NULL;
 
   /* Assert */
-  assert((!(x < 0))&&(x < (nx + 2)));  
-  assert((!(y < 0))&&(y < (ny + 2)));  
+  assert((!(ix < 0))&&(ix < (nx + 2)));  
+  assert((!(iy < 0))&&(iy < (ny + 2)));  
 
-  type = grid[x][y].type;
+  type = grid[ix][iy].type;
   /* Bypass IO_TYPE*/
   if ((EMPTY_TYPE == type)||(IO_TYPE == type)) {
     return;
   }   
-  for (iblk = 0; iblk < grid[x][y].usage; iblk++) {
-    blk_id = grid[x][y].blocks[iblk];
-    assert(block[blk_id].x == x);
-    assert(block[blk_id].y == y);
-    pb = block[blk_id].pb;
-    assert(NULL != pb);
-    local_rr_graph = pb->rr_graph; 
-    for (ipin = 0; ipin < type->num_pins; ipin++) {
-      class_id = type->pin_class[ipin];
-      if (DRIVER == type->class_inf[class_id].type) {
-        /* Find the pb net_num and update OPIN net_num */
-        pin_global_rr_node_id = get_rr_node_index(x, y, OPIN, ipin, rr_node_indices);
-        assert(local_rr_graph[ipin].vpack_net_num == local_rr_graph[ipin].net_num);
-        if (OPEN == local_rr_graph[ipin].net_num) {
-          assert(OPEN == local_rr_graph[ipin].vpack_net_num);
-          rr_node[pin_global_rr_node_id].net_num = OPEN; 
-          rr_node[pin_global_rr_node_id].vpack_net_num = OPEN; 
-          continue; /* bypass non-mapped OPIN */
-        } 
-        assert(ipin == local_rr_graph[ipin].pb_graph_pin->pin_count_in_cluster);
-        //rr_node[pin_global_rr_node_id].net_num = vpack_to_clb_net_mapping[local_rr_graph[ipin].net_num]; 
-        rr_node[pin_global_rr_node_id].vpack_net_num = local_rr_graph[ipin].vpack_net_num;
-      } else if (RECEIVER == type->class_inf[class_id].type) {
-        /* Find the global rr_node net_num and update pb net_num */
-        pin_global_rr_node_id = get_rr_node_index(x, y, IPIN, ipin, rr_node_indices);
-        /* Get the index of Vpack net from global rr_node net_num (clb_net index)*/
-        if (OPEN == rr_node[pin_global_rr_node_id].vpack_net_num) {
-          local_rr_graph[ipin].net_num = OPEN;
-          local_rr_graph[ipin].vpack_net_num = OPEN;
-          continue; /* bypass non-mapped IPIN */
-        }
-        assert(ipin == local_rr_graph[ipin].pb_graph_pin->pin_count_in_cluster);
-        local_rr_graph[ipin].net_num = rr_node[pin_global_rr_node_id].vpack_net_num;
-        local_rr_graph[ipin].vpack_net_num = rr_node[pin_global_rr_node_id].vpack_net_num;
-      } else {
-        continue; /* OPEN PIN */
+
+  assert(NULL != cur_pb);
+  local_rr_graph = cur_pb->rr_graph; 
+  for (ipin = 0; ipin < type->num_pins; ipin++) {
+    class_id = type->pin_class[ipin];
+    if (DRIVER == type->class_inf[class_id].type) {
+      /* Find the pb net_num and update OPIN net_num */
+      pin_global_rr_node_id = get_rr_node_index(ix, iy, OPIN, ipin, rr_node_indices);
+      assert(local_rr_graph[ipin].vpack_net_num == local_rr_graph[ipin].net_num);
+      if (OPEN == local_rr_graph[ipin].net_num) {
+        assert(OPEN == local_rr_graph[ipin].vpack_net_num);
+        rr_node[pin_global_rr_node_id].net_num = OPEN; 
+        rr_node[pin_global_rr_node_id].vpack_net_num = OPEN; 
+        continue; /* bypass non-mapped OPIN */
+      } 
+      assert(ipin == local_rr_graph[ipin].pb_graph_pin->pin_count_in_cluster);
+      //rr_node[pin_global_rr_node_id].net_num = vpack_to_clb_net_mapping[local_rr_graph[ipin].net_num]; 
+      rr_node[pin_global_rr_node_id].vpack_net_num = local_rr_graph[ipin].vpack_net_num;
+    } else if (RECEIVER == type->class_inf[class_id].type) {
+      /* Find the global rr_node net_num and update pb net_num */
+      pin_global_rr_node_id = get_rr_node_index(ix, iy, IPIN, ipin, rr_node_indices);
+      /* Get the index of Vpack net from global rr_node net_num (clb_net index)*/
+      if (OPEN == rr_node[pin_global_rr_node_id].vpack_net_num) {
+        local_rr_graph[ipin].net_num = OPEN;
+        local_rr_graph[ipin].vpack_net_num = OPEN;
+        continue; /* bypass non-mapped IPIN */
       }
+      assert(ipin == local_rr_graph[ipin].pb_graph_pin->pin_count_in_cluster);
+      local_rr_graph[ipin].net_num = rr_node[pin_global_rr_node_id].vpack_net_num;
+      local_rr_graph[ipin].vpack_net_num = rr_node[pin_global_rr_node_id].vpack_net_num;
+    } else {
+      continue; /* OPEN PIN */
     }
   }
  
   return;
 }
+
+
+void update_one_grid_pb_pins_parasitic_nets(int ix, int iy) {
+  int iblk;
+
+  /* Print all the grid */
+  if ((NULL == grid[ix][iy].type)||(0 != grid[ix][iy].offset)) {
+    return;
+  }
+  /* Used blocks */
+  for (iblk = 0; iblk < grid[ix][iy].usage; iblk++) {
+    /* Only for mapped block */
+    assert(NULL != block[grid[ix][iy].blocks[iblk]].pb);
+    /* Mark the temporary net_num for the type pins*/
+    mark_one_pb_parasitic_nets(block[grid[ix][iy].blocks[iblk]].pb);
+    /* Update parasitic nets */
+    update_one_used_grid_pb_pins_parasitic_nets(block[grid[ix][iy].blocks[iblk]].pb,
+                                                ix, iy);
+    backannotate_pb_rr_nodes_net_info();
+  }  
+  /* By pass Unused blocks */
+  for (iblk = grid[ix][iy].usage; iblk < grid[ix][iy].type->capacity; iblk++) {
+    /* Mark the temporary net_num for the type pins*/
+    mark_grid_type_pb_graph_node_pins_temp_net_num(ix, iy);
+    /* Update parasitic nets */
+    update_one_unused_grid_output_pins_parasitic_nets(ix, iy);
+  } 
+
+  return;
+}
+
 
 void update_grid_pb_pins_parasitic_nets() {
   int ix, iy;
@@ -1399,10 +1477,11 @@ void update_grid_pb_pins_parasitic_nets() {
   for (ix = 0; ix < (nx + 2); ix++) {
     for (iy = 0; iy < (ny + 2); iy++) {
       type = grid[ix][iy].type;
-      if (NULL != type) {
-        /* Backup the packing prev_node and prev_edge */
-        update_one_grid_pb_pins_parasitic_nets(ix, iy);
+      if ((EMPTY_TYPE == type)||(IO_TYPE == type)) {
+        continue;
       }
+      /* Backup the packing prev_node and prev_edge */
+      update_one_grid_pb_pins_parasitic_nets(ix, iy);
     }
   }
 
@@ -2192,6 +2271,62 @@ void free_backannotate_vpr_post_route_info() {
   free_cb_info_array(&cby_info, nx, ny); 
 }
 
+static 
+boolean ipin_rr_nodes_vpack_net_num_changed(int LL_num_rr_nodes,
+                                            t_rr_node* LL_rr_node) {
+  int inode;
+
+  for (inode = 0; inode < LL_num_rr_nodes; inode++) {
+    if (IPIN != LL_rr_node[inode].type) {
+      continue;
+    }
+    /* We only care IPINs */
+    if (TRUE == LL_rr_node[inode].vpack_net_num_changed) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+static 
+void parasitic_net_estimation() {
+  int iter_cnt = 0;
+  boolean iter_continue = FALSE;
+
+  while(1) {
+    iter_cnt++;
+
+    init_rr_nodes_vpack_net_num_changed(num_rr_nodes,
+                                        rr_node);
+
+    /* Update CLB pins parasitic nets:
+     * Traverse from inputs of CLBs to outputs.
+     * Mark parasitics nets propagated from input pins to output pins inside CLBs
+     */ 
+    update_grid_pb_pins_parasitic_nets();
+
+    /* Backannoating global routing parasitic net... 
+     * Traverse from OPINs in rr_graph to IPINs.
+     * Mark parasitic nets in the rr_graph 
+     */
+    backannotate_rr_nodes_parasitic_net_info();
+
+    /* Check vpack_net_num of all the OPINs are consistant */
+    /* Consistency means iterations end here */
+    iter_continue = ipin_rr_nodes_vpack_net_num_changed(num_rr_nodes, 
+                                                        rr_node);
+
+    if (FALSE == iter_continue) {
+      break;
+    }
+  }
+
+  vpr_printf(TIO_MESSAGE_INFO,"Parasitic net estimation ends in %d iterations.\n", iter_cnt);
+
+  return;
+}
+
 /* Back-Annotate post routing results to the VPR routing-resource graphs */
 void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
                                             boolean parasitic_net_estimation_off) {
@@ -2223,21 +2358,15 @@ void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
   back_annotate_pb_rr_node_map_info();
 
   /* Backannotate activity information, initialize the waveform information */
-  vpr_printf(TIO_MESSAGE_INFO, "Backannoating local routing net (1st time: for output pins)...\n");
+  vpr_printf(TIO_MESSAGE_INFO, "Backannoating local routing net...\n");
   backannotate_pb_rr_nodes_net_info();
   /* Parasitic Net Activity Estimation */
   if (FALSE == parasitic_net_estimation_off) {
-    vpr_printf(TIO_MESSAGE_INFO, "Update CLB pins parasitic nets (1st time: for output pins)...\n");
-    update_grid_pb_pins_parasitic_nets();
-    vpr_printf(TIO_MESSAGE_INFO, "Backannoating global routing parasitic net...\n");
-    backannotate_rr_nodes_parasitic_net_info();
-    vpr_printf(TIO_MESSAGE_INFO, "Update CLB pins parasitic nets (2nd time: for input pins)...\n");
-    update_grid_pb_pins_parasitic_nets();
+    vpr_printf(TIO_MESSAGE_WARNING, "Parasitic Net Estimation starts...\n");
+    parasitic_net_estimation();
   } else {
     vpr_printf(TIO_MESSAGE_WARNING, "Parasitic Net Estimation is turned off...Accuracy loss may be expected!\n");
   }
-  vpr_printf(TIO_MESSAGE_INFO, "Backannoating local routing net (2nd time: for input pins)...\n");
-  backannotate_pb_rr_nodes_net_info();
 
   /* Net activities */
   vpr_printf(TIO_MESSAGE_INFO, "Backannoating Net activities...\n");
@@ -2274,13 +2403,8 @@ void backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch) {
   /* Backannotate activity information, initialize the waveform information */
   vpr_printf(TIO_MESSAGE_INFO, "Update logic block pins parasitic nets (1st time: for output pins)...\n");
   update_grid_pb_pins_parasitic_nets();
-  vpr_printf(TIO_MESSAGE_INFO, "Backannoating global routing parasitic net...\n");
-  backannotate_rr_nodes_parasitic_net_info();
-  /* Parasitic Net Activity Estimation */
-  vpr_printf(TIO_MESSAGE_INFO, "Update logic block pins parasitic nets (2nd time: for input pins)...\n");
-  update_grid_pb_pins_parasitic_nets();
-  vpr_printf(TIO_MESSAGE_INFO, "Backannoating local routing net (2nd time: for input pins)...\n");
-  backannotate_pb_rr_nodes_net_info();
+  vpr_printf(TIO_MESSAGE_WARNING, "Parasitic Net Estimation starts...\n");
+  parasitic_net_estimation();
 
   /* Net activities */
   vpr_printf(TIO_MESSAGE_INFO, "Backannoating Net activities...\n");

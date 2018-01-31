@@ -2175,8 +2175,6 @@ int find_pb_type_physical_mode_index(t_pb_type cur_pb_type) {
   return phy_mode_index;
 }
 
-
-
 void mark_grid_type_pb_graph_node_pins_temp_net_num(int x, int y) {
   int iport, ipin, type_pin_index, class_id, pin_global_rr_node_id; 
   t_type_ptr type = NULL;
@@ -2184,8 +2182,8 @@ void mark_grid_type_pb_graph_node_pins_temp_net_num(int x, int y) {
   int mode_index, ipb, jpb;
 
   /* Assert */
-  assert((!(x < 0))&&(x < (nx + 1)));  
-  assert((!(y < 0))&&(y < (ny + 1)));  
+  assert((!(x < 0))&&(x < (nx + 2)));  
+  assert((!(y < 0))&&(y < (ny + 2)));  
 
   type = grid[x][y].type;
 
@@ -2255,10 +2253,28 @@ void mark_grid_type_pb_graph_node_pins_temp_net_num(int x, int y) {
   return; 
 }
 
-/* Mark temp_net_num in current pb_graph_node from the parent pb_graph_node */
-void rec_mark_pb_graph_node_temp_net_num(t_pb_graph_node* cur_pb_graph_node) {
-  int iport, ipin, iedge;
-  int mode_index, ipb, jpb;
+/* Assign the temp_net_num by considering the first incoming edge that belongs to the correct operating mode */
+void assign_pb_graph_node_pin_temp_net_num_by_mode_index(t_pb_graph_pin* cur_pb_graph_pin,
+                                                         int mode_index) {
+  int iedge;
+
+  /* IMPORTANT: I assume by default the index of selected edge is 0 
+   * Make sure this input edge comes from the default mode     
+   */
+  for (iedge = 0; iedge < cur_pb_graph_pin->num_input_edges; iedge++) {
+    if (mode_index != cur_pb_graph_pin->input_edges[iedge]->interconnect->parent_mode_index) {
+      continue;
+    }
+    cur_pb_graph_pin->temp_net_num = cur_pb_graph_pin->input_edges[iedge]->input_pins[0]->temp_net_num;
+    break;
+  }
+
+  return;  
+}
+
+void mark_pb_graph_node_input_pins_temp_net_num(t_pb_graph_node* cur_pb_graph_node,
+                                                int mode_index) {
+  int iport, ipin;
 
   assert(NULL != cur_pb_graph_node);
 
@@ -2266,30 +2282,64 @@ void rec_mark_pb_graph_node_temp_net_num(t_pb_graph_node* cur_pb_graph_node) {
   for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
     for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
       cur_pb_graph_node->input_pins[iport][ipin].temp_net_num = OPEN;
-      /* TODO: I assume by default the index of selected edge is 0 */
-      cur_pb_graph_node->input_pins[iport][ipin].temp_net_num = cur_pb_graph_node->input_pins[iport][ipin].input_edges[0]->input_pins[0]->temp_net_num;
+      /* IMPORTANT: I assume by default the index of selected edge is 0 
+       * Make sure this input edge comes from the default mode     
+       */
+       assign_pb_graph_node_pin_temp_net_num_by_mode_index(&(cur_pb_graph_node->input_pins[iport][ipin]), mode_index);
     }
   }
+
+  return;
+}
+
+void mark_pb_graph_node_clock_pins_temp_net_num(t_pb_graph_node* cur_pb_graph_node,
+                                                int mode_index) {
+  int iport, ipin;
+
+  assert(NULL != cur_pb_graph_node);
+
   /* Clock ports */
   for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
     for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
       cur_pb_graph_node->clock_pins[iport][ipin].temp_net_num = OPEN;
-      /* TODO: I assume by default the index of selected edge is 0 */
-      cur_pb_graph_node->clock_pins[iport][ipin].temp_net_num = cur_pb_graph_node->clock_pins[iport][ipin].input_edges[0]->input_pins[0]->temp_net_num;
+      assign_pb_graph_node_pin_temp_net_num_by_mode_index(&(cur_pb_graph_node->clock_pins[iport][ipin]), mode_index);
     }
   }
-  /* Output ports */
+
+  return;
+}
+
+void mark_pb_graph_node_output_pins_temp_net_num(t_pb_graph_node* cur_pb_graph_node,
+                                                int mode_index) {
+  int iport, ipin;
+
+  assert(NULL != cur_pb_graph_node);
+
   for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
     for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
-      /* TODO: I assume by default the index of selected edge is 0 */
       cur_pb_graph_node->output_pins[iport][ipin].temp_net_num = OPEN;
-      for (iedge = 0; iedge < cur_pb_graph_node->output_pins[iport][ipin].num_output_edges; iedge++) {
-        if (&(cur_pb_graph_node->output_pins[iport][ipin]) == cur_pb_graph_node->output_pins[iport][ipin].output_edges[iedge]->output_pins[0]->input_edges[0]->input_pins[0]) {
-          cur_pb_graph_node->output_pins[iport][ipin].temp_net_num = cur_pb_graph_node->output_pins[iport][ipin].output_edges[0]->output_pins[0]->temp_net_num;
-        }
-      }
+      /* IMPORTANT: I assume by default the index of selected edge is 0 
+       * Make sure this input edge comes from the default mode     
+       */
+      assign_pb_graph_node_pin_temp_net_num_by_mode_index(&(cur_pb_graph_node->output_pins[iport][ipin]), mode_index);
     }
   }
+
+  return;
+}
+
+/* Mark temp_net_num in current pb_graph_node from the parent pb_graph_node */
+void rec_mark_pb_graph_node_temp_net_num(t_pb_graph_node* cur_pb_graph_node) {
+  int mode_index, ipb, jpb;
+
+  assert(NULL != cur_pb_graph_node);
+
+  /* Find the default mode */
+  mode_index = find_pb_type_idle_mode_index(*(cur_pb_graph_node->pb_type));
+
+  mark_pb_graph_node_input_pins_temp_net_num(cur_pb_graph_node, mode_index);
+
+  mark_pb_graph_node_clock_pins_temp_net_num(cur_pb_graph_node, mode_index);
 
   if (NULL != cur_pb_graph_node->pb_type->spice_model) {
     return;
@@ -2302,6 +2352,214 @@ void rec_mark_pb_graph_node_temp_net_num(t_pb_graph_node* cur_pb_graph_node) {
       /* Mark pb_graph_node temp_net_num */
       rec_mark_pb_graph_node_temp_net_num(&(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]));
     }
+  }
+
+  /* IMPORTANT: update the temp_net of Output ports after recursion is done!
+   * the outputs of sub pb_graph_node should be updated first 
+   */
+  mark_pb_graph_node_output_pins_temp_net_num(cur_pb_graph_node, mode_index);
+
+  /* Do this again to handle feedback loops ! */
+  mark_pb_graph_node_input_pins_temp_net_num(cur_pb_graph_node, mode_index);
+
+  mark_pb_graph_node_clock_pins_temp_net_num(cur_pb_graph_node, mode_index);
+
+  return;
+}
+
+void load_one_pb_graph_pin_temp_net_num_from_pb(t_pb* cur_pb,
+                                                t_pb_graph_pin* cur_pb_graph_pin) {
+  int node_index;
+  t_rr_node* pb_rr_nodes = NULL;
+
+  assert(NULL != cur_pb);
+  assert(NULL != cur_pb->pb_graph_node);
+
+  /* Get the selected edge of current pin*/
+  pb_rr_nodes = cur_pb->rr_graph;
+  node_index = cur_pb_graph_pin->pin_count_in_cluster;
+  cur_pb_graph_pin->temp_net_num = pb_rr_nodes[node_index].vpack_net_num;
+
+  return;
+}
+
+/* According to the vpack_net_num in cur_pb
+ * assign it to the corresponding pb_graph_pins 
+ */
+void load_pb_graph_node_temp_net_num_from_pb(t_pb* cur_pb) {
+  int iport, ipin;
+
+  assert(NULL != cur_pb);
+  assert(NULL != cur_pb->pb_graph_node);
+
+  /* Input ports */
+  for (iport = 0; iport < cur_pb->pb_graph_node->num_input_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb->pb_graph_node->num_input_pins[iport]; ipin++) {
+      load_one_pb_graph_pin_temp_net_num_from_pb(cur_pb,
+                                                 &(cur_pb->pb_graph_node->input_pins[iport][ipin]));
+    }
+  }
+
+  /* Clock ports */
+  for (iport = 0; iport < cur_pb->pb_graph_node->num_clock_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb->pb_graph_node->num_clock_pins[iport]; ipin++) {
+      load_one_pb_graph_pin_temp_net_num_from_pb(cur_pb,
+                                                 &(cur_pb->pb_graph_node->clock_pins[iport][ipin]));
+    }
+  }
+
+  /* Output ports */
+  for (iport = 0; iport < cur_pb->pb_graph_node->num_output_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb->pb_graph_node->num_output_pins[iport]; ipin++) {
+      load_one_pb_graph_pin_temp_net_num_from_pb(cur_pb,
+                                                 &(cur_pb->pb_graph_node->output_pins[iport][ipin]));
+    }
+  }
+ 
+  return;
+}
+
+/* Recursively traverse the hierachy of a pb, 
+ * store parasitic nets in the temp_net_num of the assoicated pb_graph_node 
+ */
+void rec_mark_one_pb_unused_pb_graph_node_temp_net_num(t_pb* cur_pb) {
+  int ipb, jpb;
+  int mode_index;
+
+  /* Check */
+  assert(NULL != cur_pb);
+
+  if (NULL != cur_pb->pb_graph_node->pb_type->spice_model) {
+    return;
+  }
+  /* Go recursively ... */
+  mode_index = cur_pb->mode;
+  if (!(0 < cur_pb->pb_graph_node->pb_type->num_modes)) {
+    return;
+  }
+  for (ipb = 0; ipb < cur_pb->pb_graph_node->pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+    for (jpb = 0; jpb < cur_pb->pb_graph_node->pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+      /* Refer to pack/output_clustering.c [LINE 392] */
+      if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
+        rec_mark_one_pb_unused_pb_graph_node_temp_net_num(&(cur_pb->child_pbs[ipb][jpb]));
+      } else {
+        /* Print idle graph_node muxes */
+        load_pb_graph_node_temp_net_num_from_pb(cur_pb);
+        /* We should update the net_num  */
+        rec_mark_pb_graph_node_temp_net_num(cur_pb->child_pbs[ipb][jpb].pb_graph_node);
+      }
+    }
+  }
+  
+  return;
+}
+
+void update_pb_vpack_net_num_from_temp_net_num(t_pb* cur_pb, 
+                                               t_pb_graph_pin* cur_pb_graph_pin) {
+  int node_index;
+  t_rr_node* pb_rr_nodes = NULL;
+
+  assert(NULL != cur_pb);
+  assert(NULL != cur_pb->pb_graph_node);
+
+  /* Get the selected edge of current pin*/
+  pb_rr_nodes = cur_pb->rr_graph;
+  node_index = cur_pb_graph_pin->pin_count_in_cluster;
+  
+  /* Avoid mistakenly modification */
+  if (OPEN != pb_rr_nodes[node_index].vpack_net_num) {
+    return;
+  }
+  /* Only modify when original vpack_net_num is open!!! */
+  pb_rr_nodes[node_index].vpack_net_num = cur_pb_graph_pin->temp_net_num;
+
+  return;
+} 
+
+void update_pb_graph_node_temp_net_num_to_pb(t_pb_graph_node* cur_pb_graph_node,
+                                             t_pb* cur_pb) {
+  int iport, ipin;
+  t_rr_node* pb_rr_nodes = NULL;
+
+  assert(NULL != cur_pb->pb_graph_node);
+  assert(NULL != cur_pb);
+
+  pb_rr_nodes = cur_pb->rr_graph;
+
+  /* Input ports */
+  for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
+      update_pb_vpack_net_num_from_temp_net_num(cur_pb,
+                                                &(cur_pb_graph_node->input_pins[iport][ipin]));
+    }
+  }
+
+  /* Clock ports */
+  for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
+      update_pb_vpack_net_num_from_temp_net_num(cur_pb,
+                                                &(cur_pb_graph_node->clock_pins[iport][ipin]));
+    }
+  }
+
+  /* Output ports */
+  for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
+      update_pb_vpack_net_num_from_temp_net_num(cur_pb,
+                                                &(cur_pb_graph_node->output_pins[iport][ipin]));
+    }
+  }
+
+  return;
+}
+
+void rec_load_unused_pb_graph_node_temp_net_num_to_pb(t_pb* cur_pb) {
+  int ipb, jpb;
+  int mode_index;
+
+  /* Check */
+  assert(NULL != cur_pb);
+
+  if (NULL != cur_pb->pb_graph_node->pb_type->spice_model) {
+    return;
+  }
+  /* Go recursively ... */
+  mode_index = cur_pb->mode;
+  if (!(0 < cur_pb->pb_graph_node->pb_type->num_modes)) {
+    return;
+  }
+  for (ipb = 0; ipb < cur_pb->pb_graph_node->pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+    for (jpb = 0; jpb < cur_pb->pb_graph_node->pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+      /* Refer to pack/output_clustering.c [LINE 392] */
+      if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
+        rec_load_unused_pb_graph_node_temp_net_num_to_pb(&(cur_pb->child_pbs[ipb][jpb]));
+      } else {
+        update_pb_graph_node_temp_net_num_to_pb(cur_pb->child_pbs[ipb][jpb].pb_graph_node, 
+                                                cur_pb);
+      }
+    }
+  }
+  
+  return;
+}
+
+void mark_one_pb_parasitic_nets(t_pb* cur_pb) {
+
+  /* By go recursively, parasitic net num are stored in the temp_net_num in pb_graph_node */
+  rec_mark_one_pb_unused_pb_graph_node_temp_net_num(cur_pb);
+
+  /* Load the temp_net_num to vpack_net_num in the current pb! */
+  rec_load_unused_pb_graph_node_temp_net_num_to_pb(cur_pb);
+
+  return;
+}
+
+void init_rr_nodes_vpack_net_num_changed(int LL_num_rr_nodes,
+                                         t_rr_node* LL_rr_node) {
+  int inode;
+
+  for (inode = 0; inode < LL_num_rr_nodes; inode++) {
+    LL_rr_node[inode].vpack_net_num_changed = FALSE;
   }
 
   return;

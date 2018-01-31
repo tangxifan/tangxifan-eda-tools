@@ -464,6 +464,7 @@ int fprint_spice_one_grid_testbench(char* formatted_spice_dir,
  
   /* Quote defined Logic blocks subckts (Grids) */
   init_spice_grid_testbench_globals(*(arch.spice));
+
   fprint_spice_grid_testbench_call_one_defined_grid(fp, grid_x, grid_y);
 
   /* Back-anotate activity information to each routing resource node 
