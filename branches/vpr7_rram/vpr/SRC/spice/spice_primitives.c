@@ -94,6 +94,11 @@ void fprint_pb_primitive_ff(FILE* fp,
   /* Initialize */
   prim_pb_type = prim_pb_graph_node->pb_type;
 
+  if (NULL != mapped_logical_block) {
+    fprintf(fp, "***** Logical block mapped to this FF: %s *****\n", 
+                mapped_logical_block->name);
+  }
+
   /* Generate Subckt for pb_type*/
   /*
   port_prefix = (char*)my_malloc(sizeof(char)*
@@ -229,6 +234,12 @@ void fprint_pb_primitive_hardlogic(FILE* fp,
   /* Initialize */
   prim_pb_type = prim_pb_graph_node->pb_type;
 
+  if (NULL != mapped_logical_block) {
+    fprintf(fp, "***** Logical block mapped to this hardlogic: %s *****\n", 
+                mapped_logical_block->name);
+  }
+
+
   /* Generate Subckt for pb_type*/
   /*
   port_prefix = (char*)my_malloc(sizeof(char)*
@@ -332,6 +343,11 @@ void fprint_pb_primitive_io(FILE* fp,
   /* Initialize */
 
   prim_pb_type = prim_pb_graph_node->pb_type;
+
+  if (NULL != mapped_logical_block) {
+    fprintf(fp, "***** Logical block mapped to this IO: %s *****\n", 
+                mapped_logical_block->name);
+  }
 
   /* Generate Subckt for pb_type*/
   /*

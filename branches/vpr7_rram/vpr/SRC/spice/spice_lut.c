@@ -240,6 +240,12 @@ void fprint_pb_primitive_lut(FILE* fp,
  
   /* Print the subckts*/ 
   cur_pb_type = cur_pb_graph_node->pb_type;
+
+  if (NULL != mapped_logical_block) {
+    fprintf(fp, "***** Logical block mapped to this LUT: %s *****\n", 
+                mapped_logical_block->name);
+  }
+
   /* Subckt definition*/
   fprintf(fp, ".subckt %s%s[%d] ", formatted_subckt_prefix, cur_pb_type->name, index);
   /* Print inputs, outputs, inouts, clocks, NO SRAMs*/

@@ -2565,6 +2565,19 @@ void init_rr_nodes_vpack_net_num_changed(int LL_num_rr_nodes,
   return;
 }
 
+/* Check if this net is connected to a PI*/
+boolean is_net_pi(t_net* cur_net) {
+  int src_blk_idx;
+
+  assert(NULL != cur_net);
+
+  src_blk_idx = cur_net->node_block[0];
+  if (VPACK_INPAD == logical_block[src_blk_idx].type) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
 int check_consistency_logical_block_net_num(t_logical_block* lgk_blk, 
                                             int num_inputs, int* input_net_num) {
   int i, iport, ipin, net_eq;

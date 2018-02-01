@@ -257,6 +257,8 @@ void mark_one_pb_parasitic_nets(t_pb* cur_pb);
 void init_rr_nodes_vpack_net_num_changed(int LL_num_rr_nodes,
                                          t_rr_node* LL_rr_node);
 
+boolean is_net_pi(t_net* cur_net);
+
 int check_consistency_logical_block_net_num(t_logical_block* lgk_blk, 
                                             int num_inputs, int* input_net_num);
 

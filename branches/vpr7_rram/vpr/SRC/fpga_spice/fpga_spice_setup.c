@@ -1119,11 +1119,19 @@ void spice_net_info_add_density_weight(float signal_density_weight) {
 
   for (inet = 0; inet < num_logical_nets; inet++) {
     assert( NULL != vpack_net[inet].spice_net_info );
+    /* By pass PIs since their signal density is usually high */
+    if ( TRUE == is_net_pi(&(vpack_net[inet])) ) {
+      continue;
+    }
     vpack_net[inet].spice_net_info->density *= signal_density_weight;
   }
 
   for (inet = 0; inet < num_nets; inet++) {
     assert( NULL != clb_net[inet].spice_net_info );
+    /* By pass PIs since their signal density is usually high */
+    if ( TRUE == is_net_pi(&(vpack_net[clb_to_vpack_net_mapping[inet]])) ) {
+      continue;
+    }
     clb_net[inet].spice_net_info->density *= signal_density_weight;
   }
 }
@@ -1185,11 +1193,6 @@ void fpga_spice_setup(t_vpr_setup vpr_setup,
   spice_backannotate_vpr_post_route_info(vpr_setup.RoutingArch,
                                          vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_parasitic_net_estimation_off);
 
-  /* Add weights to spice_net density */ 
-  vpr_printf(TIO_MESSAGE_INFO, "Add %.2f weight to signal density...\n", 
-             vpr_setup.FPGA_SPICE_Opts.signal_density_weight); 
-  spice_net_info_add_density_weight(vpr_setup.FPGA_SPICE_Opts.signal_density_weight);
-
   /* Auto check the density and recommend sim_num_clock_cylce */
   vpr_crit_path_delay = get_critical_path_delay()/1e9;
   assert(vpr_crit_path_delay > 0.);
@@ -1224,6 +1227,12 @@ void fpga_spice_setup(t_vpr_setup vpr_setup,
              Arch->spice->spice_params.stimulate_params.op_clock_freq / 1e6);
   vpr_printf(TIO_MESSAGE_INFO, "Use Programming Clock freqency %.2f [MHz] in SPICE simulation.\n",
              Arch->spice->spice_params.stimulate_params.prog_clock_freq / 1e6);
+
+  /* Add weights to spice_net density */ 
+  vpr_printf(TIO_MESSAGE_INFO, "Add %.2f weight to signal density...\n", 
+             vpr_setup.FPGA_SPICE_Opts.signal_density_weight); 
+  spice_net_info_add_density_weight(vpr_setup.FPGA_SPICE_Opts.signal_density_weight);
+
 
   return;
 }

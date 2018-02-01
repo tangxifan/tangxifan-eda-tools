@@ -1112,9 +1112,9 @@ void back_annotate_rr_node_map_info() {
 
   /* 2nd step: With the help of trace, we back-annotate */
   for (inet = 0; inet < num_nets; inet++) {
-    //if (TRUE == clb_net[inet].is_global) {
-    //  continue;
-    //}
+    if (TRUE == clb_net[inet].is_global) {
+      continue;
+    }
     tptr = trace_head[inet];
     while (tptr != NULL) {
       inode = tptr->index;
