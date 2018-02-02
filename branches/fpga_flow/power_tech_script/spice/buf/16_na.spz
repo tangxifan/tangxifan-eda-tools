@@ -8,7 +8,10 @@ Vin in 0 PULSE(0 Vol 'simt/4' 'rise' 'rise' 'simt/2' 'simt')
 
 X2 Vref mid2 Vdut 0 inv nsize='1' psize='1*pnratio'
 X3 mid2 mid3 Vdut 0 inv nsize='4' psize='4*pnratio'
-X4 mid3 out Vdut 0 inv nsize='16' psize='16*pnratio'
+X4 mid3 out Vdut 0 inv nsize='4' psize='4*pnratio'
+X4_1 mid3 out Vdut 0 inv nsize='4' psize='4*pnratio'
+X4_2 mid3 out Vdut 0 inv nsize='4' psize='4*pnratio'
+X4_3 mid3 out Vdut 0 inv nsize='4' psize='4*pnratio'
 
 
 

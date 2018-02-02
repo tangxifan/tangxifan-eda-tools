@@ -255,6 +255,7 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
     /* Special for 2-input MUX */
     if (2 == mux_size) {
+      mux_level = 1;
       num_mux_sram_bits = 1;
       mux_sram_bits = decode_tree_mux_sram_bits(mux_size, 1, path_id); 
     } else {

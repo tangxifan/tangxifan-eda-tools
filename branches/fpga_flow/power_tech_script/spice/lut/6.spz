@@ -130,8 +130,23 @@ X9 mid2a mid2b mid1a sel1 sel1n mux2 size='nmos_size'
 
 X10 mid1a out Vdd2 0 levr
 
-Xs1 0 sram1 Vsram 0 inv nsize=32 psize='32*pnratio'
-Xs0 Vsram sram0 Vsram 0 inv nsize=32 psize='32*pnratio'
+Xs1_0 0 sram1 Vsram 0 inv nsize=4 psize='4*pnratio'
+Xs1_1 0 sram1 Vsram 0 inv nsize=4 psize='4*pnratio'
+Xs1_2 0 sram1 Vsram 0 inv nsize=4 psize='4*pnratio'
+Xs1_3 0 sram1 Vsram 0 inv nsize=4 psize='4*pnratio'
+Xs1_4 0 sram1 Vsram 0 inv nsize=4 psize='4*pnratio'
+Xs1_5 0 sram1 Vsram 0 inv nsize=4 psize='4*pnratio'
+Xs1_6 0 sram1 Vsram 0 inv nsize=4 psize='4*pnratio'
+Xs1_7 0 sram1 Vsram 0 inv nsize=4 psize='4*pnratio'
+
+Xs0_0 Vsram sram0 Vsram 0 inv nsize=4 psize='4*pnratio'
+Xs0_1 Vsram sram0 Vsram 0 inv nsize=4 psize='4*pnratio'
+Xs0_2 Vsram sram0 Vsram 0 inv nsize=4 psize='4*pnratio'
+Xs0_3 Vsram sram0 Vsram 0 inv nsize=4 psize='4*pnratio'
+Xs0_4 Vsram sram0 Vsram 0 inv nsize=4 psize='4*pnratio'
+Xs0_5 Vsram sram0 Vsram 0 inv nsize=4 psize='4*pnratio'
+Xs0_6 Vsram sram0 Vsram 0 inv nsize=4 psize='4*pnratio'
+Xs0_7 Vsram sram0 Vsram 0 inv nsize=4 psize='4*pnratio'
 
 
 

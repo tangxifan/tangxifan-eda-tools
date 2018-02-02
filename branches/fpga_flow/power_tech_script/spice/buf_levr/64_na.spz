@@ -8,8 +8,28 @@ Vin in 0 PULSE(0 Vol 'simt/4' 'rise' rise' 'simt/2' 'simt')
 
 X2 Vref mid2 Vdut 0 levr
 X3 mid2 mid3 Vdut 0 inv nsize='4' psize='4*pnratio'
-X4 mid3 mid4 Vdut 0 inv nsize='16' psize='16*pnratio'
-X5 mid4 out Vdut 0 inv nsize='64' psize='64*pnratio'
+
+X4_0 mid3 mid4 Vdut 0 inv nsize='4' psize='4*pnratio'
+X4_1 mid3 mid4 Vdut 0 inv nsize='4' psize='4*pnratio'
+X4_2 mid3 mid4 Vdut 0 inv nsize='4' psize='4*pnratio'
+X4_3 mid3 mid4 Vdut 0 inv nsize='4' psize='4*pnratio'
+
+X5_0 mid4 out Vdut 0 inv nsize='4' psize='4*pnratio'
+X5_1 mid4 out Vdut 0 inv nsize='4' psize='4*pnratio'
+X5_2 mid4 out Vdut 0 inv nsize='4' psize='4*pnratio'
+X5_3 mid4 out Vdut 0 inv nsize='4' psize='4*pnratio'
+X5_4 mid4 out Vdut 0 inv nsize='4' psize='4*pnratio'
+X5_5 mid4 out Vdut 0 inv nsize='4' psize='4*pnratio'
+X5_6 mid4 out Vdut 0 inv nsize='4' psize='4*pnratio'
+X5_7 mid4 out Vdut 0 inv nsize='4' psize='4*pnratio'
+X5_8 mid4 out Vdut 0 inv nsize='4' psize='4*pnratio'
+X5_9 mid4 out Vdut 0 inv nsize='4' psize='4*pnratio'
+X5_10 mid4 out Vdut 0 inv nsize='4' psize='4*pnratio'
+X5_11 mid4 out Vdut 0 inv nsize='4' psize='4*pnratio'
+X5_12 mid4 out Vdut 0 inv nsize='4' psize='4*pnratio'
+X5_13 mid4 out Vdut 0 inv nsize='4' psize='4*pnratio'
+X5_14 mid4 out Vdut 0 inv nsize='4' psize='4*pnratio'
+X5_15 mid4 out Vdut 0 inv nsize='4' psize='4*pnratio'
 
 
 

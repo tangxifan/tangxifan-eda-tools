@@ -12,7 +12,11 @@ X1 in x Vref 0 inv nsize='1' psize='1*pnratio'
 
 X2 mid1 mid2 Vdut 0 levr
 X3 mid2 mid3 Vdut 0 inv nsize='4' psize='4*pnratio'
-X4 mid3 out Vdut 0 inv nsize='16' psize='16*pnratio'
+
+X4_0 mid3 out Vdut 0 inv nsize='4' psize='4*pnratio'
+X4_1 mid3 out Vdut 0 inv nsize='4' psize='4*pnratio'
+X4_2 mid3 out Vdut 0 inv nsize='4' psize='4*pnratio'
+X4_3 mid3 out Vdut 0 inv nsize='4' psize='4*pnratio'
 
 
 

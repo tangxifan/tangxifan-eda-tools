@@ -8,7 +8,9 @@
 * UMC 180nm
 *M1 drain gate source body N_LV_18_MM L='tech' W='size*500e-9'
 * PTM45nm HP
-M1 drain gate source body nmos L='tech' W='size*160e-9'
+*M1 drain gate source body nmos L='tech' W='size*160e-9'
+* TSMC 40nm 
+M1 drain gate source body nch L='tech' W='size*140e-9'
 * PTM22nm HP
 *M1 drain gate source body nmos L='tech' W='size*66e-9'
 *M1 drain gate source body nmos L='tech' W='2.5*size*tech' AS='size*2.5*tech*2.25*tech' AD='size*2.5*tech*2.25*tech' PS='2*2.25*tech+size*2.5*tech'  PD='2*2.25*tech+size*2.5*tech'	
@@ -20,7 +22,9 @@ M1 drain gate source body nmos L='tech' W='size*160e-9'
 * UMC 180nm
 *M1 drain gate source body P_LV_18_MM L='tech' W='size*500e-9'
 * PTM45nm HP
-M1 drain gate source body pmos L='tech' W='size*160e-9'
+*M1 drain gate source body pmos L='tech' W='size*160e-9'
+* TSMC 40nm 
+M1 drain gate source body pch L='tech' W='size*140e-9'
 * PTM22nm HP
 *M1 drain gate source body pmos L='tech' W='size*66e-9'
 *M1 drain gate source body pmos L='tech' W='3.5*size*tech'
@@ -33,7 +37,9 @@ M1 drain gate source body pmos L='tech' W='size*160e-9'
 * UMC 180nm
 *M1 drain gate source body N_LV_18_MM L='lsize*tech' W='wsize*500e-9'
 * PTM45nm HP
-M1 drain gate source body pmos L='lsize*tech' W='wsize*160e-9'
+*M1 drain gate source body pmos L='lsize*tech' W='wsize*160e-9'
+* TSMC 40nm 
+M1 drain gate source body pch L='lsize*tech' W='wsize*140e-9'
 * PTM22nm HP
 *M1 drain gate source body pmos L='lsize*tech' W='wsize*66e-9'
 *M1 drain gate source body pmos L='lsize*tech' W='3.5*wsize*tech'
@@ -46,7 +52,9 @@ M1 drain gate source body pmos L='lsize*tech' W='wsize*160e-9'
 * UMC 180nm
 *M1 drain gate source body P_LV_18_MM L='lsize*tech' W='wsize*500e-9'
 * PTM45nm HP
-M1 drain gate source body nmos L='lsize*tech' W='wsize*160e-9'
+*M1 drain gate source body nmos L='lsize*tech' W='wsize*160e-9'
+* TSMC 40nm 
+M1 drain gate source body nch L='lsize*tech' W='wsize*160e-9'
 * PTM22nm HP
 *M1 drain gate source body nmos L='lsize*tech' W='wsize*66e-9'
 * General-purpose

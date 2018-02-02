@@ -33,17 +33,20 @@ my $simt = "5n";
 
 # P/N Ratio
 my $pn_interval           = 0.1;
-my $pn_search_lower_bound = 0.5;
+#my $pn_search_lower_bound = 0.5;
+my $pn_search_lower_bound = 1; # For TSMC 40nm
 my $pn_search_upper_bound = 4.0;
 
 # Transistor Capacitances
-my $max_size      = 500;
+#my $max_size      = 500;
+my $max_size      = 5; # To Fit TSMC 40nm
 my $size_interval = 1.05;
 
 # NMOS Pass transistor sizes
 my @nmos_pass_sizes;
 my $nmos_pass_interval = 1.25;
-my $nmos_pass_max_size = 25;
+#my $nmos_pass_max_size = 25;
+my $nmos_pass_max_size = 5; # To Fit TSMC40nm
 
 # Multiplexer Voltages
 my $max_mux_size  = 30;
@@ -56,7 +59,8 @@ if ($quick_test) {
 	$pn_interval           = 1.0;
 	$pn_search_lower_bound = 1.0;
 	$pn_search_upper_bound = 3.0;
-	$max_size              = 10;
+	#$max_size              = 10;
+	$max_size              = 5; # To fit TSMC 40nm
 	$size_interval         = 1.5;
 	$max_mux_size          = 4;
 	$vin_intervals         = 3;
@@ -912,9 +916,11 @@ sub get_gate_leakage {
 		$s = $s . "Vleak VleakH 0 0\n";
 		$s = $s
 		  . "X0 VleakH out Vdd 0 inv nsize='"
-		  . ( $size / $pn )
+		  #. ( $size / $pn )
+		  .  $size  # Fix for TSMC 40nm
 		  . "' psize='"
-		  . $size . "'\n";
+		  #. $size . "'\n";
+		  . ( $size * $pn ) . "'\n"; #Fix for TSMC 40nm
 	}
 
 	$s = $s . spice_sim(100);
@@ -922,7 +928,13 @@ sub get_gate_leakage {
 	$s = $s . spice_end();
 	my @results = spice_run( $s, ["leakage"] );
 
-	return &process_unit($results[0], "power");
+    $results[0] = &process_unit($results[0], "power");
+	if ( $type eq "nmos" ) {
+    } else {
+      $results[0] = $results[0] / $pn;
+    }
+
+	return $results[0];
 
 }
 
@@ -945,17 +957,26 @@ sub get_leakage {
 		$s = $s . "Vleak Vdd VleakL 0\n";
 		$s = $s
 		  . "X0 Vdd out VleakL 0 inv nsize='"
-		  . ( $size / $pn )
+		  #. ( $size / $pn ) 
+		  . $size  # Fix for TSMC 40nm
 		  . "' psize='"
-		  . $size . "'\n";
+		  #. $size . "'\n"; 
+		  . ( $size * $pn ). "'\n"; # Fix for TSMC 40nm
 	}
 
 	$s = $s . spice_sim(100);
 	$s = $s . ".measure tran leakage avg I(Vleak)\n";
 	$s = $s . spice_end();
+
 	my @results = spice_run( $s, ["leakage"] );
 
-	return &process_unit($results[0], "power");
+    $results[0] = &process_unit($results[0], "power");
+	if ( $type eq "nmos" ) {
+	} else {
+      $results[0] = $results[0] / $pn;
+    }
+
+	return $results[0];
 
 }
 
