@@ -6,8 +6,18 @@ Vref Vref 0 Vol
 Vsram sram1 0 Vol
 Vbuf Vbuf 0 Vol
 
-X0 in a Vdrive 0 inv nsize=10 psize='10*pnratio'
-Xref in x Vref 0 inv nsize=10 psize='10*pnratio'
+X0_0 in a Vdrive 0 inv nsize=2 psize='2*pnratio'
+X0_1 in a Vdrive 0 inv nsize=2 psize='2*pnratio'
+X0_2 in a Vdrive 0 inv nsize=2 psize='2*pnratio'
+X0_3 in a Vdrive 0 inv nsize=2 psize='2*pnratio'
+X0_4 in a Vdrive 0 inv nsize=2 psize='2*pnratio'
+
+Xref_0 in x Vref 0 inv nsize=2 psize='2*pnratio'
+Xref_1 in x Vref 0 inv nsize=2 psize='2*pnratio'
+Xref_2 in x Vref 0 inv nsize=2 psize='2*pnratio'
+Xref_3 in x Vref 0 inv nsize=2 psize='2*pnratio'
+Xref_4 in x Vref 0 inv nsize=2 psize='2*pnratio'
+
 X1 a a a a mida sram1 0 0 0 mux4 size='nmos_size'
 X2 a a a a midb sram1 0 0 0 mux4 size='nmos_size'
 X3 a a a a midc sram1 0 0 0 mux4 size='nmos_size'

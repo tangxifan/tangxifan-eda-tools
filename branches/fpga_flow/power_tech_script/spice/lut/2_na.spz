@@ -14,8 +14,10 @@ X2 sel1mid sel1 Vdd1 0 inv nsize=2 psize='2*pnratio'
 X3 in1 sel1n Vdd1 0 inv nsize=2 psize='2*pnratio'
 
 X4 in2 sel2mid Vdd1 0 inv nsize=1 psize='1*pnratio'
-X5 sel2mid sel2 Vdd1 0 inv nsize=2 psize='2*pnratio'
-X6 in2 sel2n Vdd1 0 inv nsize=2 psize='2*pnratio'
+X5_0 sel2mid sel2 Vdd1 0 inv nsize=1 psize='1*pnratio'
+X5_1 sel2mid sel2 Vdd1 0 inv nsize=1 psize='1*pnratio'
+X6_0 in2 sel2n Vdd1 0 inv nsize=1 psize='1*pnratio'
+X6_1 in2 sel2n Vdd1 0 inv nsize=1 psize='1*pnratio'
 
 X7 sram1 0 mid2a sel2 sel2n mux2 size=1
 X8 0 sram1 mid2b sel2 sel2n mux2 size=1

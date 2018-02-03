@@ -110,7 +110,7 @@ p = Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT, cwd=temp_dir)
 stdout, stderr = p.communicate()
 
 if re.search("error", stdout):
-    print "Error" 
+    print "$type Error" 
 
 else:
     m = re.search("^\s*power=\s*(\S*).*$", stdout, re.MULTILINE)
