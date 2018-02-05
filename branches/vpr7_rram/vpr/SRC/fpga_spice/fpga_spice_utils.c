@@ -1916,20 +1916,33 @@ int recommend_num_sim_clock_cycle(float sim_window_size) {
   quicksort_float_index(net_cnt, sort_index, density_value);
   /* Get the median */
   median_density = vpack_net[sort_index[(int)(net_cnt*(1-sim_window_size))]].spice_net_info->density;
-  
-  recmd_num_sim_clock_cycle = (int)(1/median_density); 
-  /* It may be more reasonable to use median 
-  recmd_num_sim_clock_cycle = (int)(1/avg_density);
 
-  if (median_density > avg_density) {
-    recmd_num_sim_clock_cycle = (int)(1/avg_density);
-  } 
+  /* It may be more reasonable to use median 
+   * But, if median density is 0, we use average density
   */
+  if ((0 == median_density) && (0 == avg_density)) {
+    recmd_num_sim_clock_cycle = 1;
+    vpr_printf(TIO_MESSAGE_WARNING, 
+               "All the signal density is zero! No. of clock cycles in simulations are set to be %d!",
+               recmd_num_sim_clock_cycle);
+  } else if (0 == avg_density) {
+      recmd_num_sim_clock_cycle = (int)(1/median_density); 
+  } else if (0 == median_density) {
+      recmd_num_sim_clock_cycle = (int)(1/avg_density);
+  } else {
+    if (avg_density < median_density) {
+      recmd_num_sim_clock_cycle = (int)(1/avg_density);
+    } else {
+      recmd_num_sim_clock_cycle = (int)(1/median_density); 
+    }
+  }
   
+  assert( 0 < recmd_num_sim_clock_cycle);
+
   vpr_printf(TIO_MESSAGE_INFO, "Average net density: %.2g\n", avg_density);
-  vpr_printf(TIO_MESSAGE_INFO, "Weighted Average net density: %.2g\n", weighted_avg_density);
+  vpr_printf(TIO_MESSAGE_INFO, "Median net density: %.2g\n", median_density);
+  vpr_printf(TIO_MESSAGE_INFO, "Average net densityi after weighting: %.2g\n", weighted_avg_density);
   vpr_printf(TIO_MESSAGE_INFO, "Window size set for Simulation: %.2g\n", sim_window_size);
-  vpr_printf(TIO_MESSAGE_INFO, "Net density after weighting: %.2g\n", median_density);
   vpr_printf(TIO_MESSAGE_INFO, "Recommend no. of clock cycles: %d\n", recmd_num_sim_clock_cycle);
 
   /* Free */

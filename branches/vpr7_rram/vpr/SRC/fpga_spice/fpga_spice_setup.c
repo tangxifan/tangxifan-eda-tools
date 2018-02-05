@@ -1229,10 +1229,16 @@ void fpga_spice_setup(t_vpr_setup vpr_setup,
              Arch->spice->spice_params.stimulate_params.prog_clock_freq / 1e6);
 
   /* Add weights to spice_net density */ 
-  vpr_printf(TIO_MESSAGE_INFO, "Add %.2f weight to signal density...\n", 
-             vpr_setup.FPGA_SPICE_Opts.signal_density_weight); 
-  spice_net_info_add_density_weight(vpr_setup.FPGA_SPICE_Opts.signal_density_weight);
-
+  if (!(0 < vpr_setup.FPGA_SPICE_Opts.signal_density_weight)) {
+    vpr_printf(TIO_MESSAGE_ERROR, "Signal_density_weight(currently is %.2f) should be a positive number!.\n",
+               vpr_setup.FPGA_SPICE_Opts.signal_density_weight); 
+    exit(1);
+  }
+  if (1 != vpr_setup.FPGA_SPICE_Opts.signal_density_weight) {
+    vpr_printf(TIO_MESSAGE_INFO, "Add %.2f weight to signal density...\n", 
+               vpr_setup.FPGA_SPICE_Opts.signal_density_weight); 
+    spice_net_info_add_density_weight(vpr_setup.FPGA_SPICE_Opts.signal_density_weight);
+  }
 
   return;
 }
