@@ -1917,9 +1917,9 @@ int recommend_num_sim_clock_cycle(float sim_window_size) {
   /* Get the median */
   median_density = vpack_net[sort_index[(int)(net_cnt*(1-sim_window_size))]].spice_net_info->density;
   
-  recmd_num_sim_clock_cycle = (int)(1/avg_density);
-  /* It may be more reasonable to use median 
   recmd_num_sim_clock_cycle = (int)(1/median_density); 
+  /* It may be more reasonable to use median 
+  recmd_num_sim_clock_cycle = (int)(1/avg_density);
 
   if (median_density > avg_density) {
     recmd_num_sim_clock_cycle = (int)(1/avg_density);

@@ -354,7 +354,7 @@
   </device>
 
   <cblocks>
-    <switch type="mux" name="cb_mux" R="0" Cin="596e-18" Cout="0" Tdel="77.93e-12" mux_trans_size="3" buf_size="4" spice_model_name="mux_2level_tapbuf" structure="multi-level" num_level="2">
+    <switch type="mux" name="cb_mux" R="0" Cin="596e-18" Cout="0" Tdel="77.93e-12" mux_trans_size="3" buf_size="63" spice_model_name="mux_2level_tapbuf" structure="multi-level" num_level="2">
     </switch>
   </cblocks>
   <switchlist>
@@ -371,11 +371,11 @@
 	       2.5x when looking up in Jeff's tables.
 	       Finally, we choose a switch delay (58 ps) that leads to length 4 wires having a delay equal to that of SIV of 126 ps.
 	       This also leads to the switch being 46% of the total wire delay, which is reasonable. -->
-    <switch type="mux" name="sb_mux_L4" R="105" Cin="596e-18" Cout="0e-15" Tdel="47.2e-12" mux_trans_size="3" buf_size="27.645901" spice_model_name="mux_1level_tapbuf" structure="multi-level" num_level="1">
+    <switch type="mux" name="sb_mux_L4" R="105" Cin="596e-18" Cout="0e-15" Tdel="47.2e-12" mux_trans_size="3" buf_size="63" spice_model_name="mux_1level_tapbuf" structure="multi-level" num_level="1">
     </switch>
-    <switch type="mux" name="sb_mux_L2" R="115" Cin="596e-18" Cout="0e-15" Tdel="47.2e-12" mux_trans_size="3" buf_size="27.645901" spice_model_name="mux_1level_tapbuf" structure="multi-level" num_level="1">
+    <switch type="mux" name="sb_mux_L2" R="115" Cin="596e-18" Cout="0e-15" Tdel="47.2e-12" mux_trans_size="3" buf_size="63" spice_model_name="mux_1level_tapbuf" structure="multi-level" num_level="1">
     </switch>
-    <switch type="mux" name="sb_mux_L1" R="128" Cin="596e-18" Cout="0e-15" Tdel="47.2e-12" mux_trans_size="3" buf_size="27.645901" spice_model_name="mux_1level_tapbuf" structure="multi-level" num_level="1">
+    <switch type="mux" name="sb_mux_L1" R="128" Cin="596e-18" Cout="0e-15" Tdel="47.2e-12" mux_trans_size="3" buf_size="63" spice_model_name="mux_1level_tapbuf" structure="multi-level" num_level="1">
     </switch>
   </switchlist>
   <segmentlist>
@@ -1413,9 +1413,9 @@
   </complexblocklist>
   <power>
     <local_interconnect C_wire="0"/>
-    <mux_transistor_size mux_transistor_size="3"/>
+    <mux_transistor_size mux_transistor_size="5"/>
     <FF_size FF_size="4"/>
-    <LUT_transistor_size LUT_transistor_size="4"/> 
+    <LUT_transistor_size LUT_transistor_size="5"/> 
   </power>
   <clocks>
     <clock buffer_size="auto" C_wire="0"/>
