@@ -1915,7 +1915,7 @@ int recommend_num_sim_clock_cycle(float sim_window_size) {
   /* Sort the density */
   quicksort_float_index(net_cnt, sort_index, density_value);
   /* Get the median */
-  median_density = vpack_net[sort_index[(int)(net_cnt*(1-sim_window_size))]].spice_net_info->density;
+  median_density = vpack_net[sort_index[(int)(0.5*net_cnt)]].spice_net_info->density;
 
   /* It may be more reasonable to use median 
    * But, if median density is 0, we use average density
@@ -1930,19 +1930,21 @@ int recommend_num_sim_clock_cycle(float sim_window_size) {
   } else if (0 == median_density) {
       recmd_num_sim_clock_cycle = (int)(1/avg_density);
   } else {
-    if (avg_density < median_density) {
-      recmd_num_sim_clock_cycle = (int)(1/avg_density);
-    } else {
-      recmd_num_sim_clock_cycle = (int)(1/median_density); 
-    }
+    /* add a sim window size to balance the weight of average density and median density
+     * In practice, we find that there could be huge difference between avereage and median values 
+     * For a reasonable number of simulation clock cycles, we do this window size.
+     */
+    recmd_num_sim_clock_cycle = (int)(1 / (sim_window_size * avg_density + (1 - sim_window_size) * median_density ));
   }
   
   assert( 0 < recmd_num_sim_clock_cycle);
 
-  vpr_printf(TIO_MESSAGE_INFO, "Average net density: %.2g\n", avg_density);
-  vpr_printf(TIO_MESSAGE_INFO, "Median net density: %.2g\n", median_density);
-  vpr_printf(TIO_MESSAGE_INFO, "Average net densityi after weighting: %.2g\n", weighted_avg_density);
-  vpr_printf(TIO_MESSAGE_INFO, "Window size set for Simulation: %.2g\n", sim_window_size);
+  vpr_printf(TIO_MESSAGE_INFO, "Average net density: %.2f\n", avg_density);
+  vpr_printf(TIO_MESSAGE_INFO, "Median net density: %.2f\n", median_density);
+  vpr_printf(TIO_MESSAGE_INFO, "Average net densityi after weighting: %.2f\n", weighted_avg_density);
+  vpr_printf(TIO_MESSAGE_INFO, "Window size set for Simulation: %.2f\n", sim_window_size);
+  vpr_printf(TIO_MESSAGE_INFO, "Net density after Window size : %.2f\n", 
+                               (sim_window_size * avg_density + (1 - sim_window_size) * median_density));
   vpr_printf(TIO_MESSAGE_INFO, "Recommend no. of clock cycles: %d\n", recmd_num_sim_clock_cycle);
 
   /* Free */
