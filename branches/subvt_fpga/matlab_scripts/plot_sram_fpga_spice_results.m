@@ -11,7 +11,10 @@ sram_fpga_spice_fig_data_tsmc40nm;
 %% Process data
 area_vpr_sram_fpga(:,4) = area_vpr_sram_fpga(:,2) + area_vpr_sram_fpga(:,3);
 area_vpr_sram_fpga(:,4) = min_width_trans_area * area_vpr_sram_fpga(:,4);
-area_vpr_sram_fpga(:,5) = 3 * area_vpr_sram_fpga(:,4);
+area_vpr_sram_fpga(:,5) = 1.64 * area_vpr_sram_fpga(:,4);
+area_vpr_sram_fpga(:,5) = area_vpr_sram_fpga(:,5)./area_layout_sram_fpga(:,5);
+disp('Error rate:');
+area_vpr_sram_fpga(:,5)./area_layout_sram_fpga(:,4) - 1
 
 %% Fig. 1: area comp: VPR vs. FPGA-SPICE 
 % Data format
