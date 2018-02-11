@@ -87,3 +87,4 @@ extern char* spice_tb_global_clock_port_name;
 extern char* spice_tb_global_vdd_load_port_name;
 extern char* spice_tb_global_port_inv_postfix;
 
+extern int spice_sim_multi_thread_num;

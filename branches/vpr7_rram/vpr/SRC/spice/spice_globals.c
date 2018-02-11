@@ -90,3 +90,5 @@ char* spice_tb_global_clock_port_name = "gclock";
 char* spice_tb_global_vdd_load_port_name = "gvdd_load";
 char* spice_tb_global_port_inv_postfix = "_inv";
 
+int spice_sim_multi_thread_num = 8;
+

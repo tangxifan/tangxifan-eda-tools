@@ -183,6 +183,7 @@ void vpr_print_usage(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "\t--print_spice_grid_testbench\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_leakage_only\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_parasitic_net_estimation_off\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_sim_mt_num\n");
     /* Xifan TANG: Synthesizable Verilog Dump*/
 	vpr_printf(TIO_MESSAGE_INFO, "Synthesizable Verilog Generator Options:\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_syn_verilog\n");

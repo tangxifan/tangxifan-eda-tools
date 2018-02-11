@@ -514,6 +514,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 	  return ReadFloat(Args, &Options->signal_density_weight);
     case OT_FPGA_SPICE_SIM_WINDOW_SIZE:
 	  return ReadFloat(Args, &Options->sim_window_size);
+    case OT_FPGA_SPICE_SIM_MT_NUM:
+	  return ReadInt(Args, &Options->spice_sim_mt_num);
     /* mrFPGA: Xifan TANG */
     case OT_SHOW_SRAM:
     case OT_SHOW_PASS_TRANS:

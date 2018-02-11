@@ -95,6 +95,7 @@ enum e_OptionBaseToken {
     OT_FPGA_SPICE_RENAME_ILLEGAL_PORT, 
     OT_FPGA_SPICE_SIGNAL_DENSITY_WEIGHT, /* The weight of signal density in determining number of clock cycles in simulation */
     OT_FPGA_SPICE_SIM_WINDOW_SIZE, /* Window size in determining number of clock cycles in simulation */
+    OT_FPGA_SPICE_SIM_MT_NUM, /* number of multi-thread used in simulation */
     /* mrFPGA: Xifan TANG */
     OT_SHOW_SRAM,
     OT_SHOW_PASS_TRANS,

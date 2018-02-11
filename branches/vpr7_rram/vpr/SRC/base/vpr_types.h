@@ -1177,6 +1177,8 @@ struct s_spice_opts {
   char* spice_dir;
   char* include_dir;
   char* subckt_dir;
+
+  int spice_sim_multi_thread_num;
 };
 
 /* Xifan TANG: synthesizable verilog dumping */

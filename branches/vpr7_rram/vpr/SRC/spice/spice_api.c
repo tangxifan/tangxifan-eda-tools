@@ -204,7 +204,6 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   }
 #endif  
 
-
   /* assign the global variable of SRAM model */
   assert(NULL != Arch.sram_inf.spice_sram_inf_orgz); /* Check !*/
   sram_spice_model = Arch.sram_inf.spice_sram_inf_orgz->spice_model;
@@ -244,6 +243,10 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
 
   /*Process the circuit name*/
   split_path_prog_name(circuit_name,'/',&chomped_spice_dir ,&chomped_circuit_name);
+
+  /* Update the global variable :
+   * the number of mutli-thread used in SPICE simulator */
+  spice_sim_multi_thread_num = vpr_setup.FPGA_SPICE_Opts.SpiceOpts.spice_sim_multi_thread_num;
    
   /* FPGA-SPICE formally starts*/
   vpr_printf(TIO_MESSAGE_INFO, "\nFPGA-SPICE starts...\n");

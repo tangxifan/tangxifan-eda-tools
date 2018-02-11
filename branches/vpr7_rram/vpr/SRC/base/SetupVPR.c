@@ -1022,6 +1022,12 @@ static void SetupSpiceOpts(t_options Options,
     spice_opts->print_spice_hardlogic_testbench = TRUE;
   }
 
+  /* Assign the number of mt in SPICE simulation */
+  spice_opts->spice_sim_multi_thread_num = 8;
+  if (Options.Count[OT_FPGA_SPICE_SIM_MT_NUM]) { 
+    spice_opts->spice_sim_multi_thread_num = Options.spice_sim_mt_num;
+  }
+
   /* If spice option is selected*/
   arch->read_xml_spice = spice_opts->do_spice;
   arch->spice = (t_spice*)my_malloc(sizeof(t_spice));
