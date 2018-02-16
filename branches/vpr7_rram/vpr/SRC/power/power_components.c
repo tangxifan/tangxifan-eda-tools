@@ -560,7 +560,7 @@ void power_usage_mux_multilevel(t_power_usage * power_usage,
 	if (callibration->is_done_callibration()) {
 		scale_factor = callibration->scale_factor(mux_arch->num_inputs,
 				mux_arch->transistor_size);
-		//power_scale_usage(power_usage, scale_factor);
+		power_scale_usage(power_usage, scale_factor);
 	}
 
 }

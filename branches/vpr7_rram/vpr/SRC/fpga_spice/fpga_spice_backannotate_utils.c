@@ -460,14 +460,13 @@ void backannotate_rr_nodes_parasitic_net_info() {
  
   /* Start from all the SOURCEs */
   for (inode = 0; inode < num_rr_nodes; inode++) {
-    if (SOURCE !=  rr_node[inode].type) {
+    if (OPIN !=  rr_node[inode].type) {
       continue;
     }
     /* Bypass unmapped pins */
     if (OPEN == rr_node[inode].vpack_net_num) {
       continue;
     }
-    assert(OPEN != rr_node[inode].net_num);
     /* Forward to all the downstream rr_nodes */
     rec_backannotate_rr_node_net_num(num_rr_nodes, rr_node, inode); 
   }
