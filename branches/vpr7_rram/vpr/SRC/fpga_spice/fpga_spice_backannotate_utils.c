@@ -1014,7 +1014,7 @@ void backannotate_one_pb_rr_nodes_net_info_rec(t_pb* cur_pb) {
           node_index = child_pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster;
           /* If we find an OPEN net, try to find the parasitic net_num*/
           if (OPEN == pb_rr_nodes[node_index].net_num) {
-            set_one_pb_rr_node_net_num(pb_rr_nodes, &(child_pb_graph_node->clock_pins[iport][ipin])); 
+              set_one_pb_rr_node_net_num(pb_rr_nodes, &(child_pb_graph_node->clock_pins[iport][ipin])); 
           } else {
             assert(pb_rr_nodes[node_index].net_num == pb_rr_nodes[node_index].vpack_net_num);
           }
@@ -2293,6 +2293,10 @@ void parasitic_net_estimation() {
   int iter_cnt = 0;
   boolean iter_continue = FALSE;
 
+  vpr_printf(TIO_MESSAGE_INFO, "Backannotating local routing net...\n");
+  backannotate_pb_rr_nodes_net_info();
+
+  vpr_printf(TIO_MESSAGE_INFO, "Start backannotating global and local routing nets iteratively...\n");
   while(1) {
     iter_cnt++;
 
@@ -2357,8 +2361,6 @@ void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
   back_annotate_pb_rr_node_map_info();
 
   /* Backannotate activity information, initialize the waveform information */
-  vpr_printf(TIO_MESSAGE_INFO, "Backannoating local routing net...\n");
-  backannotate_pb_rr_nodes_net_info();
   /* Parasitic Net Activity Estimation */
   if (FALSE == parasitic_net_estimation_off) {
     vpr_printf(TIO_MESSAGE_WARNING, "Parasitic Net Estimation starts...\n");
