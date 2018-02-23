@@ -1934,7 +1934,7 @@ int recommend_num_sim_clock_cycle(float sim_window_size) {
      * In practice, we find that there could be huge difference between avereage and median values 
      * For a reasonable number of simulation clock cycles, we do this window size.
      */
-    recmd_num_sim_clock_cycle = (int)(1 / (sim_window_size * avg_density + (1 - sim_window_size) * median_density ));
+    recmd_num_sim_clock_cycle = (int)round(1 / (sim_window_size * avg_density + (1 - sim_window_size) * median_density ));
   }
   
   assert( 0 < recmd_num_sim_clock_cycle);
