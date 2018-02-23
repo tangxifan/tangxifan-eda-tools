@@ -2293,8 +2293,6 @@ void parasitic_net_estimation() {
   int iter_cnt = 0;
   boolean iter_continue = FALSE;
 
-  vpr_printf(TIO_MESSAGE_INFO, "Backannotating local routing net...\n");
-  backannotate_pb_rr_nodes_net_info();
 
   vpr_printf(TIO_MESSAGE_INFO, "Start backannotating global and local routing nets iteratively...\n");
   while(1) {
@@ -2302,6 +2300,9 @@ void parasitic_net_estimation() {
 
     init_rr_nodes_vpack_net_num_changed(num_rr_nodes,
                                         rr_node);
+
+    // vpr_printf(TIO_MESSAGE_INFO, "Backannotating local routing net...\n");
+    backannotate_pb_rr_nodes_net_info();
 
     /* Update CLB pins parasitic nets:
      * Traverse from inputs of CLBs to outputs.
