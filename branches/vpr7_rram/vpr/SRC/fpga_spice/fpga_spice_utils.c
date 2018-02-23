@@ -2223,22 +2223,6 @@ void mark_grid_type_pb_graph_node_pins_temp_net_num(int x, int y) {
       top_pb_graph_node->input_pins[iport][ipin].temp_net_num = clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num];
     } 
   }
-  /* Output ports */
-  for (iport = 0; iport < top_pb_graph_node->num_output_ports; iport++) {
-    for (ipin = 0; ipin < top_pb_graph_node->num_output_pins[iport]; ipin++) {
-      top_pb_graph_node->output_pins[iport][ipin].temp_net_num = OPEN;
-      type_pin_index = top_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
-      class_id = type->pin_class[type_pin_index];
-      assert(DRIVER == type->class_inf[class_id].type);
-      /* Find the pb net_num and update OPIN net_num */
-      pin_global_rr_node_id = get_rr_node_index(x, y, OPIN, type_pin_index, rr_node_indices);
-      if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
-        top_pb_graph_node->output_pins[iport][ipin].temp_net_num = OPEN;
-        continue;
-      } 
-      top_pb_graph_node->output_pins[iport][ipin].temp_net_num = clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num];
-    } 
-  }
   /* clock ports */
   for (iport = 0; iport < top_pb_graph_node->num_clock_ports; iport++) {
     for (ipin = 0; ipin < top_pb_graph_node->num_clock_pins[iport]; ipin++) {
@@ -2264,6 +2248,58 @@ void mark_grid_type_pb_graph_node_pins_temp_net_num(int x, int y) {
       rec_mark_pb_graph_node_temp_net_num(&(top_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]));
     }
   }
+
+  /* Output ports */
+  for (iport = 0; iport < top_pb_graph_node->num_output_ports; iport++) {
+    for (ipin = 0; ipin < top_pb_graph_node->num_output_pins[iport]; ipin++) {
+      top_pb_graph_node->output_pins[iport][ipin].temp_net_num = OPEN;
+      type_pin_index = top_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
+      class_id = type->pin_class[type_pin_index];
+      assert(DRIVER == type->class_inf[class_id].type);
+      /* Find the pb net_num and update OPIN net_num */
+      pin_global_rr_node_id = get_rr_node_index(x, y, OPIN, type_pin_index, rr_node_indices);
+      if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
+        top_pb_graph_node->output_pins[iport][ipin].temp_net_num = OPEN;
+        continue;
+      } 
+      top_pb_graph_node->output_pins[iport][ipin].temp_net_num = clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num];
+    } 
+  }
+
+  /* Run again to handle feedback loop */
+  /* Input ports */
+  for (iport = 0; iport < top_pb_graph_node->num_input_ports; iport++) {
+    for (ipin = 0; ipin < top_pb_graph_node->num_input_pins[iport]; ipin++) {
+      top_pb_graph_node->input_pins[iport][ipin].temp_net_num = OPEN;
+      type_pin_index = top_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
+      class_id = type->pin_class[type_pin_index];
+      assert(RECEIVER == type->class_inf[class_id].type);
+      /* Find the pb net_num and update OPIN net_num */
+      pin_global_rr_node_id = get_rr_node_index(x, y, IPIN, type_pin_index, rr_node_indices);
+      if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
+        top_pb_graph_node->input_pins[iport][ipin].temp_net_num = OPEN;
+        continue;
+      } 
+      top_pb_graph_node->input_pins[iport][ipin].temp_net_num = clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num];
+    } 
+  }
+  /* clock ports */
+  for (iport = 0; iport < top_pb_graph_node->num_clock_ports; iport++) {
+    for (ipin = 0; ipin < top_pb_graph_node->num_clock_pins[iport]; ipin++) {
+      top_pb_graph_node->clock_pins[iport][ipin].temp_net_num = OPEN;
+      type_pin_index = top_pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster;
+      class_id = type->pin_class[type_pin_index];
+      assert(RECEIVER == type->class_inf[class_id].type);
+      /* Find the pb net_num and update OPIN net_num */
+      pin_global_rr_node_id = get_rr_node_index(x, y, IPIN, type_pin_index, rr_node_indices);
+      if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
+        top_pb_graph_node->clock_pins[iport][ipin].temp_net_num = OPEN;
+        continue;
+      } 
+      top_pb_graph_node->clock_pins[iport][ipin].temp_net_num = clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num];
+    } 
+  }
+
 
   return; 
 }
