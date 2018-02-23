@@ -1455,7 +1455,8 @@ void update_one_grid_pb_pins_parasitic_nets(int ix, int iy) {
     /* Update parasitic nets */
     update_one_used_grid_pb_pins_parasitic_nets(block[grid[ix][iy].blocks[iblk]].pb,
                                                 ix, iy);
-    backannotate_pb_rr_nodes_net_info();
+    /* update parasitic nets in each pb */
+    backannotate_one_pb_rr_nodes_net_info_rec(block[grid[ix][iy].blocks[iblk]].pb);
   }  
   /* By pass Unused blocks */
   for (iblk = grid[ix][iy].usage; iblk < grid[ix][iy].type->capacity; iblk++) {
