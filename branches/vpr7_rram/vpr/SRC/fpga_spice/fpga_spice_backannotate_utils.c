@@ -460,7 +460,11 @@ void backannotate_rr_nodes_parasitic_net_info() {
  
   /* Start from all the SOURCEs */
   for (inode = 0; inode < num_rr_nodes; inode++) {
-    if (OPIN !=  rr_node[inode].type) {
+    /* We care only OPINs
+     * or a contant generator */
+    if ((OPIN !=  rr_node[inode].type) 
+       || (!(SOURCE != rr_node[inode].type)
+          && (0 == rr_node[inode].num_drive_rr_nodes))) {
       continue;
     }
     /* Bypass unmapped pins */
@@ -767,7 +771,8 @@ void build_prev_node_list_rr_nodes(int LL_num_rr_nodes,
 
 static
 void set_one_pb_rr_node_default_prev_node_edge(t_rr_node* pb_rr_graph, 
-                                               t_pb_graph_pin* des_pb_graph_pin) {
+                                               t_pb_graph_pin* des_pb_graph_pin,
+                                               int mode_index) {
   int iedge, node_index, prev_node, prev_edge;
 
   assert(NULL != des_pb_graph_pin);
@@ -787,8 +792,14 @@ void set_one_pb_rr_node_default_prev_node_edge(t_rr_node* pb_rr_graph,
   prev_edge = OPEN;
 
   /* Set default prev_node */
-  check_pb_graph_edge(*(des_pb_graph_pin->input_edges[0]));
-  prev_node = des_pb_graph_pin->input_edges[0]->input_pins[0]->pin_count_in_cluster;
+  for (iedge = 0; iedge < des_pb_graph_pin->num_input_edges; iedge++) {
+    if (mode_index != des_pb_graph_pin->input_edges[iedge]->interconnect->parent_mode_index) {
+      continue;
+    }
+    prev_node = des_pb_graph_pin->input_edges[iedge]->input_pins[0]->pin_count_in_cluster;
+    break;
+  }
+
   /* Find prev_edge */
   for (iedge = 0; iedge < pb_rr_graph[prev_node].pb_graph_pin->num_output_edges; iedge++) {
     check_pb_graph_edge(*(pb_rr_graph[prev_node].pb_graph_pin->output_edges[iedge]));
@@ -846,7 +857,9 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb) {
       node_index = cur_pb->pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
       /* If we find an OPEN net, try to find the parasitic net_num*/
       if (OPEN == pb_rr_nodes[node_index].net_num) {
-        set_one_pb_rr_node_default_prev_node_edge(pb_rr_nodes, &(cur_pb->pb_graph_node->output_pins[iport][ipin])); 
+        set_one_pb_rr_node_default_prev_node_edge(pb_rr_nodes, 
+                                                  &(cur_pb->pb_graph_node->output_pins[iport][ipin]),
+                                                  select_mode_index); 
       } else {
         pb_rr_nodes[node_index].vpack_net_num = pb_rr_nodes[node_index].net_num;
       }
@@ -871,7 +884,9 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb) {
           node_index = child_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
           /* If we find an OPEN net, try to find the parasitic net_num*/
           if (OPEN == pb_rr_nodes[node_index].net_num) {
-            set_one_pb_rr_node_default_prev_node_edge(pb_rr_nodes, &(child_pb_graph_node->input_pins[iport][ipin])); 
+            set_one_pb_rr_node_default_prev_node_edge(pb_rr_nodes, 
+                                                      &(child_pb_graph_node->input_pins[iport][ipin]),
+                                                      select_mode_index); 
            } else {
              pb_rr_nodes[node_index].vpack_net_num = pb_rr_nodes[node_index].net_num;
           }
@@ -885,7 +900,9 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb) {
           node_index = child_pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster;
           /* If we find an OPEN net, try to find the parasitic net_num*/
           if (OPEN == pb_rr_nodes[node_index].net_num) {
-            set_one_pb_rr_node_default_prev_node_edge(pb_rr_nodes, &(child_pb_graph_node->clock_pins[iport][ipin])); 
+            set_one_pb_rr_node_default_prev_node_edge(pb_rr_nodes, 
+                                                      &(child_pb_graph_node->clock_pins[iport][ipin]),
+                                                      select_mode_index); 
           } else {
             pb_rr_nodes[node_index].vpack_net_num = pb_rr_nodes[node_index].net_num;
           }
@@ -914,11 +931,9 @@ void back_annotate_pb_rr_node_map_info() {
   /* Foreach grid */
   for (iblk = 0; iblk < num_blocks; iblk++) {
     /* By pass IO */
-    /*
     if (IO_TYPE == block[iblk].type) {
       continue;
     }
-    */
     back_annotate_one_pb_rr_node_map_info_rec(block[iblk].pb);
   }  
 
@@ -1065,11 +1080,9 @@ void backannotate_pb_rr_nodes_net_info() {
   /* Foreach grid */
   for (iblk = 0; iblk < num_blocks; iblk++) {
     /* By pass IO */
-    /*
     if (IO_TYPE == block[iblk].type) {
       continue;
     }
-    */
     backannotate_one_pb_rr_nodes_net_info_rec(block[iblk].pb);
   }  
 
