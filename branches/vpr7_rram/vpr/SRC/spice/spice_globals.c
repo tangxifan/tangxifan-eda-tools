@@ -29,6 +29,21 @@ char* luts_spice_file_name = "luts.sp";
 char* routing_spice_file_name = "routing.sp";
 char* meas_header_file_name = "meas_params.sp";
 char* stimu_header_file_name = "stimulate_params.sp";
+char* design_param_header_file_name = "design_params.sp";
+
+/* Postfix for circuit design parameters */
+char* design_param_postfix_input_buf_size = "_input_buf_size"; 
+char* design_param_postfix_output_buf_size = "_output_buf_size"; 
+char* design_param_postfix_pass_gate_logic_pmos_size = "_pgl_pmos_size"; 
+char* design_param_postfix_pass_gate_logic_nmos_size = "_pgl_nmos_size"; 
+char* design_param_postfix_wire_param_res_val = "_wire_param_res_val"; 
+char* design_param_postfix_wire_param_cap_val = "_wire_param_cap_val"; 
+char* design_param_postfix_rram_ron = "_rram_ron"; 
+char* design_param_postfix_rram_roff = "_rram_roff"; 
+char* design_param_postfix_rram_wprog_set_pmos = "_rram_wprog_set_pmos"; 
+char* design_param_postfix_rram_wprog_set_nmos = "_rram_wprog_set_nmos"; 
+char* design_param_postfix_rram_wprog_reset_pmos = "_rram_wprog_reset_pmos"; 
+char* design_param_postfix_rram_wprog_reset_nmos = "_rram_wprog_reset_nmos"; 
 
 /* Testbench names */
 char* spice_top_testbench_postfix = "_top.sp";

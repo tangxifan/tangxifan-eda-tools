@@ -460,7 +460,7 @@ void fprint_spice_wire_model(FILE* fp,
     res_per_level = res_total/((float)(2*spice_model.wire_param->level));
     cap_per_level = cap_total/((float)(spice_model.wire_param->level + 1));
     if ((0. == cap_per_level)&&(0. == res_per_level)) {
-      /* Speical: if R and C are all zeros, we use a zero-voltage source instead */
+      /* Special: if R and C are all zeros, we use a zero-voltage source instead */
       fprintf(fp, "Vshortcut pie_wire_in%d pie_wire_in%d 0\n",
               0, spice_model.wire_param->level); 
       if (SPICE_MODEL_CHAN_WIRE == spice_model.type) {
@@ -471,16 +471,28 @@ void fprint_spice_wire_model(FILE* fp,
       break;
     }
     if (0. != cap_per_level) {
-      fprintf(fp, "Clvin pie_wire_in0 sgnd %g\n", cap_per_level);
+      fprintf(fp, "Clvin pie_wire_in0 sgnd \'%s%s/%d\'\n", 
+              spice_model.name, 
+              design_param_postfix_wire_param_cap_val,
+              spice_model.wire_param->level + 1);
     }
     for (i = 0; i < spice_model.wire_param->level; i++) {
-      fprintf(fp, "Rlv%d_idx0 pie_wire_in%d pie_wire_in%d_inter %g\n",
-              i, i, i, res_per_level); 
-      fprintf(fp, "Rlv%d_idx1 pie_wire_in%d_inter pie_wire_in%d %g\n",
-              i, i, i + 1, res_per_level); 
+      fprintf(fp, "Rlv%d_idx0 pie_wire_in%d pie_wire_in%d_inter \'%s%s/%d\'\n",
+              i, i, i, 
+              spice_model.name, 
+              design_param_postfix_wire_param_res_val, 
+              2* spice_model.wire_param->level);
+      fprintf(fp, "Rlv%d_idx1 pie_wire_in%d_inter pie_wire_in%d \'%s%s/%d\'\n",
+              i, i, i + 1, 
+              spice_model.name, 
+              design_param_postfix_wire_param_res_val, 
+              2* spice_model.wire_param->level);
       if (0. != cap_per_level) {
-        fprintf(fp, "Clv%d_idx1 pie_wire_in%d sgnd %g\n",
-                i, i + 1, cap_per_level); 
+        fprintf(fp, "Clv%d_idx1 pie_wire_in%d sgnd \'%s%s/%d\'\n",
+                i, i + 1, 
+                spice_model.name, 
+                design_param_postfix_wire_param_cap_val,
+                spice_model.wire_param->level + 1);
       }
     }
     if (SPICE_MODEL_CHAN_WIRE == spice_model.type) {
@@ -508,14 +520,23 @@ void fprint_spice_wire_model(FILE* fp,
       break;
     }
     for (i = 0; i < spice_model.wire_param->level; i++) {
-      fprintf(fp, "Rlv%d_idx0 pie_wire_in%d pie_wire_in%d_inter %g\n",
-              i, i, i, res_per_level); 
+      fprintf(fp, "Rlv%d_idx0 pie_wire_in%d pie_wire_in%d_inter \'%s%s/%d\'\n",
+              i, i, i, 
+              spice_model.name, 
+              design_param_postfix_wire_param_res_val, 
+              2 * spice_model.wire_param->level);
       if (0. != cap_per_level) {
-        fprintf(fp, "Clv%d_idx1 pie_wire_in%d_inter sgnd %g\n",
-                i, i, cap_per_level); 
+        fprintf(fp, "Clv%d_idx1 pie_wire_in%d_inter sgnd \'%s%s/%d\'\n",
+                i, i, 
+                spice_model.name, 
+                design_param_postfix_wire_param_cap_val, 
+                spice_model.wire_param->level);
       }
-      fprintf(fp, "Rlv%d_idx2 pie_wire_in%d_inter pie_wire_in%d %g\n",
-              i, i, i + 1, res_per_level); 
+      fprintf(fp, "Rlv%d_idx2 pie_wire_in%d_inter pie_wire_in%d \'%s%s/%d\'\n",
+              i, i, i + 1, 
+              spice_model.name, 
+              design_param_postfix_wire_param_res_val, 
+              2 * spice_model.wire_param->level);
     }
     if (SPICE_MODEL_CHAN_WIRE == spice_model.type) {
       /*Connect the middle point */
@@ -543,7 +564,9 @@ void fprint_spice_wire_model(FILE* fp,
       fprintf(fp, "Xinv_in "); /* Given name*/
       fprintf(fp, "%s ", input_port[0]->prefix); /* input port */ 
       fprintf(fp, "pie_wire_in0 "); /* output port*/
-      fprintf(fp, "svdd sgnd inv size=\'%g\'", spice_model.input_buffer->size); /* subckt name */
+      fprintf(fp, "svdd sgnd inv size=\'%s%s\'", 
+                  spice_model.name, 
+                  design_param_postfix_input_buf_size); /* subckt name */
       fprintf(fp, "\n");
       break;
     case SPICE_MODEL_BUF_BUF:
@@ -552,7 +575,9 @@ void fprint_spice_wire_model(FILE* fp,
       fprintf(fp, "Xbuf_in "); /* Given name*/
       fprintf(fp, "%s ", input_port[0]->prefix); /* input port */ 
       fprintf(fp, "pie_wire_in0 "); /* output port*/
-      fprintf(fp, "svdd sgnd buf size=\'%g\'", spice_model.input_buffer->size); /* subckt name */
+      fprintf(fp, "svdd sgnd buf size=\'%s%s\'", 
+                  spice_model.name,
+                  design_param_postfix_output_buf_size); /* subckt name */
       fprintf(fp, "\n");
       break;
       default:
@@ -567,7 +592,7 @@ void fprint_spice_wire_model(FILE* fp,
             input_port[0]->prefix);
   }
 
-  assert(NULL != spice_model.input_buffer);
+  assert(NULL != spice_model.output_buffer);
   if (spice_model.output_buffer->exist) {
     switch (spice_model.output_buffer->type) {
     case SPICE_MODEL_BUF_INV:
@@ -575,7 +600,9 @@ void fprint_spice_wire_model(FILE* fp,
       fprintf(fp, "Xinv_out "); /* Given name*/
       fprintf(fp, "pie_wire_in%d ", spice_model.wire_param->level); /* input port */ 
       fprintf(fp, "%s ", output_port[0]->prefix); /* output port*/
-      fprintf(fp, "svdd sgnd inv size=\'%g\'", spice_model.output_buffer->size); /* subckt name */
+      fprintf(fp, "svdd sgnd inv size=\'%s%s\'",
+                 spice_model.name,
+                 design_param_postfix_output_buf_size); /* subckt name */
       fprintf(fp, "\n");
       break;
     case SPICE_MODEL_BUF_BUF:
@@ -584,7 +611,9 @@ void fprint_spice_wire_model(FILE* fp,
       fprintf(fp, "Xbuf_out "); /* Given name*/
       fprintf(fp, "pie_wire_in%d ", spice_model.wire_param->level); /* input port */ 
       fprintf(fp, "%s ", output_port[0]->prefix); /* output port*/
-      fprintf(fp, "svdd sgnd buf size=\'%g\'", spice_model.output_buffer->size); /* subckt name */
+      fprintf(fp, "svdd sgnd buf size=\'%s%s\'", 
+                  spice_model.name, 
+                  design_param_postfix_output_buf_size); /* subckt name */
       fprintf(fp, "\n");
       break;
       default:

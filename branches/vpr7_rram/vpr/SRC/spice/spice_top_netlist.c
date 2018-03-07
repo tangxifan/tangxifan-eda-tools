@@ -664,7 +664,7 @@ void fprint_spice_top_netlist(char* circuit_name,
   my_free(title);
 
   /* print technology library and design parameters*/
-  fprint_tech_lib(fp, spice.tech_lib);
+  /* fprint_tech_lib(fp, spice.tech_lib); */
 
   /* Include parameter header files */
   fprint_spice_include_param_headers(fp, include_dir_path);

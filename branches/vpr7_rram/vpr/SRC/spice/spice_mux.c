@@ -80,17 +80,20 @@ void fprint_spice_mux_model_basis_cmos_subckt(FILE* fp, char* subckt_name,
      * Identify a special case: input_size = 2
      */
     if (1 == num_sram_bits) {
-      fprintf(fp,"X%s_0 in0 out sel0 sel_inv0 svdd sgnd %s nmos_size=%g pmos_size=%g\n",
+      fprintf(fp,"X%s_0 in0 out sel0 sel_inv0 svdd sgnd %s nmos_size=\'%s%s\' pmos_size=\'%s%s\'\n",
               pgl_name, pgl_name, 
-              spice_model.pass_gate_logic->nmos_size, spice_model.pass_gate_logic->pmos_size);
-      fprintf(fp,"X%s_1 in1 out sel_inv0 sel0 svdd sgnd %s nmos_size=%g pmos_size=%g\n",
+              spice_model.name, design_param_postfix_pass_gate_logic_nmos_size,
+              spice_model.name, design_param_postfix_pass_gate_logic_pmos_size);
+      fprintf(fp,"X%s_1 in1 out sel_inv0 sel0 svdd sgnd %s nmos_size=\'%s%s\' pmos_size=\'%s%s\'\n",
               pgl_name, pgl_name, 
-              spice_model.pass_gate_logic->nmos_size, spice_model.pass_gate_logic->pmos_size);
+              spice_model.name, design_param_postfix_pass_gate_logic_nmos_size,
+              spice_model.name, design_param_postfix_pass_gate_logic_pmos_size);
     } else {
       for (i = 0; i < num_input_per_level; i++) {
-        fprintf(fp,"X%s_%d in%d out sel%d sel_inv%d svdd sgnd %s nmos_size=%g pmos_size=%g\n",
+        fprintf(fp,"X%s_%d in%d out sel%d sel_inv%d svdd sgnd %s nmos_size=\'%s%s\' pmos_size=\'%s%s\'\n",
                 pgl_name, i, i, i, i, pgl_name, 
-                spice_model.pass_gate_logic->nmos_size, spice_model.pass_gate_logic->pmos_size);
+                spice_model.name, design_param_postfix_pass_gate_logic_nmos_size,
+                spice_model.name, design_param_postfix_pass_gate_logic_pmos_size);
       }
     }
     break;
@@ -100,15 +103,18 @@ void fprint_spice_mux_model_basis_cmos_subckt(FILE* fp, char* subckt_name,
      * Identify a special case: input_size = 2
      */
     if (1 == num_sram_bits) {
-      fprintf(fp,"X%s_0 in0 sel0 out sgnd %s W=\'%g*wn\'\n",
-                  pgl_name, pgl_name, spice_model.pass_gate_logic->nmos_size);
-      fprintf(fp,"X%s_1 in1 sel_inv0 out sgnd %s W=\'%g*wn\'\n",
-                  pgl_name, pgl_name, spice_model.pass_gate_logic->nmos_size);
+      fprintf(fp,"X%s_0 in0 sel0 out sgnd %s W=\'%s%s*wn\'\n",
+                  pgl_name, pgl_name, 
+                  spice_model.name, design_param_postfix_pass_gate_logic_nmos_size);
+      fprintf(fp,"X%s_1 in1 sel_inv0 out sgnd %s W=\'%s%s*wn\'\n",
+                  pgl_name, pgl_name, 
+                  spice_model.name, design_param_postfix_pass_gate_logic_nmos_size);
     } else {
       for (i = 0; i < num_input_per_level; i++) {
-        fprintf(fp,"X%s_%d in%d sel%d out sgnd %s W=\'%g*wn\'\n",
+        fprintf(fp,"X%s_%d in%d sel%d out sgnd %s W=\'%s%s*wn\'\n",
                   pgl_name, i, i, i, 
-                  pgl_name, spice_model.pass_gate_logic->nmos_size);
+                  pgl_name, 
+                  spice_model.name, design_param_postfix_pass_gate_logic_nmos_size);
       }
     }
     break; 
@@ -186,17 +192,18 @@ void fprint_spice_mux_model_basis_rram_subckt(FILE* fp, char* subckt_name,
     fprintf(fp, "sel%d sel_inv%d ", i, i);
   }
   fprintf(fp, "svdd sgnd ");
-  fprintf(fp, "ron=\'%g\' roff=\'%g\' ",
-               spice_model.design_tech_info.ron, spice_model.design_tech_info.roff);
-  fprintf(fp, "wprog_set_nmos=\'%g*%s\' wprog_reset_nmos=\'%g*%s\' ",
-               spice_model.design_tech_info.wprog_set_nmos, 
+  fprintf(fp, "ron=\'%s%s\' roff=\'%s%s\' ",
+               spice_model.name, design_param_postfix_rram_ron,
+               spice_model.name, design_param_postfix_rram_roff);
+  fprintf(fp, "wprog_set_nmos=\'%s%s*%s\' wprog_reset_nmos=\'%s%s*%s\' ",
+               spice_model.name, design_param_postfix_rram_wprog_set_nmos, 
                prog_wn,
-               spice_model.design_tech_info.wprog_reset_nmos,
+               spice_model.name, design_param_postfix_rram_wprog_reset_nmos,
                prog_wn);
-  fprintf(fp, "wprog_set_pmos=\'%g*%s\' wprog_reset_pmos=\'%g*%s\' \n",
-               spice_model.design_tech_info.wprog_set_pmos, 
+  fprintf(fp, "wprog_set_pmos=\'%s%s*%s\' wprog_reset_pmos=\'%s%s*%s\' \n",
+               spice_model.name, design_param_postfix_rram_wprog_set_pmos, 
                prog_wp,
-               spice_model.design_tech_info.wprog_reset_pmos,
+               spice_model.name, design_param_postfix_rram_wprog_reset_pmos,
                prog_wp);
   /* Print the new 2T1R structure */ 
   /* Switch case: 
@@ -824,7 +831,7 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
         fprintf(fp, "Xinv%d ", i); /* Given name*/
         fprintf(fp, "%s%d ", input_port[0]->prefix, i); /* input port */ 
         fprintf(fp, "mux2_l%d_in%d ", spice_mux_arch.input_level[i], spice_mux_arch.input_offset[i]); /* output port*/
-        fprintf(fp, "svdd sgnd inv size=\'%g\'", spice_model.input_buffer->size); /* subckt name */
+        fprintf(fp, "svdd sgnd inv size=\'%s%s\'", spice_model.name, design_param_postfix_input_buf_size); /* subckt name */
         fprintf(fp, "\n");
         break;
       case SPICE_MODEL_BUF_BUF:
@@ -833,7 +840,7 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
         fprintf(fp, "Xbuf%d ", i); /* Given name*/
         fprintf(fp, "%s%d ", input_port[0]->prefix, i); /* input port */ 
         fprintf(fp, "mux2_l%d_in%d ", spice_mux_arch.input_level[i], spice_mux_arch.input_offset[i]); /* output port*/
-        fprintf(fp, "svdd sgnd buf size=\'%g\'", spice_model.input_buffer->size); /* subckt name */
+        fprintf(fp, "svdd sgnd buf size=\'%s%s\'", spice_model.name, design_param_postfix_input_buf_size); /* subckt name */
         fprintf(fp, "\n");
         break;
       default:
@@ -861,7 +868,7 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
       fprintf(fp, "Xinv_out "); /* Given name*/
       fprintf(fp, "mux2_l%d_in%d ", 0, 0); /* input port */ 
       fprintf(fp, "%s ", output_port[0]->prefix); /* Output port*/
-      fprintf(fp, "svdd sgnd inv size=\'%g\'", spice_model.output_buffer->size); /* subckt name */
+      fprintf(fp, "svdd sgnd inv size=\'%s%s\'", spice_model.name, design_param_postfix_output_buf_size); /* subckt name */
       fprintf(fp, "\n");
       break;
     case SPICE_MODEL_BUF_BUF:
@@ -872,7 +879,7 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
       fprintf(fp, "Xbuf_out "); /* Given name*/
       fprintf(fp, "mux2_l%d_in%d ", 0, 0); /* input port */ 
       fprintf(fp, "%s ", output_port[0]->prefix); /* Output port*/
-      fprintf(fp, "svdd sgnd buf size=\'%g\'", spice_model.output_buffer->size); /* subckt name */
+      fprintf(fp, "svdd sgnd buf size=\'%s%s\'", spice_model.name, design_param_postfix_output_buf_size); /* subckt name */
       fprintf(fp, "\n");
       break;
     default:
@@ -1011,8 +1018,9 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
   } 
   /* Print local vdd and gnd*/
   fprintf(fp, "svdd sgnd ");
-  fprintf(fp, "ron=\'%g\' roff=\'%g\' ",
-          spice_model.design_tech_info.ron, spice_model.design_tech_info.roff);
+  fprintf(fp, "ron=\'%s%s\' roff=\'%s%s\' ",
+          spice_model.name, design_param_postfix_rram_ron, 
+          spice_model.name, design_param_postfix_rram_roff);
   fprintf(fp, "\n");
   
   /* Print internal architecture*/ 
@@ -1053,7 +1061,7 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
         fprintf(fp, "Xinv%d ", i); /* Given name*/
         fprintf(fp, "%s%d ", input_port[0]->prefix, i); /* input port */ 
         fprintf(fp, "mux2_l%d_in%d ", spice_mux_arch.input_level[i], spice_mux_arch.input_offset[i]); /* output port*/
-        fprintf(fp, "svdd sgnd inv size=\'%g\'", spice_model.input_buffer->size); /* subckt name */
+        fprintf(fp, "svdd sgnd inv size=\'%s%s\'", spice_model.name, design_param_postfix_input_buf_size); /* subckt name */
         fprintf(fp, "\n");
         break;
       case SPICE_MODEL_BUF_BUF:
@@ -1062,7 +1070,7 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
         fprintf(fp, "Xbuf%d ", i); /* Given name*/
         fprintf(fp, "%s%d ", input_port[0]->prefix, i); /* input port */ 
         fprintf(fp, "mux2_l%d_in%d ", spice_mux_arch.input_level[i], spice_mux_arch.input_offset[i]); /* output port*/
-        fprintf(fp, "svdd sgnd buf size=\'%g\'", spice_model.input_buffer->size); /* subckt name */
+        fprintf(fp, "svdd sgnd buf size=\'%s%s\'", spice_model.name, design_param_postfix_input_buf_size); /* subckt name */
         fprintf(fp, "\n");
         break;
       default:
@@ -1090,7 +1098,7 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
       fprintf(fp, "Xinv_out "); /* Given name*/
       fprintf(fp, "mux2_l%d_in%d ", 0, 0); /* input port */ 
       fprintf(fp, "%s ", output_port[0]->prefix); /* Output port*/
-      fprintf(fp, "svdd sgnd inv size=\'%g\'", spice_model.output_buffer->size); /* subckt name */
+      fprintf(fp, "svdd sgnd inv size=\'%s%s\'", spice_model.name, design_param_postfix_output_buf_size); /* subckt name */
       fprintf(fp, "\n");
       break;
     case SPICE_MODEL_BUF_BUF:
@@ -1101,7 +1109,7 @@ void fprint_spice_mux_model_rram_subckt(FILE* fp,
       fprintf(fp, "Xbuf_out "); /* Given name*/
       fprintf(fp, "mux2_l%d_in%d ", 0, 0); /* input port */ 
       fprintf(fp, "%s ", output_port[0]->prefix); /* Output port*/
-      fprintf(fp, "svdd sgnd buf size=\'%g\'", spice_model.output_buffer->size); /* subckt name */
+      fprintf(fp, "svdd sgnd buf size=\'%s%s\'", spice_model.name, design_param_postfix_output_buf_size); /* subckt name */
       fprintf(fp, "\n");
       break;
     default:

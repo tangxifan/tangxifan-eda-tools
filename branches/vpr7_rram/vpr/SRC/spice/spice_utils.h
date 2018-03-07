@@ -109,6 +109,10 @@ void fprint_call_defined_switch_boxes(FILE* fp);
 void fprint_tech_lib(FILE* fp,
                      t_spice_tech_lib tech_lib);
 
+void fprint_spice_circuit_param(FILE* fp,
+                                int num_spice_models,
+                                t_spice_model* spice_model);
+
 void fprint_spice_options(FILE* fp,
                           t_spice_params spice_params);
 

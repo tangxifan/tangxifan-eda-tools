@@ -1511,6 +1511,89 @@ void fprint_tech_lib(FILE* fp,
   return;
 }
 
+/* Print all the circuit design parameters */
+void fprint_spice_circuit_param(FILE* fp,
+                                int num_spice_models,
+                                t_spice_model* spice_model) {
+  int imodel;
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File Handler!",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  fprintf(fp, "***** Parameters for Circuits *****\n");
+  for (imodel = 0; imodel < num_spice_models; imodel++) {
+     fprintf(fp, "***** Parameters for SPICE MODEL: %s *****\n",
+             spice_model[imodel].name);
+     /* Regular design parameters: input buf sizes, output buf sizes*/ 
+     if ((NULL != spice_model[imodel].input_buffer) 
+        &&(TRUE == spice_model[imodel].input_buffer->exist)) {
+       fprintf(fp, ".param %s%s = %g\n", 
+               spice_model[imodel].name, design_param_postfix_input_buf_size, 
+               spice_model[imodel].input_buffer->size); 
+     }
+
+     if ((NULL != spice_model[imodel].output_buffer) 
+        &&(TRUE == spice_model[imodel].output_buffer->exist)) {
+       fprintf(fp, ".param %s%s = %g\n", 
+               spice_model[imodel].name, design_param_postfix_output_buf_size, 
+               spice_model[imodel].output_buffer->size); 
+     }
+
+     if (NULL != spice_model[imodel].pass_gate_logic) {
+       fprintf(fp, ".param %s%s = %g\n", 
+               spice_model[imodel].name, design_param_postfix_pass_gate_logic_pmos_size, 
+               spice_model[imodel].pass_gate_logic->pmos_size); 
+       fprintf(fp, ".param %s%s = %g\n", 
+               spice_model[imodel].name, design_param_postfix_pass_gate_logic_nmos_size, 
+               spice_model[imodel].pass_gate_logic->nmos_size); 
+     }
+
+     /* Exclusive parameters WIREs */
+     if ((SPICE_MODEL_CHAN_WIRE == spice_model[imodel].type)
+        ||(SPICE_MODEL_WIRE == spice_model[imodel].type)) {
+       fprintf(fp, ".param %s%s = %g\n", 
+               spice_model[imodel].name, design_param_postfix_wire_param_res_val, 
+               spice_model[imodel].wire_param->res_val); 
+       fprintf(fp, ".param %s%s = %g\n", 
+               spice_model[imodel].name, design_param_postfix_wire_param_cap_val, 
+               spice_model[imodel].wire_param->cap_val); 
+     }
+       
+     /* We care the spice models built with RRAMs */
+     if (SPICE_MODEL_DESIGN_RRAM == spice_model[imodel].design_tech) {
+       /* Print Ron */
+       fprintf(fp, ".param %s%s = %g\n", 
+               spice_model[imodel].name, design_param_postfix_rram_ron, 
+               spice_model[imodel].design_tech_info.ron); 
+       /* Print Roff */
+       fprintf(fp, ".param %s%s = %g\n", 
+               spice_model[imodel].name, design_param_postfix_rram_roff, 
+               spice_model[imodel].design_tech_info.roff); 
+       /* Print Wprog_set_nmos */
+       fprintf(fp, ".param %s%s = %g\n", 
+               spice_model[imodel].name, design_param_postfix_rram_wprog_set_nmos, 
+               spice_model[imodel].design_tech_info.wprog_set_nmos); 
+       /* Print Wprog_set_pmos */
+       fprintf(fp, ".param %s%s = %g\n", 
+               spice_model[imodel].name, design_param_postfix_rram_wprog_set_pmos, 
+               spice_model[imodel].design_tech_info.wprog_set_pmos); 
+       /* Print Wprog_reset_nmos */
+       fprintf(fp, ".param %s%s = %g\n", 
+               spice_model[imodel].name, design_param_postfix_rram_wprog_reset_nmos, 
+               spice_model[imodel].design_tech_info.wprog_reset_nmos); 
+       /* Print Wprog_reset_pmos */
+       fprintf(fp, ".param %s%s = %g\n", 
+               spice_model[imodel].name, design_param_postfix_rram_wprog_reset_pmos, 
+               spice_model[imodel].design_tech_info.wprog_reset_pmos); 
+     } 
+  }
+
+  return;
+}
+
 /* This function may expand. 
  * It prints temperature, and options for a SPICE simulation
  */
@@ -1554,7 +1637,13 @@ void fprint_spice_include_param_headers(FILE* fp,
     exit(1);
   } 
 
-  /* Include headers for measurements and stimulates */
+  /* Include headers for circuit designs, measurements and stimulates */
+
+  fprintf(fp, "****** Include Header file: circuit design parameters *****\n");
+  temp_include_file_path = my_strcat(formatted_include_dir_path, design_param_header_file_name);
+  fprintf(fp, ".include \'%s\'\n", temp_include_file_path);
+  my_free(temp_include_file_path);
+
   fprintf(fp, "****** Include Header file: measurement parameters *****\n");
   temp_include_file_path = my_strcat(formatted_include_dir_path, meas_header_file_name);
   fprintf(fp, ".include \'%s\'\n", temp_include_file_path);

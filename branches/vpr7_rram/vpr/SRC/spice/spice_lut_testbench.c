@@ -630,7 +630,7 @@ int fprint_spice_one_lut_testbench(char* formatted_spice_dir,
   my_free(title);
 
   /* print technology library and design parameters*/
-  fprint_tech_lib(fp, arch.spice->tech_lib);
+  /*fprint_tech_lib(fp, arch.spice->tech_lib);*/
 
   /* Include parameter header files */
   fprint_spice_include_param_headers(fp, include_dir_path);

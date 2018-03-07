@@ -210,6 +210,36 @@ void fprint_spice_stimulate_header(char* stimulate_file_name,
   return;
 }
 
+/* Print parameters for circuit designs */
+static 
+void fprint_spice_design_param_header(char* design_param_file_name,
+                                      t_spice spice) {
+  FILE* fp = NULL;
+   
+  /* Check */
+  assert(NULL != design_param_file_name);
+
+  /* Create File */
+  fp = fopen(design_param_file_name, "w");
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Failure in create design parameter header file %s!\n",
+               __FILE__, __LINE__, design_param_file_name);
+    exit(1);
+  }
+
+  fprint_spice_head(fp, "Parameters for Circuit Designs");
+
+  fprint_tech_lib(fp, spice.tech_lib);
+
+  /* For transistors */
+  fprint_spice_circuit_param(fp, spice.num_spice_model, spice.spice_models);
+
+  fclose(fp);
+
+  return;
+}
+
+
 void fprint_spice_headers(char* include_dir_path,
                           float vpr_clock_period,
                           int num_clock,
@@ -217,6 +247,7 @@ void fprint_spice_headers(char* include_dir_path,
   char* formatted_include_dir_path = format_dir_path(include_dir_path);
   char* meas_header_file_path = NULL;
   char* stimu_header_file_path = NULL;
+  char* design_param_header_file_path = NULL;
 
   /* measurement header file */
   meas_header_file_path = my_strcat(formatted_include_dir_path, meas_header_file_name);
@@ -225,6 +256,10 @@ void fprint_spice_headers(char* include_dir_path,
   /* stimulate header file */
   stimu_header_file_path = my_strcat(formatted_include_dir_path, stimu_header_file_name);
   fprint_spice_stimulate_header(stimu_header_file_path, spice.spice_params.stimulate_params, vpr_clock_period, num_clock);
+
+  /* design parameter header file */
+  design_param_header_file_path = my_strcat(formatted_include_dir_path, design_param_header_file_name);
+  fprint_spice_design_param_header(design_param_header_file_path, spice);
   
   return;
 }

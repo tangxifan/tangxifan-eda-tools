@@ -18,6 +18,21 @@ extern char* luts_spice_file_name;
 extern char* routing_spice_file_name;
 extern char* meas_header_file_name;
 extern char* stimu_header_file_name;
+extern char* design_param_header_file_name;
+
+/* Postfix for circuit design parameters */
+extern char* design_param_postfix_input_buf_size; 
+extern char* design_param_postfix_output_buf_size; 
+extern char* design_param_postfix_pass_gate_logic_pmos_size; 
+extern char* design_param_postfix_pass_gate_logic_nmos_size; 
+extern char* design_param_postfix_wire_param_res_val; 
+extern char* design_param_postfix_wire_param_cap_val; 
+extern char* design_param_postfix_rram_ron; 
+extern char* design_param_postfix_rram_roff; 
+extern char* design_param_postfix_rram_wprog_set_pmos; 
+extern char* design_param_postfix_rram_wprog_set_nmos; 
+extern char* design_param_postfix_rram_wprog_reset_pmos; 
+extern char* design_param_postfix_rram_wprog_reset_nmos; 
 
 /* Testbench names */
 extern char* spice_top_testbench_postfix;
