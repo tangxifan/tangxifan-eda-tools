@@ -557,6 +557,7 @@ void fprint_top_netlist_measurements(FILE* fp,
   }
   
   fprint_spice_netlist_transient_setting(fp, spice, num_clock_cycle, leakage_only);
+  fprint_spice_netlist_generic_measurements(fp, spice.spice_params.mc_params, spice.num_spice_model, spice.spice_models);
 
   /* TODO: Measure the delay of each mapped net and logical block */
 

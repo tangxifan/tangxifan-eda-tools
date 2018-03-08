@@ -65,7 +65,28 @@ void InitSpiceStimulateParams(t_spice_stimulate_params* stimulate_params) {
 }
 
 void FreeSpiceStimulateParams(t_spice_stimulate_params* stimulate_params) {
+  return;
+}
 
+void InitSpiceVariationParams(t_spice_mc_variation_params* mc_variation_params) {
+  mc_variation_params->variation_on = FALSE; 
+  mc_variation_params->abs_variation = 0.; 
+  mc_variation_params->num_sigma = 1; 
+}
+
+void FreeSpiceVariationParams(t_spice_mc_variation_params* mc_variation_params) {
+  return; 
+}
+
+void InitSpiceMonteCarloParams(t_spice_mc_params* mc_params) {
+  /* Initialize the CMOS and RRAM variations */
+  InitSpiceVariationParams(&(mc_params->cmos_variation));
+  InitSpiceVariationParams(&(mc_params->rram_variation));
+  
+  return;
+}
+
+void FreeSpiceMonteCarloParams(t_spice_mc_params* mc_params) {
   return;
 }
 
@@ -82,6 +103,9 @@ void InitSpiceParams(t_spice_params* params) {
 
   /* stimulate params*/
   InitSpiceStimulateParams(&(params->stimulate_params));
+
+  /* stimulate params*/
+  InitSpiceMonteCarloParams(&(params->mc_params));
 
   return;
 }

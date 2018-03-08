@@ -1435,8 +1435,35 @@ void fprint_grid_float_port_stimulation(FILE* fp) {
   return;
 }
 
+void fprint_one_design_param_w_wo_variation(FILE* fp,
+                                            char* param_name,
+                                            float avg_val,
+                                            t_spice_mc_variation_params variation_params) {
+  /* Check */
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d]) FileHandle is NULL!\n",
+               __FILE__,__LINE__); 
+    exit(1);
+  } 
+
+  fprintf(fp,".param %s=", param_name); 
+  if (FALSE == variation_params.variation_on) {
+    fprintf(fp, "%g", avg_val);
+  } else {
+    fprintf(fp, "agauss(%g, '%g*%g', %d)", 
+            avg_val, 
+            variation_params.abs_variation, avg_val,
+            variation_params.num_sigma);
+  }
+  fprintf(fp, "\n");
+
+  return;
+}
+ 
+
 /* Print Technology Library and Design Parameters*/
 void fprint_tech_lib(FILE* fp,
+                     t_spice_mc_variation_params cmos_variation_params,
                      t_spice_tech_lib tech_lib) {
   /* Standard transistors*/
   t_spice_transistor_type* nmos_trans = NULL;
@@ -1470,37 +1497,40 @@ void fprint_tech_lib(FILE* fp,
   if (NULL == nmos_trans) {
     vpr_printf(TIO_MESSAGE_ERROR,"NMOS transistor is not defined in architecture XML!\n");
     exit(1);
-  } else {
-    fprintf(fp,".param nl=%g\n",nmos_trans->chan_length);
-    fprintf(fp,".param wn=%g\n",nmos_trans->min_width);
   }
+
+  fprint_one_design_param_w_wo_variation(fp, "nl", nmos_trans->chan_length, cmos_variation_params);
+  fprint_one_design_param_w_wo_variation(fp, "wn", nmos_trans->min_width, cmos_variation_params);
+
   /* Find PMOS*/
   pmos_trans = find_mosfet_tech_lib(tech_lib,SPICE_TRANS_PMOS);
   if (NULL == pmos_trans) {
     vpr_printf(TIO_MESSAGE_ERROR,"PMOS transistor is not defined in architecture XML!\n");
     exit(1);
-  } else {
-    fprintf(fp,".param pl=%g\n",pmos_trans->chan_length);
-    fprintf(fp,".param wp=%g\n",pmos_trans->min_width);
   }
 
-  /* Print I/O NMOS and PMOS */
-  if (4 == tech_lib.num_transistor_type) {
-    io_nmos_trans = find_mosfet_tech_lib(tech_lib,SPICE_TRANS_IO_NMOS);
-    if (NULL == io_nmos_trans) {
-      vpr_printf(TIO_MESSAGE_WARNING,"I/O NMOS transistor is not defined in architecture XML!\n");
-    } else {
-      fprintf(fp,".param io_nl=%g\n", io_nmos_trans->chan_length);
-      fprintf(fp,".param io_wn=%g\n", io_nmos_trans->min_width);
-    }
+  fprint_one_design_param_w_wo_variation(fp, "pl", pmos_trans->chan_length, cmos_variation_params);
+  fprint_one_design_param_w_wo_variation(fp, "wp", pmos_trans->min_width, cmos_variation_params);
 
-    io_pmos_trans = find_mosfet_tech_lib(tech_lib,SPICE_TRANS_IO_PMOS);
-    if (NULL == io_pmos_trans) {
-      vpr_printf(TIO_MESSAGE_WARNING,"I/O PMOS transistor is not defined in architecture XML!\n");
-    } else {
-      fprintf(fp,".param io_pl=%g\n", io_pmos_trans->chan_length);
-      fprintf(fp,".param io_wp=%g\n", io_pmos_trans->min_width);
-    }
+  /* Print I/O NMOS and PMOS */
+  io_nmos_trans = find_mosfet_tech_lib(tech_lib, SPICE_TRANS_IO_NMOS);
+  if ((NULL == io_nmos_trans) && (4 == tech_lib.num_transistor_type)) {
+    vpr_printf(TIO_MESSAGE_WARNING,"I/O NMOS transistor is not defined in architecture XML!\n");
+    exit(1);
+  }
+  if (NULL != io_nmos_trans) {
+    fprint_one_design_param_w_wo_variation(fp, "io_nl", io_nmos_trans->chan_length, cmos_variation_params);
+    fprint_one_design_param_w_wo_variation(fp, "io_wn", io_nmos_trans->min_width, cmos_variation_params);
+  }
+
+  io_pmos_trans = find_mosfet_tech_lib(tech_lib,SPICE_TRANS_IO_PMOS);
+  if ((NULL == io_pmos_trans) && (4 == tech_lib.num_transistor_type)) {
+    vpr_printf(TIO_MESSAGE_WARNING,"I/O PMOS transistor is not defined in architecture XML!\n");
+    exit(1);
+  }
+  if (NULL != io_nmos_trans) {
+    fprint_one_design_param_w_wo_variation(fp, "io_pl", io_pmos_trans->chan_length, cmos_variation_params);
+    fprint_one_design_param_w_wo_variation(fp, "io_wp", io_pmos_trans->min_width, cmos_variation_params);
   }
 
   /* Print nominal Vdd */
@@ -1513,6 +1543,7 @@ void fprint_tech_lib(FILE* fp,
 
 /* Print all the circuit design parameters */
 void fprint_spice_circuit_param(FILE* fp,
+                                t_spice_mc_params mc_params,
                                 int num_spice_models,
                                 t_spice_model* spice_model) {
   int imodel;
@@ -1530,66 +1561,172 @@ void fprint_spice_circuit_param(FILE* fp,
      /* Regular design parameters: input buf sizes, output buf sizes*/ 
      if ((NULL != spice_model[imodel].input_buffer) 
         &&(TRUE == spice_model[imodel].input_buffer->exist)) {
-       fprintf(fp, ".param %s%s = %g\n", 
-               spice_model[imodel].name, design_param_postfix_input_buf_size, 
-               spice_model[imodel].input_buffer->size); 
+       fprint_one_design_param_w_wo_variation(fp,
+                                              my_strcat(spice_model[imodel].name, design_param_postfix_input_buf_size), 
+                                              spice_model[imodel].input_buffer->size,
+                                              mc_params.cmos_variation); 
      }
 
      if ((NULL != spice_model[imodel].output_buffer) 
         &&(TRUE == spice_model[imodel].output_buffer->exist)) {
-       fprintf(fp, ".param %s%s = %g\n", 
-               spice_model[imodel].name, design_param_postfix_output_buf_size, 
-               spice_model[imodel].output_buffer->size); 
+       fprint_one_design_param_w_wo_variation(fp,
+                                              my_strcat(spice_model[imodel].name, design_param_postfix_output_buf_size), 
+                                              spice_model[imodel].output_buffer->size,
+                                              mc_params.cmos_variation); 
      }
 
      if (NULL != spice_model[imodel].pass_gate_logic) {
-       fprintf(fp, ".param %s%s = %g\n", 
-               spice_model[imodel].name, design_param_postfix_pass_gate_logic_pmos_size, 
-               spice_model[imodel].pass_gate_logic->pmos_size); 
-       fprintf(fp, ".param %s%s = %g\n", 
-               spice_model[imodel].name, design_param_postfix_pass_gate_logic_nmos_size, 
-               spice_model[imodel].pass_gate_logic->nmos_size); 
+       fprint_one_design_param_w_wo_variation(fp,
+                                              my_strcat(spice_model[imodel].name, design_param_postfix_pass_gate_logic_pmos_size), 
+                                              spice_model[imodel].pass_gate_logic->pmos_size, 
+                                              mc_params.cmos_variation); 
+       fprint_one_design_param_w_wo_variation(fp,
+                                              my_strcat(spice_model[imodel].name, design_param_postfix_pass_gate_logic_nmos_size), 
+                                              spice_model[imodel].pass_gate_logic->nmos_size, 
+                                              mc_params.cmos_variation); 
      }
 
      /* Exclusive parameters WIREs */
      if ((SPICE_MODEL_CHAN_WIRE == spice_model[imodel].type)
         ||(SPICE_MODEL_WIRE == spice_model[imodel].type)) {
-       fprintf(fp, ".param %s%s = %g\n", 
-               spice_model[imodel].name, design_param_postfix_wire_param_res_val, 
-               spice_model[imodel].wire_param->res_val); 
-       fprintf(fp, ".param %s%s = %g\n", 
-               spice_model[imodel].name, design_param_postfix_wire_param_cap_val, 
-               spice_model[imodel].wire_param->cap_val); 
+       fprint_one_design_param_w_wo_variation(fp,
+                                              my_strcat(spice_model[imodel].name, design_param_postfix_wire_param_res_val), 
+                                              spice_model[imodel].wire_param->res_val,
+                                              mc_params.cmos_variation); 
+       fprint_one_design_param_w_wo_variation(fp,
+                                              my_strcat(spice_model[imodel].name, design_param_postfix_wire_param_cap_val), 
+                                              spice_model[imodel].wire_param->cap_val,
+                                              mc_params.cmos_variation); 
      }
        
      /* We care the spice models built with RRAMs */
      if (SPICE_MODEL_DESIGN_RRAM == spice_model[imodel].design_tech) {
        /* Print Ron */
-       fprintf(fp, ".param %s%s = %g\n", 
-               spice_model[imodel].name, design_param_postfix_rram_ron, 
-               spice_model[imodel].design_tech_info.ron); 
+       fprint_one_design_param_w_wo_variation(fp,
+                                              my_strcat(spice_model[imodel].name, design_param_postfix_rram_ron), 
+                                              spice_model[imodel].design_tech_info.ron,
+                                              mc_params.rram_variation); 
        /* Print Roff */
-       fprintf(fp, ".param %s%s = %g\n", 
-               spice_model[imodel].name, design_param_postfix_rram_roff, 
-               spice_model[imodel].design_tech_info.roff); 
+       fprint_one_design_param_w_wo_variation(fp,
+                                              my_strcat(spice_model[imodel].name, design_param_postfix_rram_roff), 
+                                              spice_model[imodel].design_tech_info.roff,
+                                              mc_params.rram_variation); 
        /* Print Wprog_set_nmos */
-       fprintf(fp, ".param %s%s = %g\n", 
-               spice_model[imodel].name, design_param_postfix_rram_wprog_set_nmos, 
-               spice_model[imodel].design_tech_info.wprog_set_nmos); 
+       fprint_one_design_param_w_wo_variation(fp,
+                                              my_strcat(spice_model[imodel].name, design_param_postfix_rram_wprog_set_nmos), 
+                                              spice_model[imodel].design_tech_info.wprog_set_nmos,
+                                              mc_params.cmos_variation); 
        /* Print Wprog_set_pmos */
-       fprintf(fp, ".param %s%s = %g\n", 
-               spice_model[imodel].name, design_param_postfix_rram_wprog_set_pmos, 
-               spice_model[imodel].design_tech_info.wprog_set_pmos); 
+       fprint_one_design_param_w_wo_variation(fp,
+                                              my_strcat(spice_model[imodel].name, design_param_postfix_rram_wprog_set_pmos), 
+                                              spice_model[imodel].design_tech_info.wprog_set_pmos,
+                                              mc_params.cmos_variation); 
        /* Print Wprog_reset_nmos */
-       fprintf(fp, ".param %s%s = %g\n", 
-               spice_model[imodel].name, design_param_postfix_rram_wprog_reset_nmos, 
-               spice_model[imodel].design_tech_info.wprog_reset_nmos); 
+       fprint_one_design_param_w_wo_variation(fp,
+                                              my_strcat(spice_model[imodel].name, design_param_postfix_rram_wprog_reset_nmos), 
+                                              spice_model[imodel].design_tech_info.wprog_reset_nmos,
+                                              mc_params.cmos_variation); 
        /* Print Wprog_reset_pmos */
-       fprintf(fp, ".param %s%s = %g\n", 
-               spice_model[imodel].name, design_param_postfix_rram_wprog_reset_pmos, 
-               spice_model[imodel].design_tech_info.wprog_reset_pmos); 
+       fprint_one_design_param_w_wo_variation(fp,
+                                              my_strcat(spice_model[imodel].name, design_param_postfix_rram_wprog_reset_pmos), 
+                                              spice_model[imodel].design_tech_info.wprog_reset_pmos,
+                                              mc_params.cmos_variation); 
      } 
   }
+
+  return;
+}
+
+void fprint_spice_netlist_measurement_one_design_param(FILE* fp,
+                                                       char* param_name) {
+  
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File Handler!",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  fprintf(fp, ".meas tran actual_%s param='%s'\n",
+          param_name, param_name);
+
+  return;
+}
+
+void fprint_spice_netlist_generic_measurements(FILE* fp, 
+                                               t_spice_mc_params mc_params,
+                                               int num_spice_models,
+                                               t_spice_model* spice_model) {
+  
+  int imodel;
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File Handler!",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  fprintf(fp, "***** Generic Measurements for Circuit Parameters *****\n");
+
+  if ((FALSE == mc_params.cmos_variation.variation_on)
+     &&(FALSE == mc_params.rram_variation.variation_on)) {
+    return;
+  }
+
+  for (imodel = 0; imodel < num_spice_models; imodel++) {
+     fprintf(fp, "***** Measurements for Parameters for SPICE MODEL: %s *****\n",
+             spice_model[imodel].name);
+     /* Regular design parameters: input buf sizes, output buf sizes*/ 
+     if ((NULL != spice_model[imodel].input_buffer) 
+        &&(TRUE == spice_model[imodel].input_buffer->exist)) {
+       fprint_spice_netlist_measurement_one_design_param(fp,
+                                                         my_strcat(spice_model[imodel].name, design_param_postfix_input_buf_size)); 
+     }
+
+     if ((NULL != spice_model[imodel].output_buffer) 
+        &&(TRUE == spice_model[imodel].output_buffer->exist)) {
+       fprint_spice_netlist_measurement_one_design_param(fp,
+                                                         my_strcat(spice_model[imodel].name, design_param_postfix_output_buf_size)); 
+     }
+
+     if (NULL != spice_model[imodel].pass_gate_logic) {
+       fprint_spice_netlist_measurement_one_design_param(fp,
+                                                         my_strcat(spice_model[imodel].name, design_param_postfix_pass_gate_logic_pmos_size)); 
+       fprint_spice_netlist_measurement_one_design_param(fp,
+                                                         my_strcat(spice_model[imodel].name, design_param_postfix_pass_gate_logic_nmos_size)); 
+     }
+
+     /* Exclusive parameters WIREs */
+     if ((SPICE_MODEL_CHAN_WIRE == spice_model[imodel].type)
+        ||(SPICE_MODEL_WIRE == spice_model[imodel].type)) {
+       fprint_spice_netlist_measurement_one_design_param(fp,
+                                                         my_strcat(spice_model[imodel].name, design_param_postfix_wire_param_res_val)); 
+       fprint_spice_netlist_measurement_one_design_param(fp,
+                                                         my_strcat(spice_model[imodel].name, design_param_postfix_wire_param_cap_val)); 
+     }
+       
+     /* We care the spice models built with RRAMs */
+     if (SPICE_MODEL_DESIGN_RRAM == spice_model[imodel].design_tech) {
+       /* Print Ron */
+       fprint_spice_netlist_measurement_one_design_param(fp,
+                                                         my_strcat(spice_model[imodel].name, design_param_postfix_rram_ron)); 
+       /* Print Roff */
+       fprint_spice_netlist_measurement_one_design_param(fp,
+                                                         my_strcat(spice_model[imodel].name, design_param_postfix_rram_roff)); 
+       /* Print Wprog_set_nmos */
+       fprint_spice_netlist_measurement_one_design_param(fp,
+                                                         my_strcat(spice_model[imodel].name, design_param_postfix_rram_wprog_set_nmos)); 
+       /* Print Wprog_set_pmos */
+       fprint_spice_netlist_measurement_one_design_param(fp,
+                                                         my_strcat(spice_model[imodel].name, design_param_postfix_rram_wprog_set_pmos)); 
+       /* Print Wprog_reset_nmos */
+       fprint_spice_netlist_measurement_one_design_param(fp,
+                                                         my_strcat(spice_model[imodel].name, design_param_postfix_rram_wprog_reset_nmos)); 
+       /* Print Wprog_reset_pmos */
+       fprint_spice_netlist_measurement_one_design_param(fp,
+                                                         my_strcat(spice_model[imodel].name, design_param_postfix_rram_wprog_reset_pmos)); 
+     } 
+  }
+
 
   return;
 }
@@ -1770,26 +1907,41 @@ void fprint_spice_netlist_transient_setting(FILE* fp,
   /* Leakage power only, use a simplified tran sim*/
   if (TRUE == leakage_only) {
     fprintf(fp, "***** Transient simulation only for leakage power  *****\n");
-    fprintf(fp, ".tran 'clock_period/1' 'clock_period'\n");
   } else {
-    /* Determine the transistion time to simulate */
     fprintf(fp, "***** %d Clock Simulation, accuracy=%g *****\n",
             num_clock_cycle, spice.spice_params.meas_params.accuracy);
-    switch (spice.spice_params.meas_params.accuracy_type) {
-    case SPICE_ABS: 
-      fprintf(fp, ".tran %g '%d*clock_period'\n", 
-              spice.spice_params.meas_params.accuracy, num_clock_cycle);
-      break;
-    case SPICE_FRAC:
-      fprintf(fp, ".tran '%d*clock_period/%d' '%d*clock_period'\n", 
-              num_clock_cycle, (int)spice.spice_params.meas_params.accuracy, num_clock_cycle);
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid accuracy type!\n",
-                 __FILE__, __LINE__);
-      exit(1);
-    }
   }
+
+  /* Determine the transistion time to simulate */
+  switch (spice.spice_params.meas_params.accuracy_type) {
+  case SPICE_ABS: 
+    fprintf(fp, ".tran %g ", 
+            spice.spice_params.meas_params.accuracy);
+    break;
+   case SPICE_FRAC:
+    fprintf(fp, ".tran '%d*clock_period/%d' ", 
+            num_clock_cycle, (int)spice.spice_params.meas_params.accuracy);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid accuracy type!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  if (TRUE == leakage_only) {
+    fprintf(fp, " 'clock_period'");
+  } else {
+    fprintf(fp, " '%d*clock_period'", 
+            num_clock_cycle);
+  }
+
+  if ((TRUE == spice.spice_params.mc_params.cmos_variation.variation_on)
+     ||(TRUE == spice.spice_params.mc_params.rram_variation.variation_on)) {
+    fprintf(fp, " sweep monte=%d ",
+            spice.spice_params.mc_params.num_mc_points);
+  }
+
+  fprintf(fp, "\n");
 
   return;
 }

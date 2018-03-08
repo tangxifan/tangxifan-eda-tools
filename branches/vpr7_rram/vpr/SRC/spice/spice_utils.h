@@ -106,12 +106,27 @@ void fprint_call_defined_one_switch_box(FILE* fp,
 
 void fprint_call_defined_switch_boxes(FILE* fp);
 
+void fprint_one_design_param_w_wo_variation(FILE* fp,
+                                            char* param_name,
+                                            float avg_val,
+                                            t_spice_mc_variation_params variation_params);
+
 void fprint_tech_lib(FILE* fp,
+                     t_spice_mc_variation_params cmos_variation_params,
                      t_spice_tech_lib tech_lib);
 
 void fprint_spice_circuit_param(FILE* fp,
+                                t_spice_mc_params mc_params,
                                 int num_spice_models,
                                 t_spice_model* spice_model);
+
+void fprint_spice_netlist_measurement_one_design_param(FILE* fp,
+                                                       char* param_name);
+
+void fprint_spice_netlist_generic_measurements(FILE* fp, 
+                                               t_spice_mc_params mc_params,
+                                               int num_spice_models,
+                                               t_spice_model* spice_model);
 
 void fprint_spice_options(FILE* fp,
                           t_spice_params spice_params);

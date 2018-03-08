@@ -551,6 +551,7 @@ void fprint_spice_lut_testbench_measurements(FILE* fp, int grid_x, int grid_y,
   }
   
   fprint_spice_netlist_transient_setting(fp, spice, num_clock_cycle, leakage_only);
+  fprint_spice_netlist_generic_measurements(fp, spice.spice_params.mc_params, spice.num_spice_model, spice.spice_models);
 
   /* TODO: Measure the delay of each mapped net and logical block */
 
@@ -630,7 +631,6 @@ int fprint_spice_one_lut_testbench(char* formatted_spice_dir,
   my_free(title);
 
   /* print technology library and design parameters*/
-  /*fprint_tech_lib(fp, arch.spice->tech_lib);*/
 
   /* Include parameter header files */
   fprint_spice_include_param_headers(fp, include_dir_path);

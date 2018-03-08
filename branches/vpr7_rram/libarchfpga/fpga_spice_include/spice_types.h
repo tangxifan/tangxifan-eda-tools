@@ -92,6 +92,8 @@ typedef struct s_spice_model_design_tech_info t_spice_model_design_tech_info;
 typedef struct s_spice_model t_spice_model;
 typedef struct s_spice_meas_params t_spice_meas_params;
 typedef struct s_spice_stimulate_params t_spice_stimulate_params;
+typedef struct s_spice_mc_variation_params t_spice_mc_variation_params;
+typedef struct s_spice_mc_params t_spice_mc_params;
 typedef struct s_spice_params t_spice_params;
 typedef struct s_spice t_spice;
 typedef struct s_spice_mux_arch t_spice_mux_arch;
@@ -283,6 +285,20 @@ struct s_spice_stimulate_params {
   float sim_clock_freq_slack;
 };
 
+struct s_spice_mc_variation_params {
+  /* on/off, abs_variation and num_sigma */
+  boolean variation_on;
+  float abs_variation;
+  int num_sigma;
+};
+
+struct s_spice_mc_params {
+  int num_mc_points;
+  /* cmos and rram variation */
+  t_spice_mc_variation_params cmos_variation;
+  t_spice_mc_variation_params rram_variation;
+};
+
 struct s_spice_params {
   int sim_temp; /* Simulation Temperature*/
   int post;
@@ -290,6 +306,7 @@ struct s_spice_params {
   int fast;
   t_spice_meas_params meas_params;
   t_spice_stimulate_params stimulate_params;
+  t_spice_mc_params mc_params;
 };
 
 struct s_spice {

@@ -250,6 +250,62 @@ static void ProcessSpiceStimulateParams(ezxml_t Parent,
   return;
 }
 
+static void ProcessSpiceMCVariationParams(ezxml_t Parent,
+                                          t_spice_mc_variation_params* variation_params) {
+  /* Check */
+  if (variation_params == NULL) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File: %s,[LINE%d])variation_params is NULL!\n", 
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  variation_params->abs_variation = GetFloatProperty(Parent, "abs_variation", TRUE, 0);
+  ezxml_set_attr(Parent, "abs_variation", NULL);
+
+  variation_params->num_sigma = GetIntProperty(Parent, "num_sigma", TRUE, 1);
+  ezxml_set_attr(Parent, "num_sigma", NULL);
+  
+  return;
+}
+
+static void ProcessSpiceMonteCarloParams(ezxml_t Parent, 
+                                         t_spice_mc_params* mc_params) {
+  ezxml_t Node;
+
+  /* Check */
+  if (mc_params == NULL) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File: %s,[LINE%d])mc_params is NULL!\n", 
+               __FILE__, __LINE__);
+    exit(1);
+  }
+  
+  mc_params->num_mc_points = GetIntProperty(Parent, "num_mc_points", FALSE, 1);
+  ezxml_set_attr(Parent, "num_mc_points", NULL);
+
+  /* Process CMOS variations */
+  if (0 == strcmp("on", FindProperty(Parent, "cmos_variation", FALSE))) {
+    mc_params->cmos_variation.variation_on = TRUE;
+  } 
+  Node = FindElement(Parent, "cmos", mc_params->cmos_variation.variation_on);
+  if (Node) {
+    ProcessSpiceMCVariationParams(Node, &(mc_params->cmos_variation));
+    FreeNode(Node);
+  }
+  ezxml_set_attr(Parent, "cmos_variation", NULL);
+  
+  if (0 == strcmp("on", FindProperty(Parent, "rram_variation", FALSE))) {
+    mc_params->rram_variation.variation_on = TRUE;
+  }
+  Node = FindElement(Parent, "rram", mc_params->rram_variation.variation_on);
+  if (Node) {
+    ProcessSpiceMCVariationParams(Node, &(mc_params->rram_variation));
+    FreeNode(Node);
+  }
+  ezxml_set_attr(Parent, "rram_variation", NULL);
+
+  return;
+}
+
 static void ProcessSpiceParams(ezxml_t Parent,
                                t_spice_params* spice_params) {
   ezxml_t Node;
@@ -298,6 +354,13 @@ static void ProcessSpiceParams(ezxml_t Parent,
     }
     ezxml_set_attr(Node, "fast", NULL);
     /* Free*/
+    FreeNode(Node);
+  }
+
+  /* Process Monte Carlo Settings */
+  Node = FindElement(Parent, "monte_carlo", FALSE);
+  if (Node) {
+    ProcessSpiceMonteCarloParams(Node, &(spice_params->mc_params));
     FreeNode(Node);
   }
 

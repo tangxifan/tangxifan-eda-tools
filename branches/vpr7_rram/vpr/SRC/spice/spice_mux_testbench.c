@@ -1681,6 +1681,8 @@ void fprint_spice_mux_testbench_measurements(FILE* fp,
   }
 
   fprint_spice_netlist_transient_setting(fp, spice, num_clock_cycle, FALSE);
+  fprint_spice_netlist_generic_measurements(fp, spice.spice_params.mc_params, spice.num_spice_model, spice.spice_models);
+
   /* Measure the leakage and dynamic power of SRAMs*/
   fprintf(fp, ".meas tran total_leakage_srams avg p(Vgvdd_sram) from=0 to=\'clock_period\'\n");
   fprintf(fp, ".meas tran total_dynamic_srams avg p(Vgvdd_sram) from=\'clock_period\' to=\'%d*clock_period\'\n", num_clock_cycle);

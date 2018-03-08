@@ -229,10 +229,15 @@ void fprint_spice_design_param_header(char* design_param_file_name,
 
   fprint_spice_head(fp, "Parameters for Circuit Designs");
 
-  fprint_tech_lib(fp, spice.tech_lib);
+  fprint_tech_lib(fp, 
+                  spice.spice_params.mc_params.cmos_variation, 
+                  spice.tech_lib);
 
   /* For transistors */
-  fprint_spice_circuit_param(fp, spice.num_spice_model, spice.spice_models);
+  fprint_spice_circuit_param(fp, 
+                             spice.spice_params.mc_params, 
+                             spice.num_spice_model, 
+                             spice.spice_models);
 
   fclose(fp);
 
