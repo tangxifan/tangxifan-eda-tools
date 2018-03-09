@@ -910,7 +910,7 @@ sub parse_one_fpga_spice_task_one_mc_tb_results($ $ $ $ $ $ $) {
   my (@dynamic_tags) = split('\|', $tb_dynamic_tags);
   my ($line, $found_tran_analysis);
   my ($LISFH) = FileHandle->new;
-  my ($temp, $mc_cnt) = ("", 1);
+  my ($temp, $mc_cnt) = ("", 0);
 
   # Check if there is any conflict to reserved words
   foreach my $tag(@leakage_tags) {
@@ -1511,7 +1511,7 @@ sub process_mc_data_one_tag($) {
   $cur_mc_hash_ref->{mc_max} = "na"; 
   $cur_mc_hash_ref->{mc_min} = "na"; 
   for (my $i = 1;
-          $i < $cur_mc_hash_ref->{mc_cnt}; 
+          $i < $cur_mc_hash_ref->{mc_cnt} + 1; 
           $i++) {
     $cur_mc_hash_ref->{mc_total} += $cur_mc_hash_ref->{"mc".$i};  
     # Update max 
@@ -1656,10 +1656,11 @@ sub gen_csv_rpt($) {
       &gen_csv_rpt_one_case($RPTFH, "mc_max");
       &gen_csv_rpt_one_case($RPTFH, "mc_min");
     } else { # Output full report 
+      print $RPTFH "Number of Monte Carlo simulations: $mc_num\n\n";
       &gen_csv_rpt_one_case($RPTFH, "mc_avg");
       &gen_csv_rpt_one_case($RPTFH, "mc_max");
       &gen_csv_rpt_one_case($RPTFH, "mc_min");
-      for (my $i = 1; $i < $mc_num; $i++) {
+      for (my $i = 1; $i < $mc_num + 1; $i++) {
         &gen_csv_rpt_one_case($RPTFH, "mc".$i);
       } 
     }
