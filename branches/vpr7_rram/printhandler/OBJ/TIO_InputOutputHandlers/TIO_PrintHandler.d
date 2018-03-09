@@ -1,360 +1,308 @@
 OBJ/TIO_InputOutputHandlers/TIO_PrintHandler.o: \
- SRC/TIO_InputOutputHandlers/TIO_PrintHandler.cxx \
- /usr/include/stdc-predef.h /usr/include/c++/4.8.2/cstdio \
- /usr/include/c++/4.8.2/x86_64-redhat-linux/bits/c++config.h \
- /usr/include/bits/wordsize.h \
- /usr/include/c++/4.8.2/x86_64-redhat-linux/bits/os_defines.h \
- /usr/include/features.h /usr/include/sys/cdefs.h \
- /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h \
- /usr/include/c++/4.8.2/x86_64-redhat-linux/bits/cpu_defines.h \
- /usr/include/stdio.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.5/include/stddef.h \
- /usr/include/bits/types.h /usr/include/bits/typesizes.h \
- /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.5/include/stdarg.h \
- /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h \
- /usr/include/bits/stdio.h /usr/include/c++/4.8.2/cstdarg \
- /usr/include/c++/4.8.2/cstring /usr/include/string.h \
- /usr/include/xlocale.h /usr/include/c++/4.8.2/string \
- /usr/include/c++/4.8.2/bits/stringfwd.h \
- /usr/include/c++/4.8.2/bits/memoryfwd.h \
- /usr/include/c++/4.8.2/bits/char_traits.h \
- /usr/include/c++/4.8.2/bits/stl_algobase.h \
- /usr/include/c++/4.8.2/bits/functexcept.h \
- /usr/include/c++/4.8.2/bits/exception_defines.h \
- /usr/include/c++/4.8.2/bits/cpp_type_traits.h \
- /usr/include/c++/4.8.2/ext/type_traits.h \
- /usr/include/c++/4.8.2/ext/numeric_traits.h \
- /usr/include/c++/4.8.2/bits/stl_pair.h \
- /usr/include/c++/4.8.2/bits/move.h \
- /usr/include/c++/4.8.2/bits/concept_check.h \
- /usr/include/c++/4.8.2/bits/stl_iterator_base_types.h \
- /usr/include/c++/4.8.2/bits/stl_iterator_base_funcs.h \
- /usr/include/c++/4.8.2/debug/debug.h \
- /usr/include/c++/4.8.2/bits/stl_iterator.h \
- /usr/include/c++/4.8.2/bits/postypes.h /usr/include/c++/4.8.2/cwchar \
- /usr/include/bits/wchar.h /usr/include/c++/4.8.2/bits/allocator.h \
- /usr/include/c++/4.8.2/x86_64-redhat-linux/bits/c++allocator.h \
- /usr/include/c++/4.8.2/ext/new_allocator.h /usr/include/c++/4.8.2/new \
- /usr/include/c++/4.8.2/exception \
- /usr/include/c++/4.8.2/bits/atomic_lockfree_defines.h \
- /usr/include/c++/4.8.2/bits/localefwd.h \
- /usr/include/c++/4.8.2/x86_64-redhat-linux/bits/c++locale.h \
- /usr/include/c++/4.8.2/clocale /usr/include/locale.h \
- /usr/include/bits/locale.h /usr/include/c++/4.8.2/iosfwd \
- /usr/include/c++/4.8.2/cctype /usr/include/ctype.h /usr/include/endian.h \
- /usr/include/bits/endian.h /usr/include/bits/byteswap.h \
- /usr/include/bits/byteswap-16.h \
- /usr/include/c++/4.8.2/bits/ostream_insert.h \
- /usr/include/c++/4.8.2/bits/cxxabi_forced.h \
- /usr/include/c++/4.8.2/bits/stl_function.h \
- /usr/include/c++/4.8.2/backward/binders.h \
- /usr/include/c++/4.8.2/bits/range_access.h \
- /usr/include/c++/4.8.2/bits/basic_string.h \
- /usr/include/c++/4.8.2/ext/atomicity.h \
- /usr/include/c++/4.8.2/x86_64-redhat-linux/bits/gthr.h \
- /usr/include/c++/4.8.2/x86_64-redhat-linux/bits/gthr-default.h \
- /usr/include/pthread.h /usr/include/sched.h /usr/include/time.h \
- /usr/include/bits/sched.h /usr/include/bits/time.h \
- /usr/include/bits/timex.h /usr/include/bits/pthreadtypes.h \
- /usr/include/bits/setjmp.h \
- /usr/include/c++/4.8.2/x86_64-redhat-linux/bits/atomic_word.h \
- /usr/include/c++/4.8.2/bits/basic_string.tcc SRC/TC_Common/TC_Typedefs.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.5/include/float.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.5/include/stdint.h \
- /usr/include/stdint.h /usr/include/stdlib.h \
- /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
- /usr/include/sys/types.h /usr/include/sys/select.h \
- /usr/include/bits/select.h /usr/include/bits/sigset.h \
- /usr/include/sys/sysmacros.h /usr/include/alloca.h \
- /usr/include/bits/stdlib-float.h /usr/include/math.h \
- /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h \
- /usr/include/bits/huge_vall.h /usr/include/bits/inf.h \
- /usr/include/bits/nan.h /usr/include/bits/mathdef.h \
- /usr/include/bits/mathcalls.h /usr/include/bits/mathinline.h \
- SRC/TC_Common/TCT_Dims.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.5/include/limits.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.5/include/syslimits.h \
- /usr/include/limits.h /usr/include/bits/posix1_lim.h \
- /usr/include/bits/local_lim.h /usr/include/linux/limits.h \
- /usr/include/bits/posix2_lim.h /usr/include/bits/xopen_lim.h \
- SRC/TIO_InputOutputHandlers/TIO_Typedefs.h SRC/TC_Common/TCT_Generic.h \
- SRC/TC_Common/TC_Typedefs.h SRC/TC_Common/TC_MinGrid.h \
- SRC/TC_Common/TC_StringUtils.h SRC/TC_Common/TC_Name.h \
- SRC/TC_Common/TCT_NameList.h /usr/include/c++/4.8.2/vector \
- /usr/include/c++/4.8.2/bits/stl_construct.h \
- /usr/include/c++/4.8.2/ext/alloc_traits.h \
- /usr/include/c++/4.8.2/bits/stl_uninitialized.h \
- /usr/include/c++/4.8.2/bits/stl_vector.h \
- /usr/include/c++/4.8.2/bits/stl_bvector.h \
- /usr/include/c++/4.8.2/bits/vector.tcc /usr/include/c++/4.8.2/iterator \
- /usr/include/c++/4.8.2/ostream /usr/include/c++/4.8.2/ios \
- /usr/include/c++/4.8.2/bits/ios_base.h \
- /usr/include/c++/4.8.2/bits/locale_classes.h \
- /usr/include/c++/4.8.2/bits/locale_classes.tcc \
- /usr/include/c++/4.8.2/streambuf \
- /usr/include/c++/4.8.2/bits/streambuf.tcc \
- /usr/include/c++/4.8.2/bits/basic_ios.h \
- /usr/include/c++/4.8.2/bits/locale_facets.h \
- /usr/include/c++/4.8.2/cwctype /usr/include/wctype.h \
- /usr/include/c++/4.8.2/x86_64-redhat-linux/bits/ctype_base.h \
- /usr/include/c++/4.8.2/bits/streambuf_iterator.h \
- /usr/include/c++/4.8.2/x86_64-redhat-linux/bits/ctype_inline.h \
- /usr/include/c++/4.8.2/bits/locale_facets.tcc \
- /usr/include/c++/4.8.2/bits/basic_ios.tcc \
- /usr/include/c++/4.8.2/bits/ostream.tcc /usr/include/c++/4.8.2/istream \
- /usr/include/c++/4.8.2/bits/istream.tcc \
- /usr/include/c++/4.8.2/bits/stream_iterator.h \
- /usr/include/c++/4.8.2/algorithm /usr/include/c++/4.8.2/utility \
- /usr/include/c++/4.8.2/bits/stl_relops.h \
- /usr/include/c++/4.8.2/bits/stl_algo.h /usr/include/c++/4.8.2/cstdlib \
- /usr/include/c++/4.8.2/bits/algorithmfwd.h \
- /usr/include/c++/4.8.2/bits/stl_heap.h \
- /usr/include/c++/4.8.2/bits/stl_tempbuf.h \
- SRC/TIO_InputOutputHandlers/TIO_PrintHandler.h \
- SRC/TIO_InputOutputHandlers/TIO_Typedefs.h \
- SRC/TIO_InputOutputHandlers/TIO_StdioOutput.h \
- SRC/TIO_InputOutputHandlers/TIO_CustomOutput.h \
- SRC/TIO_InputOutputHandlers/TIO_FileOutput.h \
- SRC/TIO_InputOutputHandlers/TIO_FileHandler.h \
- SRC/TC_Common/TCT_RegExpIter.h SRC/TC_Common/RegExp.h ../pcre/SRC/pcre.h \
- SRC/TC_Common/TC_Name.h SRC/TIO_InputOutputHandlers/TIO_StringText.h \
- SRC/TIO_InputOutputHandlers/TIO_SkinHandler.h \
- SRC/TIO_InputOutputHandlers/TIO_PrintHandler.h
+  SRC/TIO_InputOutputHandlers/TIO_PrintHandler.cxx \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/cstdio \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/__config \
+  /usr/include/stdio.h /usr/include/sys/cdefs.h \
+  /usr/include/sys/_symbol_aliasing.h \
+  /usr/include/sys/_posix_availability.h /usr/include/Availability.h \
+  /usr/include/AvailabilityInternal.h /usr/include/_types.h \
+  /usr/include/sys/_types.h /usr/include/machine/_types.h \
+  /usr/include/i386/_types.h /usr/include/sys/_pthread/_pthread_types.h \
+  /usr/include/sys/_types/_va_list.h /usr/include/sys/_types/_size_t.h \
+  /usr/include/sys/_types/_null.h /usr/include/sys/stdio.h \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/cstdarg \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/clang/8.0.0/include/stdarg.h \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/cstring \
+  /usr/include/string.h \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/string \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/iosfwd \
+  /usr/include/wchar.h /usr/include/sys/_types/_mbstate_t.h \
+  /usr/include/sys/_types/_ct_rune_t.h /usr/include/sys/_types/_rune_t.h \
+  /usr/include/sys/_types/_wchar_t.h /usr/include/time.h \
+  /usr/include/sys/_types/_clock_t.h /usr/include/sys/_types/_time_t.h \
+  /usr/include/sys/_types/_timespec.h /usr/include/_wctype.h \
+  /usr/include/sys/_types/_wint_t.h /usr/include/_types/_wctype_t.h \
+  /usr/include/ctype.h /usr/include/runetype.h \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/cwchar \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/cwctype \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/cctype \
+  /usr/include/wctype.h /usr/include/_types/_wctrans_t.h \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/algorithm \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/initializer_list \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/cstddef \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/clang/8.0.0/include/stddef.h \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/type_traits \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/utility \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/__tuple \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/memory \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/typeinfo \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/exception \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/cstdint \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/clang/8.0.0/include/stdint.h \
+  /usr/include/stdint.h /usr/include/sys/_types/_int8_t.h \
+  /usr/include/sys/_types/_int16_t.h /usr/include/sys/_types/_int32_t.h \
+  /usr/include/sys/_types/_int64_t.h /usr/include/_types/_uint8_t.h \
+  /usr/include/_types/_uint16_t.h /usr/include/_types/_uint32_t.h \
+  /usr/include/_types/_uint64_t.h /usr/include/sys/_types/_intptr_t.h \
+  /usr/include/sys/_types/_uintptr_t.h /usr/include/_types/_intmax_t.h \
+  /usr/include/_types/_uintmax_t.h \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/new \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/__undef___deallocate \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/limits \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/__undef_min_max \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/iterator \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/__functional_base \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/__functional_base_03 \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/__debug \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/tuple \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/stdexcept \
+  SRC/TC_Common/TC_Typedefs.h \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/clang/8.0.0/include/float.h \
+  /usr/include/stdlib.h /usr/include/sys/wait.h \
+  /usr/include/sys/_types/_pid_t.h /usr/include/sys/_types/_id_t.h \
+  /usr/include/sys/signal.h /usr/include/sys/appleapiopts.h \
+  /usr/include/machine/signal.h /usr/include/i386/signal.h \
+  /usr/include/machine/_mcontext.h /usr/include/i386/_mcontext.h \
+  /usr/include/mach/i386/_structs.h \
+  /usr/include/sys/_pthread/_pthread_attr_t.h \
+  /usr/include/sys/_types/_sigaltstack.h \
+  /usr/include/sys/_types/_ucontext.h \
+  /usr/include/sys/_types/_sigset_t.h /usr/include/sys/_types/_uid_t.h \
+  /usr/include/sys/resource.h /usr/include/sys/_types/_timeval.h \
+  /usr/include/math.h SRC/TC_Common/TCT_Dims.h \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/clang/8.0.0/include/limits.h \
+  /usr/include/limits.h /usr/include/machine/limits.h \
+  /usr/include/i386/limits.h /usr/include/i386/_limits.h \
+  /usr/include/sys/syslimits.h \
+  SRC/TIO_InputOutputHandlers/TIO_Typedefs.h SRC/TC_Common/TCT_Generic.h \
+  SRC/TC_Common/TC_MinGrid.h SRC/TC_Common/TC_StringUtils.h \
+  SRC/TC_Common/TC_Name.h SRC/TC_Common/TCT_NameList.h \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/vector \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/__bit_reference \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/climits \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/__split_buffer \
+  SRC/TIO_InputOutputHandlers/TIO_PrintHandler.h \
+  SRC/TIO_InputOutputHandlers/TIO_StdioOutput.h \
+  SRC/TIO_InputOutputHandlers/TIO_CustomOutput.h \
+  SRC/TIO_InputOutputHandlers/TIO_FileOutput.h \
+  SRC/TIO_InputOutputHandlers/TIO_FileHandler.h \
+  SRC/TC_Common/TCT_RegExpIter.h SRC/TC_Common/RegExp.h \
+  ../pcre/SRC/pcre.h SRC/TIO_InputOutputHandlers/TIO_StringText.h \
+  SRC/TIO_InputOutputHandlers/TIO_SkinHandler.h
 
-/usr/include/stdc-predef.h:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/cstdio:
 
-/usr/include/c++/4.8.2/cstdio:
-
-/usr/include/c++/4.8.2/x86_64-redhat-linux/bits/c++config.h:
-
-/usr/include/bits/wordsize.h:
-
-/usr/include/c++/4.8.2/x86_64-redhat-linux/bits/os_defines.h:
-
-/usr/include/features.h:
-
-/usr/include/sys/cdefs.h:
-
-/usr/include/gnu/stubs.h:
-
-/usr/include/gnu/stubs-64.h:
-
-/usr/include/c++/4.8.2/x86_64-redhat-linux/bits/cpu_defines.h:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/__config:
 
 /usr/include/stdio.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include/stddef.h:
+/usr/include/sys/cdefs.h:
 
-/usr/include/bits/types.h:
+/usr/include/sys/_symbol_aliasing.h:
 
-/usr/include/bits/typesizes.h:
+/usr/include/sys/_posix_availability.h:
 
-/usr/include/libio.h:
+/usr/include/Availability.h:
 
-/usr/include/_G_config.h:
+/usr/include/AvailabilityInternal.h:
 
-/usr/include/wchar.h:
+/usr/include/_types.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include/stdarg.h:
+/usr/include/sys/_types.h:
 
-/usr/include/bits/stdio_lim.h:
+/usr/include/machine/_types.h:
 
-/usr/include/bits/sys_errlist.h:
+/usr/include/i386/_types.h:
 
-/usr/include/bits/stdio.h:
+/usr/include/sys/_pthread/_pthread_types.h:
 
-/usr/include/c++/4.8.2/cstdarg:
+/usr/include/sys/_types/_va_list.h:
 
-/usr/include/c++/4.8.2/cstring:
+/usr/include/sys/_types/_size_t.h:
+
+/usr/include/sys/_types/_null.h:
+
+/usr/include/sys/stdio.h:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/cstdarg:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/clang/8.0.0/include/stdarg.h:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/cstring:
 
 /usr/include/string.h:
 
-/usr/include/xlocale.h:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/string:
 
-/usr/include/c++/4.8.2/string:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/iosfwd:
 
-/usr/include/c++/4.8.2/bits/stringfwd.h:
+/usr/include/wchar.h:
 
-/usr/include/c++/4.8.2/bits/memoryfwd.h:
+/usr/include/sys/_types/_mbstate_t.h:
 
-/usr/include/c++/4.8.2/bits/char_traits.h:
+/usr/include/sys/_types/_ct_rune_t.h:
 
-/usr/include/c++/4.8.2/bits/stl_algobase.h:
+/usr/include/sys/_types/_rune_t.h:
 
-/usr/include/c++/4.8.2/bits/functexcept.h:
-
-/usr/include/c++/4.8.2/bits/exception_defines.h:
-
-/usr/include/c++/4.8.2/bits/cpp_type_traits.h:
-
-/usr/include/c++/4.8.2/ext/type_traits.h:
-
-/usr/include/c++/4.8.2/ext/numeric_traits.h:
-
-/usr/include/c++/4.8.2/bits/stl_pair.h:
-
-/usr/include/c++/4.8.2/bits/move.h:
-
-/usr/include/c++/4.8.2/bits/concept_check.h:
-
-/usr/include/c++/4.8.2/bits/stl_iterator_base_types.h:
-
-/usr/include/c++/4.8.2/bits/stl_iterator_base_funcs.h:
-
-/usr/include/c++/4.8.2/debug/debug.h:
-
-/usr/include/c++/4.8.2/bits/stl_iterator.h:
-
-/usr/include/c++/4.8.2/bits/postypes.h:
-
-/usr/include/c++/4.8.2/cwchar:
-
-/usr/include/bits/wchar.h:
-
-/usr/include/c++/4.8.2/bits/allocator.h:
-
-/usr/include/c++/4.8.2/x86_64-redhat-linux/bits/c++allocator.h:
-
-/usr/include/c++/4.8.2/ext/new_allocator.h:
-
-/usr/include/c++/4.8.2/new:
-
-/usr/include/c++/4.8.2/exception:
-
-/usr/include/c++/4.8.2/bits/atomic_lockfree_defines.h:
-
-/usr/include/c++/4.8.2/bits/localefwd.h:
-
-/usr/include/c++/4.8.2/x86_64-redhat-linux/bits/c++locale.h:
-
-/usr/include/c++/4.8.2/clocale:
-
-/usr/include/locale.h:
-
-/usr/include/bits/locale.h:
-
-/usr/include/c++/4.8.2/iosfwd:
-
-/usr/include/c++/4.8.2/cctype:
-
-/usr/include/ctype.h:
-
-/usr/include/endian.h:
-
-/usr/include/bits/endian.h:
-
-/usr/include/bits/byteswap.h:
-
-/usr/include/bits/byteswap-16.h:
-
-/usr/include/c++/4.8.2/bits/ostream_insert.h:
-
-/usr/include/c++/4.8.2/bits/cxxabi_forced.h:
-
-/usr/include/c++/4.8.2/bits/stl_function.h:
-
-/usr/include/c++/4.8.2/backward/binders.h:
-
-/usr/include/c++/4.8.2/bits/range_access.h:
-
-/usr/include/c++/4.8.2/bits/basic_string.h:
-
-/usr/include/c++/4.8.2/ext/atomicity.h:
-
-/usr/include/c++/4.8.2/x86_64-redhat-linux/bits/gthr.h:
-
-/usr/include/c++/4.8.2/x86_64-redhat-linux/bits/gthr-default.h:
-
-/usr/include/pthread.h:
-
-/usr/include/sched.h:
+/usr/include/sys/_types/_wchar_t.h:
 
 /usr/include/time.h:
 
-/usr/include/bits/sched.h:
+/usr/include/sys/_types/_clock_t.h:
 
-/usr/include/bits/time.h:
+/usr/include/sys/_types/_time_t.h:
 
-/usr/include/bits/timex.h:
+/usr/include/sys/_types/_timespec.h:
 
-/usr/include/bits/pthreadtypes.h:
+/usr/include/_wctype.h:
 
-/usr/include/bits/setjmp.h:
+/usr/include/sys/_types/_wint_t.h:
 
-/usr/include/c++/4.8.2/x86_64-redhat-linux/bits/atomic_word.h:
+/usr/include/_types/_wctype_t.h:
 
-/usr/include/c++/4.8.2/bits/basic_string.tcc:
+/usr/include/ctype.h:
 
-SRC/TC_Common/TC_Typedefs.h:
+/usr/include/runetype.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include/float.h:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/cwchar:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include/stdint.h:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/cwctype:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/cctype:
+
+/usr/include/wctype.h:
+
+/usr/include/_types/_wctrans_t.h:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/algorithm:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/initializer_list:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/cstddef:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/clang/8.0.0/include/stddef.h:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/type_traits:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/utility:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/__tuple:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/memory:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/typeinfo:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/exception:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/cstdint:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/clang/8.0.0/include/stdint.h:
 
 /usr/include/stdint.h:
 
+/usr/include/sys/_types/_int8_t.h:
+
+/usr/include/sys/_types/_int16_t.h:
+
+/usr/include/sys/_types/_int32_t.h:
+
+/usr/include/sys/_types/_int64_t.h:
+
+/usr/include/_types/_uint8_t.h:
+
+/usr/include/_types/_uint16_t.h:
+
+/usr/include/_types/_uint32_t.h:
+
+/usr/include/_types/_uint64_t.h:
+
+/usr/include/sys/_types/_intptr_t.h:
+
+/usr/include/sys/_types/_uintptr_t.h:
+
+/usr/include/_types/_intmax_t.h:
+
+/usr/include/_types/_uintmax_t.h:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/new:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/__undef___deallocate:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/limits:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/__undef_min_max:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/iterator:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/__functional_base:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/__functional_base_03:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/__debug:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/tuple:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/stdexcept:
+
+SRC/TC_Common/TC_Typedefs.h:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/clang/8.0.0/include/float.h:
+
 /usr/include/stdlib.h:
 
-/usr/include/bits/waitflags.h:
+/usr/include/sys/wait.h:
 
-/usr/include/bits/waitstatus.h:
+/usr/include/sys/_types/_pid_t.h:
 
-/usr/include/sys/types.h:
+/usr/include/sys/_types/_id_t.h:
 
-/usr/include/sys/select.h:
+/usr/include/sys/signal.h:
 
-/usr/include/bits/select.h:
+/usr/include/sys/appleapiopts.h:
 
-/usr/include/bits/sigset.h:
+/usr/include/machine/signal.h:
 
-/usr/include/sys/sysmacros.h:
+/usr/include/i386/signal.h:
 
-/usr/include/alloca.h:
+/usr/include/machine/_mcontext.h:
 
-/usr/include/bits/stdlib-float.h:
+/usr/include/i386/_mcontext.h:
+
+/usr/include/mach/i386/_structs.h:
+
+/usr/include/sys/_pthread/_pthread_attr_t.h:
+
+/usr/include/sys/_types/_sigaltstack.h:
+
+/usr/include/sys/_types/_ucontext.h:
+
+/usr/include/sys/_types/_sigset_t.h:
+
+/usr/include/sys/_types/_uid_t.h:
+
+/usr/include/sys/resource.h:
+
+/usr/include/sys/_types/_timeval.h:
 
 /usr/include/math.h:
 
-/usr/include/bits/huge_val.h:
-
-/usr/include/bits/huge_valf.h:
-
-/usr/include/bits/huge_vall.h:
-
-/usr/include/bits/inf.h:
-
-/usr/include/bits/nan.h:
-
-/usr/include/bits/mathdef.h:
-
-/usr/include/bits/mathcalls.h:
-
-/usr/include/bits/mathinline.h:
-
 SRC/TC_Common/TCT_Dims.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include/limits.h:
-
-/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include/syslimits.h:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/clang/8.0.0/include/limits.h:
 
 /usr/include/limits.h:
 
-/usr/include/bits/posix1_lim.h:
+/usr/include/machine/limits.h:
 
-/usr/include/bits/local_lim.h:
+/usr/include/i386/limits.h:
 
-/usr/include/linux/limits.h:
+/usr/include/i386/_limits.h:
 
-/usr/include/bits/posix2_lim.h:
-
-/usr/include/bits/xopen_lim.h:
+/usr/include/sys/syslimits.h:
 
 SRC/TIO_InputOutputHandlers/TIO_Typedefs.h:
 
 SRC/TC_Common/TCT_Generic.h:
-
-SRC/TC_Common/TC_Typedefs.h:
 
 SRC/TC_Common/TC_MinGrid.h:
 
@@ -364,81 +312,15 @@ SRC/TC_Common/TC_Name.h:
 
 SRC/TC_Common/TCT_NameList.h:
 
-/usr/include/c++/4.8.2/vector:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/vector:
 
-/usr/include/c++/4.8.2/bits/stl_construct.h:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/__bit_reference:
 
-/usr/include/c++/4.8.2/ext/alloc_traits.h:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/climits:
 
-/usr/include/c++/4.8.2/bits/stl_uninitialized.h:
-
-/usr/include/c++/4.8.2/bits/stl_vector.h:
-
-/usr/include/c++/4.8.2/bits/stl_bvector.h:
-
-/usr/include/c++/4.8.2/bits/vector.tcc:
-
-/usr/include/c++/4.8.2/iterator:
-
-/usr/include/c++/4.8.2/ostream:
-
-/usr/include/c++/4.8.2/ios:
-
-/usr/include/c++/4.8.2/bits/ios_base.h:
-
-/usr/include/c++/4.8.2/bits/locale_classes.h:
-
-/usr/include/c++/4.8.2/bits/locale_classes.tcc:
-
-/usr/include/c++/4.8.2/streambuf:
-
-/usr/include/c++/4.8.2/bits/streambuf.tcc:
-
-/usr/include/c++/4.8.2/bits/basic_ios.h:
-
-/usr/include/c++/4.8.2/bits/locale_facets.h:
-
-/usr/include/c++/4.8.2/cwctype:
-
-/usr/include/wctype.h:
-
-/usr/include/c++/4.8.2/x86_64-redhat-linux/bits/ctype_base.h:
-
-/usr/include/c++/4.8.2/bits/streambuf_iterator.h:
-
-/usr/include/c++/4.8.2/x86_64-redhat-linux/bits/ctype_inline.h:
-
-/usr/include/c++/4.8.2/bits/locale_facets.tcc:
-
-/usr/include/c++/4.8.2/bits/basic_ios.tcc:
-
-/usr/include/c++/4.8.2/bits/ostream.tcc:
-
-/usr/include/c++/4.8.2/istream:
-
-/usr/include/c++/4.8.2/bits/istream.tcc:
-
-/usr/include/c++/4.8.2/bits/stream_iterator.h:
-
-/usr/include/c++/4.8.2/algorithm:
-
-/usr/include/c++/4.8.2/utility:
-
-/usr/include/c++/4.8.2/bits/stl_relops.h:
-
-/usr/include/c++/4.8.2/bits/stl_algo.h:
-
-/usr/include/c++/4.8.2/cstdlib:
-
-/usr/include/c++/4.8.2/bits/algorithmfwd.h:
-
-/usr/include/c++/4.8.2/bits/stl_heap.h:
-
-/usr/include/c++/4.8.2/bits/stl_tempbuf.h:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/__split_buffer:
 
 SRC/TIO_InputOutputHandlers/TIO_PrintHandler.h:
-
-SRC/TIO_InputOutputHandlers/TIO_Typedefs.h:
 
 SRC/TIO_InputOutputHandlers/TIO_StdioOutput.h:
 
@@ -454,10 +336,6 @@ SRC/TC_Common/RegExp.h:
 
 ../pcre/SRC/pcre.h:
 
-SRC/TC_Common/TC_Name.h:
-
 SRC/TIO_InputOutputHandlers/TIO_StringText.h:
 
 SRC/TIO_InputOutputHandlers/TIO_SkinHandler.h:
-
-SRC/TIO_InputOutputHandlers/TIO_PrintHandler.h:

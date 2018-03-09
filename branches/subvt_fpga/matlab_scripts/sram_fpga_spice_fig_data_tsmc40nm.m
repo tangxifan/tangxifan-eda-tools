@@ -9,7 +9,7 @@ area_layout_sram_fpga = [ % Channel Width, area of core, total area, utilization
 300, 698886.418, 849383.111, 979387.016, 0.823;
 ];
 
-min_width_trans_area = 0.0644;
+min_width_trans_area = 0.127;
 
 area_vpr_sram_fpga = [ % Channel Width, logic block area, routing area, total area, fitting total area ;
 50, 1.35e6, 374856, 0 , 0;

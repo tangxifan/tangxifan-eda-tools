@@ -11,7 +11,7 @@ sram_fpga_spice_fig_data_tsmc40nm;
 %% Process data
 area_vpr_sram_fpga(:,4) = area_vpr_sram_fpga(:,2) + area_vpr_sram_fpga(:,3);
 area_vpr_sram_fpga(:,4) = min_width_trans_area * area_vpr_sram_fpga(:,4);
-area_vpr_sram_fpga(:,5) = 1.64 * area_vpr_sram_fpga(:,4);
+area_vpr_sram_fpga(:,5) = area_vpr_sram_fpga(:,4);
 area_vpr_sram_fpga(:,5) = area_vpr_sram_fpga(:,5)./area_layout_sram_fpga(:,5);
 disp('Error rate:');
 area_vpr_sram_fpga(:,5)./area_layout_sram_fpga(:,4) - 1
@@ -26,7 +26,7 @@ hold on
 plot(area_vpr_sram_fpga(:,5),'r-s','LineWidth', 2, 'MarkerSize',10);
 hold on
 %title('Delay-Wprog of 32-input Multiplexer, UMC 0.18um','FontSize',18)
-xlabel('Channwl Width','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
+xlabel('Channel Width','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
 ylabel('Total Area ({\mu m ^2})','FontSize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'xlim',[0.5 length(area_layout_sram_fpga(:,1))+0.5],'Fontsize',16, 'FontWeight','bold', 'FontName', 'Times');
 set(gca,'XTick',xindex);

@@ -163,8 +163,7 @@ sub print_usage()
   print "      -task <file> : the configuration file contains benchmark file names\n"; 
   print "      -rpt <file> : CSV file consists of data\n";
   print "      Other Options:\n";
-  print "      -monte_carlo <simple_rpt|detail_rpt>: Specify Monte Carlo simulation is enabled in FPGA-SPICE, specify the type of reports.";
-  print "                                            (Simple: only max/min/avg is reported; Detail: every MC case is reported.\n";
+  print "      -monte_carlo <simple_rpt|detail_rpt>: Specify Monte Carlo simulation is enabled in FPGA-SPICE, specify the type of reports. (Simple: only max/min/avg is reported; Detail: every MC case is reported.\n";
   print "      -parse_pb_mux_tb: parse the results in pb_mux_testbench\n";
   print "      -parse_cb_mux_tb: parse the results in cb_mux_testbench\n";
   print "      -parse_sb_mux_tb: parse the results in sb_mux_testbench\n";
@@ -919,7 +918,7 @@ sub parse_one_fpga_spice_task_one_mc_tb_results($ $ $ $ $ $ $) {
       die "ERROR: $tbname_tag leakage_power_tags has a conflict word($tag)!\n"; 
     }
     # for a clear start 
-    $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{mc_cnt} = 1;
+    $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{mc_cnt} = 0;
   }
   if ("off" eq $opt_ptr->{sim_leakage_power_only}) {
     foreach my $tag(@dynamic_tags) {
@@ -929,7 +928,7 @@ sub parse_one_fpga_spice_task_one_mc_tb_results($ $ $ $ $ $ $) {
         die "ERROR: $tbname_tag dynamic_power_tags has a conflict word($tag)!\n"; 
       }
       # for a clear start 
-      $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{mc_cnt} = 1;
+      $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{mc_cnt} = 0;
     }
   }
 
@@ -966,13 +965,13 @@ sub parse_one_fpga_spice_task_one_mc_tb_results($ $ $ $ $ $ $) {
         if ($line =~ m/$tag\s*=\s*([\d.\w\-\+]+)/i) {
           $temp = $1;
           $temp = &process_unit($temp, "empty");
+          $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{mc_cnt} += 1;
           $mc_cnt = $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{mc_cnt};
           if (defined($rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{"mc".$mc_cnt})) {
             $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{"mc".$mc_cnt} += $temp;
           } else {
             $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{"mc".$mc_cnt} = 0;
           }
-          $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{mc_cnt} += 1;
           next; # We find a match, ignore the rest
         }
       }
@@ -985,13 +984,13 @@ sub parse_one_fpga_spice_task_one_mc_tb_results($ $ $ $ $ $ $) {
         if ($line =~ m/$tag\s*=\s*([\d.\w\-\+]+)/i) {
           $temp = $1;
           $temp = &process_unit($temp, "empty");
+          $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{mc_cnt} += 1;
           $mc_cnt = $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{mc_cnt};
           if (defined($rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{"mc".$mc_cnt})) {
             $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{"mc".$mc_cnt} += $temp;
           } else {
             $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{"mc".$mc_cnt} = 0;
           }
-          $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{mc_cnt} += 1;
           next; # We find a match, ignore the rest
         }
       } 
@@ -1445,7 +1444,7 @@ sub gen_csv_rpt_one_tb_one_case($ $ $ $ $) {
 sub gen_csv_rpt_one_case($ $) {
   my ($RPTFH, $case_tag) = @_;
 
-  print $RPTFH "Case tag of the results: $case_tag\n";
+  print $RPTFH "Monte Carlo case tag of the results: $case_tag\n";
 
   if ("on" eq $opt_ptr->{parse_pb_mux_tb}) {
     print $RPTFH "***** pb_mux_tb Results Table *****\n";
@@ -1556,7 +1555,7 @@ sub process_mc_data_one_tb($ $ $) {
       next;
     }
     foreach my $tag(@dynamic_tags) {
-      &process_mc_data_one_tag($rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}); 
+      $mc_cnt_temp = &process_mc_data_one_tag($rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}); 
       if (0 == $mc_cnt) {
         $mc_cnt = $mc_cnt_temp;
       } elsif ($mc_cnt != $mc_cnt_temp) {
@@ -1572,48 +1571,56 @@ sub process_mc_results() {
   my ($mc_cnt) = (0);
 
   if ("on" eq $opt_ptr->{parse_pb_mux_tb}) {
+    $mc_cnt =  
     &process_mc_data_one_tb("pb_mux_tb", 
                             $conf_ptr->{csv_tags}->{pb_mux_tb_leakage_power_tags}->{val}, 
                             $conf_ptr->{csv_tags}->{pb_mux_tb_dynamic_power_tags}->{val});
   }
 
   if ("on" eq $opt_ptr->{parse_cb_mux_tb}) {
+    $mc_cnt =  
     &process_mc_data_one_tb("cb_mux_tb", 
                             $conf_ptr->{csv_tags}->{cb_mux_tb_leakage_power_tags}->{val}, 
                             $conf_ptr->{csv_tags}->{cb_mux_tb_dynamic_power_tags}->{val});
   }
 
   if ("on" eq $opt_ptr->{parse_sb_mux_tb}) {
+    $mc_cnt =  
     &process_mc_data_one_tb("sb_mux_tb", 
                             $conf_ptr->{csv_tags}->{sb_mux_tb_leakage_power_tags}->{val}, 
                             $conf_ptr->{csv_tags}->{sb_mux_tb_dynamic_power_tags}->{val});
   }
 
   if ("on" eq $opt_ptr->{parse_lut_tb}) {
+    $mc_cnt =  
     &process_mc_data_one_tb("lut_tb",
                             $conf_ptr->{csv_tags}->{lut_tb_leakage_power_tags}->{val}, 
                             $conf_ptr->{csv_tags}->{lut_tb_dynamic_power_tags}->{val});
   }
 
   if ("on" eq $opt_ptr->{parse_hardlogic_tb}) {
+    $mc_cnt =  
     &process_mc_data_one_tb("hardlogic_tb", 
                             $conf_ptr->{csv_tags}->{hardlogic_tb_leakage_power_tags}->{val}, 
                             $conf_ptr->{csv_tags}->{hardlogic_tb_dynamic_power_tags}->{val});
   }
 
   if ("on" eq $opt_ptr->{parse_grid_tb}) {
+    $mc_cnt =  
     &process_mc_data_one_tb("grid_tb", 
                             $conf_ptr->{csv_tags}->{grid_tb_leakage_power_tags}->{val}, 
                             $conf_ptr->{csv_tags}->{grid_tb_dynamic_power_tags}->{val});
   }
 
   if ("on" eq $opt_ptr->{parse_cb_tb}) {
+    $mc_cnt =  
     &process_mc_data_one_tb("cb_tb", 
                             $conf_ptr->{csv_tags}->{cb_tb_leakage_power_tags}->{val}, 
                             $conf_ptr->{csv_tags}->{cb_tb_dynamic_power_tags}->{val});
   }
 
   if ("on" eq $opt_ptr->{parse_sb_tb}) {
+    $mc_cnt =  
     &process_mc_data_one_tb("sb_tb", 
                             $conf_ptr->{csv_tags}->{sb_tb_leakage_power_tags}->{val}, 
                             $conf_ptr->{csv_tags}->{sb_tb_dynamic_power_tags}->{val});

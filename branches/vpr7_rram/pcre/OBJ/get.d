@@ -1,23 +1,31 @@
-OBJ/get.o: SRC/get.c /usr/include/stdc-predef.h SRC/internal.h \
- SRC/config.h /usr/include/ctype.h /usr/include/features.h \
- /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h \
- /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h \
- /usr/include/bits/types.h /usr/include/bits/typesizes.h \
- /usr/include/endian.h /usr/include/bits/endian.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.5/include/limits.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.5/include/syslimits.h \
- /usr/include/limits.h /usr/include/bits/posix1_lim.h \
- /usr/include/bits/local_lim.h /usr/include/linux/limits.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.5/include/stddef.h \
- /usr/include/stdio.h /usr/include/libio.h /usr/include/_G_config.h \
- /usr/include/wchar.h \
- /usr/lib/gcc/x86_64-redhat-linux/4.8.5/include/stdarg.h \
- /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h \
- /usr/include/bits/stdio.h /usr/include/stdlib.h \
- /usr/include/bits/stdlib-float.h /usr/include/string.h \
- /usr/include/bits/string.h /usr/include/bits/string2.h SRC/pcre.h
-
-/usr/include/stdc-predef.h:
+OBJ/get.o: SRC/get.c SRC/internal.h SRC/config.h /usr/include/ctype.h \
+  /usr/include/sys/cdefs.h /usr/include/sys/_symbol_aliasing.h \
+  /usr/include/sys/_posix_availability.h /usr/include/runetype.h \
+  /usr/include/_types.h /usr/include/sys/_types.h \
+  /usr/include/machine/_types.h /usr/include/i386/_types.h \
+  /usr/include/sys/_pthread/_pthread_types.h \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/clang/8.0.0/include/limits.h \
+  /usr/include/limits.h /usr/include/machine/limits.h \
+  /usr/include/i386/limits.h /usr/include/i386/_limits.h \
+  /usr/include/sys/syslimits.h \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/clang/8.0.0/include/stddef.h \
+  /usr/include/stdio.h /usr/include/Availability.h \
+  /usr/include/AvailabilityInternal.h /usr/include/sys/_types/_va_list.h \
+  /usr/include/sys/_types/_size_t.h /usr/include/sys/_types/_null.h \
+  /usr/include/sys/stdio.h /usr/include/secure/_stdio.h \
+  /usr/include/secure/_common.h /usr/include/stdlib.h \
+  /usr/include/sys/wait.h /usr/include/sys/_types/_pid_t.h \
+  /usr/include/sys/_types/_id_t.h /usr/include/sys/signal.h \
+  /usr/include/sys/appleapiopts.h /usr/include/machine/signal.h \
+  /usr/include/i386/signal.h /usr/include/machine/_mcontext.h \
+  /usr/include/i386/_mcontext.h /usr/include/mach/i386/_structs.h \
+  /usr/include/sys/_pthread/_pthread_attr_t.h \
+  /usr/include/sys/_types/_sigaltstack.h \
+  /usr/include/sys/_types/_ucontext.h \
+  /usr/include/sys/_types/_sigset_t.h /usr/include/sys/_types/_uid_t.h \
+  /usr/include/sys/resource.h /usr/include/sys/_types/_timeval.h \
+  /usr/include/sys/_types/_wchar_t.h /usr/include/string.h \
+  /usr/include/secure/_string.h SRC/pcre.h
 
 SRC/internal.h:
 
@@ -25,62 +33,96 @@ SRC/config.h:
 
 /usr/include/ctype.h:
 
-/usr/include/features.h:
-
 /usr/include/sys/cdefs.h:
 
-/usr/include/bits/wordsize.h:
+/usr/include/sys/_symbol_aliasing.h:
 
-/usr/include/gnu/stubs.h:
+/usr/include/sys/_posix_availability.h:
 
-/usr/include/gnu/stubs-64.h:
+/usr/include/runetype.h:
 
-/usr/include/bits/types.h:
+/usr/include/_types.h:
 
-/usr/include/bits/typesizes.h:
+/usr/include/sys/_types.h:
 
-/usr/include/endian.h:
+/usr/include/machine/_types.h:
 
-/usr/include/bits/endian.h:
+/usr/include/i386/_types.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include/limits.h:
+/usr/include/sys/_pthread/_pthread_types.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include/syslimits.h:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/clang/8.0.0/include/limits.h:
 
 /usr/include/limits.h:
 
-/usr/include/bits/posix1_lim.h:
+/usr/include/machine/limits.h:
 
-/usr/include/bits/local_lim.h:
+/usr/include/i386/limits.h:
 
-/usr/include/linux/limits.h:
+/usr/include/i386/_limits.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include/stddef.h:
+/usr/include/sys/syslimits.h:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/clang/8.0.0/include/stddef.h:
 
 /usr/include/stdio.h:
 
-/usr/include/libio.h:
+/usr/include/Availability.h:
 
-/usr/include/_G_config.h:
+/usr/include/AvailabilityInternal.h:
 
-/usr/include/wchar.h:
+/usr/include/sys/_types/_va_list.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include/stdarg.h:
+/usr/include/sys/_types/_size_t.h:
 
-/usr/include/bits/stdio_lim.h:
+/usr/include/sys/_types/_null.h:
 
-/usr/include/bits/sys_errlist.h:
+/usr/include/sys/stdio.h:
 
-/usr/include/bits/stdio.h:
+/usr/include/secure/_stdio.h:
+
+/usr/include/secure/_common.h:
 
 /usr/include/stdlib.h:
 
-/usr/include/bits/stdlib-float.h:
+/usr/include/sys/wait.h:
+
+/usr/include/sys/_types/_pid_t.h:
+
+/usr/include/sys/_types/_id_t.h:
+
+/usr/include/sys/signal.h:
+
+/usr/include/sys/appleapiopts.h:
+
+/usr/include/machine/signal.h:
+
+/usr/include/i386/signal.h:
+
+/usr/include/machine/_mcontext.h:
+
+/usr/include/i386/_mcontext.h:
+
+/usr/include/mach/i386/_structs.h:
+
+/usr/include/sys/_pthread/_pthread_attr_t.h:
+
+/usr/include/sys/_types/_sigaltstack.h:
+
+/usr/include/sys/_types/_ucontext.h:
+
+/usr/include/sys/_types/_sigset_t.h:
+
+/usr/include/sys/_types/_uid_t.h:
+
+/usr/include/sys/resource.h:
+
+/usr/include/sys/_types/_timeval.h:
+
+/usr/include/sys/_types/_wchar_t.h:
 
 /usr/include/string.h:
 
-/usr/include/bits/string.h:
-
-/usr/include/bits/string2.h:
+/usr/include/secure/_string.h:
 
 SRC/pcre.h:
