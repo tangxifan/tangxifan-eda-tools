@@ -163,6 +163,8 @@ sub print_usage()
   print "      -task <file> : the configuration file contains benchmark file names\n"; 
   print "      -rpt <file> : CSV file consists of data\n";
   print "      Other Options:\n";
+  print "      -monte_carlo <simple_rpt|detail_rpt>: Specify Monte Carlo simulation is enabled in FPGA-SPICE, specify the type of reports.";
+  print "                                            (Simple: only max/min/avg is reported; Detail: every MC case is reported.\n";
   print "      -parse_pb_mux_tb: parse the results in pb_mux_testbench\n";
   print "      -parse_cb_mux_tb: parse the results in cb_mux_testbench\n";
   print "      -parse_sb_mux_tb: parse the results in sb_mux_testbench\n";
@@ -273,6 +275,9 @@ sub opts_read() {
   &read_opt_into_hash("conf","on","on");
   &read_opt_into_hash("task","on","on");
   &read_opt_into_hash("rpt","on","on");
+
+  # Optional options
+  &read_opt_into_hash("monte_carlo","on","off");
   &read_opt_into_hash("sim_leakage_power_only","off","off");
   &read_opt_into_hash("parse_results_only","off","off");
   &read_opt_into_hash("multi_thread","on","off");
@@ -817,7 +822,7 @@ sub init_one_fpga_spice_task_one_tb_results($ $ $ $) {
   return;
 }
 
-sub parse_one_fpga_spice_task_one_tb_results($ $ $ $ $ $) {
+sub parse_one_fpga_spice_task_one_regular_tb_results($ $ $ $ $ $) {
   my ($benchmark, $tbname_tag, $tb_lispath, $tb_mtpath, $tb_leakage_tags, $tb_dynamic_tags) = @_;
   my (@leakage_tags) = split('\|', $tb_leakage_tags);
   my (@dynamic_tags) = split('\|', $tb_dynamic_tags);
@@ -859,26 +864,34 @@ sub parse_one_fpga_spice_task_one_tb_results($ $ $ $ $ $) {
            ||($rpt_ptr->{$benchmark}->{$tbname_tag}->{peak_mem_used} < $temp)) {
           $rpt_ptr->{$benchmark}->{$tbname_tag}->{peak_mem_used} = $temp;
         }
+        next; # We find a match, ignore the rest
       }
+      # Special: get peak memory used and total elapsed time
       if ($line =~ m/total\s+elapsed\s+time\s+([\d.]+)\s+seconds/i) {
         $temp = $1;
         $rpt_ptr->{$benchmark}->{$tbname_tag}->{total_elapsed_time} += $temp;
+        next; # We find a match, ignore the rest
       }
+      # For leakage power  
       foreach my $tag(@leakage_tags) {
         if ($line =~ m/$tag\s*=\s*([\d.\w\-\+]+)/i) {
           $temp = $1;
           $temp = &process_unit($temp, "empty");
-          $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag} += $temp;
-
+          $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{avg} += $temp;
+          next; # We find a match, ignore the rest
         }
       }
-      if ("off" eq $opt_ptr->{sim_leakage_power_only}) {
-        foreach my $tag(@dynamic_tags) {
-          if ($line =~ m/$tag\s*=\s*([\d.\w\-\+]+)/i) {
-            $temp = $1;
-            $temp = &process_unit($temp, "empty");
-            $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag} += $temp;
-          }
+      # Bypass dynamic tags if leakage_only is enabled  
+      if ("on" eq $opt_ptr->{sim_leakage_power_only}) {
+        next;
+      }
+      # For dynamic power  
+      foreach my $tag(@dynamic_tags) {
+        if ($line =~ m/$tag\s*=\s*([\d.\w\-\+]+)/i) {
+          $temp = $1;
+          $temp = &process_unit($temp, "empty");
+          $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{avg} += $temp;
+          next; # We find a match, ignore the rest
         }
       } 
     }
@@ -889,6 +902,121 @@ sub parse_one_fpga_spice_task_one_tb_results($ $ $ $ $ $) {
   close($LISFH);
 
   return;
+}
+
+
+sub parse_one_fpga_spice_task_one_mc_tb_results($ $ $ $ $ $ $) {
+  my ($benchmark, $tbname_tag, $tb_lispath, $tb_mtpath, $tb_leakage_tags, $tb_dynamic_tags) = @_;
+  my (@leakage_tags) = split('\|', $tb_leakage_tags);
+  my (@dynamic_tags) = split('\|', $tb_dynamic_tags);
+  my ($line, $found_tran_analysis);
+  my ($LISFH) = FileHandle->new;
+  my ($temp, $mc_cnt) = ("", 1);
+
+  # Check if there is any conflict to reserved words
+  foreach my $tag(@leakage_tags) {
+    if (("peak_mem_used" eq $tag)||("total_elapsed_time" eq $tag)) {
+      die "ERROR: $tbname_tag leakage_power_tags has a conflict word($tag)!\n"; 
+    }
+    # for a clear start 
+    $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{mc_cnt} = 1;
+  }
+  if ("off" eq $opt_ptr->{sim_leakage_power_only}) {
+    foreach my $tag(@dynamic_tags) {
+      if (("peak_mem_used" eq $tag)||("total_elapsed_time" eq $tag)
+         ||("mc_min" eq $tag)||("mc_max" eq $tag)||("mc_avg" eq $tag)
+         ||("mc_total" eq $tag)||("mc_cnt" eq $tag)) {
+        die "ERROR: $tbname_tag dynamic_power_tags has a conflict word($tag)!\n"; 
+      }
+      # for a clear start 
+      $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{mc_cnt} = 1;
+    }
+  }
+
+  if (!(-e $tb_lispath)) {
+    die "ERROR: Fail to find SPICE lis file($tb_lispath)!\n";
+  }
+  if ($LISFH->open("< $tb_lispath")) {
+    $found_tran_analysis = 0;
+    while(defined($line = <$LISFH>)) {
+      chomp $line;
+      if ((0 == $found_tran_analysis)&&($line =~ m/transient\s+analysis/)) {
+        $found_tran_analysis = 1;
+      }
+      if (0 == $found_tran_analysis) {
+        next;
+      }
+      # Special: get peak memory used and total elapsed time
+      if ($line =~ m/peak\s+memory\s+used\s+([\d.]+)\s+megabytes/i) {
+        $temp = $1;
+        if ((!defined($rpt_ptr->{$benchmark}->{$tbname_tag}->{peak_mem_used}))
+           ||($rpt_ptr->{$benchmark}->{$tbname_tag}->{peak_mem_used} < $temp)) {
+          $rpt_ptr->{$benchmark}->{$tbname_tag}->{peak_mem_used} = $temp;
+        }
+        next; # We find a match, ignore the rest
+      }
+      # Special: get peak memory used and total elapsed time
+      if ($line =~ m/total\s+elapsed\s+time\s+([\d.]+)\s+seconds/i) {
+        $temp = $1;
+        $rpt_ptr->{$benchmark}->{$tbname_tag}->{total_elapsed_time} += $temp;
+        next; # We find a match, ignore the rest
+      }
+      # For leakage power  
+      foreach my $tag(@leakage_tags) {
+        if ($line =~ m/$tag\s*=\s*([\d.\w\-\+]+)/i) {
+          $temp = $1;
+          $temp = &process_unit($temp, "empty");
+          $mc_cnt = $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{mc_cnt};
+          if (defined($rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{"mc".$mc_cnt})) {
+            $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{"mc".$mc_cnt} += $temp;
+          } else {
+            $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{"mc".$mc_cnt} = 0;
+          }
+          $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{mc_cnt} += 1;
+          next; # We find a match, ignore the rest
+        }
+      }
+      # Bypass dynamic tags if leakage_only is enabled  
+      if ("on" eq $opt_ptr->{sim_leakage_power_only}) {
+        next;
+      }
+      # For dynamic power  
+      foreach my $tag(@dynamic_tags) {
+        if ($line =~ m/$tag\s*=\s*([\d.\w\-\+]+)/i) {
+          $temp = $1;
+          $temp = &process_unit($temp, "empty");
+          $mc_cnt = $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{mc_cnt};
+          if (defined($rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{"mc".$mc_cnt})) {
+            $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{"mc".$mc_cnt} += $temp;
+          } else {
+            $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{"mc".$mc_cnt} = 0;
+          }
+          $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{mc_cnt} += 1;
+          next; # We find a match, ignore the rest
+        }
+      } 
+    }
+  } else {
+    die "ERROR: fail to open $tb_lispath!\n";
+  }
+  # Close file
+  close($LISFH);
+
+  return;
+}
+
+sub parse_one_fpga_spice_task_one_tb_results($ $ $ $ $ $) {
+  my ($benchmark, $tbname_tag, $tb_lispath, $tb_mtpath, $tb_leakage_tags, $tb_dynamic_tags) = @_;
+
+  if ("on" eq $opt_ptr->{monte_carlo}) {
+    &parse_one_fpga_spice_task_one_mc_tb_results($benchmark, $tbname_tag, $tb_lispath, $tb_mtpath, 
+                                                 $tb_leakage_tags, $tb_dynamic_tags);
+  } else {
+    &parse_one_fpga_spice_task_one_regular_tb_results($benchmark, $tbname_tag, $tb_lispath, $tb_mtpath,
+                                                      $tb_leakage_tags, $tb_dynamic_tags);
+  }
+
+  return;  
 }
  
 sub count_num_tb_one_folder($) {
@@ -1281,8 +1409,8 @@ sub plan_run_tasks() {
   }
 }
 
-sub gen_csv_rpt_one_tb($ $ $ $) {
-  my ($RPTFH, $tbname_tag, $tb_leakage_tags, $tb_dynamic_tags) = @_;
+sub gen_csv_rpt_one_tb_one_case($ $ $ $ $) {
+  my ($RPTFH, $tbname_tag, $tb_leakage_tags, $tb_dynamic_tags, $case_tag) = @_;
   my (@leakage_tags) = split('\|', $tb_leakage_tags);
   my (@dynamic_tags) = split('\|', $tb_dynamic_tags);
 
@@ -1302,11 +1430,11 @@ sub gen_csv_rpt_one_tb($ $ $ $) {
     print $RPTFH "$rpt_ptr->{$benchmark}->{$tbname_tag}->{total_elapsed_time},";
     print $RPTFH "$rpt_ptr->{$benchmark}->{$tbname_tag}->{peak_mem_used},";
     foreach my $tag(@leakage_tags) {
-      print $RPTFH "$rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag},";
+      print $RPTFH "$rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{$case_tag},";
     }
     if ("off" eq $opt_ptr->{sim_leakage_power_only}) {
       foreach my $tag(@dynamic_tags) {
-        print $RPTFH "$rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag},";
+        print $RPTFH "$rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{$case_tag},";
       }
     }
     print $RPTFH "\n";
@@ -1314,9 +1442,197 @@ sub gen_csv_rpt_one_tb($ $ $ $) {
   return;
 }
 
+sub gen_csv_rpt_one_case($ $) {
+  my ($RPTFH, $case_tag) = @_;
+
+  print $RPTFH "Case tag of the results: $case_tag\n";
+
+  if ("on" eq $opt_ptr->{parse_pb_mux_tb}) {
+    print $RPTFH "***** pb_mux_tb Results Table *****\n";
+    &gen_csv_rpt_one_tb_one_case($RPTFH, "pb_mux_tb", $conf_ptr->{csv_tags}->{pb_mux_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{pb_mux_tb_dynamic_power_tags}->{val}, $case_tag);
+    print $RPTFH "\n";
+  }
+
+  if ("on" eq $opt_ptr->{parse_cb_mux_tb}) {
+    print $RPTFH "***** cb_mux_tb Results Table *****\n";
+    &gen_csv_rpt_one_tb_one_case($RPTFH, "cb_mux_tb", $conf_ptr->{csv_tags}->{cb_mux_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{cb_mux_tb_dynamic_power_tags}->{val}, $case_tag);
+    print $RPTFH "\n";
+  }
+
+  if ("on" eq $opt_ptr->{parse_sb_mux_tb}) {
+    print $RPTFH "***** sb_mux_tb Results Table *****\n";
+    &gen_csv_rpt_one_tb_one_case($RPTFH, "sb_mux_tb", $conf_ptr->{csv_tags}->{sb_mux_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{sb_mux_tb_dynamic_power_tags}->{val}, $case_tag);
+    print $RPTFH "\n";
+  }
+
+  if ("on" eq $opt_ptr->{parse_lut_tb}) {
+    print $RPTFH "***** lut_tb Results Table *****\n";
+    &gen_csv_rpt_one_tb_one_case($RPTFH, "lut_tb", $conf_ptr->{csv_tags}->{lut_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{lut_tb_dynamic_power_tags}->{val}, $case_tag);
+    print $RPTFH "\n";
+  }
+
+  if ("on" eq $opt_ptr->{parse_hardlogic_tb}) {
+    print $RPTFH "***** hardlogic_tb Results Table *****\n";
+    &gen_csv_rpt_one_tb_one_case($RPTFH, "hardlogic_tb", $conf_ptr->{csv_tags}->{hardlogic_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{hardlogic_tb_dynamic_power_tags}->{val}, $case_tag);
+    print $RPTFH "\n";
+  }
+
+  if ("on" eq $opt_ptr->{parse_grid_tb}) {
+    print $RPTFH "***** grid_tb Results Table *****\n";
+    &gen_csv_rpt_one_tb_one_case($RPTFH, "grid_tb", $conf_ptr->{csv_tags}->{grid_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{grid_tb_dynamic_power_tags}->{val}, $case_tag);
+    print $RPTFH "\n";
+  }
+
+  if ("on" eq $opt_ptr->{parse_cb_tb}) {
+    print $RPTFH "***** cb_tb Results Table *****\n";
+    &gen_csv_rpt_one_tb_one_case($RPTFH, "cb_tb", $conf_ptr->{csv_tags}->{cb_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{cb_tb_dynamic_power_tags}->{val}, $case_tag);
+    print $RPTFH "\n";
+  }
+
+  if ("on" eq $opt_ptr->{parse_sb_tb}) {
+    print $RPTFH "***** sb_tb Results Table *****\n";
+    &gen_csv_rpt_one_tb_one_case($RPTFH, "sb_tb", $conf_ptr->{csv_tags}->{sb_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{sb_tb_dynamic_power_tags}->{val}, $case_tag);
+    print $RPTFH "\n";
+  }
+
+  if ("on" eq $opt_ptr->{parse_top_tb}) {
+    print $RPTFH "***** top_tb Results Table *****\n";
+    &gen_csv_rpt_one_tb_one_case($RPTFH, "top_tb", $conf_ptr->{csv_tags}->{top_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{top_tb_dynamic_power_tags}->{val}, $case_tag);
+    print $RPTFH "\n";
+  }
+
+  return;
+}
+
+sub process_mc_data_one_tag($) {
+  my ($cur_mc_hash_ref) = @_;
+
+  $cur_mc_hash_ref->{mc_total} = 0; 
+  $cur_mc_hash_ref->{mc_avg} = "na"; 
+  $cur_mc_hash_ref->{mc_max} = "na"; 
+  $cur_mc_hash_ref->{mc_min} = "na"; 
+  for (my $i = 1;
+          $i < $cur_mc_hash_ref->{mc_cnt}; 
+          $i++) {
+    $cur_mc_hash_ref->{mc_total} += $cur_mc_hash_ref->{"mc".$i};  
+    # Update max 
+    if (("na" eq $cur_mc_hash_ref->{mc_max})
+       ||($cur_mc_hash_ref->{mc_max} < $cur_mc_hash_ref->{"mc".$i})) {
+      $cur_mc_hash_ref->{mc_max} = $cur_mc_hash_ref->{"mc".$i};
+    }
+    # Update min 
+    if (("na" eq $cur_mc_hash_ref->{mc_min})
+       ||($cur_mc_hash_ref->{mc_min} > $cur_mc_hash_ref->{"mc".$i})) {
+      $cur_mc_hash_ref->{mc_min} = $cur_mc_hash_ref->{"mc".$i};
+    }
+  }
+  # Get average 
+  $cur_mc_hash_ref->{mc_avg} = $cur_mc_hash_ref->{mc_total} / $cur_mc_hash_ref->{mc_cnt}; 
+
+  return $cur_mc_hash_ref->{mc_cnt};
+}
+
+# Count the number of Monte Carlo simulations,
+# and calculate the average, max and min
+sub process_mc_data_one_tb($ $ $) {
+  my ($tbname_tag, $tb_leakage_tags, $tb_dynamic_tags) = @_;
+  my (@leakage_tags) = split('\|', $tb_leakage_tags);
+  my (@dynamic_tags) = split('\|', $tb_dynamic_tags);
+  my ($mc_cnt, $mc_cnt_temp) = (0, 0);
+
+  # Check each benchmark
+  foreach my $benchmark(@benchmark_names) {
+    foreach my $tag(@leakage_tags) {
+      $mc_cnt_temp = &process_mc_data_one_tag($rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}); 
+      if (0 == $mc_cnt) {
+        $mc_cnt = $mc_cnt_temp;
+      } elsif ($mc_cnt != $mc_cnt_temp) {
+        die "Inconsistent Monte Carlo Counter for (Benchmark:$benchmark; Testbench: $tbname_tag, Tag:$tag)\n";
+      }
+    }
+
+    # Only do the next part when sim_leakage is disabled 
+    if ("on" eq $opt_ptr->{sim_leakage_power_only}) {
+      next;
+    }
+    foreach my $tag(@dynamic_tags) {
+      &process_mc_data_one_tag($rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}); 
+      if (0 == $mc_cnt) {
+        $mc_cnt = $mc_cnt_temp;
+      } elsif ($mc_cnt != $mc_cnt_temp) {
+        die "Inconsistent Monte Carlo Counter for (Benchmark:$benchmark; Testbench: $tbname_tag, Tag:$tag)\n";
+      }
+    }
+  }
+  return $mc_cnt;
+}
+
+
+sub process_mc_results() {
+  my ($mc_cnt) = (0);
+
+  if ("on" eq $opt_ptr->{parse_pb_mux_tb}) {
+    &process_mc_data_one_tb("pb_mux_tb", 
+                            $conf_ptr->{csv_tags}->{pb_mux_tb_leakage_power_tags}->{val}, 
+                            $conf_ptr->{csv_tags}->{pb_mux_tb_dynamic_power_tags}->{val});
+  }
+
+  if ("on" eq $opt_ptr->{parse_cb_mux_tb}) {
+    &process_mc_data_one_tb("cb_mux_tb", 
+                            $conf_ptr->{csv_tags}->{cb_mux_tb_leakage_power_tags}->{val}, 
+                            $conf_ptr->{csv_tags}->{cb_mux_tb_dynamic_power_tags}->{val});
+  }
+
+  if ("on" eq $opt_ptr->{parse_sb_mux_tb}) {
+    &process_mc_data_one_tb("sb_mux_tb", 
+                            $conf_ptr->{csv_tags}->{sb_mux_tb_leakage_power_tags}->{val}, 
+                            $conf_ptr->{csv_tags}->{sb_mux_tb_dynamic_power_tags}->{val});
+  }
+
+  if ("on" eq $opt_ptr->{parse_lut_tb}) {
+    &process_mc_data_one_tb("lut_tb",
+                            $conf_ptr->{csv_tags}->{lut_tb_leakage_power_tags}->{val}, 
+                            $conf_ptr->{csv_tags}->{lut_tb_dynamic_power_tags}->{val});
+  }
+
+  if ("on" eq $opt_ptr->{parse_hardlogic_tb}) {
+    &process_mc_data_one_tb("hardlogic_tb", 
+                            $conf_ptr->{csv_tags}->{hardlogic_tb_leakage_power_tags}->{val}, 
+                            $conf_ptr->{csv_tags}->{hardlogic_tb_dynamic_power_tags}->{val});
+  }
+
+  if ("on" eq $opt_ptr->{parse_grid_tb}) {
+    &process_mc_data_one_tb("grid_tb", 
+                            $conf_ptr->{csv_tags}->{grid_tb_leakage_power_tags}->{val}, 
+                            $conf_ptr->{csv_tags}->{grid_tb_dynamic_power_tags}->{val});
+  }
+
+  if ("on" eq $opt_ptr->{parse_cb_tb}) {
+    &process_mc_data_one_tb("cb_tb", 
+                            $conf_ptr->{csv_tags}->{cb_tb_leakage_power_tags}->{val}, 
+                            $conf_ptr->{csv_tags}->{cb_tb_dynamic_power_tags}->{val});
+  }
+
+  if ("on" eq $opt_ptr->{parse_sb_tb}) {
+    &process_mc_data_one_tb("sb_tb", 
+                            $conf_ptr->{csv_tags}->{sb_tb_leakage_power_tags}->{val}, 
+                            $conf_ptr->{csv_tags}->{sb_tb_dynamic_power_tags}->{val});
+  }
+
+  if ("on" eq $opt_ptr->{parse_top_tb}) {
+    $mc_cnt =  
+    &process_mc_data_one_tb("top_tb", 
+                            $conf_ptr->{csv_tags}->{top_tb_leakage_power_tags}->{val}, 
+                            $conf_ptr->{csv_tags}->{top_tb_dynamic_power_tags}->{val});
+  }
+
+  return $mc_cnt;
+}
+
 sub gen_csv_rpt($) {
   my ($rpt_file) = @_;
   my ($RPTFH) = FileHandle->new;
+  my ($mc_num) = (0);
 
   if ($RPTFH->open("> $rpt_file")) {
     print "INFO: print CVS report($rpt_file)...\n";
@@ -1324,65 +1640,25 @@ sub gen_csv_rpt($) {
     die "ERROR: fail to create $rpt_file!\n";
   }
 
-  if ("on" eq $opt_ptr->{parse_pb_mux_tb}) {
-    print $RPTFH "***** pb_mux_tb Results Table *****\n";
-    &gen_csv_rpt_one_tb($RPTFH, "pb_mux_tb", $conf_ptr->{csv_tags}->{pb_mux_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{pb_mux_tb_dynamic_power_tags}->{val});
-    print $RPTFH "\n";
+  if ("on" eq $opt_ptr->{monte_carlo}) {
+    # Preprocess the data 
+    $mc_num = &process_mc_results();
+    # Output starts 
+    if ("simple_rpt" eq $opt_ptr->{monte_carlo_val}) {
+      &gen_csv_rpt_one_case($RPTFH, "mc_avg");
+      &gen_csv_rpt_one_case($RPTFH, "mc_max");
+      &gen_csv_rpt_one_case($RPTFH, "mc_min");
+    } else { # Output full report 
+      &gen_csv_rpt_one_case($RPTFH, "mc_avg");
+      &gen_csv_rpt_one_case($RPTFH, "mc_max");
+      &gen_csv_rpt_one_case($RPTFH, "mc_min");
+      for (my $i = 1; $i < $mc_num; $i++) {
+        &gen_csv_rpt_one_case($RPTFH, "mc".$i);
+      } 
+    }
+  } else {
+    &gen_csv_rpt_one_case($RPTFH, "avg");
   }
-
-  if ("on" eq $opt_ptr->{parse_cb_mux_tb}) {
-    print $RPTFH "***** cb_mux_tb Results Table *****\n";
-    &gen_csv_rpt_one_tb($RPTFH, "cb_mux_tb", $conf_ptr->{csv_tags}->{cb_mux_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{cb_mux_tb_dynamic_power_tags}->{val});
-    print $RPTFH "\n";
-  }
-
-  if ("on" eq $opt_ptr->{parse_sb_mux_tb}) {
-    print $RPTFH "***** sb_mux_tb Results Table *****\n";
-    &gen_csv_rpt_one_tb($RPTFH, "sb_mux_tb", $conf_ptr->{csv_tags}->{sb_mux_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{sb_mux_tb_dynamic_power_tags}->{val});
-    print $RPTFH "\n";
-  }
-
-  if ("on" eq $opt_ptr->{parse_lut_tb}) {
-    print $RPTFH "***** lut_tb Results Table *****\n";
-    &gen_csv_rpt_one_tb($RPTFH, "lut_tb", $conf_ptr->{csv_tags}->{lut_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{lut_tb_dynamic_power_tags}->{val});
-    print $RPTFH "\n";
-  }
-
-  if ("on" eq $opt_ptr->{parse_hardlogic_tb}) {
-    print $RPTFH "***** hardlogic_tb Results Table *****\n";
-    &gen_csv_rpt_one_tb($RPTFH, "hardlogic_tb", $conf_ptr->{csv_tags}->{hardlogic_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{hardlogic_tb_dynamic_power_tags}->{val});
-    print $RPTFH "\n";
-  }
-
-  if ("on" eq $opt_ptr->{parse_grid_tb}) {
-    print $RPTFH "***** grid_tb Results Table *****\n";
-    &gen_csv_rpt_one_tb($RPTFH, "grid_tb", $conf_ptr->{csv_tags}->{grid_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{grid_tb_dynamic_power_tags}->{val});
-    print $RPTFH "\n";
-  }
-
-  if ("on" eq $opt_ptr->{parse_cb_tb}) {
-    print $RPTFH "***** cb_tb Results Table *****\n";
-    &gen_csv_rpt_one_tb($RPTFH, "cb_tb", $conf_ptr->{csv_tags}->{cb_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{cb_tb_dynamic_power_tags}->{val});
-    print $RPTFH "\n";
-  }
-
-  if ("on" eq $opt_ptr->{parse_sb_tb}) {
-    print $RPTFH "***** sb_tb Results Table *****\n";
-    &gen_csv_rpt_one_tb($RPTFH, "sb_tb", $conf_ptr->{csv_tags}->{sb_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{sb_tb_dynamic_power_tags}->{val});
-    print $RPTFH "\n";
-  }
-
-  if ("on" eq $opt_ptr->{parse_top_tb}) {
-    print $RPTFH "***** top_tb Results Table *****\n";
-    &gen_csv_rpt_one_tb($RPTFH, "top_tb", $conf_ptr->{csv_tags}->{top_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{top_tb_dynamic_power_tags}->{val});
-    print $RPTFH "\n";
-  }
-
-  #if ("on" eq $opt_ptr->{parse_routing_mux_tb}) {
-  #  print $RPTFH "***** routing_mux_tb Results Table *****\n";
-  #  &gen_csv_rpt_one_tb($RPTFH, "routing_mux_tb", $conf_ptr->{csv_tags}->{routing_mux_tb_leakage_power_tags}->{val}, $conf_ptr->{csv_tags}->{routing_mux_tb_dynamic_power_tags}->{val});
-  #  print $RPTFH "\n";
-  #}
 
   close($RPTFH);
   return;
