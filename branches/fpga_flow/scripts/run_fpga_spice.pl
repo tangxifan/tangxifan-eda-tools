@@ -970,7 +970,7 @@ sub parse_one_fpga_spice_task_one_mc_tb_results($ $ $ $ $ $ $) {
           if (defined($rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{"mc".$mc_cnt})) {
             $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{"mc".$mc_cnt} += $temp;
           } else {
-            $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{"mc".$mc_cnt} = 0;
+            $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{"mc".$mc_cnt} = $temp;
           }
           next; # We find a match, ignore the rest
         }
@@ -989,7 +989,7 @@ sub parse_one_fpga_spice_task_one_mc_tb_results($ $ $ $ $ $ $) {
           if (defined($rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{"mc".$mc_cnt})) {
             $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{"mc".$mc_cnt} += $temp;
           } else {
-            $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{"mc".$mc_cnt} = 0;
+            $rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}->{"mc".$mc_cnt} = $temp;
           }
           next; # We find a match, ignore the rest
         }

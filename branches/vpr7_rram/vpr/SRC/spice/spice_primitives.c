@@ -128,7 +128,7 @@ void fprint_pb_primitive_ff(FILE* fp,
   /* print ports*/
   fprint_pb_type_ports(fp, port_prefix, 0, prim_pb_type); /* Use global clock for each DFF...*/ 
   /* Local vdd and gnd, spice_model name
-   * TODO: global vdd for ff
+   * global vdd for ff
    */
   fprintf(fp, "%s_%s[%d] sgnd %s\n", 
               spice_tb_global_vdd_port_name,
