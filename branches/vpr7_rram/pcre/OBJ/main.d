@@ -1,100 +1,63 @@
-OBJ/main.o: SRC/main.c /usr/include/stdio.h /usr/include/sys/cdefs.h \
-  /usr/include/sys/_symbol_aliasing.h \
-  /usr/include/sys/_posix_availability.h /usr/include/Availability.h \
-  /usr/include/AvailabilityInternal.h /usr/include/_types.h \
-  /usr/include/sys/_types.h /usr/include/machine/_types.h \
-  /usr/include/i386/_types.h /usr/include/sys/_pthread/_pthread_types.h \
-  /usr/include/sys/_types/_va_list.h /usr/include/sys/_types/_size_t.h \
-  /usr/include/sys/_types/_null.h /usr/include/sys/stdio.h \
-  /usr/include/secure/_stdio.h /usr/include/secure/_common.h \
-  /usr/include/string.h /usr/include/secure/_string.h SRC/pcre.h \
-  /usr/include/stdlib.h /usr/include/sys/wait.h \
-  /usr/include/sys/_types/_pid_t.h /usr/include/sys/_types/_id_t.h \
-  /usr/include/sys/signal.h /usr/include/sys/appleapiopts.h \
-  /usr/include/machine/signal.h /usr/include/i386/signal.h \
-  /usr/include/machine/_mcontext.h /usr/include/i386/_mcontext.h \
-  /usr/include/mach/i386/_structs.h \
-  /usr/include/sys/_pthread/_pthread_attr_t.h \
-  /usr/include/sys/_types/_sigaltstack.h \
-  /usr/include/sys/_types/_ucontext.h \
-  /usr/include/sys/_types/_sigset_t.h /usr/include/sys/_types/_uid_t.h \
-  /usr/include/sys/resource.h /usr/include/sys/_types/_timeval.h \
-  /usr/include/sys/_types/_wchar_t.h
+OBJ/main.o: SRC/main.c /usr/include/stdc-predef.h /usr/include/stdio.h \
+ /usr/include/features.h /usr/include/sys/cdefs.h \
+ /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h \
+ /usr/include/gnu/stubs-64.h \
+ /uusoc/facility/cad_common/Synopsys/hspice_vM-2017.03/hspice/GNU/linux64/gcc-5.2.0/lib/gcc/x86_64-redhat-linux/5.2.0/include/stddef.h \
+ /usr/include/bits/types.h /usr/include/bits/typesizes.h \
+ /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h \
+ /uusoc/facility/cad_common/Synopsys/hspice_vM-2017.03/hspice/GNU/linux64/gcc-5.2.0/lib/gcc/x86_64-redhat-linux/5.2.0/include/stdarg.h \
+ /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h \
+ /usr/include/bits/stdio.h /usr/include/string.h \
+ /usr/include/bits/string.h /usr/include/bits/string2.h \
+ /usr/include/endian.h /usr/include/bits/endian.h SRC/pcre.h \
+ /usr/include/stdlib.h /usr/include/bits/stdlib-float.h
+
+/usr/include/stdc-predef.h:
 
 /usr/include/stdio.h:
 
+/usr/include/features.h:
+
 /usr/include/sys/cdefs.h:
 
-/usr/include/sys/_symbol_aliasing.h:
+/usr/include/bits/wordsize.h:
 
-/usr/include/sys/_posix_availability.h:
+/usr/include/gnu/stubs.h:
 
-/usr/include/Availability.h:
+/usr/include/gnu/stubs-64.h:
 
-/usr/include/AvailabilityInternal.h:
+/uusoc/facility/cad_common/Synopsys/hspice_vM-2017.03/hspice/GNU/linux64/gcc-5.2.0/lib/gcc/x86_64-redhat-linux/5.2.0/include/stddef.h:
 
-/usr/include/_types.h:
+/usr/include/bits/types.h:
 
-/usr/include/sys/_types.h:
+/usr/include/bits/typesizes.h:
 
-/usr/include/machine/_types.h:
+/usr/include/libio.h:
 
-/usr/include/i386/_types.h:
+/usr/include/_G_config.h:
 
-/usr/include/sys/_pthread/_pthread_types.h:
+/usr/include/wchar.h:
 
-/usr/include/sys/_types/_va_list.h:
+/uusoc/facility/cad_common/Synopsys/hspice_vM-2017.03/hspice/GNU/linux64/gcc-5.2.0/lib/gcc/x86_64-redhat-linux/5.2.0/include/stdarg.h:
 
-/usr/include/sys/_types/_size_t.h:
+/usr/include/bits/stdio_lim.h:
 
-/usr/include/sys/_types/_null.h:
+/usr/include/bits/sys_errlist.h:
 
-/usr/include/sys/stdio.h:
-
-/usr/include/secure/_stdio.h:
-
-/usr/include/secure/_common.h:
+/usr/include/bits/stdio.h:
 
 /usr/include/string.h:
 
-/usr/include/secure/_string.h:
+/usr/include/bits/string.h:
+
+/usr/include/bits/string2.h:
+
+/usr/include/endian.h:
+
+/usr/include/bits/endian.h:
 
 SRC/pcre.h:
 
 /usr/include/stdlib.h:
 
-/usr/include/sys/wait.h:
-
-/usr/include/sys/_types/_pid_t.h:
-
-/usr/include/sys/_types/_id_t.h:
-
-/usr/include/sys/signal.h:
-
-/usr/include/sys/appleapiopts.h:
-
-/usr/include/machine/signal.h:
-
-/usr/include/i386/signal.h:
-
-/usr/include/machine/_mcontext.h:
-
-/usr/include/i386/_mcontext.h:
-
-/usr/include/mach/i386/_structs.h:
-
-/usr/include/sys/_pthread/_pthread_attr_t.h:
-
-/usr/include/sys/_types/_sigaltstack.h:
-
-/usr/include/sys/_types/_ucontext.h:
-
-/usr/include/sys/_types/_sigset_t.h:
-
-/usr/include/sys/_types/_uid_t.h:
-
-/usr/include/sys/resource.h:
-
-/usr/include/sys/_types/_timeval.h:
-
-/usr/include/sys/_types/_wchar_t.h:
+/usr/include/bits/stdlib-float.h:
