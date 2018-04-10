@@ -1936,7 +1936,8 @@ void fprint_spice_netlist_transient_setting(FILE* fp,
   }
 
   if ((TRUE == spice.spice_params.mc_params.cmos_variation.variation_on)
-     ||(TRUE == spice.spice_params.mc_params.rram_variation.variation_on)) {
+     ||(TRUE == spice.spice_params.mc_params.rram_variation.variation_on)
+     ||(TRUE == spice.spice_params.mc_params.mc_sim)) {
     fprintf(fp, " sweep monte=%d ",
             spice.spice_params.mc_params.num_mc_points);
   }

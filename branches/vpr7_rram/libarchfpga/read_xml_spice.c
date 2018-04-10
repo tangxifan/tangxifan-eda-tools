@@ -278,6 +278,12 @@ static void ProcessSpiceMonteCarloParams(ezxml_t Parent,
                __FILE__, __LINE__);
     exit(1);
   }
+
+  mc_params->mc_sim = FALSE;
+  if (0 == strcmp("on", FindProperty(Parent, "mc_sim", FALSE))) {
+    mc_params->mc_sim = TRUE;
+  }
+  ezxml_set_attr(Parent, "mc_sim", NULL);
   
   mc_params->num_mc_points = GetIntProperty(Parent, "num_mc_points", FALSE, 1);
   ezxml_set_attr(Parent, "num_mc_points", NULL);

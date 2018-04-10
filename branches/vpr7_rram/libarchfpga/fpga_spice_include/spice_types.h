@@ -293,6 +293,7 @@ struct s_spice_mc_variation_params {
 };
 
 struct s_spice_mc_params {
+  boolean mc_sim;
   int num_mc_points;
   /* cmos and rram variation */
   t_spice_mc_variation_params cmos_variation;

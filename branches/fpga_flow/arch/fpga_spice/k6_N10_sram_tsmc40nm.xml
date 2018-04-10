@@ -149,7 +149,7 @@
   <spice_settings>
     <parameters>
       <options sim_temp="25" post="off" captab="off" fast="on"/>
-      <monte_carlo num_mc_points="2" cmos_variation="off" rram_variation="on">
+      <monte_carlo mc_sim="off" num_mc_points="2" cmos_variation="off" rram_variation="off">
         <cmos abs_variation="0.1" num_sigma="3"/>
         <rram abs_variation="0.1" num_sigma="3"/>
       </monte_carlo>
