@@ -1641,6 +1641,9 @@ sub gen_csv_rpt($) {
   my ($RPTFH) = FileHandle->new;
   my ($mc_num) = (0);
 
+  my ($rpt_dir_path, $rpt_filename) = &split_prog_path($rpt_file);
+  &generate_path($rpt_dir_path);
+
   if ($RPTFH->open("> $rpt_file")) {
     print "INFO: print CVS report($rpt_file)...\n";
   } else {
