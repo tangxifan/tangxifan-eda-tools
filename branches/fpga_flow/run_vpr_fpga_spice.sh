@@ -79,7 +79,7 @@ foreach j ($rhrs_list)
   cd ./scripts
   #perl fpga_flow.pl -conf ../configs/fpga_spice/k6_N10_rram_tsmc40nm_RHRS$j\MOhm.conf -benchmark ../benchmarks/mcnc_big20.txt -rpt ../csv_rpts/fpga_spice/k6_N10_rram_tsmc40nm_mcncbig20.csv -N 10 -K 6 -power -remove_designs -multi_thread 1 -fix_route_chan_width -vpr_fpga_spice ../vpr_fpga_spice_task_lists/k6_N10_rram_tsmc40nm -vpr_fpga_spice_rename_illegal_port -vpr_fpga_spice_print_top_tb  #-vpr_fpga_spice_parasitic_net_estimation_off #-vpr_fpga_spice_leakage_only
 
-  perl run_fpga_spice.pl -conf ../vpr_fpga_spice_conf/sample.conf -task ../vpr_fpga_spice_task_lists/k6_N10_rram_tsmc40nm_standard.txt -rpt ../vpr_fpga_spice_csv_rpts/k6_N10_rram_tsmc40_spice_mcncbig20_RHRS$j\MOhm.csv -parse_top_tb -multi_thread 6 -monte_carlo detail_rpt
+  #perl run_fpga_spice.pl -conf ../vpr_fpga_spice_conf/sample.conf -task ../vpr_fpga_spice_task_lists/k6_N10_rram_tsmc40nm_standard.txt -rpt ../vpr_fpga_spice_csv_rpts/k6_N10_rram_tsmc40_spice_mcncbig20_RHRS$j\MOhm.csv -parse_top_tb -multi_thread 6 -monte_carlo detail_rpt
   #@ j -= 10
   cd ..
 end
