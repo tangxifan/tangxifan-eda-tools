@@ -263,9 +263,6 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   /* Free global array */
   free_global_routing_conf_bits();
 
-  /* Free index low and high */
-  free_spice_model_grid_index_low_high(Arch.spice->num_spice_model, Arch.spice->spice_models);
-  free_spice_model_routing_index_low_high(Arch.spice->num_spice_model, Arch.spice->spice_models);
   /* Free sram_orgz_info */
   free_sram_orgz_info(sram_verilog_orgz_info,
                       sram_verilog_orgz_info->type,

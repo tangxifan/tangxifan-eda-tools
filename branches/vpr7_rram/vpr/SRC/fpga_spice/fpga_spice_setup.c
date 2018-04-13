@@ -1136,6 +1136,12 @@ void spice_net_info_add_density_weight(float signal_density_weight) {
   }
 }
 
+void fpga_spice_free(t_arch* Arch) {
+  /* Free index low and high */
+  free_spice_model_grid_index_low_high(Arch->spice->num_spice_model, Arch->spice->spice_models);
+  free_spice_model_routing_index_low_high(Arch->spice->num_spice_model, Arch->spice->spice_models);
+}
+
 /* Top-level function of FPGA-SPICE setup */
 void fpga_spice_setup(t_vpr_setup vpr_setup,
                       t_arch* Arch) {

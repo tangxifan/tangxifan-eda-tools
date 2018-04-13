@@ -1075,9 +1075,7 @@ sub run_std_vpr($ $ $ $ $ $ $ $ $)
   my ($vpr_spice_opts) = ("");
   if (("on" eq $opt_ptr->{power})&&("on" eq $opt_ptr->{vpr_fpga_spice})) {
     $vpr_spice_opts = "--fpga_spice";
-    if ("on" eq $opt_ptr->{vpr_fpga_spice_rename_illegal_port}) {
-      $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_rename_illegal_port";
-    }
+
     if ("on" eq $opt_ptr->{vpr_fpga_spice_signal_density_weight}) {
       $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_signal_density_weight $opt_ptr->{vpr_fpga_spice_signal_density_weight_val}";
     }
@@ -1109,8 +1107,12 @@ sub run_std_vpr($ $ $ $ $ $ $ $ $)
       $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_parasitic_net_estimation_off";
     }
   }
-  if ("on" eq $opt_ptr->{vpr_fpga_spice_verilog_generator}) {
+  if (("on" eq $opt_ptr->{power})&&("on" eq $opt_ptr->{vpr_fpga_spice_verilog_generator})) {
     $vpr_spice_opts = $vpr_spice_opts." --fpga_syn_verilog";
+  }
+
+  if ("on" eq $opt_ptr->{vpr_fpga_spice_rename_illegal_port}) {
+    $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_rename_illegal_port";
   }
   
   my ($other_opt) = ("");

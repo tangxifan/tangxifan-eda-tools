@@ -37,7 +37,6 @@ void vpr_fpga_spice_tool_suites(t_vpr_setup vpr_setup,
   if (TRUE == vpr_setup.FPGA_SPICE_Opts.do_fpga_spice) {
     fpga_spice_setup(vpr_setup, &Arch);
   }
-  
 
   /* Xifan TANG: SPICE Modeling, SPICE Netlist Output  */ 
   if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.do_spice) {
@@ -54,7 +53,9 @@ void vpr_fpga_spice_tool_suites(t_vpr_setup vpr_setup,
     /* Free all the backannotation containing post routing information */
     free_backannotate_vpr_post_route_info();
     /* TODO: free other linked lists ! */
+    fpga_spice_free(&Arch);
   }
+
 
   return;
 }

@@ -378,9 +378,6 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   run_time_sec = (float)(t_end - t_start) / CLOCKS_PER_SEC;
   vpr_printf(TIO_MESSAGE_INFO, "SPICE netlists dumping took %g seconds\n", run_time_sec);  
 
-  /* Free index low and high */
-  free_spice_model_grid_index_low_high(Arch.spice->num_spice_model, Arch.spice->spice_models);
-  free_spice_model_routing_index_low_high(Arch.spice->num_spice_model, Arch.spice->spice_models);
   /* Free sram_orgz_info */
   free_sram_orgz_info(sram_spice_orgz_info,
                       sram_spice_orgz_info->type,
