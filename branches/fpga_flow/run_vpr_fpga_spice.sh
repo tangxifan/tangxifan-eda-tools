@@ -21,12 +21,12 @@ cd ./scripts
 # FPGA-SPICE
 
 # SRAM FPGA
-#perl fpga_flow.pl -conf ../configs/fpga_spice/k6_N10_sram_tsmc40nm.conf -benchmark ../benchmarks/mcnc_big20.txt -rpt ../csv_rpts/fpga_spice/k6_N10_sram_tsmc40nm_mcncbig20_part2.csv -N 10 -K 6 -power -remove_designs -multi_thread 1 -fix_route_chan_width -vpr_fpga_spice ../vpr_fpga_spice_task_lists/k6_N10_sram_tsmc40nm -vpr_fpga_spice_rename_illegal_port -vpr_fpga_spice_print_component_tb -vpr_fpga_spice_print_grid_tb -vpr_fpga_spice_print_top_tb  #-vpr_fpga_spice_parasitic_net_estimation_off #-vpr_fpga_spice_leakage_only
+#perl fpga_flow.pl -conf ../configs/fpga_spice/k6_N10_sram_tsmc40nm.conf -benchmark ../benchmarks/mcnc_big20.txt -rpt ../csv_rpts/fpga_spice/k6_N10_sram_tsmc40nm_mcncbig20.csv -N 10 -K 6 -power -remove_designs -multi_thread 1 -fix_route_chan_width -vpr_fpga_spice ../vpr_fpga_spice_task_lists/k6_N10_sram_tsmc40nm -vpr_fpga_spice_rename_illegal_port  -vpr_fpga_spice_print_top_tb #-vpr_fpga_spice_print_component_tb -vpr_fpga_spice_print_grid_tb  #-vpr_fpga_spice_parasitic_net_estimation_off #-vpr_fpga_spice_leakage_only
 
-#perl run_fpga_spice.pl -conf ../vpr_fpga_spice_conf/sample.conf -task ../vpr_fpga_spice_task_lists/k6_N10_sram_tsmc40nm_standard.txt -rpt ../vpr_fpga_spice_csv_rpts/k6_N10_sram_tsmc40_spice_mcncbig20_part2.csv -parse_pb_mux_tb -parse_cb_mux_tb -parse_sb_mux_tb -parse_lut_tb -parse_hardlogic_tb -parse_grid_tb -parse_cb_tb -parse_sb_tb -parse_top_tb -multi_thread 6
+#perl run_fpga_spice.pl -conf ../vpr_fpga_spice_conf/sample.conf -task ../vpr_fpga_spice_task_lists/k6_N10_sram_tsmc40nm_standard.txt -rpt ../vpr_fpga_spice_csv_rpts/k6_N10_sram_tsmc40_spice_mcncbig20.csv -parse_top_tb -multi_thread 6 #-parse_pb_mux_tb -parse_cb_mux_tb -parse_sb_mux_tb -parse_lut_tb -parse_hardlogic_tb -parse_grid_tb -parse_cb_tb -parse_sb_tb 
 
 # Verilog Generator 
-perl fpga_flow.pl -conf ../configs/fpga_spice/k6_N10_sram_tsmc40nm.conf -benchmark ../benchmarks/mcnc_big20.txt -rpt ../csv_rpts/fpga_spice/k6_N10_sram_tsmc40nm_mcncbig20.csv -N 10 -K 6 -power -remove_designs -multi_thread 1 -fix_route_chan_width  ../vpr_fpga_spice_task_lists/k6_N10_sram_tsmc40nm -vpr_fpga_spice_rename_illegal_port -vpr_fpga_spice_verilog_generator  #-vpr_fpga_spice_parasitic_net_estimation_off #-vpr_fpga_spice_leakage_only
+#perl fpga_flow.pl -conf ../configs/fpga_spice/k6_N10_sram_tsmc40nm.conf -benchmark ../benchmarks/mcnc_big20.txt -rpt ../csv_rpts/fpga_spice/k6_N10_sram_tsmc40nm_mcncbig20.csv -N 10 -K 6 -power -remove_designs -multi_thread 1 -fix_route_chan_width  ../vpr_fpga_spice_task_lists/k6_N10_sram_tsmc40nm -vpr_fpga_spice_rename_illegal_port -vpr_fpga_spice_verilog_generator  #-vpr_fpga_spice_parasitic_net_estimation_off #-vpr_fpga_spice_leakage_only
 cd ..
 
 # RRAM FPGA
@@ -80,9 +80,9 @@ foreach j ($rhrs_list)
 #while ($j >= 10)
   #rm -rf ./results
   cd ./scripts
-  #perl fpga_flow.pl -conf ../configs/fpga_spice/k6_N10_rram_tsmc40nm_RHRS$j\MOhm.conf -benchmark ../benchmarks/mcnc_big20.txt -rpt ../csv_rpts/fpga_spice/k6_N10_rram_tsmc40nm_mcncbig20.csv -N 10 -K 6 -power -remove_designs -multi_thread 1 -fix_route_chan_width -vpr_fpga_spice ../vpr_fpga_spice_task_lists/k6_N10_rram_tsmc40nm -vpr_fpga_spice_rename_illegal_port -vpr_fpga_spice_print_top_tb  #-vpr_fpga_spice_parasitic_net_estimation_off #-vpr_fpga_spice_leakage_only
+  perl fpga_flow.pl -conf ../configs/fpga_spice/k6_N10_rram_tsmc40nm_RHRS$j\MOhm.conf -benchmark ../benchmarks/mcnc_big20.txt -rpt ../csv_rpts/fpga_spice/k6_N10_rram_tsmc40nm_mcncbig20.csv -N 10 -K 6 -power -remove_designs -multi_thread 1 -fix_route_chan_width -vpr_fpga_spice ../vpr_fpga_spice_task_lists/k6_N10_rram_tsmc40nm -vpr_fpga_spice_rename_illegal_port -vpr_fpga_spice_print_top_tb  #-vpr_fpga_spice_parasitic_net_estimation_off #-vpr_fpga_spice_leakage_only
 
-  #perl run_fpga_spice.pl -conf ../vpr_fpga_spice_conf/sample.conf -task ../vpr_fpga_spice_task_lists/k6_N10_rram_tsmc40nm_standard.txt -rpt ../vpr_fpga_spice_csv_rpts/k6_N10_rram_tsmc40_spice_mcncbig20_RHRS$j\MOhm.csv -parse_top_tb -multi_thread 6 -monte_carlo detail_rpt
+  perl run_fpga_spice.pl -conf ../vpr_fpga_spice_conf/sample.conf -task ../vpr_fpga_spice_task_lists/k6_N10_rram_tsmc40nm_standard.txt -rpt ../vpr_fpga_spice_csv_rpts/k6_N10_rram_tsmc40_spice_mcncbig20_RHRS$j\MOhm.csv -parse_top_tb -multi_thread 6 -monte_carlo detail_rpt
   #@ j -= 10
   cd ..
 end

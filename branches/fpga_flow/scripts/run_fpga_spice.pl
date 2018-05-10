@@ -354,7 +354,7 @@ sub read_conf() {
   my ($line,$post_line);
   my @equation;
   my $cur = "unknown";
-  open (CONF, "< $opt_ptr->{conf_val}") or die "Fail to open $opt_ptr->{conf}!\n";
+  open (CONF, "< $opt_ptr->{conf_val}") or die "Fail to open $opt_ptr->{conf_val}!\n";
   print "Reading $opt_ptr->{conf_val}...\n";
   while(defined($line = <CONF>)) {
     chomp $line;

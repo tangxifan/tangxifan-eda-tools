@@ -72,7 +72,7 @@ void fprint_run_hspice_shell_script(t_spice spice,
   /* For VerilogA initilization */
   if (1 == rram_design_tech) {
     fprintf(fp, "cd %s\n", subckt_dir_path);
-    fprintf(fp, "source /softs/synopsys/hspice/2013.12/hspice/bin/cshrc.meta\n");
+    fprintf(fp, "source /uusoc/facility/cad_common/Synopsys/hspice_vM-2017.03/hspice/bin/cshrc.meta\n");
   }
 
   total_num_sim = 0;
@@ -100,7 +100,7 @@ void fprint_run_hspice_shell_script(t_spice spice,
             testbench_file, sim_results_dir_path, chomped_testbench_name);
     temp = temp->next;
     if (1 == rram_design_tech) {
-      fprintf(fp, "-hdlpath /softs/synopsys/hspice/2017.03/hspice/include\n");
+      fprintf(fp, "-hdlpath /uusoc/facility/cad_common/Synopsys/hspice_vM-2017.03/hspice/include\n");
     } else { 
       fprintf(fp, "\n");
     }

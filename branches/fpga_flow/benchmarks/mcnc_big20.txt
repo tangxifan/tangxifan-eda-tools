@@ -14,7 +14,7 @@
 #mcnc_big20.txt
 #misex3.blif, 120
 #pdc.blif, 120
-s298.blif, 120
+s298.blif, 30
 #s38417.blif, 120
 #s38584.1.blif, 120
 #seq.blif, 120
