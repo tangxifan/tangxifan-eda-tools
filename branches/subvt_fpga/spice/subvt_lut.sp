@@ -1,6 +1,13 @@
 *.include './UMC180nm_tech.sp'
 *.include './PTM45nm_tech.sp'
-.include '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/spice/inv_buf.sp'
+.include '/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/subvt_fpga/spice/inv_buf_trans_gate.sp'
+
+* 2:1 MUX
+.subckt mux2to1 in0 in1 sel sel_inv out svdd sgnd size=1 
+Xcpt0 in0 out sel sel_inv svdd sgnd cpt nmos_size='size' pmos_size='beta*size'
+Xcpt1 in1 out sel_inv sel svdd sgnd cpt nmos_size='size' pmos_size='beta*size'
+.eom
+
 * LUT input buffers
 .subckt lut_in_buf in in_buf inbar_buf size=1
 Xinv0_inbuf in inbar_buf vdd gnd inv size='4*size'

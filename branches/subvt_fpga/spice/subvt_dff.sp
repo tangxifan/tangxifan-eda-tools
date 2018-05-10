@@ -5,7 +5,7 @@
 *.param wn = '1*nl'
 *.param wp = 'beta*wn'
 *.include './spice/PTM45nm_tech.sp'
-.include './spice/inv_buf.sp'
+.include '/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/subvt_fpga/spice/inv_buf_trans_gate.sp'
 *******************************
 * Sub Circuits
 *

@@ -7,7 +7,7 @@ use strict;
 # Use the time
 use Time::gmtime;
 # Use switch module
-use Switch;
+#use Switch;
 use File::Path;
 use Cwd;
 # Use FileHandle to open&close file
@@ -64,6 +64,8 @@ my @sctgy;
                 "process_type",
                 "finfet_tech",
                 "verilogA_hspice_sim",
+                "verilogA_hdl_path",
+                "verilogA_cshrc_path",
                 "trans_model_ref",
                 "time_unit",
                 "voltage_unit",
@@ -496,7 +498,7 @@ sub read_conf()
   my ($line,$post_line);
   my @equation;
   my $cur = "unknown";
-  open (CONF, "< $opt_ptr->{conf_val}") or die "Fail to open $opt_ptr->{conf}!\n";
+  open (CONF, "< $opt_ptr->{conf_val}") or die "Fail to open $opt_ptr->{conf_val}!\n";
   print "Reading $opt_ptr->{conf_val}...";
   while(defined($line = <CONF>))
   {
@@ -1014,8 +1016,8 @@ sub run_hspice($ $ $)
     my ($process_dir,$process_file) = &split_prog_path("$conf_ptr->{general_settings}->{process_tech}->{val}");
     chdir $process_dir;
     print "Enter directory($process_dir)...\n";
-    `csh -x 'source /softs/synopsys/hspice/2017.03/hspice/bin/cshrc.meta'`;
-    #system("tcsh -x 'source /softs/synopsys/hspice/I-2013.12/hspice/bin/cshrc.meta'");
+    #`csh -x 'source $conf_ptr->{general_settings}->{verilogA_cshrc_path}->{val}'`;
+    system("/bin/csh -x 'source $conf_ptr->{general_settings}->{verilogA_cshrc_path}->{val}'");
     #system("printenv");
   }
   if (!(-e "$mypath"))
@@ -1039,7 +1041,7 @@ sub run_hspice($ $ $)
   #`csh -cx 'cd ./process'`;
   # Use Cshell to run hspice
   if ("on" eq $verilogA_sim) {
-    `csh -cx '$hspice_path -i $fspice -o $flis -hdlpath /softs/synopsys/hspice/2017.03/hspice/include'`;
+    `csh -cx '$hspice_path -i $fspice -o $flis -hdlpath $conf_ptr->{general_settings}->{verilogA_hdl_path}->{val}'`;
     #system("$hspice_path -i $fspice -o $flis -hdlpath /softs/synopsys/hspice/2013.12/hspice/include");
     chdir $cwd;
     print "Return directory($cwd)...\n";
@@ -5054,7 +5056,7 @@ sub measure_mux_leakage($ $ $ $ $ $ $ $ $ $ $ $)
 sub run_mux_once($ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $)
 {
   my ($tag,$vsp,$mux_size,$SRAM_bits,$input_vectors,$input_slew,$cload, $w_cpt, $tran_step,$rram_enhance,$ron,$wprog,$roff,$on_gap,$off_gap, $cap_in_wire, $cap_out_wire) = @_;
-
+  
   my (%sim_results);
   my ($sim_results_ref) = \%sim_results;
 
@@ -5215,6 +5217,10 @@ sub print_results()
 sub create_rpt_head($) 
 {
   my ($rpt_file) = @_;
+
+  my ($rpt_dir_path, $rpt_filename) = &split_prog_path($rpt_file);
+  &generate_path($rpt_dir_path);
+
   my $rptfh = FileHandle->new;
   if ($rptfh->open("> $rpt_file")) {
     &tab_print($rptfh,"* Sub Vt FPGA Sim Report *\n",0);
