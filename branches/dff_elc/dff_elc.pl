@@ -3,11 +3,11 @@
 # use the strict mode
 use strict;
 # Use the Shell enviornment
-use Shell;
+#use Shell;
 # Use the time
 use Time::gmtime;
 # Use switch module
-use Switch;
+#use Switch;
 use File::Path;
 use Cwd;
 # Use FileHandle to open&close file

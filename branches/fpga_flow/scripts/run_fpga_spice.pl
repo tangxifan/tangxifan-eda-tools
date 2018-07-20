@@ -1526,7 +1526,9 @@ sub process_mc_data_one_tag($) {
     }
   }
   # Get average 
-  $cur_mc_hash_ref->{mc_avg} = $cur_mc_hash_ref->{mc_total} / $cur_mc_hash_ref->{mc_cnt}; 
+  if ( 0 < $cur_mc_hash_ref->{mc_cnt}) {
+    $cur_mc_hash_ref->{mc_avg} = $cur_mc_hash_ref->{mc_total} / $cur_mc_hash_ref->{mc_cnt}; 
+  }
 
   return $cur_mc_hash_ref->{mc_cnt};
 }
@@ -1543,6 +1545,9 @@ sub process_mc_data_one_tb($ $ $) {
   foreach my $benchmark(@benchmark_names) {
     foreach my $tag(@leakage_tags) {
       $mc_cnt_temp = &process_mc_data_one_tag($rpt_ptr->{$benchmark}->{$tbname_tag}->{$tag}); 
+      if (0 == $mc_cnt_temp) {
+        print "Warning: zero results found in Monte Carlo simulations for $tag!\n";
+      }
       if (0 == $mc_cnt) {
         $mc_cnt = $mc_cnt_temp;
       } elsif ($mc_cnt != $mc_cnt_temp) {

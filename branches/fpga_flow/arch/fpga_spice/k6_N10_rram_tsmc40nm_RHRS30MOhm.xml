@@ -134,8 +134,8 @@
   <!-- ODIN II specific config ends -->
 
   <!-- Physical descriptions begin -->
-  <layout auto="1.0"/>
-  <!--layout width="2" height="2"/-->
+  <!--layout auto="1.0"/-->
+  <layout width="10" height="10"/>
 
   <!--mrFPGA_settings--> 
     <!-- below is the timing parameters for a single memristor device (or so called RRAM) -->
