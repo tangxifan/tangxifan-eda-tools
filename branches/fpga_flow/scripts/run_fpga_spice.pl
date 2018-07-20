@@ -1551,7 +1551,7 @@ sub process_mc_data_one_tb($ $ $) {
       if (0 == $mc_cnt) {
         $mc_cnt = $mc_cnt_temp;
       } elsif ($mc_cnt != $mc_cnt_temp) {
-        die "Inconsistent Monte Carlo Counter for (Benchmark:$benchmark; Testbench: $tbname_tag, Tag:$tag)\n";
+        print "Warning: Inconsistent Monte Carlo Counter for (Benchmark:$benchmark; Testbench: $tbname_tag, Tag:$tag)\n";
       }
     }
 
@@ -1564,7 +1564,7 @@ sub process_mc_data_one_tb($ $ $) {
       if (0 == $mc_cnt) {
         $mc_cnt = $mc_cnt_temp;
       } elsif ($mc_cnt != $mc_cnt_temp) {
-        die "Inconsistent Monte Carlo Counter for (Benchmark:$benchmark; Testbench: $tbname_tag, Tag:$tag)\n";
+        print "Warning: Inconsistent Monte Carlo Counter for (Benchmark:$benchmark; Testbench: $tbname_tag, Tag:$tag)\n";
       }
     }
   }
