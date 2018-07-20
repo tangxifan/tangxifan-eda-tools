@@ -7015,3 +7015,16 @@ void check_spice_models_grid_tb_cnt(int num_spice_models,
 
   return;
 }
+
+boolean check_negative_variation(float avg_val, 
+                                 t_spice_mc_variation_params variation_params) {
+  boolean exist_neg_val = FALSE;
+
+  /* Assume only support gaussian variation now */
+  if (avg_val < 0.) {
+    exist_neg_val = TRUE;
+  } 
+
+  return exist_neg_val;
+}
+    

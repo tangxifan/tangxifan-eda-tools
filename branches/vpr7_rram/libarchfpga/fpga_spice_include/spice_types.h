@@ -298,6 +298,7 @@ struct s_spice_mc_params {
   /* cmos and rram variation */
   t_spice_mc_variation_params cmos_variation;
   t_spice_mc_variation_params rram_variation;
+  t_spice_mc_variation_params wire_variation;
 };
 
 struct s_spice_params {

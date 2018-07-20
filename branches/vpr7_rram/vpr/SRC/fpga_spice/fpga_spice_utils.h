@@ -600,3 +600,6 @@ void check_spice_models_grid_tb_cnt(int num_spice_models,
                                     t_spice_model* spice_model,
                                     int grid_x, int grid_y,
                                     enum e_spice_model_type spice_model_type_to_check);
+
+boolean check_negative_variation(float avg_val, 
+                                 t_spice_mc_variation_params variation_params);

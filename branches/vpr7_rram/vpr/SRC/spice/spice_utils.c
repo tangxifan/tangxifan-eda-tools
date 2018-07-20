@@ -1449,6 +1449,11 @@ void fprint_one_design_param_w_wo_variation(FILE* fp,
   fprintf(fp,".param %s=", param_name); 
   if (FALSE == variation_params.variation_on) {
     fprintf(fp, "%g", avg_val);
+  /* We do not allow any negative value exist in the variation,
+   * This could be too tight, could be removed   
+   */
+  } else if (TRUE == check_negative_variation(avg_val, variation_params)) {
+    fprintf(fp, "%g", avg_val);
   } else {
     fprintf(fp, "agauss(%g, '%g*%g', %d)", 
             avg_val, 
@@ -1592,11 +1597,11 @@ void fprint_spice_circuit_param(FILE* fp,
        fprint_one_design_param_w_wo_variation(fp,
                                               my_strcat(spice_model[imodel].name, design_param_postfix_wire_param_res_val), 
                                               spice_model[imodel].wire_param->res_val,
-                                              mc_params.cmos_variation); 
+                                              mc_params.wire_variation); 
        fprint_one_design_param_w_wo_variation(fp,
                                               my_strcat(spice_model[imodel].name, design_param_postfix_wire_param_cap_val), 
                                               spice_model[imodel].wire_param->cap_val,
-                                              mc_params.cmos_variation); 
+                                              mc_params.wire_variation); 
      }
        
      /* We care the spice models built with RRAMs */

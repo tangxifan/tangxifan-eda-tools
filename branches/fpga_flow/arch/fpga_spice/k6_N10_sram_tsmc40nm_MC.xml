@@ -148,10 +148,11 @@
 
   <spice_settings>
     <parameters>
-      <options sim_temp="25" post="off" captab="off" fast="on"/>
-      <monte_carlo mc_sim="on" num_mc_points="2" cmos_variation="off" rram_variation="off">
+      <options sim_temp="25" post="on" captab="off" fast="on"/>
+      <monte_carlo mc_sim="on" num_mc_points="100" cmos_variation="off" rram_variation="off" wire_variation="on">
         <cmos abs_variation="0.1" num_sigma="3"/>
         <rram abs_variation="0.1" num_sigma="3"/>
+        <wire abs_variation="0.1" num_sigma="3"/>
       </monte_carlo>
       <measure sim_num_clock_cycle="auto" accuracy="1e-13" accuracy_type="abs">
         <slew>

@@ -309,6 +309,17 @@ static void ProcessSpiceMonteCarloParams(ezxml_t Parent,
   }
   ezxml_set_attr(Parent, "rram_variation", NULL);
 
+  if (0 == strcmp("on", FindProperty(Parent, "wire_variation", FALSE))) {
+    mc_params->wire_variation.variation_on = TRUE;
+  }
+  Node = FindElement(Parent, "wire", mc_params->wire_variation.variation_on);
+  if (Node) {
+    ProcessSpiceMCVariationParams(Node, &(mc_params->wire_variation));
+    FreeNode(Node);
+  }
+  ezxml_set_attr(Parent, "wire_variation", NULL);
+
+
   return;
 }
 
