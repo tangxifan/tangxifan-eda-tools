@@ -1,6 +1,6 @@
 
 
-void fprint_spice_lut_testbench(char* formatted_spice_dir,
+void spice_print_lut_testbench(char* formatted_spice_dir,
                                 char* circuit_name,
                                 char* include_dir_path,
                                 char* subckt_dir_path,

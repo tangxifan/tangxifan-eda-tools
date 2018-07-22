@@ -77,17 +77,18 @@ enum e_OptionBaseToken {
     /* Xifan TANG: FPGA SPICE Support */
     OT_FPGA_SPICE, /* Xifan TANG: FPGA SPICE Model Support */
     OT_SPICE_DIR, /* Xifan TANG: FPGA SPICE Model Support */
-    OT_PRINT_SPICE_TOP_TESTBENCH, /* Xifan TANG: Print Top-level SPICE Testbench */
-    OT_PRINT_SPICE_PB_MUX_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for MUXes */
-    OT_PRINT_SPICE_CB_MUX_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for MUXes */
-    OT_PRINT_SPICE_SB_MUX_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for MUXes */
-    OT_PRINT_SPICE_CB_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for CBs */
-    OT_PRINT_SPICE_SB_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for SBs */
-    OT_PRINT_SPICE_GRID_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for Grids */
-    OT_PRINT_SPICE_LUT_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for LUTs */
-    OT_PRINT_SPICE_HARDLOGIC_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for hard logic s */
+    OT_SPICE_PRINT_TOP_TESTBENCH, /* Xifan TANG: Print Top-level SPICE Testbench */
+    OT_SPICE_PRINT_PB_MUX_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for MUXes */
+    OT_SPICE_PRINT_CB_MUX_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for MUXes */
+    OT_SPICE_PRINT_SB_MUX_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for MUXes */
+    OT_SPICE_PRINT_CB_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for CBs */
+    OT_SPICE_PRINT_SB_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for SBs */
+    OT_SPICE_PRINT_GRID_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for Grids */
+    OT_SPICE_PRINT_LUT_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for LUTs */
+    OT_SPICE_PRINT_HARDLOGIC_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for hard logic s */
     OT_FPGA_SPICE_LEAKAGE_ONLY, /* Xifan TANG: Print SPICE Testbench for MUXes */
     OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION_OFF, /* Xifan TANG: turn off the parasitic net estimation*/
+    OT_FPGA_SPICE_TESTBENCH_LOAD_EXTRACTION_OFF, /* Xifan TANG: turn off the testbench load extraction */
     /* Xifan TANG: Verilog Generation */
     OT_FPGA_VERILOG_SYN, /* Xifan TANG: Synthesizable Verilog Dump */
     OT_FPGA_VERILOG_SYN_DIR, /* Xifan TANG: Synthesizable Verilog Dump */

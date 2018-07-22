@@ -202,22 +202,24 @@ void fprint_spice_lut_testbench_one_pb_graph_node_lut(FILE* fp,
                                   + 6 + 1 ));
   sprintf(outport_name, "lut[%d]->out",
                          tb_num_luts);
-  if (OPEN != logical_block_index) {
-    fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
-                                                      x, y, 
-                                                      &(cur_pb_graph_node->output_pins[0][0]), 
-                                                      logical_block[logical_block_index].pb, 
-                                                      outport_name, 
-                                                      FALSE, 
-                                                      LL_rr_node_indices); 
-  } else {
-    fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
-                                                      x, y, 
-                                                      &(cur_pb_graph_node->output_pins[0][0]), 
-                                                      NULL, 
-                                                      outport_name, 
-                                                      FALSE, 
-                                                      LL_rr_node_indices); 
+  if (TRUE == run_testbench_load_extraction) { /* Additional switch, default on! */
+    if (OPEN != logical_block_index) {
+      fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
+                                                        x, y, 
+                                                        &(cur_pb_graph_node->output_pins[0][0]), 
+                                                        logical_block[logical_block_index].pb, 
+                                                        outport_name, 
+                                                        FALSE, 
+                                                        LL_rr_node_indices); 
+    } else {
+      fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
+                                                        x, y, 
+                                                        &(cur_pb_graph_node->output_pins[0][0]), 
+                                                        NULL, 
+                                                        outport_name, 
+                                                        FALSE, 
+                                                        LL_rr_node_indices); 
+    }
   }
 
   /* Calculate average density of this MUX */
@@ -701,7 +703,7 @@ int fprint_spice_one_lut_testbench(char* formatted_spice_dir,
 
 
 /* Top-level function in this source file */
-void fprint_spice_lut_testbench(char* formatted_spice_dir,
+void spice_print_lut_testbench(char* formatted_spice_dir,
                                 char* circuit_name,
                                 char* include_dir_path,
                                 char* subckt_dir_path,

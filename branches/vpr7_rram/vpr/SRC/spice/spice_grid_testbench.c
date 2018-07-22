@@ -253,7 +253,9 @@ void fprint_grid_testbench_one_grid_stimulation(FILE* fp,
           if (RECEIVER == type->class_inf[class_id].type) { 
             fprint_spice_testbench_one_grid_pin_stimulation(fp, x, y, iheight, side, ipin, LL_rr_node_indices);
           } else if (DRIVER == type->class_inf[class_id].type) { 
-            fprint_spice_testbench_one_grid_pin_loads(fp, x, y, iheight, side, ipin, &testbench_load_cnt, LL_rr_node_indices);
+            if (TRUE == run_testbench_load_extraction) { /* Additional switch, default on! */
+              fprint_spice_testbench_one_grid_pin_loads(fp, x, y, iheight, side, ipin, &testbench_load_cnt, LL_rr_node_indices);
+            }
           } else {
             fprint_stimulate_dangling_one_grid_pin(fp, x, y, iheight, side, ipin, LL_rr_node_indices);
           }
@@ -501,7 +503,7 @@ int fprint_spice_one_grid_testbench(char* formatted_spice_dir,
 
 
 /* Top-level function in this source file */
-void fprint_spice_grid_testbench(char* formatted_spice_dir,
+void spice_print_grid_testbench(char* formatted_spice_dir,
                                  char* circuit_name,
                                  char* include_dir_path,
                                  char* subckt_dir_path,

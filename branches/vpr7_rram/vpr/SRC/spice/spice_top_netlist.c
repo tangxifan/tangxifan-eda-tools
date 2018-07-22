@@ -636,7 +636,7 @@ void fprint_top_netlist_measurements(FILE* fp,
 }
 
 /***** Print Top-level SPICE netlist *****/
-void fprint_spice_top_netlist(char* circuit_name,
+void spice_print_top_netlist(char* circuit_name,
                               char* top_netlist_name,
                               char* include_dir_path,
                               char* subckt_dir_path,

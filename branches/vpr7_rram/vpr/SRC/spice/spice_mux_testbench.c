@@ -531,11 +531,14 @@ void fprint_spice_mux_testbench_pb_graph_node_pin_mux(FILE* fp,
                                   + 7 ));
   sprintf(outport_name, "%s_size%d[%d]->out",
                         cur_interc->spice_model->prefix, fan_in, testbench_mux_cnt);
-  fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
-                                                    grid_x, grid_y, 
-                                                    des_pb_graph_pin, NULL, 
-                                                    outport_name, TRUE, 
-                                                    LL_rr_node_indices); 
+
+  if (TRUE == run_testbench_load_extraction) { /* Additional switch, default on! */
+    fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
+                                                      grid_x, grid_y, 
+                                                      des_pb_graph_pin, NULL, 
+                                                      outport_name, TRUE, 
+                                                      LL_rr_node_indices); 
+  }
 
   fprint_spice_mux_testbench_pb_mux_meas(fp, meas_tag);
   /* Update the counter */
@@ -633,12 +636,14 @@ void fprint_spice_mux_testbench_pb_pin_mux(FILE* fp,
                                   + 7 ));
   sprintf(outport_name, "%s_size%d[%d]->out",
                         cur_interc->spice_model->prefix, fan_in, testbench_mux_cnt);
-  fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
-                                                    grid_x, grid_y,
-                                                    des_pb_graph_pin, des_pb, 
-                                                    outport_name, TRUE, 
-                                                    LL_rr_node_indices);
 
+  if (TRUE == run_testbench_load_extraction) { /* Additional switch, default on! */
+    fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
+                                                      grid_x, grid_y,
+                                                      des_pb_graph_pin, des_pb, 
+                                                      outport_name, TRUE, 
+                                                      LL_rr_node_indices);
+  }
 
   fprint_spice_mux_testbench_pb_mux_meas(fp, meas_tag);
 
@@ -1305,8 +1310,11 @@ void fprint_spice_mux_testbench_cb_one_mux(FILE* fp,
                         mux_spice_model->prefix, 
                         mux_size, 
                         testbench_mux_cnt);
-  fprint_spice_testbench_one_cb_mux_loads(fp, &testbench_load_cnt, src_rr_node, 
-                                          outport_name, LL_rr_node_indices);
+
+  if (TRUE == run_testbench_load_extraction) { /* Additional switch, default on! */
+    fprint_spice_testbench_one_cb_mux_loads(fp, &testbench_load_cnt, src_rr_node, 
+                                            outport_name, LL_rr_node_indices);
+  }
 
   fprint_spice_mux_testbench_cb_mux_meas(fp, meas_tag);
   /* Update the counter */
@@ -1512,14 +1520,17 @@ int fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
                                  + strlen(my_itoa(testbench_mux_cnt))
                                  + 6 + 1 ));
   sprintf(outport_name, "%s_size%d[%d]->out", mux_spice_model->prefix, mux_size, testbench_mux_cnt);
-  fprintf(fp, "***** Load for rr_node[%d] *****\n", src_rr_node - rr_node);
-  rr_node_outport_name = fprint_spice_testbench_rr_node_load_version(fp, 
-                                                                     &testbench_load_cnt,
-                                                                     num_segments,
-                                                                     segments,
-                                                                     0, /* load size */
-                                                                     (*src_rr_node), 
-                                                                     outport_name); 
+  
+  if (TRUE == run_testbench_load_extraction) { /* Additional switch, default on! */
+    fprintf(fp, "***** Load for rr_node[%d] *****\n", src_rr_node - rr_node);
+    rr_node_outport_name = fprint_spice_testbench_rr_node_load_version(fp, 
+                                                                       &testbench_load_cnt,
+                                                                       num_segments,
+                                                                       segments,
+                                                                       0, /* load size */
+                                                                       (*src_rr_node), 
+                                                                       outport_name); 
+  }
 
   fprint_spice_mux_testbench_sb_mux_meas(fp, meas_tag);
 
@@ -1883,7 +1894,7 @@ int fprint_spice_one_mux_testbench(char* formatted_spice_dir,
   return used;
 }
 
-void fprint_spice_mux_testbench(char* formatted_spice_dir,
+void spice_print_mux_testbench(char* formatted_spice_dir,
                                 char* circuit_name,
                                 char* include_dir_path,
                                 char* subckt_dir_path,

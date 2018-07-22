@@ -289,7 +289,10 @@ static void ProcessSpiceMonteCarloParams(ezxml_t Parent,
   ezxml_set_attr(Parent, "num_mc_points", NULL);
 
   /* Process CMOS variations */
-  if (0 == strcmp("on", FindProperty(Parent, "cmos_variation", FALSE))) {
+  mc_params->cmos_variation.variation_on = FALSE;
+  if (NULL == FindProperty(Parent, "cmos_variation", FALSE)) {
+    mc_params->cmos_variation.variation_on = FALSE;
+  } else if (0 == strcmp("on", FindProperty(Parent, "cmos_variation", FALSE))) {
     mc_params->cmos_variation.variation_on = TRUE;
   } 
   Node = FindElement(Parent, "cmos", mc_params->cmos_variation.variation_on);
@@ -299,7 +302,11 @@ static void ProcessSpiceMonteCarloParams(ezxml_t Parent,
   }
   ezxml_set_attr(Parent, "cmos_variation", NULL);
   
-  if (0 == strcmp("on", FindProperty(Parent, "rram_variation", FALSE))) {
+
+  mc_params->rram_variation.variation_on = FALSE;
+  if (NULL == FindProperty(Parent, "rram_variation", FALSE)) {
+    mc_params->rram_variation.variation_on = FALSE;
+  } else if (0 == strcmp("on", FindProperty(Parent, "rram_variation", FALSE))) {
     mc_params->rram_variation.variation_on = TRUE;
   }
   Node = FindElement(Parent, "rram", mc_params->rram_variation.variation_on);
@@ -309,7 +316,10 @@ static void ProcessSpiceMonteCarloParams(ezxml_t Parent,
   }
   ezxml_set_attr(Parent, "rram_variation", NULL);
 
-  if (0 == strcmp("on", FindProperty(Parent, "wire_variation", FALSE))) {
+  mc_params->wire_variation.variation_on = FALSE;
+  if (NULL == FindProperty(Parent, "wire_variation", FALSE)) {
+    mc_params->wire_variation.variation_on = FALSE;
+  } else if (0 == strcmp("on", FindProperty(Parent, "wire_variation", FALSE))) {
     mc_params->wire_variation.variation_on = TRUE;
   }
   Node = FindElement(Parent, "wire", mc_params->wire_variation.variation_on);

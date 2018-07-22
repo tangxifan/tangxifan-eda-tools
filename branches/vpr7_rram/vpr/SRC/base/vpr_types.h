@@ -1161,17 +1161,18 @@ struct s_cb {
 typedef struct s_spice_opts t_spice_opts;
 struct s_spice_opts {
   boolean do_spice;
-  boolean print_spice_top_testbench; 
-  boolean print_spice_grid_testbench; 
-  boolean print_spice_cb_testbench; 
-  boolean print_spice_sb_testbench; 
-  boolean print_spice_pb_mux_testbench; 
-  boolean print_spice_cb_mux_testbench; 
-  boolean print_spice_sb_mux_testbench; 
-  boolean print_spice_lut_testbench; 
-  boolean print_spice_hardlogic_testbench; 
+  boolean spice_print_top_testbench; 
+  boolean spice_print_grid_testbench; 
+  boolean spice_print_cb_testbench; 
+  boolean spice_print_sb_testbench; 
+  boolean spice_print_pb_mux_testbench; 
+  boolean spice_print_cb_mux_testbench; 
+  boolean spice_print_sb_mux_testbench; 
+  boolean spice_print_lut_testbench; 
+  boolean spice_print_hardlogic_testbench; 
   boolean fpga_spice_leakage_only;
   boolean fpga_spice_parasitic_net_estimation_off;
+  boolean fpga_spice_testbench_load_extraction_off;
  
   /*Xifan TANG: FPGA SPICE Model Support*/
   char* spice_dir;

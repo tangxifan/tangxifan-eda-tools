@@ -357,22 +357,24 @@ void fprint_spice_hardlogic_testbench_one_pb_graph_node_hardlogic(FILE* fp,
                             pb_spice_model->tb_cnt,
                             output_ports[iport]->prefix,
                             ipin);
-      if (OPEN != logical_block_index) {
-        fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
-                                                          x, y, 
-                                                          &(cur_pb_graph_node->output_pins[0][0]), 
-                                                          logical_block[logical_block_index].pb, 
-                                                          outport_name, 
-                                                          FALSE, 
-                                                          LL_rr_node_indices); 
-      } else {
-        fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
-                                                          x, y, 
-                                                          &(cur_pb_graph_node->output_pins[0][0]), 
-                                                          NULL, 
-                                                          outport_name, 
-                                                          FALSE, 
-                                                          LL_rr_node_indices); 
+      if (TRUE == run_testbench_load_extraction) { /* Additional switch, default on! */
+        if (OPEN != logical_block_index) {
+          fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
+                                                            x, y, 
+                                                            &(cur_pb_graph_node->output_pins[0][0]), 
+                                                            logical_block[logical_block_index].pb, 
+                                                            outport_name, 
+                                                            FALSE, 
+                                                            LL_rr_node_indices); 
+        } else {
+          fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
+                                                            x, y, 
+                                                            &(cur_pb_graph_node->output_pins[0][0]), 
+                                                            NULL, 
+                                                            outport_name, 
+                                                            FALSE, 
+                                                            LL_rr_node_indices); 
+        }
       }
       /* Free outport_name in each iteration */
       my_free(outport_name);
@@ -812,7 +814,7 @@ int fprint_spice_one_hardlogic_testbench(char* formatted_spice_dir,
 }
 
 /* Top-level function in this source file */
-void fprint_spice_hardlogic_testbench(char* formatted_spice_dir,
+void spice_print_hardlogic_testbench(char* formatted_spice_dir,
                                       char* circuit_name,
                                       char* include_dir_path,
                                       char* subckt_dir_path,

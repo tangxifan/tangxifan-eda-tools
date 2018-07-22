@@ -145,6 +145,7 @@ sub print_usage()
   print "      -vpr_fpga_spice_print_top_tb : print full-chip testbench in VPR FPGA SPICE\n";
   print "      -vpr_fpga_spice_leakage_only : turn on leakage_only mode in VPR FPGA SPICE\n";
   print "      -vpr_fpga_spice_parasitic_net_estimation_off : turn off parasitic_net_estimation in VPR FPGA SPICE\n";
+  print "      -vpr_fpga_spice_testbench_load_extraction_off : turn off testbench_load_extraction in VPR FPGA SPICE\n";
   print "      -vpr_fpga_spice_verilog_generator : turn on Verilog Generator of VPR FPGA SPICE\n";
   print "      -vpr_fpga_spice_rename_illegal_port : turn on renaming illegal ports option of VPR FPGA SPICE\n";
   print "      -vpr_fpga_spice_signal_density_weight <float>: specify the option signal_density_weight of VPR FPGA SPICE\n";
@@ -316,6 +317,7 @@ sub opts_read()
   &read_opt_into_hash("vpr_fpga_spice_print_top_tb","off","off");
   &read_opt_into_hash("vpr_fpga_spice_leakage_only","off","off");
   &read_opt_into_hash("vpr_fpga_spice_parasitic_net_estimation_off","off","off");
+  &read_opt_into_hash("vpr_fpga_spice_testbench_load_extraction_off","off","off");
   &read_opt_into_hash("vpr_fpga_spice_verilog_generator","off","off");
   &read_opt_into_hash("vpr_fpga_spice_rename_illegal_port","off","off");
   &read_opt_into_hash("vpr_fpga_spice_signal_density_weight","on","off");
@@ -1086,25 +1088,28 @@ sub run_std_vpr($ $ $ $ $ $ $ $ $)
       $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_sim_mt_num $opt_ptr->{vpr_fpga_spice_sim_mt_num_val}";
     }
     if ("on" eq $opt_ptr->{vpr_fpga_spice_print_component_tb}) {
-      $vpr_spice_opts = $vpr_spice_opts." --print_spice_lut_testbench";
-      $vpr_spice_opts = $vpr_spice_opts." --print_spice_hardlogic_testbench";
-      $vpr_spice_opts = $vpr_spice_opts." --print_spice_pb_mux_testbench";
-      $vpr_spice_opts = $vpr_spice_opts." --print_spice_cb_mux_testbench";
-      $vpr_spice_opts = $vpr_spice_opts." --print_spice_sb_mux_testbench";
+      $vpr_spice_opts = $vpr_spice_opts." --spice_print_lut_testbench";
+      $vpr_spice_opts = $vpr_spice_opts." --spice_print_hardlogic_testbench";
+      $vpr_spice_opts = $vpr_spice_opts." --spice_print_pb_mux_testbench";
+      $vpr_spice_opts = $vpr_spice_opts." --spice_print_cb_mux_testbench";
+      $vpr_spice_opts = $vpr_spice_opts." --spice_print_sb_mux_testbench";
     }
     if ("on" eq $opt_ptr->{vpr_fpga_spice_print_grid_tb}) {
-      $vpr_spice_opts = $vpr_spice_opts." --print_spice_grid_testbench";
-      $vpr_spice_opts = $vpr_spice_opts." --print_spice_cb_testbench";
-      $vpr_spice_opts = $vpr_spice_opts." --print_spice_sb_testbench";
+      $vpr_spice_opts = $vpr_spice_opts." --spice_print_grid_testbench";
+      $vpr_spice_opts = $vpr_spice_opts." --spice_print_cb_testbench";
+      $vpr_spice_opts = $vpr_spice_opts." --spice_print_sb_testbench";
     }
     if ("on" eq $opt_ptr->{vpr_fpga_spice_print_top_tb}) {
-      $vpr_spice_opts = $vpr_spice_opts." --print_spice_top_testbench";
+      $vpr_spice_opts = $vpr_spice_opts." --spice_print_top_testbench";
     }
     if ("on" eq $opt_ptr->{vpr_fpga_spice_leakage_only}) {
       $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_leakage_only";
     }
     if ("on" eq $opt_ptr->{vpr_fpga_spice_parasitic_net_estimation_off}) {
       $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_parasitic_net_estimation_off";
+    }
+    if ("on" eq $opt_ptr->{vpr_fpga_spice_testbench_load_extraction_off}) {
+      $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_testbench_load_extraction_off";
     }
   }
   if (("on" eq $opt_ptr->{power})&&("on" eq $opt_ptr->{vpr_fpga_spice_verilog_generator})) {

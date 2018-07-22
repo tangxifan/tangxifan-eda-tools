@@ -222,14 +222,17 @@ int fprint_spice_routing_testbench_call_one_cb_tb(FILE* fp,
       ipin_height = get_grid_pin_height(cur_cb_info.ipin_rr_node[side][inode]->xlow,
                                         cur_cb_info.ipin_rr_node[side][inode]->ylow,
                                         cur_cb_info.ipin_rr_node[side][inode]->ptc_num);
-      fprint_spice_testbench_one_grid_pin_loads(fp,  
-                                                cur_cb_info.ipin_rr_node[side][inode]->xlow,
-                                                cur_cb_info.ipin_rr_node[side][inode]->ylow, 
-                                                ipin_height,
-                                                cur_cb_info.ipin_rr_node_grid_side[side][inode],
-                                                cur_cb_info.ipin_rr_node[side][inode]->ptc_num,
-                                                &testbench_load_cnt,
-                                                LL_rr_node_indices); 
+
+      if (TRUE == run_testbench_load_extraction) { /* Additional switch, default on! */
+        fprint_spice_testbench_one_grid_pin_loads(fp,  
+                                                  cur_cb_info.ipin_rr_node[side][inode]->xlow,
+                                                  cur_cb_info.ipin_rr_node[side][inode]->ylow, 
+                                                  ipin_height,
+                                                  cur_cb_info.ipin_rr_node_grid_side[side][inode],
+                                                  cur_cb_info.ipin_rr_node[side][inode]->ptc_num,
+                                                  &testbench_load_cnt,
+                                                  LL_rr_node_indices); 
+      }
       fprintf(fp, "\n");
       /* Get signal activity */
       input_density = get_rr_node_net_density(*cur_cb_info.ipin_rr_node[side][inode]);
@@ -399,13 +402,15 @@ int fprint_spice_routing_testbench_call_one_sb_tb(FILE* fp,
         sprintf(outport_name, "%s[%d][%d]_out[%d]", 
                 convert_chan_type_to_string(cur_sb_info.chan_rr_node[side][itrack]->type), 
                 ix, iy, itrack);
-        fprintf(fp, "**** Load for rr_node[%ld] *****\n", cur_sb_info.chan_rr_node[side][itrack] - rr_node);
-        rr_node_outport_name = fprint_spice_testbench_rr_node_load_version(fp, &testbench_load_cnt,
-                                                                           num_segments, 
-                                                                           segments, 
-                                                                           0, 
-                                                                           *cur_sb_info.chan_rr_node[side][itrack],
-                                                                           outport_name); 
+        if (TRUE == run_testbench_load_extraction) { /* Additional switch, default on! */
+          fprintf(fp, "**** Load for rr_node[%ld] *****\n", cur_sb_info.chan_rr_node[side][itrack] - rr_node);
+          rr_node_outport_name = fprint_spice_testbench_rr_node_load_version(fp, &testbench_load_cnt,
+                                                                             num_segments, 
+                                                                             segments, 
+                                                                             0, 
+                                                                             *cur_sb_info.chan_rr_node[side][itrack],
+                                                                             outport_name); 
+        }
         /* Free */
         my_free(rr_node_outport_name);
         break;
@@ -717,7 +722,7 @@ int fprint_spice_one_sb_testbench(char* formatted_spice_dir,
 }
 
 /* Top function: Generate testbenches for all Connection Boxes */
-void fprint_spice_cb_testbench(char* formatted_spice_dir,
+void spice_print_cb_testbench(char* formatted_spice_dir,
                                char* circuit_name,
                                char* include_dir_path,
                                char* subckt_dir_path,
@@ -775,7 +780,7 @@ void fprint_spice_cb_testbench(char* formatted_spice_dir,
 }
 
 /* Top function: Generate testbenches for all Switch Blocks */
-void fprint_spice_sb_testbench(char* formatted_spice_dir,
+void spice_print_sb_testbench(char* formatted_spice_dir,
                                char* circuit_name,
                                char* include_dir_path,
                                char* subckt_dir_path,

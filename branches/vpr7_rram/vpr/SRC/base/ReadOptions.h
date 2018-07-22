@@ -24,7 +24,7 @@ struct s_options {
 	float constant_net_delay;
 	boolean TimingAnalysis;
 	boolean CreateEchoFile;
-  boolean Generate_Post_Synthesis_Netlist;
+    boolean Generate_Post_Synthesis_Netlist;
 	/* Clustering options */
 	boolean global_clocks;
 	int cluster_size;

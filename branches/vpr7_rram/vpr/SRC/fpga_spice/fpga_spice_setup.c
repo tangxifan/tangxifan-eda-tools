@@ -1195,6 +1195,18 @@ void fpga_spice_setup(t_vpr_setup vpr_setup,
     }
   }
 
+  /* Update global options: 
+   * 1. run_parasitic_net_estimation
+   * 2. run_testbench_load_extraction 
+   */
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_parasitic_net_estimation_off) {
+    run_parasitic_net_estimation = FALSE;
+  }
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_testbench_load_extraction_off) {
+    run_testbench_load_extraction = FALSE;
+    vpr_printf(TIO_MESSAGE_WARNING, "SPICE testbench load extraction is turned off...Accuracy loss may be expected!\n");
+  }
+
   /* Backannotation for post routing information */
   spice_backannotate_vpr_post_route_info(vpr_setup.RoutingArch,
                                          vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_parasitic_net_estimation_off);

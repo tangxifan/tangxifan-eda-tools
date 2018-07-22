@@ -37,5 +37,6 @@ int default_signal_init_value = 0;
 
 /* Default do parasitic net estimation !!!*/
 boolean run_parasitic_net_estimation = TRUE;
+boolean run_testbench_load_extraction = TRUE;
 
 char* renaming_report_postfix = "_io_renaming.rpt";

@@ -479,27 +479,29 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
       return Args;
     case OT_SPICE_DIR:
       return ReadString(Args, &Options->spice_dir);
-    case OT_PRINT_SPICE_TOP_TESTBENCH:
+    case OT_SPICE_PRINT_TOP_TESTBENCH:
       return Args;
-    case OT_PRINT_SPICE_PB_MUX_TESTBENCH:
+    case OT_SPICE_PRINT_PB_MUX_TESTBENCH:
       return Args;
-    case OT_PRINT_SPICE_CB_MUX_TESTBENCH:
+    case OT_SPICE_PRINT_CB_MUX_TESTBENCH:
       return Args;
-    case OT_PRINT_SPICE_SB_MUX_TESTBENCH:
+    case OT_SPICE_PRINT_SB_MUX_TESTBENCH:
       return Args;
-    case OT_PRINT_SPICE_CB_TESTBENCH:
+    case OT_SPICE_PRINT_CB_TESTBENCH:
       return Args;
-    case OT_PRINT_SPICE_SB_TESTBENCH:
+    case OT_SPICE_PRINT_SB_TESTBENCH:
       return Args;
-    case OT_PRINT_SPICE_GRID_TESTBENCH:
+    case OT_SPICE_PRINT_GRID_TESTBENCH:
       return Args;
-    case OT_PRINT_SPICE_LUT_TESTBENCH:
+    case OT_SPICE_PRINT_LUT_TESTBENCH:
       return Args;
-    case OT_PRINT_SPICE_HARDLOGIC_TESTBENCH:
+    case OT_SPICE_PRINT_HARDLOGIC_TESTBENCH:
       return Args;
     case OT_FPGA_SPICE_LEAKAGE_ONLY:
       return Args;
     case OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION_OFF:
+      return Args;
+    case OT_FPGA_SPICE_TESTBENCH_LOAD_EXTRACTION_OFF:
       return Args;
     /* Xifan TANG: Synthesizable Verilog */
     case OT_FPGA_VERILOG_SYN:
