@@ -1398,7 +1398,7 @@ sub run_ace_in_flow($ $ $ $ $ $ $) {
     }
   }
 
-  if (!(-e $act_file)) {
+  if (("on" eq $opt_ptr->{power})&&(!(-e $act_file))) {
     die "ERROR: Fail ACE2 for benchmark $act_file.\n";
   }
 }
@@ -2605,9 +2605,9 @@ sub parse_benchmark_selected_flow($ $) {
   } elsif ($flow_type eq "vtr_mccl") {
     &parse_vtr_flow_results("vtr_mccl", $benchmark, $conf_ptr->{flow_conf}->{vpr_arch}->{val});
   } elsif ($flow_type eq "mccl") {
-    &parse_standard_flow_results("mccl", $benchmark, $conf_ptr->{flow_conf}->{vpr_arch}->{val});
+    &parse_standard_flow_results("mccl", $benchmark, $conf_ptr->{flow_conf}->{vpr_arch}->{val}, "abc_black_box");
   } elsif ($flow_type eq "mig_mccl") {
-    &parse_standard_flow_results("mig_mccl", $benchmark, $conf_ptr->{flow_conf}->{vpr_arch}->{val});
+    &parse_standard_flow_results("mig_mccl", $benchmark, $conf_ptr->{flow_conf}->{vpr_arch}->{val}, "abc_black_box");
   } else {
     die "ERROR: unsupported flow type ($flow_type) is chosen!\n";
   } 
