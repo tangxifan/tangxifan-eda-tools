@@ -158,6 +158,7 @@ void fprint_grid_side_pin_with_given_index(FILE* fp,
                                            int x, int y) {
   int height, class_id;
   t_type_ptr type = NULL;
+  int inode;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -174,8 +175,10 @@ void fprint_grid_side_pin_with_given_index(FILE* fp,
   assert((!(0 > pin_index))&&(pin_index < type->num_pins));
   assert((!(0 > side))&&(!(side > 3)));
 
+  inode = get_rr_node_index(x, y, OPIN, pin_index, rr_node_indices);
+
   /* Output the pins on the side*/ 
-  height = grid[x][y].offset;
+  height = get_grid_pin_height(x, y, pin_index);
   class_id = type->pin_class[pin_index];
   if ((1 == type->pinloc[height][side][pin_index])) {
     /* Not sure if we need to plus a height */
@@ -228,8 +231,8 @@ void fprint_grid_side_pins(FILE* fp,
   }
 
   /* Output the pins on the side*/ 
-  height = grid[x][y].offset;
   for (ipin = 0; ipin < type->num_pins; ipin++) {
+    height = get_grid_pin_height(x, y, ipin);
     class_id = type->pin_class[ipin];
     if ((1 == type->pinloc[height][side][ipin])&&(pin_class_type == type->class_inf[class_id].type)) {
       /* Not sure if we need to plus a height */
@@ -412,7 +415,9 @@ void fprint_switch_box_mux(FILE* fp,
       /* Search all the sides of a SB, see this drive_rr_node is an INPUT of this SB */
       get_rr_node_side_and_index_in_sb_info(drive_rr_nodes[inode], cur_sb_info, IN_PORT, &side, &index);
       /* We need to be sure that drive_rr_node is part of the SB */
+      if (!((-1 != index)&&(-1 != side))) {
       assert((-1 != index)&&(-1 != side));
+      }
       /* Find grid_x and grid_y */
       grid_x = drive_rr_nodes[inode]->xlow; 
       grid_y = drive_rr_nodes[inode]->ylow; /*Plus the offset in function fprint_grid_side_pin_with_given_index */

@@ -2156,6 +2156,7 @@ int find_pb_type_idle_mode_index(t_pb_type cur_pb_type) {
       num_idle_mode++;
     }
   } 
+
   assert(1 == num_idle_mode); 
 
   return idle_mode_index;
@@ -3957,7 +3958,9 @@ void init_one_grid_num_conf_bits(int ix, int iy,
   assert((!(0 > ix))&&(!(ix > (nx + 1)))); 
   assert((!(0 > iy))&&(!(iy > (ny + 1)))); 
  
-  if ((NULL == grid[ix][iy].type)||(0 != grid[ix][iy].offset)) {
+  if ((NULL == grid[ix][iy].type)
+     ||(EMPTY_TYPE == grid[ix][iy].type)
+     ||(0 != grid[ix][iy].offset)) {
     /* Empty grid, directly return */
     return; 
   }
@@ -4378,7 +4381,9 @@ void init_one_grid_num_iopads(int ix, int iy) {
   assert((!(0 > ix))&&(!(ix > (nx + 1)))); 
   assert((!(0 > iy))&&(!(iy > (ny + 1)))); 
  
-  if ((NULL == grid[ix][iy].type)||(0 != grid[ix][iy].offset)) {
+  if ((NULL == grid[ix][iy].type)
+     ||(EMPTY_TYPE == grid[ix][iy].type)
+     ||(0 != grid[ix][iy].offset)) {
     /* Empty grid, directly return */
     return; 
   }
@@ -5723,7 +5728,9 @@ int get_lut_output_init_val(t_logical_block* lut_logical_block) {
         && ( NULL != lut_logical_block->pb->pb_graph_node)
         && ( NULL != lut_logical_block->pb->pb_graph_node->pb_type));
   lut_spice_model = lut_logical_block->pb->pb_graph_node->pb_type->parent_mode->parent_pb_type->spice_model;
+
   assert(SPICE_MODEL_LUT == lut_spice_model->type);
+
   sram_ports = find_spice_model_ports(lut_spice_model, SPICE_MODEL_PORT_SRAM, 
                                       &num_sram_port, TRUE);
   assert(1 == num_sram_port);
@@ -5772,6 +5779,39 @@ int get_lut_output_init_val(t_logical_block* lut_logical_block) {
   return output_init_val;
 }
 
+/* Deteremine the initial value of an output of a logical block 
+ * The logical block could be a LUT, a memory block or a multiplier 
+ */
+int get_logical_block_output_init_val(t_logical_block* cur_logical_block) {
+  int output_init_val = 0;
+  t_spice_model* cur_spice_model = NULL;
+
+  /* Get the spice_model of current logical_block */
+  assert((NULL != cur_logical_block->pb)
+        && ( NULL != cur_logical_block->pb->pb_graph_node)
+        && ( NULL != cur_logical_block->pb->pb_graph_node->pb_type));
+  cur_spice_model = cur_logical_block->pb->pb_graph_node->pb_type->parent_mode->parent_pb_type->spice_model;
+
+  /* Switch to specific cases*/
+  switch (cur_spice_model->type) {
+  case SPICE_MODEL_LUT:
+    /* Determine the initial value from LUT inputs */
+    output_init_val = get_lut_output_init_val(cur_logical_block);
+    break;
+  case SPICE_MODEL_HARDLOGIC:
+    /* We have no information, give a default 0 now... 
+     * TODO: find a smarter way!
+     */
+    output_init_val = 0;
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid type of SPICE MODEL (name=%s) in determining the initial output value of logical block(name=%s)!\n",
+               __FILE__, __LINE__, cur_spice_model->name, cur_logical_block->name);
+    exit(1); 
+  }
+  
+  return output_init_val;
+}
 
 /* Functions to manipulate struct sram_orgz_info */
 t_sram_orgz_info* alloc_one_sram_orgz_info() {
@@ -6900,6 +6940,9 @@ void config_spice_models_sram_port_spice_model(int num_spice_model,
   return;
 }
 
+/* Return the child_pb of a LUT pb
+ * Because the mapping information is stored in the child_pb!!!
+ */
 t_pb* get_lut_child_pb(t_pb* cur_lut_pb,
                        int mode_index) {
 
@@ -6910,6 +6953,21 @@ t_pb* get_lut_child_pb(t_pb* cur_lut_pb,
 
   return (&(cur_lut_pb->child_pbs[0][0])); 
 }
+
+/* Return the child_pb of a hardlogic  pb
+ * Because the mapping information is stored in the child_pb!!!
+ */
+t_pb* get_hardlogic_child_pb(t_pb* cur_hardlogic_pb,
+                             int mode_index) {
+
+  assert(SPICE_MODEL_HARDLOGIC == cur_hardlogic_pb->pb_graph_node->pb_type->spice_model->type);
+
+  assert(1 == cur_hardlogic_pb->pb_graph_node->pb_type->modes[mode_index].num_pb_type_children);
+  assert(1 == cur_hardlogic_pb->pb_graph_node->pb_type->num_pb);
+
+  return (&(cur_hardlogic_pb->child_pbs[0][0])); 
+}
+
 
 int get_grid_pin_height(int grid_x, int grid_y, int pin_index) {
   int pin_height;

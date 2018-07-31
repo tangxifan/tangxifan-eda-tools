@@ -451,6 +451,8 @@ char** assign_lut_truth_table(t_logical_block* mapped_logical_block,
 
 int get_lut_output_init_val(t_logical_block* lut_logical_block);
 
+int get_logical_block_output_init_val(t_logical_block* cur_logical_block);
+
 /* Functions to manipulate structs of SRAM orgz */
 t_sram_orgz_info* alloc_one_sram_orgz_info();
 
@@ -583,6 +585,9 @@ void config_spice_models_sram_port_spice_model(int num_spice_model,
                                                t_spice_model* default_sram_spice_model);
 t_pb* get_lut_child_pb(t_pb* cur_lut_pb,
                        int mode_index);
+
+t_pb* get_hardlogic_child_pb(t_pb* cur_hardlogic_pb,
+                             int mode_index);
 
 int get_grid_pin_height(int grid_x, int grid_y, int pin_index);
 
