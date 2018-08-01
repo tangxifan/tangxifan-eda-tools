@@ -26,6 +26,7 @@
 #include "fpga_spice_globals.h"
 #include "spice_globals.h"
 #include "fpga_spice_utils.h"
+#include "fpga_spice_backannotate_utils.h"
 #include "spice_utils.h"
 #include "spice_routing.h"
 #include "spice_subckt.h"
@@ -1419,7 +1420,7 @@ int fprint_spice_mux_testbench_call_one_grid_cb_muxes(FILE* fp,
 
 static 
 int fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
-                                          int switch_box_x, int switch_box_y,
+                                          t_sb cur_sb_info,
                                           int chan_side,
                                           t_rr_node* src_rr_node) {
   int inode, switch_index, mux_size;
@@ -1437,6 +1438,11 @@ int fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
 
   float average_sb_mux_input_density = 0.;
 
+  int switch_box_x, switch_box_y;
+
+  switch_box_x = cur_sb_info.x;
+  switch_box_y = cur_sb_info.y;
+
   /* Check */
   assert((!(0 > switch_box_x))&&(!(switch_box_x > (nx + 1)))); 
   assert((!(0 > switch_box_y))&&(!(switch_box_y > (ny + 1)))); 
@@ -1452,7 +1458,7 @@ int fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
   */
 
   /* Determine if the interc lies inside a channel wire, that is interc between segments */
-  if (1 == is_sb_interc_between_segments(switch_box_x, switch_box_y, src_rr_node, chan_side)) {
+  if (1 == is_rr_node_exist_opposite_side_in_sb_info(cur_sb_info, src_rr_node, chan_side)) {
     num_drive_rr_nodes = 0;
     drive_rr_nodes = NULL;
   } else {
@@ -1571,8 +1577,7 @@ int fprint_spice_mux_testbench_call_one_grid_sb_muxes(FILE* fp,
       switch (cur_sb_info.chan_rr_node_direction[side][itrack]) {
       case OUT_PORT:
         fprint_spice_mux_testbench_sb_one_mux(fp, 
-                                              cur_sb_info.x, 
-                                              cur_sb_info.y, 
+                                              cur_sb_info, 
                                               side, 
                                               cur_sb_info.chan_rr_node[side][itrack]);
         used++;

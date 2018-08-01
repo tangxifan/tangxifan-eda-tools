@@ -1321,6 +1321,24 @@ char** my_strtok(char* str,
   return ret;
 }
 
+int get_opposite_side(int side){
+ 
+  switch (side) {
+  case 0:
+    return 2;
+  case 1:
+    return 3;
+  case 2:
+    return 0;
+  case 3:
+    return 1;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid side index. Should be [0,3].\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+}
+
 char* convert_side_index_to_string(int side) {
   switch (side) {
   case 0:
@@ -2692,8 +2710,8 @@ int rr_node_drive_switch_box(t_rr_node* src_rr_node,
   assert((!(0 > switch_box_x))&&(!(switch_box_x > (nx + 1)))); 
   assert((!(0 > switch_box_y))&&(!(switch_box_y > (ny + 1)))); 
   /* Valid des_rr_node coordinator */
-  assert((!(switch_box_x < (des_rr_node->xlow-1)))&&(!(switch_box_x > (des_rr_node->xhigh+1))));
-  assert((!(switch_box_y < (des_rr_node->ylow-1)))&&(!(switch_box_y > (des_rr_node->yhigh+1))));
+  assert((!(switch_box_x < (des_rr_node->xlow - 1)))&&(!(switch_box_x > (des_rr_node->xhigh + 1))));
+  assert((!(switch_box_y < (des_rr_node->ylow - 1)))&&(!(switch_box_y > (des_rr_node->yhigh + 1))));
 
   /* Check the src_rr_node coordinator */
   switch (chan_side) {
@@ -2715,14 +2733,16 @@ int rr_node_drive_switch_box(t_rr_node* src_rr_node,
     case CHANX:
       assert(src_rr_node->ylow == src_rr_node->yhigh);
       if ((switch_box_y == src_rr_node->ylow)
-         &&(!(switch_box_x < (src_rr_node->xlow-1)))&&(!(switch_box_x > (src_rr_node->xhigh+1)))) {
+         &&(!(switch_box_x < (src_rr_node->xlow - 1)))
+         &&(!(switch_box_x > (src_rr_node->xhigh + 1)))) {
         return 1;
       }
       break;
     case CHANY:
       assert(src_rr_node->xlow == src_rr_node->xhigh);
       if ((switch_box_x == src_rr_node->xlow)
-         &&(!(switch_box_y < src_rr_node->ylow))&&(!(switch_box_y > src_rr_node->yhigh))) {
+         &&(!(switch_box_y < src_rr_node->ylow))
+         &&(!(switch_box_y > src_rr_node->yhigh))) {
         return 1;
       }
       break;
@@ -2758,7 +2778,8 @@ int rr_node_drive_switch_box(t_rr_node* src_rr_node,
     case CHANY:
       assert(src_rr_node->xlow == src_rr_node->xhigh);
       if ((switch_box_x == src_rr_node->xlow)
-         &&(!(switch_box_y < (src_rr_node->ylow-1)))&&(!(switch_box_y > (src_rr_node->yhigh+1)))) {
+         &&(!(switch_box_y < (src_rr_node->ylow - 1)))
+         &&(!(switch_box_y > (src_rr_node->yhigh + 1)))) {
         return 1;
       }
       break;
@@ -2771,7 +2792,7 @@ int rr_node_drive_switch_box(t_rr_node* src_rr_node,
   case BOTTOM:
     /* Following cases:
      *          |               
-     *        \   /  
+     *        \ | /  
      *          |
      */
     /* The destination rr_node only have one condition!!! */
@@ -2787,14 +2808,16 @@ int rr_node_drive_switch_box(t_rr_node* src_rr_node,
     case CHANX:
       assert(src_rr_node->ylow == src_rr_node->yhigh);
       if ((switch_box_y == src_rr_node->ylow)
-         &&(!(switch_box_x < (src_rr_node->xlow-1)))&&(!(switch_box_x > (src_rr_node->xhigh+1)))) {
+         &&(!(switch_box_x < (src_rr_node->xlow - 1)))
+         &&(!(switch_box_x > (src_rr_node->xhigh + 1)))) {
         return 1;
       }
       break;
     case CHANY:
       assert(src_rr_node->xlow == src_rr_node->xhigh);
       if ((switch_box_x == src_rr_node->xlow)
-         &&(!((switch_box_y+1) < src_rr_node->ylow))&&(!((switch_box_y+1) > src_rr_node->yhigh))) {
+         &&(!((switch_box_y + 1) < src_rr_node->ylow))
+         &&(!((switch_box_y + 1) > src_rr_node->yhigh))) {
         return 1;
       }
       break;
@@ -2823,14 +2846,16 @@ int rr_node_drive_switch_box(t_rr_node* src_rr_node,
     case CHANX:
       assert(src_rr_node->ylow == src_rr_node->yhigh);
       if ((switch_box_y == src_rr_node->ylow)
-         &&(!((switch_box_x+1) < src_rr_node->xlow))&&(!((switch_box_x+1) > src_rr_node->xhigh))) {
+         &&(!((switch_box_x + 1) < src_rr_node->xlow))
+         &&(!((switch_box_x + 1) > src_rr_node->xhigh))) {
         return 1;
       }
       break;
     case CHANY:
       assert(src_rr_node->xlow == src_rr_node->xhigh);
       if ((switch_box_x == src_rr_node->xlow)
-         &&(!(switch_box_y < (src_rr_node->ylow-1)))&&(!(switch_box_y > (src_rr_node->yhigh+1)))) {
+         &&(!(switch_box_y < (src_rr_node->ylow - 1)))
+         &&(!(switch_box_y > (src_rr_node->yhigh + 1)))) {
         return 1;
       }
       break;
@@ -2946,26 +2971,6 @@ void find_drive_rr_nodes_switch_box(int switch_box_x,
   assert(cur_index == (*num_drive_rr_nodes));
 
   return;
-}
-
-int is_sb_interc_between_segments(int switch_box_x, 
-                                  int switch_box_y, 
-                                  t_rr_node* src_rr_node, 
-                                  int chan_side) {
-  int inode;
-  int cur_sb_num_drive_rr_nodes = 0;
-
-  for (inode = 0; inode < src_rr_node->num_drive_rr_nodes; inode++) {
-    if (1 == rr_node_drive_switch_box(src_rr_node->drive_rr_nodes[inode], src_rr_node, 
-                                      switch_box_x, switch_box_y, chan_side)) { 
-      cur_sb_num_drive_rr_nodes++;
-    }
-  }
-  if (0 == cur_sb_num_drive_rr_nodes) {
-    return 1;
-  } else {
-    return 0;
-  }
 }
 
 /* Count the number of configuration bits of a spice model */
@@ -7085,4 +7090,47 @@ boolean check_negative_variation(float avg_val,
 
   return exist_neg_val;
 }
+
+/* Check if this cby_info exists, it may be covered by a heterogenous block */
+boolean is_cb_exist(t_rr_type cb_type,
+                    int cb_x, int cb_y) {
+  boolean cb_exist = TRUE;
+
+  /* Check */
+  assert((!(0 > cb_x))&&(!(cb_x > (nx + 1)))); 
+  assert((!(0 > cb_y))&&(!(cb_y > (ny + 1)))); 
+
+  switch (cb_type) {
+  case CHANX:
+    /* Border case */
+    /* Check the grid under this CB */
+    if ((NULL == grid[cb_x][cb_y].type) 
+       ||(EMPTY_TYPE == grid[cb_x][cb_y].type) 
+       ||(1 <  grid[cb_x][cb_y].type->height)) {
+      cb_exist = FALSE;
+    }
+    break;
+  case CHANY:
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid CB type! Should be CHANX or CHANY.\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  return cb_exist;
+}
+
+/* Count the number of IPIN rr_nodes in a CB_info struct */
+int count_cb_info_num_ipin_rr_nodes(t_cb cur_cb_info) {
+  int side;
+  int cnt = 0;
+
+  for (side = 0; side < cur_cb_info.num_sides; side++) {
+    cnt += cur_cb_info.num_ipin_rr_nodes[side];
+  }
+
+  return cnt; 
+}
+
     

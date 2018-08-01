@@ -266,6 +266,38 @@ int get_rr_node_index_in_sb_info(t_rr_node* cur_rr_node,
   return ret; /* Return an invalid value: nonthing is found*/
 }
 
+/* Check if the src_rr_node is just a wire crossing this switch box
+ *        ---------
+ *        |       |
+ *    ------------------>
+ *        |       |
+ *        ---------
+ * Strategy:
+ * Check each driver rr_node of this src_rr_node,
+ * see if they are in the opin_rr_node, chan_rr_node lists of sb_rr_info
+ */
+int is_rr_node_exist_opposite_side_in_sb_info(t_sb cur_sb_info,
+                                              t_rr_node* src_rr_node, 
+                                              int chan_side) {
+  int oppo_chan_side = -1;
+  int interc, index;
+
+  oppo_chan_side = get_opposite_side(chan_side); 
+
+  /* See if we can find the same src_rr_node in the opposite chan_side 
+   * if there is one, it means a shorted wire across the SB 
+   */
+  index = get_rr_node_index_in_sb_info(src_rr_node, cur_sb_info, oppo_chan_side, IN_PORT);
+
+  interc = 0;
+  if (-1 != index) {
+    interc = 1;
+  }
+
+  return interc;
+}
+
+
 /* Get the side and index of a given rr_node in a SB_info 
  * Return cur_rr_node_side & cur_rr_node_index
  */
@@ -1922,7 +1954,7 @@ void build_one_switch_block_info(t_sb* cur_sb, int sb_x, int sb_y,
       /* Side: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
       /* Alloc */
       cur_sb->chan_rr_node[side] = get_chan_rr_nodes(&(cur_sb->chan_width[side]), CHANX, ix, iy, 
-                                                 LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
+                                                     LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
       cur_sb->chan_rr_node_direction[side] = (enum PORTS*)my_malloc(sizeof(enum PORTS)*cur_sb->chan_width[side]);
       /* Collect rr_nodes for Tracks for left: chanx[x][y] */
       for (itrack = 0; itrack < cur_sb->chan_width[side]; itrack++) {

@@ -158,7 +158,6 @@ void fprint_grid_side_pin_with_given_index(FILE* fp,
                                            int x, int y) {
   int height, class_id;
   t_type_ptr type = NULL;
-  int inode;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -175,8 +174,6 @@ void fprint_grid_side_pin_with_given_index(FILE* fp,
   assert((!(0 > pin_index))&&(pin_index < type->num_pins));
   assert((!(0 > side))&&(!(side > 3)));
 
-  inode = get_rr_node_index(x, y, OPIN, pin_index, rr_node_indices);
-
   /* Output the pins on the side*/ 
   height = get_grid_pin_height(x, y, pin_index);
   class_id = type->pin_class[pin_index];
@@ -185,7 +182,7 @@ void fprint_grid_side_pin_with_given_index(FILE* fp,
     /* fprintf(fp, "grid[%d][%d]_pin[%d][%d][%d] ", x, y, height, side, pin_index); */
     fprintf(fp, "grid[%d][%d]_pin[%d][%d][%d] ", x, y + height, height, side, pin_index);
   } else {
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Fail to print a grid pin (x=%d, y=%d, height=%d, side=%d, index=%d)",
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Fail to print a grid pin (x=%d, y=%d, height=%d, side=%d, index=%d)\n",
               __FILE__, __LINE__, x, y, height, side, pin_index);
     exit(1);
   } 
@@ -569,7 +566,7 @@ void fprint_switch_box_interc(FILE* fp,
   */
 
   /* Determine if the interc lies inside a channel wire, that is interc between segments */
-  if (1 == is_sb_interc_between_segments(sb_x, sb_y, cur_rr_node, chan_side)) {
+  if (1 == is_rr_node_exist_opposite_side_in_sb_info(cur_sb_info, cur_rr_node, chan_side)) {
     num_drive_rr_nodes = 0;
     drive_rr_nodes = NULL;
   } else {
@@ -1242,8 +1239,12 @@ void generate_spice_routing_resources(char* subckt_dir,
   for (iy = 0; iy < (ny + 1); iy++) {
     for (ix = 1; ix < (nx + 1); ix++) {
       update_spice_models_routing_index_low(ix, iy, CHANX, arch.spice->num_spice_model, arch.spice->spice_models);
-      fprint_routing_connection_box_subckt(fp, cbx_info[ix][iy],
-                                           LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices); 
+      /* Check if this cby_info exists, it may be covered by a heterogenous block */
+      if ((TRUE == is_cb_exist(CHANX, ix, iy)) 
+         &&(0 < count_cb_info_num_ipin_rr_nodes(cbx_info[ix][iy]))) {
+        fprint_routing_connection_box_subckt(fp, cbx_info[ix][iy],
+                                             LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices); 
+      }
       update_spice_models_routing_index_high(ix, iy, CHANX, arch.spice->num_spice_model, arch.spice->spice_models);
     }
   }
@@ -1251,8 +1252,12 @@ void generate_spice_routing_resources(char* subckt_dir,
   for (ix = 0; ix < (nx + 1); ix++) {
     for (iy = 1; iy < (ny + 1); iy++) {
       update_spice_models_routing_index_low(ix, iy, CHANY, arch.spice->num_spice_model, arch.spice->spice_models);
-      fprint_routing_connection_box_subckt(fp, cby_info[ix][iy],
-                                           LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices); 
+      /* Check if this cby_info exists, it may be covered by a heterogenous block */
+      if ((TRUE == is_cb_exist(CHANY, ix, iy))
+         &&(0 < count_cb_info_num_ipin_rr_nodes(cby_info[ix][iy]))) {
+        fprint_routing_connection_box_subckt(fp, cby_info[ix][iy],
+                                             LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices); 
+      }
       update_spice_models_routing_index_high(ix, iy, CHANY, arch.spice->num_spice_model, arch.spice->spice_models);
     }
   }
