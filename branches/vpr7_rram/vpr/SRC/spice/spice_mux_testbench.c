@@ -1612,7 +1612,9 @@ int fprint_spice_mux_testbench_call_one_grid_pb_muxes(FILE* fp, int ix, int iy,
     exit(1);
   } 
   /* Print all the grid */
-  if ((NULL == grid[ix][iy].type)||(0 != grid[ix][iy].offset)) {
+  if ((NULL == grid[ix][iy].type)
+     ||(EMPTY_TYPE == grid[ix][iy].type)
+     ||(0 != grid[ix][iy].offset)) {
     return used;
   }
   /* Used blocks */
@@ -1828,17 +1830,26 @@ int fprint_spice_one_mux_testbench(char* formatted_spice_dir,
   switch (mux_tb_type) {
   case SPICE_PB_MUX_TB:
     total_pb_mux_input_density = 0.;
+    /* Output a pb_mux testbench */
     used = fprint_spice_mux_testbench_call_one_grid_pb_muxes(fp, grid_x, grid_y, LL_rr_node_indices);
-    total_pb_mux_input_density = total_pb_mux_input_density/testbench_pb_mux_cnt;
+
+    /* Check and output info. */
+    assert((0 == testbench_pb_mux_cnt)||(0 < testbench_pb_mux_cnt));
+    if (0 < testbench_pb_mux_cnt) {
+      total_pb_mux_input_density = total_pb_mux_input_density/testbench_pb_mux_cnt;
+      /* Add stimulations */
+      fprint_spice_mux_testbench_stimulations(fp, num_clocks);
+      /* Add measurements */  
+      fprint_spice_mux_testbench_measurements(fp, mux_tb_type, *(arch.spice));
+    }
+    /* 
     vpr_printf(TIO_MESSAGE_INFO,"Average density of PB MUX inputs is %.2g.\n", total_pb_mux_input_density);
-    /* Add stimulations */
-    fprint_spice_mux_testbench_stimulations(fp, num_clocks);
-    /* Add measurements */  
-    fprint_spice_mux_testbench_measurements(fp, mux_tb_type, *(arch.spice));
+    */
     break;
   case SPICE_CB_MUX_TB:
-    /* one cbx, one cby*/
+    /* one cbx or  one cby*/
     total_cb_mux_input_density = 0.;
+    /* Output a cb_mux testbench */
     switch (cb_type) {
     case CHANX:
       used = fprint_spice_mux_testbench_call_one_grid_cb_muxes(fp, cbx_info[grid_x][grid_y], LL_rr_node_indices);
@@ -1850,22 +1861,35 @@ int fprint_spice_one_mux_testbench(char* formatted_spice_dir,
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d]) Invalid connection_box_type!\n", __FILE__, __LINE__);
       exit(1);
     }
-    total_cb_mux_input_density = total_cb_mux_input_density/testbench_cb_mux_cnt;
+    /* Check and output info. */
+    assert((0 == testbench_cb_mux_cnt)||(0 < testbench_cb_mux_cnt));
+    if (0 < testbench_cb_mux_cnt) {
+      total_cb_mux_input_density = total_cb_mux_input_density/testbench_cb_mux_cnt;
+      /* Add stimulations */
+      fprint_spice_mux_testbench_stimulations(fp, num_clocks);
+      /* Add measurements */  
+      fprint_spice_mux_testbench_measurements(fp, mux_tb_type, *(arch.spice));
+    }
+    /* 
     vpr_printf(TIO_MESSAGE_INFO,"Average density of CB MUX inputs is %.2g.\n", total_cb_mux_input_density);
-    /* Add stimulations */
-     fprint_spice_mux_testbench_stimulations(fp, num_clocks);
-    /* Add measurements */  
-    fprint_spice_mux_testbench_measurements(fp, mux_tb_type, *(arch.spice));
+    */
     break;
   case SPICE_SB_MUX_TB:
     total_sb_mux_input_density = 0.;
+    /* Output a sb_mux testbench */
     used = fprint_spice_mux_testbench_call_one_grid_sb_muxes(fp, sb_info[grid_x][grid_y], LL_rr_node_indices);
-    total_sb_mux_input_density = total_sb_mux_input_density/testbench_sb_mux_cnt;
+    /* Check and output info. */
+    assert((0 == testbench_sb_mux_cnt)||(0 < testbench_sb_mux_cnt));
+    if (0 < testbench_sb_mux_cnt) {
+      total_sb_mux_input_density = total_sb_mux_input_density/testbench_sb_mux_cnt;
+      /* Add stimulations */
+      fprint_spice_mux_testbench_stimulations(fp, num_clocks);
+      /* Add measurements */  
+      fprint_spice_mux_testbench_measurements(fp, mux_tb_type, *(arch.spice));
+    }
+    /* 
     vpr_printf(TIO_MESSAGE_INFO,"Average density of SB MUX inputs is %.2g.\n", total_sb_mux_input_density);
-    /* Add stimulations */
-    fprint_spice_mux_testbench_stimulations(fp, num_clocks);
-    /* Add measurements */  
-    fprint_spice_mux_testbench_measurements(fp, mux_tb_type, *(arch.spice));
+    */
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d]) Invalid mux_tb_type!\n", __FILE__, __LINE__);
@@ -1885,8 +1909,9 @@ int fprint_spice_one_mux_testbench(char* formatted_spice_dir,
   free_muxes_llist(testbench_muxes_head);
 
   if (0 < testbench_mux_cnt) {
-    vpr_printf(TIO_MESSAGE_INFO, "Writing Grid[%d][%d] SPICE %s Test Bench for %s...\n", 
+    /* vpr_printf(TIO_MESSAGE_INFO, "Writing Grid[%d][%d] SPICE %s Test Bench for %s...\n", 
                grid_x, grid_y, mux_tb_name, circuit_name);
+    */
     /* Push the testbench to the linked list */
     tb_head = add_one_spice_tb_info_to_llist(tb_head, mux_testbench_file_path, max_sim_num_clock_cycles); 
     used = 1;
@@ -1912,11 +1937,13 @@ void spice_print_mux_testbench(char* formatted_spice_dir,
   int ix, iy;
   int cnt = 0;
   int used = 0;
+  int bypass_cnt = 0;
 
   /* Depend on the type of testbench, we generate the a list of testbenches */
   switch (mux_tb_type) {
   case SPICE_PB_MUX_TB:
     cnt = 0;
+    vpr_printf(TIO_MESSAGE_INFO,"Generating Grid multiplexer testbench...\n");
     for (ix = 1; ix < (nx+1); ix++) {
       for (iy = 1; iy < (ny+1); iy++) {
         mux_testbench_name = (char*)my_malloc(sizeof(char)*( strlen(circuit_name) 
@@ -1938,12 +1965,20 @@ void spice_print_mux_testbench(char* formatted_spice_dir,
     } 
     /* Update the global counter */
     num_used_grid_mux_tb = cnt;
-    vpr_printf(TIO_MESSAGE_INFO,"No. of generated PB_MUX testbench = %d\n", num_used_grid_tb);
+    vpr_printf(TIO_MESSAGE_INFO,"No. of generated Grid multiplexer testbench = %d\n", num_used_grid_mux_tb);
     break;
   case SPICE_CB_MUX_TB:
     cnt = 0;
+    /* X-channel Connection Blocks */
+    vpr_printf(TIO_MESSAGE_INFO,"Generating X-channel Connection Block multiplexer testbench...\n");
     for (iy = 0; iy < (ny+1); iy++) {
       for (ix = 1; ix < (nx+1); ix++) {
+        /* Bypass non-exist CBs */
+        if ((FALSE == is_cb_exist(CHANX, ix, iy))
+           ||(0 == count_cb_info_num_ipin_rr_nodes(cbx_info[ix][iy]))) {
+          bypass_cnt++;
+          continue;
+        }
         mux_testbench_name = (char*)my_malloc(sizeof(char)*( strlen(circuit_name) 
                                               + 4 + strlen(my_itoa(ix)) + 2 + strlen(my_itoa(iy)) + 1
                                               + strlen(spice_cb_mux_testbench_postfix)  + 1 ));
@@ -1960,8 +1995,17 @@ void spice_print_mux_testbench(char* formatted_spice_dir,
         my_free(mux_testbench_name);
       }  
     } 
+
+    /* Y-channel Connection Blocks */
+    vpr_printf(TIO_MESSAGE_INFO,"Generating Y-channel Connection Block multiplexer testbench...\n");
     for (ix = 0; ix < (nx+1); ix++) {
       for (iy = 1; iy < (ny+1); iy++) {
+        /* Bypass non-exist CBs */
+        if ((FALSE == is_cb_exist(CHANY, ix, iy))
+           ||(0 == count_cb_info_num_ipin_rr_nodes(cby_info[ix][iy]))) {
+          bypass_cnt++;
+          continue;
+        }
         mux_testbench_name = (char*)my_malloc(sizeof(char)*( strlen(circuit_name) 
                                               + 4 + strlen(my_itoa(ix)) + 2 + strlen(my_itoa(iy)) + 1
                                               + strlen(spice_cb_mux_testbench_postfix)  + 1 ));
@@ -1980,10 +2024,13 @@ void spice_print_mux_testbench(char* formatted_spice_dir,
     } 
     /* Update the global counter */
     num_used_cb_mux_tb = cnt;
-    vpr_printf(TIO_MESSAGE_INFO,"No. of generated CB_MUX testbench = %d\n", num_used_cb_mux_tb);
+    vpr_printf(TIO_MESSAGE_INFO,"No. of generated Connection Block multiplexer testbench = %d\n", num_used_cb_mux_tb);
+    vpr_printf(TIO_MESSAGE_INFO, "Bypass %d Connection Blocks that does no exist in the architecture.\n",
+               bypass_cnt);
     break;
   case SPICE_SB_MUX_TB:
     cnt = 0;
+    vpr_printf(TIO_MESSAGE_INFO,"Generating Switch Block multiplexer testbench...\n");
     for (ix = 0; ix < (nx+1); ix++) {
       for (iy = 0; iy < (ny+1); iy++) {
         mux_testbench_name = (char*)my_malloc(sizeof(char)*( strlen(circuit_name) 
@@ -2004,7 +2051,7 @@ void spice_print_mux_testbench(char* formatted_spice_dir,
     } 
     /* Update the global counter */
     num_used_sb_mux_tb = cnt;
-    vpr_printf(TIO_MESSAGE_INFO,"No. of generated SB_MUX testbench = %d\n", num_used_sb_mux_tb);
+    vpr_printf(TIO_MESSAGE_INFO,"No. of generated Switch Block multiplexer testbench = %d\n", num_used_sb_mux_tb);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d]) Invalid mux_tb_type!\n", __FILE__, __LINE__);

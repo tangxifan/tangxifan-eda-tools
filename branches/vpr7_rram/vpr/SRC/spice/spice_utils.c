@@ -2938,8 +2938,10 @@ char* fprint_spice_testbench_rr_node_load_version(FILE* fp, int* testbench_load_
         to_node = rr_node[cur_rr_node.edges[iedge]]; 
         switch (to_node.type) {
         case IPIN:
+          /* The assert only works for homogeneous blocks 
           assert(to_node.xhigh == to_node.xlow);
           assert(to_node.yhigh == to_node.ylow);
+          */
           if (((cur_x == to_node.xlow)&&(cur_y == to_node.ylow))
              ||((cur_x == to_node.xlow)&&((cur_y + 1) == to_node.ylow))) {
             /* We find a CB! */
@@ -3022,8 +3024,10 @@ char* fprint_spice_testbench_rr_node_load_version(FILE* fp, int* testbench_load_
         to_node = rr_node[cur_rr_node.edges[iedge]]; 
         switch (to_node.type) {
         case IPIN:
+          /* The assert only works for homogeneous blocks 
           assert(to_node.xhigh == to_node.xlow);
           assert(to_node.yhigh == to_node.ylow);
+          */
           if (((cur_y == to_node.ylow)&&(cur_x == to_node.xlow))
              ||((cur_y == to_node.xlow)&&((cur_x + 1) == to_node.xlow))) {
             /* We find a CB! */
@@ -3101,8 +3105,10 @@ void fprint_spice_testbench_one_cb_mux_loads(FILE* fp, int* testbench_load_cnt,
   t_pb* cb_out_pb = NULL;
 
   assert(IPIN == src_rr_node->type);
+  /* The assert only works for homogeneous blocks 
   assert(src_rr_node->xlow == src_rr_node->xhigh);
   assert(src_rr_node->ylow == src_rr_node->yhigh);
+  */
 
   cb_out_grid_type = grid[src_rr_node->xlow][src_rr_node->ylow].type; 
   assert(NULL != cb_out_grid_type);

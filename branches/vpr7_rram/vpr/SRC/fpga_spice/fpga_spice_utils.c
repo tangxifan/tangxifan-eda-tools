@@ -1797,14 +1797,27 @@ int find_pb_mapped_logical_block_rec(t_pb* cur_pb,
 
   if ((pb_spice_model == cur_pb->pb_graph_node->pb_type->spice_model)
     &&(0 == strcmp(cur_pb->spice_name_tag, pb_spice_name_tag))) {
-    /* Special for LUT... They have sub modes!!!*/
-    if (SPICE_MODEL_LUT == pb_spice_model->type) {
-      mode_index = cur_pb->mode;
+    /* Return the logic block we may find */
+    switch (pb_spice_model->type) {
+    case SPICE_MODEL_LUT :
+      /* Special for LUT... They have sub modes!!!*/
       assert(NULL != cur_pb->child_pbs);
       return cur_pb->child_pbs[0][0].logical_block; 
+    case SPICE_MODEL_FF:
+      assert(pb_spice_model == logical_block[cur_pb->logical_block].mapped_spice_model);
+      return cur_pb->logical_block;
+    case SPICE_MODEL_HARDLOGIC:
+      if (NULL != cur_pb->child_pbs) {
+        return cur_pb->child_pbs[0][0].logical_block; 
+      } else {
+        assert(pb_spice_model == logical_block[cur_pb->logical_block].mapped_spice_model);
+        return cur_pb->logical_block;
+      } 
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid spice model type!\n",
+                 __FILE__, __LINE__);
+      exit(1);
     }
-    assert(pb_spice_model == logical_block[cur_pb->logical_block].mapped_spice_model);
-    return cur_pb->logical_block;
   }
   
   /* Go recursively ... */
@@ -7073,7 +7086,7 @@ void check_spice_models_grid_tb_cnt(int num_spice_models,
     if (spice_model_type_to_check != spice_model[imodel].type) {
       continue;
     }
-    assert(spice_model[imodel].tb_cnt = spice_model[imodel].grid_index_high[grid_x][grid_y]);
+    assert(spice_model[imodel].tb_cnt == spice_model[imodel].grid_index_high[grid_x][grid_y]);
   }
 
   return;

@@ -320,8 +320,8 @@
       <!-- Hard logic definition for heterogenous blocks -->
      <spice_model type="hard_logic" name="ram_32768x1" prefix="ram_32767x1" spice_netlist="/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/ram.sp" verilog_netlist="/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/ram.v">
          <design_technology type="cmos"/>
-         <input_buffer exist="off" spice_model_name="INVTX1"/>
-         <output_buffer exist="off" spice_model_name="INVTX1"/>
+         <input_buffer exist="on" spice_model_name="INVTX1"/>
+         <output_buffer exist="on" spice_model_name="INVTX1"/>
          <port type="input" prefix="addr" size="15"/>
          <port type="input" prefix="data" size="1"/>
          <port type="input" prefix="we" size="1"/>
@@ -330,8 +330,8 @@
       </spice_model>
       <spice_model type="hard_logic" name="mult_36x36" prefix="mult_36x36" spice_netlist="/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/mult.sp" verilog_netlist="/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/mult.v">
          <design_technology type="cmos"/>
-         <input_buffer exist="off" spice_model_name="INVTX1"/>
-         <output_buffer exist="off" spice_model_name="INVTX1"/>
+         <input_buffer exist="on" spice_model_name="INVTX1"/>
+         <output_buffer exist="on" spice_model_name="INVTX1"/>
          <port type="input" prefix="a" size="36"/>
          <port type="input" prefix="b" size="36"/>
          <port type="output" prefix="out" size="72"/>
