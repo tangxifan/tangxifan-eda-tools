@@ -180,7 +180,7 @@ void fprint_grid_side_pin_with_given_index(FILE* fp,
   if ((1 == type->pinloc[height][side][pin_index])) {
     /* Not sure if we need to plus a height */
     /* fprintf(fp, "grid[%d][%d]_pin[%d][%d][%d] ", x, y, height, side, pin_index); */
-    fprintf(fp, "grid[%d][%d]_pin[%d][%d][%d] ", x, y + height, height, side, pin_index);
+    fprintf(fp, "grid[%d][%d]_pin[%d][%d][%d] ", x, y, height, side, pin_index);
   } else {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Fail to print a grid pin (x=%d, y=%d, height=%d, side=%d, index=%d)\n",
               __FILE__, __LINE__, x, y, height, side, pin_index);

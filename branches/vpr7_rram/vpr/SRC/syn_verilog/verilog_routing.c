@@ -276,7 +276,7 @@ void dump_verilog_grid_side_pin_with_given_index(FILE* fp, t_rr_type pin_type,
     if (TRUE == dump_port_type) {
       fprintf(fp, "%s ", verilog_port_type);
     }
-    fprintf(fp, " grid_%d__%d__pin_%d__%d__%d_", x, y + height, height, side, pin_index);
+    fprintf(fp, " grid_%d__%d__pin_%d__%d__%d_", x, y, height, side, pin_index);
     if (TRUE == dump_port_type) {
       fprintf(fp, ",\n");
     }
