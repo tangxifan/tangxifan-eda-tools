@@ -10,10 +10,10 @@ X2_n in2 sel2 out 0 nfet size='size'
 X3_n in3 sel3 out 0 nfet size='size'
 X4_n in4 sel4 out 0 nfet size='size'
 
-X0_p in0 sel0_inv out Vdd pfet size='size_pnratio'
-X1_p in1 sel1_inv out Vdd pfet size='size_pnratio'
-X2_p in2 sel2_inv out Vdd pfet size='size_pnratio'
-X3_p in3 sel3_inv out Vdd pfet size='size_pnratio'
-X4_p in4 sel4_inv out Vdd pfet size='size_pnratio'
+X0_p in0 sel0_inv out Vdd pfet size='size*pnratio'
+X1_p in1 sel1_inv out Vdd pfet size='size*pnratio'
+X2_p in2 sel2_inv out Vdd pfet size='size*pnratio'
+X3_p in3 sel3_inv out Vdd pfet size='size*pnratio'
+X4_p in4 sel4_inv out Vdd pfet size='size*pnratio'
 	
 .ends

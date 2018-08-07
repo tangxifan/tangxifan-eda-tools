@@ -10,7 +10,7 @@ from subprocess import Popen, PIPE, STDOUT
 my_dir = ""
 
 if len(sys.argv) < 9:
-    print ("Usage: spice.py <tech_file> <tech_size> <Vdd> <P/N> <temp> <activity [hz]> <component_type> <size> <nmos_size>")
+    print ("Usage: spice.py <tech_file> <tech_size> <lib_type> <Vdd> <P/N> <temp> <activity [hz]> <component_type> <size> <nmos_size> ")
     sys.exit();
     
 my_dir = os.path.dirname(os.path.realpath(__file__));
@@ -18,17 +18,18 @@ my_dir = os.path.dirname(os.path.realpath(__file__));
 tech_file = sys.argv[1]
 tech_file = os.path.abspath(tech_file)
 tech_size = sys.argv[2]
-Vdd = sys.argv[3]
-pn = sys.argv[4]
-temp = sys.argv[5]
-activity = sys.argv[6]
-type = sys.argv[7]
-size = sys.argv[8]
+lib_type = sys.argv[3]
+Vdd = sys.argv[4]
+pn = sys.argv[5]
+temp = sys.argv[6]
+activity = sys.argv[7]
+type = sys.argv[8]
+size = sys.argv[9]
 
 do_nmos_size = False
-if len(sys.argv) > 9:
+if len(sys.argv) > 10:
     do_nmos_size = True
-    nmos_size = sys.argv[9]
+    nmos_size = sys.argv[10]
 
 if (activity == "h"):
     na = 0
@@ -61,7 +62,7 @@ f.write ("Auto Spice\n")
     
 m = (re.search("\.l$", tech_file) or re.search("\.lib$", tech_file))
 if (m) : 
-  f.write (".lib \'" + tech_file + "\' TT\n")
+  f.write (".lib \'" + tech_file + "\' " + lib_type + "\n")
 else :
   f.write (".include \'" + tech_file + "\'\n")
 

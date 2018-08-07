@@ -21,7 +21,6 @@ sub muxes;
 sub nmos_leakages;
 
 
-#my $hspice      = "/edadk/bin/eda snps hspice";
 my $hspice      = "hspice";
 my $script_path = ( fileparse( abs_path($0) ) )[1];
 my $spice_path  = File::Spec->join( $script_path, "spice" );
@@ -78,7 +77,7 @@ if ($quick_test) {
 my $number_arguments = @ARGV;
 if ( $number_arguments < 4 ) {
 	print(
-		"usage: generate_cmos_tech_data.pl <tech_file> <tech_size> <Vdd> <temp>\n"
+		"usage: generate_cmos_tech_data.pl <tech_file> <tech_size> <Vdd> <temp> <lib_type>\n"
 	);
 	exit(-1);
 }
@@ -307,11 +306,11 @@ sub components() {
 				my $cmd;
 				if ( $type == 0 ) {
 					$cmd =
-					  "python $spice_script $tech_file $tech_size_nm $Vdd $optimal_p_to_n $temp h $component_name $size";
+					  "python $spice_script $tech_file $tech_size_nm $lib_type $Vdd $optimal_p_to_n $temp h $component_name $size ";
 				}
 				else {
 					$cmd =
-					  "python $spice_script $tech_file $tech_size_nm $Vdd $optimal_p_to_n $temp h $component_name $num_inputs $size";
+					  "python $spice_script $tech_file $tech_size_nm $lib_type $Vdd $optimal_p_to_n $temp h $component_name $num_inputs $size";
 				}
 
 				#				print $cmd;
@@ -365,7 +364,7 @@ sub get_nmos_leakage_for_Vds {
 
 	my $s = spice_header();
 	$s = $s . "Vin in 0 " . $Vds . "\n";
-    $s = $s . spice_gen_one_nfet_line("X0", "in 0 0 0", "nfet", $size);
+    $s = $s . spice_gen_one_fet_line("X0", "in 0 0 0", "nfet", $size);
 	$s = $s . spice_sim(10);
 	$s = $s . ".measure tran leakage avg I(Vin)\n";
 	$s = $s . spice_end();
@@ -933,7 +932,7 @@ sub spice_run {
 	#system("cd $run_dir");
     #`source /softs/synopsys/hspice/2010.12/hspice/bin/cshrc.meta`;
     #`csh -cx "hspice -i $spice_file -o $spice_out $hdlpath"`;
-    `/bin/csh -cx 'hspice -i $spice_file -o $spice_out'`;
+    `/bin/csh -cx '$hspice -i $spice_file -o $spice_out'`;
 
 	my $spice_data;
 	{
