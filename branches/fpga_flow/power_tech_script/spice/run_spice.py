@@ -59,7 +59,7 @@ f = open(file_path, 'w')
 
 f.write ("Auto Spice\n")
     
-m = re.search("\.lib$", tech_file)
+m = (re.search("\.l$", tech_file) or re.search("\.lib$", tech_file))
 if (m) : 
   f.write (".lib \'" + tech_file + "\' TT\n")
 else :
@@ -102,7 +102,7 @@ f.close()
 #os.system('source /softs/synopsys/hspice/2010.12/hspice/bin/cshrc.meta')
 
 #cmd = "csh -cx \"hspice64 " + file_path + " -hdlpath /softs/synopsys/hpsice/2010.12/hspice/include\""
-cmd = "csh -cx \"hspice " + file_path + "\"" #+ " -hdlpath /softs/synopsys/hpsice/2010.12/hspice/include\""
+cmd = "csh -cx \"hspice64 " + file_path + "\"" #+ " -hdlpath /softs/synopsys/hpsice/2010.12/hspice/include\""
 #cmd = "/edadk/bin/eda/ snps hspice " + file_path # + " -hdlpath /softs/synopsys/hpsice/2010.12/hspice/include"
 #print cmd 
 

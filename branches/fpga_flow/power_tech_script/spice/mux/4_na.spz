@@ -6,9 +6,9 @@ Vref Vref 0 Vol
 Vsram sram1 0 Vol
 Vbuf Vbuf 0 Vol
 
-X1 Vdrive 0 mida sram1 0 mux2 size=1
-X2 0 0 midb sram1 0 mux2 size=1
-X3 mida midb out sram1 0 mux2 size=1
+X1 Vdrive 0 mida sram1 0 0 sram1 mux2 size=1
+X2 0 0 midb sram1 0 0 sram1 mux2 size=1
+X3 mida midb out sram1 0 0 sram1 mux2 size=1
 
 
 

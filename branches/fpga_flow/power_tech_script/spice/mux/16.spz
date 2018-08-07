@@ -18,11 +18,11 @@ Xref_2 in x Vref 0 inv nsize=2 psize='2*pnratio'
 Xref_3 in x Vref 0 inv nsize=2 psize='2*pnratio'
 Xref_4 in x Vref 0 inv nsize=2 psize='2*pnratio'
 
-X1 a a a a mida sram1 0 0 0 mux4 size='nmos_size'
-X2 a a a a midb sram1 0 0 0 mux4 size='nmos_size'
-X3 a a a a midc sram1 0 0 0 mux4 size='nmos_size'
-X4 a a a a midd sram1 0 0 0 mux4 size='nmos_size'
-X5 mida midb midc midd out sram1 0 0 0 mux4 size='nmos_size'
+X1 a a a a mida sram1 0 0 0 0 sram1 sram1 sram1 mux4 size='nmos_size'
+X2 a a a a midb sram1 0 0 0 0 sram1 sram1 sram1 mux4 size='nmos_size'
+X3 a a a a midc sram1 0 0 0 0 sram1 sram1 sram1 mux4 size='nmos_size'
+X4 a a a a midd sram1 0 0 0 0 sram1 sram1 sram1 mux4 size='nmos_size'
+X5 mida midb midc midd out sram1 0 0 0 0 sram1 sram1 sram1 mux4 size='nmos_size'
 
 
 .TEMP tempr

@@ -6,12 +6,12 @@ Vref Vref 0 Vol
 Vsram sram1 0 Vol
 Vbuf Vbuf 0 Vol
 
-X1 Vdrive 0 0 0 0 mida sram1 0 0 0 0 mux5 size=1
-X2 0 0 0 0 0 midb sram1 0 0 0 0 mux5 size=1
-X3 0 0 0 0 0 midc sram1 0 0 0 0 mux5 size=1
-X4 0 0 0 0 0 midd sram1 0 0 0 0 mux5 size=1
-X5 0 0 0 0 0 mide sram1 0 0 0 0 mux5 size=1
-X6 mida midb midc midd mide out sram1 0 0 0 0 mux5 size=1
+X1 Vdrive 0 0 0 0 mida sram1 0 0 0 0 0 sram1 sram1 sram1 sram1  mux5 size=1
+X2 0 0 0 0 0 midb sram1 0 0 0 0 0 sram1 sram1 sram1 sram1  mux5 size=1
+X3 0 0 0 0 0 midc sram1 0 0 0 0 0 sram1 sram1 sram1 sram1  mux5 size=1
+X4 0 0 0 0 0 midd sram1 0 0 0 0 0 sram1 sram1 sram1 sram1  mux5 size=1
+X5 0 0 0 0 0 mide sram1 0 0 0 0 0 sram1 sram1 sram1 sram1  mux5 size=1
+X6 mida midb midc midd mide out sram1 0 0 0 0 0 sram1 sram1 sram1 sram1  mux5 size=1
 
 
 .TEMP tempr

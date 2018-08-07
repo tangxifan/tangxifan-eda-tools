@@ -37,9 +37,12 @@ my $pn_interval           = 0.1;
 my $pn_search_lower_bound = 1; # For TSMC 40nm
 my $pn_search_upper_bound = 4.0;
 
+# Max width of a transistor
+my $max_w_per_trans = 5; # Forced by TSMC 40nm, can be adpated to other technology
+
 # Transistor Capacitances
-#my $max_size      = 500;
-my $max_size      = 5; # To Fit TSMC 40nm
+my $max_size      = 500;
+#my $max_size      = 5; # To Fit TSMC 40nm
 my $size_interval = 1.05;
 
 # NMOS Pass transistor sizes
@@ -59,8 +62,8 @@ if ($quick_test) {
 	$pn_interval           = 1.0;
 	$pn_search_lower_bound = 1.0;
 	$pn_search_upper_bound = 3.0;
-	#$max_size              = 10;
-	$max_size              = 5; # To fit TSMC 40nm
+	$max_size              = 10;
+	#$max_size              = 5; # To fit TSMC 40nm
 	$size_interval         = 1.5;
 	$max_mux_size          = 4;
 	$vin_intervals         = 3;
@@ -86,6 +89,7 @@ my $tech_size      = shift(@ARGV);
 my $Vdd            = shift(@ARGV);
 my $temp           = shift(@ARGV);
 my $tech_file_name = basename($tech_file);
+my $lib_type = shift(@ARGV);
 #my $tech_file_name = $tech_file;
 my $cwd = getcwd();
 
@@ -235,7 +239,7 @@ sub muxes() {
 			print "\t\t\t<multiplexer size=\"" . $i . "\">\n";
 			for ( my $j = 0 ; $j <= $vin_intervals ; $j++ ) {
 				my $Vin = $Vdd * ( 0.5 + 0.5 * ( $j / $vin_intervals ) );
-				my ( $min, $max ) = get_mux_out_voltage( $size, $i, $Vin );
+				my ( $min, $max ) = get_mux_out_voltage( $size, $i, $Vin, $optimal_p_to_n );
 				print "\t\t\t\t<voltages in=\"" . $Vin
 				  . "\" out_min=\""
 				  . $min
@@ -281,8 +285,8 @@ sub components() {
 		[ "buf_levr", [1], [ 1, 4, 16, 64 ], 0 ],
 		[ "mux", [ 4, 9, 16, 25 ], \@nmos_pass_sizes, 1 ],
 		[ "lut", [ 2, 4, 6 ], \@nmos_pass_sizes, 1 ],
-		#[ "dff", [1], [ 1, 2, 4, 8 ], 0 ]
-		[ "dff", [1], [ 1 ], 0 ]
+		[ "dff", [1], [ 1, 2, 4, 8 ], 0 ]
+		#[ "dff", [1], [ 1 ], 0 ]
 	);
 
 	print "\t<components>\n";
@@ -361,7 +365,7 @@ sub get_nmos_leakage_for_Vds {
 
 	my $s = spice_header();
 	$s = $s . "Vin in 0 " . $Vds . "\n";
-	$s = $s . "X0 in 0 0 0 nfet size='" . $size . "'\n";
+    $s = $s . spice_gen_one_nfet_line("X0", "in 0 0 0", "nfet", $size);
 	$s = $s . spice_sim(10);
 	$s = $s . ".measure tran leakage avg I(Vin)\n";
 	$s = $s . spice_end();
@@ -399,17 +403,38 @@ sub get_mux_out_voltage {
 	my $size     = shift(@_);
 	my $mux_size = shift(@_);
 	my $Vin      = shift(@_);
+	my $pn      = shift(@_);
 
 	my $s = spice_header();
+
 	$s = $s . "Vin in 0 " . $Vin . "\n";
-	$s = $s . "X0a in Vdd outa 0 nfet size='" . $size . "'\n";
+    # Xifan: Support transmission gates 
+    # NMOS 
+    $s = $s . spice_gen_one_fet_line("X0a", "in Vdd outa 0", "nfet", $size);
+    # PMOS 
+    $s = $s . spice_gen_one_fet_line("X0a_cpt", "in 0 outa Vdd", "pfet", $size*$pn);
+
+
 	for ( my $i = 1 ; $i < $mux_size ; $i++ ) {
-		$s = $s . "X" . $i . "a in 0 outa 0 nfet size='" . $size . "'\n";
+      # NMOS 
+      $s = $s . spice_gen_one_fet_line("X$i"."a", "in 0 outa 0", "nfet", $size);
+      # PMOS 
+      $s = $s . spice_gen_one_fet_line("X$i"."a_cpt", "in Vdd outa Vdd", "pfet", $size);
 	}
-	$s = $s . "X0b in Vdd outb 0 nfet size='" . $size . "'\n";
+
+    # NMOS 
+    $s = $s . spice_gen_one_fet_line("X0b", "in Vdd outb 0", "nfet", $size);
+    # PMOS 
+    $s = $s . spice_gen_one_fet_line("X0b_cpt", "in 0 outb Vdd", "nfet", $size);
+
 	for ( my $i = 1 ; $i < $mux_size ; $i++ ) {
-		$s = $s . "X" . $i . "b 0 0 outb 0 nfet size='" . $size . "'\n";
+      # NMOS 
+      $s = $s. spice_gen_one_fet_line("X$i"."b", "0 0 outb 0", "nfet", $size);
+      # PMOS 
+      $s = $s. spice_gen_one_fet_line("X$i"."b_cpt", "0 Vdd outb Vdd", "nfet", $size);
 	}
+
+
 	$s = $s . spice_sim(10);
 	$s = $s . ".measure tran vout_min avg V(outb)\n";
 	$s = $s . ".measure tran vout_max avg V(outa)\n";
@@ -781,8 +806,8 @@ sub spice_header {
 
 	$s = $s . "Automated spice simuation: " . localtime() . "\n";
     $s = $s . ".global Vdd gnd\n";
-    if ($tech_file =~ m/\.lib$/) {
-	  $s = $s . ".lib \'$tech_file\' TT\n";
+    if (($tech_file =~ m/\.lib$/) or ($tech_file =~ m/\.l$/)) {
+	  $s = $s . ".lib \'$tech_file\' $lib_type\n";
     } else {
 	  $s = $s . ".include \'$tech_file\'\n";
     }
@@ -800,6 +825,67 @@ sub spice_header {
 	$s = $s . "Vdd Vdd 0 'Vol'\n";
 
 	return $s;
+}
+
+# Xifan Tang: a sub function to format all the lines that dumping a FET 
+sub spice_gen_one_fet_line($ $ $ $ $) {
+  my ($fet_prefix, $fet_port_map, $fet_name, $fet_width, $fet_chanl) = @_;   
+  my ($cur_fet_w);
+
+  my $s = "";
+
+  if ($fet_width <= $max_w_per_trans) {
+    my ($j, $res_fet_w) = (int($fet_width / $max_w_per_trans) + 1, $fet_width % $max_w_per_trans);
+    $s = $s . "$fet_prefix\_0 $fet_port_map $fet_name size='$fet_width'\n";
+  } else {
+    for (my $i = 0; $i < ceil($fet_width / $max_w_per_trans); $i++) { 
+      $cur_fet_w = $fet_width / (ceil($fet_width / $max_w_per_trans));
+      $s = $s . "$fet_prefix\_$i $fet_port_map $fet_name size='$cur_fet_w'\n";
+    }
+  }
+
+  return $s;
+}
+
+# Xifan Tang: a sub function to format all the lines that dumping a FET 
+sub spice_gen_one_fetz_line($ $ $ $ $) {
+  my ($fet_prefix, $fet_port_map, $fet_name, $fet_width, $fet_chanl) = @_;   
+  my ($cur_fet_w);
+
+  my $s = "";
+
+  if ( $fet_width <= $max_w_per_trans) {
+    $s = $s . "$fet_prefix\_0 $fet_port_map $fet_name wsize='$fet_width' lsize='$fet_chanl'\n";
+  } else {
+    for (my $i = 0; $i < ceil($fet_width / $max_w_per_trans); $i++) { 
+      $cur_fet_w = $fet_width / (ceil($fet_width / $max_w_per_trans));
+      $s = $s . "$fet_prefix\_$i $fet_port_map $fet_name wsize='$cur_fet_w' lsize='$fet_chanl'\n";
+    }
+  }
+
+  return $s;
+}
+
+# Xifan Tang: a sub function to format all the lines that dumping a FET 
+sub spice_gen_one_inv_line($ $ $ $ $) {
+  my ($inv_prefix, $inv_port_map, $inv_name, $nfet_w, $pn) = @_;   
+  my ($cur_nfet_w, $cur_pfet_w);
+
+  my $s = "";
+
+  if ($nfet_w * $pn <= $max_w_per_trans) {
+    $cur_nfet_w = $nfet_w;
+    $cur_pfet_w = $nfet_w * $pn;
+    $s = $s . "$inv_prefix\_0 $inv_port_map $inv_name nsize='$cur_nfet_w' psize='$cur_pfet_w'\n";
+  } else {
+    for (my $i = 0; $i < ceil($nfet_w * $pn / $max_w_per_trans); $i++) { 
+      $cur_nfet_w = $nfet_w / (ceil($nfet_w * $pn / $max_w_per_trans));
+      $cur_pfet_w = $cur_nfet_w * $pn;
+      $s = $s . "$inv_prefix\_$i $inv_port_map $inv_name nsize='$cur_nfet_w' psize='$cur_pfet_w'\n";
+    }
+  }
+
+  return $s;
 }
 
 sub spice_sim {
@@ -846,7 +932,8 @@ sub spice_run {
 	#system("$hspice $spice_file 1> $spice_out 2 > /dev/null");
 	#system("cd $run_dir");
     #`source /softs/synopsys/hspice/2010.12/hspice/bin/cshrc.meta`;
-    `csh -cx "hspice -i $spice_file -o $spice_out $hdlpath"`;
+    #`csh -cx "hspice -i $spice_file -o $spice_out $hdlpath"`;
+    `/bin/csh -cx 'hspice -i $spice_file -o $spice_out'`;
 
 	my $spice_data;
 	{
@@ -882,11 +969,10 @@ sub get_leakage_long {
 
 	$s = $s . "Vleak Vleak 0 Vol\n";
 	if ( $type eq "nmos" ) {
-		$s = $s . "X0 Vleak 0 0 0 nfetz wsize=" . $w . " lsize=" . $l . "\n";
+        $s = $s. spice_gen_one_fetz_line("X0", "Vleak 0 0 0", "nfetz", $w, $l);
 	}
 	else {
-		$s =
-		  $s . "X0 0 Vdd Vleak Vdd pfetz wsize=" . $w . " lsize=" . $l . "\n";
+        $s = $s. spice_gen_one_fetz_line("X0", "0 Vdd Vleak Vdd", "pfetz", $w, $l);
 	}
 
 	$s = $s . spice_sim(100);
@@ -906,21 +992,11 @@ sub get_gate_leakage {
 
 	if ( $type eq "nmos" ) {
 		$s = $s . "Vleak Vdd VleakL 0\n";
-		$s = $s
-		  . "X0 VleakL out Vdd 0 inv nsize='"
-		  . $size
-		  . "' psize='"
-		  . ( $size * $pn ) . "'\n";
+        $s = $s . spice_gen_one_inv_line("X0", "VleakL out Vdd 0", "inv", $size, $pn);
 	}
 	else {
 		$s = $s . "Vleak VleakH 0 0\n";
-		$s = $s
-		  . "X0 VleakH out Vdd 0 inv nsize='"
-		  #. ( $size / $pn )
-		  .  $size  # Fix for TSMC 40nm
-		  . "' psize='"
-		  #. $size . "'\n";
-		  . ( $size * $pn ) . "'\n"; #Fix for TSMC 40nm
+        $s = $s . spice_gen_one_inv_line("X0", "VleakH out Vdd 0", "inv", $size, $pn);
 	}
 
 	$s = $s . spice_sim(100);
@@ -947,21 +1023,13 @@ sub get_leakage {
 
 	if ( $type eq "nmos" ) {
 		$s = $s . "Vleak Vleak 0 0\n";
-		$s = $s
-		  . "X0 0 out Vdd Vleak inv nsize='"
-		  . $size
-		  . "' psize='"
-		  . ( $size * $pn ) . "'\n";
+        # Xifan : adapt to TSMC 40nm lib
+        $s =  $s. spice_gen_one_inv_line("X0", "0 out Vdd Vleak", "inv", $size, $pn);
 	}
 	else {
 		$s = $s . "Vleak Vdd VleakL 0\n";
-		$s = $s
-		  . "X0 Vdd out VleakL 0 inv nsize='"
-		  #. ( $size / $pn ) 
-		  . $size  # Fix for TSMC 40nm
-		  . "' psize='"
-		  #. $size . "'\n"; 
-		  . ( $size * $pn ). "'\n"; # Fix for TSMC 40nm
+        # Xifan : adapt to TSMC 40nm lib
+        $s =  $s. spice_gen_one_inv_line("X0", "Vdd out VleakL 0", "inv", $size, $pn);
 	}
 
 	$s = $s . spice_sim(100);
@@ -1023,11 +1091,8 @@ sub get_capacitances {
 		$s = $s
 		  . "Vsource source 0 PWL(0 0 	'1*tick' 0 '1*tick+rise' Vol 	'2*tick' Vol '2*tick+rise' 0 	'3*tick' 0 '3*tick+rise' Vol 	'4*tick' Vol '4*tick+rise' 0 	'5*tick' 0 '5*tick+rise' Vol)\n";
 
-		$s = $s
-		  . "X1 drain gate source 0 nfetz wsize="
-		  . $width
-		  . " lsize="
-		  . $length . "\n";
+        # Split the transistors if their size exceed the limit per bin 
+        $s = $s. spice_gen_one_fetz_line("X1", "drain gate source 0", "nfetz", $size, $length);
 	}
 	else {
 		$s = $s . "Vgate gate 0 PWL(	0 0 	'2*tick' 0 '2*tick+rise' Vol)\n";
@@ -1036,11 +1101,8 @@ sub get_capacitances {
 		$s = $s
 		  . "Vsource source 0 PWL(0 0 	'1*tick' 0 '1*tick+rise' Vol 	'2*tick' Vol '2*tick+rise' 0 	'3*tick' 0 '3*tick+rise' Vol 	'4*tick' Vol '4*tick+rise' 0 	'5*tick' 0 '5*tick+rise' Vol)\n";
 
-		$s = $s
-		  . "X1 drain gate source Vdd pfetz wsize="
-		  . $width
-		  . " lsize="
-		  . $length . "\n";
+        # Split the transistors if their size exceed the limit per bin 
+        $s = $s. spice_gen_one_fetz_line("X1", "drain gate source 0", "pfetz", $size, $length);
 	}
 
 	$s = $s . spice_sim(100);

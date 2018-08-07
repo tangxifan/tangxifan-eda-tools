@@ -2726,9 +2726,7 @@ int rr_node_drive_switch_box(t_rr_node* src_rr_node,
                              int chan_side) {
   
   /* Make sure a valid src_rr_node and des_rr_node */
-  if (NULL == src_rr_node) {
   assert(NULL != src_rr_node);
-  }
   assert(NULL != des_rr_node);
   /* The src_rr_node should be either CHANX or CHANY */
   assert((CHANX == des_rr_node->type)||(CHANY == des_rr_node->type));
