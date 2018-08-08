@@ -258,7 +258,8 @@ sub nmos_leakages() {
 	foreach my $size (@nmos_pass_sizes) {
 		print "\t\t<nmos size=\"" . $size . "\">\n";
 		for ( my $i = 0 ; $i <= $vds_intervals ; $i++ ) {
-			my $Vds = $Vdd * ( 0.5 + 0.5 * ( $i / $vds_intervals ) );
+			#my $Vds = $Vdd * ( 0.5 + 0.5 * ( $i / $vds_intervals ) ); # fit tsmc40nm
+			my $Vds = $Vdd * ( 0.01 + 1.0 * ( $i / $vds_intervals ) ); # fit tsmc40nm
 			my $leakage_current = get_nmos_leakage_for_Vds( $size, $Vds );
 			print "\t\t\t<nmos_leakage Vds=\"" . $Vds
 			  . "\" Ids=\""
@@ -285,7 +286,6 @@ sub components() {
 		[ "mux", [ 4, 9, 16, 25 ], \@nmos_pass_sizes, 1 ],
 		[ "lut", [ 2, 4, 6 ], \@nmos_pass_sizes, 1 ],
 		[ "dff", [1], [ 1, 2, 4, 8 ], 0 ]
-		#[ "dff", [1], [ 1 ], 0 ]
 	);
 
 	print "\t<components>\n";
