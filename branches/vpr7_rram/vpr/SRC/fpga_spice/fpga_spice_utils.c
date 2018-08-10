@@ -1984,15 +1984,15 @@ int recommend_num_sim_clock_cycle(float sim_window_size) {
   /* It may be more reasonable to use median 
    * But, if median density is 0, we use average density
   */
-  if ((0 == median_density) && (0 == avg_density)) {
+  if ((0. == median_density) && (0. == avg_density)) {
     recmd_num_sim_clock_cycle = 1;
     vpr_printf(TIO_MESSAGE_WARNING, 
                "All the signal density is zero! No. of clock cycles in simulations are set to be %d!",
                recmd_num_sim_clock_cycle);
-  } else if (0 == avg_density) {
-      recmd_num_sim_clock_cycle = (int)(1/median_density); 
-  } else if (0 == median_density) {
-      recmd_num_sim_clock_cycle = (int)(1/avg_density);
+  } else if (0. == avg_density) {
+      recmd_num_sim_clock_cycle = (int)round(1/median_density); 
+  } else if (0. == median_density) {
+      recmd_num_sim_clock_cycle = (int)round(1/avg_density);
   } else {
     /* add a sim window size to balance the weight of average density and median density
      * In practice, we find that there could be huge difference between avereage and median values 
@@ -5750,6 +5750,14 @@ char** assign_lut_truth_table(t_logical_block* mapped_logical_block,
   return truth_table;
 }
 
+/* Get initial value of a Latch/FF output*/
+int get_ff_output_init_val(t_logical_block* ff_logical_block) {
+  assert((0 == ff_logical_block->init_val)||(1 == ff_logical_block->init_val));  
+
+  return ff_logical_block->init_val;
+}
+
+/* Get initial value of a mapped  LUT output*/
 int get_lut_output_init_val(t_logical_block* lut_logical_block) {
   int i;
   int* sram_bits = NULL; /* decoded SRAM bits */ 
@@ -5851,7 +5859,7 @@ int get_logical_block_output_init_val(t_logical_block* cur_logical_block) {
     /* We have no information, give a default 0 now... 
      * TODO: find a smarter way!
      */
-    output_init_val = 0;
+    output_init_val = get_ff_output_init_val(cur_logical_block);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid type of SPICE MODEL (name=%s) in determining the initial output value of logical block(name=%s)!\n",

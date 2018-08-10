@@ -660,7 +660,7 @@ int fprint_spice_one_lut_testbench(char* formatted_spice_dir,
   /* Check if we include an existing file! */
   if (FALSE == check_subckt_file_exist_in_llist(grid_spice_subckt_file_path_head, 
                                                 my_strcat(formatted_subckt_dir_path, temp_include_file_path))) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Intend to include a non-existed SPICE netlist %s!",
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Intend to include a non-existed SPICE netlist %s!\n",
                __FILE__, __LINE__, temp_include_file_path); 
     exit(1);
   }
@@ -728,6 +728,7 @@ void spice_print_lut_testbench(char* formatted_spice_dir,
                                 t_arch arch,
                                 boolean leakage_only) {
   char* lut_testbench_name = NULL;
+  char* temp_include_file_path = NULL;
   int ix, iy;
   int cnt = 0;
   int used;
@@ -736,6 +737,16 @@ void spice_print_lut_testbench(char* formatted_spice_dir,
 
   for (ix = 1; ix < (nx+1); ix++) {
     for (iy = 1; iy < (ny+1); iy++) {
+      /* Check if we include an existing subckt file! */
+      temp_include_file_path = fpga_spice_create_one_subckt_filename(grid_spice_file_name_prefix, ix, iy, spice_netlist_file_postfix);
+      if (FALSE == check_subckt_file_exist_in_llist(grid_spice_subckt_file_path_head, 
+                                                    my_strcat(subckt_dir_path, temp_include_file_path))) {
+        /* free */
+        my_free(temp_include_file_path);
+        continue;
+      }
+
+      /* Create a testbench for the existing subckt */
       lut_testbench_name = (char*)my_malloc(sizeof(char)*( strlen(circuit_name) 
                                             + 6 + strlen(my_itoa(ix)) + 1 
                                             + strlen(my_itoa(iy)) + 1 
@@ -751,6 +762,7 @@ void spice_print_lut_testbench(char* formatted_spice_dir,
       }
       /* free */
       my_free(lut_testbench_name);
+      my_free(temp_include_file_path);
     }  
   } 
   /* Update the global counter */

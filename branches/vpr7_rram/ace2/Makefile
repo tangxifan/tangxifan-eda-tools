@@ -4,7 +4,8 @@ LFLAGS = -g -O0
 
 EXE = ace
 
-ABC_DIR = ../../../../research/vtr_release/abc_with_bb_support
+#ABC_DIR = ../../../../research/vtr_release/abc_with_bb_support
+ABC_DIR = ../../../../research/ABC/abc70930
 ABC_LIB = libabc.a
 ABC_LIB_PATH = $(ABC_DIR)/$(ABC_LIB)
 
@@ -40,7 +41,7 @@ ABC_HEADERS = -I $(ABC_DIR)/src/base/io \
 			-I $(ABC_DIR)/src/map/if \
 			-I $(ABC_DIR)/src/sat/bsat
 			
-LIBS = -lm -ldl
+LIBS = -lm -ldl -lreadline
 DEFINES = -DLIN
 
 $(EXE): $(OBJS) Makefile $(ABC_LIB_PATH)

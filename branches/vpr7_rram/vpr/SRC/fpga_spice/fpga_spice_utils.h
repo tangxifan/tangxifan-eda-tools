@@ -454,6 +454,8 @@ int* generate_lut_sram_bits(int truth_table_len,
 char** assign_lut_truth_table(t_logical_block* mapped_logical_block,
                               int* truth_table_length);
 
+int get_ff_output_init_val(t_logical_block* ff_logical_block);
+
 int get_lut_output_init_val(t_logical_block* lut_logical_block);
 
 int get_logical_block_output_init_val(t_logical_block* cur_logical_block);
