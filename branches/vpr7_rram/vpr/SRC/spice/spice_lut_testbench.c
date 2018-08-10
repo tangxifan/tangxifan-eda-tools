@@ -651,14 +651,20 @@ int fprint_spice_one_lut_testbench(char* formatted_spice_dir,
   
   /* Special subckts for Top-level SPICE netlist */
   fprintf(fp, "****** Include subckt netlists: Look-Up Tables (LUTs) *****\n");
-  temp_include_file_path = my_strcat(formatted_subckt_dir_path, luts_spice_file_name);
-  fprintf(fp, ".include \'%s\'\n", temp_include_file_path);
-  my_free(temp_include_file_path);
+  spice_print_one_include_subckt_line(fp, formatted_subckt_dir_path, luts_spice_file_name);
 
-  fprintf(fp, "****** Include subckt netlists: Logic Blocks *****\n");
-  temp_include_file_path = my_strcat(formatted_subckt_dir_path, logic_block_spice_file_name);
-  fprintf(fp, ".include \'%s\'\n", temp_include_file_path);
-  my_free(temp_include_file_path);
+  /* Generate filename */
+  fprintf(fp, "****** Include subckt netlists: Grid[%d][%d] *****\n",
+          grid_x, grid_y);
+  temp_include_file_path = fpga_spice_create_one_subckt_filename(grid_spice_file_name_prefix, grid_x, grid_y, spice_netlist_file_postfix);
+  /* Check if we include an existing file! */
+  if (FALSE == check_subckt_file_exist_in_llist(grid_spice_subckt_file_path_head, 
+                                                my_strcat(formatted_subckt_dir_path, temp_include_file_path))) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Intend to include a non-existed SPICE netlist %s!",
+               __FILE__, __LINE__, temp_include_file_path); 
+    exit(1);
+  }
+  spice_print_one_include_subckt_line(fp, formatted_subckt_dir_path, temp_include_file_path);
 
   /* Print simulation temperature and other options for SPICE */
   fprint_spice_options(fp, arch.spice->spice_params);
@@ -704,6 +710,9 @@ int fprint_spice_one_lut_testbench(char* formatted_spice_dir,
     my_remove_file(lut_testbench_file_path);
     used = 0;
   }
+
+  /* Free */
+  my_free(temp_include_file_path);
 
   return used;
 }

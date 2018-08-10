@@ -219,6 +219,7 @@ char* chomp_file_name_postfix(char* file_name) {
   return ret;
 }
 
+
 /* Print SRAM bits, typically in a comment line */
 void fprint_commented_sram_bits(FILE* fp,
                                 int num_sram_bits, int* sram_bits) {
@@ -602,6 +603,25 @@ char* my_itoa(int input) {
 
   return ret;
 }
+
+/* Generate a filename (string) for a grid subckt SPICE netlist, 
+ * with given x and y coordinates
+ */
+char* fpga_spice_create_one_subckt_filename(char* file_name_prefix,
+                                            int subckt_x, int subckt_y,
+                                            char* file_name_postfix) {
+  char* fname = NULL;
+
+  fname = (char*) my_malloc(sizeof(char) * (strlen(file_name_prefix)
+                            + strlen(my_itoa(subckt_x)) + strlen(my_itoa(subckt_y))
+                            + strlen(file_name_postfix) + 1));
+
+  sprintf(fname, "%s%d_%d%s", 
+          file_name_prefix, subckt_x, subckt_y, file_name_postfix);
+
+  return fname;
+}
+
 
 /* With given spice_model_port, find the pb_type port with same name and type*/
 t_port* find_pb_type_port_match_spice_model_port(t_pb_type* pb_type,
@@ -7212,5 +7232,41 @@ int count_cb_info_num_ipin_rr_nodes(t_cb cur_cb_info) {
 
   return cnt; 
 }
+
+/* Add a subckt file name to a linked list */
+t_llist* add_one_subckt_file_name_to_llist(t_llist* cur_head, 
+                                            char* subckt_file_path) {
+  t_llist* new_head = NULL;
+
+  if (NULL == cur_head) {
+    new_head = create_llist(1);
+    new_head->dptr = (void*) my_strdup(subckt_file_path);
+  } else {
+    new_head = insert_llist_node_before_head(cur_head);
+    new_head->dptr = (void*) my_strdup(subckt_file_path);
+  }
+
+  return new_head;
+}
+
+/* Check if SPICE subckt is already created
+ * (if they exist in a given linked-list
+ */
+boolean check_subckt_file_exist_in_llist(t_llist* subckt_llist_head,
+                                         char* subckt_file_name) {
+  t_llist* temp = NULL; 
+
+  temp = subckt_llist_head;
+  while (temp) {
+    if (0 == strcmp(subckt_file_name, (char*)(temp->dptr))) {
+      return TRUE;
+    }
+    temp = temp->next;
+  }
+
+  return FALSE;
+}
+
+
 
     

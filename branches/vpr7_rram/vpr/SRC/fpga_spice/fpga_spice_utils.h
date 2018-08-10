@@ -48,6 +48,10 @@ t_spice_transistor_type* find_mosfet_tech_lib(t_spice_tech_lib tech_lib,
 
 char* my_itoa(int input);
 
+char* fpga_spice_create_one_subckt_filename(char* file_name_prefix,
+                                            int subckt_x, int subckt_y,
+                                            char* file_name_postfix);
+
 char* chomp_spice_node_prefix(char* spice_node_prefix);
 
 char* format_spice_node_prefix(char* spice_node_prefix);
@@ -616,3 +620,9 @@ boolean is_cb_exist(t_rr_type cb_type,
                     int cb_x, int cb_y);
 
 int count_cb_info_num_ipin_rr_nodes(t_cb cur_cb_info);
+
+t_llist* add_one_subckt_file_name_to_llist(t_llist* cur_head, 
+                                            char* subckt_file_path);
+
+boolean check_subckt_file_exist_in_llist(t_llist* subckt_llist_head,
+                                         char* subckt_file_name);
