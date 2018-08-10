@@ -2084,12 +2084,6 @@ sub parse_vtr_flow_results($ $ $) {
   rename $abc_blif_out,"$abc_blif_out".".bak";
 
   my ($act_file,$ace_new_blif,$ace_log) = ("$prefix"."ace.act","$prefix"."ace.blif","$prefix"."ace.log");
-  if ("on" eq $opt_ptr->{power}) {
-    if ("on" eq $opt_ptr->{black_box_ace}) {
-    } else {
-      $abc_blif_out = $ace_new_blif;
-    }
-  }
 
   $vpr_net = "$prefix"."vpr.net";
   $vpr_place = "$prefix"."vpr.place";
