@@ -134,6 +134,8 @@ void fpga_spice_generate_bitstream_pb_primitive_io(t_logical_block* mapped_logic
 
   prim_pb_type = prim_pb_graph_node->pb_type;
 
+  num_sram = count_num_sram_bits_one_spice_model(verilog_model, -1);
+
   switch (cur_sram_orgz_info->type) {
   case SPICE_SRAM_MEMORY_BANK:
     /* Local wires */
@@ -202,6 +204,9 @@ void fpga_spice_generate_bitstream_pb_primitive_io(t_logical_block* mapped_logic
     mapped_logical_block->mapped_spice_model = verilog_model;
     mapped_logical_block->mapped_spice_model_index = verilog_model->cnt;
   }
+
+  /* Synchronize the internal counters of sram_orgz_info with generated bitstreams*/
+  add_sram_conf_bits_to_sram_orgz_info(cur_sram_orgz_info, verilog_model);
 
   /* Update the verilog_model counter */
   verilog_model->cnt++;
@@ -338,7 +343,10 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(t_logical_block* mapped_logi
                __FILE__, __LINE__);
     exit(1);
   }
- 
+
+  /* Synchronize the internal counters of sram_orgz_info with generated bitstreams*/
+  add_sram_conf_bits_to_sram_orgz_info(cur_sram_orgz_info, verilog_model);
+
   /* Update counter */
   verilog_model->cnt++;
 

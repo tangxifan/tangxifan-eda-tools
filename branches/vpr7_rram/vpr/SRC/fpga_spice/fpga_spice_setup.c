@@ -1132,8 +1132,7 @@ int check_and_rename_logical_block_and_net_names(t_llist* LL_reserved_syntax_cha
   fprintf(fp, "-------VPACK_NET renaming report END ----------\n");
 
   if ((0 < num_violations) && ( FALSE == rename_illegal_port )) {
-    vpr_printf(TIO_MESSAGE_ERROR, "Detect %d port violate syntax rules while renaming port is disabled\n", num_violations);
-    exit(1);
+    vpr_printf(TIO_MESSAGE_WARNING, "Detect %d port violate syntax rules while renaming port is disabled\n", num_violations);
   }
 
   /* close fp */
@@ -1183,7 +1182,7 @@ void fpga_spice_free(t_arch* Arch) {
 /* Top-level function of FPGA-SPICE setup */
 void fpga_spice_setup(t_vpr_setup vpr_setup,
                       t_arch* Arch) {
-
+  int num_rename_violation = 0;
   int num_clocks = 0;
   float vpr_crit_path_delay = 0.; 
   float vpr_clock_freq = 0.; 
@@ -1213,24 +1212,22 @@ void fpga_spice_setup(t_vpr_setup vpr_setup,
                                               reserved_syntax_char_head);
 
 
-  /* Check and rename io names to avoid violating SPICE or Verilog syntax */
+  /* Check and rename io names to avoid violating SPICE or Verilog syntax 
+   * Only valid when Verilog generator or SPICE generator is enabled
+   */
+  num_rename_violation = 
   check_and_rename_logical_block_and_net_names(reserved_syntax_char_head, 
                                                vpr_setup.FileNameOpts.CircuitName,
                                                vpr_setup.FPGA_SPICE_Opts.rename_illegal_port,
                                                num_logical_blocks, logical_block,
                                                num_nets, clb_net,
                                                num_logical_nets, vpack_net);
-
-  /* Check Activity file is valid */
-  if (TRUE == vpr_setup.FPGA_SPICE_Opts.read_act_file) {
-    if (1 == try_access_file(vpr_setup.FileNameOpts.ActFile)) {
-      vpr_printf(TIO_MESSAGE_ERROR,"Activity file (%s) does not exists! Please provide a valid file path!\n",
-                 vpr_setup.FileNameOpts.ActFile);
-       exit(1);
-    } else {
-      vpr_printf(TIO_MESSAGE_INFO,"Check Activity file (%s) is a valid file path!\n",
-                 vpr_setup.FileNameOpts.ActFile);
-    }
+  /* Violation is not allowed for SPICE and Verilog Generator! */
+  if (((0 < num_rename_violation) && (FALSE == vpr_setup.FPGA_SPICE_Opts.rename_illegal_port))
+     && ((TRUE == vpr_setup.FPGA_SPICE_Opts.SpiceOpts.do_spice) 
+     || (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.dump_syn_verilog))) {
+    vpr_printf(TIO_MESSAGE_ERROR, "Port name syntax violations is not allowed for SPICE and Verilog Generators!\n");
+    exit(1);
   }
 
   /* Update global options: 
@@ -1248,9 +1245,27 @@ void fpga_spice_setup(t_vpr_setup vpr_setup,
     vpr_printf(TIO_MESSAGE_WARNING, "SPICE testbench load extraction is turned off...Accuracy loss may be expected!\n");
   }
 
+  /* Check Activity file is valid */
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.read_act_file) {
+    if (1 == try_access_file(vpr_setup.FileNameOpts.ActFile)) {
+      vpr_printf(TIO_MESSAGE_ERROR,"Activity file (%s) does not exists! Please provide a valid file path!\n",
+                 vpr_setup.FileNameOpts.ActFile);
+      exit(1);
+    } else {
+      vpr_printf(TIO_MESSAGE_INFO,"Check Activity file (%s) is a valid file path!\n",
+                 vpr_setup.FileNameOpts.ActFile);
+    }
+  }
+
   /* Backannotation for post routing information */
   spice_backannotate_vpr_post_route_info(vpr_setup.RoutingArch,
+                                         vpr_setup.FPGA_SPICE_Opts.read_act_file,
                                          vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_parasitic_net_estimation);
+
+  /* Not should be done when read_act_file is disabled */
+  if (FALSE == vpr_setup.FPGA_SPICE_Opts.read_act_file) {
+    return;
+  }
 
   /* Auto check the density and recommend sim_num_clock_cylce */
   vpr_crit_path_delay = get_critical_path_delay()/1e9;

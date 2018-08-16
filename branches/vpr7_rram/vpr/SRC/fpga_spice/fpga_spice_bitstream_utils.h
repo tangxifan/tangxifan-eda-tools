@@ -59,3 +59,20 @@ decode_and_add_sram_membank_conf_bit_to_llist(t_sram_orgz_info* cur_sram_orgz_in
                                               int num_bl_per_sram, int num_wl_per_sram, 
                                               int cur_sram_bit);
 
+void determine_blwl_decoder_size(INP t_sram_orgz_info* cur_sram_orgz_info,
+                                 OUTP int* num_array_bl, OUTP int* num_array_wl,
+                                 OUTP int* bl_decoder_size, OUTP int* wl_decoder_size) ;
+
+void init_sram_orgz_info_reserved_blwl(t_sram_orgz_info* cur_sram_orgz_info,
+                                       int num_switch,
+                                       t_switch_inf* switches,
+                                       t_spice* spice,
+                                       t_det_routing_arch* routing_arch);
+
+void add_one_conf_bit_to_sram_orgz_info(t_sram_orgz_info* cur_sram_orgz_info) ;
+
+void add_sram_conf_bits_to_sram_orgz_info(t_sram_orgz_info* cur_sram_orgz_info,
+                                          t_spice_model* cur_spice_model) ;
+
+void add_mux_conf_bits_to_sram_orgz_info(t_sram_orgz_info* cur_sram_orgz_info,
+                                         t_spice_model* mux_spice_model, int mux_size) ;

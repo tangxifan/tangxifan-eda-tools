@@ -226,7 +226,6 @@ void dump_conf_bits_to_bitstream_file(FILE* fp,
   bl_decoder_size = determine_decoder_size(num_bl);
   wl_decoder_size = determine_decoder_size(num_wl);
 
-
   while (NULL != temp) {
     cur_conf_bit_info = (t_conf_bit_info*)(temp->dptr);
     /* We alraedy touch the tail, start dump */
@@ -289,7 +288,7 @@ void dump_conf_bits_to_bitstream_file(FILE* fp,
 void vpr_fpga_spice_generate_bitstream(t_vpr_setup vpr_setup,
                                        t_arch Arch,
                                        char* circuit_name,
-                                       t_sram_orgz_info* cur_sram_orgz_info) {
+                                       t_sram_orgz_info** cur_sram_orgz_info) {
   /* Timer */
   clock_t t_start;
   clock_t t_end;
@@ -335,8 +334,8 @@ void vpr_fpga_spice_generate_bitstream(t_vpr_setup vpr_setup,
   /* assign the global variable of SRAM model */
   assert(NULL != Arch.sram_inf.verilog_sram_inf_orgz); /* Check !*/
   /* initialize the SRAM organization information struct */
-  cur_sram_orgz_info = alloc_one_sram_orgz_info();
-  init_sram_orgz_info(cur_sram_orgz_info, Arch.sram_inf.verilog_sram_inf_orgz->type, 
+  (*cur_sram_orgz_info) = alloc_one_sram_orgz_info();
+  init_sram_orgz_info(*cur_sram_orgz_info, Arch.sram_inf.verilog_sram_inf_orgz->type, 
                       Arch.sram_inf.verilog_sram_inf_orgz->spice_model, nx + 2, ny + 2);
   /* Check all the SRAM port is using the correct SRAM SPICE MODEL */
   config_spice_models_sram_port_spice_model(Arch.spice->num_spice_model, 
@@ -346,19 +345,23 @@ void vpr_fpga_spice_generate_bitstream(t_vpr_setup vpr_setup,
   /* zero the counter of each spice_model */
   zero_spice_models_cnt(Arch.spice->num_spice_model, Arch.spice->spice_models);
 
+
   /* Generate Bitstreams 
    * Bitstream generation must follow the sequence: grid => CB => SB 
    * (To be consistent with Verilog Generator !!!)
    */
+  init_sram_orgz_info_reserved_blwl(*cur_sram_orgz_info, vpr_setup.RoutingArch.num_switch, 
+                                    switch_inf, Arch.spice, &vpr_setup.RoutingArch);
+
   /* Logic blocks */
-  fpga_spice_generate_bitstream_logic_block(&Arch, cur_sram_orgz_info);
+  fpga_spice_generate_bitstream_logic_block(&Arch, *cur_sram_orgz_info);
 
   /* Routing: Connection Boxes and Switch Boxes */
-  fpga_spice_generate_bitstream_routing_resources(Arch, &vpr_setup.RoutingArch, cur_sram_orgz_info,
+  fpga_spice_generate_bitstream_routing_resources(Arch, &vpr_setup.RoutingArch, *cur_sram_orgz_info,
                                                   num_rr_nodes, rr_node, rr_node_indices);
 
   /* Dump bitstream file */
-  dump_fpga_spice_bitstream(bitstream_file_path, chomped_circuit_name, cur_sram_orgz_info);
+  dump_fpga_spice_bitstream(bitstream_file_path, chomped_circuit_name, *cur_sram_orgz_info);
 
   /* End time count */
   t_end = clock();

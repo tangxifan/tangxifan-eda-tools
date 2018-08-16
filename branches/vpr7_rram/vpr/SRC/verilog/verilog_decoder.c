@@ -32,49 +32,6 @@
 #include "verilog_utils.h"
 
 /***** Subroutines *****/
-void determine_verilog_blwl_decoder_size(INP t_sram_orgz_info* cur_sram_verilog_orgz_info,
-                                         OUTP int* num_array_bl, OUTP int* num_array_wl,
-                                         OUTP int* bl_decoder_size, OUTP int* wl_decoder_size) {
-  t_spice_model* mem_model = NULL;
-  int num_mem_bit;
-  int num_reserved_bl, num_reserved_wl;
-
-  /* Check */
-  assert(SPICE_SRAM_MEMORY_BANK == sram_verilog_orgz_info->type);
-
-  num_mem_bit = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info);
-  get_sram_orgz_info_num_blwl(sram_verilog_orgz_info, num_array_bl, num_array_wl);
-  get_sram_orgz_info_reserved_blwl(sram_verilog_orgz_info, &num_reserved_bl, &num_reserved_wl);
-
-  /* Sizes of decodes depend on the Memory technology */
-  get_sram_orgz_info_mem_model(sram_verilog_orgz_info, &mem_model); 
-  switch (mem_model->design_tech) {
-  /* CMOS SRAM*/
-  case SPICE_MODEL_DESIGN_CMOS:
-   /* SRAMs can efficiently share BLs and WLs, 
-    * Actual number of BLs and WLs will be sqrt(num_bls) and sqrt(num_wls) 
-    */
-    assert(0 == num_reserved_bl);
-    assert(0 == num_reserved_wl);
-    (*num_array_bl) = ceil(sqrt(*num_array_bl));
-    (*num_array_wl) = ceil(sqrt(*num_array_wl));
-    (*bl_decoder_size) = determine_decoder_size(*num_array_bl);
-    (*wl_decoder_size) = determine_decoder_size(*num_array_wl);
-    break;
-  /* RRAM */
-  case SPICE_MODEL_DESIGN_RRAM:
-    /* Currently we do not have more efficient way to share the BLs and WLs as CMOS SRAMs */
-    (*bl_decoder_size) = determine_decoder_size(*num_array_bl);
-    (*wl_decoder_size) = determine_decoder_size(*num_array_wl);
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology [CMOS|RRAM] for memory technology!\n",
-               __FILE__, __LINE__);
-    exit(1);
-  }
-
-  return;
-}
 
 void dump_verilog_decoder(char* submodule_dir) {
   int num_array_bl, num_array_wl;
@@ -97,9 +54,9 @@ void dump_verilog_decoder(char* submodule_dir) {
   assert(SPICE_SRAM_MEMORY_BANK == sram_verilog_orgz_info->type);
 
   /* Get number of BLs,WLs and decoder sizes */
-  determine_verilog_blwl_decoder_size(sram_verilog_orgz_info, 
-                                      &num_array_bl, &num_array_wl, 
-                                      &bl_decoder_size, &wl_decoder_size);
+  determine_blwl_decoder_size(sram_verilog_orgz_info, 
+                              &num_array_bl, &num_array_wl, 
+                              &bl_decoder_size, &wl_decoder_size);
    
   /* Generate file header*/ 
   vpr_printf(TIO_MESSAGE_INFO, "Writing Decoder verilog netlist...\n");

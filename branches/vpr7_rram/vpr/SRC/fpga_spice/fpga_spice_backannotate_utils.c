@@ -2517,7 +2517,8 @@ void parasitic_net_estimation() {
 
 /* Back-Annotate post routing results to the VPR routing-resource graphs */
 void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
-                                            boolean parasitic_net_estimation_off) {
+                                            boolean read_activity_file,
+                                            boolean run_parasitic_net_estimation) {
 
   vpr_printf(TIO_MESSAGE_INFO, "Start backannotating post route information for SPICE modeling...\n");
 
@@ -2553,18 +2554,22 @@ void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
 
   /* Backannotate activity information, initialize the waveform information */
   /* Parasitic Net Activity Estimation */
-  if (FALSE == parasitic_net_estimation_off) {
-    vpr_printf(TIO_MESSAGE_WARNING, "Parasitic Net Estimation starts...\n");
+  if (TRUE == run_parasitic_net_estimation) {
+    vpr_printf(TIO_MESSAGE_INFO, "Parasitic Net Estimation starts...\n");
     parasitic_net_estimation();
   } else {
     vpr_printf(TIO_MESSAGE_WARNING, "Parasitic Net Estimation is turned off...Accuracy loss may be expected!\n");
   }
 
   /* Net activities */
-  vpr_printf(TIO_MESSAGE_INFO, "Backannoating Net activities...\n");
-  backannotate_clb_nets_act_info();
-  vpr_printf(TIO_MESSAGE_INFO, "Determine Net initial values...\n");
-  backannotate_clb_nets_init_val();
+  if (TRUE == read_activity_file) {
+    vpr_printf(TIO_MESSAGE_INFO, "Backannoating Net activities...\n");
+    backannotate_clb_nets_act_info();
+    vpr_printf(TIO_MESSAGE_INFO, "Determine Net initial values...\n");
+    backannotate_clb_nets_init_val();
+  } else {
+    vpr_printf(TIO_MESSAGE_INFO, "Net activity backannoation is bypassed...\n");
+  }
 
   vpr_printf(TIO_MESSAGE_INFO, "Finish backannotating post route information for SPICE modeling.\n");
 

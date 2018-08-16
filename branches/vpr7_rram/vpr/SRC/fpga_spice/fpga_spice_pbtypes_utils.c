@@ -270,6 +270,15 @@ int find_pb_type_idle_mode_index(t_pb_type cur_pb_type) {
                __FILE__, __LINE__);
     exit(1);
   }
+
+  /* Corner case:
+   * If there is only 1 mode available, it will be the idle_mode by default! 
+   */
+  if (1 == cur_pb_type.num_modes) {
+    idle_mode_index = 0;
+    num_idle_mode++;
+    return idle_mode_index;
+  } 
  
   /* Normal Condition: */ 
   for (imode = 0; imode < cur_pb_type.num_modes; imode++) {
@@ -296,10 +305,19 @@ int find_pb_type_physical_mode_index(t_pb_type cur_pb_type) {
   }
 
   if (0 == cur_pb_type.num_modes) {
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Intend to find the idle mode while cur_pb_type has 0 modes!\n",
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Intend to find the physical mode while cur_pb_type has 0 modes!\n",
                __FILE__, __LINE__);
     exit(1);
   }
+
+  /* Corner case:
+   * If there is only 1 mode available, it will be the physical_mode by default! 
+   */
+  if (1 == cur_pb_type.num_modes) {
+    phy_mode_index = 0;
+    num_phy_mode++;
+    return phy_mode_index;
+  } 
  
   /* Normal Condition: */ 
   for (imode = 0; imode < cur_pb_type.num_modes; imode++) {
@@ -1646,7 +1664,7 @@ void init_grids_num_iopads() {
   int ix, iy; 
 
   /* Core grid */
-  vpr_printf(TIO_MESSAGE_INFO, "INFO: Initializing number of I/O pads of Core grids...\n");
+  vpr_printf(TIO_MESSAGE_INFO, "INFO: Initializing number of I/O pads in Core grids...\n");
   for (ix = 1; ix < (nx + 1); ix++) {
     for (iy = 1; iy < (ny + 1); iy++) {
       init_one_grid_num_iopads(ix, iy);
@@ -1654,7 +1672,7 @@ void init_grids_num_iopads() {
   }
   
   /* Consider the IO pads */
-  vpr_printf(TIO_MESSAGE_INFO, "INFO: Initializing number of I/O pads of I/O grids...\n");
+  vpr_printf(TIO_MESSAGE_INFO, "INFO: Initializing number of I/O pads in I/O grids...\n");
   /* Left side: x = 0, y = 1 .. ny*/
   ix = 0;
   for (iy = 1; iy < (ny + 1); iy++) {

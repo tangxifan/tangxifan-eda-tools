@@ -86,7 +86,7 @@ void fpga_spice_generate_bitstream_switch_box_mux(t_sb* cur_sb_info,
 
   /* Get verilog model*/
   verilog_model = switch_inf[switch_index].spice_model;
- 
+
   /* Configuration bits for this MUX*/
   path_id = -1;
   for (inode = 0; inode < mux_size; inode++) {
@@ -116,6 +116,9 @@ void fpga_spice_generate_bitstream_switch_box_mux(t_sb* cur_sb_info,
   add_mux_conf_bits_to_llist(mux_size, cur_sram_orgz_info, 
                              num_mux_sram_bits, mux_sram_bits,
                              verilog_model);
+
+  /* Synchronize the sram_orgz_info with mem_bits */
+  add_mux_conf_bits_to_sram_orgz_info(cur_sram_orgz_info, verilog_model, mux_size); 
   
   /* update sram counter */
   verilog_model->cnt++;
@@ -298,7 +301,9 @@ void fpga_spice_generate_bitstream_connection_box_mux(t_cb* cur_cb_info,
   add_mux_conf_bits_to_llist(mux_size, cur_sram_orgz_info, 
                              num_mux_sram_bits, mux_sram_bits,
                              verilog_model);
-  
+  /* Synchronize the sram_orgz_info with mem_bits */
+  add_mux_conf_bits_to_sram_orgz_info(cur_sram_orgz_info, verilog_model, mux_size); 
+
   /* update sram counter */
   verilog_model->cnt++;
 
@@ -418,6 +423,7 @@ void fpga_spice_generate_bitstream_routing_resources(t_arch arch,
    * For DEC_DIRECTION chany, the inputs are at the top of channels, the outputs are at the bottom of channels
    */
   /* X - channels [1...nx][0..ny]*/
+  vpr_printf(TIO_MESSAGE_INFO,"Generating bitstream for Routing Channels - X direction...\n");
   for (iy = 0; iy < (ny + 1); iy++) {
     for (ix = 1; ix < (nx + 1); ix++) {
       fpga_spice_generate_bitstream_routing_chan_subckt(ix, iy, CHANX, cur_sram_orgz_info, 
@@ -426,6 +432,7 @@ void fpga_spice_generate_bitstream_routing_resources(t_arch arch,
     }
   }
   /* Y - channels [1...ny][0..nx]*/
+  vpr_printf(TIO_MESSAGE_INFO,"Generating bitstream for Routing Channels - Y direction...\n");
   for (ix = 0; ix < (nx + 1); ix++) {
     for (iy = 1; iy < (ny + 1); iy++) {
       fpga_spice_generate_bitstream_routing_chan_subckt(ix, iy, CHANY, cur_sram_orgz_info, 
@@ -435,6 +442,7 @@ void fpga_spice_generate_bitstream_routing_resources(t_arch arch,
   }
 
   /* Switch Boxes*/
+  vpr_printf(TIO_MESSAGE_INFO,"Generating bitstream for Switch blocks...\n");
   for (ix = 0; ix < (nx + 1); ix++) {
     for (iy = 0; iy < (ny + 1); iy++) {
       /* vpr_printf(TIO_MESSAGE_INFO, "Writing Switch Boxes[%d][%d]...\n", ix, iy); */
@@ -446,6 +454,7 @@ void fpga_spice_generate_bitstream_routing_resources(t_arch arch,
   }
 
   /* Connection Boxes */
+  vpr_printf(TIO_MESSAGE_INFO,"Generating bitstream for Connection blocks - X direction ...\n");
   /* X - channels [1...nx][0..ny]*/
   for (iy = 0; iy < (ny + 1); iy++) {
     for (ix = 1; ix < (nx + 1); ix++) {
@@ -460,6 +469,7 @@ void fpga_spice_generate_bitstream_routing_resources(t_arch arch,
     }
   }
   /* Y - channels [1...ny][0..nx]*/
+  vpr_printf(TIO_MESSAGE_INFO,"Generating bitstream for Connection blocks - Y direction ...\n");
   for (ix = 0; ix < (nx + 1); ix++) {
     for (iy = 1; iy < (ny + 1); iy++) {
       /* vpr_printf(TIO_MESSAGE_INFO, "Writing Y-direction Connection Boxes[%d][%d]...\n", ix, iy); */

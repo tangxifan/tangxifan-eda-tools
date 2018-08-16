@@ -998,7 +998,7 @@ void fprint_spice_mux_testbench_pb_interc(FILE* fp,
 
   int node_index = -1;
   int prev_node = -1;
-  int prev_edge = -1;
+  /* int prev_edge = -1; */
   int path_id = -1;
   t_rr_node* pb_rr_nodes = NULL;
 
@@ -1039,7 +1039,7 @@ void fprint_spice_mux_testbench_pb_interc(FILE* fp,
       */ 
       prev_node = pb_rr_nodes[node_index].prev_node;
       /* prev_edge is the index of edge of prev_node !!! */
-      prev_edge = pb_rr_nodes[node_index].prev_edge;
+      /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
       /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
       if (OPEN == prev_node) {
         path_id = 0; 
@@ -1111,7 +1111,7 @@ void fprint_spice_mux_testbench_pb_interc(FILE* fp,
           /* Get the index of the edge that are selected to pass signal*/
           node_index = child_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
           prev_node = pb_rr_nodes[node_index].prev_node;
-          prev_edge = pb_rr_nodes[node_index].prev_edge;
+          /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
           /* Bypass unmapped interc */
           /* 
           if (OPEN == pb_rr_nodes[node_index].net_num) {
@@ -1143,7 +1143,7 @@ void fprint_spice_mux_testbench_pb_interc(FILE* fp,
           /* Get the index of the edge that are selected to pass signal*/
           node_index = child_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
           prev_node = pb_rr_nodes[node_index].prev_node;
-          prev_edge = pb_rr_nodes[node_index].prev_edge;
+          /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
           /* Bypass unmapped interc */
           /* 
           if (OPEN == pb_rr_nodes[node_index].net_num) {
@@ -1435,7 +1435,7 @@ int fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
   int num_drive_rr_nodes = 0;  
   t_rr_node** drive_rr_nodes = NULL;
   char* outport_name = NULL;
-  char* rr_node_outport_name = NULL;
+  char* rr_node_outport_name = NULL; 
   int used = 0;
 
   float average_sb_mux_input_density = 0.;
@@ -1533,7 +1533,7 @@ int fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
   sprintf(outport_name, "%s_size%d[%d]->out", mux_spice_model->prefix, mux_size, testbench_mux_cnt);
   
   if (TRUE == run_testbench_load_extraction) { /* Additional switch, default on! */
-    fprintf(fp, "***** Load for rr_node[%d] *****\n", src_rr_node - rr_node);
+    fprintf(fp, "***** Load for rr_node[%ld] *****\n", src_rr_node - rr_node);
     rr_node_outport_name = fprint_spice_testbench_rr_node_load_version(fp, 
                                                                        &testbench_load_cnt,
                                                                        num_segments,
@@ -1552,6 +1552,7 @@ int fprint_spice_mux_testbench_sb_one_mux(FILE* fp,
   my_free(input_init_value);
   my_free(input_density);
   my_free(input_probability);
+  my_free(rr_node_outport_name);
 
   return 1;
 }
@@ -1561,7 +1562,7 @@ static
 int fprint_spice_mux_testbench_call_one_grid_sb_muxes(FILE* fp, 
                                                       t_sb cur_sb_info,
                                                       t_ivec*** LL_rr_node_indices) {
-  int itrack, inode, side;
+  int itrack, side;
   int used = 0;
 
   /* Check the file handler*/ 

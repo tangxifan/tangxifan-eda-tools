@@ -1241,3 +1241,179 @@ decode_and_add_sram_membank_conf_bit_to_llist(t_sram_orgz_info* cur_sram_orgz_in
   return;
 }
 
+void determine_blwl_decoder_size(INP t_sram_orgz_info* cur_sram_orgz_info,
+                                 OUTP int* num_array_bl, OUTP int* num_array_wl,
+                                 OUTP int* bl_decoder_size, OUTP int* wl_decoder_size) {
+  t_spice_model* mem_model = NULL;
+  int num_mem_bit;
+  int num_reserved_bl, num_reserved_wl;
+
+  /* Check */
+  assert(SPICE_SRAM_MEMORY_BANK == cur_sram_orgz_info->type);
+
+  num_mem_bit = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info);
+  get_sram_orgz_info_num_blwl(cur_sram_orgz_info, num_array_bl, num_array_wl);
+  get_sram_orgz_info_reserved_blwl(cur_sram_orgz_info, &num_reserved_bl, &num_reserved_wl);
+
+  /* Sizes of decodes depend on the Memory technology */
+  get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model); 
+  switch (mem_model->design_tech) {
+  /* CMOS SRAM*/
+  case SPICE_MODEL_DESIGN_CMOS:
+   /* SRAMs can efficiently share BLs and WLs, 
+    * Actual number of BLs and WLs will be sqrt(num_bls) and sqrt(num_wls) 
+    */
+    assert(0 == num_reserved_bl);
+    assert(0 == num_reserved_wl);
+    (*num_array_bl) = ceil(sqrt(*num_array_bl));
+    (*num_array_wl) = ceil(sqrt(*num_array_wl));
+    (*bl_decoder_size) = determine_decoder_size(*num_array_bl);
+    (*wl_decoder_size) = determine_decoder_size(*num_array_wl);
+    break;
+  /* RRAM */
+  case SPICE_MODEL_DESIGN_RRAM:
+    /* Currently we do not have more efficient way to share the BLs and WLs as CMOS SRAMs */
+    (*bl_decoder_size) = determine_decoder_size(*num_array_bl);
+    (*wl_decoder_size) = determine_decoder_size(*num_array_wl);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology [CMOS|RRAM] for memory technology!\n",
+               __FILE__, __LINE__);
+    exit(1);
+ }
+
+  return;
+}
+
+void init_sram_orgz_info_reserved_blwl(t_sram_orgz_info* cur_sram_orgz_info,
+                                       int num_switch,
+                                       t_switch_inf* switches,
+                                       t_spice* spice,
+                                       t_det_routing_arch* routing_arch) {
+
+  /* We have linked list whichs stores spice model information of multiplexer*/
+  t_llist* muxes_head = NULL; 
+  t_llist* temp = NULL;
+  t_spice_mux_model* cur_spice_mux_model = NULL;
+  int max_routing_mux_size = -1;
+
+  /* Alloc the muxes*/
+  muxes_head = stats_spice_muxes(num_switch, switches, spice, routing_arch);
+
+  temp = muxes_head;
+  while(temp) {
+    assert(NULL != temp->dptr);
+    cur_spice_mux_model = (t_spice_mux_model*)(temp->dptr);
+    /* Exclude LUT MUX from this statistics */
+    if ((SPICE_MODEL_MUX == cur_spice_mux_model->spice_model->type)
+       &&((-1 == max_routing_mux_size)||(max_routing_mux_size < cur_spice_mux_model->size))) {
+      max_routing_mux_size = cur_spice_mux_model->size;
+    }
+    /* Move on to the next*/
+    temp = temp->next;
+  }
+
+  try_update_sram_orgz_info_reserved_blwl(cur_sram_orgz_info, 
+                                          max_routing_mux_size, max_routing_mux_size);
+
+  vpr_printf(TIO_MESSAGE_INFO,"Detected %d reserved BLs and% d reserved WLs...\n", 
+             max_routing_mux_size, max_routing_mux_size);
+
+  /* remember to free the linked list*/
+  free_muxes_llist(muxes_head);
+  
+  return;
+}
+
+void add_one_conf_bit_to_sram_orgz_info(t_sram_orgz_info* cur_sram_orgz_info) {
+  int cur_num_sram = 0;
+  int cur_bl, cur_wl;
+
+  /* Get current index of SRAM module */
+  cur_num_sram = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info); 
+
+  switch (cur_sram_orgz_info->type) {
+  case SPICE_SRAM_MEMORY_BANK:
+    get_sram_orgz_info_num_blwl(cur_sram_orgz_info, &cur_bl, &cur_wl); 
+    /* Update the counter */
+    update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info,
+                                      cur_num_sram + 1);
+    update_sram_orgz_info_num_blwl(cur_sram_orgz_info, 
+                                   cur_bl + 1,
+                                   cur_wl + 1);
+    break;
+  case SPICE_SRAM_STANDALONE:
+    /* Update the counter */
+    update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info,
+                                      cur_num_sram + 1);
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+    /* Update the counter */
+    update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info,
+                                      cur_num_sram + 1);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid SRAM organization type!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  return;
+}
+
+void add_sram_conf_bits_to_sram_orgz_info(t_sram_orgz_info* cur_sram_orgz_info, 
+                                          t_spice_model* cur_spice_model) {
+  int i;
+  int num_sram; 
+
+  /* Synchronize the internal counters of sram_orgz_info with generated bitstreams*/
+  num_sram = count_num_sram_bits_one_spice_model(cur_spice_model, -1);
+  for (i = 0; i < num_sram; i++) {
+    add_one_conf_bit_to_sram_orgz_info(cur_sram_orgz_info); /* use the mem_model in cur_sram_orgz_info */
+  }
+
+  return;
+}
+
+void add_mux_conf_bits_to_sram_orgz_info(t_sram_orgz_info* cur_sram_orgz_info,
+                                         t_spice_model* mux_spice_model, int mux_size) {
+  int i;
+  int num_mux_sram_bits, num_mux_conf_bits;
+  int cur_num_sram, cur_bl, cur_wl;
+
+  /* cur_num_sram = sram_verilog_model->cnt; */
+  cur_num_sram = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info); 
+  get_sram_orgz_info_num_blwl(cur_sram_orgz_info, &cur_bl, &cur_wl);
+
+  /* Get the number of configuration bits required by this MUX */
+  num_mux_sram_bits = count_num_sram_bits_one_spice_model(mux_spice_model, mux_size);
+
+  num_mux_conf_bits = count_num_conf_bits_one_spice_model(mux_spice_model, 
+                                                          cur_sram_orgz_info->type,
+                                                          mux_size);
+ 
+  /* Synchronize sram_orgz_info by incrementing its internal counters */
+  switch (mux_spice_model->design_tech) {
+  case SPICE_MODEL_DESIGN_CMOS:
+    /* SRAM-based MUX required dumping SRAMs! */
+    for (i = 0; i < num_mux_sram_bits; i++) {
+      add_one_conf_bit_to_sram_orgz_info(cur_sram_orgz_info); /* use the mem_model in sram_verilog_orgz_info */
+    }
+    break;
+  case SPICE_MODEL_DESIGN_RRAM:
+    /* RRAM-based MUX does not need any SRAM dumping
+     * But we have to get the number of configuration bits required by this MUX 
+     * and update the number of memory bits 
+     */
+    update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info, cur_num_sram + num_mux_conf_bits);
+    update_sram_orgz_info_num_blwl(cur_sram_orgz_info, 
+                                   cur_bl + num_mux_conf_bits, 
+                                   cur_wl + num_mux_conf_bits);
+    break;  
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",
+               __FILE__, __LINE__, mux_spice_model->name);
+  }
+
+  return;
+}

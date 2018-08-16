@@ -2458,7 +2458,9 @@ void free_sram_orgz_info(t_sram_orgz_info* cur_sram_orgz_info,
   int i;
   t_llist* temp = NULL;
 
-  assert(NULL != cur_sram_orgz_info);
+  if (NULL == cur_sram_orgz_info) {
+    return;
+  }
 
   /* According to the type, we allocate structs */
   switch (cur_sram_orgz_info->type) {

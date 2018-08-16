@@ -125,8 +125,8 @@ void fpga_spice_generate_bitstream_pb_graph_pin_interc(enum e_pin2pin_interc_typ
     add_mux_conf_bits_to_llist(fan_in, cur_sram_orgz_info, 
                                num_mux_sram_bits, mux_sram_bits,
                                cur_interc->spice_model);
-  
-    get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model);
+    /* Synchronize the sram_orgz_info with mem_bits */
+    add_mux_conf_bits_to_sram_orgz_info(cur_sram_orgz_info, cur_interc->spice_model, fan_in); 
     /* update sram counter */
     cur_interc->spice_model->cnt++;
     break;

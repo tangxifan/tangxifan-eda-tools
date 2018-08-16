@@ -25,6 +25,7 @@
 #include "fpga_spice_utils.h"
 #include "fpga_spice_pbtypes_utils.h"
 #include "fpga_spice_backannotate_utils.h"
+#include "fpga_spice_bitstream_utils.h"
 #include "fpga_spice_globals.h"
 #include "fpga_spice_bitstream.h"
 
@@ -96,8 +97,8 @@ void dump_verilog_top_netlist_memory_bank_ports(FILE* fp,
   get_sram_orgz_info_mem_model(sram_verilog_orgz_info, &mem_model);
   assert(NULL != mem_model);
 
-  determine_verilog_blwl_decoder_size(sram_verilog_orgz_info,
-                                      &num_array_bl, &num_array_wl, &bl_decoder_size, &wl_decoder_size);
+  determine_blwl_decoder_size(sram_verilog_orgz_info,
+                              &num_array_bl, &num_array_wl, &bl_decoder_size, &wl_decoder_size);
 
   /* Depend on the memory technology */
   switch (mem_model->design_tech) {
@@ -171,8 +172,8 @@ void dump_verilog_top_netlist_memory_bank_internal_wires(FILE* fp) {
   /* Get the reserved BLs and WLs */
   get_sram_orgz_info_reserved_blwl(sram_verilog_orgz_info, &num_reserved_bl, &num_reserved_wl);
 
-  determine_verilog_blwl_decoder_size(sram_verilog_orgz_info,
-                                      &num_array_bl, &num_array_wl, &bl_decoder_size, &wl_decoder_size);
+  determine_blwl_decoder_size(sram_verilog_orgz_info,
+                              &num_array_bl, &num_array_wl, &bl_decoder_size, &wl_decoder_size);
 
   /* Get BLB and WLB ports */
   find_blb_wlb_ports_spice_model(mem_model, &num_blb_ports, &blb_port,
@@ -1308,8 +1309,8 @@ void dump_verilog_configuration_circuits_memory_bank(FILE* fp,
     exit(1);
   } 
 
-  determine_verilog_blwl_decoder_size(sram_verilog_orgz_info,
-                                      &num_array_bl, &num_array_wl, &bl_decoder_size, &wl_decoder_size);
+  determine_blwl_decoder_size(sram_verilog_orgz_info,
+                              &num_array_bl, &num_array_wl, &bl_decoder_size, &wl_decoder_size);
   /* Get memory model */
   get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model);
   assert(NULL != mem_model);
@@ -1590,8 +1591,8 @@ void dump_verilog_top_testbench_ports(FILE* fp,
     break;
   case SPICE_SRAM_MEMORY_BANK:
     /* Get the number of array BLs/WLs, decoder sizes */
-    determine_verilog_blwl_decoder_size(sram_verilog_orgz_info,
-                                        &num_array_bl, &num_array_wl, &bl_decoder_size, &wl_decoder_size);
+    determine_blwl_decoder_size(sram_verilog_orgz_info,
+                                &num_array_bl, &num_array_wl, &bl_decoder_size, &wl_decoder_size);
 
     fprintf(fp, "  wire [0:0] %s;\n",
             top_netlist_bl_enable_port_name
@@ -1737,8 +1738,8 @@ void dump_verilog_top_testbench_sram_memory_bank_conf_bits_serial(FILE* fp,
   } 
 
   /* Dump one configuring operation on BL and WL addresses */
-  determine_verilog_blwl_decoder_size(sram_verilog_orgz_info,
-                                      &num_array_bl, &num_array_wl, &bl_decoder_size, &wl_decoder_size);
+  determine_blwl_decoder_size(sram_verilog_orgz_info,
+                              &num_array_bl, &num_array_wl, &bl_decoder_size, &wl_decoder_size);
 
   /* We will allocate the configuration bits to be written for each programming cycle */
   array_bit = (int**)my_malloc(sizeof(int*)*num_array_wl);
@@ -1836,8 +1837,8 @@ void dump_verilog_top_testbench_rram_memory_bank_conf_bits_serial(FILE* fp,
 
 
   /* Dump one configuring operation on BL and WL addresses */
-  determine_verilog_blwl_decoder_size(sram_verilog_orgz_info,
-                                      &num_bl, &num_wl, &bl_decoder_size, &wl_decoder_size);
+  determine_blwl_decoder_size(sram_verilog_orgz_info,
+                              &num_bl, &num_wl, &bl_decoder_size, &wl_decoder_size);
 
   while (NULL != temp) {
     cur_conf_bit_info = (t_conf_bit_info*)(temp->dptr);
@@ -2008,8 +2009,8 @@ void dump_verilog_top_testbench_conf_bits_serial(FILE* fp,
     break;
   case SPICE_SRAM_MEMORY_BANK:
     /* Configuration bits are loaded differently depending on memory technology */
-    determine_verilog_blwl_decoder_size(sram_verilog_orgz_info,
-                                        &num_bl, &num_wl, &bl_decoder_size, &wl_decoder_size);
+    determine_blwl_decoder_size(sram_verilog_orgz_info,
+                                &num_bl, &num_wl, &bl_decoder_size, &wl_decoder_size);
     /* Configuration phase: configure each SRAM or BL/WL */
     fprintf(fp, "//----- Configuration phase -----\n");
     fprintf(fp, "initial\n");
@@ -2056,8 +2057,8 @@ void dump_verilog_top_testbench_stimuli_serial_version_tasks_memory_bank(FILE* f
   } 
 
   /* Find the number of array BLs/WLs and decoder sizes */
-  determine_verilog_blwl_decoder_size(sram_verilog_orgz_info,
-                                      &num_array_bl, &num_array_wl, &bl_decoder_size, &wl_decoder_size);
+  determine_blwl_decoder_size(sram_verilog_orgz_info,
+                              &num_array_bl, &num_array_wl, &bl_decoder_size, &wl_decoder_size);
 
   /* Depending on the memory technology*/
   get_sram_orgz_info_mem_model(sram_verilog_orgz_info, &mem_model);

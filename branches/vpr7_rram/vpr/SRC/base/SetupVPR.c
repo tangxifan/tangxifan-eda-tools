@@ -1110,14 +1110,10 @@ static void SetupBitstreamGenOpts(t_options Options,
   /* Turn on Bitstream Generator options */
   if (Options.Count[OT_FPGA_BITSTREAM_GENERATOR]) {
     bitstream_gen_opts->gen_bitstream = TRUE;
-  } else {
-    return;
   }
 
   if (Options.Count[OT_FPGA_BITSTREAM_OUTPUT_FILE]) {
     bitstream_gen_opts->bitstream_output_file = my_strdup(Options.fpga_bitstream_file);
-  } else {
-    return;
   }
 
   /* SynVerilog needs the input from spice modeling */

@@ -55,7 +55,7 @@ void vpr_fpga_spice_tool_suites(t_vpr_setup vpr_setup,
   if ((TRUE == vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.gen_bitstream)
     &&(FALSE == vpr_setup.FPGA_SPICE_Opts.SpiceOpts.do_spice)
     &&(FALSE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.dump_syn_verilog)) {
-    vpr_fpga_spice_generate_bitstream(vpr_setup, Arch, vpr_setup.FileNameOpts.CircuitName, sram_bitstream_orgz_info);
+    vpr_fpga_spice_generate_bitstream(vpr_setup, Arch, vpr_setup.FileNameOpts.CircuitName, &sram_bitstream_orgz_info);
     /* Free sram_orgz_info */
     free_sram_orgz_info(sram_bitstream_orgz_info,
                         sram_bitstream_orgz_info->type,

@@ -86,7 +86,8 @@ void update_grid_pbs_post_route_rr_graph();
 void free_backannotate_vpr_post_route_info();
 
 void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
-                                            boolean parasitic_net_estimation_off);
+                                            boolean read_activity_file,
+                                            boolean parasitic_net_estimation);
 
 void backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch); 
 
