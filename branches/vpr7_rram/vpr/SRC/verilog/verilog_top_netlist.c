@@ -23,6 +23,7 @@
 #include "read_xml_spice_util.h"
 #include "linkedlist.h"
 #include "fpga_spice_utils.h"
+#include "fpga_spice_pbtypes_utils.h"
 #include "fpga_spice_backannotate_utils.h"
 #include "fpga_spice_globals.h"
 #include "fpga_spice_bitstream.h"
@@ -2738,7 +2739,7 @@ void dump_verilog_top_netlist(char* circuit_name,
   /* Quote Routing structures: Channels */
   dump_verilog_defined_channels(fp, LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
 
-  /* Quote Routing structures: Conneciton Boxes */
+  /* Quote Routing structures: Connection Boxes */
   dump_verilog_defined_connection_boxes(fp); 
   
   /* Quote Routing structures: Switch Boxes */

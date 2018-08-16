@@ -23,6 +23,8 @@
 /* Include spice support headers*/
 #include "linkedlist.h"
 #include "fpga_spice_utils.h"
+#include "fpga_spice_pbtypes_utils.h"
+#include "fpga_spice_bitstream_utils.h"
 #include "fpga_spice_globals.h"
 
 /* Include verilog support headers*/
@@ -497,9 +499,9 @@ void dump_verilog_pb_primitive_io(FILE* fp,
       /* Decode the SRAM bits to BL/WL bits.
        * first half part is BL, the other half part is WL 
        */
-      decode_and_add_verilog_sram_membank_conf_bit_to_llist(sram_verilog_orgz_info, cur_num_sram + i,
-                                                            num_bl_per_sram, num_wl_per_sram,
-                                                            sram_bits[i]);
+      decode_and_add_sram_membank_conf_bit_to_llist(sram_verilog_orgz_info, cur_num_sram + i,
+                                                    num_bl_per_sram, num_wl_per_sram,
+                                                    sram_bits[i]);
     }
     break;
   case SPICE_SRAM_STANDALONE:

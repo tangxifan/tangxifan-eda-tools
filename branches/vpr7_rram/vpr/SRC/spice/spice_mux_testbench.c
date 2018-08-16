@@ -26,6 +26,8 @@
 #include "fpga_spice_globals.h"
 #include "spice_globals.h"
 #include "fpga_spice_utils.h"
+#include "fpga_spice_mux_utils.h"
+#include "fpga_spice_pbtypes_utils.h"
 #include "fpga_spice_backannotate_utils.h"
 #include "spice_utils.h"
 #include "spice_routing.h"

@@ -70,16 +70,21 @@ struct s_TokenPair OptionBaseTokenList[] = {
         { "spice_print_lut_testbench", OT_SPICE_PRINT_LUT_TESTBENCH }, /* Print the SPICE Testbench for Grids  */
         { "spice_print_hardlogic_testbench", OT_SPICE_PRINT_HARDLOGIC_TESTBENCH }, /* Print the SPICE Testbench for Grids  */
         { "fpga_spice_leakage_only", OT_FPGA_SPICE_LEAKAGE_ONLY }, /* Only simulate leakage power in FPGA SPICE */
-        { "fpga_spice_parasitic_net_estimation_off", OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION_OFF }, /* Xifan TANG: turn off the parasitic net estimation*/
-        { "fpga_spice_testbench_load_extraction_off", OT_FPGA_SPICE_TESTBENCH_LOAD_EXTRACTION_OFF }, /* Xifan TANG: turn off the parasitic net estimation*/
+        { "fpga_spice_parasitic_net_estimation", OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION}, /* Xifan TANG: turn on/off the parasitic net estimation*/
+        { "fpga_spice_testbench_load_extraction", OT_FPGA_SPICE_TESTBENCH_LOAD_EXTRACTION}, /* Xifan TANG: turn on/off the parasitic net estimation*/
         /* Xifan TANG: Synthsizable Verilog */
         { "fpga_syn_verilog", OT_FPGA_VERILOG_SYN },
         { "fpga_syn_verilog_dir", OT_FPGA_VERILOG_SYN_DIR },
+        { "fpga_syn_verilog_print_top_testbench", OT_FPGA_VERILOG_SYN_PRINT_TOP_TESTBENCH },
+        { "fpga_syn_verilog_print_input_blif_testbench", OT_FPGA_VERILOG_SYN_PRINT_INPUT_BLIF_TESTBENCH },
         { "fpga_syn_verilog_tb_serial_config_mode", OT_FPGA_VERILOG_SYN_TB_SERIAL_CONFIG_MODE },
         { "fpga_spice_rename_illegal_port", OT_FPGA_SPICE_RENAME_ILLEGAL_PORT }, /* Xifan TANG: rename illegal port names */
         { "fpga_spice_signal_density_weight", OT_FPGA_SPICE_SIGNAL_DENSITY_WEIGHT }, /* The weight of signal density */
         { "fpga_spice_sim_window_size", OT_FPGA_SPICE_SIM_WINDOW_SIZE }, /* Window size in determining number of clock cycles in simulation */
         { "fpga_spice_sim_mt_num", OT_FPGA_SPICE_SIM_MT_NUM }, /* number of multi-thread used in simulation */
+        /* Xifan Tang: Bitstream generator */
+        { "fpga_bitstream_generator", OT_FPGA_BITSTREAM_GENERATOR }, /* turn on bitstream generator, and specify the output file */
+        { "fpga_bitstream_output_file", OT_FPGA_BITSTREAM_OUTPUT_FILE }, /* turn on bitstream generator, and specify the output file */
         /* mrFPGA: Xifan TANG */
         {"show_sram", OT_SHOW_SRAM},
         {"show_pass_trans", OT_SHOW_PASS_TRANS},

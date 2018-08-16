@@ -80,6 +80,7 @@ void vpr_print_title(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "Enhancements: mrFPGA, RRAM, SWSEG, FPGA-SPICE by Xifan TANG, EPFL-LSI, U. of Utah-LNIS \n");
 	vpr_printf(TIO_MESSAGE_INFO, "Enhancements: OPIN_TO_CB, CLB_PIN_REMAP by Xifan TANG, EPFL-LSI, U. of Utah-LNIS\n");
 	vpr_printf(TIO_MESSAGE_INFO, "Enhancements: Synthesizable Verilog Support by Xifan TANG, EPFL-LSI, U. of Utah-LNIS\n");
+	vpr_printf(TIO_MESSAGE_INFO, "Enhancements: Bitstream Generator Support by Xifan TANG, EPFL-LSI, U. of Utah-LNIS\n");
 	vpr_printf(TIO_MESSAGE_INFO, "xifan.tang@utah.edu\n");
 	vpr_printf(TIO_MESSAGE_INFO, "This is free open source code under MIT license.\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
@@ -188,8 +189,10 @@ void vpr_print_usage(void) {
     /* Xifan TANG: Synthesizable Verilog Dump*/
 	vpr_printf(TIO_MESSAGE_INFO, "Synthesizable Verilog Generator Options:\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_syn_verilog\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_syn_verilog_dir <directory_path_of_dumped_verilog_files>\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_syn_verilog_tb_serial_config_mode\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_syn_verilog_dir <string>\n");
+    /* Xifan Tang: Bitstream generator */
+	vpr_printf(TIO_MESSAGE_INFO, "Bitstream Generator (accompany with the Verilog Generator) Options:\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_bitstream_file <string>\n");
 }
 
 /* Initialize VPR 

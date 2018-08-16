@@ -499,25 +499,34 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
       return Args;
     case OT_FPGA_SPICE_LEAKAGE_ONLY:
       return Args;
-    case OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION_OFF:
-      return Args;
-    case OT_FPGA_SPICE_TESTBENCH_LOAD_EXTRACTION_OFF:
-      return Args;
+    case OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION:
+      return ReadOnOff(Args, &Options->fpga_spice_parasitic_net_estimation);
+    case OT_FPGA_SPICE_TESTBENCH_LOAD_EXTRACTION:
+      return ReadOnOff(Args, &Options->fpga_spice_testbench_load_extraction);
     /* Xifan TANG: Synthesizable Verilog */
     case OT_FPGA_VERILOG_SYN:
       return Args;
     case OT_FPGA_VERILOG_SYN_DIR:
-      return ReadString(Args, &Options->syn_verilog_dir);
+      return ReadString(Args, &Options->fpga_syn_verilog_dir);
+    case OT_FPGA_VERILOG_SYN_PRINT_TOP_TESTBENCH:
+      return Args;
+    case OT_FPGA_VERILOG_SYN_PRINT_INPUT_BLIF_TESTBENCH:
+      return Args;
     case OT_FPGA_VERILOG_SYN_TB_SERIAL_CONFIG_MODE:
       return Args;
     case OT_FPGA_SPICE_RENAME_ILLEGAL_PORT:
       return Args;
     case OT_FPGA_SPICE_SIGNAL_DENSITY_WEIGHT:
-	  return ReadFloat(Args, &Options->signal_density_weight);
+	  return ReadFloat(Args, &Options->fpga_spice_signal_density_weight);
     case OT_FPGA_SPICE_SIM_WINDOW_SIZE:
-	  return ReadFloat(Args, &Options->sim_window_size);
+	  return ReadFloat(Args, &Options->fpga_spice_sim_window_size);
     case OT_FPGA_SPICE_SIM_MT_NUM:
-	  return ReadInt(Args, &Options->spice_sim_mt_num);
+	  return ReadInt(Args, &Options->fpga_spice_sim_mt_num);
+    /* Xifan TANG: Bitstream generator */
+    case OT_FPGA_BITSTREAM_GENERATOR:
+      return Args;
+    case OT_FPGA_BITSTREAM_OUTPUT_FILE:
+      return ReadString(Args, &Options->fpga_bitstream_file);
     /* mrFPGA: Xifan TANG */
     case OT_SHOW_SRAM:
     case OT_SHOW_PASS_TRANS:

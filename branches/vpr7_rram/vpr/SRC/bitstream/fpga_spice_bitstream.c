@@ -26,12 +26,10 @@
 #include "linkedlist.h"
 #include "fpga_spice_utils.h"
 #include "fpga_spice_backannotate_utils.h"
-#include "spice_api.h"
+#include "fpga_spice_bitstream_utils.h"
 #include "fpga_spice_globals.h"
-
-/* Include SynVerilog headers */
-#include "verilog_global.h"
-#include "verilog_utils.h"
+#include "fpga_spice_bitstream_pbtypes.h"
+#include "fpga_spice_bitstream_routing.h"
 
 /* Global variables only in file */
 static int dumped_num_conf_bits = 0;
@@ -286,3 +284,94 @@ void dump_conf_bits_to_bitstream_file(FILE* fp,
   
   return;
 }
+
+/* Top-level function*/
+void vpr_fpga_spice_generate_bitstream(t_vpr_setup vpr_setup,
+                                       t_arch Arch,
+                                       char* circuit_name,
+                                       t_sram_orgz_info* cur_sram_orgz_info) {
+  /* Timer */
+  clock_t t_start;
+  clock_t t_end;
+  float run_time_sec;
+
+  char* bitstream_file_name = NULL;
+  char* bitstream_file_path = NULL;
+
+  char* chomped_parent_dir = NULL;
+  char* chomped_circuit_name = NULL;
+
+  /* Check if the routing architecture we support*/
+  if (UNI_DIRECTIONAL != vpr_setup.RoutingArch.directionality) {
+    vpr_printf(TIO_MESSAGE_ERROR, "FPGA Bitstream Generator only support uni-directional routing architecture!\n");
+    exit(1);
+  }
+  
+  /* We don't support mrFPGA */
+#ifdef MRFPGA_H
+  if (is_mrFPGA) {
+    vpr_printf(TIO_MESSAGE_ERROR, "FPGA Bitstream Generator do not support mrFPGA!\n");
+    exit(1);
+  }
+#endif
+  
+  assert (TRUE == vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.gen_bitstream);
+
+  /* Format the directory paths */
+  split_path_prog_name(circuit_name, '/', &chomped_parent_dir, &chomped_circuit_name);
+
+  /* VerilogGenerator formally starts*/
+  vpr_printf(TIO_MESSAGE_INFO, "\nFPGA Bitstream generator starts...\n");
+ 
+  /* Start time count */
+  t_start = clock();
+
+  if (NULL == vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.bitstream_output_file) {
+    bitstream_file_path = my_strcat(circuit_name, fpga_spice_bitstream_output_file_postfix);
+  } else {
+    bitstream_file_path = my_strdup(vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.bitstream_output_file);
+  }
+
+  /* assign the global variable of SRAM model */
+  assert(NULL != Arch.sram_inf.verilog_sram_inf_orgz); /* Check !*/
+  /* initialize the SRAM organization information struct */
+  cur_sram_orgz_info = alloc_one_sram_orgz_info();
+  init_sram_orgz_info(cur_sram_orgz_info, Arch.sram_inf.verilog_sram_inf_orgz->type, 
+                      Arch.sram_inf.verilog_sram_inf_orgz->spice_model, nx + 2, ny + 2);
+  /* Check all the SRAM port is using the correct SRAM SPICE MODEL */
+  config_spice_models_sram_port_spice_model(Arch.spice->num_spice_model, 
+                                            Arch.spice->spice_models,
+                                            Arch.sram_inf.verilog_sram_inf_orgz->spice_model);
+
+  /* zero the counter of each spice_model */
+  zero_spice_models_cnt(Arch.spice->num_spice_model, Arch.spice->spice_models);
+
+  /* Generate Bitstreams 
+   * Bitstream generation must follow the sequence: grid => CB => SB 
+   * (To be consistent with Verilog Generator !!!)
+   */
+  /* Logic blocks */
+  fpga_spice_generate_bitstream_logic_block(&Arch, cur_sram_orgz_info);
+
+  /* Routing: Connection Boxes and Switch Boxes */
+  fpga_spice_generate_bitstream_routing_resources(Arch, &vpr_setup.RoutingArch, cur_sram_orgz_info,
+                                                  num_rr_nodes, rr_node, rr_node_indices);
+
+  /* Dump bitstream file */
+  dump_fpga_spice_bitstream(bitstream_file_path, chomped_circuit_name, cur_sram_orgz_info);
+
+  /* End time count */
+  t_end = clock();
+ 
+  run_time_sec = (float)(t_end - t_start) / CLOCKS_PER_SEC;
+  vpr_printf(TIO_MESSAGE_INFO, "Bitstream Generation took %g seconds\n", run_time_sec);  
+
+  /* Free */
+  my_free(bitstream_file_name);
+  my_free(bitstream_file_path);
+ 
+  return;
+}
+
+
+

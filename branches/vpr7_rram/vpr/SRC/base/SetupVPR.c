@@ -48,6 +48,12 @@ static void SetupSpiceOpts(t_options Options,
 static void SetupSynVerilogOpts(t_options Options, 
                                 t_syn_verilog_opts* syn_verilog_opts,
                                 t_arch* arch);
+
+/* Xifan TANG: Bitstream Generator */
+static void SetupBitstreamGenOpts(t_options Options, 
+                                  t_bitstream_gen_opts* bitstream_gen_opts,
+                                  t_arch* arch);
+
 /* Xifan TANG: FPGA-SPICE Tool suites Options Setup */
 static void SetupFpgaSpiceOpts(t_options Options, 
                                t_fpga_spice_opts* fpga_spice_opts,
@@ -970,8 +976,8 @@ static void SetupSpiceOpts(t_options Options,
   spice_opts->spice_print_hardlogic_testbench = FALSE;
   spice_opts->spice_print_grid_testbench = FALSE;
   spice_opts->fpga_spice_leakage_only = FALSE;
-  spice_opts->fpga_spice_parasitic_net_estimation_off = FALSE;
-  spice_opts->fpga_spice_testbench_load_extraction_off = FALSE;
+  spice_opts->fpga_spice_parasitic_net_estimation = TRUE;
+  spice_opts->fpga_spice_testbench_load_extraction = TRUE;
 
   /* Turn on the spice option if it is selected*/
   if (Options.Count[OT_FPGA_SPICE]) {
@@ -1010,11 +1016,11 @@ static void SetupSpiceOpts(t_options Options,
     if (Options.Count[OT_FPGA_SPICE_LEAKAGE_ONLY]) {
       spice_opts->fpga_spice_leakage_only = TRUE;
     }
-    if (Options.Count[OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION_OFF]) {
-      spice_opts->fpga_spice_parasitic_net_estimation_off = TRUE;
+    if (Options.Count[OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION]) {
+      spice_opts->fpga_spice_parasitic_net_estimation = Options.fpga_spice_parasitic_net_estimation;
     }
-    if (Options.Count[OT_FPGA_SPICE_TESTBENCH_LOAD_EXTRACTION_OFF]) {
-      spice_opts->fpga_spice_testbench_load_extraction_off = TRUE;
+    if (Options.Count[OT_FPGA_SPICE_TESTBENCH_LOAD_EXTRACTION]) {
+      spice_opts->fpga_spice_testbench_load_extraction = Options.fpga_spice_testbench_load_extraction;
     }
   }
   /* Set default options */
@@ -1038,7 +1044,7 @@ static void SetupSpiceOpts(t_options Options,
   /* Assign the number of mt in SPICE simulation */
   spice_opts->spice_sim_multi_thread_num = 8;
   if (Options.Count[OT_FPGA_SPICE_SIM_MT_NUM]) { 
-    spice_opts->spice_sim_multi_thread_num = Options.spice_sim_mt_num;
+    spice_opts->spice_sim_multi_thread_num = Options.fpga_spice_sim_mt_num;
   }
 
   /* If spice option is selected*/
@@ -1056,6 +1062,8 @@ static void SetupSynVerilogOpts(t_options Options,
   /* Initialize */  
   syn_verilog_opts->dump_syn_verilog = FALSE;
   syn_verilog_opts->syn_verilog_dump_dir = NULL;
+  syn_verilog_opts->dump_syn_verilog_top_testbench = FALSE;
+  syn_verilog_opts->dump_syn_verilog_input_blif_testbench = FALSE;
   syn_verilog_opts->tb_serial_config_mode = FALSE;
 
   /* Turn on Syn_verilog options */
@@ -1066,7 +1074,15 @@ static void SetupSynVerilogOpts(t_options Options,
   }
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_DIR]) {
-    syn_verilog_opts->syn_verilog_dump_dir = my_strdup(Options.syn_verilog_dir);
+    syn_verilog_opts->syn_verilog_dump_dir = my_strdup(Options.fpga_syn_verilog_dir);
+  }
+
+  if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_INPUT_BLIF_TESTBENCH]) {
+    syn_verilog_opts->dump_syn_verilog_top_testbench = TRUE;
+  }
+
+  if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_TOP_TESTBENCH]) {
+    syn_verilog_opts->dump_syn_verilog_input_blif_testbench = TRUE;
   }
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_TB_SERIAL_CONFIG_MODE]) {
@@ -1082,6 +1098,37 @@ static void SetupSynVerilogOpts(t_options Options,
   return;
 }
 
+/*Xifan TANG: Bitstream Generator */
+static void SetupBitstreamGenOpts(t_options Options, 
+                                  t_bitstream_gen_opts* bitstream_gen_opts,
+                                  t_arch* arch) {
+
+  /* Initialize */  
+  bitstream_gen_opts->gen_bitstream = FALSE;
+  bitstream_gen_opts->bitstream_output_file = NULL;
+
+  /* Turn on Bitstream Generator options */
+  if (Options.Count[OT_FPGA_BITSTREAM_GENERATOR]) {
+    bitstream_gen_opts->gen_bitstream = TRUE;
+  } else {
+    return;
+  }
+
+  if (Options.Count[OT_FPGA_BITSTREAM_OUTPUT_FILE]) {
+    bitstream_gen_opts->bitstream_output_file = my_strdup(Options.fpga_bitstream_file);
+  } else {
+    return;
+  }
+
+  /* SynVerilog needs the input from spice modeling */
+  if (FALSE == arch->read_xml_spice) {
+    arch->read_xml_spice = bitstream_gen_opts->gen_bitstream;
+    arch->spice = (t_spice*)my_malloc(sizeof(t_spice));
+  }
+
+  return;
+}
+
 static void SetupFpgaSpiceOpts(t_options Options, 
                                t_fpga_spice_opts* fpga_spice_opts,
                                t_arch* Arch) {
@@ -1091,8 +1138,8 @@ static void SetupFpgaSpiceOpts(t_options Options,
   /* Xifan TANG: Synthesizable Verilog Dumping*/
   SetupSynVerilogOpts(Options, &(fpga_spice_opts->SynVerilogOpts), Arch);   
 
-  /* Decide if we need to read activity file */
-  fpga_spice_opts->read_act_file = FALSE;
+  /* Xifan TANG: Bitstream generator */
+  SetupBitstreamGenOpts(Options, &(fpga_spice_opts->BitstreamGenOpts), Arch);
 
   /* Decide if we need to rename illegal port names */
   fpga_spice_opts->rename_illegal_port = FALSE;
@@ -1103,21 +1150,28 @@ static void SetupFpgaSpiceOpts(t_options Options,
   /* Assign the weight of signal density */
   fpga_spice_opts->signal_density_weight = 1.;
   if (Options.Count[OT_FPGA_SPICE_SIGNAL_DENSITY_WEIGHT]) { 
-    fpga_spice_opts->signal_density_weight = Options.signal_density_weight;
+    fpga_spice_opts->signal_density_weight = Options.fpga_spice_signal_density_weight;
   }
 
   /* Assign the weight of signal density */
   fpga_spice_opts->sim_window_size = 0.5;
   if (Options.Count[OT_FPGA_SPICE_SIM_WINDOW_SIZE]) { 
-    fpga_spice_opts->sim_window_size = Options.sim_window_size;
+    fpga_spice_opts->sim_window_size = Options.fpga_spice_sim_window_size;
   }
 
   /* Decide if we need to do FPGA-SPICE */
   fpga_spice_opts->do_fpga_spice = FALSE;
   if (( TRUE == fpga_spice_opts->SpiceOpts.do_spice)
+     ||(TRUE == fpga_spice_opts->SynVerilogOpts.dump_syn_verilog)
+     ||(TRUE == fpga_spice_opts->BitstreamGenOpts.gen_bitstream)) {
+    fpga_spice_opts->do_fpga_spice = TRUE;
+  }
+
+  /* Decide if we need to read activity file */
+  fpga_spice_opts->read_act_file = FALSE;
+  if (( TRUE == fpga_spice_opts->SpiceOpts.do_spice)
      ||(TRUE == fpga_spice_opts->SynVerilogOpts.dump_syn_verilog)) {
     fpga_spice_opts->read_act_file = TRUE;
-    fpga_spice_opts->do_fpga_spice = TRUE;
   }
 
   return;

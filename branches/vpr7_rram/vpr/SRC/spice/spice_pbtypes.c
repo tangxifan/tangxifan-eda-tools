@@ -24,6 +24,10 @@
 #include "fpga_spice_globals.h"
 #include "spice_globals.h"
 #include "fpga_spice_utils.h"
+#include "fpga_spice_mux_utils.h"
+#include "fpga_spice_pbtypes_utils.h"
+#include "fpga_spice_bitstream_utils.h"
+
 #include "spice_utils.h"
 #include "spice_mux.h"
 #include "spice_lut.h"
@@ -375,35 +379,6 @@ void generate_spice_src_des_pb_graph_pin_prefix(t_pb_graph_node* src_pb_graph_no
   return;
 }
 
-void find_interc_fan_in_des_pb_graph_pin(t_pb_graph_pin* des_pb_graph_pin,
-                                         t_mode* cur_mode,
-                                         t_interconnect** cur_interc,
-                                         int* fan_in) { 
-  int iedge;
-  
-  (*cur_interc) = NULL;
-  (*fan_in) = 0;  
-
-  /* Search the input edges only, stats on the size of MUX we may need (fan-in) */
-  for (iedge = 0; iedge < des_pb_graph_pin->num_input_edges; iedge++) {
-    /* 1. First, we should make sure this interconnect is in the selected mode!!!*/
-    if (cur_mode == des_pb_graph_pin->input_edges[iedge]->interconnect->parent_mode) {
-      /* Check this edge*/
-      check_pb_graph_edge(*(des_pb_graph_pin->input_edges[iedge]));
-      /* Record the interconnection*/
-      if (NULL == (*cur_interc)) {
-        (*cur_interc) = des_pb_graph_pin->input_edges[iedge]->interconnect;
-      } else { /* Make sure the interconnections for this pin is the same!*/
-        assert((*cur_interc) == des_pb_graph_pin->input_edges[iedge]->interconnect);
-      }
-      /* Search the input_pins of input_edges only*/
-      (*fan_in) += des_pb_graph_pin->input_edges[iedge]->num_input_pins;
-    }
-  }
-
-  return;
-}
-
 /* We check output_pins of cur_pb_graph_node and its the input_edges
  * Built the interconnections between outputs of cur_pb_graph_node and outputs of child_pb_graph_node
  *   src_pb_graph_node.[in|out]_pins -----------------> des_pb_graph_node.[in|out]pins
@@ -465,28 +440,7 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
     return;
   }
   /* Initialize the interconnection type that will be implemented in SPICE netlist*/
-  switch (cur_interc->type) {
-    case DIRECT_INTERC:
-      assert(1 == fan_in);
-      spice_interc_type = DIRECT_INTERC;
-      break;
-    case COMPLETE_INTERC:
-      if (1 == fan_in) {
-        spice_interc_type = DIRECT_INTERC;
-      } else {
-        assert((2 == fan_in)||(2 < fan_in));
-        spice_interc_type = MUX_INTERC;
-      }
-      break;
-    case MUX_INTERC:
-      assert((2 == fan_in)||(2 < fan_in));
-      spice_interc_type = MUX_INTERC;
-      break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid interconnection type for %s (Arch[LINE%d])!\n",
-               __FILE__, __LINE__, cur_interc->name, cur_interc->line_num);
-    exit(1);
-  }
+  spice_interc_type = determine_actual_pb_interc_type(cur_interc, fan_in);
   /* This time, (2nd round), we print the subckt, according to interc type*/ 
   switch (spice_interc_type) {
   case DIRECT_INTERC:

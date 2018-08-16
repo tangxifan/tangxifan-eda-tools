@@ -1,4 +1,10 @@
 
+int get_ff_output_init_val(t_logical_block* ff_logical_block);
+
+int get_lut_output_init_val(t_logical_block* lut_logical_block);
+
+int get_logical_block_output_init_val(t_logical_block* cur_logical_block);
+
 void init_one_sb_info(t_sb* cur_sb); 
 
 void free_one_sb_info(t_sb* cur_sb);
@@ -72,6 +78,10 @@ void build_one_connection_block_info(t_cb* cur_cb, int cb_x, int cb_y, t_rr_type
                                      int LL_num_rr_nodes,
                                      t_rr_node* LL_rr_node,
                                      t_ivec*** LL_rr_node_indices);
+
+void update_one_grid_pack_prev_node_edge(int x, int y);
+
+void update_grid_pbs_post_route_rr_graph();
 
 void free_backannotate_vpr_post_route_info();
 

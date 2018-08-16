@@ -22,6 +22,9 @@
 /* Include SPICE support headers*/
 #include "linkedlist.h"
 #include "fpga_spice_utils.h"
+#include "fpga_spice_mux_utils.h"
+#include "fpga_spice_pbtypes_utils.h"
+#include "fpga_spice_bitstream_utils.h"
 #include "spice_mux.h"
 #include "fpga_spice_globals.h"
 
@@ -1059,28 +1062,7 @@ void dump_verilog_pb_graph_pin_interc(FILE* fp,
     return;
   }
   /* Initialize the interconnection type that will be implemented in SPICE netlist*/
-  switch (cur_interc->type) {
-    case DIRECT_INTERC:
-      assert(1 == fan_in);
-      verilog_interc_type = DIRECT_INTERC;
-      break;
-    case COMPLETE_INTERC:
-      if (1 == fan_in) {
-        verilog_interc_type = DIRECT_INTERC;
-      } else {
-        assert((2 == fan_in)||(2 < fan_in));
-        verilog_interc_type = MUX_INTERC;
-      }
-      break;
-    case MUX_INTERC:
-      assert((2 == fan_in)||(2 < fan_in));
-      verilog_interc_type = MUX_INTERC;
-      break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid interconnection type for %s (Arch[LINE%d])!\n",
-               __FILE__, __LINE__, cur_interc->name, cur_interc->line_num);
-    exit(1);
-  }
+  verilog_interc_type = determine_actual_pb_interc_type(cur_interc, fan_in);
   /* This time, (2nd round), we print the subckt, according to interc type*/ 
   switch (verilog_interc_type) {
   case DIRECT_INTERC:
@@ -1233,7 +1215,7 @@ void dump_verilog_pb_graph_pin_interc(FILE* fp,
                                 &num_mux_sram_bits, &mux_sram_bits, &mux_level);
       break;
     case SPICE_MODEL_DESIGN_RRAM:
-      decode_verilog_rram_mux(cur_interc->spice_model, fan_in, select_edge, 
+      decode_rram_mux(cur_interc->spice_model, fan_in, select_edge, 
                               &num_mux_sram_bits, &mux_sram_bits, &mux_level);
       break;
     default:
@@ -1673,8 +1655,6 @@ void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
 
   int child_pb_num_reserved_conf_bits = 0;
   int child_pb_num_conf_bits = 0;
-  int child_pb_num_inpads = 0;
-  int child_pb_num_outpads = 0;
   int child_pb_num_iopads = 0;
   
   int num_reserved_conf_bits = 0;
@@ -2241,8 +2221,6 @@ void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
 
   int child_pb_num_reserved_conf_bits = 0;
   int child_pb_num_conf_bits = 0;
-  int child_pb_num_inpads = 0;
-  int child_pb_num_outpads = 0;
   int child_pb_num_iopads = 0;
   
   int num_reserved_conf_bits = 0;

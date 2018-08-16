@@ -27,11 +27,14 @@
 #include "fpga_spice_backannotate_utils.h"
 #include "fpga_spice_setup.h"
 #include "spice_api.h"
-#include "syn_verilog_api.h"
+#include "verilog_api.h"
+#include "fpga_spice_bitstream.h"
 
 /* Top-level API of FPGA-SPICE */
 void vpr_fpga_spice_tool_suites(t_vpr_setup vpr_setup,
                                 t_arch Arch) {
+  t_sram_orgz_info* sram_bitstream_orgz_info = NULL;
+
   /* Common initializations and malloc operations */
   /* If FPGA-SPICE is not called, we should initialize the spice_models */
   if (TRUE == vpr_setup.FPGA_SPICE_Opts.do_fpga_spice) {
@@ -39,14 +42,25 @@ void vpr_fpga_spice_tool_suites(t_vpr_setup vpr_setup,
   }
 
   /* Xifan TANG: SPICE Modeling, SPICE Netlist Output  */ 
-  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.do_spice) {
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SpiceOpts.do_spice) {
     vpr_print_spice_netlists(vpr_setup, Arch, vpr_setup.FileNameOpts.CircuitName);
   }
 
   /* Xifan TANG: Synthesizable verilog dumping */
-  if (vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.dump_syn_verilog) {
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.dump_syn_verilog) {
     vpr_dump_syn_verilog(vpr_setup, Arch, vpr_setup.FileNameOpts.CircuitName);
   }	
+
+  /* Xifan Tang: Bitstream Generator */
+  if ((TRUE == vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.gen_bitstream)
+    &&(FALSE == vpr_setup.FPGA_SPICE_Opts.SpiceOpts.do_spice)
+    &&(FALSE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.dump_syn_verilog)) {
+    vpr_fpga_spice_generate_bitstream(vpr_setup, Arch, vpr_setup.FileNameOpts.CircuitName, sram_bitstream_orgz_info);
+    /* Free sram_orgz_info */
+    free_sram_orgz_info(sram_bitstream_orgz_info,
+                        sram_bitstream_orgz_info->type,
+                        nx + 2, ny + 2);
+  }
 
   /* Free */
   if (TRUE == vpr_setup.FPGA_SPICE_Opts.do_fpga_spice) {

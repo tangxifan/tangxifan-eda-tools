@@ -24,8 +24,9 @@
 /* Include FPGA-SPICE utils */
 #include "linkedlist.h"
 #include "fpga_spice_utils.h"
-#include "spice_mux.h"
 #include "fpga_spice_globals.h"
+#include "fpga_spice_mux_utils.h"
+#include "fpga_spice_bitstream_utils.h"
 
 /* Include verilog utils */
 #include "verilog_global.h"

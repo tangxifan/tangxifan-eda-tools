@@ -26,7 +26,8 @@
 #include "fpga_spice_globals.h"
 #include "fpga_spice_utils.h"
 #include "fpga_spice_backannotate_utils.h"
-#include "syn_verilog_api.h"
+#include "fpga_spice_pbtypes_utils.h"
+#include "verilog_api.h"
 #include "fpga_spice_setup.h"
 
 /***** Subroutines Declarations *****/
@@ -1236,17 +1237,20 @@ void fpga_spice_setup(t_vpr_setup vpr_setup,
    * 1. run_parasitic_net_estimation
    * 2. run_testbench_load_extraction 
    */
-  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_parasitic_net_estimation_off) {
+  run_parasitic_net_estimation = TRUE;
+  if (FALSE == vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_parasitic_net_estimation) {
     run_parasitic_net_estimation = FALSE;
   }
-  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_testbench_load_extraction_off) {
+  
+  run_testbench_load_extraction = TRUE;
+  if (FALSE == vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_testbench_load_extraction) {
     run_testbench_load_extraction = FALSE;
     vpr_printf(TIO_MESSAGE_WARNING, "SPICE testbench load extraction is turned off...Accuracy loss may be expected!\n");
   }
 
   /* Backannotation for post routing information */
   spice_backannotate_vpr_post_route_info(vpr_setup.RoutingArch,
-                                         vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_parasitic_net_estimation_off);
+                                         vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_parasitic_net_estimation);
 
   /* Auto check the density and recommend sim_num_clock_cylce */
   vpr_crit_path_delay = get_critical_path_delay()/1e9;

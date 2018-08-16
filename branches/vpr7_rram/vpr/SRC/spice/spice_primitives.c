@@ -25,6 +25,8 @@
 #include "fpga_spice_globals.h"
 #include "spice_globals.h"
 #include "fpga_spice_utils.h"
+#include "fpga_spice_pbtypes_utils.h"
+#include "fpga_spice_bitstream_utils.h"
 #include "spice_utils.h"
 #include "spice_pbtypes.h"
 #include "spice_primitives.h"

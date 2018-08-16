@@ -25,6 +25,7 @@
 #include "read_xml_spice_util.h"
 #include "linkedlist.h"
 #include "fpga_spice_utils.h"
+#include "fpga_spice_pbtypes_utils.h"
 #include "fpga_spice_backannotate_utils.h"
 #include "fpga_spice_globals.h"
 #include "fpga_spice_bitstream.h"
@@ -166,12 +167,6 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   /* Top netlists dir_path */
   top_netlist_file = my_strcat(chomped_circuit_name, verilog_top_postfix);
   top_netlist_path = my_strcat(verilog_dir_formatted, top_netlist_file);
-  bitstream_file_name = my_strcat(chomped_circuit_name, bitstream_verilog_file_postfix);
-  bitstream_file_path = my_strcat(verilog_dir_formatted, bitstream_file_name);
-  top_testbench_file_name = my_strcat(chomped_circuit_name, top_testbench_verilog_file_postfix);
-  top_testbench_file_path = my_strcat(verilog_dir_formatted, top_testbench_file_name);
-  blif_testbench_file_name = my_strcat(chomped_circuit_name, blif_testbench_verilog_file_postfix);
-  blif_testbench_file_path = my_strcat(verilog_dir_formatted, blif_testbench_file_name);
   
   /* Create directories */
   create_dir_path(verilog_dir_formatted);
@@ -244,15 +239,40 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   // dump_verilog_sdc_file();
   
   /* dump verilog testbench only for top-level */
-  dump_verilog_top_testbench(chomped_circuit_name, top_testbench_file_path, num_clocks, 
-                             vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts, *(Arch.spice));
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.dump_syn_verilog_top_testbench) {
+    top_testbench_file_name = my_strcat(chomped_circuit_name, top_testbench_verilog_file_postfix);
+    top_testbench_file_path = my_strcat(verilog_dir_formatted, top_testbench_file_name);
+    dump_verilog_top_testbench(chomped_circuit_name, top_testbench_file_path, num_clocks, 
+                               vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts, *(Arch.spice));
+    /* Free */
+    my_free(top_testbench_file_name);
+    my_free(top_testbench_file_path);
+  }
 
   /* dump verilog testbench only for input blif */
-  dump_verilog_input_blif_testbench(chomped_circuit_name, blif_testbench_file_path, num_clocks, 
-                                    vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts, *(Arch.spice));
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.dump_syn_verilog_input_blif_testbench) {
+    blif_testbench_file_name = my_strcat(chomped_circuit_name, blif_testbench_verilog_file_postfix);
+    blif_testbench_file_path = my_strcat(verilog_dir_formatted, blif_testbench_file_name);
+    dump_verilog_input_blif_testbench(chomped_circuit_name, blif_testbench_file_path, num_clocks, 
+                                      vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts, *(Arch.spice));
+    /* Free */
+    my_free(blif_testbench_file_name);
+    my_free(blif_testbench_file_path);
+  }
   
   /* Dump bitstream file */
-  dump_fpga_spice_bitstream(bitstream_file_path, chomped_circuit_name, sram_verilog_orgz_info);
+  if (vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.gen_bitstream) {
+    if (NULL == vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.bitstream_output_file) {
+      bitstream_file_name = my_strcat(chomped_circuit_name, fpga_spice_bitstream_output_file_postfix);
+      bitstream_file_path = my_strcat(verilog_dir_formatted, bitstream_file_name);
+    } else {
+      bitstream_file_path = my_strdup(vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.bitstream_output_file);
+    }
+    dump_fpga_spice_bitstream(bitstream_file_path, chomped_circuit_name, sram_verilog_orgz_info);
+    /* Free */
+    my_free(bitstream_file_name);
+    my_free(bitstream_file_path);
+  }
 
   /* End time count */
   t_end = clock();

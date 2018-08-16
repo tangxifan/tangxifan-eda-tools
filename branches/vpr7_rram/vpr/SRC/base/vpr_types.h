@@ -1190,8 +1190,8 @@ struct s_spice_opts {
   boolean spice_print_lut_testbench; 
   boolean spice_print_hardlogic_testbench; 
   boolean fpga_spice_leakage_only;
-  boolean fpga_spice_parasitic_net_estimation_off;
-  boolean fpga_spice_testbench_load_extraction_off;
+  boolean fpga_spice_parasitic_net_estimation;
+  boolean fpga_spice_testbench_load_extraction;
  
   /*Xifan TANG: FPGA SPICE Model Support*/
   char* spice_dir;
@@ -1206,7 +1206,16 @@ typedef struct s_syn_verilog_opts t_syn_verilog_opts;
 struct s_syn_verilog_opts {
   boolean dump_syn_verilog;
   char* syn_verilog_dump_dir;
+  boolean dump_syn_verilog_top_testbench;
+  boolean dump_syn_verilog_input_blif_testbench;
   boolean tb_serial_config_mode;
+};
+
+/* Xifan TANG: bitstream generator */
+typedef struct s_bitstream_gen_opts t_bitstream_gen_opts;
+struct s_bitstream_gen_opts {
+  boolean gen_bitstream;
+  char* bitstream_output_file;
 };
 
 typedef struct s_fpga_spice_opts t_fpga_spice_opts;
@@ -1216,6 +1225,7 @@ struct s_fpga_spice_opts {
   boolean rename_illegal_port; /* Rename illegal port names that is not compatible with verilog/SPICE syntax */
   t_spice_opts SpiceOpts; /* Xifan TANG: SPICE Support*/
   t_syn_verilog_opts SynVerilogOpts; /* Xifan TANG: Synthesizable verilog dumping*/
+  t_bitstream_gen_opts BitstreamGenOpts; /* Xifan Bitsteam Generator */
 
   /* Signal Density */
   float signal_density_weight;

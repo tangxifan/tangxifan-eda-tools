@@ -24,6 +24,9 @@
 #include "linkedlist.h"
 #include "fpga_spice_utils.h"
 #include "fpga_spice_backannotate_utils.h"
+#include "fpga_spice_mux_utils.h"
+#include "fpga_spice_pbtypes_utils.h"
+#include "fpga_spice_bitstream_utils.h"
 #include "fpga_spice_globals.h"
 
 /* Include Verilog support headers*/
@@ -773,7 +776,7 @@ void dump_verilog_switch_box_mux(FILE* fp,
     decode_cmos_mux_sram_bits(verilog_model, mux_size, path_id, &num_mux_sram_bits, &mux_sram_bits, &mux_level);
     break;
   case SPICE_MODEL_DESIGN_RRAM:
-    decode_verilog_rram_mux(verilog_model, mux_size, path_id, &num_mux_sram_bits, &mux_sram_bits, &mux_level);
+    decode_rram_mux(verilog_model, mux_size, path_id, &num_mux_sram_bits, &mux_sram_bits, &mux_level);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",
@@ -1479,7 +1482,7 @@ void dump_verilog_connection_box_mux(FILE* fp,
     decode_cmos_mux_sram_bits(verilog_model, mux_size, path_id, &num_mux_sram_bits, &mux_sram_bits, &mux_level);
     break;
   case SPICE_MODEL_DESIGN_RRAM:
-    decode_verilog_rram_mux(verilog_model, mux_size, path_id, &num_mux_sram_bits, &mux_sram_bits, &mux_level);
+    decode_rram_mux(verilog_model, mux_size, path_id, &num_mux_sram_bits, &mux_sram_bits, &mux_level);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",

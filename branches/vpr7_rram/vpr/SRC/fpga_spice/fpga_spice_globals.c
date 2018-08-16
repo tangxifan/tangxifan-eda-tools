@@ -40,3 +40,4 @@ boolean run_parasitic_net_estimation = TRUE;
 boolean run_testbench_load_extraction = TRUE;
 
 char* renaming_report_postfix = "_io_renaming.rpt";
+char* fpga_spice_bitstream_output_file_postfix = ".bitstream";

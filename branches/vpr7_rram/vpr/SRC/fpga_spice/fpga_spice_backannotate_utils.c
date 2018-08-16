@@ -29,9 +29,130 @@
 #include "fpga_spice_globals.h"
 #include "spice_globals.h"
 #include "fpga_spice_utils.h"
-#include "spice_lut.h"
-
+#include "fpga_spice_lut_utils.h"
+#include "fpga_spice_pbtypes_utils.h"
 #include "fpga_spice_backannotate_utils.h"
+
+/* Get initial value of a Latch/FF output*/
+int get_ff_output_init_val(t_logical_block* ff_logical_block) {
+  assert((0 == ff_logical_block->init_val)||(1 == ff_logical_block->init_val));  
+
+  return ff_logical_block->init_val;
+}
+
+/* Get initial value of a mapped  LUT output*/
+int get_lut_output_init_val(t_logical_block* lut_logical_block) {
+  int i;
+  int* sram_bits = NULL; /* decoded SRAM bits */ 
+  int truth_table_length = 0;
+  char** truth_table = NULL;
+  int lut_size = 0;
+  int input_net_index = OPEN;
+  int* input_init_val = NULL;
+  int init_path_id = 0;
+  int output_init_val = 0;
+
+  t_spice_model* lut_spice_model = NULL;
+  int num_sram_port = 0;
+  t_spice_model_port** sram_ports = NULL;
+
+  /* Ensure a valid file handler*/ 
+  if (NULL == lut_logical_block) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid LUT logical block!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /* Get SPICE model */
+  assert((NULL != lut_logical_block->pb)
+        && ( NULL != lut_logical_block->pb->pb_graph_node)
+        && ( NULL != lut_logical_block->pb->pb_graph_node->pb_type));
+  lut_spice_model = lut_logical_block->pb->pb_graph_node->pb_type->parent_mode->parent_pb_type->spice_model;
+
+  assert(SPICE_MODEL_LUT == lut_spice_model->type);
+
+  sram_ports = find_spice_model_ports(lut_spice_model, SPICE_MODEL_PORT_SRAM, 
+                                      &num_sram_port, TRUE);
+  assert(1 == num_sram_port);
+
+  /* Get the truth table */
+  truth_table = assign_lut_truth_table(lut_logical_block, &truth_table_length); 
+  lut_size = lut_logical_block->used_input_pins;
+  assert(!(0 > lut_size));
+  /* Special for LUT_size = 0 */
+  if (0 == lut_size) {
+    /* Generate sram bits*/
+    sram_bits = generate_lut_sram_bits(truth_table_length, truth_table, 
+                                       1, sram_ports[0]->default_val);
+    /* This is constant generator, SRAM bits should be the same */
+    output_init_val = sram_bits[0];
+    for (i = 0; i < (int)pow(2.,(double)lut_size); i++) { 
+      assert(sram_bits[i] == output_init_val);
+    } 
+  } else { 
+    /* Generate sram bits*/
+    sram_bits = generate_lut_sram_bits(truth_table_length, truth_table,
+                                       lut_size, sram_ports[0]->default_val);
+
+    assert(1 == lut_logical_block->pb->pb_graph_node->num_input_ports);
+    assert(1 == lut_logical_block->pb->pb_graph_node->num_output_ports);
+    /* Get the initial path id */
+    input_init_val = (int*)my_malloc(sizeof(int)*lut_size);
+    for (i = 0; i < lut_size; i++) {
+      input_net_index = lut_logical_block->input_nets[0][i]; 
+      input_init_val[i] = vpack_net[input_net_index].spice_net_info->init_val;
+    } 
+
+    init_path_id = determine_lut_path_id(lut_size, input_init_val);
+    /* Check */  
+    assert((!(0 > init_path_id))&&(init_path_id < (int)pow(2.,(double)lut_size)));
+    output_init_val = sram_bits[init_path_id]; 
+  }
+   
+  /*Free*/
+  for (i = 0; i < truth_table_length; i++) {
+    free(truth_table[i]);
+  }
+  free(truth_table);
+  my_free(sram_bits);
+
+  return output_init_val;
+}
+
+/* Deteremine the initial value of an output of a logical block 
+ * The logical block could be a LUT, a memory block or a multiplier 
+ */
+int get_logical_block_output_init_val(t_logical_block* cur_logical_block) {
+  int output_init_val = 0;
+  t_spice_model* cur_spice_model = NULL;
+
+  /* Get the spice_model of current logical_block */
+  assert((NULL != cur_logical_block->pb)
+        && ( NULL != cur_logical_block->pb->pb_graph_node)
+        && ( NULL != cur_logical_block->pb->pb_graph_node->pb_type));
+  cur_spice_model = cur_logical_block->pb->pb_graph_node->pb_type->parent_mode->parent_pb_type->spice_model;
+
+  /* Switch to specific cases*/
+  switch (cur_spice_model->type) {
+  case SPICE_MODEL_LUT:
+    /* Determine the initial value from LUT inputs */
+    output_init_val = get_lut_output_init_val(cur_logical_block);
+    break;
+  case SPICE_MODEL_HARDLOGIC:
+    /* We have no information, give a default 0 now... 
+     * TODO: find a smarter way!
+     */
+    output_init_val = get_ff_output_init_val(cur_logical_block);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid type of SPICE MODEL (name=%s) in determining the initial output value of logical block(name=%s)!\n",
+               __FILE__, __LINE__, cur_spice_model->name, cur_logical_block->name);
+    exit(1); 
+  }
+  
+  return output_init_val;
+}
+
 
 /* Alloc, initialize and free functions for sb_info & cb_info */
 /* Initialize a SB_info */
@@ -1232,16 +1353,6 @@ void back_annotate_rr_node_map_info() {
   return;
 }
 
-void backup_one_pb_rr_node_pack_prev_node_edge(t_rr_node* pb_rr_node) {
-
-  pb_rr_node->prev_node_in_pack = pb_rr_node->prev_node; 
-  pb_rr_node->prev_edge_in_pack = pb_rr_node->prev_edge; 
-  pb_rr_node->net_num_in_pack = pb_rr_node->net_num; 
-  pb_rr_node->prev_node = OPEN; 
-  pb_rr_node->prev_edge = OPEN; 
-
-  return;
-}
 
 /* During routing stage, VPR swap logic equivalent pins
  * which potentially changes the packing results (prev_node, prev_edge) in local routing

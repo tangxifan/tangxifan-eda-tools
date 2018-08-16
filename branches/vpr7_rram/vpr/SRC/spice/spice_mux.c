@@ -20,11 +20,15 @@
 #include "rr_graph_swseg.h"
 #include "vpr_utils.h"
 
-/* Include spice support headers*/
+/* Include fpga_spice support headers*/
 #include "linkedlist.h"
 #include "fpga_spice_globals.h"
 #include "spice_globals.h"
 #include "fpga_spice_utils.h"
+#include "fpga_spice_mux_utils.h"
+#include "fpga_spice_bitstream_utils.h"
+
+/* Include spice support headers*/
 #include "spice_utils.h"
 #include "spice_lut.h"
 #include "spice_pbtypes.h"

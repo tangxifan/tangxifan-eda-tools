@@ -11,7 +11,6 @@
 char* verilog_netlist_file_postfix = ".v";
 
 char* verilog_top_postfix = "_top.v";
-char* bitstream_verilog_file_postfix = ".bitstream";
 char* top_testbench_verilog_file_postfix = "_top_tb.v";
 char* blif_testbench_verilog_file_postfix = "_blif_tb.v";
 char* logic_block_verilog_file_name = "logic_blocks.v";
