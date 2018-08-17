@@ -1180,15 +1180,15 @@ struct s_cb {
 typedef struct s_spice_opts t_spice_opts;
 struct s_spice_opts {
   boolean do_spice;
-  boolean spice_print_top_testbench; 
-  boolean spice_print_grid_testbench; 
-  boolean spice_print_cb_testbench; 
-  boolean spice_print_sb_testbench; 
-  boolean spice_print_pb_mux_testbench; 
-  boolean spice_print_cb_mux_testbench; 
-  boolean spice_print_sb_mux_testbench; 
-  boolean spice_print_lut_testbench; 
-  boolean spice_print_hardlogic_testbench; 
+  boolean fpga_spice_print_top_testbench; 
+  boolean fpga_spice_print_grid_testbench; 
+  boolean fpga_spice_print_cb_testbench; 
+  boolean fpga_spice_print_sb_testbench; 
+  boolean fpga_spice_print_pb_mux_testbench; 
+  boolean fpga_spice_print_cb_mux_testbench; 
+  boolean fpga_spice_print_sb_mux_testbench; 
+  boolean fpga_spice_print_lut_testbench; 
+  boolean fpga_spice_print_hardlogic_testbench; 
   boolean fpga_spice_leakage_only;
   boolean fpga_spice_parasitic_net_estimation;
   boolean fpga_spice_testbench_load_extraction;
@@ -1198,7 +1198,7 @@ struct s_spice_opts {
   char* include_dir;
   char* subckt_dir;
 
-  int spice_sim_multi_thread_num;
+  int fpga_spice_sim_multi_thread_num;
 };
 
 /* Xifan TANG: synthesizable verilog dumping */
@@ -1208,6 +1208,7 @@ struct s_syn_verilog_opts {
   char* syn_verilog_dump_dir;
   boolean dump_syn_verilog_top_testbench;
   boolean dump_syn_verilog_input_blif_testbench;
+  boolean output_compact_netlist;
   boolean tb_serial_config_mode;
 };
 

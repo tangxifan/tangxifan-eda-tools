@@ -38,6 +38,7 @@
 #include "verilog_pbtypes.h"
 #include "verilog_routing.h"
 #include "verilog_top_netlist.h"
+#include "verilog_compact_netlist.h"
 
 /* Global Variants available only in this source file */
 static char* default_verilog_dir_name = "syn_verilogs/";
@@ -213,8 +214,17 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   dump_verilog_routing_resources(rr_dir_path, Arch, &vpr_setup.RoutingArch,
                                  num_rr_nodes, rr_node, rr_node_indices);
 
-  /* Dump logic blocks */
-  dump_verilog_logic_blocks(lb_dir_path, &Arch);
+  /* Dump logic blocks 
+   * Branches to go: 
+   * 1. a compact output
+   * 2. a full-size output
+   */
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.output_compact_netlist) {
+    dump_compact_verilog_logic_blocks(lb_dir_path, &Arch);
+  } else {
+    assert (FALSE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.output_compact_netlist);
+    dump_verilog_logic_blocks(lb_dir_path, &Arch);
+  }
 
   /* Dump decoder modules only when memory bank is required */
   switch(sram_verilog_orgz_type) {
@@ -232,8 +242,14 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   }
 
   /* Dump top-level verilog */
-  dump_verilog_top_netlist(chomped_circuit_name, top_netlist_path, lb_dir_path, rr_dir_path, 
-                           num_rr_nodes, rr_node, rr_node_indices, num_clocks, *(Arch.spice));
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.output_compact_netlist) {
+    dump_compact_verilog_top_netlist(chomped_circuit_name, top_netlist_path, lb_dir_path, rr_dir_path, 
+                                     num_rr_nodes, rr_node, rr_node_indices, num_clocks, *(Arch.spice));
+   
+  } else {
+    dump_verilog_top_netlist(chomped_circuit_name, top_netlist_path, lb_dir_path, rr_dir_path, 
+                             num_rr_nodes, rr_node, rr_node_indices, num_clocks, *(Arch.spice));
+   }
 
   /* Dump SDC constraints */
   // dump_verilog_sdc_file();

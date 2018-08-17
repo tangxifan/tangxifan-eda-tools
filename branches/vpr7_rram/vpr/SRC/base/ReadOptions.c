@@ -477,25 +477,25 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
     /* Xifan TANG: FPGA SPICE Model Options*/
     case OT_FPGA_SPICE:
       return Args;
-    case OT_SPICE_DIR:
+    case OT_FPGA_SPICE_DIR:
       return ReadString(Args, &Options->spice_dir);
-    case OT_SPICE_PRINT_TOP_TESTBENCH:
+    case OT_FPGA_SPICE_PRINT_TOP_TESTBENCH:
       return Args;
-    case OT_SPICE_PRINT_PB_MUX_TESTBENCH:
+    case OT_FPGA_SPICE_PRINT_PB_MUX_TESTBENCH:
       return Args;
-    case OT_SPICE_PRINT_CB_MUX_TESTBENCH:
+    case OT_FPGA_SPICE_PRINT_CB_MUX_TESTBENCH:
       return Args;
-    case OT_SPICE_PRINT_SB_MUX_TESTBENCH:
+    case OT_FPGA_SPICE_PRINT_SB_MUX_TESTBENCH:
       return Args;
-    case OT_SPICE_PRINT_CB_TESTBENCH:
+    case OT_FPGA_SPICE_PRINT_CB_TESTBENCH:
       return Args;
-    case OT_SPICE_PRINT_SB_TESTBENCH:
+    case OT_FPGA_SPICE_PRINT_SB_TESTBENCH:
       return Args;
-    case OT_SPICE_PRINT_GRID_TESTBENCH:
+    case OT_FPGA_SPICE_PRINT_GRID_TESTBENCH:
       return Args;
-    case OT_SPICE_PRINT_LUT_TESTBENCH:
+    case OT_FPGA_SPICE_PRINT_LUT_TESTBENCH:
       return Args;
-    case OT_SPICE_PRINT_HARDLOGIC_TESTBENCH:
+    case OT_FPGA_SPICE_PRINT_HARDLOGIC_TESTBENCH:
       return Args;
     case OT_FPGA_SPICE_LEAKAGE_ONLY:
       return Args;
@@ -511,6 +511,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
     case OT_FPGA_VERILOG_SYN_PRINT_TOP_TESTBENCH:
       return Args;
     case OT_FPGA_VERILOG_SYN_PRINT_INPUT_BLIF_TESTBENCH:
+      return Args;
+    case OT_FPGA_VERILOG_SYN_COMPACT_NETLIST:
       return Args;
     case OT_FPGA_VERILOG_SYN_TB_SERIAL_CONFIG_MODE:
       return Args;

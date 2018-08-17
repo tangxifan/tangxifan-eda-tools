@@ -247,7 +247,7 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
 
   /* Update the global variable :
    * the number of mutli-thread used in SPICE simulator */
-  spice_sim_multi_thread_num = vpr_setup.FPGA_SPICE_Opts.SpiceOpts.spice_sim_multi_thread_num;
+  spice_sim_multi_thread_num = vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_sim_multi_thread_num;
    
   /* FPGA-SPICE formally starts*/
   vpr_printf(TIO_MESSAGE_INFO, "\nFPGA-SPICE starts...\n");
@@ -281,7 +281,7 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   generate_spice_subckts(subckt_dir_path, &Arch ,&vpr_setup.RoutingArch);
 
   /* Print MUX testbench if needed */
-  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.spice_print_pb_mux_testbench) {
+  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_print_pb_mux_testbench) {
     pb_mux_testbench_dir_path = my_strcat(spice_dir_formatted, spice_pb_mux_tb_dir_name);
     create_dir_path(pb_mux_testbench_dir_path);
     spice_print_mux_testbench(pb_mux_testbench_dir_path, chomped_circuit_name, 
@@ -293,7 +293,7 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
     my_free(pb_mux_testbench_dir_path);
   }
 
-  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.spice_print_cb_mux_testbench) {
+  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_print_cb_mux_testbench) {
     cb_mux_testbench_dir_path = my_strcat(spice_dir_formatted, spice_cb_mux_tb_dir_name);
     create_dir_path(cb_mux_testbench_dir_path);
     spice_print_mux_testbench(cb_mux_testbench_dir_path, chomped_circuit_name,
@@ -304,7 +304,7 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
     my_free(cb_mux_testbench_dir_path);
   }
 
-  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.spice_print_sb_mux_testbench) {
+  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_print_sb_mux_testbench) {
     sb_mux_testbench_dir_path = my_strcat(spice_dir_formatted, spice_sb_mux_tb_dir_name);
     create_dir_path(sb_mux_testbench_dir_path);
     spice_print_mux_testbench(sb_mux_testbench_dir_path, chomped_circuit_name, 
@@ -315,7 +315,7 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
     my_free(sb_mux_testbench_dir_path);
   }
 
-  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.spice_print_cb_testbench) {
+  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_print_cb_testbench) {
     cb_testbench_dir_path = my_strcat(spice_dir_formatted, spice_cb_tb_dir_name);
     create_dir_path(cb_testbench_dir_path);
     spice_print_cb_testbench(cb_testbench_dir_path, chomped_circuit_name,
@@ -326,7 +326,7 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
     my_free(cb_testbench_dir_path);
   }
 
-  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.spice_print_sb_testbench) {
+  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_print_sb_testbench) {
     sb_testbench_dir_path = my_strcat(spice_dir_formatted, spice_sb_tb_dir_name);
     create_dir_path(sb_testbench_dir_path);
     spice_print_sb_testbench(sb_testbench_dir_path, chomped_circuit_name, 
@@ -337,7 +337,7 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
     my_free(sb_testbench_dir_path);
   }
 
-  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.spice_print_lut_testbench) {
+  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_print_lut_testbench) {
     lut_testbench_dir_path = my_strcat(spice_dir_formatted, spice_lut_tb_dir_name); 
     create_dir_path(lut_testbench_dir_path);
     spice_print_lut_testbench(lut_testbench_dir_path, chomped_circuit_name, include_dir_path, subckt_dir_path,
@@ -347,7 +347,7 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   }
 
   /* Print hardlogic testbench file if needed */
-  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.spice_print_hardlogic_testbench) {
+  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_print_hardlogic_testbench) {
     hardlogic_testbench_dir_path = my_strcat(spice_dir_formatted, spice_hardlogic_tb_dir_name); 
     create_dir_path(hardlogic_testbench_dir_path);
     spice_print_hardlogic_testbench(hardlogic_testbench_dir_path, chomped_circuit_name, include_dir_path, subckt_dir_path,
@@ -357,7 +357,7 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   }
 
   /* Print Grid testbench if needed */
-  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.spice_print_grid_testbench) {
+  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_print_grid_testbench) {
     grid_testbench_dir_path = my_strcat(spice_dir_formatted, spice_grid_tb_dir_name);
     create_dir_path(grid_testbench_dir_path);
     spice_print_grid_testbench(grid_testbench_dir_path, chomped_circuit_name, 
@@ -369,7 +369,7 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   }
 
   /* Print Netlists of the given FPGA*/
-  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.spice_print_top_testbench) {
+  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_print_top_testbench) {
     top_testbench_file = my_strcat(chomped_circuit_name, spice_top_testbench_postfix);
     /* Process top_netlist_path */
     top_testbench_dir_path = my_strcat(spice_dir_formatted, spice_top_tb_dir_name); 

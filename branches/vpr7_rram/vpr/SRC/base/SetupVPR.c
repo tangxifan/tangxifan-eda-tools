@@ -966,15 +966,15 @@ static void SetupSpiceOpts(t_options Options,
                            t_arch* arch) {
   /* Initialize */  
   spice_opts->do_spice = FALSE;
-  spice_opts->spice_print_top_testbench = FALSE;
-  spice_opts->spice_print_pb_mux_testbench = FALSE;
-  spice_opts->spice_print_cb_mux_testbench = FALSE;
-  spice_opts->spice_print_sb_mux_testbench = FALSE;
-  spice_opts->spice_print_cb_testbench = FALSE;
-  spice_opts->spice_print_sb_testbench = FALSE;
-  spice_opts->spice_print_lut_testbench = FALSE;
-  spice_opts->spice_print_hardlogic_testbench = FALSE;
-  spice_opts->spice_print_grid_testbench = FALSE;
+  spice_opts->fpga_spice_print_top_testbench = FALSE;
+  spice_opts->fpga_spice_print_pb_mux_testbench = FALSE;
+  spice_opts->fpga_spice_print_cb_mux_testbench = FALSE;
+  spice_opts->fpga_spice_print_sb_mux_testbench = FALSE;
+  spice_opts->fpga_spice_print_cb_testbench = FALSE;
+  spice_opts->fpga_spice_print_sb_testbench = FALSE;
+  spice_opts->fpga_spice_print_lut_testbench = FALSE;
+  spice_opts->fpga_spice_print_hardlogic_testbench = FALSE;
+  spice_opts->fpga_spice_print_grid_testbench = FALSE;
   spice_opts->fpga_spice_leakage_only = FALSE;
   spice_opts->fpga_spice_parasitic_net_estimation = TRUE;
   spice_opts->fpga_spice_testbench_load_extraction = TRUE;
@@ -986,32 +986,32 @@ static void SetupSpiceOpts(t_options Options,
     /* TODO: this could be more flexible*/
     spice_opts->include_dir = "include/";
     spice_opts->subckt_dir = "subckt/";
-    if (Options.Count[OT_SPICE_PRINT_TOP_TESTBENCH]) {
-      spice_opts->spice_print_top_testbench = TRUE;
+    if (Options.Count[OT_FPGA_SPICE_PRINT_TOP_TESTBENCH]) {
+      spice_opts->fpga_spice_print_top_testbench = TRUE;
     }
-    if (Options.Count[OT_SPICE_PRINT_PB_MUX_TESTBENCH]) {
-      spice_opts->spice_print_pb_mux_testbench = TRUE;
+    if (Options.Count[OT_FPGA_SPICE_PRINT_PB_MUX_TESTBENCH]) {
+      spice_opts->fpga_spice_print_pb_mux_testbench = TRUE;
     }
-    if (Options.Count[OT_SPICE_PRINT_CB_MUX_TESTBENCH]) {
-      spice_opts->spice_print_cb_mux_testbench = TRUE;
+    if (Options.Count[OT_FPGA_SPICE_PRINT_CB_MUX_TESTBENCH]) {
+      spice_opts->fpga_spice_print_cb_mux_testbench = TRUE;
     }
-    if (Options.Count[OT_SPICE_PRINT_SB_MUX_TESTBENCH]) {
-      spice_opts->spice_print_sb_mux_testbench = TRUE;
+    if (Options.Count[OT_FPGA_SPICE_PRINT_SB_MUX_TESTBENCH]) {
+      spice_opts->fpga_spice_print_sb_mux_testbench = TRUE;
     }
-    if (Options.Count[OT_SPICE_PRINT_CB_TESTBENCH]) {
-      spice_opts->spice_print_cb_testbench = TRUE;
+    if (Options.Count[OT_FPGA_SPICE_PRINT_CB_TESTBENCH]) {
+      spice_opts->fpga_spice_print_cb_testbench = TRUE;
     }
-    if (Options.Count[OT_SPICE_PRINT_SB_TESTBENCH]) {
-      spice_opts->spice_print_sb_testbench = TRUE;
+    if (Options.Count[OT_FPGA_SPICE_PRINT_SB_TESTBENCH]) {
+      spice_opts->fpga_spice_print_sb_testbench = TRUE;
     }
-    if (Options.Count[OT_SPICE_PRINT_GRID_TESTBENCH]) {
-      spice_opts->spice_print_grid_testbench = TRUE;
+    if (Options.Count[OT_FPGA_SPICE_PRINT_GRID_TESTBENCH]) {
+      spice_opts->fpga_spice_print_grid_testbench = TRUE;
     }
-    if (Options.Count[OT_SPICE_PRINT_LUT_TESTBENCH]) {
-      spice_opts->spice_print_lut_testbench = TRUE;
+    if (Options.Count[OT_FPGA_SPICE_PRINT_LUT_TESTBENCH]) {
+      spice_opts->fpga_spice_print_lut_testbench = TRUE;
     }
-    if (Options.Count[OT_SPICE_PRINT_HARDLOGIC_TESTBENCH]) {
-      spice_opts->spice_print_hardlogic_testbench = TRUE;
+    if (Options.Count[OT_FPGA_SPICE_PRINT_HARDLOGIC_TESTBENCH]) {
+      spice_opts->fpga_spice_print_hardlogic_testbench = TRUE;
     }
     if (Options.Count[OT_FPGA_SPICE_LEAKAGE_ONLY]) {
       spice_opts->fpga_spice_leakage_only = TRUE;
@@ -1025,26 +1025,26 @@ static void SetupSpiceOpts(t_options Options,
   }
   /* Set default options */
   if ((TRUE == spice_opts->do_spice)
-    &&(FALSE == spice_opts->spice_print_top_testbench)
-    &&(FALSE == spice_opts->spice_print_grid_testbench)
-    &&(FALSE == spice_opts->spice_print_pb_mux_testbench)
-    &&(FALSE == spice_opts->spice_print_cb_mux_testbench)
-    &&(FALSE == spice_opts->spice_print_sb_mux_testbench)
-    &&(FALSE == spice_opts->spice_print_cb_testbench)
-    &&(FALSE == spice_opts->spice_print_sb_testbench)
-    &&(FALSE == spice_opts->spice_print_lut_testbench)
-    &&(FALSE == spice_opts->spice_print_hardlogic_testbench)) {
-    spice_opts->spice_print_pb_mux_testbench = TRUE;
-    spice_opts->spice_print_cb_mux_testbench = TRUE;
-    spice_opts->spice_print_sb_mux_testbench = TRUE;
-    spice_opts->spice_print_lut_testbench = TRUE;
-    spice_opts->spice_print_hardlogic_testbench = TRUE;
+    &&(FALSE == spice_opts->fpga_spice_print_top_testbench)
+    &&(FALSE == spice_opts->fpga_spice_print_grid_testbench)
+    &&(FALSE == spice_opts->fpga_spice_print_pb_mux_testbench)
+    &&(FALSE == spice_opts->fpga_spice_print_cb_mux_testbench)
+    &&(FALSE == spice_opts->fpga_spice_print_sb_mux_testbench)
+    &&(FALSE == spice_opts->fpga_spice_print_cb_testbench)
+    &&(FALSE == spice_opts->fpga_spice_print_sb_testbench)
+    &&(FALSE == spice_opts->fpga_spice_print_lut_testbench)
+    &&(FALSE == spice_opts->fpga_spice_print_hardlogic_testbench)) {
+    spice_opts->fpga_spice_print_pb_mux_testbench = TRUE;
+    spice_opts->fpga_spice_print_cb_mux_testbench = TRUE;
+    spice_opts->fpga_spice_print_sb_mux_testbench = TRUE;
+    spice_opts->fpga_spice_print_lut_testbench = TRUE;
+    spice_opts->fpga_spice_print_hardlogic_testbench = TRUE;
   }
 
   /* Assign the number of mt in SPICE simulation */
-  spice_opts->spice_sim_multi_thread_num = 8;
+  spice_opts->fpga_spice_sim_multi_thread_num = 8;
   if (Options.Count[OT_FPGA_SPICE_SIM_MT_NUM]) { 
-    spice_opts->spice_sim_multi_thread_num = Options.fpga_spice_sim_mt_num;
+    spice_opts->fpga_spice_sim_multi_thread_num = Options.fpga_spice_sim_mt_num;
   }
 
   /* If spice option is selected*/
@@ -1064,6 +1064,7 @@ static void SetupSynVerilogOpts(t_options Options,
   syn_verilog_opts->syn_verilog_dump_dir = NULL;
   syn_verilog_opts->dump_syn_verilog_top_testbench = FALSE;
   syn_verilog_opts->dump_syn_verilog_input_blif_testbench = FALSE;
+  syn_verilog_opts->output_compact_netlist = FALSE;
   syn_verilog_opts->tb_serial_config_mode = FALSE;
 
   /* Turn on Syn_verilog options */
@@ -1083,6 +1084,10 @@ static void SetupSynVerilogOpts(t_options Options,
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_TOP_TESTBENCH]) {
     syn_verilog_opts->dump_syn_verilog_input_blif_testbench = TRUE;
+  }
+
+  if (Options.Count[OT_FPGA_VERILOG_SYN_COMPACT_NETLIST]) {
+    syn_verilog_opts->output_compact_netlist = TRUE;
   }
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_TB_SERIAL_CONFIG_MODE]) {
@@ -1110,6 +1115,8 @@ static void SetupBitstreamGenOpts(t_options Options,
   /* Turn on Bitstream Generator options */
   if (Options.Count[OT_FPGA_BITSTREAM_GENERATOR]) {
     bitstream_gen_opts->gen_bitstream = TRUE;
+  } else {
+    return;
   }
 
   if (Options.Count[OT_FPGA_BITSTREAM_OUTPUT_FILE]) {
