@@ -3337,8 +3337,6 @@ void dump_verilog_physical_grid_blocks(char* subckt_dir,
   int cur_num_mem_bit;
   int temp_reserved_conf_bits_msb;
   int temp_conf_bits_lsb, temp_conf_bits_msb;
-  int temp_inpad_lsb, temp_inpad_msb;
-  int temp_outpad_lsb, temp_outpad_msb;
   int temp_iopad_lsb, temp_iopad_msb;
   FILE* fp = NULL;
   char* fname = NULL;
@@ -3489,8 +3487,6 @@ void dump_verilog_physical_grid_blocks(char* subckt_dir,
     }
     /* Update temp_sram_lsb */
     temp_conf_bits_lsb = temp_conf_bits_msb;
-    temp_inpad_lsb = temp_inpad_msb;
-    temp_outpad_lsb = temp_outpad_msb;
     temp_iopad_lsb = temp_iopad_msb;
     fprintf(fp, ");\n");
   }
