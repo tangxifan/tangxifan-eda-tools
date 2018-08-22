@@ -33,7 +33,8 @@
 
 /***** Subroutines *****/
 
-void dump_verilog_decoder(char* submodule_dir) {
+void dump_verilog_decoder(t_sram_orgz_info* cur_sram_orgz_info,
+                          char* submodule_dir) {
   int num_array_bl, num_array_wl;
   int bl_decoder_size, wl_decoder_size;
   FILE* fp = NULL;
@@ -46,15 +47,16 @@ void dump_verilog_decoder(char* submodule_dir) {
   /* Print the muxes netlist*/
   fp = fopen(verilog_name, "w");
   if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in create decoder SPICE netlist %s",__FILE__, __LINE__, verilog_name); 
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in create decoder SPICE netlist %s", 
+               __FILE__, __LINE__, verilog_name); 
     exit(1);
   } 
 
   /* Check */
-  assert(SPICE_SRAM_MEMORY_BANK == sram_verilog_orgz_info->type);
+  assert(SPICE_SRAM_MEMORY_BANK == cur_sram_orgz_info->type);
 
   /* Get number of BLs,WLs and decoder sizes */
-  determine_blwl_decoder_size(sram_verilog_orgz_info, 
+  determine_blwl_decoder_size(cur_sram_orgz_info, 
                               &num_array_bl, &num_array_wl, 
                               &bl_decoder_size, &wl_decoder_size);
    
@@ -65,7 +67,7 @@ void dump_verilog_decoder(char* submodule_dir) {
   dump_verilog_file_header(fp, " Verilog Decoders");
 
   /* Different design technology requires different BL decoder logic */
-  get_sram_orgz_info_mem_model(sram_verilog_orgz_info, &mem_model); 
+  get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model); 
   /* Find if we need an inversion of the BL */
   check_mem_model_blwl_inverted(mem_model, SPICE_MODEL_PORT_BL, &bl_inverted); 
   check_mem_model_blwl_inverted(mem_model, SPICE_MODEL_PORT_WL, &wl_inverted); 

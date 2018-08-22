@@ -24,8 +24,6 @@ extern char* cbx_verilog_file_name_prefix;
 extern char* cby_verilog_file_name_prefix;
 
 extern t_spice_model* sram_verilog_model;
-extern enum e_sram_orgz sram_verilog_orgz_type;
-extern t_sram_orgz_info* sram_verilog_orgz_info;
 
 /* Input and Output Pad spice model. should be set as global */
 extern t_spice_model* inpad_verilog_model;

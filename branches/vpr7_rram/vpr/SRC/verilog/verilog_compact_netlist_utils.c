@@ -228,4 +228,133 @@ void dump_compact_verilog_io_grid_pins(FILE* fp,
   return;
 } 
 
+/* Physical mode subckt name */
+char* compact_verilog_get_grid_phy_block_subckt_name(int z,
+                                                     char* subckt_prefix) {
+  char* ret = NULL;
+  t_type_ptr type_descriptor = NULL;
+  char* formatted_subckt_prefix = format_verilog_node_prefix(subckt_prefix);
+  int phy_mode_index = 0;
+
+  /* Check */
+  assert((!(0 > x))&&(!(x > (nx + 1)))); 
+  assert((!(0 > y))&&(!(y > (ny + 1)))); 
+
+  type_descriptor = grid[x][y].type;
+  assert(NULL != type_descriptor);
+
+  /* This a NULL logic block... Find the idle mode*/
+  phy_mode_index = find_pb_type_physical_mode_index(type_descriptor->pb_type); 
+  assert(-1 < phy_mode_index);
+
+  ret = (char*)my_malloc(sizeof(char)* 
+             (strlen(formatted_subckt_prefix) + strlen(type_descriptor->name) + 1
+             + strlen(my_itoa(z)) + 7 + strlen(type_descriptor->pb_type->modes[phy_mode_index].name) + 1 + 1)); 
+  sprintf(ret, "%s%s_%d__mode_%s_", formatted_subckt_prefix,
+          type_descriptor->name, z, type_descriptor->pb_type->modes[phy_mode_index].name);
+
+  return ret;
+}                        
+
+/* Print the pins of grid subblocks */
+void dump_compact_verilog_io_grid_block_subckt_pins(FILE* fp,
+                                                    t_type_ptr grid_type_descriptor,
+                                                    int border_side,
+                                                    int z) {
+  int iport, ipin, dump_pin_cnt;
+  int grid_pin_index, pin_height, side_pin_index;
+  t_pb_graph_node* top_pb_graph_node = NULL;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+  /* Check */
+  assert(NULL != grid_type_descriptor);
+  top_pb_graph_node = grid_type_descriptor->pb_graph_head;
+  assert(NULL != grid_top_pb_graph_node); 
+
+  /* Make sure this is IO */
+  assert(IO_TYPE == grid_type_descriptor);
+
+  /* identify the location of IO grid and 
+   * decide which side of ports we need
+   */
+
+  dump_pin_cnt = 0;
+
+  for (iport = 0; iport < top_pb_graph_node->num_input_ports; iport++) {
+    for (ipin = 0; ipin < top_pb_graph_node->num_input_pins[iport]; ipin++) {
+      grid_pin_index = top_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster 
+                     + z * grid_type_descriptor->num_pins / grid_type_descriptor->capacity;
+      /* num_pins/capacity = the number of pins that each type_descriptor has.
+       * Capacity defines the number of type_descriptors in each grid
+       * so the pin index at grid level = pin_index_in_type_descriptor 
+       *                                + type_descriptor_index_in_capacity * num_pins_per_type_descriptor
+       */
+      pin_height = grid_type_descriptor->pin_height[grid_pin_index];
+      if (1 == grid_type_descriptor->pinloc[pin_height][border_side][grid_pin_index]) {
+        /* This pin appear at this side! */
+        if (0 < dump_pin_cnt) {
+          fprintf(fp, ",\n");
+        }
+        fprintf(fp, "%s_height_%d__pin_%d_", 
+                convert_side_index_to_string(side), pin_height, grid_pin_index);
+        side_pin_index++;
+        dump_pin_cnt++;
+      }
+    }
+  }
+
+  for (iport = 0; iport < top_pb_graph_node->num_output_ports; iport++) {
+    for (ipin = 0; ipin < top_pb_graph_node->num_output_pins[iport]; ipin++) {
+      grid_pin_index = top_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster 
+                     + z * grid_type_descriptor->num_pins / grid_type_descriptor->capacity;
+      /* num_pins/capacity = the number of pins that each type_descriptor has.
+       * Capacity defines the number of type_descriptors in each grid
+       * so the pin index at grid level = pin_index_in_type_descriptor 
+       *                                + type_descriptor_index_in_capacity * num_pins_per_type_descriptor
+       */
+      pin_height = grid_type_descriptor->pin_height[grid_pin_index];
+      if (1 == grid_type_descriptor->pinloc[pin_height][border_side][grid_pin_index]) {
+        /* This pin appear at this side! */
+        if (0 < dump_pin_cnt) {
+          fprintf(fp, ",\n");
+        }
+        fprintf(fp, "%s_height_%d__pin_%d_", 
+                convert_side_index_to_string(border_side), pin_height, grid_pin_index);
+        side_pin_index++;
+        dump_pin_cnt++;
+      }
+    }
+  }
+
+  for (iport = 0; iport < top_pb_graph_node->num_clock_ports; iport++) {
+    for (ipin = 0; ipin < top_pb_graph_node->num_clock_pins[iport]; ipin++) {
+      grid_pin_index = top_pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster 
+                     + z * grid_type_descriptor->num_pins / grid_type_descriptor->capacity;
+      /* num_pins/capacity = the number of pins that each type_descriptor has.
+       * Capacity defines the number of type_descriptors in each grid
+       * so the pin index at grid level = pin_index_in_type_descriptor 
+       *                                + type_descriptor_index_in_capacity * num_pins_per_type_descriptor
+       */
+      pin_height = grid_type_descriptor->pin_height[grid_pin_index];
+      if (1 == grid_type_descriptor->pinloc[pin_height][border_side][grid_pin_index]) {
+        /* This pin appear at this side! */
+        if (0 < dump_pin_cnt) {
+          fprintf(fp, ",\n");
+        }
+        fprintf(fp, "%s_height_%d__pin_%d_", 
+                convert_side_index_to_string(border_side), pin_height, grid_pin_index);
+        side_pin_index++;
+        dump_pin_cnt++;
+      }
+    }
+  }
+
+  return;
+}
+
 

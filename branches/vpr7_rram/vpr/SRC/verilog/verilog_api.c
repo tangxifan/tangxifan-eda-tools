@@ -119,8 +119,6 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   char* rr_dir_path = NULL;
   char* top_netlist_file = NULL;
   char* top_netlist_path = NULL;
-  char* bitstream_file_name = NULL;
-  char* bitstream_file_path = NULL;
   char* top_testbench_file_name = NULL;
   char* top_testbench_file_path = NULL;
   char* blif_testbench_file_name = NULL;
@@ -128,6 +126,8 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
 
   char* chomped_parent_dir = NULL;
   char* chomped_circuit_name = NULL;
+
+  t_sram_orgz_info* sram_verilog_orgz_info = NULL;
 
   /* Check if the routing architecture we support*/
   if (UNI_DIRECTIONAL != vpr_setup.RoutingArch.directionality) {
@@ -178,10 +178,10 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   /* assign the global variable of SRAM model */
   assert(NULL != Arch.sram_inf.verilog_sram_inf_orgz); /* Check !*/
   sram_verilog_model = Arch.sram_inf.verilog_sram_inf_orgz->spice_model;
-  sram_verilog_orgz_type = Arch.sram_inf.verilog_sram_inf_orgz->type;
+  sram_verilog_orgz_info->type = Arch.sram_inf.verilog_sram_inf_orgz->type;
   /* initialize the SRAM organization information struct */
   sram_verilog_orgz_info = alloc_one_sram_orgz_info();
-  init_sram_orgz_info(sram_verilog_orgz_info, sram_verilog_orgz_type, sram_verilog_model, nx + 2, ny + 2);
+  init_sram_orgz_info(sram_verilog_orgz_info, sram_verilog_orgz_info->type, sram_verilog_model, nx + 2, ny + 2);
   /* Check all the SRAM port is using the correct SRAM SPICE MODEL */
   config_spice_models_sram_port_spice_model(Arch.spice->num_spice_model, 
                                             Arch.spice->spice_models,
@@ -198,7 +198,7 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   init_list_include_verilog_netlists(Arch.spice);
  
   /* Dump internal structures of submodules */
-  dump_verilog_submodules(submodule_dir_path, Arch, &vpr_setup.RoutingArch);
+  dump_verilog_submodules(sram_verilog_orgz_info, submodule_dir_path, Arch, &vpr_setup.RoutingArch);
 
   /* Initial global variables about configuration bits */
   alloc_global_routing_conf_bits();
@@ -211,7 +211,7 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   /* init_grids_num_mode_bits(); */
 
   /* Dump routing resources: switch blocks, connection blocks and channel tracks */
-  dump_verilog_routing_resources(rr_dir_path, Arch, &vpr_setup.RoutingArch,
+  dump_verilog_routing_resources(sram_verilog_orgz_info, rr_dir_path, Arch, &vpr_setup.RoutingArch,
                                  num_rr_nodes, rr_node, rr_node_indices);
 
   /* Dump logic blocks 
@@ -220,20 +220,20 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
    * 2. a full-size output
    */
   if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.output_compact_netlist) {
-    dump_compact_verilog_logic_blocks(lb_dir_path, &Arch);
+    dump_compact_verilog_logic_blocks(sram_verilog_orgz_info, lb_dir_path, &Arch);
   } else {
     assert (FALSE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.output_compact_netlist);
-    dump_verilog_logic_blocks(lb_dir_path, &Arch);
+    dump_verilog_logic_blocks(sram_verilog_orgz_info, lb_dir_path, &Arch);
   }
 
   /* Dump decoder modules only when memory bank is required */
-  switch(sram_verilog_orgz_type) {
+  switch(sram_verilog_orgz_info->type) {
   case SPICE_SRAM_STANDALONE:
   case SPICE_SRAM_SCAN_CHAIN:
     break;
   case SPICE_SRAM_MEMORY_BANK:
     /* Dump verilog decoder */
-    dump_verilog_decoder(submodule_dir_path);
+    dump_verilog_decoder(sram_verilog_orgz_info, submodule_dir_path);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
@@ -243,28 +243,21 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
 
   /* Dump top-level verilog */
   if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.output_compact_netlist) {
-    dump_compact_verilog_top_netlist(chomped_circuit_name, top_netlist_path, lb_dir_path, rr_dir_path, 
-                                     num_rr_nodes, rr_node, rr_node_indices, num_clocks, *(Arch.spice));
+    dump_compact_verilog_top_netlist(sram_verilog_orgz_info, chomped_circuit_name, 
+                                     top_netlist_path, lb_dir_path, rr_dir_path, 
+                                     num_rr_nodes, rr_node, rr_node_indices, 
+                                     num_clocks, *(Arch.spice));
    
   } else {
-    dump_verilog_top_netlist(chomped_circuit_name, top_netlist_path, lb_dir_path, rr_dir_path, 
-                             num_rr_nodes, rr_node, rr_node_indices, num_clocks, *(Arch.spice));
+    dump_verilog_top_netlist(sram_verilog_orgz_info, chomped_circuit_name, 
+                             top_netlist_path, lb_dir_path, rr_dir_path, 
+                             num_rr_nodes, rr_node, rr_node_indices, 
+                             num_clocks, *(Arch.spice));
    }
 
   /* Dump SDC constraints */
-  // dump_verilog_sdc_file();
+  /* dump_verilog_sdc_file(); */
   
-  /* dump verilog testbench only for top-level */
-  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.dump_syn_verilog_top_testbench) {
-    top_testbench_file_name = my_strcat(chomped_circuit_name, top_testbench_verilog_file_postfix);
-    top_testbench_file_path = my_strcat(verilog_dir_formatted, top_testbench_file_name);
-    dump_verilog_top_testbench(chomped_circuit_name, top_testbench_file_path, num_clocks, 
-                               vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts, *(Arch.spice));
-    /* Free */
-    my_free(top_testbench_file_name);
-    my_free(top_testbench_file_path);
-  }
-
   /* dump verilog testbench only for input blif */
   if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.dump_syn_verilog_input_blif_testbench) {
     blif_testbench_file_name = my_strcat(chomped_circuit_name, blif_testbench_verilog_file_postfix);
@@ -275,19 +268,37 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
     my_free(blif_testbench_file_name);
     my_free(blif_testbench_file_path);
   }
+
+  /* Free sram_orgz_info:
+   * Free the allocated sram_orgz_info before, we start bitstream generation !
+   */
+  free_sram_orgz_info(sram_verilog_orgz_info,
+                      sram_verilog_orgz_info->type,
+                      nx + 2, ny + 2);
   
-  /* Dump bitstream file */
+  /* Generate bitstream if required, and also Dump bitstream file */
   if (vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.gen_bitstream) {
-    if (NULL == vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.bitstream_output_file) {
-      bitstream_file_name = my_strcat(chomped_circuit_name, fpga_spice_bitstream_output_file_postfix);
-      bitstream_file_path = my_strcat(verilog_dir_formatted, bitstream_file_name);
-    } else {
-      bitstream_file_path = my_strdup(vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.bitstream_output_file);
+    vpr_fpga_spice_generate_bitstream(vpr_setup, Arch, circuit_name, &sram_verilog_orgz_info);
+    /* Free sram_orgz_info:
+     */
+    free_sram_orgz_info(sram_verilog_orgz_info,
+                      sram_verilog_orgz_info->type,
+                      nx + 2, ny + 2);
+  }
+
+  /* dump verilog testbench only for top-level: ONLY valid when bitstream is generated! */
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.dump_syn_verilog_top_testbench) {
+    if (FALSE == vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.gen_bitstream) {
+      vpr_printf(TIO_MESSAGE_ERROR, "Verilog Top-level testbench can only be generated when bitstream generator is enabled!\n");  
+      exit(1);
     }
-    dump_fpga_spice_bitstream(bitstream_file_path, chomped_circuit_name, sram_verilog_orgz_info);
+    top_testbench_file_name = my_strcat(chomped_circuit_name, top_testbench_verilog_file_postfix);
+    top_testbench_file_path = my_strcat(verilog_dir_formatted, top_testbench_file_name);
+    dump_verilog_top_testbench(sram_verilog_orgz_info, chomped_circuit_name, top_testbench_file_path, num_clocks, 
+                               vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts, *(Arch.spice));
     /* Free */
-    my_free(bitstream_file_name);
-    my_free(bitstream_file_path);
+    my_free(top_testbench_file_name);
+    my_free(top_testbench_file_path);
   }
 
   /* End time count */
@@ -299,10 +310,6 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   /* Free global array */
   free_global_routing_conf_bits();
 
-  /* Free sram_orgz_info */
-  free_sram_orgz_info(sram_verilog_orgz_info,
-                      sram_verilog_orgz_info->type,
-                      nx + 2, ny + 2);
   /* Free */
   my_free(verilog_dir_formatted);
   my_free(lb_dir_path);

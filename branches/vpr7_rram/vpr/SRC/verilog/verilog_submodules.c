@@ -1108,7 +1108,6 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
    * 2. LUTs, the naming rule is <lut_spice_model_name>_mux_size<sram_port_size>
    */
   num_conf_bits = count_num_sram_bits_one_spice_model(&spice_model, 
-                                                      /* sram_verilog_orgz_info->type, */ 
                                                       mux_size);
   if (SPICE_MODEL_LUT == spice_model.type) {
     /* Special for LUT MUX */
@@ -1485,7 +1484,6 @@ void dump_verilog_rram_mux_onelevel_structure(FILE* fp,
   fprintf(fp, "mux2_l%d_in[%d],\n", 0, 0); /* output */
   fprintf(fp, "//----- SRAM ports -----\n");
   num_conf_bits = count_num_sram_bits_one_spice_model(&spice_model, 
-                                                      /* sram_verilog_orgz_info->type,*/ 
                                                       spice_mux_arch.num_input);
   fprintf(fp, "%s[0:%d], %s_inv[0:%d]", 
             sram_port[0]->prefix, num_conf_bits - 1, 
@@ -1570,7 +1568,6 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
   fprintf(fp, "output wire %s,\n ", output_port[0]->prefix);
   /* Print configuration ports */
   num_conf_bits = count_num_sram_bits_one_spice_model(&spice_model, 
-                                                      /* sram_verilog_orgz_info->type,*/
                                                       mux_size);
   fprintf(fp, "input wire [0:%d] %s,\n", 
           num_conf_bits - 1, sram_port[0]->prefix);
@@ -1779,7 +1776,8 @@ void dump_verilog_mux_module(FILE* fp,
 /* We should count how many multiplexers with different sizes are needed */
 
 /**/
-void dump_verilog_submodule_muxes(char* submodule_dir,
+void dump_verilog_submodule_muxes(t_sram_orgz_info* cur_sram_orgz_info,
+                                  char* submodule_dir,
                                   int num_switch,
                                   t_switch_inf* switches,
                                   t_spice* spice,
@@ -1878,7 +1876,7 @@ void dump_verilog_submodule_muxes(char* submodule_dir,
   /* Determine reserved Bit/Word Lines if a memory bank is specified,
    * At least 1 BL/WL should be reserved! 
    */
-  try_update_sram_orgz_info_reserved_blwl(sram_verilog_orgz_info, 
+  try_update_sram_orgz_info_reserved_blwl(cur_sram_orgz_info, 
                                           max_routing_mux_size, max_routing_mux_size);
 
   vpr_printf(TIO_MESSAGE_INFO,"Generated %d Multiplexer submodules.\n",
@@ -2226,7 +2224,8 @@ void dump_verilog_submodule_wires(char* subckt_dir,
 /* Dump verilog files of submodules to be used in FPGA components :
  * 1. MUXes
  */
-void dump_verilog_submodules(char* submodule_dir, 
+void dump_verilog_submodules(t_sram_orgz_info* cur_sram_orgz_info,
+                             char* submodule_dir, 
                              t_arch Arch, 
                              t_det_routing_arch* routing_arch) {
 
@@ -2238,7 +2237,7 @@ void dump_verilog_submodules(char* submodule_dir,
 
   /* 1. MUXes */
   vpr_printf(TIO_MESSAGE_INFO, "Generating modules of multiplexers...\n");
-  dump_verilog_submodule_muxes(submodule_dir, routing_arch->num_switch, 
+  dump_verilog_submodule_muxes(cur_sram_orgz_info, submodule_dir, routing_arch->num_switch, 
                                switch_inf, Arch.spice, routing_arch);
  
   /* 2. LUTes */

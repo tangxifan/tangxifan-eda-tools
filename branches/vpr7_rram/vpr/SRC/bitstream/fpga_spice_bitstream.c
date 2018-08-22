@@ -284,6 +284,36 @@ void dump_conf_bits_to_bitstream_file(FILE* fp,
   return;
 }
 
+static 
+char* vpr_fpga_spice_identify_bitstream_output_file_name(t_vpr_setup vpr_setup,
+                                                         char* chomped_parent_dir, 
+                                                         char* chomped_circuit_name) {
+  char* verilog_dir_formatted = NULL;
+  char* bitstream_file_name = NULL; 
+  char* bitstream_file_path = NULL; 
+
+  if (NULL == vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.bitstream_output_file) {
+    bitstream_file_path = my_strcat(circuit_name, fpga_spice_bitstream_output_file_postfix);
+  } else if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.dump_syn_verilog) {
+    if (NULL != vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.syn_verilog_dump_dir) {
+      verilog_dir_formatted = format_dir_path(vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.syn_verilog_dump_dir);
+    } else { 
+      verilog_dir_formatted = format_dir_path(my_strcat(format_dir_path(chomped_parent_dir),default_verilog_dir_name));
+    }
+    bitstream_file_name = my_strcat(chomped_circuit_name, fpga_spice_bitstream_output_file_postfix);
+    bitstream_file_path = my_strcat(verilog_dir_formatted, bitstream_file_name);
+  } else {
+    bitstream_file_path = my_strdup(vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.bitstream_output_file);
+  }
+
+  /* Free */
+  my_free(verilog_dir_formatted);
+  my_free(bitstream_file_name);
+
+  return bitstream_file_path;
+}
+
+
 /* Top-level function*/
 void vpr_fpga_spice_generate_bitstream(t_vpr_setup vpr_setup,
                                        t_arch Arch,
@@ -294,11 +324,10 @@ void vpr_fpga_spice_generate_bitstream(t_vpr_setup vpr_setup,
   clock_t t_end;
   float run_time_sec;
 
-  char* bitstream_file_name = NULL;
-  char* bitstream_file_path = NULL;
-
   char* chomped_parent_dir = NULL;
   char* chomped_circuit_name = NULL;
+
+  char* bitstream_file_path = NULL; 
 
   /* Check if the routing architecture we support*/
   if (UNI_DIRECTIONAL != vpr_setup.RoutingArch.directionality) {
@@ -319,17 +348,15 @@ void vpr_fpga_spice_generate_bitstream(t_vpr_setup vpr_setup,
   /* Format the directory paths */
   split_path_prog_name(circuit_name, '/', &chomped_parent_dir, &chomped_circuit_name);
 
+  bitstream_file_path = vpr_fpga_spice_identify_bitstream_output_file_name(vpr_setup, 
+                                                                           chomped_parent_dir, 
+                                                                           chomped_circuit_name);
+
   /* VerilogGenerator formally starts*/
   vpr_printf(TIO_MESSAGE_INFO, "\nFPGA Bitstream generator starts...\n");
  
   /* Start time count */
   t_start = clock();
-
-  if (NULL == vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.bitstream_output_file) {
-    bitstream_file_path = my_strcat(circuit_name, fpga_spice_bitstream_output_file_postfix);
-  } else {
-    bitstream_file_path = my_strdup(vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.bitstream_output_file);
-  }
 
   /* assign the global variable of SRAM model */
   assert(NULL != Arch.sram_inf.verilog_sram_inf_orgz); /* Check !*/
@@ -344,7 +371,6 @@ void vpr_fpga_spice_generate_bitstream(t_vpr_setup vpr_setup,
 
   /* zero the counter of each spice_model */
   zero_spice_models_cnt(Arch.spice->num_spice_model, Arch.spice->spice_models);
-
 
   /* Generate Bitstreams 
    * Bitstream generation must follow the sequence: grid => CB => SB 

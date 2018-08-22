@@ -34,8 +34,6 @@ char* cby_verilog_file_name_prefix = "cby_";
 
 /* SRAM SPICE MODEL should be set as global*/
 t_spice_model* sram_verilog_model = NULL;
-enum e_sram_orgz sram_verilog_orgz_type = SPICE_SRAM_STANDALONE;
-t_sram_orgz_info* sram_verilog_orgz_info = NULL;
 
 /* Input and Output Pad spice model. should be set as global */
 t_spice_model* iopad_verilog_model = NULL;

@@ -36,7 +36,8 @@
 
 
 /***** Subroutines *****/
-void dump_verilog_pb_primitive_lut(FILE* fp,
+void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
+                                   FILE* fp,
                                    char* subckt_prefix,
                                    t_logical_block* mapped_logical_block,
                                    t_pb_graph_node* cur_pb_graph_node,
@@ -113,10 +114,10 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   /* Count the number of configuration bits */
   num_sram = count_num_sram_bits_one_spice_model(verilog_model, -1);
   /* Get memory model */
-  get_sram_orgz_info_mem_model(sram_verilog_orgz_info, &mem_model);
+  get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model);
 
   /* Find the number of BLs/WLs of each SRAM */
-  switch (sram_verilog_orgz_type) {
+  switch (cur_sram_orgz_info->type) {
   case SPICE_SRAM_MEMORY_BANK:
     /* Detect the SRAM SPICE model linked to this SRAM port */
     assert(NULL != sram_ports[0]->spice_model);
@@ -167,21 +168,21 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   /* Print inputs, outputs, inouts, clocks, NO SRAMs*/
   dump_verilog_pb_type_ports(fp, port_prefix, 0, cur_pb_type, TRUE, TRUE); 
   /* Print SRAM ports */
-  cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info); 
-  get_sram_orgz_info_num_blwl(sram_verilog_orgz_info, &cur_bl, &cur_wl);
+  cur_num_sram = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info); 
+  get_sram_orgz_info_num_blwl(cur_sram_orgz_info, &cur_bl, &cur_wl);
   /* connect to reserved BL/WLs ? */
-  num_reserved_conf_bits = count_num_reserved_conf_bits_one_spice_model(verilog_model, sram_verilog_orgz_info->type, 0);
+  num_reserved_conf_bits = count_num_reserved_conf_bits_one_spice_model(verilog_model, cur_sram_orgz_info->type, 0);
   /* Get the number of configuration bits required by this MUX */
-  num_conf_bits = count_num_conf_bits_one_spice_model(verilog_model, sram_verilog_orgz_info->type, 0);
+  num_conf_bits = count_num_conf_bits_one_spice_model(verilog_model, cur_sram_orgz_info->type, 0);
   /* Reserved sram ports */
-  dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info, 
+  dump_verilog_reserved_sram_ports(fp, cur_sram_orgz_info, 
                                    0, num_reserved_conf_bits - 1,
                                    VERILOG_PORT_INPUT);
   if ( 0 < num_reserved_conf_bits) {
     fprintf(fp, ",\n");
   }
   /* Normal sram ports */
-  dump_verilog_sram_ports(fp, sram_verilog_orgz_info, 
+  dump_verilog_sram_ports(fp, cur_sram_orgz_info, 
                           cur_num_sram, cur_num_sram + num_conf_bits - 1,
                           VERILOG_PORT_INPUT);
   /* Local Vdd and gnd*/ 
@@ -210,8 +211,8 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   }
 
   /* Specify SRAM output are wires */
-  cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info);
-  dump_verilog_sram_config_bus_internal_wires(fp, sram_verilog_orgz_info, cur_num_sram, cur_num_sram + num_sram - 1);
+  cur_num_sram = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info);
+  dump_verilog_sram_config_bus_internal_wires(fp, cur_sram_orgz_info, cur_num_sram, cur_num_sram + num_sram - 1);
   /*
   fprintf(fp, "wire [%d:%d] %s_out;\n",
           cur_num_sram, cur_num_sram + num_sram - 1, mem_model->prefix);
@@ -220,7 +221,7 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   */
 
   num_sram = count_num_sram_bits_one_spice_model(verilog_model, -1);
-  cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info);
+  cur_num_sram = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info);
 
   /* Call LUT subckt*/
   fprintf(fp, "%s %s_%d_ (", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
@@ -239,26 +240,26 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   dump_verilog_pb_type_bus_ports(fp, port_prefix, 0, cur_pb_type, FALSE, TRUE); 
   fprintf(fp, "//----- SRAM ports -----\n");
   /* Connect srams: TODO: to find the SRAM model used by this Verilog model */
-  cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info);
+  cur_num_sram = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info);
   /* TODO: switch depending on the type of configuration circuit */
-  switch (sram_verilog_orgz_info->type) {
+  switch (cur_sram_orgz_info->type) {
   case SPICE_SRAM_STANDALONE: 
     break;
   case SPICE_SRAM_SCAN_CHAIN:
-    dump_verilog_sram_one_port(fp, sram_verilog_orgz_info, 
+    dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
                                cur_num_sram, cur_num_sram + num_sram - 1, 
                                1, VERILOG_PORT_CONKT);
     fprintf(fp, ", ");
-    dump_verilog_sram_one_outport(fp, sram_verilog_orgz_info, 
+    dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
                                   cur_num_sram, cur_num_sram + num_sram - 1, 
                                   1, VERILOG_PORT_CONKT);
     break;
   case SPICE_SRAM_MEMORY_BANK:
-    dump_verilog_sram_one_outport(fp, sram_verilog_orgz_info, 
+    dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
                                   cur_num_sram, cur_num_sram + num_sram - 1, 
                                   0, VERILOG_PORT_CONKT);
     fprintf(fp, ", ");
-    dump_verilog_sram_one_outport(fp, sram_verilog_orgz_info, 
+    dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
                                   cur_num_sram, cur_num_sram + num_sram - 1, 
                                   1, VERILOG_PORT_CONKT);
     break;
@@ -289,37 +290,6 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   fprint_commented_sram_bits(fp, num_sram, sram_bits);
   fprintf(fp, "-----\n");
 
-  /* Decode the SRAM bits to BL/WL bits. */ 
-  switch (sram_verilog_orgz_type) {
-  case SPICE_SRAM_MEMORY_BANK:
-    cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info);
-    for (i = 0; i < num_sram; i++) {
-      /* TODO: should be more structural in coding !!! */
-      /* Decode the SRAM bits to BL/WL bits.
-       * first half part is BL, the other half part is WL 
-       */
-      decode_and_add_sram_membank_conf_bit_to_llist(sram_verilog_orgz_info, cur_num_sram + i,
-                                                    num_bl_per_sram, num_wl_per_sram,
-                                                    sram_bits[i]);
-    }
-    /* NUM_SRAM is set to be consistent with number of BL/WLs
-     * TODO: NUM_SRAM should be the as they are. 
-     * Should use another variable i.e., num_bl
-     */
-    break;
-  case SPICE_SRAM_STANDALONE:
-  case SPICE_SRAM_SCAN_CHAIN:
-    /* Store the configuraion bit to linked-list */
-    add_mux_conf_bits_to_llist(0, sram_verilog_orgz_info, 
-                               num_sram, sram_bits,
-                               verilog_model);
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid SRAM organization type!\n",
-               __FILE__, __LINE__);
-    exit(1);
-  }
-
   /* Call SRAM subckts only 
    * when Configuration organization style is memory bank */
   /* No. of SRAMs is different from the number of configuration lines.
@@ -329,14 +299,14 @@ void dump_verilog_pb_primitive_lut(FILE* fp,
   for (i = 0; i < num_sram; i++) {
     /* Dump the configuration port bus */
     /*TODO: to be more smart!!! num_reserved_conf_bits and num_conf_bits/num_sram should be determined by each mem_bit */ 
-    cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info);
-    dump_verilog_mem_config_bus(fp, mem_model, sram_verilog_orgz_info,
+    cur_num_sram = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info);
+    dump_verilog_mem_config_bus(fp, mem_model, cur_sram_orgz_info,
                                 cur_num_sram, num_reserved_conf_bits, num_conf_bits/num_sram); 
     /* This function should be called in the very end, 
      * because we update the counter of mem_model after each sram submodule is dumped !!!
      */
-    dump_verilog_sram_submodule(fp, sram_verilog_orgz_info,
-                                mem_model); /* use the mem_model in sram_verilog_orgz_info */
+    dump_verilog_sram_submodule(fp, cur_sram_orgz_info,
+                                mem_model); /* use the mem_model in cur_sram_orgz_info */
   }
 
   /* End of subckt*/

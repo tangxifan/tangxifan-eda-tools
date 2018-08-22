@@ -51,14 +51,16 @@ void verilog_find_interc_fan_in_des_pb_graph_pin(t_pb_graph_pin* des_pb_graph_pi
                                                  t_interconnect** cur_interc,
                                                  int* fan_in); 
 
-void dump_verilog_pb_graph_pin_interc(FILE* fp,
-                                       char* parent_pin_prefix,
-                                       enum e_pin2pin_interc_type pin2pin_interc_type,
-                                       t_pb_graph_pin* des_pb_graph_pin,
-                                       t_mode* cur_mode,
-                                       int is_idle);
+void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
+                                      FILE* fp,
+                                      char* parent_pin_prefix,
+                                      enum e_pin2pin_interc_type pin2pin_interc_type,
+                                      t_pb_graph_pin* des_pb_graph_pin,
+                                      t_mode* cur_mode,
+                                      int is_idle);
 
-void dump_verilog_pb_graph_interc(FILE* fp, 
+void dump_verilog_pb_graph_interc(t_sram_orgz_info* cur_sram_orgz_info,
+                                  FILE* fp, 
                                   char* pin_prefix,
                                   t_pb_graph_node* cur_pb_graph_node,
                                   int select_mode_index,
@@ -70,31 +72,36 @@ void dump_verilog_pb_graph_primitive_node(FILE* fp,
                                           t_pb_graph_node* cur_pb_graph_node,
                                           int pb_type_index);
 
-void dump_pb_primitive_verilog_model(FILE* fp,
-                                     char* subckt_prefix,
-                                     t_pb* prim_pb,
-                                     t_pb_graph_node* prim_pb_graph_node,
-                                     int pb_index,
-                                     t_spice_model* verilog_model,
-                                     int is_idle);
+void dump_verilog_pb_primitive_verilog_model(t_sram_orgz_info* cur_sram_orgz_info,
+                                             FILE* fp,
+                                             char* subckt_prefix,
+                                             t_pb* prim_pb,
+                                             t_pb_graph_node* prim_pb_graph_node,
+                                             int pb_index,
+                                             t_spice_model* verilog_model,
+                                             int is_idle);
 
-void dump_verilog_idle_pb_graph_node_rec(FILE* fp,
+void dump_verilog_idle_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
+                                         FILE* fp,
                                          char* subckt_prefix,
                                          t_pb_graph_node* cur_pb_graph_node,
                                          int pb_type_index);
 
-void dump_verilog_pb_graph_node_rec(FILE* fp, 
+void dump_verilog_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
+                                    FILE* fp, 
                                     char* subckt_prefix, 
                                     t_pb* cur_pb, 
                                     t_pb_graph_node* cur_pb_graph_node,
                                     int pb_type_index);
 
-void dump_verilog_phy_pb_graph_node_rec(FILE* fp,
+void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
+                                        FILE* fp,
                                         char* subckt_prefix,
                                         t_pb_graph_node* cur_pb_graph_node,
                                         int pb_type_index);
 
-void dump_verilog_block(FILE* fp,
+void dump_verilog_block(t_sram_orgz_info* cur_sram_orgz_info,
+                        FILE* fp,
                         char* subckt_name, 
                         int x,
                         int y,
@@ -102,7 +109,8 @@ void dump_verilog_block(FILE* fp,
                         t_type_ptr type_descriptor,
                         t_block* mapped_block);
 
-void dump_verilog_physical_block(FILE* fp,
+void dump_verilog_physical_block(t_sram_orgz_info* cur_sram_orgz_info,
+                                 FILE* fp,
                                  char* subckt_name, 
                                  int x,
                                  int y,
@@ -137,20 +145,20 @@ void dump_verilog_io_grid_block_subckt_pins(FILE* fp,
                                       int z,
                                       t_type_ptr type_descriptor);
 
-void dump_verilog_grid_blocks(FILE* fp,
-                        int ix,
-                        int iy);
+void dump_verilog_grid_blocks(t_sram_orgz_info* cur_sram_orgz_info,
+                              FILE* fp,
+                              int ix, int iy);
 
-void dump_verilog_physical_grid_blocks(FILE* fp,
-                                       int ix,
-                                       int iy,
-                                       t_arch* arch);
+void dump_verilog_physical_grid_blocks(t_sram_orgz_info* cur_sram_orgz_info,
+                                        FILE* fp,
+                                        int ix, int iy,
+                                        t_arch* arch);
 
-void dump_verilog_idle_block(FILE* fp,
+void dump_verilog_idle_block(t_sram_orgz_info* cur_sram_orgz_info,
+                             FILE* fp,
                              char* subckt_name, 
-                             int x,
-                             int y,
-                             int z,
+                             int x, int y, int z,
                              t_type_ptr type_descriptor);
 
-void dump_verilog_logic_blocks(char* subckt_dir, t_arch* arch);
+void dump_verilog_logic_blocks(t_sram_orgz_info* cur_sram_orgz_info,
+                               char* subckt_dir, t_arch* arch);

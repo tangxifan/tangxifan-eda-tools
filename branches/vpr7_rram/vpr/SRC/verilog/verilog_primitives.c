@@ -38,12 +38,13 @@ enum e_ff_trigger_type {
 };
 
 /* Subroutines */
-void dump_verilog_pb_primitive_ff(FILE* fp,
-                            char* subckt_prefix,
-                            t_logical_block* mapped_logical_block,
-                            t_pb_graph_node* prim_pb_graph_node,
-                            int index,
-                            t_spice_model* verilog_model) {
+void dump_verilog_pb_primitive_ff(t_sram_orgz_info* cur_sram_orgz_info,
+                                  FILE* fp,
+                                  char* subckt_prefix,
+                                  t_logical_block* mapped_logical_block,
+                                  t_pb_graph_node* prim_pb_graph_node,
+                                  int index,
+                                  t_spice_model* verilog_model) {
   int i;
   /* Default FF settings, applied when this FF is idle*/
   enum e_ff_trigger_type trigger_type = FF_RE;
@@ -187,12 +188,13 @@ void dump_verilog_pb_primitive_ff(FILE* fp,
 }
 
 /* Print hardlogic SPICE subckt*/
-void dump_verilog_pb_primitive_hardlogic(FILE* fp,
-                                   char* subckt_prefix,
-                                   t_logical_block* mapped_logical_block,
-                                   t_pb_graph_node* prim_pb_graph_node,
-                                   int index,
-                                   t_spice_model* verilog_model) {
+void dump_verilog_pb_primitive_hardlogic(t_sram_orgz_info* cur_sram_orgz_info, 
+                                         FILE* fp,
+                                         char* subckt_prefix,
+                                         t_logical_block* mapped_logical_block,
+                                         t_pb_graph_node* prim_pb_graph_node,
+                                         int index,
+                                         t_spice_model* verilog_model) {
   int num_input_port = 0;
   t_spice_model_port** input_ports = NULL;
   int num_output_port = 0;
@@ -293,7 +295,8 @@ void dump_verilog_pb_primitive_hardlogic(FILE* fp,
 }
 
 /* Dump a I/O pad primitive node */
-void dump_verilog_pb_primitive_io(FILE* fp,
+void dump_verilog_pb_primitive_io(t_sram_orgz_info* cur_sram_orgz_info,
+                                  FILE* fp,
                                   char* subckt_prefix,
                                   t_logical_block* mapped_logical_block,
                                   t_pb_graph_node* prim_pb_graph_node,
@@ -358,7 +361,7 @@ void dump_verilog_pb_primitive_io(FILE* fp,
   assert(SPICE_MODEL_IOPAD == verilog_model->type); /* Support IO PAD which matches the physical design */
   
   /* Initialize */
-  get_sram_orgz_info_mem_model(sram_verilog_orgz_info, &mem_model);
+  get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model);
 
   prim_pb_type = prim_pb_graph_node->pb_type;
 
@@ -384,8 +387,8 @@ void dump_verilog_pb_primitive_io(FILE* fp,
   assert((1 == num_sram_port)&&(NULL != sram_ports)&&(1 == sram_ports[0]->size));
   num_sram = count_num_sram_bits_one_spice_model(verilog_model, -1);
   /* Get current counter of mem_bits, bl and wl */
-  cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_verilog_orgz_info); 
-  get_sram_orgz_info_num_blwl(sram_verilog_orgz_info, &cur_bl, &cur_wl);
+  cur_num_sram = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info); 
+  get_sram_orgz_info_num_blwl(cur_sram_orgz_info, &cur_bl, &cur_wl);
   /* print ports --> input ports */
   dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, TRUE, TRUE); 
   /* Print output port */
@@ -394,29 +397,29 @@ void dump_verilog_pb_primitive_io(FILE* fp,
           gio_inout_prefix, verilog_model->prefix);
   /* Print SRAM ports */
   /* connect to reserved BL/WLs ? */
-  num_reserved_conf_bits = count_num_reserved_conf_bits_one_spice_model(verilog_model, sram_verilog_orgz_info->type, 0);
+  num_reserved_conf_bits = count_num_reserved_conf_bits_one_spice_model(verilog_model, cur_sram_orgz_info->type, 0);
   /* Get the number of configuration bits required by this MUX */
-  num_conf_bits = count_num_conf_bits_one_spice_model(verilog_model, sram_verilog_orgz_info->type, 0);
+  num_conf_bits = count_num_conf_bits_one_spice_model(verilog_model, cur_sram_orgz_info->type, 0);
   /* Reserved sram ports */
   if (0 < num_reserved_conf_bits) {
     fprintf(fp, ",\n");
   }
-  dump_verilog_reserved_sram_ports(fp, sram_verilog_orgz_info, 
+  dump_verilog_reserved_sram_ports(fp, cur_sram_orgz_info, 
                                    0, num_reserved_conf_bits - 1,
                                    VERILOG_PORT_INPUT);
   /* Normal sram ports */
   if (0 < num_conf_bits) {
     fprintf(fp, ",\n");
   }
-  dump_verilog_sram_ports(fp, sram_verilog_orgz_info, 
+  dump_verilog_sram_ports(fp, cur_sram_orgz_info, 
                           cur_num_sram, cur_num_sram + num_sram - 1,
                           VERILOG_PORT_INPUT);
   /* Local vdd and gnd*/
   fprintf(fp, ");\n");
 
-  dump_verilog_sram_config_bus_internal_wires(fp, sram_verilog_orgz_info, 
+  dump_verilog_sram_config_bus_internal_wires(fp, cur_sram_orgz_info, 
                                               cur_num_sram, cur_num_sram + num_sram - 1);
-  switch (sram_verilog_orgz_type) {
+  switch (cur_sram_orgz_info->type) {
   case SPICE_SRAM_MEMORY_BANK:
     /* Local wires */
     /* Find the number of BLs/WLs of each SRAM */
@@ -441,7 +444,7 @@ void dump_verilog_pb_primitive_io(FILE* fp,
   /* Definition ends*/
 
   /* Dump the configuration port bus */
-  dump_verilog_mem_config_bus(fp, mem_model, sram_verilog_orgz_info,
+  dump_verilog_mem_config_bus(fp, mem_model, cur_sram_orgz_info,
                               cur_num_sram, num_reserved_conf_bits, num_conf_bits); 
 
   /* Call the I/O subckt*/
@@ -464,11 +467,11 @@ void dump_verilog_pb_primitive_io(FILE* fp,
               verilog_model->prefix, verilog_model->cnt);
   /* Print SRAM ports */
   /* Connect srams: TODO: to find the SRAM model used by this Verilog model */
-  dump_verilog_sram_one_outport(fp, sram_verilog_orgz_info,
+  dump_verilog_sram_one_outport(fp, cur_sram_orgz_info,
                                 cur_num_sram, cur_num_sram,
                                 0, VERILOG_PORT_CONKT);
   fprintf(fp, ", ");
-  dump_verilog_sram_one_outport(fp, sram_verilog_orgz_info,
+  dump_verilog_sram_one_outport(fp, cur_sram_orgz_info,
                                 cur_num_sram, cur_num_sram,
                                 1, VERILOG_PORT_CONKT);
   
@@ -492,36 +495,13 @@ void dump_verilog_pb_primitive_io(FILE* fp,
       sram_bits[i] = sram_ports[0]->default_val;
     }
   }
-  /* SRAM_bit will be later reconfigured according to operating mode */
-  switch (sram_verilog_orgz_type) {
-  case SPICE_SRAM_MEMORY_BANK:
-    for (i = 0; i < num_sram; i++) {
-      /* Decode the SRAM bits to BL/WL bits.
-       * first half part is BL, the other half part is WL 
-       */
-      decode_and_add_sram_membank_conf_bit_to_llist(sram_verilog_orgz_info, cur_num_sram + i,
-                                                    num_bl_per_sram, num_wl_per_sram,
-                                                    sram_bits[i]);
-    }
-    break;
-  case SPICE_SRAM_STANDALONE:
-  case SPICE_SRAM_SCAN_CHAIN:
-    /* Store the configuraion bit to linked-list */
-    add_mux_conf_bits_to_llist(0, sram_verilog_orgz_info, 
-                               num_sram, sram_bits,
-                               verilog_model);
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid SRAM organization type!\n",
-               __FILE__, __LINE__);
-    exit(1);
-  }
+
   /* Call SRAM subckts only 
    * when Configuration organization style is memory bank */
   num_sram = count_num_sram_bits_one_spice_model(verilog_model, -1);
   for (i = 0; i < num_sram; i++) {
-    dump_verilog_sram_submodule(fp, sram_verilog_orgz_info,
-                                mem_model); /* use the mem_model in sram_verilog_orgz_info */
+    dump_verilog_sram_submodule(fp, cur_sram_orgz_info,
+                                mem_model); /* use the mem_model in cur_sram_orgz_info */
   }
 
   /* End */
