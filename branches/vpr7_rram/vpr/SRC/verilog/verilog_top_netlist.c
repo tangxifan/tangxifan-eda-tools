@@ -363,7 +363,7 @@ static
 void dump_verilog_top_netlist_scan_chain_internal_wires(t_sram_orgz_info* cur_sram_orgz_info, 
                                                         FILE* fp) {
   t_spice_model* scff_mem_model = NULL;
-  int iscff, num_scffs;
+  int num_scffs;
 
   /* A valid file handler */
   if (NULL == fp) {
@@ -457,11 +457,11 @@ void dump_verilog_top_module_ports(t_sram_orgz_info* cur_sram_orgz_info,
     /* Definition ends */
     break;
   case SPICE_SRAM_SCAN_CHAIN:
-    dump_verilog_top_netlist_scan_chain_ports(fp, dump_port_type);
+    dump_verilog_top_netlist_scan_chain_ports(cur_sram_orgz_info, fp, dump_port_type);
     /* Definition ends */
     break;
   case SPICE_SRAM_MEMORY_BANK:
-    dump_verilog_top_netlist_memory_bank_ports(fp, dump_port_type);
+    dump_verilog_top_netlist_memory_bank_ports(cur_sram_orgz_info, fp, dump_port_type);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
@@ -474,13 +474,16 @@ void dump_verilog_top_module_ports(t_sram_orgz_info* cur_sram_orgz_info,
 
   
 /* Dump ports for the top-level Verilog netlist */
-void dump_verilog_top_netlist_ports(FILE* fp,
+void dump_verilog_top_netlist_ports(t_sram_orgz_info* cur_sram_orgz_info,
+                                    FILE* fp,
                                     int num_clocks,
                                     char* circuit_name,
                                     t_spice verilog) {
+  /* 
   int num_array_bl, num_array_wl;
   int bl_decoder_size, wl_decoder_size;
   char* port_name = NULL;
+  */
 
   /* A valid file handler */
   if (NULL == fp) {
@@ -492,7 +495,7 @@ void dump_verilog_top_netlist_ports(FILE* fp,
   fprintf(fp, "module %s_top (\n", circuit_name);
   fprintf(fp, "\n");
 
-  dump_verilog_top_module_ports(fp, VERILOG_PORT_INPUT);
+  dump_verilog_top_module_ports(cur_sram_orgz_info, fp, VERILOG_PORT_INPUT);
 
   fprintf(fp, ");\n");
 
@@ -589,7 +592,8 @@ void dump_verilog_defined_one_grid(t_sram_orgz_info* cur_sram_orgz_info,
 
 
 /***** Print (call) the defined grids *****/
-void dump_verilog_defined_grids(FILE* fp) {
+void dump_verilog_defined_grids(t_sram_orgz_info* cur_sram_orgz_info,
+                                FILE* fp) {
   int ix, iy;
 
   if (NULL == fp) {
@@ -605,7 +609,7 @@ void dump_verilog_defined_grids(FILE* fp) {
         continue;
       }
       assert(IO_TYPE != grid[ix][iy].type);
-      dump_verilog_defined_one_grid(fp, ix, iy);
+      dump_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
     }
   } 
 
@@ -618,7 +622,7 @@ void dump_verilog_defined_grids(FILE* fp) {
       continue;
     }
     assert(IO_TYPE == grid[ix][iy].type);
-    dump_verilog_defined_one_grid(fp, ix, iy);
+    dump_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
   }
 
   /* RIGHT side */
@@ -629,7 +633,7 @@ void dump_verilog_defined_grids(FILE* fp) {
       continue;
     }
     assert(IO_TYPE == grid[ix][iy].type);
-    dump_verilog_defined_one_grid(fp, ix, iy);
+    dump_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
   }
 
   /* BOTTOM side */
@@ -640,7 +644,7 @@ void dump_verilog_defined_grids(FILE* fp) {
       continue;
     }
     assert(IO_TYPE == grid[ix][iy].type);
-    dump_verilog_defined_one_grid(fp, ix, iy);
+    dump_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
   } 
 
   /* TOP side */
@@ -651,7 +655,7 @@ void dump_verilog_defined_grids(FILE* fp) {
       continue;
     }
     assert(IO_TYPE == grid[ix][iy].type);
-    dump_verilog_defined_one_grid(fp, ix, iy);
+    dump_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
   } 
 
   return;
@@ -965,7 +969,8 @@ void dump_verilog_defined_one_connection_box(t_sram_orgz_info* cur_sram_orgz_inf
 }
 
 /* Call the sub-circuits for connection boxes */
-void dump_verilog_defined_connection_boxes(FILE* fp) {
+void dump_verilog_defined_connection_boxes(t_sram_orgz_info* cur_sram_orgz_info,
+                                           FILE* fp) {
   int ix, iy;
 
   /* Check the file handler*/ 
@@ -980,7 +985,7 @@ void dump_verilog_defined_connection_boxes(FILE* fp) {
     for (ix = 1; ix < (nx + 1); ix++) {
       if ((TRUE == is_cb_exist(CHANX, ix, iy))
          &&(0 < count_cb_info_num_ipin_rr_nodes(cbx_info[ix][iy]))) {
-        dump_verilog_defined_one_connection_box(fp, cbx_info[ix][iy]);
+        dump_verilog_defined_one_connection_box(cur_sram_orgz_info, fp, cbx_info[ix][iy]);
       }
     }
   }
@@ -989,7 +994,7 @@ void dump_verilog_defined_connection_boxes(FILE* fp) {
     for (iy = 1; iy < (ny + 1); iy++) {
       if ((TRUE == is_cb_exist(CHANY, ix, iy))
          &&(0 < count_cb_info_num_ipin_rr_nodes(cby_info[ix][iy]))) {
-        dump_verilog_defined_one_connection_box(fp, cby_info[ix][iy]);
+        dump_verilog_defined_one_connection_box(cur_sram_orgz_info, fp, cby_info[ix][iy]);
       }
     }
   }
@@ -1674,16 +1679,19 @@ void dump_verilog_top_testbench_ports(t_sram_orgz_info* cur_sram_orgz_info,
 }
 
 static 
-void dump_verilog_top_testbench_call_top_module(FILE* fp,
+void dump_verilog_top_testbench_call_top_module(t_sram_orgz_info* cur_sram_orgz_info,
+                                                FILE* fp,
                                                 char* circuit_name) {
+  /*
   int iblock, iopad_idx;
+  */
 
   /* Include defined top-level module */
   fprintf(fp, "//----- Device Under Test (DUT) ----\n");
   fprintf(fp, "//------Call defined Top-level Verilog Module -----\n");
   fprintf(fp, "%s_top U0 (\n", circuit_name);
 
-  dump_verilog_top_module_ports(fp, VERILOG_PORT_CONKT);
+  dump_verilog_top_module_ports(cur_sram_orgz_info, fp, VERILOG_PORT_CONKT);
 
   fprintf(fp, ");\n");
   return;
@@ -1696,7 +1704,8 @@ void dump_verilog_top_testbench_call_top_module(FILE* fp,
  * (3) BL = 1 && WL = 0 with a paired conf_bit;
  */
 static 
-int dump_verilog_top_testbench_find_num_config_clock_cycles(t_llist* head) {
+int dump_verilog_top_testbench_find_num_config_clock_cycles(t_sram_orgz_info* cur_sram_orgz_info,
+                                                            t_llist* head) {
   int cnt = 0;
   t_llist* temp = head; 
   t_conf_bit_info* temp_conf_bit_info = NULL; 
@@ -1705,7 +1714,7 @@ int dump_verilog_top_testbench_find_num_config_clock_cycles(t_llist* head) {
     /* Fetch the conf_bit_info */
     temp_conf_bit_info = (t_conf_bit_info*)(temp->dptr);
     /* Check if conf_bit_info needs a clock cycle*/
-    switch (sram_verilog_orgz_type) {
+    switch (cur_sram_orgz_info->type) {
     case SPICE_SRAM_STANDALONE:
     case SPICE_SRAM_SCAN_CHAIN:
       cnt++;
@@ -1992,7 +2001,7 @@ void dump_verilog_top_testbench_one_conf_bit_serial(t_sram_orgz_info* cur_sram_o
                                                     t_llist* cur_conf_bit) {
     						
   /* We already touch the tail, start dump */
-  switch (sram_verilog_orgz_type) {
+  switch (cur_sram_orgz_info->type) {
   case SPICE_SRAM_STANDALONE:
   case SPICE_SRAM_SCAN_CHAIN:
     dump_verilog_top_testbench_scan_chain_conf_bits_serial(fp, cur_conf_bit); 
@@ -2018,7 +2027,7 @@ void dump_verilog_top_testbench_conf_bits_serial(t_sram_orgz_info* cur_sram_orgz
   int bl_decoder_size, wl_decoder_size;
   t_llist* new_head = head;
 
-  switch (sram_verilog_orgz_type) {
+  switch (cur_sram_orgz_info->type) {
   case SPICE_SRAM_STANDALONE:
   case SPICE_SRAM_SCAN_CHAIN:
     /* For scan chain, the last bit should go first!*/
@@ -2286,7 +2295,8 @@ void dump_verilog_top_testbench_stimuli_serial_version(t_sram_orgz_info* cur_sra
    * by traversing the linked-list and count the number of SRAM=1 or BL=1&WL=1 in it.
    * We plus 1 additional config clock cycle here because we need to reset everything during the first clock cycle
    */
-  num_config_clock_cycles = 1 + dump_verilog_top_testbench_find_num_config_clock_cycles(cur_sram_orgz_info->conf_bit_head);
+  num_config_clock_cycles = 1 + dump_verilog_top_testbench_find_num_config_clock_cycles(cur_sram_orgz_info, 
+                                                                                        cur_sram_orgz_info->conf_bit_head);
   fprintf(fp, "//----- Number of clock cycles in configuration phase: %d -----\n", 
               num_config_clock_cycles);
 
@@ -2741,7 +2751,7 @@ void dump_verilog_top_netlist(t_sram_orgz_info* cur_sram_orgz_info,
   my_free(temp_include_file_path);
  
   /* Include decoders if required */ 
-  switch(sram_verilog_orgz_type) {
+  switch(cur_sram_orgz_info->type) {
   case SPICE_SRAM_STANDALONE:
   case SPICE_SRAM_SCAN_CHAIN:
     break;
@@ -2759,7 +2769,7 @@ void dump_verilog_top_netlist(t_sram_orgz_info* cur_sram_orgz_info,
   }
  
   /* Print all global wires*/
-  dump_verilog_top_netlist_ports(fp, num_clock, circuit_name, verilog);
+  dump_verilog_top_netlist_ports(cur_sram_orgz_info, fp, num_clock, circuit_name, verilog);
 
   dump_verilog_top_netlist_internal_wires(cur_sram_orgz_info, fp);
 
@@ -2817,10 +2827,10 @@ void dump_verilog_top_testbench(t_sram_orgz_info* cur_sram_orgz_info,
   my_free(title);
 
   /* Start of testbench */
-  dump_verilog_top_testbench_ports(fp, circuit_name);
+  dump_verilog_top_testbench_ports(cur_sram_orgz_info, fp, circuit_name);
 
   /* Call defined top-level module */
-  dump_verilog_top_testbench_call_top_module(fp, circuit_name);
+  dump_verilog_top_testbench_call_top_module(cur_sram_orgz_info, fp, circuit_name);
 
   /* Add stimuli for reset, set, clock and iopad signals */
   dump_verilog_top_testbench_stimuli(cur_sram_orgz_info, fp, num_clock, syn_verilog_opts, verilog);

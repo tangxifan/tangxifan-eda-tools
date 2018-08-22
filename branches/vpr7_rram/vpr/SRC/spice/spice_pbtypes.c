@@ -122,7 +122,7 @@ void fprint_pb_type_ports(FILE* fp,
 void fprint_spice_dangling_des_pb_graph_pin_interc(FILE* fp,
                                                    t_pb_graph_pin* des_pb_graph_pin,
                                                    t_mode* cur_mode,
-                                                   enum e_pin2pin_interc_type pin2pin_interc_type,
+                                                   enum e_spice_pin2pin_interc_type pin2pin_interc_type,
                                                    char* parent_pin_prefix) {
   t_pb_graph_node* des_pb_graph_node = NULL;
   t_pb_type* des_pb_type = NULL;
@@ -239,7 +239,7 @@ void fprint_spice_dangling_des_pb_graph_pin_interc(FILE* fp,
 
 void generate_spice_src_des_pb_graph_pin_prefix(t_pb_graph_node* src_pb_graph_node,
                                                 t_pb_graph_node* des_pb_graph_node,
-                                                enum e_pin2pin_interc_type pin2pin_interc_type,
+                                                enum e_spice_pin2pin_interc_type pin2pin_interc_type,
                                                 t_interconnect* pin2pin_interc,
                                                 char* parent_pin_prefix,
                                                 char** src_pin_prefix,
@@ -250,10 +250,10 @@ void generate_spice_src_des_pb_graph_pin_prefix(t_pb_graph_node* src_pb_graph_no
   t_pb_type* des_pb_type = NULL;
   int des_pb_type_index = -1;
   
-  //char* formatted_parent_pin_prefix = format_spice_node_prefix(parent_pin_prefix); /* Complete a "_" at the end if needed*/
-  //char* chomped_parent_pin_prefix = chomp_spice_node_prefix(parent_pin_prefix); /* Remove a "_" at the end if needed*/
+  /* char* formatted_parent_pin_prefix = format_spice_node_prefix(parent_pin_prefix);*/ /* Complete a "_" at the end if needed*/
+  /* char* chomped_parent_pin_prefix = chomp_spice_node_prefix(parent_pin_prefix);*/ /* Remove a "_" at the end if needed*/
   
-  t_mode* pin2pin_interc_parent_mode = NULL;
+  /* t_mode* pin2pin_interc_parent_mode = NULL; */
 
   /* Check the pb_graph_nodes*/ 
   if (NULL == src_pb_graph_node) {
@@ -278,7 +278,7 @@ void generate_spice_src_des_pb_graph_pin_prefix(t_pb_graph_node* src_pb_graph_no
   des_pb_type = des_pb_graph_node->pb_type; 
   des_pb_type_index = des_pb_graph_node->placement_index;
   
-  pin2pin_interc_parent_mode = pin2pin_interc->parent_mode;
+  /* pin2pin_interc_parent_mode = pin2pin_interc->parent_mode;*/
 
   assert(NULL == (*src_pin_prefix));
   assert(NULL == (*des_pin_prefix));
@@ -388,7 +388,7 @@ void generate_spice_src_des_pb_graph_pin_prefix(t_pb_graph_node* src_pb_graph_no
  */ 
 void fprintf_spice_pb_graph_pin_interc(FILE* fp,
                                        char* parent_pin_prefix,
-                                       enum e_pin2pin_interc_type pin2pin_interc_type,
+                                       enum e_spice_pin2pin_interc_type pin2pin_interc_type,
                                        t_pb_graph_pin* des_pb_graph_pin,
                                        t_mode* cur_mode,
                                        int select_edge) {
@@ -400,11 +400,11 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
   t_pb_graph_pin* src_pb_graph_pin = NULL;
   t_pb_graph_node* src_pb_graph_node = NULL;
   t_pb_type* src_pb_type = NULL;
-  int src_pb_type_index = -1;
+  /* int src_pb_type_index = -1; */
 
   t_pb_graph_node* des_pb_graph_node = NULL;
-  t_pb_type* des_pb_type = NULL;
-  int des_pb_type_index = -1;
+  /* t_pb_type* des_pb_type = NULL; */
+  /* int des_pb_type_index = -1; */
 
   char* formatted_parent_pin_prefix = chomp_spice_node_prefix(parent_pin_prefix); /* Complete a "_" at the end if needed*/
   char* src_pin_prefix = NULL;
@@ -413,7 +413,7 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
 
   int num_sram_bits = 0;
   int* sram_bits = NULL;
-  int num_sram = 0;
+  /* int num_sram = 0; */
   int cur_sram = 0;
   int mux_level = 0;
 
@@ -467,11 +467,11 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
     src_pb_graph_pin = des_pb_graph_pin->input_edges[iedge]->input_pins[0];
     src_pb_graph_node = src_pb_graph_pin->parent_node;
     src_pb_type = src_pb_graph_node->pb_type;
-    src_pb_type_index = src_pb_graph_node->placement_index;
+    /* src_pb_type_index = src_pb_graph_node->placement_index; */
     /* Des pin, node, pb_type */
     des_pb_graph_node  = des_pb_graph_pin->parent_node;
-    des_pb_type = des_pb_graph_node->pb_type;
-    des_pb_type_index = des_pb_graph_node->placement_index;
+    /* des_pb_type = des_pb_graph_node->pb_type; */
+    /* des_pb_type_index = des_pb_graph_node->placement_index; */
     /* Generate the pin_prefix for src_pb_graph_node and des_pb_graph_node*/
     generate_spice_src_des_pb_graph_pin_prefix(src_pb_graph_node, des_pb_graph_node, pin2pin_interc_type, 
                                                cur_interc, formatted_parent_pin_prefix, &src_pin_prefix, &des_pin_prefix);
@@ -529,11 +529,11 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
       src_pb_graph_pin = des_pb_graph_pin->input_edges[iedge]->input_pins[0];
       src_pb_graph_node = src_pb_graph_pin->parent_node;
       src_pb_type = src_pb_graph_node->pb_type;
-      src_pb_type_index = src_pb_graph_node->placement_index;
+      /* src_pb_type_index = src_pb_graph_node->placement_index; */
       /* Des pin, node, pb_type */
       des_pb_graph_node  = des_pb_graph_pin->parent_node;
-      des_pb_type = des_pb_graph_node->pb_type;
-      des_pb_type_index = des_pb_graph_node->placement_index;
+      /* des_pb_type = des_pb_graph_node->pb_type; */
+      /* des_pb_type_index = des_pb_graph_node->placement_index; */
       /* Generate the pin_prefix for src_pb_graph_node and des_pb_graph_node*/
       generate_spice_src_des_pb_graph_pin_prefix(src_pb_graph_node, des_pb_graph_node, pin2pin_interc_type, 
                                                  cur_interc, formatted_parent_pin_prefix, &src_pin_prefix, &des_pin_prefix);
@@ -641,6 +641,133 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
   return;
 }
 
+/* Print the SPICE interconnections of a port defined in pb_graph */
+void fprintf_spice_pb_graph_port_interc(FILE* fp,
+                                        char* formatted_pin_prefix,
+                                        t_pb_graph_node* cur_pb_graph_node,
+                                        t_pb* cur_pb,
+                                        enum e_spice_pb_port_type pb_port_type,
+                                        t_mode* cur_mode,
+                                        int is_idle) {
+  int iport, ipin;
+  int node_index = -1;
+  int prev_node = -1;
+  /* int prev_edge = -1; */
+  int path_id = -1;
+  t_rr_node* pb_rr_nodes = NULL;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  switch (pb_port_type) {
+  case SPICE_PB_PORT_INPUT:
+    for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
+        /* If this is a idle block, we set 0 to the selected edge*/
+        if (is_idle) {
+          assert(NULL == cur_pb);
+          path_id = 0;
+        } else {
+          /* Get the selected edge of current pin*/
+          assert(NULL != cur_pb);
+          pb_rr_nodes = cur_pb->rr_graph;
+          node_index = cur_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
+          prev_node = pb_rr_nodes[node_index].prev_node;
+          /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
+          /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
+          if (OPEN == prev_node) {
+            path_id = 0; //
+          } else {
+            /* Find the path_id */
+            path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
+            assert(-1 != path_id);
+          }
+        }
+        fprintf_spice_pb_graph_pin_interc(fp,
+                                          formatted_pin_prefix, /* parent_pin_prefix */
+                                          INPUT2INPUT_INTERC,
+                                          &(cur_pb_graph_node->input_pins[iport][ipin]),
+                                          cur_mode,
+                                          path_id);
+      }
+    }
+    break;
+  case SPICE_PB_PORT_OUTPUT:
+    for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
+        /* If this is a idle block, we set 0 to the selected edge*/
+        if (is_idle) {
+          assert(NULL == cur_pb);
+          path_id = 0;
+        } else {
+          /* Get the selected edge of current pin*/
+          assert(NULL != cur_pb);
+          pb_rr_nodes = cur_pb->rr_graph;
+          node_index = cur_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
+          prev_node = pb_rr_nodes[node_index].prev_node;
+          /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
+          /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
+          if (OPEN == prev_node) {
+            path_id = 0; //
+          } else {
+            /* Find the path_id */
+            path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
+            assert(-1 != path_id);
+          }
+        }
+        fprintf_spice_pb_graph_pin_interc(fp,
+                                          formatted_pin_prefix, /* parent_pin_prefix */
+                                          OUTPUT2OUTPUT_INTERC,
+                                          &(cur_pb_graph_node->output_pins[iport][ipin]),
+                                          cur_mode,
+                                          path_id);
+      }
+    }
+    break;
+  case SPICE_PB_PORT_CLOCK:
+    for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
+        /* If this is a idle block, we set 0 to the selected edge*/
+        if (is_idle) {
+          assert(NULL == cur_pb);
+          path_id = 0;
+        } else {
+          /* Get the selected edge of current pin*/
+          assert(NULL != cur_pb);
+          pb_rr_nodes = cur_pb->rr_graph;
+          node_index = cur_pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster;
+          prev_node = pb_rr_nodes[node_index].prev_node;
+          /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
+          /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
+          if (OPEN == prev_node) {
+            path_id = 0; //
+          } else {
+            /* Find the path_id */
+            path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
+            assert(-1 != path_id);
+          }
+        }
+        fprintf_spice_pb_graph_pin_interc(fp,
+                                          formatted_pin_prefix, /* parent_pin_prefix */
+                                          INPUT2INPUT_INTERC,
+                                          &(cur_pb_graph_node->clock_pins[iport][ipin]),
+                                          cur_mode,
+                                          path_id);
+      }
+    }
+    break;
+  default:
+   vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid pb port type!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  return;
+}
 
 /* Print the SPICE interconnections according to pb_graph */
 void fprint_spice_pb_graph_interc(FILE* fp, 
@@ -649,7 +776,6 @@ void fprint_spice_pb_graph_interc(FILE* fp,
                                   t_pb* cur_pb,
                                   int select_mode_index,
                                   int is_idle) {
-  int iport, ipin;
   int ipb, jpb;
   t_mode* cur_mode = NULL;
   t_pb_type* cur_pb_type = cur_pb_graph_node->pb_type;
@@ -659,11 +785,6 @@ void fprint_spice_pb_graph_interc(FILE* fp,
   
   char* formatted_pin_prefix = format_spice_node_prefix(pin_prefix); /* Complete a "_" at the end if needed*/
 
-  int node_index = -1;
-  int prev_node = -1;
-  int prev_edge = -1;
-  int path_id = -1;
-  t_rr_node* pb_rr_nodes = NULL;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -688,41 +809,10 @@ void fprint_spice_pb_graph_interc(FILE* fp,
    *                                         |
    *                         input_pins,   edges,       output_pins
    */ 
-  for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
-    for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
-      /* If this is a idle block, we set 0 to the selected edge*/
-      if (is_idle) {
-        assert(NULL == cur_pb);
-        fprintf_spice_pb_graph_pin_interc(fp,
-                                          formatted_pin_prefix, /* parent_pin_prefix */
-                                          OUTPUT2OUTPUT_INTERC,
-                                          &(cur_pb_graph_node->output_pins[iport][ipin]),
-                                          cur_mode,
-                                          0);
-      } else {
-        /* Get the selected edge of current pin*/
-        assert(NULL != cur_pb);
-        pb_rr_nodes = cur_pb->rr_graph;
-        node_index = cur_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
-        prev_node = pb_rr_nodes[node_index].prev_node;
-        prev_edge = pb_rr_nodes[node_index].prev_edge;
-        /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
-        if (OPEN == prev_node) {
-          path_id = 0; //
-        } else {
-          /* Find the path_id */
-          path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-          assert(-1 != path_id);
-        }
-        fprintf_spice_pb_graph_pin_interc(fp,
-                                          formatted_pin_prefix, /* parent_pin_prefix */
-                                          OUTPUT2OUTPUT_INTERC,
-                                          &(cur_pb_graph_node->output_pins[iport][ipin]),
-                                          cur_mode,
-                                          path_id);
-      }
-    }
-  }
+  fprintf_spice_pb_graph_port_interc(fp, formatted_pin_prefix,
+                                     cur_pb_graph_node, cur_pb,
+                                     SPICE_PB_PORT_OUTPUT,
+                                     cur_mode, is_idle);
   
   /* We check input_pins of child_pb_graph_node and its the input_edges
    * Built the interconnections between inputs of cur_pb_graph_node and inputs of child_pb_graph_node
@@ -737,96 +827,29 @@ void fprint_spice_pb_graph_interc(FILE* fp,
       /* If this is a idle block, we set 0 to the selected edge*/
       if (is_idle) {
         assert(NULL == cur_pb);
-        /* For each child_pb_graph_node input pins*/
-        for (iport = 0; iport < child_pb_graph_node->num_input_ports; iport++) {
-          for (ipin = 0; ipin < child_pb_graph_node->num_input_pins[iport]; ipin++) {
-            fprintf_spice_pb_graph_pin_interc(fp,
-                                              formatted_pin_prefix, /* parent_pin_prefix */
-                                              INPUT2INPUT_INTERC,
-                                              &(child_pb_graph_node->input_pins[iport][ipin]),
-                                              cur_mode,
-                                              0);
-          }
-        }
-        /* TODO: for clock pins, we should do the same work */
-        for (iport = 0; iport < child_pb_graph_node->num_clock_ports; iport++) {
-          for (ipin = 0; ipin < child_pb_graph_node->num_clock_pins[iport]; ipin++) {
-            fprintf_spice_pb_graph_pin_interc(fp,
-                                              formatted_pin_prefix, /* parent_pin_prefix */
-                                              INPUT2INPUT_INTERC,
-                                              &(child_pb_graph_node->clock_pins[iport][ipin]),
-                                              cur_mode,
-                                              0);
-          }
-        }
-        continue;
-      }
-      assert(NULL != cur_pb);
-      child_pb = &(cur_pb->child_pbs[ipb][jpb]);
-      /* Check if child_pb is empty */
-      if (NULL != child_pb->name) { 
-        is_child_pb_idle = 0;
+        child_pb =  NULL;
+        is_child_pb_idle = is_idle;
       } else {
-        is_child_pb_idle = 1;
+        assert(NULL != cur_pb);
+        child_pb = &(cur_pb->child_pbs[ipb][jpb]);
+        /* Check if child_pb is empty */
+        if (NULL != child_pb->name) { 
+          is_child_pb_idle = 0;
+        } else {
+          is_child_pb_idle = 1;
+          child_pb = NULL;
+        }
       }
-      /* Get pb_rr_graph of current pb*/
-      pb_rr_nodes = child_pb->rr_graph;
       /* For each child_pb_graph_node input pins*/
-      for (iport = 0; iport < child_pb_graph_node->num_input_ports; iport++) {
-        for (ipin = 0; ipin < child_pb_graph_node->num_input_pins[iport]; ipin++) {
-          if (is_child_pb_idle) {
-            prev_edge = 0;
-          } else {
-            /* Get the index of the edge that are selected to pass signal*/
-            node_index = child_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
-            prev_node = pb_rr_nodes[node_index].prev_node;
-            prev_edge = pb_rr_nodes[node_index].prev_edge;
-            /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
-            if (OPEN == prev_node) {
-              path_id = 0; //
-            } else {
-              /* Find the path_id */
-              path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-              assert(-1 != path_id);
-            }
-          }
-          /* Write the interconnection*/
-          fprintf_spice_pb_graph_pin_interc(fp,
-                                            formatted_pin_prefix, /* parent_pin_prefix */
-                                            INPUT2INPUT_INTERC,
-                                            &(child_pb_graph_node->input_pins[iport][ipin]),
-                                            cur_mode,
-                                            path_id);
-        }
-      }
+      fprintf_spice_pb_graph_port_interc(fp, formatted_pin_prefix,
+                                         child_pb_graph_node, child_pb,
+                                         SPICE_PB_PORT_INPUT,
+                                         cur_mode, is_child_pb_idle);
       /* TODO: for clock pins, we should do the same work */
-      for (iport = 0; iport < child_pb_graph_node->num_clock_ports; iport++) {
-        for (ipin = 0; ipin < child_pb_graph_node->num_clock_pins[iport]; ipin++) {
-          if (is_child_pb_idle) {
-            prev_edge = 0;
-          } else {
-            /* Get the index of the edge that are selected to pass signal*/
-            node_index = child_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
-            prev_node = pb_rr_nodes[node_index].prev_node;
-            prev_edge = pb_rr_nodes[node_index].prev_edge;
-            /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
-            if (OPEN == prev_node) {
-              path_id = 0; //
-            } else {
-              /* Find the path_id */
-              path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-              assert(-1 != path_id);
-            }
-          }
-          /* Write the interconnection*/
-          fprintf_spice_pb_graph_pin_interc(fp,
-                                            formatted_pin_prefix, /* parent_pin_prefix */
-                                            INPUT2INPUT_INTERC,
-                                            &(child_pb_graph_node->clock_pins[iport][ipin]),
-                                            cur_mode,
-                                            path_id);
-        }
-      }
+      fprintf_spice_pb_graph_port_interc(fp, formatted_pin_prefix,
+                                         child_pb_graph_node, child_pb,
+                                         SPICE_PB_PORT_CLOCK,
+                                         cur_mode, is_child_pb_idle);
     }
   }
 

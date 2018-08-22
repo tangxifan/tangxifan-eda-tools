@@ -31,9 +31,6 @@
 #include "spice_pbtypes.h"
 #include "spice_primitives.h"
 
-enum e_ff_trigger_type {
-  FF_RE, FF_FE
-};
 
 /* Subroutines */
 void fprint_pb_primitive_ff(FILE* fp,
@@ -44,7 +41,7 @@ void fprint_pb_primitive_ff(FILE* fp,
                             t_spice_model* spice_model) {
   int i;
   /* Default FF settings, applied when this FF is idle*/
-  enum e_ff_trigger_type trigger_type = FF_RE;
+  enum e_spice_ff_trigger_type trigger_type = FF_RE;
   int init_val = 0;
  
   int num_input_port = 0;

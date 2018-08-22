@@ -33,10 +33,6 @@
 #include "verilog_pbtypes.h"
 #include "verilog_primitives.h"
 
-enum e_ff_trigger_type {
-  FF_RE, FF_FE
-};
-
 /* Subroutines */
 void dump_verilog_pb_primitive_ff(t_sram_orgz_info* cur_sram_orgz_info,
                                   FILE* fp,
@@ -47,7 +43,7 @@ void dump_verilog_pb_primitive_ff(t_sram_orgz_info* cur_sram_orgz_info,
                                   t_spice_model* verilog_model) {
   int i;
   /* Default FF settings, applied when this FF is idle*/
-  enum e_ff_trigger_type trigger_type = FF_RE;
+  enum e_spice_ff_trigger_type trigger_type = FF_RE;
   int init_val = 0;
  
   int num_input_port = 0;

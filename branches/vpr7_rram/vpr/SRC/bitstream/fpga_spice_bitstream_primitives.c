@@ -29,10 +29,6 @@
 #include "fpga_spice_pbtypes_utils.h"
 #include "fpga_spice_bitstream_utils.h"
 
-enum e_ff_trigger_type {
-  FF_RE, FF_FE
-};
-
 /* Subroutines */
 void fpga_spice_generate_bitstream_pb_primitive_ff(t_logical_block* mapped_logical_block,
                                                   t_pb_graph_node* prim_pb_graph_node,

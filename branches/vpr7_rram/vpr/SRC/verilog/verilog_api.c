@@ -123,6 +123,8 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   char* top_testbench_file_path = NULL;
   char* blif_testbench_file_name = NULL;
   char* blif_testbench_file_path = NULL;
+  char* bitstream_file_name = NULL;
+  char* bitstream_file_path = NULL;
 
   char* chomped_parent_dir = NULL;
   char* chomped_circuit_name = NULL;
@@ -178,9 +180,9 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   /* assign the global variable of SRAM model */
   assert(NULL != Arch.sram_inf.verilog_sram_inf_orgz); /* Check !*/
   sram_verilog_model = Arch.sram_inf.verilog_sram_inf_orgz->spice_model;
-  sram_verilog_orgz_info->type = Arch.sram_inf.verilog_sram_inf_orgz->type;
   /* initialize the SRAM organization information struct */
   sram_verilog_orgz_info = alloc_one_sram_orgz_info();
+  sram_verilog_orgz_info->type = Arch.sram_inf.verilog_sram_inf_orgz->type;
   init_sram_orgz_info(sram_verilog_orgz_info, sram_verilog_orgz_info->type, sram_verilog_model, nx + 2, ny + 2);
   /* Check all the SRAM port is using the correct SRAM SPICE MODEL */
   config_spice_models_sram_port_spice_model(Arch.spice->num_spice_model, 
@@ -278,12 +280,17 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   
   /* Generate bitstream if required, and also Dump bitstream file */
   if (vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.gen_bitstream) {
-    vpr_fpga_spice_generate_bitstream(vpr_setup, Arch, circuit_name, &sram_verilog_orgz_info);
+    bitstream_file_name = my_strcat(chomped_circuit_name, fpga_spice_bitstream_output_file_postfix);
+    bitstream_file_path = my_strcat(verilog_dir_formatted, bitstream_file_name);
+    /* Run bitstream generation */
+    vpr_fpga_spice_generate_bitstream(vpr_setup, Arch, circuit_name, bitstream_file_path, &sram_verilog_orgz_info);
     /* Free sram_orgz_info:
      */
     free_sram_orgz_info(sram_verilog_orgz_info,
                       sram_verilog_orgz_info->type,
                       nx + 2, ny + 2);
+    my_free(bitstream_file_name);
+    my_free(bitstream_file_path);
   }
 
   /* dump verilog testbench only for top-level: ONLY valid when bitstream is generated! */

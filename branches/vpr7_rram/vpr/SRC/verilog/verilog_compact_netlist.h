@@ -1,3 +1,8 @@
+void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_info, 
+                                             char* subckt_dir_path,
+                                             t_type_ptr phy_block_type,
+                                             int border_side,
+                                             t_arch* arch);
 
 void dump_compact_verilog_logic_blocks(t_sram_orgz_info* cur_sram_orgz_info,
                                        char* subckt_dir,

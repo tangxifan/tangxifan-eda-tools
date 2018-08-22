@@ -7,12 +7,12 @@ void fprint_pb_type_ports(FILE* fp,
 void fprint_spice_dangling_des_pb_graph_pin_interc(FILE* fp,
                                                    t_pb_graph_pin* des_pb_graph_pin,
                                                    t_mode* cur_mode,
-                                                   enum e_pin2pin_interc_type pin2pin_interc_type,
+                                                   enum e_spice_pin2pin_interc_type pin2pin_interc_type,
                                                    char* parent_pin_prefix);
 
 void generate_spice_src_des_pb_graph_pin_prefix(t_pb_graph_node* src_pb_graph_node,
                                                 t_pb_graph_node* des_pb_graph_node,
-                                                enum e_pin2pin_interc_type pin2pin_interc_type,
+                                                enum e_spice_pin2pin_interc_type pin2pin_interc_type,
                                                 t_interconnect* pin2pin_interc,
                                                 char* parent_pin_prefix,
                                                 char** src_pin_prefix,
@@ -25,7 +25,7 @@ void find_interc_fan_in_des_pb_graph_pin(t_pb_graph_pin* des_pb_graph_pin,
 
 void fprintf_spice_pb_graph_pin_interc(FILE* fp,
                                        char* parent_pin_prefix,
-                                       enum e_pin2pin_interc_type pin2pin_interc_type,
+                                       enum e_spice_pin2pin_interc_type pin2pin_interc_type,
                                        t_pb_graph_pin* des_pb_graph_pin,
                                        t_mode* cur_mode,
                                        int is_idle);

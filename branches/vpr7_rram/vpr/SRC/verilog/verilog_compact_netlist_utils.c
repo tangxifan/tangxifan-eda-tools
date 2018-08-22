@@ -177,9 +177,9 @@ void dump_compact_verilog_io_grid_pins(FILE* fp,
   /* Count the number of pins */
   side_pin_index = 0;
   //for (iz = 0; iz < capacity; iz++) {
-    for (iheight = 0; iheight < type_descriptor->height; iheight++) {
-      for (ipin = 0; ipin < type_descriptor->num_pins; ipin++) {
-        if (1 == type_descriptor->pinloc[iheight][border_side][ipin]) {
+    for (iheight = 0; iheight < grid_type_descriptor->height; iheight++) {
+      for (ipin = 0; ipin < grid_type_descriptor->num_pins; ipin++) {
+        if (1 == grid_type_descriptor->pinloc[iheight][border_side][ipin]) {
           /* Add comma if needed */
           if (1 == first_dump) {
             first_dump = 0;
@@ -192,8 +192,8 @@ void dump_compact_verilog_io_grid_pins(FILE* fp,
           }
           /* Determine this pin is an input or output */
           if (TRUE == dump_port_type) {
-            class_id = type_descriptor->pin_class[ipin];
-            switch (type_descriptor->class_inf[class_id].type) {
+            class_id = grid_type_descriptor->pin_class[ipin];
+            switch (grid_type_descriptor->class_inf[class_id].type) {
             case RECEIVER:
               fprintf(fp, "input ");
               break;
@@ -229,29 +229,25 @@ void dump_compact_verilog_io_grid_pins(FILE* fp,
 } 
 
 /* Physical mode subckt name */
-char* compact_verilog_get_grid_phy_block_subckt_name(int z,
+char* compact_verilog_get_grid_phy_block_subckt_name(t_type_ptr grid_type_descriptor,
+                                                     int z,
                                                      char* subckt_prefix) {
   char* ret = NULL;
-  t_type_ptr type_descriptor = NULL;
   char* formatted_subckt_prefix = format_verilog_node_prefix(subckt_prefix);
   int phy_mode_index = 0;
 
   /* Check */
-  assert((!(0 > x))&&(!(x > (nx + 1)))); 
-  assert((!(0 > y))&&(!(y > (ny + 1)))); 
-
-  type_descriptor = grid[x][y].type;
-  assert(NULL != type_descriptor);
+  assert(NULL != grid_type_descriptor);
 
   /* This a NULL logic block... Find the idle mode*/
-  phy_mode_index = find_pb_type_physical_mode_index(type_descriptor->pb_type); 
+  phy_mode_index = find_pb_type_physical_mode_index(*(grid_type_descriptor->pb_type)); 
   assert(-1 < phy_mode_index);
 
   ret = (char*)my_malloc(sizeof(char)* 
-             (strlen(formatted_subckt_prefix) + strlen(type_descriptor->name) + 1
-             + strlen(my_itoa(z)) + 7 + strlen(type_descriptor->pb_type->modes[phy_mode_index].name) + 1 + 1)); 
+             (strlen(formatted_subckt_prefix) + strlen(grid_type_descriptor->name) + 1
+             + strlen(my_itoa(z)) + 7 + strlen(grid_type_descriptor->pb_type->modes[phy_mode_index].name) + 1 + 1)); 
   sprintf(ret, "%s%s_%d__mode_%s_", formatted_subckt_prefix,
-          type_descriptor->name, z, type_descriptor->pb_type->modes[phy_mode_index].name);
+          grid_type_descriptor->name, z, grid_type_descriptor->pb_type->modes[phy_mode_index].name);
 
   return ret;
 }                        
@@ -274,7 +270,7 @@ void dump_compact_verilog_io_grid_block_subckt_pins(FILE* fp,
   /* Check */
   assert(NULL != grid_type_descriptor);
   top_pb_graph_node = grid_type_descriptor->pb_graph_head;
-  assert(NULL != grid_top_pb_graph_node); 
+  assert(NULL != top_pb_graph_node); 
 
   /* Make sure this is IO */
   assert(IO_TYPE == grid_type_descriptor);
@@ -301,7 +297,7 @@ void dump_compact_verilog_io_grid_block_subckt_pins(FILE* fp,
           fprintf(fp, ",\n");
         }
         fprintf(fp, "%s_height_%d__pin_%d_", 
-                convert_side_index_to_string(side), pin_height, grid_pin_index);
+                convert_side_index_to_string(border_side), pin_height, grid_pin_index);
         side_pin_index++;
         dump_pin_cnt++;
       }

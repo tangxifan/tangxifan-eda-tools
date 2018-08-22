@@ -1,8 +1,4 @@
 
-enum e_spice_mux_tb_type {
-  SPICE_CB_MUX_TB, SPICE_SB_MUX_TB, SPICE_PB_MUX_TB 
-};
-
 void spice_print_mux_testbench(char* formatted_spice_dir,
                                 char* circuit_name,
                                 char* include_dir_path,

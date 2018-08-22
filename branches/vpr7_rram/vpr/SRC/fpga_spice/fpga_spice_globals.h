@@ -30,10 +30,5 @@ extern t_llist* global_ports_head;
 /* Linked list for verilog and spice syntax char */
 extern t_llist* reserved_syntax_char_head;
  
-/* Enumeration */
-enum e_pin2pin_interc_type {
- INPUT2INPUT_INTERC, OUTPUT2OUTPUT_INTERC
-};
-
 extern char* renaming_report_postfix;
 extern char* fpga_spice_bitstream_output_file_postfix;

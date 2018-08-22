@@ -41,7 +41,7 @@
  * The pins appear in the port list will depend on the selected border side
  */
 void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_info, 
-                                             char* subckt_dir,
+                                             char* subckt_dir_path,
                                              t_type_ptr phy_block_type,
                                              int border_side,
                                              t_arch* arch) {
@@ -59,7 +59,7 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
   }
 
   /* Give a name to the Verilog netlist */
-  fname = my_strcat(formatted_dir_path(subckt_dir_path), phy_block_type->name);
+  fname = my_strcat(format_dir_path(subckt_dir_path), phy_block_type->name);
   fname = my_strcat(fname, verilog_netlist_file_postfix); 
 
   /* Create file handler */
@@ -82,7 +82,8 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
     /* Comments: Grid [x][y]*/
     fprintf(fp, "//----- Submodule of type_descriptor: %s[%d] -----\n", phy_block_type->name, iz);
     /* Print a NULL logic block...*/
-    dump_verilog_phy_pb_graph_node_rec(fp, phy_block_type->name, NULL, phy_block_type->pb_graph_node, iz);
+    dump_verilog_phy_pb_graph_node_rec(cur_sram_orgz_info, fp, phy_block_type->name, NULL, 
+                                       phy_block_type->pb_graph_head, iz);
     fprintf(fp, "//----- END -----\n\n");
   }
 
@@ -139,7 +140,7 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
   /* Quote all the sub blocks*/
   for (iz = 0; iz < phy_block_type->capacity; iz++) {
     /* Local Vdd and Gnd, subckt name*/
-    fprintf(fp, "%s ", compact_verilog_get_grid_phy_block_subckt_name(iz, phy_block_type->name));
+    fprintf(fp, "%s ", compact_verilog_get_grid_phy_block_subckt_name(phy_block_type, iz, phy_block_type->name));
     fprintf(fp, " grid_%s_%d_ (", phy_block_type->name, iz);
     fprintf(fp, "\n");
     /* dump global ports */
@@ -215,23 +216,26 @@ void dump_compact_verilog_logic_blocks(t_sram_orgz_info* cur_sram_orgz_info,
 
   /* Enumerate the types, dump one Verilog module for each */
   for (itype = 0; itype > num_types; itype++) {
-    switch (&(type_descriptors[itype])) {
+    if (EMPTY_TYPE == &type_descriptors[itype]) {
     /* Bypass empty type or NULL */
-    case EMPTY_TYPE:
-      break;
+      continue;
+    } else if (IO_TYPE == &type_descriptors[itype]) {
     /* Special for I/O block, generate one module for each border side */
-    case IO_TYPE: 
       for (iside = 0; iside < num_sides; iside++) {
         dump_compact_verilog_one_physical_block(cur_sram_orgz_info, subckt_dir, 
-                                                   type_descriptors[itype], iside, arch);
+                                                &type_descriptors[itype], iside, arch);
       } 
-      break;
-    /* For CLB and heterogenenous blocks */
-    case FILL_TYPE:
-    default:
-      dump_compact_verilog_one_physical_logic_block(cur_sram_orgz_info, subckt_dir, 
-                                                    type_descriptors[itype], -1, arch);
-      break;  
+      continue;
+    } else if (FILL_TYPE == &type_descriptors[itype]) {
+    /* For CLB */
+      dump_compact_verilog_one_physical_block(cur_sram_orgz_info, subckt_dir, 
+                                              &type_descriptors[itype], -1, arch);
+      continue;
+    } else {
+    /* For heterogenenous blocks */
+      dump_compact_verilog_one_physical_block(cur_sram_orgz_info, subckt_dir, 
+                                              &type_descriptors[itype], -1, arch);
+
     }
   }
 
@@ -260,7 +264,7 @@ void dump_compact_verilog_defined_one_grid(t_sram_orgz_info* cur_sram_orgz_info,
   /* Comment lines */
   fprintf(fp, "//----- BEGIN Call Grid[%d][%d] module -----\n", ix, iy);
   /* Print the Grid module */
-  fprintf(fp, "grid_%s  ", grid[ix][iy]->type->name); /* Call the name of subckt */ 
+  fprintf(fp, "grid_%s  ", grid[ix][iy].type->name); /* Call the name of subckt */ 
   fprintf(fp, "grid_%d__%d_ ", ix, iy);
   fprintf(fp, "(");
   fprintf(fp, "\n");
@@ -326,7 +330,7 @@ void dump_compact_verilog_defined_grids(t_sram_orgz_info* cur_sram_orgz_info,
         continue;
       }
       assert(IO_TYPE != grid[ix][iy].type);
-      dump_compact_verilog_defined_one_grid(fp, ix, iy);
+      dump_compact_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
     }
   } 
 
@@ -339,7 +343,7 @@ void dump_compact_verilog_defined_grids(t_sram_orgz_info* cur_sram_orgz_info,
       continue;
     }
     assert(IO_TYPE == grid[ix][iy].type);
-    dump_compact_verilog_defined_one_grid(fp, ix, iy);
+    dump_compact_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
   }
 
   /* RIGHT side */
@@ -350,7 +354,7 @@ void dump_compact_verilog_defined_grids(t_sram_orgz_info* cur_sram_orgz_info,
       continue;
     }
     assert(IO_TYPE == grid[ix][iy].type);
-    dump_compact_verilog_defined_one_grid(fp, ix, iy);
+    dump_compact_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
   }
 
   /* BOTTOM side */
@@ -361,7 +365,7 @@ void dump_compact_verilog_defined_grids(t_sram_orgz_info* cur_sram_orgz_info,
       continue;
     }
     assert(IO_TYPE == grid[ix][iy].type);
-    dump_compact_verilog_defined_one_grid(fp, ix, iy);
+    dump_compact_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
   } 
 
   /* TOP side */
@@ -372,7 +376,7 @@ void dump_compact_verilog_defined_grids(t_sram_orgz_info* cur_sram_orgz_info,
       continue;
     }
     assert(IO_TYPE == grid[ix][iy].type);
-    dump_compact_verilog_defined_one_grid(fp, ix, iy);
+    dump_compact_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
   } 
 
   return;
@@ -459,7 +463,7 @@ void dump_compact_verilog_top_netlist(t_sram_orgz_info* cur_sram_orgz_info,
   }
  
   /* Print all global wires*/
-  dump_verilog_top_netlist_ports(fp, num_clock, circuit_name, verilog);
+  dump_verilog_top_netlist_ports(cur_sram_orgz_info, fp, num_clock, circuit_name, verilog);
 
   dump_verilog_top_netlist_internal_wires(cur_sram_orgz_info, fp);
 
@@ -479,7 +483,7 @@ void dump_compact_verilog_top_netlist(t_sram_orgz_info* cur_sram_orgz_info,
   dump_verilog_clb2clb_directs(fp, num_clb2clb_directs, clb2clb_direct);
 
   /* Dump configuration circuits */
-  dump_verilog_configuration_circuits(fp);
+  dump_verilog_configuration_circuits(cur_sram_orgz_info, fp);
 
   /* verilog ends*/
   fprintf(fp, "endmodule\n");

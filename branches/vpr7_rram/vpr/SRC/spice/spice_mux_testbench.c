@@ -665,7 +665,7 @@ void fprint_spice_mux_testbench_pb_pin_mux(FILE* fp,
 
 static 
 void fprint_spice_mux_testbench_pb_graph_node_pin_interc(FILE* fp,
-                                                         enum e_pin2pin_interc_type pin2pin_interc_type,
+                                                         enum e_spice_pin2pin_interc_type pin2pin_interc_type,
                                                          t_pb_graph_pin* des_pb_graph_pin,
                                                          t_mode* cur_mode,
                                                          int select_path_id,
@@ -758,7 +758,7 @@ static
 void fprint_spice_mux_testbench_pb_pin_interc(FILE* fp,
                                               t_rr_node* pb_rr_graph,
                                               t_pb* des_pb,
-                                              enum e_pin2pin_interc_type pin2pin_interc_type,
+                                              enum e_spice_pin2pin_interc_type pin2pin_interc_type,
                                               t_pb_graph_pin* des_pb_graph_pin,
                                               t_mode* cur_mode,
                                               int select_path_id,
@@ -847,20 +847,173 @@ void fprint_spice_mux_testbench_pb_pin_interc(FILE* fp,
   return;
 }
 
+/* Print the SPICE interconnections of a port defined in pb_graph */
+static 
+void fprintf_spice_mux_testbench_pb_graph_port_interc(FILE* fp,
+                                                      t_pb_graph_node* cur_pb_graph_node,
+                                                      t_pb* cur_pb,
+                                                      enum e_spice_pb_port_type pb_port_type,
+                                                      t_mode* cur_mode,
+                                                      int is_idle,
+                                                      int grid_x, int grid_y,
+                                                      t_ivec*** LL_rr_node_indices) {
+  int iport, ipin;
+  int node_index = -1;
+  int prev_node = -1;
+  /* int prev_edge = -1; */
+  int path_id = -1;
+  t_rr_node* pb_rr_nodes = NULL;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  switch (pb_port_type) {
+  case SPICE_PB_PORT_INPUT:
+    for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
+        /* If this is a idle block, we set 0 to the selected edge*/
+        if (is_idle) {
+          assert(NULL == cur_pb);
+          path_id = 0;
+          fprint_spice_mux_testbench_pb_graph_node_pin_interc(fp, 
+                                                              INPUT2INPUT_INTERC,
+                                                              &(cur_pb_graph_node->input_pins[iport][ipin]),
+                                                              cur_mode,
+                                                              path_id,
+                                                              grid_x, grid_y, 
+                                                              LL_rr_node_indices);
+        } else {
+          /* Get the selected edge of current pin*/
+          assert(NULL != cur_pb);
+          pb_rr_nodes = cur_pb->rr_graph;
+          node_index = cur_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
+          prev_node = pb_rr_nodes[node_index].prev_node;
+          /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
+          /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
+          if (OPEN == prev_node) {
+            path_id = 0; //
+          } else {
+            /* Find the path_id */
+            path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
+            assert(-1 != path_id);
+          }
+          fprint_spice_mux_testbench_pb_pin_interc(fp, pb_rr_nodes, cur_pb, /* TODO: find out the child_pb*/
+                                                   INPUT2INPUT_INTERC,
+                                                   &(cur_pb_graph_node->input_pins[iport][ipin]),
+                                                   cur_mode,
+                                                   path_id, 
+                                                   grid_x, grid_y, 
+                                                   LL_rr_node_indices);
+        }
+      }
+    }
+    break;
+  case SPICE_PB_PORT_OUTPUT:
+    for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
+        /* If this is a idle block, we set 0 to the selected edge*/
+        if (is_idle) {
+          assert(NULL == cur_pb);
+          path_id = 0;
+          fprint_spice_mux_testbench_pb_graph_node_pin_interc(fp, 
+                                                              OUTPUT2OUTPUT_INTERC,
+                                                              &(cur_pb_graph_node->output_pins[iport][ipin]),
+                                                              cur_mode,
+                                                              path_id,
+                                                              grid_x, grid_y, 
+                                                              LL_rr_node_indices);
+        } else {
+          /* Get the selected edge of current pin*/
+          assert(NULL != cur_pb);
+          pb_rr_nodes = cur_pb->rr_graph;
+          node_index = cur_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
+          prev_node = pb_rr_nodes[node_index].prev_node;
+          /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
+          /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
+          if (OPEN == prev_node) {
+            path_id = 0; //
+          } else {
+            /* Find the path_id */
+            path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
+            assert(-1 != path_id);
+          }
+          fprint_spice_mux_testbench_pb_pin_interc(fp, pb_rr_nodes, cur_pb, /* TODO: find out the child_pb*/
+                                                   OUTPUT2OUTPUT_INTERC,
+                                                   &(cur_pb_graph_node->output_pins[iport][ipin]),
+                                                   cur_mode,
+                                                   path_id, 
+                                                   grid_x, grid_y, 
+                                                   LL_rr_node_indices);
+        }
+      }
+    }
+    break;
+  case SPICE_PB_PORT_CLOCK:
+    for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
+        /* If this is a idle block, we set 0 to the selected edge*/
+        if (is_idle) {
+          assert(NULL == cur_pb);
+          path_id = 0;
+          fprint_spice_mux_testbench_pb_graph_node_pin_interc(fp, 
+                                                              INPUT2INPUT_INTERC,
+                                                              &(cur_pb_graph_node->clock_pins[iport][ipin]),
+                                                              cur_mode,
+                                                              path_id,
+                                                              grid_x, grid_y, 
+                                                              LL_rr_node_indices);
+        } else {
+          /* Get the selected edge of current pin*/
+          assert(NULL != cur_pb);
+          pb_rr_nodes = cur_pb->rr_graph;
+          node_index = cur_pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster;
+          prev_node = pb_rr_nodes[node_index].prev_node;
+          /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
+          /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
+          if (OPEN == prev_node) {
+            path_id = 0; //
+          } else {
+            /* Find the path_id */
+            path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
+            assert(-1 != path_id);
+          }
+          fprint_spice_mux_testbench_pb_pin_interc(fp, pb_rr_nodes, cur_pb, /* TODO: find out the child_pb*/
+                                                   INPUT2INPUT_INTERC,
+                                                   &(cur_pb_graph_node->clock_pins[iport][ipin]),
+                                                   cur_mode,
+                                                   path_id, 
+                                                   grid_x, grid_y, 
+                                                   LL_rr_node_indices);
+        }
+      }
+    }
+    break;
+  default:
+   vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid pb port type!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  return;
+}
+
+
+
 /* For each pb, we search the input pins and output pins for local interconnections */
 static 
 void fprint_spice_mux_testbench_pb_graph_node_interc(FILE* fp,
                                                      t_pb_graph_node* cur_pb_graph_node,
                                                      int grid_x, int grid_y,
                                                      t_ivec*** LL_rr_node_indices) {
-  int iport, ipin;
   int ipb, jpb;
   t_pb_type* cur_pb_type = NULL;
   t_mode* cur_mode = NULL;
   t_pb_graph_node* child_pb_graph_node = NULL;
   int select_mode_index = -1;
-
-  int path_id = -1;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -883,18 +1036,15 @@ void fprint_spice_mux_testbench_pb_graph_node_interc(FILE* fp,
    *                                         |
    *                         input_pins,   edges,       output_pins
    */ 
-  for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
-    for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
-      path_id = 0; 
-      fprint_spice_mux_testbench_pb_graph_node_pin_interc(fp, 
-                                                          OUTPUT2OUTPUT_INTERC,
-                                                          &(cur_pb_graph_node->output_pins[iport][ipin]),
-                                                          cur_mode,
-                                                          path_id, 
-                                                          grid_x, grid_y, 
-                                                          LL_rr_node_indices);
-    }
-  }
+  fprintf_spice_mux_testbench_pb_graph_port_interc(fp,
+                                                   cur_pb_graph_node,
+                                                   NULL,
+                                                   SPICE_PB_PORT_OUTPUT,
+                                                   cur_mode,
+                                                   1,
+                                                   grid_x, grid_y,
+                                                   LL_rr_node_indices);
+ 
   
   /* We check input_pins of child_pb_graph_node and its the input_edges
    * Built the interconnections between inputs of cur_pb_graph_node and inputs of child_pb_graph_node
@@ -907,33 +1057,23 @@ void fprint_spice_mux_testbench_pb_graph_node_interc(FILE* fp,
     for (jpb = 0; jpb < cur_pb_type->modes[select_mode_index].pb_type_children[ipb].num_pb; jpb++) {
       child_pb_graph_node = &(cur_pb_graph_node->child_pb_graph_nodes[select_mode_index][ipb][jpb]);
       /* For each child_pb_graph_node input pins*/
-      for (iport = 0; iport < child_pb_graph_node->num_input_ports; iport++) {
-        for (ipin = 0; ipin < child_pb_graph_node->num_input_pins[iport]; ipin++) {
-          path_id = 0;
-          /* Write the interconnection*/
-          fprint_spice_mux_testbench_pb_graph_node_pin_interc(fp, 
-                                                              INPUT2INPUT_INTERC,
-                                                              &(child_pb_graph_node->input_pins[iport][ipin]),
-                                                              cur_mode,
-                                                              path_id,
-                                                              grid_x, grid_y, 
-                                                              LL_rr_node_indices);
-        }
-      }
+      fprintf_spice_mux_testbench_pb_graph_port_interc(fp,
+                                                       child_pb_graph_node,
+                                                       NULL,
+                                                       SPICE_PB_PORT_INPUT,
+                                                       cur_mode,
+                                                       1,
+                                                       grid_x, grid_y,
+                                                       LL_rr_node_indices);
       /* TODO: for clock pins, we should do the same work */
-      for (iport = 0; iport < child_pb_graph_node->num_clock_ports; iport++) {
-        for (ipin = 0; ipin < child_pb_graph_node->num_clock_pins[iport]; ipin++) {
-          path_id = 0;
-          /* Write the interconnection*/
-          fprint_spice_mux_testbench_pb_graph_node_pin_interc(fp, 
-                                                              INPUT2INPUT_INTERC,
-                                                              &(child_pb_graph_node->clock_pins[iport][ipin]),
-                                                              cur_mode,
-                                                              path_id,
-                                                              grid_x, grid_y, 
-                                                              LL_rr_node_indices);
-        }
-      }
+      fprintf_spice_mux_testbench_pb_graph_port_interc(fp,
+                                                       child_pb_graph_node,
+                                                       NULL,
+                                                       SPICE_PB_PORT_CLOCK,
+                                                       cur_mode,
+                                                       1,
+                                                       grid_x, grid_y,
+                                                       LL_rr_node_indices);
     }
   }
 
@@ -981,13 +1121,13 @@ void fprint_spice_mux_testbench_idle_pb_graph_node_muxes_rec(FILE* fp,
   return;
 }
 
+
 /* For each pb, we search the input pins and output pins for local interconnections */
 static 
 void fprint_spice_mux_testbench_pb_interc(FILE* fp,
                                           t_pb* cur_pb,
                                           int grid_x, int grid_y,
                                           t_ivec*** LL_rr_node_indices) {
-  int iport, ipin;
   int ipb, jpb;
   t_pb_graph_node* cur_pb_graph_node = NULL;
   t_pb_type* cur_pb_type = NULL;
@@ -995,12 +1135,7 @@ void fprint_spice_mux_testbench_pb_interc(FILE* fp,
   t_pb_graph_node* child_pb_graph_node = NULL;
   t_pb* child_pb = NULL;
   int select_mode_index = -1;
-
-  int node_index = -1;
-  int prev_node = -1;
-  /* int prev_edge = -1; */
-  int path_id = -1;
-  t_rr_node* pb_rr_nodes = NULL;
+  int is_child_pb_idle = -1;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -1025,39 +1160,15 @@ void fprint_spice_mux_testbench_pb_interc(FILE* fp,
    *                                         |
    *                         input_pins,   edges,       output_pins
    */ 
-  for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
-    for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
-      /* Get the selected edge of current pin*/
-      assert(NULL != cur_pb);
-      pb_rr_nodes = cur_pb->rr_graph;
-      node_index = cur_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
-      /* Bypass unmapped interc */
-      /* 
-      if (OPEN == pb_rr_nodes[node_index].net_num) {
-        continue;
-      }
-      */ 
-      prev_node = pb_rr_nodes[node_index].prev_node;
-      /* prev_edge is the index of edge of prev_node !!! */
-      /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
-      /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
-      if (OPEN == prev_node) {
-        path_id = 0; 
-        /* Determine the child_pb */
-      } else {
-        /* Find the path_id */
-        path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-        assert(-1 != path_id);
-      } 
-      fprint_spice_mux_testbench_pb_pin_interc(fp, pb_rr_nodes ,cur_pb, /* TODO: find out the child_pb*/
-                                               OUTPUT2OUTPUT_INTERC,
-                                               &(cur_pb_graph_node->output_pins[iport][ipin]),
-                                               cur_mode,
-                                               path_id, 
-                                               grid_x, grid_y, 
-                                               LL_rr_node_indices);
-    }
-  }
+  fprintf_spice_mux_testbench_pb_graph_port_interc(fp,
+                                                   cur_pb_graph_node,
+                                                   cur_pb,
+                                                   SPICE_PB_PORT_OUTPUT,
+                                                   cur_mode,
+                                                   0,
+                                                   grid_x, grid_y,
+                                                   LL_rr_node_indices);
+
   
   /* We check input_pins of child_pb_graph_node and its the input_edges
    * Built the interconnections between inputs of cur_pb_graph_node and inputs of child_pb_graph_node
@@ -1072,103 +1183,29 @@ void fprint_spice_mux_testbench_pb_interc(FILE* fp,
       child_pb = &(cur_pb->child_pbs[ipb][jpb]);
       /* Check if child_pb is empty */
       if (NULL == child_pb->name) { 
-        //continue; /* by pass*/
-        /* For each child_pb_graph_node input pins*/
-        for (iport = 0; iport < child_pb_graph_node->num_input_ports; iport++) {
-          for (ipin = 0; ipin < child_pb_graph_node->num_input_pins[iport]; ipin++) {
-            path_id = 0;
-            /* Write the interconnection*/
-            fprint_spice_mux_testbench_pb_graph_node_pin_interc(fp, 
-                                                                INPUT2INPUT_INTERC,
-                                                                &(child_pb_graph_node->input_pins[iport][ipin]),
-                                                                cur_mode,
-                                                                path_id,
-                                                                grid_x, grid_y, 
-                                                                LL_rr_node_indices);
-          }
-        }
-        /* TODO: for clock pins, we should do the same work */
-        for (iport = 0; iport < child_pb_graph_node->num_clock_ports; iport++) {
-          for (ipin = 0; ipin < child_pb_graph_node->num_clock_pins[iport]; ipin++) {
-            path_id = 0;
-            /* Write the interconnection*/
-            fprint_spice_mux_testbench_pb_graph_node_pin_interc(fp, 
-                                                                INPUT2INPUT_INTERC,
-                                                                &(child_pb_graph_node->clock_pins[iport][ipin]),
-                                                                cur_mode,
-                                                                path_id,
-                                                                grid_x, grid_y, 
-                                                                LL_rr_node_indices);
-          }  
-        }
-        continue;
+        is_child_pb_idle = 1;
+        child_pb = NULL;
+      } else { 
+        is_child_pb_idle = 0;
       }
-      /* Get pb_rr_graph of current pb*/
-      pb_rr_nodes = child_pb->rr_graph;
       /* For each child_pb_graph_node input pins*/
-      for (iport = 0; iport < child_pb_graph_node->num_input_ports; iport++) {
-        for (ipin = 0; ipin < child_pb_graph_node->num_input_pins[iport]; ipin++) {
-          /* Get the index of the edge that are selected to pass signal*/
-          node_index = child_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
-          prev_node = pb_rr_nodes[node_index].prev_node;
-          /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
-          /* Bypass unmapped interc */
-          /* 
-          if (OPEN == pb_rr_nodes[node_index].net_num) {
-            continue;
-          } 
-          */
-          /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
-          if (OPEN == prev_node) {
-            path_id = 0;
-            //break; /* TODO: if there exist parasitic input waveforms, we should print the interc */
-          } else {
-            /* Find the path_id */
-            path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-            assert(-1 != path_id);
-          }
-          /* Write the interconnection*/
-          fprint_spice_mux_testbench_pb_pin_interc(fp, pb_rr_nodes, child_pb,
-                                                   INPUT2INPUT_INTERC,
-                                                   &(child_pb_graph_node->input_pins[iport][ipin]),
-                                                   cur_mode,
-                                                   path_id,
-                                                   grid_x, grid_y, 
-                                                   LL_rr_node_indices);
-        }
-      }
+      fprintf_spice_mux_testbench_pb_graph_port_interc(fp,
+                                                       child_pb_graph_node,
+                                                       child_pb,
+                                                       SPICE_PB_PORT_INPUT,
+                                                       cur_mode,
+                                                       is_child_pb_idle,
+                                                       grid_x, grid_y,
+                                                       LL_rr_node_indices);
       /* TODO: for clock pins, we should do the same work */
-      for (iport = 0; iport < child_pb_graph_node->num_clock_ports; iport++) {
-        for (ipin = 0; ipin < child_pb_graph_node->num_clock_pins[iport]; ipin++) {
-          /* Get the index of the edge that are selected to pass signal*/
-          node_index = child_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
-          prev_node = pb_rr_nodes[node_index].prev_node;
-          /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
-          /* Bypass unmapped interc */
-          /* 
-          if (OPEN == pb_rr_nodes[node_index].net_num) {
-            continue;
-          }
-          */
-          /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
-          if (OPEN == prev_node) {
-            path_id = 0;
-            //break; /* TODO: if there exist parasitic input waveforms, we should print the interc */
-          } else {
-            /* Find the path_id */
-            path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-            assert(-1 != path_id);
-          }
-          /* Write the interconnection*/
-          fprint_spice_mux_testbench_pb_pin_interc(fp, pb_rr_nodes, child_pb,
-                                                   INPUT2INPUT_INTERC,
-                                                   &(child_pb_graph_node->clock_pins[iport][ipin]),
-                                                   cur_mode,
-                                                   path_id,
-                                                   grid_x, grid_y, 
-                                                   LL_rr_node_indices);
-        }
-      }
+      fprintf_spice_mux_testbench_pb_graph_port_interc(fp,
+                                                       child_pb_graph_node,
+                                                       child_pb,
+                                                       SPICE_PB_PORT_CLOCK,
+                                                       cur_mode,
+                                                       is_child_pb_idle,
+                                                       grid_x, grid_y,
+                                                       LL_rr_node_indices);
     }
   }
 

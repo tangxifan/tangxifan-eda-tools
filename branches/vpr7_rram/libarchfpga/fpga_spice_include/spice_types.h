@@ -79,6 +79,24 @@ enum e_spice_accuracy_type {
   SPICE_FRAC, SPICE_ABS
 };
 
+enum e_spice_pb_port_type {
+  SPICE_PB_PORT_INPUT,
+  SPICE_PB_PORT_OUTPUT,
+  SPICE_PB_PORT_CLOCK
+};
+
+enum e_spice_ff_trigger_type {
+  FF_RE, FF_FE
+};
+
+enum e_spice_mux_tb_type {
+  SPICE_CB_MUX_TB, SPICE_SB_MUX_TB, SPICE_PB_MUX_TB 
+};
+
+
+enum e_spice_pin2pin_interc_type {
+ INPUT2INPUT_INTERC, OUTPUT2OUTPUT_INTERC
+};
 
 /* typedef of structs */
 typedef struct s_spice_transistor_type t_spice_transistor_type;

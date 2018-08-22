@@ -148,43 +148,6 @@ void match_pb_types_verilog_model_rec(t_pb_type* cur_pb_type,
   return;  
 }
 
-int verilog_find_path_id_between_pb_rr_nodes(t_rr_node* local_rr_graph,
-                                     int src_node,
-                                     int des_node) {
-  int path_id = -1;
-  int prev_edge = -1;
-  int path_count = 0;
-  int iedge;
-  t_interconnect* cur_interc = NULL;
-
-  /* Check */
-  assert(NULL != local_rr_graph);
-  assert((0 == src_node)||(0 < src_node));
-  assert((0 == des_node)||(0 < des_node));
-
-  prev_edge = local_rr_graph[des_node].prev_edge;
-  check_pb_graph_edge(*(local_rr_graph[src_node].pb_graph_pin->output_edges[prev_edge]));
-  assert(local_rr_graph[src_node].pb_graph_pin->output_edges[prev_edge]->output_pins[0] == local_rr_graph[des_node].pb_graph_pin);
- 
-  cur_interc = local_rr_graph[src_node].pb_graph_pin->output_edges[prev_edge]->interconnect;
-  /* Search des_node input edges */ 
-  for (iedge = 0; iedge < local_rr_graph[des_node].pb_graph_pin->num_input_edges; iedge++) {
-    if (local_rr_graph[des_node].pb_graph_pin->input_edges[iedge]->input_pins[0] 
-        == local_rr_graph[src_node].pb_graph_pin) {
-      /* Strict check */
-      assert(local_rr_graph[src_node].pb_graph_pin->output_edges[prev_edge]
-              == local_rr_graph[des_node].pb_graph_pin->input_edges[iedge]);
-      path_id = path_count;
-      break;
-    }
-    if (cur_interc == local_rr_graph[des_node].pb_graph_pin->input_edges[iedge]->interconnect) {
-      path_count++;
-    }
-  }
-
-  return path_id; 
-}
-
 /* Find the interconnection type of pb_graph_pin edges*/
 enum e_interconnect verilog_find_pb_graph_pin_in_edges_interc_type(t_pb_graph_pin pb_graph_pin) {
   enum e_interconnect interc_type;
@@ -734,7 +697,7 @@ void dump_verilog_pb_type_ports(FILE* fp,
 void dump_verilog_dangling_des_pb_graph_pin_interc(FILE* fp,
                                                    t_pb_graph_pin* des_pb_graph_pin,
                                                    t_mode* cur_mode,
-                                                   enum e_pin2pin_interc_type pin2pin_interc_type,
+                                                   enum e_spice_pin2pin_interc_type pin2pin_interc_type,
                                                    char* parent_pin_prefix) {
   t_pb_graph_node* des_pb_graph_node = NULL;
   t_pb_type* des_pb_type = NULL;
@@ -838,7 +801,7 @@ void dump_verilog_dangling_des_pb_graph_pin_interc(FILE* fp,
 
 void generate_verilog_src_des_pb_graph_pin_prefix(t_pb_graph_node* src_pb_graph_node,
                                                 t_pb_graph_node* des_pb_graph_node,
-                                                enum e_pin2pin_interc_type pin2pin_interc_type,
+                                                enum e_spice_pin2pin_interc_type pin2pin_interc_type,
                                                 t_interconnect* pin2pin_interc,
                                                 char* parent_pin_prefix,
                                                 char** src_pin_prefix,
@@ -1010,7 +973,7 @@ void verilog_find_interc_fan_in_des_pb_graph_pin(t_pb_graph_pin* des_pb_graph_pi
 void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
                                       FILE* fp,
                                       char* parent_pin_prefix,
-                                      enum e_pin2pin_interc_type pin2pin_interc_type,
+                                      enum e_spice_pin2pin_interc_type pin2pin_interc_type,
                                       t_pb_graph_pin* des_pb_graph_pin,
                                       t_mode* cur_mode,
                                       int select_edge) {
@@ -1293,6 +1256,138 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
   return;
 }
 
+/* Print the SPICE interconnections of a port defined in pb_graph */
+void dump_verilog_pb_graph_port_interc(t_sram_orgz_info* cur_sram_orgz_info,
+                                       FILE* fp,
+                                       char* formatted_pin_prefix,
+                                       t_pb_graph_node* cur_pb_graph_node,
+                                       t_pb* cur_pb,
+                                       enum e_spice_pb_port_type pb_port_type,
+                                       t_mode* cur_mode,
+                                       int is_idle) {
+  int iport, ipin;
+  int node_index = -1;
+  int prev_node = -1;
+  /* int prev_edge = -1; */
+  int path_id = -1;
+  t_rr_node* pb_rr_nodes = NULL;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  switch (pb_port_type) {
+  case SPICE_PB_PORT_INPUT:
+    for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
+        /* If this is a idle block, we set 0 to the selected edge*/
+        if (is_idle) {
+          assert(NULL == cur_pb);
+          path_id = 0;
+        } else {
+          /* Get the selected edge of current pin*/
+          assert(NULL != cur_pb);
+          pb_rr_nodes = cur_pb->rr_graph;
+          node_index = cur_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
+          prev_node = pb_rr_nodes[node_index].prev_node;
+          /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
+          /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
+          if (OPEN == prev_node) {
+            path_id = 0; //
+          } else {
+            /* Find the path_id */
+            path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
+            assert(-1 != path_id);
+          }
+        }
+        dump_verilog_pb_graph_pin_interc(cur_sram_orgz_info,
+                                         fp, 
+                                         formatted_pin_prefix, /* parent_pin_prefix */
+                                         INPUT2INPUT_INTERC,
+                                         &(cur_pb_graph_node->input_pins[iport][ipin]),
+                                         cur_mode,
+                                         path_id);
+      }
+    }
+    break;
+  case SPICE_PB_PORT_OUTPUT:
+    for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
+        /* If this is a idle block, we set 0 to the selected edge*/
+        if (is_idle) {
+          assert(NULL == cur_pb);
+          path_id = 0;
+        } else {
+          /* Get the selected edge of current pin*/
+          assert(NULL != cur_pb);
+          pb_rr_nodes = cur_pb->rr_graph;
+          node_index = cur_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
+          prev_node = pb_rr_nodes[node_index].prev_node;
+          /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
+          /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
+          if (OPEN == prev_node) {
+            path_id = 0; //
+          } else {
+            /* Find the path_id */
+            path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
+            assert(-1 != path_id);
+          }
+        }
+        dump_verilog_pb_graph_pin_interc(cur_sram_orgz_info,
+                                         fp, 
+                                         formatted_pin_prefix, /* parent_pin_prefix */
+                                         OUTPUT2OUTPUT_INTERC,
+                                         &(cur_pb_graph_node->output_pins[iport][ipin]),
+                                         cur_mode,
+                                         path_id);
+      }
+    }
+    break;
+  case SPICE_PB_PORT_CLOCK:
+    for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
+        /* If this is a idle block, we set 0 to the selected edge*/
+        if (is_idle) {
+          assert(NULL == cur_pb);
+          path_id = 0;
+        } else {
+          /* Get the selected edge of current pin*/
+          assert(NULL != cur_pb);
+          pb_rr_nodes = cur_pb->rr_graph;
+          node_index = cur_pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster;
+          prev_node = pb_rr_nodes[node_index].prev_node;
+          /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
+          /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
+          if (OPEN == prev_node) {
+            path_id = 0; //
+          } else {
+            /* Find the path_id */
+            path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
+            assert(-1 != path_id);
+          }
+        }
+        dump_verilog_pb_graph_pin_interc(cur_sram_orgz_info,
+                                         fp, 
+                                         formatted_pin_prefix, /* parent_pin_prefix */
+                                         INPUT2INPUT_INTERC,
+                                         &(cur_pb_graph_node->clock_pins[iport][ipin]),
+                                         cur_mode,
+                                         path_id);
+      }
+    }
+    break;
+  default:
+   vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid pb port type!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  return;
+}
+
 
 /* Print the SPICE interconnections according to pb_graph */
 void dump_verilog_pb_graph_interc(t_sram_orgz_info* cur_sram_orgz_info,
@@ -1302,7 +1397,6 @@ void dump_verilog_pb_graph_interc(t_sram_orgz_info* cur_sram_orgz_info,
                                   t_pb* cur_pb,
                                   int select_mode_index,
                                   int is_idle) {
-  int iport, ipin;
   int ipb, jpb;
   t_mode* cur_mode = NULL;
   t_pb_type* cur_pb_type = cur_pb_graph_node->pb_type;
@@ -1311,11 +1405,6 @@ void dump_verilog_pb_graph_interc(t_sram_orgz_info* cur_sram_orgz_info,
   int is_child_pb_idle = 0;
   
   char* formatted_pin_prefix = format_verilog_node_prefix(pin_prefix); /* Complete a "_" at the end if needed*/
-
-  int node_index = -1;
-  int prev_node = -1; 
-  int path_id = -1;
-  t_rr_node* pb_rr_nodes = NULL;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -1340,40 +1429,10 @@ void dump_verilog_pb_graph_interc(t_sram_orgz_info* cur_sram_orgz_info,
    *                                         |
    *                         input_pins,   edges,       output_pins
    */ 
-  for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
-    for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
-      /* If this is a idle block, we set 0 to the selected edge*/
-      if (is_idle) {
-        assert(NULL == cur_pb);
-        dump_verilog_pb_graph_pin_interc(fp,
-                                          formatted_pin_prefix, /* parent_pin_prefix */
-                                          OUTPUT2OUTPUT_INTERC,
-                                          &(cur_pb_graph_node->output_pins[iport][ipin]),
-                                          cur_mode,
-                                          0);
-      } else {
-        /* Get the selected edge of current pin*/
-        assert(NULL != cur_pb);
-        pb_rr_nodes = cur_pb->rr_graph;
-        node_index = cur_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
-        prev_node = pb_rr_nodes[node_index].prev_node;
-        /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
-        if (OPEN == prev_node) {
-          path_id = 0; //
-        } else {
-          /* Find the path_id */
-          path_id = verilog_find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-          assert(-1 != path_id);
-        }
-        dump_verilog_pb_graph_pin_interc(fp,
-                                          formatted_pin_prefix, /* parent_pin_prefix */
-                                          OUTPUT2OUTPUT_INTERC,
-                                          &(cur_pb_graph_node->output_pins[iport][ipin]),
-                                          cur_mode,
-                                          path_id);
-      }
-    }
-  }
+  dump_verilog_pb_graph_port_interc(cur_sram_orgz_info, fp, formatted_pin_prefix,
+                                    cur_pb_graph_node, cur_pb,
+                                    SPICE_PB_PORT_OUTPUT,
+                                    cur_mode, is_idle);
   
   /* We check input_pins of child_pb_graph_node and its the input_edges
    * Built the interconnections between inputs of cur_pb_graph_node and inputs of child_pb_graph_node
@@ -1386,98 +1445,32 @@ void dump_verilog_pb_graph_interc(t_sram_orgz_info* cur_sram_orgz_info,
     for (jpb = 0; jpb < cur_pb_type->modes[select_mode_index].pb_type_children[ipb].num_pb; jpb++) {
       child_pb_graph_node = &(cur_pb_graph_node->child_pb_graph_nodes[select_mode_index][ipb][jpb]);
       /* If this is a idle block, we set 0 to the selected edge*/
-      if (is_idle) {
+     if (is_idle) {
         assert(NULL == cur_pb);
-        /* For each child_pb_graph_node input pins*/
-        for (iport = 0; iport < child_pb_graph_node->num_input_ports; iport++) {
-          for (ipin = 0; ipin < child_pb_graph_node->num_input_pins[iport]; ipin++) {
-            dump_verilog_pb_graph_pin_interc(cur_sram_orgz_info,
-                                             fp,
-                                             formatted_pin_prefix, /* parent_pin_prefix */
-                                             INPUT2INPUT_INTERC,
-                                             &(child_pb_graph_node->input_pins[iport][ipin]),
-                                             cur_mode,
-                                             0);
-          }
-        }
-        /* TODO: for clock pins, we should do the same work */
-        for (iport = 0; iport < child_pb_graph_node->num_clock_ports; iport++) {
-          for (ipin = 0; ipin < child_pb_graph_node->num_clock_pins[iport]; ipin++) {
-            dump_verilog_pb_graph_pin_interc(cur_sram_orgz_info,
-                                             fp,
-                                             formatted_pin_prefix, /* parent_pin_prefix */
-                                             INPUT2INPUT_INTERC,
-                                             &(child_pb_graph_node->clock_pins[iport][ipin]),
-                                             cur_mode,
-                                             0);
-          }
-        }
-        continue;
-      }
-      assert(NULL != cur_pb);
-      child_pb = &(cur_pb->child_pbs[ipb][jpb]);
-      /* Check if child_pb is empty */
-      if (NULL != child_pb->name) { 
-        is_child_pb_idle = 0;
+        child_pb =  NULL;
+        is_child_pb_idle = is_idle;
       } else {
-        is_child_pb_idle = 1;
+        assert(NULL != cur_pb);
+        child_pb = &(cur_pb->child_pbs[ipb][jpb]);
+        /* Check if child_pb is empty */
+        if (NULL != child_pb->name) { 
+          is_child_pb_idle = 0;
+        } else {
+          is_child_pb_idle = 1;
+          child_pb = NULL;
+        }
       }
-      /* Get pb_rr_graph of current pb*/
-      pb_rr_nodes = child_pb->rr_graph;
       /* For each child_pb_graph_node input pins*/
-      for (iport = 0; iport < child_pb_graph_node->num_input_ports; iport++) {
-        for (ipin = 0; ipin < child_pb_graph_node->num_input_pins[iport]; ipin++) {
-          if (is_child_pb_idle) {
-          } else {
-            /* Get the index of the edge that are selected to pass signal*/
-            node_index = child_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
-            prev_node = pb_rr_nodes[node_index].prev_node;
-            /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
-            if (OPEN == prev_node) {
-              path_id = 0; //
-            } else {
-              /* Find the path_id */
-              path_id = verilog_find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-              assert(-1 != path_id);
-            }
-          }
-          /* Write the interconnection*/
-          dump_verilog_pb_graph_pin_interc(cur_sram_orgz_info,
-                                           fp,
-                                           formatted_pin_prefix, /* parent_pin_prefix */
-                                           INPUT2INPUT_INTERC,
-                                           &(child_pb_graph_node->input_pins[iport][ipin]),
-                                           cur_mode,
-                                           path_id);
-        }
-      }
+      dump_verilog_pb_graph_port_interc(cur_sram_orgz_info, fp, formatted_pin_prefix,
+                                         child_pb_graph_node, child_pb,
+                                         SPICE_PB_PORT_INPUT,
+                                         cur_mode, is_child_pb_idle);
       /* TODO: for clock pins, we should do the same work */
-      for (iport = 0; iport < child_pb_graph_node->num_clock_ports; iport++) {
-        for (ipin = 0; ipin < child_pb_graph_node->num_clock_pins[iport]; ipin++) {
-          if (is_child_pb_idle) {
-          } else {
-            /* Get the index of the edge that are selected to pass signal*/
-            node_index = child_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
-            prev_node = pb_rr_nodes[node_index].prev_node;
-            /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
-            if (OPEN == prev_node) {
-              path_id = 0; //
-            } else {
-              /* Find the path_id */
-              path_id = verilog_find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-              assert(-1 != path_id);
-            }
-          }
-          /* Write the interconnection*/
-          dump_verilog_pb_graph_pin_interc(cur_sram_orgz_info,
-                                           fp,
-                                           formatted_pin_prefix, /* parent_pin_prefix */
-                                           INPUT2INPUT_INTERC,
-                                           &(child_pb_graph_node->clock_pins[iport][ipin]),
-                                           cur_mode,
-                                           path_id);
-        }
-      }
+      dump_verilog_pb_graph_port_interc(cur_sram_orgz_info, fp, formatted_pin_prefix,
+                                        child_pb_graph_node, child_pb,
+                                        SPICE_PB_PORT_CLOCK,
+                                        cur_mode, is_child_pb_idle);
+ 
     }
   }
 
@@ -1925,8 +1918,6 @@ void dump_verilog_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
   int num_conf_bits = 0;
   int child_pb_num_reserved_conf_bits = 0;
   int child_pb_num_conf_bits = 0;
-  int child_pb_num_inpads = 0;
-  int child_pb_num_outpads = 0;
   int child_pb_num_iopads = 0;
 
   int stamped_sram_cnt = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info); 
@@ -2109,8 +2100,6 @@ void dump_verilog_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
         child_mode_index = cur_pb->child_pbs[ipb][jpb].mode; 
         child_pb_num_reserved_conf_bits = cur_pb->child_pbs[ipb][jpb].num_reserved_conf_bits;
         child_pb_num_conf_bits = cur_pb->child_pbs[ipb][jpb].num_conf_bits;
-        child_pb_num_inpads = cur_pb->child_pbs[ipb][jpb].num_inpads;
-        child_pb_num_outpads = cur_pb->child_pbs[ipb][jpb].num_outpads;
         child_pb_num_iopads = cur_pb->child_pbs[ipb][jpb].num_iopads;
       } else /*if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model)*/ { /* Find the idle_mode_index, if this is not a leaf node  */
         child_mode_index = find_pb_type_idle_mode_index(cur_pb_type->modes[mode_index].pb_type_children[ipb]);
@@ -3111,8 +3100,6 @@ void dump_verilog_grid_blocks(t_sram_orgz_info* cur_sram_orgz_info,
   int num_reserved_conf_bits;
   int temp_reserved_conf_bits_msb;
   int temp_conf_bits_lsb, temp_conf_bits_msb;
-  int temp_inpad_lsb, temp_inpad_msb;
-  int temp_outpad_lsb, temp_outpad_msb;
   int temp_iopad_lsb, temp_iopad_msb;
   FILE* fp = NULL;
   char* fname = NULL;
@@ -3160,14 +3147,14 @@ void dump_verilog_grid_blocks(t_sram_orgz_info* cur_sram_orgz_info,
     fprintf(fp, "//----- Grid[%d][%d] type_descriptor: %s[%d] -----\n", ix, iy, grid[ix][iy].type->name, iz);
     if (NULL == mapped_block) {
       /* Print a NULL logic block...*/
-      dump_verilog_idle_block(fp, subckt_name, ix, iy, iz, grid[ix][iy].type);
+      dump_verilog_idle_block(cur_sram_orgz_info, fp, subckt_name, ix, iy, iz, grid[ix][iy].type);
     } else {
       if (iz == mapped_block->z) {
         // assert(mapped_block == &(block[grid[ix][iy].blocks[cur_block_index]]));
         cur_block_index++;
       }
       /* Print a logic block with specific configurations*/ 
-      dump_verilog_block(fp, subckt_name, ix, iy, iz, grid[ix][iy].type, mapped_block);
+      dump_verilog_block(cur_sram_orgz_info, fp, subckt_name, ix, iy, iz, grid[ix][iy].type, mapped_block);
     }
     fprintf(fp, "//----- END -----\n\n");
   } 
@@ -3287,8 +3274,6 @@ void dump_verilog_grid_blocks(t_sram_orgz_info* cur_sram_orgz_info,
     }
     /* Update temp_sram_lsb */
     temp_conf_bits_lsb = temp_conf_bits_msb;
-    temp_inpad_lsb = temp_inpad_msb;
-    temp_outpad_lsb = temp_outpad_msb;
     fprintf(fp, ");\n");
   }
 
