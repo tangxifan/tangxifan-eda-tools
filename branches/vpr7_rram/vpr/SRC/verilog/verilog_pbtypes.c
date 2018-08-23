@@ -1617,12 +1617,6 @@ void dump_verilog_pb_primitive_verilog_model(t_sram_orgz_info* cur_sram_orgz_inf
     dump_verilog_pb_primitive_hardlogic(cur_sram_orgz_info, fp, subckt_prefix, mapped_logical_block, prim_pb_graph_node,
                                         pb_index, verilog_model);
     break;
-  case SPICE_MODEL_VDD:
-    /* TODO: Add codes for VDD */
-    break;
-  case SPICE_MODEL_GND:
-    /* TODO: Add codes for GND */
-    break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid type of verilog_model(%s), should be [LUT|FF|HARD_LOGIC|IO]!\n",
                __FILE__, __LINE__, verilog_model->name);

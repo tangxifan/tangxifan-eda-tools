@@ -1802,7 +1802,6 @@ void dump_verilog_submodule_muxes(t_sram_orgz_info* cur_sram_orgz_info,
   int num_input_basis = 0;
   t_spice_mux_model* cur_spice_mux_model = NULL;
   
-  int cur_bl, cur_wl;
   int max_routing_mux_size = -1;
 
   /* Alloc the muxes*/
@@ -2202,6 +2201,7 @@ void dump_verilog_submodule_wires(char* subckt_dir,
   }
 
   /* Create module for hard-wired VDD and GND */
+  /*
   for (imodel = 0; imodel < num_spice_model; imodel++) {
     if (SPICE_MODEL_VDD == spice_models[imodel].type) {
       dump_verilog_hard_wired_vdd(fp, spice_models[imodel]);
@@ -2209,6 +2209,7 @@ void dump_verilog_submodule_wires(char* subckt_dir,
       dump_verilog_hard_wired_gnd(fp, spice_models[imodel]);
     }
   }
+  */
   
   /* Close the file handler */
   fclose(fp);

@@ -636,8 +636,6 @@ static void ProcessSpiceModel(ezxml_t Parent,
     spice_model->type = SPICE_MODEL_CHAN_WIRE;
   } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"wire")) {
     spice_model->type = SPICE_MODEL_WIRE;
-  } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"hard_logic")) {
-    spice_model->type = SPICE_MODEL_HARDLOGIC;
   } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"lut")) {
     spice_model->type = SPICE_MODEL_LUT;
   } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"ff")) {
@@ -650,16 +648,12 @@ static void ProcessSpiceModel(ezxml_t Parent,
     spice_model->type = SPICE_MODEL_SCFF;
   } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"iopad")) {
     spice_model->type = SPICE_MODEL_IOPAD;
-  } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"wire_vdd")) {
-    spice_model->type = SPICE_MODEL_VDD;
-  } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"wire_gnd")) {
-    spice_model->type = SPICE_MODEL_GND;
   } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"inv_buf")) {
     spice_model->type = SPICE_MODEL_INVBUF;
   } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"pass_gate")) {
     spice_model->type = SPICE_MODEL_PASSGATE;
   } else {
-    vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] Invalid type of spice model(%s). Should be [mux|lut|ff|io|sram|hard_logic|sff].\n",
+    vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] Invalid type of spice model(%s). Should be [mux|lut|ff|io|sram|hard_logic|sff|iopad|inv_buf|pass_gate|].\n",
                Parent->line, FindProperty(Parent, "type", TRUE));
     exit(1);
   }

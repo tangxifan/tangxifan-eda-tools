@@ -1078,11 +1078,11 @@ static void SetupSynVerilogOpts(t_options Options,
     syn_verilog_opts->syn_verilog_dump_dir = my_strdup(Options.fpga_syn_verilog_dir);
   }
 
-  if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_INPUT_BLIF_TESTBENCH]) {
+  if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_TOP_TESTBENCH]) {
     syn_verilog_opts->dump_syn_verilog_top_testbench = TRUE;
   }
 
-  if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_TOP_TESTBENCH]) {
+  if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_INPUT_BLIF_TESTBENCH]) {
     syn_verilog_opts->dump_syn_verilog_input_blif_testbench = TRUE;
   }
 

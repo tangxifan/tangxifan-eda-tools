@@ -135,8 +135,6 @@ int count_num_sram_bits_one_spice_model(t_spice_model* cur_spice_model,
   case SPICE_MODEL_SRAM:
   case SPICE_MODEL_HARDLOGIC:
   case SPICE_MODEL_SCFF:
-  case SPICE_MODEL_VDD:
-  case SPICE_MODEL_GND:
   case SPICE_MODEL_IOPAD:
     /* Other block, we just count the number SRAM ports defined by user */
     num_sram_bits = 0;
@@ -362,8 +360,6 @@ int count_num_reserved_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
   case SPICE_MODEL_SRAM:
   case SPICE_MODEL_HARDLOGIC:
   case SPICE_MODEL_SCFF:
-  case SPICE_MODEL_VDD:
-  case SPICE_MODEL_GND:
   case SPICE_MODEL_IOPAD:
     /* Other block, we just count the number SRAM ports defined by user */
     num_reserved_conf_bits = 0;
@@ -531,8 +527,6 @@ int count_num_conf_bits_one_spice_model(t_spice_model* cur_spice_model,
   case SPICE_MODEL_SRAM:
   case SPICE_MODEL_HARDLOGIC:
   case SPICE_MODEL_SCFF:
-  case SPICE_MODEL_VDD:
-  case SPICE_MODEL_GND:
   case SPICE_MODEL_IOPAD:
     /* Other block, we just count the number SRAM ports defined by user */
     num_conf_bits = 0;

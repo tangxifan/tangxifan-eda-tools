@@ -393,12 +393,6 @@ void fpga_spice_generate_bitstream_pb_primitive(t_pb* prim_pb,
     fpga_spice_generate_bitstream_pb_primitive_hardlogic(mapped_logical_block, prim_pb_graph_node,
                                                          pb_index, verilog_model, cur_sram_orgz_info);
     break;
-  case SPICE_MODEL_VDD:
-    /* TODO: Add codes for VDD */
-    break;
-  case SPICE_MODEL_GND:
-    /* TODO: Add codes for GND */
-    break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid type of verilog_model(%s), should be [LUT|FF|HARD_LOGIC|IO]!\n",
                __FILE__, __LINE__, verilog_model->name);

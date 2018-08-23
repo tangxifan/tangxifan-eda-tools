@@ -277,28 +277,24 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   free_sram_orgz_info(sram_verilog_orgz_info,
                       sram_verilog_orgz_info->type,
                       nx + 2, ny + 2);
-  
+
+  /* Force enable bitstream generator when we need to output Verilog top testbench*/  
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.dump_syn_verilog_top_testbench) {
+    vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.gen_bitstream = TRUE;
+  }
+
   /* Generate bitstream if required, and also Dump bitstream file */
-  if (vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.gen_bitstream) {
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.gen_bitstream) {
     bitstream_file_name = my_strcat(chomped_circuit_name, fpga_spice_bitstream_output_file_postfix);
     bitstream_file_path = my_strcat(verilog_dir_formatted, bitstream_file_name);
     /* Run bitstream generation */
     vpr_fpga_spice_generate_bitstream(vpr_setup, Arch, circuit_name, bitstream_file_path, &sram_verilog_orgz_info);
-    /* Free sram_orgz_info:
-     */
-    free_sram_orgz_info(sram_verilog_orgz_info,
-                      sram_verilog_orgz_info->type,
-                      nx + 2, ny + 2);
     my_free(bitstream_file_name);
     my_free(bitstream_file_path);
   }
 
   /* dump verilog testbench only for top-level: ONLY valid when bitstream is generated! */
   if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.dump_syn_verilog_top_testbench) {
-    if (FALSE == vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.gen_bitstream) {
-      vpr_printf(TIO_MESSAGE_ERROR, "Verilog Top-level testbench can only be generated when bitstream generator is enabled!\n");  
-      exit(1);
-    }
     top_testbench_file_name = my_strcat(chomped_circuit_name, top_testbench_verilog_file_postfix);
     top_testbench_file_path = my_strcat(verilog_dir_formatted, top_testbench_file_name);
     dump_verilog_top_testbench(sram_verilog_orgz_info, chomped_circuit_name, top_testbench_file_path, num_clocks, 
@@ -308,6 +304,16 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
     my_free(top_testbench_file_path);
   }
 
+  if ((TRUE == vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.gen_bitstream)
+    || (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.dump_syn_verilog_top_testbench)) {
+    /* Free sram_orgz_info:
+     * Free the allocated sram_orgz_info before, we start bitstream generation !
+     */
+    free_sram_orgz_info(sram_verilog_orgz_info,
+                        sram_verilog_orgz_info->type,
+                        nx + 2, ny + 2);
+  }
+  
   /* End time count */
   t_end = clock();
  
