@@ -564,6 +564,18 @@ static void ProcessSpiceModelPort(ezxml_t Node,
   port->default_val = GetIntProperty(Node, "default_val", FALSE, 0);
   ezxml_set_attr(Node, "default_val", NULL);
 
+  /* Tri-state map */
+  port->tri_state_map = my_strdup(FindProperty(Node, "tri_state_map", FALSE));
+  ezxml_set_attr(Node, "tri_state_map", NULL);
+
+  /* fracturable LUT: define at which level the output should be fractured */
+  port->lut_frac_level = GetIntProperty(Node, "lut_frac_level", FALSE, 0);
+  ezxml_set_attr(Node, "lut_frac_level", NULL);
+
+  /* Output mast of a fracturable LUT, which is to identify which intermediate LUT output will be connected to outputs */
+  port->lut_output_mask = my_strdup(FindProperty(Node, "lut_output_mask", FALSE));
+  ezxml_set_attr(Node, "lut_output_mask", NULL);
+
   /* See if this is a global signal 
    * We assume that global signals are shared by all the SPICE Model/blocks.
    * We need to check if other SPICE model has the same port name
@@ -653,7 +665,7 @@ static void ProcessSpiceModel(ezxml_t Parent,
   } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"pass_gate")) {
     spice_model->type = SPICE_MODEL_PASSGATE;
   } else {
-    vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] Invalid type of spice model(%s). Should be [mux|lut|ff|io|sram|hard_logic|sff|iopad|inv_buf|pass_gate|].\n",
+    vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] Invalid type of spice model(%s). Should be [chan_wire|wire|mux|lut|ff|sram|hard_logic|sff|iopad|inv_buf|pass_gate|].\n",
                Parent->line, FindProperty(Parent, "type", TRUE));
     exit(1);
   }
@@ -730,6 +742,13 @@ static void ProcessSpiceModel(ezxml_t Parent,
       exit(1);
     }
 	ezxml_set_attr(Node, "type", NULL);
+
+    /* If this is a LUT, more options are available */
+    if (SPICE_MODEL_LUT == spice_model->type) {
+      spice_model->design_tech_info.frac_lut = GetBooleanProperty(Node,"fracturable_lut", FALSE, FALSE);
+    }
+	ezxml_set_attr(Node, "fracturable_lut", NULL);
+
     /* Read in the structure if defined */
     if (SPICE_MODEL_MUX == spice_model->type) {
       if (0 == strcmp(FindProperty(Node,"structure",TRUE),"tree")) {

@@ -1314,7 +1314,7 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		parent_pb->logical_block = OPEN;
 		parent_pb->name = my_strdup(logical_block[ilogical_block].name);
 		parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
-		set_pb_graph_mode(parent_pb->pb_graph_node, 0, 0); /* TODO: default mode is to use mode 0, document this! */
+		/* set_pb_graph_mode(parent_pb->pb_graph_node, 0, 0); */ /* TODO: default mode is to use mode 0, document this! */
 		set_pb_graph_mode(parent_pb->pb_graph_node, parent_pb->mode, 1);
 		parent_pb->child_pbs = (t_pb **) my_calloc(parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children,	sizeof(t_pb *));
 		for (i = 0;	i < parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode].num_pb_type_children;	i++) {
@@ -1342,6 +1342,12 @@ static enum e_block_pack_status try_place_logical_block_rec(
 		alloc_and_load_pb_stats(pb, max_models, max_nets_in_pb_type);
 	}
 	pb_type = pb_graph_node->pb_type;
+
+    /* Xifan Tang: bypass those modes that are specified as unavaible during packing */
+    if (TRUE == pb_type->parent_mode->disabled_in_packing) {
+	  return  BLK_FAILED_FEASIBLE;
+    } 
+    /* END */
 
 	is_primitive = (boolean) (pb_type->num_modes == 0);
 

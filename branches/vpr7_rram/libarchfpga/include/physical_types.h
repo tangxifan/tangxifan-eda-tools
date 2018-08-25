@@ -376,7 +376,7 @@ struct s_mode {
      */
     int define_idle_mode;   
     int define_physical_mode;   
-    int available_in_packing;
+    int disabled_in_packing;
  
 	/* Power releated members */
 	t_mode_power * mode_power;
@@ -636,6 +636,7 @@ struct s_pb_type {
     int default_mode_num_conf_bits;
     int default_mode_num_mode_bits;
     int default_mode_num_iopads;
+
 };
 typedef struct s_pb_type t_pb_type;
 

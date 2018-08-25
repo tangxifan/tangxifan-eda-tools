@@ -438,7 +438,7 @@
       <output name="inpad" num_pins="1"/>
 
       <!-- physical design description -->
-      <mode name="io_phy" available_in_packing="false">
+      <mode name="io_phy" disabled_in_packing="true">
         <pb_type name="iopad" blif_model=".subckt io" num_pb="1" spice_model_name="iopad">
           <input name="outpad" num_pins="1"/>
           <output name="inpad" num_pins="1"/>
@@ -531,7 +531,7 @@
         <output name="out" num_pins="1"/>
         <clock name="clk" num_pins="1"/>
         <!-- 6-LUT mode definition begin -->
-        <mode name="n1_lut6">
+        <mode name="n1_lut6" disabled_in_packing="false">
           <!-- Define 6-LUT mode -->
           <pb_type name="ble6" num_pb="1">
             <input name="in" num_pins="6"/>

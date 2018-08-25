@@ -1366,7 +1366,7 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 			num_annotations += CountChildren(Cur, "C_constant", 0);
 			num_annotations += CountChildren(Cur, "C_matrix", 0);
 			num_annotations += CountChildren(Cur, "pack_pattern", 0);
-            /* Xifan TANG: FPGA-SPICE, mode select description */
+            /* Xifan TANG: FPGA-SPICE, mode select description for multi-mode CLB */
 			num_annotations += CountChildren(Cur, "mode_select", 0);
             /* END FPGA-SPICE, mode select description */
 
@@ -1471,7 +1471,8 @@ static void ProcessMode(INOUTP ezxml_t Parent, t_mode * mode,
     /* Spice Model Support: Xifan TANG
      * More option: specify if this mode is available during packing 
      */
-    mode->available_in_packing = GetBooleanProperty(Parent, "available_in_packing", FALSE, TRUE);
+    mode->disabled_in_packing = FALSE; /* By default it is TRUE otherwise users specify it */
+    mode->disabled_in_packing = GetBooleanProperty(Parent, "disabled_in_packing", FALSE, FALSE);
     /* END */
 
 	mode->num_pb_type_children = CountChildren(Parent, "pb_type", 0);

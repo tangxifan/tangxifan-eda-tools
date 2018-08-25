@@ -165,17 +165,25 @@ struct s_spice_model_port {
   enum e_spice_model_port_type type;
   int size;
   char* prefix; 
+  /* Mode select port properties */
   boolean mode_select;
   int default_val;
+  /* Global port properties */
   boolean is_global;
   boolean is_reset;
   boolean is_set;
   boolean is_config_enable;
   boolean is_prog;
+  /* The spice model that this port will be connected to */
   char* spice_model_name;
   t_spice_model* spice_model;
   char* inv_spice_model_name;
   t_spice_model* inv_spice_model;
+  /* Tri-state map */
+  char* tri_state_map;
+  /* For frac_lut only */
+  int lut_frac_level;
+  char* lut_output_mask;
 };
 
 struct s_spice_model_wire_param {
@@ -202,12 +210,14 @@ struct s_spice_model_design_tech_info {
   float wprog_set_pmos;
   float wprog_reset_nmos;
   float wprog_reset_pmos;
+  boolean advanced_rram_design;
   /* Mux information only */
   enum e_spice_model_structure structure;
   int mux_num_level;
   /* Power gate information */
   boolean power_gated;
-  boolean advanced_rram_design;
+  /* LUT information */
+  boolean frac_lut;
 };
 
 struct s_spice_model {
