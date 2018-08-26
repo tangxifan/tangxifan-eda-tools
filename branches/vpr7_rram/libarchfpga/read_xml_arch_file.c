@@ -1006,12 +1006,18 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
      */
     pb_type->spice_model_name = my_strdup(FindProperty(Parent, "spice_model_name", FALSE));
     pb_type->spice_model = NULL;
-    ezxml_set_attr(Parent,"spice_model_name",NULL);
-    /* We can read the mode configuration bits if they are defined */
-    if (NULL != pb_type->spice_model_name) {
-      pb_type->mode_bits = my_strdup(FindProperty(Parent, "mode_bits", FALSE));
-      ezxml_set_attr(Parent,"mode_bits",NULL);
-    }
+    ezxml_set_attr(Parent, "spice_model_name", NULL);
+    /* Multi-mode CLB support:
+     * We can read the mode configuration bits if they are defined 
+     */
+    pb_type->mode_bits = my_strdup(FindProperty(Parent, "mode_bits", FALSE));
+    ezxml_set_attr(Parent, "mode_bits", NULL);
+    /* Multi-mode CLB support:
+     * Specify the offset in sram bits of a spice_model
+     * This will determine which SRAMs will be configured by this pb_type configuration bits 
+     */
+    pb_type->spice_model_sram_offset = GetIntProperty(Parent, "spice_model_sram_offset", FALSE, 0);
+    ezxml_set_attr(Parent, "spice_model_sram_offset", NULL);
     /* End Spice Model Support*/
 
 	/* Determine if this is a leaf or container pb_type */
@@ -1090,9 +1096,14 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
             * We don't need to search the spice_model_mode_name at this level.
             * There is only one mode, so it should herit.
             */
-            if (do_spice) {
+            /* We need to identify the physical mode that refers to physical design interests */
+            pb_type->idle_mode_name = my_strdup(FindProperty(Parent,"idle_mode_name", FALSE)); 
+            ezxml_set_attr(Parent,"idle_mode_name",NULL);
+            pb_type->physical_mode_name = my_strdup(FindProperty(Parent,"physical_mode_name", FALSE)); 
+            ezxml_set_attr(Parent,"physical_mode_name",NULL);
+            /*END*/
+            if (NULL == pb_type->idle_mode_name) {
               pb_type->idle_mode_name = my_strdup(pb_type->name); 
-              pb_type->physical_mode_name = my_strdup(pb_type->name); 
             }
             /*END*/
 			ProcessMode(Parent, &pb_type->modes[i], &default_leakage_mode, do_spice);
@@ -1110,12 +1121,7 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
             }
             ezxml_set_attr(Parent,"idle_mode_name",NULL);
             /* We need to identify the physical mode that refers to physical design interests */
-            if (FindProperty(Parent,"physical_mode_name", do_spice)) {
-              pb_type->physical_mode_name = my_strdup(FindProperty(Parent,"physical_mode_name",TRUE)); 
-            } else if (do_spice) {
-              vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d]Pb_Type has more than 1 mode, should define a physical_mode_name.\n",Parent->line);
-              exit(1);
-            }
+            pb_type->physical_mode_name = my_strdup(FindProperty(Parent,"physical_mode_name", FALSE)); 
             ezxml_set_attr(Parent,"physical_mode_name",NULL);
             /*END*/
 			pb_type->modes = (t_mode*) my_calloc(pb_type->num_modes,
@@ -1268,10 +1274,16 @@ static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port,
 	ezxml_set_attr(Parent, "chain", NULL);
 
 	port->equivalent = GetBooleanProperty(Parent, "equivalent", FALSE, FALSE);
+	ezxml_set_attr(Parent, "equivalent", NULL);
    
 	port->num_pins = GetIntProperty(Parent, "num_pins", TRUE, 0);
 	port->is_non_clock_global = GetBooleanProperty(Parent,
 			"is_non_clock_global", FALSE, FALSE);
+
+    /* FPGA-SPICE multi-mode CLB support */
+	Prop = FindProperty(Parent, "physical_mode_pin", FALSE);
+    port->physical_mode_pin = my_strdup(Prop);
+	ezxml_set_attr(Parent, "physical_mode_pin", NULL);
 
 	if (0 == strcmp(Parent->name, "input")) {
 		port->type = IN_PORT;
@@ -1340,6 +1352,9 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
             mode->interconnect[i].fan_out = 0;
             mode->interconnect[i].num_mux = 0;
             ezxml_set_attr(Cur, "spice_model_name", NULL);
+            /* Get sram offset */
+            mode->interconnect[i].spice_model_sram_offset = GetIntProperty(Cur, "spice_model_sram_offset", FALSE, 0); 
+            ezxml_set_attr(Cur, "spice_model_sram_offset", NULL);
             /* END */
  
 			mode->interconnect[i].line_num = Cur->line;

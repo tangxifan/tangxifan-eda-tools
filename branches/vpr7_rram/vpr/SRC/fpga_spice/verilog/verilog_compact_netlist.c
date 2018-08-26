@@ -31,7 +31,6 @@
 /* Include Synthesizable Verilog headers */
 #include "verilog_global.h"
 #include "verilog_utils.h"
-#include "verilog_lut.h"
 #include "verilog_primitives.h"
 #include "verilog_pbtypes.h"
 #include "verilog_top_netlist.h"

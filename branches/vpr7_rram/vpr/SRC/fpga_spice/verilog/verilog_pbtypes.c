@@ -31,7 +31,6 @@
 /* Include Synthesizable Verilog headers */
 #include "verilog_global.h"
 #include "verilog_utils.h"
-#include "verilog_lut.h"
 #include "verilog_primitives.h"
 #include "verilog_pbtypes.h"
 
@@ -1172,7 +1171,7 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
     fprintf(fp, ");\n");
 
     assert(select_edge < fan_in);
-    /* SRAMs */
+    /* Disable decode SRAMs, they are the job of bitstream generator */
     switch (cur_interc->spice_model->design_tech) {
     case SPICE_MODEL_DESIGN_CMOS:
       decode_cmos_mux_sram_bits(cur_interc->spice_model, fan_in, select_edge, 
@@ -1186,8 +1185,8 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
       vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",
                  __FILE__, __LINE__, cur_interc->spice_model->name);
     }
-  
     /* Print the encoding in SPICE netlist for debugging */
+    /*
     switch (cur_interc->spice_model->design_tech) {
     case SPICE_MODEL_DESIGN_CMOS:
       fprintf(fp, "//----- SRAM bits for MUX[%d], level=%d, select_path_id=%d. -----\n", 
@@ -1213,7 +1212,7 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
       vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",
                  __FILE__, __LINE__, cur_interc->spice_model->name);
     }
-
+    */
     get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model);
     /* Dump sram modules */
     switch (cur_interc->spice_model->design_tech) {
@@ -1604,13 +1603,13 @@ void dump_verilog_pb_primitive_verilog_model(t_sram_orgz_info* cur_sram_orgz_inf
   case SPICE_MODEL_FF:
     assert(NULL != verilog_model->model_netlist);
     /* TODO : We should learn trigger type and initial value!!! and how to apply them!!! */
-    dump_verilog_pb_primitive_ff(cur_sram_orgz_info, fp, subckt_prefix, mapped_logical_block, prim_pb_graph_node,
-                                 pb_index, verilog_model);
+    dump_verilog_pb_primitive_hardlogic(cur_sram_orgz_info, fp, subckt_prefix, mapped_logical_block, prim_pb_graph_node,
+                                        pb_index, verilog_model);
     break;
   case SPICE_MODEL_IOPAD:
     assert(NULL != verilog_model->model_netlist);
-    dump_verilog_pb_primitive_io(cur_sram_orgz_info, fp, subckt_prefix, mapped_logical_block, prim_pb_graph_node,
-                                 pb_index, verilog_model);
+    dump_verilog_pb_primitive_hardlogic (cur_sram_orgz_info, fp, subckt_prefix, mapped_logical_block, prim_pb_graph_node,
+                                         pb_index, verilog_model);
     break;
   case SPICE_MODEL_HARDLOGIC:
     assert(NULL != verilog_model->model_netlist);

@@ -241,6 +241,7 @@ struct s_pb_type;
  * port_index_by_type index of port by type (index by input, output, or clock)
  * equivalence: 
  */
+typedef struct s_port t_port;
 struct s_port {
 	char* name;
 	t_model_ports *model_port;
@@ -262,8 +263,13 @@ struct s_port {
     /* FPGA_SPICE_model support:
      * mapped SPICE model port */
     t_spice_model_port* spice_model_port;
+    char* physical_mode_pin;
+	struct s_pb_type *phy_pb_type;
+    t_port* phy_pb_type_port;
+    int phy_pb_type_port_lsb;
+    int phy_pb_type_port_msb;
+    /* END */
 };
-typedef struct s_port t_port;
 
 /** 
  * Info placed between pins that can be processed later for additional information
@@ -328,6 +334,7 @@ struct s_interconnect {
     int fan_in;
     int fan_out;
     int num_mux;
+    int spice_model_sram_offset;
     /* END */
 
 	t_interconnect_power * interconnect_power;
@@ -623,6 +630,8 @@ struct s_pb_type {
     char* spice_model_name;
     t_spice_model* spice_model;
     char* mode_bits; /* Mode bits to select */
+    int spice_model_sram_offset;
+    /* END */
 
 	/* Power related members */
 	t_pb_type_power * pb_type_power;
@@ -636,7 +645,7 @@ struct s_pb_type {
     int default_mode_num_conf_bits;
     int default_mode_num_mode_bits;
     int default_mode_num_iopads;
-
+    /* END */
 };
 typedef struct s_pb_type t_pb_type;
 

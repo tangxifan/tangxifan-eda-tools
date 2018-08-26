@@ -577,6 +577,79 @@ void init_check_arch_spice_models(t_arch* arch,
   return;
 }
 
+/* Recursively traverse pb_type graph and mark idle mode 
+ * Only one idle mode is allowed under each pb_type
+ */
+static 
+void rec_identify_pb_type_idle_mode(t_pb_type* cur_pb_type) {
+  int imode, ichild, idle_mode_idx;
+
+  /* Find idle mode index */
+  idle_mode_idx = find_pb_type_idle_mode_index(*cur_pb_type);
+  cur_pb_type->modes[idle_mode_idx].define_idle_mode = TRUE;
+
+  /* Traverse all the modes for identifying idle mode */
+  for (imode = 0; cur_pb_type->num_modes; imode++) {
+    /* Check each pb_type_child */
+    for (ichild = 0; ichild < cur_pb_type->modes[imode].num_pb_type_children; ichild++) { 
+      rec_identify_pb_type_idle_mode(&(cur_pb_type->modes[imode].pb_type_children[ichild]));
+    }
+  }
+
+  return;
+}
+
+
+/* Recursively traverse pb_type graph and mark idle and physical mode 
+ * Only one idle mode and one physical mode is allowed under each pb_type
+ * In particular, a physical mode should appear only when its parent is a physical mode.
+ */
+static 
+void rec_identify_pb_type_phy_mode(t_pb_type* cur_pb_type) {
+  int imode, ichild, phy_mode_idx;
+  
+  /* Only try to find physical mode when parent is a physical mode or this is the top cur_pb_type! */
+  if ((NULL == cur_pb_type->parent_mode)
+     || (TRUE == cur_pb_type->parent_mode->define_physical_mode)) {
+    /* Find physical mode index */
+    phy_mode_idx = find_pb_type_physical_mode_index(*cur_pb_type);
+    cur_pb_type->modes[phy_mode_idx].define_physical_mode = TRUE;
+  } else { 
+    /* The parent must not be a physical mode*/
+    assert (FALSE == cur_pb_type->parent_mode->define_physical_mode);
+    phy_mode_idx = -1;
+    /* Traverse all the modes for identifying idle mode */
+    for (imode = 0; cur_pb_type->num_modes; imode++) {
+      cur_pb_type->modes[imode].define_physical_mode = FALSE;
+    }
+  }
+
+  /* Traverse all the modes for identifying idle mode */
+  for (imode = 0; cur_pb_type->num_modes; imode++) {
+    /* Check each pb_type_child */
+    for (ichild = 0; ichild < cur_pb_type->modes[imode].num_pb_type_children; ichild++) { 
+      rec_identify_pb_type_phy_mode(&(cur_pb_type->modes[imode].pb_type_children[ichild]));
+    }
+  }
+
+  return;
+}
+
+/* Identify physical mode of pb_types in each defined complex block */
+static 
+void init_check_arch_pb_type_idle_and_phy_mode(t_arch* Arch) {
+  int itype;
+
+  for (itype = 0; itype < num_types; itype++) {
+    if (type_descriptors[itype].pb_type) {
+      rec_identify_pb_type_idle_mode(type_descriptors[itype].pb_type);
+      rec_identify_pb_type_phy_mode(type_descriptors[itype].pb_type);
+    }
+  }
+
+  return;
+}
+
 /* Statistics reserved names in pb_types to the list*/
 static 
 void rec_stat_pb_type_keywords(t_pb_type* cur_pb_type,
@@ -837,7 +910,6 @@ void check_keywords_conflict(t_arch Arch) {
 static 
 t_llist* check_and_add_one_global_port_to_llist(t_llist* old_head, 
                                                 t_spice_model_port* candidate_port) {
-  boolean is_new_global_port = TRUE;
   t_llist* temp = old_head;
   t_llist* new_head = NULL;
 
@@ -845,7 +917,6 @@ t_llist* check_and_add_one_global_port_to_llist(t_llist* old_head,
     if (0 == strcmp(candidate_port->prefix, 
                     ((t_spice_model_port*)(temp->dptr))->prefix) ) { 
       /* Find a same global port name, we do nothing, return directly */
-      is_new_global_port = FALSE;
       return old_head;
     }
     /* Go to the next */
@@ -1193,6 +1264,9 @@ void fpga_spice_setup(t_vpr_setup vpr_setup,
   
   /* Initialize Arch SPICE MODELS*/
   init_check_arch_spice_models(Arch, &(vpr_setup.RoutingArch));
+
+  /* Initialize idle mode and physical mode of each pb_type and pb_graph_node */
+  init_check_arch_pb_type_idle_and_phy_mode(Arch);
 
   /* Create and initialize a linked list for global ports */
   global_ports_head = init_llist_global_ports(Arch->spice);
