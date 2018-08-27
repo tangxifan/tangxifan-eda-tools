@@ -1268,6 +1268,9 @@ void fpga_spice_setup(t_vpr_setup vpr_setup,
   /* Initialize idle mode and physical mode of each pb_type and pb_graph_node */
   init_check_arch_pb_type_idle_and_phy_mode(Arch);
 
+  /* Create pb for physical mode pb_graph_nodes in grid */
+  alloc_phy_pb_for_mapped_block(num_blocks, block);
+
   /* Create and initialize a linked list for global ports */
   global_ports_head = init_llist_global_ports(Arch->spice);
   vpr_printf(TIO_MESSAGE_INFO, "Detect %d global ports...\n", 

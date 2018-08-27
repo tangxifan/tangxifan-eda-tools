@@ -2515,6 +2515,28 @@ void parasitic_net_estimation() {
   return;
 }
 
+/* Allocate pb in mapped blocks, corresponding to physical modes  */
+void alloc_phy_pb_for_mapped_block(int num_mapped_blocks, 
+                                   t_block* mapped_block) {
+  int iblk;
+
+  for (iblk = 0; iblk < num_mapped_blocks; iblk++) {
+    mapped_block[iblk].phy_pb = (t_pb*) my_calloc(1, sizeof(t_pb)); 
+    /* Create a pristine pb for pb_graph_nodes in the physical modes */
+    mapped_block[iblk].phy_pb->pb_graph_node = mapped_block[iblk].type->pb_graph_head;
+    /* alloc_and_load_pb_stats(maped_block[iblk].phy_pb, num_models, max_nets_in_pb_type); */
+    mapped_block[iblk].phy_pb->parent_pb = NULL;
+    /* Create a clean copy of this function, which does not use any global variables!!! 
+     * We need to go recursively in this function !!!   
+     */
+    alloc_and_load_legalizer_for_cluster(mapped_block[iblk], clb_index, arch)
+    /* Backannotate global routing results (net_name) to pb_rr_nodes */
+    /* Perform routing for the phy_pb !!! */
+  }
+
+  return;
+}
+
 /* Back-Annotate post routing results to the VPR routing-resource graphs */
 void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
                                             boolean read_activity_file,
@@ -2525,6 +2547,10 @@ void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
   /* Give spice_name_tag for each pb*/
   vpr_printf(TIO_MESSAGE_INFO, "Generate SPICE name tags for pbs...\n");
   gen_spice_name_tags_all_pbs();
+
+  /* TODO: Match truth table and post-routing results */
+  vpr_printf(TIO_MESSAGE_INFO, "Synchornize LUT truth tables for post-routing logic blocks...\n");
+  sync_lut_truth_table_to_blocks(num_blocks, block, num_logical_blocks, logical_block);
 
   /* Build previous node lists for each rr_node */
   vpr_printf(TIO_MESSAGE_INFO, "Building previous node list for all Routing Resource Nodes...\n");

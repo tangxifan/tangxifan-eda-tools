@@ -428,6 +428,8 @@ struct s_pb_graph_pin {
 	int pin_count_in_cluster;
     /* Xifan TANG: FPGA-SPICE */
     int temp_net_num;
+	int rr_node_index_phyiscal_pb; /* rr_node in the physical pb rr_graph*/
+    /* END */
 
 	int scratch_pad; /* temporary data structure useful to store traversal info */
 

@@ -149,4 +149,6 @@ int* decode_mode_bits(char* mode_bits, int* num_sram_bits);
 enum e_interconnect determine_actual_pb_interc_type(t_interconnect* def_interc, 
                                                     int fan_in) ;
 
+int count_pin_number_one_port_pb_graph_node(int num_ports, int* num_pins);
 
+int count_pin_number_one_pb_graph_node(t_pb_graph_node* cur_pb_graph_node) ;

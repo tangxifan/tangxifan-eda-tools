@@ -85,6 +85,9 @@ void update_grid_pbs_post_route_rr_graph();
 
 void free_backannotate_vpr_post_route_info();
 
+void alloc_phy_pb_for_mapped_block(int num_mapped_blocks, 
+                                   t_block* mapped_block);
+
 void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
                                             boolean read_activity_file,
                                             boolean parasitic_net_estimation);

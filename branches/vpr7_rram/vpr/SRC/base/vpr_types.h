@@ -185,6 +185,9 @@ typedef struct s_pb {
 	struct s_pb **child_pbs; /* children pbs attached to this pb [0..num_child_pb_types - 1][0..child_type->num_pb - 1] */
 	struct s_pb *parent_pb; /* pointer to parent node */
 
+    /* Xifan TANG: FPGA-SPICE*/
+    int num_rr_nodes; /* number of rr_nodes in the local rr_graph */
+    /* END */
 	struct s_rr_node *rr_graph; /* pointer to rr_graph connecting pbs of cluster */
 	struct s_pb **rr_node_to_pb_mapping; /* [0..num_local_rr_nodes-1] pointer look-up of which pb this rr_node belongs based on index, NULL if pb does not exist  */
 	struct s_pb_stats *pb_stats; /* statistics for current pb */
@@ -596,6 +599,11 @@ struct s_block {
     int** pin_prefer_side; /* [0..num_pins-1][0..3] */
 
 	t_pb *pb;
+    
+    /* Xifan TANG: FPGA-SPICE 
+     * pb for physical model  
+     */
+    t_pb* phy_pb;
 
 	boolean isFixed;
 

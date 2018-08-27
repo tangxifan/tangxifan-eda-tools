@@ -2071,3 +2071,64 @@ enum e_interconnect determine_actual_pb_interc_type(t_interconnect* def_interc,
 
   return actual_interc_type;
 } 
+
+
+/* Count the number of pins in a pb_graph node */
+int count_pin_number_one_port_pb_graph_node(int num_ports, int* num_pins) {
+  int total_pins = 0;
+  int iport;
+
+  for (iport = 0; iport < num_ports; iport++) {
+    total_pins += num_pins[iport];
+  }
+
+  return total_pins;
+}
+
+/* Count the number of pins in a pb_graph node */
+int count_pin_number_one_pb_graph_node(t_pb_graph_node* cur_pb_graph_node) {
+  int total_pin = 0;
+  int iport;
+
+  /* INPUT port */
+  total_pins += count_pin_number_one_port_pb_graph_node(cur_pb_graph_node->num_input_ports,
+                                                        cur_pb_graph_node->num_input_pins);
+
+  /* OUTPUT port */
+  total_pins += count_pin_number_one_port_pb_graph_node(cur_pb_graph_node->num_output_ports,
+                                                        cur_pb_graph_node->num_output_pins);
+
+  /* CLOCK port */
+  total_pins += count_pin_number_one_port_pb_graph_node(cur_pb_graph_node->num_clock_ports,
+                                                        cur_pb_graph_node->num_clock_pins);
+  
+
+  return total_pin;
+}
+
+/* find the number of pb_graph edges with a given physical mode index */
+int count_pb_graph_node_input_edge_in_phy_mode(t_pb_graph_pin* cur_pb_graph_pin,
+                                               int phy_mode_index) {
+  int cnt = 0;
+  int iedge;
+
+  for (iedge = 0; iedge < cur_pb_graph_pin->num_input_edges; iedge++) {
+    if (phy_mode_index == cur_pb_graph_pin->input_edges[iedge]->interconnect->parent_mode_index) {
+      cnt++;
+    }
+  }
+  return cnt;
+}
+
+int count_pb_graph_node_output_edge_in_phy_mode(t_pb_graph_pin* cur_pb_graph_pin,
+                                                int phy_mode_index) {
+  int cnt = 0;
+  int iedge;
+
+  for (iedge = 0; iedge < cur_pb_graph_pin->num_output_edges; iedge++) {
+    if (phy_mode_index == cur_pb_graph_pin->output_edges[iedge]->interconnect->parent_mode_index) {
+      cnt++;
+    }
+  }
+  return cnt;
+}
