@@ -1,0 +1,557 @@
+/***********************************/
+/*      SPICE Modeling for VPR     */
+/*       Xifan TANG, EPFL/LSI      */
+/***********************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <time.h>
+#include <assert.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+/* Include vpr structs*/
+#include "util.h"
+#include "physical_types.h"
+#include "vpr_types.h"
+#include "globals.h"
+#include "rr_graph_util.h"
+#include "rr_graph.h"
+#include "rr_graph2.h"
+#include "vpr_utils.h"
+
+/* Include SPICE support headers*/
+#include "linkedlist.h"
+#include "fpga_spice_utils.h"
+#include "fpga_spice_utils.h"
+
+/* Initial rr_graph */
+void alloc_and_load_rr_graph_rr_node(INOUTP t_rr_graph* local_rr_graph,
+                                     IN int local_num_rr_nodes) {
+  local_rr_graph->num_rr_nodes = local_num_rr_nodes;
+  /* Allocate rr_graph */
+  local_rr_graph->rr_node = (t_rr_node*) my_calloc(local_rr_graph->num_rr_nodes, sizeof(t_rr_node));
+
+  return;
+}
+
+
+void alloc_and_load_rr_graph_switch_inf(INOUTP t_rr_graph* local_rr_graph,
+                                        IN int num_switch_inf,
+                                        INP t_switch_inf* switch_inf) {
+  local_rr_graph->num_switch_inf = num_switch_inf;
+  /* Allocate memory */
+  local_rr_graph->switch_inf = (t_switch_inf*) my_calloc(local_rr_graph->num_switch_inf, sizeof(t_switch_inf);
+  /* Create a local copy */
+  memcpy(local_rr_graph->switch_inf, switch_inf, sizeof(switch_inf));
+
+  return;
+}
+
+
+/* Allocate a LL_rr_node route structs for a given rr_graph
+ * This is function is a copy of alloc_and_load_rr_node_route_structs
+ * The major difference lies in removing the use of global variables 
+ */
+void alloc_and_load_rr_graph_route_structs(t_rr_graph* local_rr_graph) {
+  /* Allocates some extra information about each LL_rr_node that is used only   *
+   * during routing.                                                         */
+
+  int inode;
+
+  local_rr_graph->rr_node_route_inf = (t_rr_node_route_inf *) my_malloc(local_rr_graph->num_rr_nodes * sizeof(t_rr_node_route_inf));
+
+  for (inode = 0; inode < local_rr_graph->num_rr_nodes; inode++) {
+   local_rr_graph->rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
+   local_rr_graph->rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
+   local_rr_graph->rr_node_route_inf[inode].pres_cost = 1.;
+   local_rr_graph->rr_node_route_inf[inode].acc_cost = 1.;
+   local_rr_graph->rr_node_route_inf[inode].path_cost = HUGE_POSITIVE_FLOAT;
+   local_rr_graph->rr_node_route_inf[inode].target_flag = 0;
+  }
+
+  return;
+}
+
+/* Free rr_graph data structs */
+void free_rr_graph_rr_nodes(t_rr_graph* local_rr_graph) {
+  int i;
+  
+  /* Free edges and switches of all the rr_nodes */
+  for (i = 0; i < local_rr_graph->num_rr_nodes; i++) {
+    my_free(local_rr_graph->rr_node[i].edges);
+    my_free(local_rr_graph->rr_node[i].switches);
+    my_free(local_rr_graph->rr_node[i].drive_rr_nodes);
+  }
+  /* Free the rr_node list */
+  my_free(local_rr_graph->rr_node);
+
+  return;
+}
+
+void free_rr_graph_switch_inf(INOUTP t_rr_graph* local_rr_graph) {
+
+  my_free(local_rr_graph->switch_inf);
+
+  return;
+}
+
+void free_rr_graph_route_structs(t_rr_graph* local_rr_graph) { /* [0..num_rr_nodes-1] */
+
+  /* Frees the extra information about each LL_rr_node that is needed only      *
+   * during routing.                                                         */
+
+  free(local_rr_graph->rr_node_route_inf);
+  local_rr_graph->rr_node_route_inf = NULL; /* Mark as free */
+
+  return;
+}
+
+void free_rr_graph_trace_data(t_rr_graph* local_rr_graph,
+                              t_trace *tptr) {
+
+  /* Puts the traceback structure pointed to by tptr on the free list. */
+
+  tptr->next = local_rr_graph->trace_free_head;
+  local_rr_graph->trace_free_head = tptr;
+#ifdef DEBUG
+  local_rr_graph->num_trace_allocated--;
+#endif
+}
+
+void free_rr_graph_traceback(t_rr_graph* local_rr_graph, 
+                             int inet) {
+
+  /* Puts the entire traceback (old routing) for this net on the free list *
+   * and sets the trace_head pointers etc. for the net to NULL.            */
+
+  t_trace *tptr, *tempptr;
+
+  if( local_rr_graph->trace_head == NULL) {
+    return;
+  }
+
+  tptr = local_rr_graph->trace_head[inet];
+
+  while (tptr != NULL) {
+    tempptr = tptr->next;
+    free_rr_graph_trace_data(local_rr_graph, tptr);
+    tptr = tempptr;
+  }
+
+  local_rr_graph->trace_head[inet] = NULL;
+  local_rr_graph->trace_tail[inet] = NULL;
+}
+
+/* TODO: Fully free a rr_graph data struct */
+void free_rr_graph(t_rr_graph* local_rr_graph) {
+  /* Free the internal data structs one by one */
+  free_rr_graph_rr_nodes(local_rr_graph);
+  free_rr_graph_switch_inf(local_rr_graph);
+  free_rr_graph_route_structs(local_rr_graph);
+
+  return;
+}
+
+t_heap * get_rr_graph_heap_head(t_rr_graph* local_rr_graph) {
+
+  /* Returns a pointer to the smallest element on the heap, or NULL if the     *
+   * heap is empty.  Invalid (index == OPEN) entries on the heap are never     *
+   * returned -- they are just skipped over.                                   */
+
+  int ito, ifrom;
+  struct s_heap *heap_head, *temp_ptr;
+
+  do {
+    if (local_rr_graph->heap_tail == 1) { /* Empty heap. */
+      vpr_printf(TIO_MESSAGE_WARNING, "Empty heap occurred in get_heap_head.\n");
+      vpr_printf(TIO_MESSAGE_WARNING, "Some blocks are impossible to connect in this architecture.\n");
+      return (NULL);
+    }
+
+    local_rr_graph->heap_head = local_rr_graph->heap[1]; /* Smallest element. */
+
+    /* Now fix up the heap */
+
+    local_rr_graph->heap_tail--;
+    local_rr_graph->heap[1] = local_rr_graph->heap[local_rr_graph->heap_tail];
+    ifrom = 1;
+    ito = 2 * ifrom;
+
+    while (ito < local_rr_graph->heap_tail) {
+      if (local_rr_graph->heap[ito + 1]->cost < local_rr_graph->heap[ito]->cost)
+        ito++;
+      if (local_rr_graph->heap[ito]->cost > local_rr_graph->heap[ifrom]->cost)
+        break;
+      temp_ptr = local_rr_graph->heap[ito];
+      local_rr_graph->heap[ito] = local_rr_graph->heap[ifrom];
+      local_rr_graph->heap[ifrom] = temp_ptr;
+      ifrom = ito;
+      ito = 2 * ifrom;
+    }
+
+  } while (local_rr_graph->heap_head->index == OPEN); /* Get another one if invalid entry. */
+
+  return (local_rr_graph->heap_head);
+}
+
+t_linked_f_pointer* alloc_rr_graph_linked_f_pointer(t_rr_graph* local_rr_graph) {
+
+  /* This routine returns a linked list element with a float pointer as *
+   * the node data.                                                     */
+
+  /*int i;*/
+  t_linked_f_pointer *temp_ptr;
+
+  if (local_rr_graph->linked_f_pointer_free_head == NULL) {
+    /* No elements on the free list */  
+    local_rr_graph->linked_f_pointer_free_head = (t_linked_f_pointer *) my_chunk_malloc(sizeof(t_linked_f_pointer), &local_rr_graph->linked_f_pointer_ch);
+    local_rr_graph->linked_f_pointer_free_head->next = NULL;
+  }
+
+  temp_ptr = local_rr_graph->linked_f_pointer_free_head;
+  local_rr_graph->linked_f_pointer_free_head = local_rr_graph->linked_f_pointer_free_head->next;
+
+#ifdef DEBUG
+  local_rr_graph->num_linked_f_pointer_allocated++;
+#endif
+
+  return (temp_ptr);
+}
+
+
+void add_to_rr_graph_mod_list(t_rr_graph* local_rr_graph,
+                              float *fptr) {
+
+  /* This routine adds the floating point pointer (fptr) into a  *
+   * linked list that indicates all the pathcosts that have been *
+   * modified thus far.                                          */
+
+  t_linked_f_pointer *mod_ptr;
+
+  mod_ptr = alloc_linked_f_pointer(local_rr_graph);
+
+  /* Add this element to the start of the modified list. */
+
+  mod_ptr->next = local_rr_graph->rr_modified_head;
+  mod_ptr->fptr = fptr;
+  local_rr_graph->rr_modified_head = mod_ptr;
+}
+
+void free_rr_graph_heap_data(t_rr_graph* local_rr_graph,
+                             t_heap *hptr) {
+
+  hptr->u.next = local_rr_graph->heap_free_head;
+  local_rr_graph->heap_free_head = hptr;
+#ifdef DEBUG
+  local_rr_graph->num_heap_allocated--;
+#endif
+}
+
+t_trace* alloc_rr_graph_trace_data(t_rr_graph* local_rr_graph) {
+
+  t_trace *temp_ptr;
+
+  if (local_rr_graph->trace_free_head == NULL) { /* No elements on the free list */
+    local_rr_graph->trace_free_head = (t_trace *) my_chunk_malloc(sizeof(t_trace), &local_rr_graph->trace_ch);
+    local_rr_graph->trace_free_head->next = NULL;
+  }
+  temp_ptr = local_rr_graph->trace_free_head;
+  local_rr_graph->trace_free_head = local_rr_graph->trace_free_head->next;
+#ifdef DEBUG
+  local_rr_graph->num_trace_allocated++;
+#endif
+  return (temp_ptr);
+}
+
+void empty_rr_graph_heap(t_rr_graph* local_rr_graph) {
+
+  int i;
+
+  for (i = 1; i < local_rr_graph->heap_tail; i++)
+    free_rr_graph_heap_data(local_rr_graph, heap[i]);
+
+  local_rr_graph->heap_tail = 1;
+
+  return;
+}
+
+void reset_rr_graph_rr_node_route_structs(t_rr_graph* local_rr_graph) {
+
+  /* Allocates some extra information about each rr_node that is used only   *
+   * during routing.                                                         */
+
+  int inode;
+
+  assert(local_rr_graph->rr_node_route_inf != NULL);
+
+  for (inode = 0; inode < local_rr_graph->num_rr_nodes; inode++) {
+    local_rr_graph->rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
+    local_rr_graph->rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
+    local_rr_graph->rr_node_route_inf[inode].pres_cost = 1.;
+    local_rr_graph->rr_node_route_inf[inode].acc_cost = 1.;
+    local_rr_graph->rr_node_route_inf[inode].path_cost = HUGE_POSITIVE_FLOAT;
+    local_rr_graph->rr_node_route_inf[inode].target_flag = 0;
+  }
+
+  return;
+}
+
+
+t_trace* update_rr_graph_traceback(t_rr_graph* local_rr_graph,
+                                   t_heap *hptr, int inet) {
+
+  /* This routine adds the most recently finished wire segment to the         *
+   * traceback linked list.  The first connection starts with the net SOURCE  *
+   * and begins at the structure pointed to by trace_head[inet]. Each         *
+   * connection ends with a SINK.  After each SINK, the next connection       *
+   * begins (if the net has more than 2 pins).  The first element after the   *
+   * SINK gives the routing node on a previous piece of the routing, which is *
+   * the link from the existing net to this new piece of the net.             *
+   * In each traceback I start at the end of a path and trace back through    *
+   * its predecessors to the beginning.  I have stored information on the     *
+   * predecesser of each node to make traceback easy -- this sacrificies some *
+   * memory for easier code maintenance.  This routine returns a pointer to   *
+   * the first "new" node in the traceback (node not previously in trace).    */
+
+  struct s_trace *tptr, *prevptr, *temptail, *ret_ptr;
+  int inode;
+  short iedge;
+
+#ifdef DEBUG
+  t_rr_type rr_type;
+#endif
+
+  inode = hptr->index;
+
+#ifdef DEBUG
+  rr_type = local_rr_graph->rr_node[inode].type;
+  if (rr_type != SINK) {
+    vpr_printf(TIO_MESSAGE_ERROR, "in update_traceback. Expected type = SINK (%d).\n", SINK);
+    vpr_printf(TIO_MESSAGE_ERROR, "\tGot type = %d while tracing back net %d.\n", rr_type, inet);
+    exit(1);
+  }
+#endif
+
+  tptr = alloc_rr_graph_trace_data(local_rr_graph); /* SINK on the end of the connection */
+  tptr->index = inode;
+  tptr->iswitch = OPEN;
+  tptr->next = NULL;
+  temptail = tptr; /* This will become the new tail at the end */
+  /* of the routine.                          */
+
+  /* Now do it's predecessor. */
+
+  inode = hptr->u.prev_node;
+  iedge = hptr->prev_edge;
+
+  while (inode != NO_PREVIOUS) {
+    prevptr = alloc_rr_graph_trace_data(local_rr_graph);
+    prevptr->index = inode;
+    prevptr->iswitch = rr_node[inode].switches[iedge];
+    prevptr->next = tptr;
+    tptr = prevptr;
+
+    iedge = local_rr_graph->rr_node_route_inf[inode].prev_edge;
+    inode = local_rr_graph->rr_node_route_inf[inode].prev_node;
+  }
+
+  if (local_rr_graph->trace_tail[inet] != NULL) {
+    local_rr_graph->trace_tail[inet]->next = tptr; /* Traceback ends with tptr */
+    ret_ptr = tptr->next; /* First new segment.       */
+  } else { /* This was the first "chunk" of the net's routing */
+    local_rr_graph->trace_head[inet] = tptr;
+    ret_ptr = tptr; /* Whole traceback is new. */
+  }
+
+  local_rr_graph->trace_tail[inet] = temptail;
+  return (ret_ptr);
+}
+
+
+void reset_rr_graph_path_costs(t_rr_graph* local_rr_graph) {
+
+  /* The routine sets the path_cost to HUGE_POSITIVE_FLOAT for all channel segments   *
+   * touched by previous routing phases.                                     */
+
+  t_linked_f_pointer *mod_ptr;
+
+#ifdef DEBUG
+  int num_mod_ptrs;
+#endif
+
+  /* The traversal method below is slightly painful to make it faster. */
+
+  if (local_rr_graph->rr_modified_head != NULL) {
+    mod_ptr = local_rr_graph->rr_modified_head;
+
+#ifdef DEBUG
+    num_mod_ptrs = 1;
+#endif
+
+    while (mod_ptr->next != NULL) {
+      *(mod_ptr->fptr) = HUGE_POSITIVE_FLOAT;
+      mod_ptr = mod_ptr->next;
+#ifdef DEBUG
+      num_mod_ptrs++;
+#endif
+    }
+    *(mod_ptr->fptr) = HUGE_POSITIVE_FLOAT; /* Do last one. */
+
+    /* Reset the modified list and put all the elements back in the free   *
+     * list.                                                               */
+
+    mod_ptr->next = local_rr_graph->linked_f_pointer_free_head;
+    local_rr_graph->linked_f_pointer_free_head = local_rr_graph->rr_modified_head;
+    local_rr_graph->rr_modified_head = NULL;
+
+#ifdef DEBUG
+    local_rr_graph->num_linked_f_pointer_allocated -= num_mod_ptrs;
+#endif
+  }
+
+  return;
+}
+
+
+/* a copy of get_rr_cong_cost, 
+ * I remove all the use of global variables */
+float get_rr_graph_rr_cong_cost(t_rr_graph* local_rr_graph,
+                                int rr_node_index) {
+
+  /* Returns the *congestion* cost of using this rr_node. */
+
+  short cost_index;
+  float cost;
+
+  cost_index = local_rr_graph->rr_node[rr_node_index].cost_index;
+  cost = local_rr_graph->rr_indexed_data[cost_index].base_cost
+      * local_rr_graph->rr_node_route_inf[rr_node_index].acc_cost
+      * local_rr_graph->rr_node_route_inf[rr_node_index].pres_cost;
+  return (cost);
+}
+
+t_heap * alloc_rr_graph_heap_data(t_rr_graph* local_rr_graph) {
+
+  t_heap *temp_ptr;
+
+  if (local_rr_graph->heap_free_head == NULL) { /* No elements on the free list */
+    local_rr_graph->heap_free_head = (t_heap *) my_chunk_malloc(sizeof(t_heap), &(local_rr_graph->heap_ch));
+    local_rr_graph->heap_free_head->u.next = NULL;
+  }
+
+  temp_ptr = local_rr_graph->heap_free_head;
+  local_rr_graph->heap_free_head = local_rr_graph->heap_free_head->u.next;
+#ifdef DEBUG
+  local_rr_graph->num_heap_allocated++;
+#endif
+  return (temp_ptr);
+}
+
+void add_heap_node_to_rr_graph_heap(t_rr_graph* local_rr_graph,
+                                    t_heap *hptr) {
+
+  /* Adds an item to the heap, expanding the heap if necessary.             */
+
+  int ito, ifrom;
+  t_heap *temp_ptr;
+
+  if (local_rr_graph->heap_tail > local_rr_graph->heap_size) { /* Heap is full */
+    local_rr_graph->heap_size *= 2;
+    local_rr_graph->heap = (t_heap **) my_realloc((void *) (heap + 1),
+        local_rr_graph->heap_size * sizeof(t_heap *));
+    local_rr_graph->heap--; /* heap goes from [1..heap_size] */
+  }
+
+  local_rr_graph->heap[local_rr_graph->heap_tail] = hptr;
+  ifrom = local_rr_graph->heap_tail;
+  ito = ifrom / 2;
+  local_rr_graph->heap_tail++;
+
+  while ((ito >= 1) && (local_rr_graph->heap[ifrom]->cost < local_rr_graph->heap[ito]->cost)) {
+    temp_ptr = local_rr_graph->heap[ito];
+    local_rr_graph->heap[ito] = local_rr_graph->heap[ifrom];
+    local_rr_graph->heap[ifrom] = temp_ptr;
+    ifrom = ito;
+    ito = ifrom / 2;
+  }
+  return;
+}
+
+
+void add_node_to_rr_graph_heap(t_rr_graph* local_rr_graph,
+                               int inode, float cost, int prev_node, int prev_edge,
+                               float backward_path_cost, float R_upstream) {
+
+  /* Puts an rr_node on the heap, if the new cost given is lower than the     *
+   * current path_cost to this channel segment.  The index of its predecessor *
+   * is stored to make traceback easy.  The index of the edge used to get     *
+   * from its predecessor to it is also stored to make timing analysis, etc.  *
+   * easy.  The backward_path_cost and R_upstream values are used only by the *
+   * timing-driven router -- the breadth-first router ignores them.           */
+
+  struct s_heap *hptr;
+
+  if (cost >= local_rr_graph->rr_node_route_inf[inode].path_cost)
+    return;
+
+  hptr = alloc_rr_graph_heap_data(local_rr_graph);
+  hptr->index = inode;
+  hptr->cost = cost;
+  hptr->u.prev_node = prev_node;
+  hptr->prev_edge = prev_edge;
+  hptr->backward_path_cost = backward_path_cost;
+  hptr->R_upstream = R_upstream;
+  add_heap_node_to_rr_graph_heap(local_rr_graph, hptr);
+
+  return;
+}
+
+void mark_rr_graph_ends(t_rr_graph* local_rr_graph, 
+                        int inet) {
+
+  /* Mark all the SINKs of this net as targets by setting their target flags  *
+   * to the number of times the net must connect to each SINK.  Note that     *
+   * this number can occassionally be greater than 1 -- think of connecting   *
+   * the same net to two inputs of an and-gate (and-gate inputs are logically *
+   * equivalent, so both will connect to the same SINK).                      */
+
+  int ipin, inode;
+
+  for (ipin = 1; ipin <= local_rr_graph->net[inet].num_sinks; ipin++) {
+    inode = local_rr_graph->net_rr_terminals[inet][ipin];
+    if (inode == OPEN)
+      continue;
+    local_rr_graph->rr_node_route_inf[inode].target_flag++;
+    assert(local_rr_graph->rr_node_route_inf[inode].target_flag > 0 && local_rr_graph->rr_node_route_inf[inode].target_flag <= local_rr_graph->rr_node[inode].capacity);
+  }
+
+  return;
+}
+
+void invalidate_rr_graph_heap_entries(t_rr_graph* local_rr_graph, 
+                                      int sink_node, int ipin_node) {
+
+  /* Marks all the heap entries consisting of sink_node, where it was reached *
+   * via ipin_node, as invalid (OPEN).  Used only by the breadth_first router *
+   * and even then only in rare circumstances.                                */
+
+  int i;
+
+  for (i = 1; i < local_rr_grap->heap_tail; i++) {
+    if (local_rr_graph->heap[i]->index == sink_node 
+        && local_rr_graph->heap[i]->u.prev_node == ipin_node) {
+      local_rr_graph->heap[i]->index = OPEN; /* Invalid. */
+    }
+  }
+}
+
+float get_rr_graph_rr_node_pack_intrinsic_cost(t_rr_graph* local_rr_graph,
+                                               int inode) {
+  /* This is a tie breaker to avoid using nodes with more edges whenever possible */
+  float value;
+  value = local_rr_graph->rr_node[inode].pack_intrinsic_cost;
+  return value;
+}
+

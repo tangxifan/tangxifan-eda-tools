@@ -1,0 +1,423 @@
+#include <stdio.h>
+#include <assert.h>
+#include <string.h>
+#include <time.h>
+
+#include "util.h"
+#include "physical_types.h"
+#include "vpr_types.h"
+#include "globals.h"
+
+#include "fpga_spice_rr_graph_utils.h"
+
+void breadth_first_expand_rr_graph_trace_segment(t_rr_graph* local_rr_graph,
+                                                 t_trace *start_ptr, 
+                                                 int remaining_connections_to_sink) {
+
+  /* Adds all the rr_nodes in the traceback segment starting at tptr (and     *
+   * continuing to the end of the traceback) to the heap with a cost of zero. *
+   * This allows expansion to begin from the existing wiring.  The            *
+   * remaining_connections_to_sink value is 0 if the route segment ending     *
+   * at this location is the last one to connect to the SINK ending the route *
+   * segment.  This is the usual case.  If it is not the last connection this *
+   * net must make to this SINK, I have a hack to ensure the next connection  *
+   * to this SINK goes through a different IPIN.  Without this hack, the      *
+   * router would always put all the connections from this net to this SINK   *
+   * through the same IPIN.  With LUTs or cluster-based logic blocks, you     *
+   * should never have a net connecting to two logically-equivalent pins on   *
+   * the same logic block, so the hack will never execute.  If your logic     *
+   * block is an and-gate, however, nets might connect to two and-inputs on   *
+   * the same logic block, and since the and-inputs are logically-equivalent, *
+   * this means two connections to the same SINK.                             */
+
+  t_trace *tptr, *next_ptr;
+  int inode, sink_node, last_ipin_node;
+
+  tptr = start_ptr;
+
+  if (remaining_connections_to_sink == 0) { /* Usual case. */
+    while (tptr != NULL) {
+      add_node_to_rr_graph_heap(local_rr_graph, tptr->index, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
+      tptr = tptr->next;
+    }
+  } else { /* This case never executes for most logic blocks. */
+    /* Weird case.  Lots of hacks. The cleanest way to do this would be to empty *
+     * the heap, update the congestion due to the partially-completed route, put *
+     * the whole route so far (excluding IPINs and SINKs) on the heap with cost  *
+     * 0., and expand till you hit the next SINK.  That would be slow, so I      *
+     * do some hacks to enable incremental wavefront expansion instead.          */
+
+    if (tptr == NULL)
+      return; /* No route yet */
+
+    next_ptr = tptr->next;
+    last_ipin_node = OPEN; /* Stops compiler from complaining. */
+
+    /* Can't put last SINK on heap with NO_PREVIOUS, etc, since that won't let  *
+     * us reach it again.  Instead, leave the last traceback element (SINK) off *
+     * the heap.                                                                */
+
+    while (next_ptr != NULL) {
+      inode = tptr->index;
+      add_node_to_rr_graph_heap(inode, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
+
+      if (rr_node[inode].type == INTRA_CLUSTER_EDGE) {
+        if(rr_node[inode].pb_graph_pin != NULL && rr_node[inode].pb_graph_pin->num_output_edges == 0) {
+          last_ipin_node = inode;
+        }
+      }
+
+      tptr = next_ptr;
+      next_ptr = tptr->next;
+    }
+
+    /* This will stop the IPIN node used to get to this SINK from being         *
+     * reexpanded for the remainder of this net's routing.  This will make us   *
+     * hook up more IPINs to this SINK (which is what we want).  If IPIN        *
+     * doglegs are allowed in the graph, we won't be able to use this IPIN to   *
+     * do a dogleg, since it won't be re-expanded.  Shouldn't be a big problem. */
+    assert(last_ipin_node != OPEN);
+    local_rr_graph->rr_node_route_inf[last_ipin_node].path_cost = -HUGE_POSITIVE_FLOAT;
+
+    /* Also need to mark the SINK as having high cost, so another connection can *
+     * be made to it.                                                            */
+
+    sink_node = tptr->index;
+    local_rr_graph->rr_node_route_inf[sink_node].path_cost = HUGE_POSITIVE_FLOAT;
+
+    /* Finally, I need to remove any pending connections to this SINK via the    *
+     * IPIN I just used (since they would result in congestion).  Scan through   *
+     * the heap to do this.                                                      */
+
+    invalidate_heap_entries(sink_node, last_ipin_node);
+  }
+}
+
+void breadth_first_expand_rr_graph_neighbours(t_rr_graph* local_rr_graph,
+                                              int inode, float pcost,
+                                              int inet, boolean first_time) {
+
+  /* Puts all the rr_nodes adjacent to inode on the heap.  rr_nodes outside   *
+   * the expanded bounding box specified in route_bb are not added to the     *
+   * heap.  pcost is the path_cost to get to inode.                           */
+
+  int iconn, to_node, num_edges;
+  float tot_cost;
+
+  num_edges = local_rr_graph->rr_node[inode].num_edges;
+  for (iconn = 0; iconn < num_edges; iconn++) {
+    to_node = local_rr_graph->rr_node[inode].edges[iconn];
+    /*if (first_time) { */
+    tot_cost = pcost + get_rr_graph_rr_cong_cost(local_rr_graph, to_node) 
+               * get_rr_graph_rr_node_pack_intrinsic_cost(local_rr_graph, to_node);
+    /*
+     } else {
+     tot_cost = pcost + get_rr_cong_cost(to_node);
+     }*/
+    add_node_to_rr_graph_heap(local_rr_graph, to_node, tot_cost, inode, iconn, OPEN, OPEN);
+  }
+}
+
+/* A copy of breath_first_add_source_to_heap_cluster
+ * I remove all the use of global variables
+ */
+void breadth_first_add_source_to_rr_graph_heap(t_rr_graph* local_rr_graph,
+                                               int src_net_index) {
+
+  /* Adds the SOURCE of this net to the heap.  Used to start a net's routing. */
+
+  int inode;
+  float cost;
+
+  inode = local_rr_graph->net_rr_terminals[src_net_index][0]; /* SOURCE */
+  cost = get_rr_graph_rr_cong_cost(local_rr_graph, inode);
+
+  add_node_to_rr_graph_heap(local_rr_graph, inode, cost, NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
+}
+
+
+
+/* A copy of breath_first_route_net_cluster
+ * I remove all the use of global variables
+ */
+boolean breadth_first_route_one_net_rr_graph_cluster(t_rr_graph* local_rr_graph, 
+                                                     int inet) {
+
+  /* Uses a maze routing (Dijkstra's) algorithm to route a net.  The net       *
+   * begins at the net output, and expands outward until it hits a target      *
+   * pin.  The algorithm is then restarted with the entire first wire segment  *
+   * included as part of the source this time.  For an n-pin net, the maze     *
+   * router is invoked n-1 times to complete all the connections.  Inet is     *
+   * the index of the net to be routed.                                *
+   * If this routine finds that a net *cannot* be connected (due to a complete *
+   * lack of potential paths, rather than congestion), it returns FALSE, as    *
+   * routing is impossible on this architecture.  Otherwise it returns TRUE.   */
+
+  int i, inode, prev_node, remaining_connections_to_sink;
+  float pcost, new_pcost;
+  struct s_heap *current;
+  struct s_trace *tptr;
+  boolean first_time;
+
+  free_rr_graph_traceback(local_rr_graph, inet);
+  breadth_first_add_source_to_rr_graph_heap(local_rr_graph, inet);
+  mark_rr_graph_ends(local_rr_graph, inet);
+
+  tptr = NULL;
+  remaining_connections_to_sink = 0;
+
+  for (i = 1; i <= local_rr_graph->net[inet].num_sinks; i++) { /* Need n-1 wires to connect n pins */
+
+    /* Do not connect open terminals */
+    if (local_rr_graph->net_rr_terminals[inet][i] == OPEN)
+      continue;
+    /* Expand and begin routing */
+    breadth_first_expand_rr_graph_trace_segment(local_rr_graph, tptr, remaining_connections_to_sink);
+    current = get_rr_graph_heap_head(local_rr_graph);
+
+    if (current == NULL) { /* Infeasible routing.  No possible path for net. */
+      reset_rr_graph_path_costs(); /* Clean up before leaving. */
+      return (FALSE);
+    }
+
+    inode = current->index;
+
+    while (local_rr_graph->rr_node_route_inf[inode].target_flag == 0) {
+      pcost = local_rr_graph->rr_node_route_inf[inode].path_cost;
+      new_pcost = current->cost;
+      if (pcost > new_pcost) { /* New path is lowest cost. */
+        local_rr_graph->rr_node_route_inf[inode].path_cost = new_pcost;
+        prev_node = current->u.prev_node;
+        local_rr_graph->rr_node_route_inf[inode].prev_node = prev_node;
+        local_rr_graph->rr_node_route_inf[inode].prev_edge = current->prev_edge;
+        first_time = FALSE;
+
+        if (pcost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */{
+          add_to_rr_graph_mod_list(local_rr_graph, &local_rr_graph->rr_node_route_inf[inode].path_cost);
+          first_time = TRUE;
+        }
+
+        breadth_first_expand_rr_graph_neighbours(local_rr_graph, inode, new_pcost, inet, first_time);
+      }
+
+      free_rr_graph_heap_data(local_rr_graph, current);
+      current = get_rr_graph_heap_head(local_rr_graph);
+
+      if (current == NULL) { /* Impossible routing. No path for net. */
+        reset_rr_graph_path_costs(local_rr_graph);
+        return (FALSE);
+      }
+
+      inode = current->index;
+    }
+
+    local_rr_graph->rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
+    remaining_connections_to_sink = local_rr_graph->rr_node_route_inf[inode].target_flag;
+    tptr = update_rr_graph_traceback(local_rr_graph, current, inet);
+    free_rr_graph_heap_data(local_rr_graph, current);
+  }
+
+  empty_heap();
+  reset_rr_graph_path_costs(local_rr_graph);
+  return (TRUE);
+}
+
+boolean feasible_routing_rr_graph(t_rr_graph* local_rr_graph) {
+
+  /* This routine checks to see if this is a resource-feasible routing.      *
+   * That is, are all rr_node capacity limitations respected?  It assumes    *
+   * that the occupancy arrays are up to date when it is called.             */
+
+  int inode;
+
+  for (inode = 0; inode < local_rr_graph->num_rr_nodes; inode++) {
+    if (local_rr_graph->rr_node[inode].occ > rlocal_rr_graph->r_node[inode].capacity) {
+            /*
+            vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]rr_node[%d] occupancy(%d) exceeds its capacity(%d)!\n",
+                       __FILE__, __LINE__, inode, rr_node[inode].occ, rr_node[inode].capacity);
+            */
+      return (FALSE);
+    }
+  }
+
+  return (TRUE);
+}
+
+void pathfinder_update_rr_graph_one_cost(t_rr_graph* local_rr_graph, 
+                                         t_trace *route_segment_start,
+                                         int add_or_sub, float pres_fac) {
+
+  /* This routine updates the occupancy and pres_cost of the rr_nodes that are *
+   * affected by the portion of the routing of one net that starts at          *
+   * route_segment_start.  If route_segment_start is trace_head[inet], the     *
+   * cost of all the nodes in the routing of net inet are updated.  If         *
+   * add_or_sub is -1 the net (or net portion) is ripped up, if it is 1 the    *
+   * net is added to the routing.  The size of pres_fac determines how severly *
+   * oversubscribed rr_nodes are penalized.                                    */
+
+  struct s_trace *tptr;
+  int inode, occ, capacity;
+
+  tptr = route_segment_start;
+  if (tptr == NULL) /* No routing yet. */
+    return;
+
+  for (;;) {
+    inode = tptr->index;
+
+    occ = local_rr_graph->rr_node[inode].occ + add_or_sub;
+    capacity = local_rr_graph->rr_node[inode].capacity;
+
+    local_rr_graph->rr_node[inode].occ = occ;
+
+    /* pres_cost is Pn in the Pathfinder paper. I set my pres_cost according to *
+     * the overuse that would result from having ONE MORE net use this routing  *
+     * node.                                                                    */
+
+    if (occ < capacity) {
+      local_rr_graph->rr_node_route_inf[inode].pres_cost = 1.;
+    } else {
+      local_rr_graph->rr_node_route_inf[inode].pres_cost = 1. + (occ + 1 - capacity) * pres_fac;
+    }
+
+    if (local_rr_graph->rr_node[inode].type == SINK) {
+      tptr = tptr->next; /* Skip next segment. */
+      if (tptr == NULL)
+        break;
+    }
+
+    tptr = tptr->next;
+
+  } /* End while loop -- did an entire traceback. */
+
+  return;
+}
+
+void pathfinder_update_rr_graph_cost(t_rr_graph* local_rr_graph,
+                                     float pres_fac, float acc_fac) {
+
+  /* This routine recomputes the pres_cost and acc_cost of each routing        *
+   * resource for the pathfinder algorithm after all nets have been routed.    *
+   * It updates the accumulated cost to by adding in the number of extra       *
+   * signals sharing a resource right now (i.e. after each complete iteration) *
+   * times acc_fac.  It also updates pres_cost, since pres_fac may have        *
+   * changed.  THIS ROUTINE ASSUMES THE OCCUPANCY VALUES IN RR_NODE ARE UP TO  *
+   * DATE.                                                                     */
+
+  int inode, occ, capacity;
+
+  for (inode = 0; inode < local_rr_graph->num_rr_nodes; inode++) {
+    occ = local_rr_graph->rr_node[inode].occ;
+    capacity = local_rr_graph->rr_node[inode].capacity;
+
+    if (occ > capacity) {
+      local_rr_graph->rr_node_route_inf[inode].acc_cost += (occ - capacity) * acc_fac;
+      local_rr_graph->rr_node_route_inf[inode].pres_cost = 1. + (occ + 1 - capacity) * pres_fac;
+    } else if (occ == capacity) {
+    /* If occ == capacity, we don't need to increase acc_cost, but a change    *
+     * in pres_fac could have made it necessary to recompute the cost anyway.  */
+      local_rr_graph->rr_node_route_inf[inode].pres_cost = 1. + pres_fac;
+    }
+  }
+
+  return;
+}
+
+
+/** 
+ * A Copy of try_breadth_first_route_cluster 
+ * I remove all the use of global variables  
+ * internal_nets: index of nets to route [0..num_internal_nets - 1]
+ */
+boolean try_breadth_first_route_rr_graph_cluster(t_rr_graph* local_rr_graph) {
+
+  /* Iterated maze router ala Pathfinder Negotiated Congestion algorithm,  *
+   * (FPGA 95 p. 111).  Returns TRUE if it can route this FPGA, FALSE if   *
+   * it can't.                                                             */
+
+  /* For different modes, when a mode is turned on, I set the max occupancy of all rr_nodes in the mode to 1 and all others to 0 */
+  /* TODO: There is a bug for route-throughs where edges in route-throughs do not get turned off because the rr_edge is in a particular mode but the two rr_nodes are outside */
+
+  boolean success, is_routable;
+  int itry, inet, net_index;
+  struct s_router_opts router_opts;
+
+  /* Xifan TANG: Count runtime for routing in packing stage */
+  clock_t begin, end;
+
+  begin = clock();
+
+  /* Usually the first iteration uses a very small (or 0) pres_fac to find  *
+   * the shortest path and get a congestion map.  For fast compiles, I set  *
+   * pres_fac high even for the first iteration.                            */
+
+  /* sets up a fast breadth-first router */
+  router_opts.first_iter_pres_fac = 10;
+  router_opts.max_router_iterations = 20;
+  router_opts.initial_pres_fac = 10;
+  router_opts.pres_fac_mult = 2;
+  router_opts.acc_fac = 1;
+
+  reset_rr_graph_rr_node_route_structs(local_rr_graph); /* Clear all prior rr_graph history */
+
+  pres_fac = router_opts.first_iter_pres_fac;
+
+  for (itry = 1; itry <= router_opts.max_router_iterations; itry++) {
+    for (inet = 0; inet < local_rr_graph->num_nets; inet++) {
+      net_index = local_rr_graph->net[inet];
+
+      pathfinder_update_rr_graph_one_cost(local_rr_graph, local_rr_graph->trace_head[net_index], -1, pres_fac);
+
+      is_routable = breadth_first_route_one_net_rr_graph_cluster(local_rr_graph, net_index);
+
+      /* Impossible to route? (disconnected rr_graph) */
+
+      if (!is_routable) {
+        /* TODO: Inelegant, can be more intelligent */
+        vpr_printf(TIO_MESSAGE_INFO, "Failed routing net %s\n", local_rr_graph->net[net_index].name);
+        vpr_printf(TIO_MESSAGE_INFO, "Routing failed. Disconnected rr_graph.\n");
+        return FALSE;
+      }
+
+      pathfinder_update_rr_graph_one_cost(local_rr_graph, local_rr_graph->trace_head[net_index], 1, pres_fac);
+
+    }
+
+    success = feasible_routing_rr_graph(local_rr_graph);
+    if (success) {
+      /* End of packing routing */
+      end = clock();
+      /* accumulate the runtime for pack routing */
+#ifdef CLOCKS_PER_SEC
+      pack_route_time += (float)(end - begin)/ CLOCKS_PER_SEC; 
+#else
+      pack_route_time += (float)(end - begin)/ CLK_PER_SEC; 
+#endif
+      /* vpr_printf(TIO_MESSAGE_INFO, "Updated: Packing routing took %g seconds\n", pack_route_time); */
+      return (TRUE);
+    }
+
+    if (itry == 1)
+      pres_fac = router_opts.initial_pres_fac;
+    else
+      pres_fac *= router_opts.pres_fac_mult;
+
+    pres_fac = std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5));
+
+    pathfinder_update_cost(pres_fac, router_opts.acc_fac);
+  }
+  /* End of packing routing */
+  end = clock();
+  /* accumulate the runtime for pack routing */
+#ifdef CLOCKS_PER_SEC
+  pack_route_time += (float)(end - begin)/ CLOCKS_PER_SEC; 
+#else
+  pack_route_time += (float)(end - begin)/ CLK_PER_SEC; 
+#endif
+  /* vpr_printf(TIO_MESSAGE_INFO, "Updated: Packing routing took %g seconds\n", pack_route_time); */
+
+  return (FALSE);
+}
+
+
+

@@ -887,7 +887,7 @@ typedef struct s_seg_details {
  * (UDSD by AY) drivers: How do signals driving a routing track connect to  *
  *                       the track?                                         *
  * index: index of the segment type used for this track.                    */
-
+typedef struct s_linked_f_pointer t_linked_f_pointer;
 struct s_linked_f_pointer {
 	struct s_linked_f_pointer *next;
 	float *fptr;
