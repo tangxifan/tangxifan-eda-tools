@@ -11,7 +11,8 @@ typedef struct fpga_spice_rr_graph t_rr_graph;
 struct fpga_spice_rr_graph {
   /* Routing Resource nodes */
   int num_rr_nodes;
-  t_rr_node* rr_nodes;
+  t_rr_node* rr_node;
+  t_ivec*** rr_node_indices;
 
   /* Switches between routing resource nodes */
   int num_switch_inf;
@@ -22,16 +23,20 @@ struct fpga_spice_rr_graph {
   t_net* net; /* nets to route */
   /* Gives the rr_node indices of net terminals. */
   int **net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
+  t_chunk rr_mem_ch;
 
   /* Routing statisitics */
   int num_rr_indexed_data;
   t_rr_indexed_data *rr_indexed_data; /* [0..(num_rr_indexed_data-1)] */
 
   t_rr_node_route_inf* rr_node_route_inf;
+  t_bb *route_bb; /* [0..num_nets-1]. Limits area in which each  */
 
   /* Linked list start pointers.  Define the routing. */
-  t_trace **trace_head = NULL; /* [0..(num_nets-1)] */
-  t_trace **trace_tail = NULL; /* [0..(num_nets-1)] */
+  t_trace **trace_head; /* [0..(num_nets-1)] */
+  t_trace **trace_tail; /* [0..(num_nets-1)] */
+  t_trace *trace_free_head;
+  t_chunk trace_ch;
 
   /**************** Static variables local to route_common.c ******************/
   t_heap **heap; /* Indexed from [1..heap_size] */

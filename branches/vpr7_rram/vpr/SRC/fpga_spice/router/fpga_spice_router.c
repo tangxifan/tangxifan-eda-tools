@@ -9,6 +9,7 @@
 #include "globals.h"
 
 #include "fpga_spice_rr_graph_utils.h"
+#include "fpga_spice_rr_graph.h"
 
 void breadth_first_expand_rr_graph_trace_segment(t_rr_graph* local_rr_graph,
                                                  t_trace *start_ptr, 
@@ -169,14 +170,15 @@ boolean breadth_first_route_one_net_rr_graph_cluster(t_rr_graph* local_rr_graph,
   for (i = 1; i <= local_rr_graph->net[inet].num_sinks; i++) { /* Need n-1 wires to connect n pins */
 
     /* Do not connect open terminals */
-    if (local_rr_graph->net_rr_terminals[inet][i] == OPEN)
+    if (local_rr_graph->net_rr_terminals[inet][i] == OPEN) {
       continue;
+    }
     /* Expand and begin routing */
     breadth_first_expand_rr_graph_trace_segment(local_rr_graph, tptr, remaining_connections_to_sink);
     current = get_rr_graph_heap_head(local_rr_graph);
 
     if (current == NULL) { /* Infeasible routing.  No possible path for net. */
-      reset_rr_graph_path_costs(); /* Clean up before leaving. */
+      reset_rr_graph_path_costs(local_rr_graph); /* Clean up before leaving. */
       return (FALSE);
     }
 
@@ -217,7 +219,7 @@ boolean breadth_first_route_one_net_rr_graph_cluster(t_rr_graph* local_rr_graph,
     free_rr_graph_heap_data(local_rr_graph, current);
   }
 
-  empty_heap();
+  empty_rr_graph_heap(local_rr_graph);
   reset_rr_graph_path_costs(local_rr_graph);
   return (TRUE);
 }
@@ -397,14 +399,15 @@ boolean try_breadth_first_route_rr_graph_cluster(t_rr_graph* local_rr_graph) {
       return (TRUE);
     }
 
-    if (itry == 1)
+    if (itry == 1) {
       pres_fac = router_opts.initial_pres_fac;
-    else
+    } else {
       pres_fac *= router_opts.pres_fac_mult;
+    }
 
     pres_fac = std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5));
 
-    pathfinder_update_cost(pres_fac, router_opts.acc_fac);
+    pathfinder_update_rr_graph_cost(pres_fac, router_opts.acc_fac);
   }
   /* End of packing routing */
   end = clock();
