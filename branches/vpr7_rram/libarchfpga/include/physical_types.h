@@ -264,7 +264,6 @@ struct s_port {
      * mapped SPICE model port */
     t_spice_model_port* spice_model_port;
     char* physical_mode_pin;
-	struct s_pb_type *phy_pb_type;
     t_port* phy_pb_type_port;
     int phy_pb_type_port_lsb;
     int phy_pb_type_port_msb;
@@ -582,6 +581,9 @@ struct s_pb_graph_node {
 	t_pb_graph_node_power * pb_node_power;
 	t_interconnect_pins ** interconnect_pins; /* [0..num_modes-1][0..num_interconnect_in_mode] */
 
+    /* Xifan Tang: FPGA-SPICE */
+	int placement_index_in_top_node; /* index at the top-level pb_graph node */
+    /* END */
 };
 
 struct s_pb_graph_node_power {
@@ -633,6 +635,9 @@ struct s_pb_type {
     t_spice_model* spice_model;
     char* mode_bits; /* Mode bits to select */
     int spice_model_sram_offset;
+    char* physical_pb_type_name;
+	struct s_pb_type *phy_pb_type;
+    float physical_pb_type_index_factor;
     /* END */
 
 	/* Power related members */

@@ -927,6 +927,16 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 		pb_type->num_pb = GetIntProperty(Parent, "num_pb", TRUE, 0);
 	}
 
+    /* Xifan TANG: FPGA_SPICE, multi-mode support */
+	Prop = FindProperty(Parent, "physical_pb_type_name", FALSE);
+	pb_type->physical_pb_type_name = my_strdup(Prop);
+	ezxml_set_attr(Parent, "physical_pb_type_name", NULL);
+
+	pb_type->physical_pb_type_index_factor = GetFloatProperty(Parent, "physical_pb_type_index_factor", FALSE, 1.0);
+	ezxml_set_attr(Parent, "physical_pb_type_index_factor", NULL);
+
+    /* END */
+
 	assert(pb_type->num_pb > 0);
 	num_ports = 0;
 	num_ports += CountChildren(Parent, "input", 0);

@@ -237,6 +237,7 @@ void fprint_pb_primitive_lut(FILE* fp,
   cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_spice_orgz_info); 
 
   /* Generate sram bits, use the default value of SRAM port */
+  /* TODO: Match truth table and post-routing results */
   sram_bits = generate_lut_sram_bits(truth_table_length, truth_table, 
                                      lut_size, sram_ports[0]->default_val);
  

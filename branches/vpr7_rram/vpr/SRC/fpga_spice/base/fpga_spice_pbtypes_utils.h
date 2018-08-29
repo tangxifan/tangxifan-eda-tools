@@ -151,4 +151,17 @@ enum e_interconnect determine_actual_pb_interc_type(t_interconnect* def_interc,
 
 int count_pin_number_one_port_pb_graph_node(int num_ports, int* num_pins);
 
-int count_pin_number_one_pb_graph_node(t_pb_graph_node* cur_pb_graph_node) ;
+int count_pin_number_one_pb_graph_node(t_pb_graph_node* cur_pb_graph_node);
+
+t_pb_type* rec_get_pb_type_by_name(t_pb_type* cur_pb_type, 
+                                   char* pb_type_name);
+
+void decode_physical_mode_pin_annotation(char* phy_mode_pin,
+                                         char** port_name,
+                                         int* pin_msb, int* pin_lsb);
+
+void annotate_physical_mode_pin_to_pb_type(t_port* cur_pb_type_port,
+                                           t_pb_type* phy_pb_type);
+
+void annotate_pb_type_port_to_phy_pb_type(t_pb_type* cur_pb_type, 
+                                          t_pb_type* phy_pb_type);

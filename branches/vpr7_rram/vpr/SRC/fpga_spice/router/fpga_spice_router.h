@@ -22,7 +22,7 @@ void pathfinder_update_rr_graph_cost(t_rr_graph* local_rr_graph,
 void breadth_first_add_source_to_rr_graph_heap(t_rr_graph* local_rr_graph,
                                                int src_net_index);
 
-boolean breadth_first_route_one_net_rr_graph_cluster(t_rr_graph* local_rr_graph, 
+boolean breadth_first_route_one_net_pb_rr_graph(t_rr_graph* local_rr_graph, 
                                                      int inet);
 
-boolean try_breadth_first_route_rr_graph_cluster(t_rr_graph* local_rr_graph);
+boolean try_breadth_first_route_pb_rr_graph(t_rr_graph* local_rr_graph);

@@ -567,7 +567,7 @@
                   <output name="lut5_out" num_pins="2"/>
                   <output name="lut4_out" num_pins="4"/>
                 </pb_type>       
-                <pb_type name="adder" blif_model=".subckt adder" num_pb="2" spice_model_name="adder">
+                <pb_type name="adder_phy" blif_model=".subckt adder" num_pb="2" spice_model_name="adder">
                   <input name="a" num_pins="1"/>
                   <input name="b" num_pins="1"/>
                   <input name="cin" num_pins="1"/>                      
@@ -595,7 +595,7 @@
                   </mux>
                 </interconnect> 
               </pb_type>
-              <pb_type name="ff" blif_model=".latch" num_pb="2" class="flipflop" spice_model_name="static_dff">
+              <pb_type name="ff_phy" blif_model=".latch" num_pb="2" class="flipflop" spice_model_name="static_dff">
                 <input name="D" num_pins="1" port_class="D"/>
                 <output name="Q" num_pins="1" port_class="Q"/>
                 <clock name="clk" num_pins="1" port_class="clock"/>
@@ -633,9 +633,9 @@
                     <output name="out" num_pins="1"/>
                     <clock name="clk" num_pins="1"/> 
                     <!-- Regular LUT mode -->
-                    <pb_type name="lut5" blif_model=".names" num_pb="1" class="lut" spice_model_name="frac_lut6" mode_bits="10" spice_model_sram_offset="0">
-                      <input name="in" num_pins="5" port_class="lut_in" physical_mode_pin="frac_lut6.in[5:0]"/>
-                      <output name="out" num_pins="1" port_class="lut_out" physical_mode_pin="frac_lut6.lut5_out[0]"/>
+                    <pb_type name="lut5" blif_model=".names" num_pb="1" class="lut" spice_model_name="frac_lut6" mode_bits="10" physical_pb_type_name="frac_lut6" physical_pb_type_index_factor="0.5">
+                      <input name="in" num_pins="5" port_class="lut_in" physical_mode_pin="in[5:0]"/>
+                      <output name="out" num_pins="1" port_class="lut_out" physical_mode_pin="lut5_out[0]"/>
                       <!-- LUT timing using delay matrix -->
                         <!-- These are the physical delay inputs on a Stratix IV LUT but because VPR cannot do LUT rebalancing,
                            we instead take the average of these numbers to get more stable results
@@ -687,9 +687,9 @@
                     <output name="cout" num_pins="1"/>
                     <clock name="clk" num_pins="1"/> 
                     <!-- Special dual-LUT mode that drives adder only -->
-                    <pb_type name="lut4" blif_model=".names" num_pb="2" class="lut" spice_model_name="frac_lut6" mode_bits="00" spice_model_sram_offset="0">
-                      <input name="in" num_pins="4" port_class="lut_in" physical_mode_pin="frac_lut6.in[4:0]"/>
-                      <output name="out" num_pins="1" port_class="lut_out" physical_mode_pin="frac_lut6.lut4_out"/>
+                    <pb_type name="lut4" blif_model=".names" num_pb="2" class="lut" spice_model_name="frac_lut6" mode_bits="00" physical_pb_type_name="frac_lut6" physical_pb_type_index_factor="0.25">
+                      <input name="in" num_pins="4" port_class="lut_in" physical_mode_pin="in[4:0]"/>
+                      <output name="out" num_pins="1" port_class="lut_out" physical_mode_pin="lut4_out"/>
                       <!-- LUT timing using delay matrix -->
                       <!-- These are the physical delay inputs on a Stratix IV LUT but because VPR cannot do LUT rebalancing,
                              we instead take the average of these numbers to get more stable results
@@ -705,7 +705,7 @@
                         195e-12
                       </delay_matrix>
                     </pb_type>    
-                    <pb_type name="adder" blif_model=".subckt adder" num_pb="1">
+                    <pb_type name="adder" blif_model=".subckt adder" num_pb="1" physical_pb_type_name="adder_phy">
                       <input name="a" num_pins="1" physical_mode_pin="adder.a"/>
                       <input name="b" num_pins="1" physical_mode_pin="adder.b"/>
                       <input name="cin" num_pins="1" physical_mode_pin="adder.cin"/>                      
@@ -718,10 +718,10 @@
                       <delay_constant max="0.3e-9" in_port="adder.b" out_port="adder.cout"/>
                       <delay_constant max="0.01e-9" in_port="adder.cin" out_port="adder.cout"/>
                     </pb_type>
-                    <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
-                      <input name="D" num_pins="1" port_class="D" physical_mode_pin="ff.D"/>
-                      <output name="Q" num_pins="1" port_class="Q" physical_mode_pin="ff.Q"/>
-                      <clock name="clk" num_pins="1" port_class="clock" physical_mode_pin="ff.clk"/>
+                    <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop" physical_pb_type_name="ff_phy">
+                      <input name="D" num_pins="1" port_class="D" physical_mode_pin="D"/>
+                      <output name="Q" num_pins="1" port_class="Q" physical_mode_pin="Q"/>
+                      <clock name="clk" num_pins="1" port_class="clock" physical_mode_pin="clk"/>
                       <T_setup value="66e-12" port="ff.D" clock="clk"/>
                       <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
                     </pb_type>
@@ -795,9 +795,9 @@
               <input name="in" num_pins="6" physical_mode_pin="in[0:5]"/>
               <output name="out" num_pins="1" physical_mode_pin="out[1]"/>
               <clock name="clk" num_pins="1" physical_mode_pin="clk[0]"/> 
-              <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut" spice_model_name="frac_lut6" mode_bits="11" spice_model_sram_offset="0">
-                <input name="in" num_pins="6" port_class="lut_in" physical_mode_pin="frac_lut6.in[5:0]"/>
-                <output name="out" num_pins="1" port_class="lut_out" physical_mode_pin="frac_lut6.lut6_out[0]"/>
+              <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut" spice_model_name="frac_lut6" mode_bits="11" physical_pb_type_name="frac_lut6" spice_model_sram_offset="0">
+                <input name="in" num_pins="6" port_class="lut_in" physical_mode_pin="in[5:0]"/>
+                <output name="out" num_pins="1" port_class="lut_out" physical_mode_pin="lut6_out[0]"/>
                 <!-- LUT timing using delay matrix -->
                 <!-- These are the physical delay inputs on a Stratix IV LUT but because VPR cannot do LUT rebalancing,
                        we instead take the average of these numbers to get more stable results
@@ -817,10 +817,10 @@
                   261e-12
                 </delay_matrix>
               </pb_type>
-              <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
-                <input name="D" num_pins="1" port_class="D" physical_mode_pin="ff[0].D"/>
-                <output name="Q" num_pins="1" port_class="Q" physical_mode_pin="ff[0].Q"/>
-                <clock name="clk" num_pins="1" port_class="clock" physical_mode_pin="ff[0].clk"/>
+              <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop" physical_pb_type_name="ff_phy" physical_pb_type_index_factor="2">
+                <input name="D" num_pins="1" port_class="D" physical_mode_pin="D"/>
+                <output name="Q" num_pins="1" port_class="Q" physical_mode_pin="Q"/>
+                <clock name="clk" num_pins="1" port_class="clock" physical_mode_pin="clk"/>
                 <T_setup value="66e-12" port="ff.D" clock="clk"/>
                 <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
               </pb_type>

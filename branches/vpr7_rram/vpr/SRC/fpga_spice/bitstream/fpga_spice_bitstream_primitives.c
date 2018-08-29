@@ -303,6 +303,7 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(t_logical_block* mapped_logi
   }
 
   /* Generate sram bits*/
+  /* TODO: Match truth table and post-routing results */
   sram_bits = generate_lut_sram_bits(truth_table_length, truth_table, 
                                      lut_size, sram_ports[0]->default_val);
 

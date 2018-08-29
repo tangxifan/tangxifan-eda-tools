@@ -20,7 +20,7 @@ struct fpga_spice_rr_graph {
   int delayless_switch_index;
 
   int num_nets; /* number of nets to route */
-  t_net* net; /* nets to route */
+  t_net** net; /* nets to route, this is pointer to the existing nets */
   /* Gives the rr_node indices of net terminals. */
   int **net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
   t_chunk rr_mem_ch;
@@ -75,19 +75,13 @@ struct fpga_spice_phy_pb {
 
   int mode; /* mode that this pb is set to */
 
-  struct s_pb **child_pbs; /* children pbs attached to this pb [0..num_child_pb_types - 1][0..child_type->num_pb - 1] */
-  struct s_pb *parent_pb; /* pointer to parent node */
+  t_pb **child_pbs; /* children pbs attached to this pb [0..num_child_pb_types - 1][0..child_type->num_pb - 1] */
+  t_pb *parent_pb; /* pointer to parent node */
 
   /* Xifan TANG: FPGA-SPICE*/
   t_rr_graph* rr_graph;
   /* END */
-  struct s_pb **rr_node_to_pb_mapping; /* [0..num_local_rr_nodes-1] pointer look-up of which pb this rr_node belongs based on index, NULL if pb does not exist  */
-  struct s_pb_stats *pb_stats; /* statistics for current pb */
-
-  struct s_net *local_nets; /* Records post-packing connections, valid only for top-level */
-  int num_local_nets; /* Records post-packing connections, valid only for top-level */
-
-  int clock_net; /* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs */
+  t_pb **rr_node_to_pb_mapping; /* [0..num_local_rr_nodes-1] pointer look-up of which pb this rr_node belongs based on index, NULL if pb does not exist  */
 
   int *lut_pin_remap; /* [0..num_lut_inputs-1] applies only to LUT primitives, stores how LUT inputs were swapped during CAD flow, 
    LUT inputs can be swapped by changing the logic in the LUT, this is useful because the fastest LUT input compared to the slowest is often significant (2-5x),

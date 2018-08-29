@@ -80,9 +80,8 @@ void alloc_rr_graph_net_rr_terminals(t_rr_graph* local_rr_graph) {
   local_rr_graph->net_rr_terminals = (int **) my_malloc(local_rr_graph->num_nets * sizeof(int *));
 
   for (inet = 0; inet < local_rr_graph->num_nets; inet++) {
-    local_rr_graph->net_rr_terminals[inet] = (int *) my_chunk_malloc((local_rr_graph->net[inet].num_sinks + 1) * sizeof(int),
+    local_rr_graph->net_rr_terminals[inet] = (int *) my_chunk_malloc((local_rr_graph->net[inet]->num_sinks + 1) * sizeof(int),
                                                                       &local_rr_graph->rr_mem_ch);
-
   }
 
   return;
@@ -290,7 +289,6 @@ void alloc_and_load_rr_graph_switch_inf(INOUTP t_rr_graph* local_rr_graph,
   return;
 }
 
-
 /* Allocate a LL_rr_node route structs for a given rr_graph
  * This is function is a copy of alloc_and_load_rr_node_route_structs
  * The major difference lies in removing the use of global variables 
@@ -314,7 +312,6 @@ void alloc_and_load_rr_graph_route_structs(t_rr_graph* local_rr_graph) {
 
   return;
 }
-
 
 t_heap * get_rr_graph_heap_head(t_rr_graph* local_rr_graph) {
 
@@ -511,7 +508,7 @@ t_trace* update_rr_graph_traceback(t_rr_graph* local_rr_graph,
   while (inode != NO_PREVIOUS) {
     prevptr = alloc_rr_graph_trace_data(local_rr_graph);
     prevptr->index = inode;
-    prevptr->iswitch = rr_node[inode].switches[iedge];
+    prevptr->iswitch = local_rr_graph->rr_node[inode].switches[iedge];
     prevptr->next = tptr;
     tptr = prevptr;
 

@@ -2515,13 +2515,142 @@ void parasitic_net_estimation() {
   return;
 }
 
+/* Annotate the physical_mode_pin in pb_type ports,
+ * Go recursively until we reach a primtiive node 
+ */
+void rec_annotate_pb_type_primitive_node_physical_mode_pin(t_pb_type* top_pb_type,
+                                                           t_pb_type* cur_pb_type) {
+  int imode, ipb, iport;
+
+  /* See if this is a primitive pb_graph_node */
+  if (NULL == cur_pb_type->spice_model) { 
+    /* Check each mode*/
+    for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
+      /* bypass physical modes */
+      if (imode == find_pb_type_physical_mode_index((*cur_pb_type))) {
+        continue;
+      }
+      /* Quote all child pb_types */
+      for (ipb = 0; ipb < cur_pb_type->modes[imode].num_pb_type_children; ipb++) {
+        /* we should make sure this placement index == child_pb_type[jpb]*/
+        rec_annotate_pb_type_primitive_node_physical_mode_pin(top_pb_type,
+                                                              &(cur_pb_type->modes[imode].pb_type_children[ipb]));
+      }
+    }
+    return;
+  }
+
+  /* Reach here, it means a primitive mode */ 
+  assert (NULL != cur_pb_type->spice_model);
+  /* Check the physical pb_type  */
+  assert (NULL != cur_pb_type->physical_pb_type_name);
+  /* Find the physical_pb_type with the name provided */
+  cur_pb_type->phy_pb_type = rec_get_pb_type_by_name(top_pb_type, cur_pb_type->physical_pb_type_name);
+  /* Check: We should find one! */
+  if (NULL == cur_pb_type->phy_pb_type) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(File:%s,[LINE%d])Fail to find physical pb_type (name=%s) for pb_type (name=%s)!\n",
+                __FILE__, __LINE__, cur_pb_type->physical_pb_type_name, cur_pb_type->name);
+    exit(1);
+  }
+  /* Check: the one should be linked to a SPICE model ! */
+  if (NULL == cur_pb_type->phy_pb_type->spice_model) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(File:%s,[LINE%d])Found physical pb_type (name=%s) for pb_type (name=%s) does not have a SPICE model definition!\n",
+                __FILE__, __LINE__, cur_pb_type->physical_pb_type_name, cur_pb_type->name);
+    exit(1);
+  }
+  /* Check: the one should be in a physical mode! */
+  if (FALSE == cur_pb_type->phy_pb_type->parent_mode->define_physical_mode) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(File:%s,[LINE%d])Found physical pb_type (name=%s) for pb_type (name=%s) does not belong to a physical mode!\n",
+                __FILE__, __LINE__, cur_pb_type->physical_pb_type_name, cur_pb_type->name);
+    exit(1);
+
+  /* Now we are sure about the phy_pb_type that is found */
+  /* Find matched port one by one */
+  annotate_pb_type_port_to_phy_pb_type(cur_pb_type, cur_pb_type->phy_pb_type);
+
+  return;
+}
+
+/* Go recursively visiting each primitive node in the pb_graph_node 
+ * Label the primitive node with a placement index which is unique at the top-level node 
+ */
+void rec_mark_pb_graph_node_primitive_placement_index_in_top_node(t_pb_graph_node* cur_pb_graph_node,
+                                                                  int* start_index) {
+  int imode, ipb, jpb;
+  t_pb_type* cur_pb_type = NULL;
+
+  cur_pb_type = cur_pb_graph_node->pb_type;
+
+  /* See if this is a primitive pb_graph_node */
+  if (NULL == cur_pb_type->spice_model) { 
+    /* Check each mode*/
+    for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
+      /* Quote all child pb_types */
+      for (ipb = 0; ipb < cur_pb_type->modes[imode].num_pb_type_children; ipb++) {
+        /* Each child may exist multiple times in the hierarchy*/
+        for (jpb = 0; jpb < cur_pb_type->modes[imode].pb_type_children[ipb].num_pb; jpb++) {
+          /* we should make sure this placement index == child_pb_type[jpb]*/
+          assert(jpb == cur_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb].placement_index);
+          rec_mark_pb_graph_node_primitive_placement_index_in_top_node(&(cur_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb]), 
+                                                                       start_index);
+        }
+      }
+    }
+  }
+
+  /* Reach here, it means a primitive mode */ 
+  assert (NULL != cur_pb_type->spice_model );
+  /* Label placement_index_in_top_node */ 
+  cur_pb_graph_node->placement_index = (*start_index);
+  /* Increament the counter */
+  (*start_index)++;
+
+  return;
+}
+
+/* Recursively go to the primitive pb_graph_node
+ * create a link from the primitive pb_graph_node to its physical pb_graph_pin */
+void rec_link_primitive_pb_graph_node_pin_to_phy_pb_graph_pin(t_pb_graph_node* cur_pb_graph_node) {
+  return;
+}
+
+/* Back-annotate the physical mode pins defined in pb_type to pb_graph_node
+ * For each pb_graph_node available in type->pb_graph_head 
+ * 1. Label each primitive nodes with the placement_index_top_node
+ * 2. find the pb_graph_pin of primitive nodes in the pb_graph_node
+ * 3. identify the physical mode pin definition (in pb_type)
+ * 4. create a link to the pb_graph_pin in physical mode
+ */
+void annotate_physical_mode_pins_in_pb_graph_node() {
+  int itype;
+  int start_index = 0;
+  
+  for (itype = 0; itype < num_types; itype++) {
+    /* Bybass NULL/EMPTY_TYPE */
+    if (EMPTY_TYPE == &type[itype]) {
+      continue; 
+    }
+    /* annotate the physical mode pins in the primitive pb_type*/
+    rec_annotate_pb_type_primitive_node_physical_mode_pin(type[itype].pb_type, type[itype].pb_type);
+    /* Recursively find the primitive pb_grpah_nodes */
+    rec_mark_pb_graph_node_primitive_placement_index_in_top_node(type[itype].pb_graph_head, &start_index);
+    /* Recursively link the pb_graph_pin of primitive nodes in operating pb to physical pb */
+    rec_link_primitive_pb_graph_node_pin_to_phy_pb_graph_pin(type[itype].pb_graph_head);
+  }
+ 
+  return;
+}
+
 /* Allocate pb in mapped blocks, corresponding to physical modes  */
 void alloc_phy_pb_for_mapped_block(int num_mapped_blocks, 
                                    t_block* mapped_block) {
   int iblk;
 
   for (iblk = 0; iblk < num_mapped_blocks; iblk++) {
-    mapped_block[iblk].phy_pb = (t_pb*) my_calloc(1, sizeof(t_pb)); 
+    mapped_block[iblk].phy_pb = (t_phy_pb*) my_calloc(1, sizeof(t_phy_pb)); 
     /* Create a pristine pb for pb_graph_nodes in the physical modes */
     mapped_block[iblk].phy_pb->pb_graph_node = mapped_block[iblk].type->pb_graph_head;
     /* alloc_and_load_pb_stats(maped_block[iblk].phy_pb, num_models, max_nets_in_pb_type); */
@@ -2529,13 +2658,13 @@ void alloc_phy_pb_for_mapped_block(int num_mapped_blocks,
     /* Create a clean copy of this function, which does not use any global variables!!! 
      * We need to go recursively in this function !!!   
      */
-    alloc_and_load_legalizer_for_cluster(mapped_block[iblk], clb_index, arch)
     /* Backannotate global routing results (net_name) to pb_rr_nodes */
     /* Perform routing for the phy_pb !!! */
   }
 
   return;
 }
+
 
 /* Back-Annotate post routing results to the VPR routing-resource graphs */
 void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
@@ -2544,13 +2673,17 @@ void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
 
   vpr_printf(TIO_MESSAGE_INFO, "Start backannotating post route information for SPICE modeling...\n");
 
+  /* Annotate physical mode pins defined in each primitive pb_type/pb_graph_node */
+  vpr_printf(TIO_MESSAGE_INFO, "Annotate physical mode pins for pbs ...\n");
+  annotate_physical_mode_pins_in_pb_graph_node();
+
+  /* Create pb for physical mode pb_graph_nodes in grid */
+  vpr_printf(TIO_MESSAGE_INFO, "Synchronize mapped blocks into physical blocks ...\n");
+  alloc_phy_pb_for_mapped_block(num_blocks, block);
+
   /* Give spice_name_tag for each pb*/
   vpr_printf(TIO_MESSAGE_INFO, "Generate SPICE name tags for pbs...\n");
   gen_spice_name_tags_all_pbs();
-
-  /* TODO: Match truth table and post-routing results */
-  vpr_printf(TIO_MESSAGE_INFO, "Synchornize LUT truth tables for post-routing logic blocks...\n");
-  sync_lut_truth_table_to_blocks(num_blocks, block, num_logical_blocks, logical_block);
 
   /* Build previous node lists for each rr_node */
   vpr_printf(TIO_MESSAGE_INFO, "Building previous node list for all Routing Resource Nodes...\n");

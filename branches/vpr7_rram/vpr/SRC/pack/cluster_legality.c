@@ -576,6 +576,12 @@ void alloc_and_load_legalizer_for_cluster(INP t_block* clb, INP int clb_index,
 		}
 	}
 
+   /* Xifan TANG: FPGA-SPICE:
+    * Record the number of rr_nodes in pb  
+    */
+   clb->pb->num_rr_nodes = num_rr_nodes;
+   /* END */
+
 	alloc_and_load_rr_node_route_structs();
 	num_nets_in_cluster = 0;
 

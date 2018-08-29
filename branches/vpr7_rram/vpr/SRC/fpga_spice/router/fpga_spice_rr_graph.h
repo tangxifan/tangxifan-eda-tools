@@ -1,3 +1,0 @@
-
-
-int rec_count_rr_graph_nodes_for_phy_pb_graph_node(t_pb_graph_node* cur_pb_graph_node);

@@ -2132,3 +2132,147 @@ int count_pb_graph_node_output_edge_in_phy_mode(t_pb_graph_pin* cur_pb_graph_pin
   }
   return cnt;
 }
+
+/* With a given name, find the pb_type by recursively traversing the pb_type_tree */
+t_pb_type* rec_get_pb_type_by_name(t_pb_type* cur_pb_type, 
+                                   char* pb_type_name) {
+  t_pb_type* ret_pb_type = NULL;
+  t_pb_type* found_pb_type = NULL;
+ 
+  /* Check the name of this pb_type */ 
+  if (0 == strcmp(cur_pb_type->name, pb_type_name)) {
+    return ret_pb_type;
+  }
+
+  /* We cannot find what we want this level, go recursively */
+  /* Check each mode*/
+  for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
+    /* bypass physical modes */
+    if (imode == find_pb_type_physical_mode_index((*cur_pb_type))) {
+      continue;
+    }
+     /* Quote all child pb_types */
+    for (ipb = 0; ipb < cur_pb_type->modes[imode].num_pb_type_children; ipb++) {
+      /* we should make sure this placement index == child_pb_type[jpb]*/
+      found_pb_type = rec_get_pb_type_by_name(&(cur_pb_type->modes[imode].pb_type_children[ipb]), pb_type_name);
+      if (NULL == found_pb_type) { /* See if we have found anything*/
+        continue;
+      }
+      /* We find something, check if we have a overlap in naming */
+      if (NULL != ret_pb_type) {
+        vpr_printf(TIO_MESSAGE_ERROR,
+                   "(File:%s,[LINE%d])Duplicated pb_type name(%s) is not allowed in pb_types!\n",
+                   __FILE__, __LINE__, pb_type_name);
+        exit(1);
+      } else { /* We are free of naming conflict, assign the return value */
+        ret_pb_type = found_pb_type;
+      }
+    }
+  }
+
+  return ret_pb_type;
+}
+
+/* Decode an annotation (a string): <port_name>[<msb>:<lsb>] */
+void decode_physical_mode_pin_annotation(char* phy_mode_pin,
+                                         char** port_name,
+                                         int* pin_msb, int* pin_lsb) {
+  int itoken;
+  int num_tokens = 0;
+  char* token = NULL;
+
+  token = my_strtok(phy_mode_pin, "[:]", &num_tokens);
+
+  /* 1 == num_token */
+  switch (num_tokens) {
+  case 1:
+    (*port_name) = my_strdup(phy_mode_pin);
+    (*pin_msb) = 0;
+    (*pin_lsb) = 0;
+    break;
+  case 2:
+    (*port_name) = my_strdup(token[0]);
+    (*pin_msb) = my_atoi(token[1]);
+    (*pin_lsb) = (*pin_msb);
+    break;
+  case 3:
+    (*port_name) = my_strdup(token[0]);
+    (*pin_msb) = my_atoi(token[1]);
+    (*pin_lsb) = my_atoi(token[2]);
+    /* Identify which is larger: pin_msb and pin_lsb */
+    (*pin_msb) = ((*pin_msb) > (*pin_lsb)) ? (*pin_msb) : (*pin_lsb);
+    (*pin_msb) = ((*pin_msb) > (*pin_lsb)) ? (*pin_lsb) : (*pin_msb);
+    break;
+  default:
+    /* Error out! */
+    vpr_printf(TIO_MESSAGE_ERROR,
+                 "(File:%s,[LINE%d])Invalid physical_mode_pin: %s!\n",
+                  __FILE__, __LINE__, phy_mode_pin);
+    exit(1);
+  }
+
+  /* Free tokens */
+  for (itoken = 0; itoken < num_tokens; itoken++) {
+    my_free(token[itoken]);
+  }
+  my_free(token);
+ 
+  return;
+}
+
+/* Decode the physical_mode_pin definition in cur_pb_type_port
+ * Annotate it to the ports of phy_pb_type
+ */
+void annotate_physical_mode_pin_to_pb_type(t_port* cur_pb_type_port,
+                                           t_pb_type* phy_pb_type) {
+  int iport; 
+  char* phy_port_name = NULL;
+  int msb, lsb;
+  int port_matched = 0;
+
+  /* Check */
+  assert ( TRUE == phy_pb_type->parent_mode->define_physical_mode );
+
+  /* Decode the physical_mode_pin */
+  decode_physical_mode_pin_annotation(phy_mode_pin, &phy_port_name, &msb, &lsb);
+
+  /* Search phy_pb_port ports */
+  for (iport = 0; iport < phy_pb_type->num_ports; iport) { 
+    if (0 == strcmp(phy_port_name, phy_pb_type->ports[iport].name)) {
+      /* We got a match! Give the lsb, msb and create a link */
+      cur_pb_type_port->phy_pb_type_port = &(phy_pb_type->ports[iport]);
+      cur_pb_type_port->phy_pb_type_port_msb = msb;      
+      cur_pb_type_port->phy_pb_type_port_lsb = lsb;      
+      port_matched++;
+    }
+  }
+
+  /* Check if the port is unique */
+  assert (1 == port_matched);
+  /* Check if the pin number match */
+  assert(!(cur_pb_type_type->phy_pb_type_port->num_pins < (msb - lsb)));
+
+  /* Free */  
+  my_free(phy_port_name);
+
+  return;
+}
+
+/* Annotate the port-to-port definition from cur_pb_type to a physical pb_type */
+void annotate_pb_type_port_to_phy_pb_type(t_pb_type* cur_pb_type, 
+                                          t_pb_type* phy_pb_type) {
+  int iport; 
+
+  /* Check */
+  assert ( TRUE == phy_pb_type->parent_mode->define_physical_mode );
+  assert ( NULL != cur_pb_type->phy_pb_type );
+
+  /* Check each port of cur_pb_type */
+  for (iport = 0; iport < cur_pb_type->num_ports; iport) { 
+    annotate_physical_mode_pin_to_pb_type(cur_pb_type->ports[iport], phy_pb_type);
+  }
+
+  return;
+}
+
+

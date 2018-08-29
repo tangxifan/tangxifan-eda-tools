@@ -141,7 +141,7 @@ void breadth_first_add_source_to_rr_graph_heap(t_rr_graph* local_rr_graph,
 /* A copy of breath_first_route_net_cluster
  * I remove all the use of global variables
  */
-boolean breadth_first_route_one_net_rr_graph_cluster(t_rr_graph* local_rr_graph, 
+boolean breadth_first_route_one_net_pb_rr_graph(t_rr_graph* local_rr_graph, 
                                                      int inet) {
 
   /* Uses a maze routing (Dijkstra's) algorithm to route a net.  The net       *
@@ -234,10 +234,10 @@ boolean feasible_routing_rr_graph(t_rr_graph* local_rr_graph) {
 
   for (inode = 0; inode < local_rr_graph->num_rr_nodes; inode++) {
     if (local_rr_graph->rr_node[inode].occ > rlocal_rr_graph->r_node[inode].capacity) {
-            /*
-            vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]rr_node[%d] occupancy(%d) exceeds its capacity(%d)!\n",
-                       __FILE__, __LINE__, inode, rr_node[inode].occ, rr_node[inode].capacity);
-            */
+      /*
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]rr_node[%d] occupancy(%d) exceeds its capacity(%d)!\n",
+                 __FILE__, __LINE__, inode, rr_node[inode].occ, rr_node[inode].capacity);
+      */
       return (FALSE);
     }
   }
@@ -331,7 +331,7 @@ void pathfinder_update_rr_graph_cost(t_rr_graph* local_rr_graph,
  * I remove all the use of global variables  
  * internal_nets: index of nets to route [0..num_internal_nets - 1]
  */
-boolean try_breadth_first_route_rr_graph_cluster(t_rr_graph* local_rr_graph) {
+boolean try_breadth_first_route_pb_rr_graph(t_rr_graph* local_rr_graph) {
 
   /* Iterated maze router ala Pathfinder Negotiated Congestion algorithm,  *
    * (FPGA 95 p. 111).  Returns TRUE if it can route this FPGA, FALSE if   *
@@ -366,11 +366,11 @@ boolean try_breadth_first_route_rr_graph_cluster(t_rr_graph* local_rr_graph) {
 
   for (itry = 1; itry <= router_opts.max_router_iterations; itry++) {
     for (inet = 0; inet < local_rr_graph->num_nets; inet++) {
-      net_index = local_rr_graph->net[inet];
+      net_index = inet;
 
       pathfinder_update_rr_graph_one_cost(local_rr_graph, local_rr_graph->trace_head[net_index], -1, pres_fac);
 
-      is_routable = breadth_first_route_one_net_rr_graph_cluster(local_rr_graph, net_index);
+      is_routable = breadth_first_route_one_net_pb_rr_graph(local_rr_graph, net_index);
 
       /* Impossible to route? (disconnected rr_graph) */
 
