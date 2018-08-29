@@ -415,6 +415,7 @@ enum e_pb_graph_pin_type {
  * parent_node: parent pb_graph_node
  * pin_count_in_cluster: Unique number for pin inside cluster
  */
+typedef struct s_pb_graph_pin t_pb_graph_pin;
 struct s_pb_graph_pin {
 	t_port *port;
 	int pin_number;
@@ -428,6 +429,7 @@ struct s_pb_graph_pin {
     /* Xifan TANG: FPGA-SPICE */
     int temp_net_num;
 	int rr_node_index_physical_pb; /* rr_node in the physical pb rr_graph*/
+    t_pb_graph_pin* physical_pb_graph_pin;
     /* END */
 
 	int scratch_pad; /* temporary data structure useful to store traversal info */
@@ -452,7 +454,6 @@ struct s_pb_graph_pin {
 
 	t_pb_graph_pin_power * pin_power;
 };
-typedef struct s_pb_graph_pin t_pb_graph_pin;
 
 struct s_pb_graph_pin_power {
 	/* Transistor-level Power Properties */
@@ -582,6 +583,7 @@ struct s_pb_graph_node {
 	t_interconnect_pins ** interconnect_pins; /* [0..num_modes-1][0..num_interconnect_in_mode] */
 
     /* Xifan Tang: FPGA-SPICE */
+    t_pb_graph_node* physical_pb_graph_node; /* physical pb_graph_node */
 	int placement_index_in_top_node; /* index at the top-level pb_graph node */
     /* END */
 };
@@ -636,8 +638,9 @@ struct s_pb_type {
     char* mode_bits; /* Mode bits to select */
     int spice_model_sram_offset;
     char* physical_pb_type_name;
-	struct s_pb_type *phy_pb_type;
+	struct s_pb_type* phy_pb_type;
     float physical_pb_type_index_factor;
+    int physical_pb_type_index_offset;
     /* END */
 
 	/* Power related members */

@@ -74,4 +74,14 @@ void free_rr_graph_route_structs(t_rr_graph* local_rr_graph);
 void free_rr_graph(t_rr_graph* local_rr_graph);
 
 void free_rr_graph_heap_data(t_rr_graph* local_rr_graph,
+                             t_heap *hptr);
 
+void build_prev_node_list_rr_nodes(int LL_num_rr_nodes,
+                                   t_rr_node* LL_rr_node);
+
+void alloc_and_load_prev_node_list_rr_graph_rr_nodes(t_rr_graph* local_rr_graph);
+
+void backannotate_rr_graph_routing_results_to_net_name(t_rr_graph* local_rr_graph);
+
+int get_rr_graph_net_vpack_net_index(t_rr_graph* local_rr_graph,
+                                     int net_index);

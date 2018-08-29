@@ -23,6 +23,7 @@
 
 /* Include SPICE support headers*/
 #include "linkedlist.h"
+#include "fpga_spice_types.h"
 #include "fpga_spice_utils.h"
 #include "fpga_spice_utils.h"
 #include "fpga_spice_bitstream_utils.h"
@@ -2141,7 +2142,7 @@ t_pb_type* rec_get_pb_type_by_name(t_pb_type* cur_pb_type,
  
   /* Check the name of this pb_type */ 
   if (0 == strcmp(cur_pb_type->name, pb_type_name)) {
-    return ret_pb_type;
+    ret_pb_type = cur_pb_type;
   }
 
   /* We cannot find what we want this level, go recursively */
@@ -2275,4 +2276,366 @@ void annotate_pb_type_port_to_phy_pb_type(t_pb_type* cur_pb_type,
   return;
 }
 
+/* Find a pb_graph_node with a given pb_type_name in placement_index_in_top */
+t_pb_graph_node* rec_get_pb_graph_node_by_pb_type_and_placement_index_in_top_node(t_pb_graph_node* cur_pb_graph_node, 
+                                                                                  t_pb_type* target_pb_type,
+                                                                                  int target_placement_index) {
+  t_pb_graph_node* ret_pb_graph_node = NULL;
+  t_pb_graph_node* found_pb_graph_node = NULL;
+ 
+  /* Check if pb_type matches and also the placement_index */ 
+  if (( target_pb_type == cur_pb_graph_node->pb_type )
+     &&( target_placement_index == cur_pb_graph_node->placement_index_in_top_node )) {
+    ret_pb_graph_node = cur_pb_graph_node;
+  }
 
+  /* We cannot find what we want this level, go recursively */
+  /* Check each mode*/
+  for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
+    /* Quote all child pb_types */
+    for (ipb = 0; ipb < cur_pb_type->modes[imode].num_pb_type_children; ipb++) {
+      /* Each child may exist multiple times in the hierarchy*/
+      for (jpb = 0; jpb < cur_pb_type->modes[imode].pb_type_children[ipb].num_pb; jpb++) {
+        found_pb_graph_node = rec_get_pb_graph_node_by_pb_type_and_placement_index_in_top_node(&(cur_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb])i,
+                                                                                               target_pb_type, target_placement_index);
+      
+        if (NULL == found_pb_graph_node) { /* See if we have found anything*/
+          continue;
+        }
+        /* We find something, check if we have a overlap in naming */
+        if (NULL != ret_pb_graph_node) {
+          vpr_printf(TIO_MESSAGE_ERROR,
+                     "(File:%s,[LINE%d])Duplicated pb_graph_node name %s[%d] is not allowed in pb_graph_node!\n",
+                     __FILE__, __LINE__, target_pb_type->name, target_placement_index);
+          exit(1);
+        } else { /* We are free of naming conflict, assign the return value */
+          ret_pb_graph_node = found_pb_graph_node;
+        }
+      }
+    }
+  }
+
+  return ret_pb_graph_node;
+}
+
+/* Check if the pin_number of cur_pb_graph_pin matches the phycial pb_graph_pin */
+boolean check_pin_number_match_phy_pb_graph_pin(t_pb_graph_pin* cur_pb_graph_pin, 
+                                                t_pb_graph_pin* phy_pb_graph_pin) {
+  boolean pin_number_match = FALSE;
+
+  if ( (cur_pb_graph_pin->port->phy_pb_type_port == phy_pb_graph_pin->port)
+     &&(cur_pb_graph_pin->pin_number + cur_pb_graph_pin->port->phy_pb_type_port_lsb == phy_pb_graph_pin->pin_number)) {
+    pin_number_match = TRUE;
+  }
+  return pin_number_match; 
+}
+
+/* Link a port in the pb_graph_node to its physical_pb_graph_node port */
+void link_one_pb_graph_node_pin_to_phy_pb_graph_pin(t_pb_graph_pin* cur_pb_graph_pin, 
+                                                    t_pb_graph_node* phy_pb_graph_node) {
+  t_pb_graph_pin* phy_pb_graph_pin = NULL;
+  int iport, ipin;
+
+  /* Get the name match pin in the phy_graph_node */
+  for (iport = 0; iport < phy_pb_graph_node->num_input_ports; iport++) {
+    for (ipin = 0; ipin < phy_pb_graph_node->num_input_pins[iport]; ipin++) {
+      if (FALSE == check_pin_number_match_phy_pb_graph_pin(cur_pb_graph_pin, &(phy_pb_graph_node->input_pins[iport][ipin]))) {
+        continue;
+      }
+      if (NULL == phy_pb_graph_pin) {
+        phy_pb_graph_pin = phy_pb_graph_node->input_pins[iport][ipin];
+      } else {
+        vpr_printf(TIO_MESSAGE_ERROR,
+                   "(File:%s,[LINE%d]) More than one matched pin number found for %s[%d] in %s!\n",
+                   __FILE__, __LINE__, cur_pb_graph_pin->port->name, cur_pb_graph_pin->pin_number, phy_pb_graph_node->pb_type->name);
+        exit(1);
+      }
+    }
+  }
+
+  for (iport = 0; iport < phy_pb_graph_node->num_output_ports; iport++) {
+    for (ipin = 0; ipin < phy_pb_graph_node->num_output_pins[iport]; ipin++) {
+      if (FALSE == check_pin_number_match_phy_pb_graph_pin(cur_pb_graph_pin, &(phy_pb_graph_node->output_pins[iport][ipin]))) {
+        continue;
+      }
+      if (NULL == phy_pb_graph_pin) {
+        phy_pb_graph_pin = phy_pb_graph_node->output_pins[iport][ipin];
+      } else {
+        vpr_printf(TIO_MESSAGE_ERROR,
+                   "(File:%s,[LINE%d]) More than one matched pin number found for %s[%d] in %s!\n",
+                   __FILE__, __LINE__, cur_pb_graph_pin->port->name, cur_pb_graph_pin->pin_number, phy_pb_graph_node->pb_type->name);
+        exit(1);
+      }
+
+    }
+  }
+
+  for (iport = 0; iport < phy_pb_graph_node->num_clock_ports; iport++) {
+    for (ipin = 0; ipin < phy_pb_graph_node->num_clock_pins[iport]; ipin++) {
+      if (FALSE == check_pin_number_match_phy_pb_graph_pin(cur_pb_graph_pin, &(phy_pb_graph_node->clock_pins[iport][ipin]))) {
+        continue;
+      }
+      if (NULL == phy_pb_graph_pin) {
+        phy_pb_graph_pin = phy_pb_graph_node->clock_pins[iport][ipin];
+      } else {
+        vpr_printf(TIO_MESSAGE_ERROR,
+                   "(File:%s,[LINE%d]) More than one matched pin number found for %s[%d] in %s!\n",
+                   __FILE__, __LINE__, cur_pb_graph_pin->port->name, cur_pb_graph_pin->pin_number, phy_pb_graph_node->pb_type->name);
+        exit(1);
+      }
+
+    }
+  }
+
+  /* We should find one! */
+  if (NULL == phy_pb_graph_pin) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(File:%s,[LINE%d]) No matched pin number found for %s[%d] in %s!\n",
+                __FILE__, __LINE__, cur_pb_graph_pin->port->name, cur_pb_graph_pin->pin_number, phy_pb_graph_node->pb_type->name);
+    exit(1);
+  }
+  /* Create the link */
+  cur_pb_graph_pin->physical_pb_graph_pin = phy_pb_graph_pin;
+
+  return;
+}
+
+/* Link the pb_graph_pins of a pb_graph_node to its physical pb_graph_node by the annotation in pb_type ports 
+ * pb_graph_node A contains the annotation, while pb_graph_node B is the physical_pb_graph_node */
+void link_pb_graph_node_pins_to_phy_pb_graph_pins(t_pb_graph_node* cur_pb_graph_node, 
+                                                  t_pb_graph_node* phy_pb_graph_node) {
+  int iport, ipin;
+
+  /* Search each port of cur_pb_graph_node and 
+   * check matched port name in phy_pb_graph_node
+   */
+  for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
+      link_one_pb_graph_node_pin_to_phy_pb_graph_pin(&(cur_pb_graph_node->input_pins[iport][ipin]), 
+                                                     phy_pb_graph_node);
+    }
+  }
+
+  for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
+      link_one_pb_graph_node_pin_to_phy_pb_graph_pin(&(cur_pb_graph_node->output_pins[iport][ipin]), 
+                                                     phy_pb_graph_node);
+    }
+  }
+
+  for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
+      link_one_pb_graph_node_pin_to_phy_pb_graph_pin(&(cur_pb_graph_node->clock_pins[iport][ipin]), 
+                                                     phy_pb_graph_node);
+    }
+  }
+
+  return;
+}
+
+void rec_reset_pb_graph_node_rr_node_index_physical_pb(t_pb_graph_node* cur_pb_graph_node) {
+  int imode, ipb, jpb;
+  t_pb_type* cur_pb_type = cur_pb_graph_node->pb_type;
+
+  for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
+      cur_pb_graph_node->input_pins[iport][ipin].rr_node_index_physical_pb = OPEN;
+    }
+  }
+
+  for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
+      cur_pb_graph_node->output_pins[iport][ipin].rr_node_index_physical_pb = OPEN;
+    }
+  }
+
+  for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
+      cur_pb_graph_node->clock_pins[iport][ipin].rr_node_index_physical_pb = OPEN;
+    }
+  }
+
+  /* END until primitive node */
+  if (NULL != cur_pb_type->spice_model) {
+    return;
+  }
+
+  /* We cannot find what we want this level, go recursively */
+  /* Check each mode*/
+  for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
+    /* Quote all child pb_types */
+    for (ipb = 0; ipb < cur_pb_type->modes[imode].num_pb_type_children; ipb++) {
+      /* Each child may exist multiple times in the hierarchy*/
+      for (jpb = 0; jpb < cur_pb_type->modes[imode].pb_type_children[ipb].num_pb; jpb++) {
+        rec_reset_pb_graph_node_rr_node_index_physical_pb(&(cur_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb]));
+      }
+    }
+  }
+
+  return;
+}
+
+/* Allocate empty child_phy_pbs according to a pb_graph_node */
+void rec_alloc_phy_pb_children(t_pb_graph_node* cur_pb_graph_node, 
+                               t_phy_pb* cur_phy_pb) {
+  int phy_mode_index;
+  t_pb_type* cur_pb_type = cur_pb_graph_node->pb_type;
+  char* phy_pb_name = NULL;
+
+  phy_pb_name = (char*) my_malloc(sizeof(char) * (strlen(cur_pb_graph_node->pb_type->name)
+                                                  + 1 + strlen(my_itoa(cur_pb_graph_node->placement_index_in_top_node)) 
+                                                  + 2));
+  sprintf(phy_pb_name, "%s[%d]", 
+          cur_pb_graph_node->pb_type->name, cur_pb_graph_node->placement_index_in_top_node);
+
+  /* Initialize */
+  cur_phy_pb->pb_graph_node = cur_pb_graph_node;
+  cur_phy_pb->name = phy_pb_name;
+  cur_phy_pb->num_logical_blocks = 0;
+  cur_phy_pb->logical_block = NULL;
+
+  /* Return if we reach the primitive node */
+  if (NULL != cur_pb_type->spice_model) {
+    return;
+  }
+
+  /* Contine recursively */
+  phy_mode_index = find_pb_type_physical_mode_index((*cur_pb_type));
+  /* Quote all child pb_types */
+  for (ipb = 0; ipb < cur_pb_type->modes[phy_mode_index].num_pb_type_children; ipb++) {
+    /* Each child may exist multiple times in the hierarchy*/
+    for (jpb = 0; jpb < cur_pb_type->modes[phy_mode_index].pb_type_children[ipb].num_pb; jpb++) {
+      rec_alloc_phy_pb_children(&(cur_pb_graph_node->child_pb_graph_nodes[phy_mode_index][ipb][jpb]),
+                                cur_phy_pb->child_pbs[ipb][jpb]);
+      /* Assign parent_pb */
+      cur_phy_pb->child_pbs[ipb][jpb].parent_pb = cur_phy_pb;
+      cur_phy_pb->child_pbs[ipb][jpb].mode = phy_mode_index;
+    }
+  }
+
+  /* Allocate */
+  cur_phy_pb->child_pbs = (t_phy_pb**) my_calloc(cur_pb_type->modes[phy_mode_index].pb_type_children, sizeof(t_phy_pb*));
+  for (ipb = 0; ipb < cur_pb_type->modes[phy_mode_index].num_pb_type_children; ipb++) {
+    cur_phy_pb->child_pbs[ipb] = (t_phy_pb*) my_calloc(cur_pb_type->modes[phy_mode_index].pb_type_children[ipb].num_pb, sizeof(t_phy_pb));
+  }
+
+  return;
+}
+
+/* With a given name, find the pb_type by recursively traversing the pb_type_tree */
+t_phy_pb* rec_get_phy_pb_by_name(t_phy_pb* cur_phy_pb, 
+                                 char* phy_pb_name) {
+  t_phy_pb* ret_phy_pb = NULL;
+  t_phy_pb* found_phy_pb = NULL;
+ 
+  /* Check the name of this pb_type */ 
+  if (0 == strcmp(cur_phy_pb->name, phy_pb_name)) {
+    ret_phy_pb = cur_phy_pb;
+  }
+
+  for (ipb = 0; ipb < cur_phy_pb->pb_graph_node->pb_type->modes[cur_phy_pb->mode].num_pb_type_children; ipb++) {
+    /* Each child may exist multiple times in the hierarchy*/
+    for (jpb = 0; jpb < cur_phy_pb->pb_graph_node->pb_type->modes[cur_phy_pb->mode].pb_type_children[ipb].num_pb; jpb++) {
+      /* we should make sure this placement index == child_pb_type[jpb]*/
+      found_phy_pb = rec_get_phy_pb_by_name(&(cur_pb_pb->child_pbs[ipb][jpb]), phy_pb_name);
+      if (NULL == found_phy_pb) { /* See if we have found anything*/
+        continue;
+      }
+      /* We find something, check if we have a overlap in naming */
+      if (NULL != ret_phy_pb) {
+        vpr_printf(TIO_MESSAGE_ERROR,
+                   "(File:%s,[LINE%d])Duplicated phy_pb name(%s) is not allowed in phy_pb!\n",
+                   __FILE__, __LINE__, phy_pb_name);
+        exit(1);
+      } else { /* We are free of naming conflict, assign the return value */
+        ret_phy_pb = found_phy_pb;
+      }
+    }
+  }
+
+  return ret_phy_pb;
+}
+
+
+/* Synchronize the mapped information from operating pb cur_pb to phy_pb */
+void sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb, 
+                                           t_phy_pb* cur_phy_pb) {
+  int ipb, jpb;
+  t_pb_graph_node* cur_pb_graph_node = cur_op_pb->pb_graph_node;
+  t_pb_type* cur_pb_type = cur_pb_graph_node->pb_type;
+  int mode_index = cur_pb->mode; 
+  t_pb* child_pb = NULL;
+  char* phy_pb_name = NULL;
+  t_phy_pb* phy_pb_to_sync = NULL;
+
+  /* Return if we reach the primitive node */
+  if (NULL != cur_pb_type->spice_model) {
+    /* Check */
+    assert(NULL != cur_pb_type->phy_pb_type);
+    assert(NULL != cur_pb_graph_node->physical_pb_graph_node);
+    /* Generate the name */
+    phy_pb_name = (char*) my_malloc(sizeof(char) * (strlen(cur_pb_type->phy_pb_type->name)
+                                                    + 1 + strlen(my_itoa(cur_pb_graph_node->physical_pb_graph_node->placement_index_in_top_node)) 
+                                                    + 2));
+    sprintf(phy_pb_name, "%s[%d]", 
+            cur_pb_type->phy_pb_type->name, cur_pb_graph_node->physical_pb_graph_node->placement_index_in_top_node);
+    /* find the child_pb in the current physical pb (cur_phy_pb) */
+    phy_pb_to_sync = rec_get_phy_pb_by_name(cur_phy_pb, phy_pb_name);
+    /* Check */
+    assert (phy_pb_to_sync->spice_model == cur_pb_type->spice_model);
+    /* Re-allocate logical_block array mapped to this pb */
+    phy_pb_to_sync->num_logical_blocks++;
+    phy_pb_to_sync->logical_block = (int*) my_realloc(phy_pb_to_sync->logical_block, sizeof(int) * phy_pb_to_sync->num_logical_blocks);
+    /* Synchronize the logic block information */
+    switch (cur_pb_type->class_type) {
+    case LUT_CLASS: 
+      child_pb = get_lut_child_pb(cur_op_pb, mode_index);
+      phy_pb_to_sync->logical_block[phy_pb_to_syn->num_logical_blocks - 1] = child_pb->logical_block;
+      break;
+    case LATCH_CLASS:
+      phy_pb_to_sync->logical_block[phy_pb_to_syn->num_logical_blocks - 1] = cur_op_pb->logical_block;
+      break;
+    case MEMORY_CLASS:
+      child_pb = get_hardlogic_child_pb(cur_op_pb, mode_index); 
+      phy_pb_to_sync->logical_block[phy_pb_to_syn->num_logical_blocks - 1] = child_pb->logical_block;
+      break;  
+    case UNKNOWN_CLASS:
+      phy_pb_to_sync->logical_block[phy_pb_to_syn->num_logical_blocks - 1] = cur_op_pb->logical_block;
+      break;  
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Unknown class type of pb_type(%s)!\n",
+                 __FILE__, __LINE__, cur_pb_type->name);
+      exit(1);
+    }
+ 
+    /* Free */
+    my_free(phy_pb_name);
+    return;
+  }
+
+  /* Recursive*/
+  for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+    for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+      /* Refer to pack/output_clustering.c [LINE 392] */
+      if ((NULL != cur_op_pb->child_pbs[ipb])&&(NULL != cur_op_pb->child_pbs[ipb][jpb].name)) {
+        sync_op_pb_mapping_to_phy_pb_children(&(cur_op_pb->child_pbs[ipb][jpb], cur_phy_pb);
+      }
+    }
+  }
+
+  return;
+}
+
+
+/* Allocate pb children for a physical pb, according to the results in cur_pb*/
+void alloc_and_load_phy_pb_children_for_one_mapped_block(t_pb* cur_pb,
+                                                         t_phy_pb* cur_phy_pb) {
+
+  /* allocate empty child pbs according to pb_graph_node  */
+  rec_alloc_phy_pb_children(cur_phy_pb->pb_graph_node, cur_phy_pb);
+
+  /* Synchronize the cur_pb to cur_phy_pb */
+  sync_op_pb_mapping_to_phy_pb_children(cur_op_pb, cur_phy_pb);
+
+  return;
+}

@@ -85,12 +85,21 @@ void update_grid_pbs_post_route_rr_graph();
 
 void free_backannotate_vpr_post_route_info();
 
-void alloc_phy_pb_for_mapped_block(int num_mapped_blocks, 
-                                   t_block* mapped_block);
+void rec_annotate_pb_type_primitive_node_physical_mode_pin(t_pb_type* top_pb_type,
+                                                           t_pb_type* cur_pb_type);
+
+void rec_mark_pb_graph_node_primitive_placement_index_in_top_node(t_pb_graph_node* cur_pb_graph_node,
+                                                                  int* start_index);
+
+void rec_link_primitive_pb_graph_node_pin_to_phy_pb_graph_pin(t_pb_graph_node* top_pb_graph_node,
+                                                              t_pb_graph_node* cur_pb_graph_node);
+
+void annotate_physical_mode_pins_in_pb_graph_node();
+
+void alloc_and_load_phy_pb_for_mapped_block(int num_mapped_blocks, t_block* mapped_block,
+                                            int L_num_vpack_nets, t_net* L_vpack_net);
 
 void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
                                             boolean read_activity_file,
                                             boolean parasitic_net_estimation);
-
-void backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch); 
 

@@ -809,143 +809,6 @@ void free_clb_nets_spice_net_info() {
   return;
 }
 
-static 
-void build_prev_node_list_rr_nodes(int LL_num_rr_nodes,
-                                   t_rr_node* LL_rr_node) {
-  int inode, iedge, to_node, cur;
-  /* int jnode, switch_box_x, switch_box_y, chan_side, switch_index; */
-  int* cur_index = (int*)my_malloc(sizeof(int)*LL_num_rr_nodes);
-  
-  /* This function is not timing-efficient, I comment it */
-  /*
-  for (inode = 0; inode < LL_num_rr_nodes; inode++) {
-    find_prev_rr_nodes_with_src(&(LL_rr_nodes[inode]), 
-                                &(LL_rr_nodes[inode].num_drive_rr_nodes),
-                                &(LL_rr_nodes[inode].drive_rr_nodes),
-                                &(LL_rr_nodes[inode].drive_switches));
-  }
-  */
-  for (inode = 0; inode < LL_num_rr_nodes; inode++) {
-    /* Malloc */
-    LL_rr_node[inode].num_drive_rr_nodes = LL_rr_node[inode].fan_in;
-    if (0 == LL_rr_node[inode].fan_in) {
-     continue;
-    }
-    LL_rr_node[inode].drive_rr_nodes = (t_rr_node**)my_malloc(sizeof(t_rr_node*)*LL_rr_node[inode].num_drive_rr_nodes);
-    LL_rr_node[inode].drive_switches = (int*)my_malloc(sizeof(int)*LL_rr_node[inode].num_drive_rr_nodes);
-  }
-  /* Initialize */
-  for (inode = 0; inode < LL_num_rr_nodes; inode++) {
-    cur_index[inode] = 0;
-    for (iedge = 0; iedge < LL_rr_node[inode].num_drive_rr_nodes; iedge++) {
-      LL_rr_node[inode].drive_rr_nodes[iedge] = NULL;
-      LL_rr_node[inode].drive_switches[iedge] = -1;
-    }
-  }
-  /* Fill */
-  for (inode = 0; inode < LL_num_rr_nodes; inode++) {
-    for (iedge = 0; iedge < LL_rr_node[inode].num_edges; iedge++) {
-      to_node = LL_rr_node[inode].edges[iedge]; 
-      cur = cur_index[to_node];
-      LL_rr_node[to_node].drive_rr_nodes[cur] = &(LL_rr_node[inode]);
-      LL_rr_node[to_node].drive_switches[cur] = LL_rr_node[inode].switches[iedge];
-      /* Update cur_index[to_node]*/
-      assert(NULL != LL_rr_node[to_node].drive_rr_nodes[cur]);
-      cur_index[to_node]++;
-    }
-  }
-  /* Check */
-  for (inode = 0; inode < LL_num_rr_nodes; inode++) {
-    assert(cur_index[inode] == LL_rr_node[inode].num_drive_rr_nodes);
-  }
-
-  /* TODO: fill the sb_drive_rr_nodes */
-  //for (inode = 0; inode < LL_num_rr_nodes; inode++) {
-  //  /* Initial */
-  //  LL_rr_node[inode].sb_num_drive_rr_nodes = 0;
-  //  LL_rr_node[inode].sb_drive_rr_nodes = NULL;
-  //  LL_rr_node[inode].sb_drive_switches = NULL;
-  //  /* Find SB source rr nodes:  channels*/
-  //  switch (LL_rr_node[inode].type) {
-  //  case CHANX:
-  //    assert(LL_rr_node[inode].ylow == LL_rr_node[inode].yhigh);
-  //    switch (LL_rr_node[inode].direction) {
-  //    case INC_DIRECTION:
-  //      switch_box_x = LL_rr_node[inode].xlow-1;
-  //      switch_box_y = LL_rr_node[inode].ylow;
-  //      chan_side = RIGHT;
-  //      break;
-  //    case DEC_DIRECTION:
-  //      switch_box_x = LL_rr_node[inode].xhigh;
-  //      switch_box_y = LL_rr_node[inode].yhigh;
-  //      chan_side = LEFT;
-  //      break;
-  //    case BI_DIRECTION:
-  //      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Bidirectional routing wires are not supported!\n",
-  //                 __FILE__, __LINE__);
-  //      exit(1);
-  //    default:
-  //      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid rr_node direction!\n",
-  //                 __FILE__, __LINE__);
-  //      exit(1);
-  //    }
-  //    find_drive_rr_nodes_switch_box(switch_box_x, switch_box_y, &(LL_rr_node[inode]), chan_side, 0, 
-  //                                   &(LL_rr_node[inode].sb_num_drive_rr_nodes), 
-  //                                   &(LL_rr_node[inode].sb_drive_rr_nodes), &switch_index);
-  //    /* fill the sb_drive_switches */
-  //    LL_rr_node[inode].sb_drive_switches = (int*)my_malloc(sizeof(int)*LL_rr_node[inode].sb_num_drive_rr_nodes);
-  //    for (jnode = 0; jnode < LL_rr_node[inode].sb_num_drive_rr_nodes; jnode++) {
-  //      LL_rr_node[inode].sb_drive_switches[jnode] = switch_index;
-  //    }
-  //    break;
-  //  case CHANY:
-  //    /* TODO: fill the sb_drive_rr_nodes */
-  //    assert(LL_rr_node[inode].xlow == LL_rr_node[inode].xhigh);
-  //    switch (LL_rr_node[inode].direction) {
-  //    case INC_DIRECTION:
-  //      switch_box_x = LL_rr_node[inode].xlow;
-  //      switch_box_y = LL_rr_node[inode].ylow-1;
-  //      chan_side = TOP;
-  //      break;
-  //    case DEC_DIRECTION:
-  //      switch_box_x = LL_rr_node[inode].xhigh;
-  //      switch_box_y = LL_rr_node[inode].yhigh;
-  //      chan_side = BOTTOM;
-  //      break;
-  //    case BI_DIRECTION:
-  //      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Bidirectional routing wires are not supported!\n",
-  //                 __FILE__, __LINE__);
-  //      exit(1);
-  //    default:
-  //      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid rr_node direction!\n",
-  //                 __FILE__, __LINE__);
-  //      exit(1);
-  //    }
-  //    find_drive_rr_nodes_switch_box(switch_box_x, switch_box_y, &(LL_rr_node[inode]), chan_side, 0, 
-  //                                   &(LL_rr_node[inode].sb_num_drive_rr_nodes), 
-  //                                   &(LL_rr_node[inode].sb_drive_rr_nodes), &switch_index);
-  //    /* fill the sb_drive_switches */
-  //    LL_rr_node[inode].sb_drive_switches = (int*)my_malloc(sizeof(int)*LL_rr_node[inode].sb_num_drive_rr_nodes);
-  //    for (jnode = 0; jnode < LL_rr_node[inode].sb_num_drive_rr_nodes; jnode++) {
-  //      LL_rr_node[inode].sb_drive_switches[jnode] = switch_index;
-  //    }
-  //    break;
-  //  case SOURCE:
-  //  case OPIN:
-  //  case SINK:
-  //  case IPIN:
-  //  case NUM_RR_TYPES:
-  //    break;
-  //  default:
-  //    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid rr_node type!\n",
-  //               __FILE__, __LINE__);
-  //    exit(1);
-  //  }
-  //}
-
-  return;
-}
-
 static
 void set_one_pb_rr_node_default_prev_node_edge(t_rr_node* pb_rr_graph, 
                                                t_pb_graph_pin* des_pb_graph_pin,
@@ -2566,6 +2429,7 @@ void rec_annotate_pb_type_primitive_node_physical_mode_pin(t_pb_type* top_pb_typ
                "(File:%s,[LINE%d])Found physical pb_type (name=%s) for pb_type (name=%s) does not belong to a physical mode!\n",
                 __FILE__, __LINE__, cur_pb_type->physical_pb_type_name, cur_pb_type->name);
     exit(1);
+  }
 
   /* Now we are sure about the phy_pb_type that is found */
   /* Find matched port one by one */
@@ -2599,6 +2463,7 @@ void rec_mark_pb_graph_node_primitive_placement_index_in_top_node(t_pb_graph_nod
         }
       }
     }
+    return;
   }
 
   /* Reach here, it means a primitive mode */ 
@@ -2613,7 +2478,46 @@ void rec_mark_pb_graph_node_primitive_placement_index_in_top_node(t_pb_graph_nod
 
 /* Recursively go to the primitive pb_graph_node
  * create a link from the primitive pb_graph_node to its physical pb_graph_pin */
-void rec_link_primitive_pb_graph_node_pin_to_phy_pb_graph_pin(t_pb_graph_node* cur_pb_graph_node) {
+void rec_link_primitive_pb_graph_node_pin_to_phy_pb_graph_pin(t_pb_graph_node* top_pb_graph_node,
+                                                              t_pb_graph_node* cur_pb_graph_node) {
+  int imode, ipb, jpb;
+  int physical_pb_graph_node_placement_index = -1;
+  t_pb_type* cur_pb_type = NULL;
+  t_pb_graph_node* phy_pb_graph_node = NULL;
+
+  cur_pb_type = cur_pb_graph_node->pb_type;
+
+  /* See if this is a primitive pb_graph_node */
+  if (NULL == cur_pb_type->spice_model) { 
+    /* Check each mode*/
+    for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
+      /* Quote all child pb_types */
+      for (ipb = 0; ipb < cur_pb_type->modes[imode].num_pb_type_children; ipb++) {
+        /* Each child may exist multiple times in the hierarchy*/
+        for (jpb = 0; jpb < cur_pb_type->modes[imode].pb_type_children[ipb].num_pb; jpb++) {
+          /* we should make sure this placement index == child_pb_type[jpb]*/
+          assert(jpb == cur_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb].placement_index);
+          rec_link_primitive_pb_graph_node_pin_to_phy_pb_graph_pin(top_pb_graph_node,
+                                                                   &(cur_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb]));
+        }
+      }
+    }
+    return;
+  }
+
+  /* Reach here, it means a primitive mode */ 
+  assert (NULL != cur_pb_type->spice_model);
+  /* Get the physical pb_graph_node with the scaled placement_index! */
+  physical_pb_graph_node_placement_index = (int) (cur_pb_type->physical_pb_type_index_factor 
+                                                  * (float) cur_pb_graph_node->placement_index_in_top_node)
+                                                  + cur_pb_type->physical_pb_type_index_offset;
+  phy_pb_graph_node = rec_get_pb_graph_node_by_pb_type_and_placement_index_in_top_node(top_pb_graph_node, 
+                                                                                       cur_pb_type->physical_pb_type,
+                                                                                       physical_pb_grpah_node_placement_index);
+  /* Create linkes between pb_graph_pins and pb_graph_nodes */
+  cur_pb_graph_node->physical_pb_graph_node = phy_pb_graph_node; 
+  link_pb_graph_node_pins_to_phy_pb_graph_pins(cur_pb_graph_node, cur_pb_graph_node->physical_pb_graph_node);
+  
   return;
 }
 
@@ -2633,6 +2537,8 @@ void annotate_physical_mode_pins_in_pb_graph_node() {
     if (EMPTY_TYPE == &type[itype]) {
       continue; 
     }
+    /* reset the rr_node_index_physical_pb of each pb_graph_pin to be OPEN ! */
+    rec_reset_pb_graph_node_rr_node_index_physical_pb(top_pb_graph_node);
     /* annotate the physical mode pins in the primitive pb_type*/
     rec_annotate_pb_type_primitive_node_physical_mode_pin(type[itype].pb_type, type[itype].pb_type);
     /* Recursively find the primitive pb_grpah_nodes */
@@ -2645,9 +2551,10 @@ void annotate_physical_mode_pins_in_pb_graph_node() {
 }
 
 /* Allocate pb in mapped blocks, corresponding to physical modes  */
-void alloc_phy_pb_for_mapped_block(int num_mapped_blocks, 
-                                   t_block* mapped_block) {
+void alloc_and_load_phy_pb_for_mapped_block(int num_mapped_blocks, t_block* mapped_block,
+                                            int L_num_vpack_nets, t_net* L_vpack_net) {
   int iblk;
+  boolean route_sucess = FALSE;
 
   for (iblk = 0; iblk < num_mapped_blocks; iblk++) {
     mapped_block[iblk].phy_pb = (t_phy_pb*) my_calloc(1, sizeof(t_phy_pb)); 
@@ -2655,12 +2562,26 @@ void alloc_phy_pb_for_mapped_block(int num_mapped_blocks,
     mapped_block[iblk].phy_pb->pb_graph_node = mapped_block[iblk].type->pb_graph_head;
     /* alloc_and_load_pb_stats(maped_block[iblk].phy_pb, num_models, max_nets_in_pb_type); */
     mapped_block[iblk].phy_pb->parent_pb = NULL;
-    /* Create a clean copy of this function, which does not use any global variables!!! 
-     * We need to go recursively in this function !!!   
-     */
-    /* Backannotate global routing results (net_name) to pb_rr_nodes */
+    mapped_block[iblk].phy_pb->mode = 0; /* Top-level should have only one mode!!! */
+    /* Allocate rr_graph for the phy_pb */
+    alloc_and_load_rr_graph_for_phy_pb(mapped_block[iblk].pb, mapped_block[iblk].phy_pb, L_num_vpack_nets, L_vpack_net); 
     /* Perform routing for the phy_pb !!! */
+    route_success = try_breadth_first_route_pb_rr_graph(mapped_block[iblk].phy_pb->rr_graph);
+    if (TRUE == route_success) { 
+      vpr_printf(TIO_MESSAGE_INFO, "Route successfully for %d physical pbs!\r", iblk);
+    } else {
+      assert(FALSE == route_success);
+      vpr_printf(TIO_MESSAGE_ERROR,
+                 "(File:%s,[LINE%d]) Route fail for physical pb (x=%d, y=%d, type_name=%s)!\n",
+                  __FILE__, __LINE__, mapped_block[iblk].x, mapped_block[iblk].y, mapped_block[iblk].type->name);
+      exit(1);
+    }
+    /* Backannotate routing results to physical pb_rr_graph */
+    backannotate_rr_graph_routing_results_to_net_name(mapped_block[iblk].phy_pb->rr_graph);
+    /* Allocate and load child_pb graphs */
+    alloc_and_load_phy_pb_children_for_one_mapped_block(mapped_block[iblk].pb, mapped_block[iblk].phy_pb);
   }
+  vpr_printf(TIO_MESSAGE_INFO, "\n");
 
   return;
 }
@@ -2672,14 +2593,6 @@ void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
                                             boolean run_parasitic_net_estimation) {
 
   vpr_printf(TIO_MESSAGE_INFO, "Start backannotating post route information for SPICE modeling...\n");
-
-  /* Annotate physical mode pins defined in each primitive pb_type/pb_graph_node */
-  vpr_printf(TIO_MESSAGE_INFO, "Annotate physical mode pins for pbs ...\n");
-  annotate_physical_mode_pins_in_pb_graph_node();
-
-  /* Create pb for physical mode pb_graph_nodes in grid */
-  vpr_printf(TIO_MESSAGE_INFO, "Synchronize mapped blocks into physical blocks ...\n");
-  alloc_phy_pb_for_mapped_block(num_blocks, block);
 
   /* Give spice_name_tag for each pb*/
   vpr_printf(TIO_MESSAGE_INFO, "Generate SPICE name tags for pbs...\n");
@@ -2711,6 +2624,11 @@ void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
   vpr_printf(TIO_MESSAGE_INFO,"Back annotating mapping information to local routing resource nodes...\n");
   back_annotate_pb_rr_node_map_info();
 
+  /* Annotate physical mode pins defined in each primitive pb_type/pb_graph_node */
+  vpr_printf(TIO_MESSAGE_INFO, "Annotate physical mode pins for pbs ...\n");
+  annotate_physical_mode_pins_in_pb_graph_node();
+  alloc_and_load_phy_pb_for_mapped_block(num_blocks, block, num_vpack_nets, vpack_net);
+
   /* Backannotate activity information, initialize the waveform information */
   /* Parasitic Net Activity Estimation */
   if (TRUE == run_parasitic_net_estimation) {
@@ -2735,40 +2653,3 @@ void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
   return;
 }
 
-void backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch) { 
-
-  vpr_printf(TIO_MESSAGE_INFO, "Start backannotating post route information...\n");
-  /* Build previous node lists for each rr_node */
-  vpr_printf(TIO_MESSAGE_INFO, "Building previous node list for all Routing Resource Nodes...\n");
-  build_prev_node_list_rr_nodes(num_rr_nodes, rr_node);
-  /* This function should go very first because it gives all the net_num */
-  vpr_printf(TIO_MESSAGE_INFO,"Back annotating mapping information to global routing resource nodes...\n");
-  back_annotate_rr_node_map_info();
-  /* Update local_rr_graphs to match post-route results*/
-  vpr_printf(TIO_MESSAGE_INFO, "Update logic block local routing graph to match post-route results...\n");
-  update_grid_pbs_post_route_rr_graph();
-  vpr_printf(TIO_MESSAGE_INFO,"Back annotating mapping information to local routing resource nodes...\n");
-  back_annotate_pb_rr_node_map_info();
-
-  /* Build Array for each Switch block and Connection block */ 
-  vpr_printf(TIO_MESSAGE_INFO, "Collecting detailed information for each Switch block...\n");
-  alloc_and_build_switch_blocks_info(RoutingArch, num_rr_nodes, rr_node, rr_node_indices);
-  vpr_printf(TIO_MESSAGE_INFO, "Collecting detailed infromation for each to Connection block...\n");
-  alloc_and_build_connection_blocks_info(RoutingArch, num_rr_nodes, rr_node, rr_node_indices);
-
-  /* Backannotate activity information, initialize the waveform information */
-  vpr_printf(TIO_MESSAGE_INFO, "Update logic block pins parasitic nets (1st time: for output pins)...\n");
-  update_grid_pb_pins_parasitic_nets();
-  vpr_printf(TIO_MESSAGE_WARNING, "Parasitic Net Estimation starts...\n");
-  parasitic_net_estimation();
-
-  /* Net activities */
-  vpr_printf(TIO_MESSAGE_INFO, "Backannoating Net activities...\n");
-  backannotate_clb_nets_act_info();
-  vpr_printf(TIO_MESSAGE_INFO, "Determine Net initial values...\n");
-  backannotate_clb_nets_init_val();
-
-  vpr_printf(TIO_MESSAGE_INFO, "Finish backannotating post route information.\n");
-
-  return;
-}

@@ -165,3 +165,18 @@ void annotate_physical_mode_pin_to_pb_type(t_port* cur_pb_type_port,
 
 void annotate_pb_type_port_to_phy_pb_type(t_pb_type* cur_pb_type, 
                                           t_pb_type* phy_pb_type);
+
+t_pb_graph_node* rec_get_pb_graph_node_by_pb_type_and_placement_index_in_top_node(t_pb_graph_node* cur_pb_graph_node, 
+                                                                                  t_pb_type* target_pb_type,
+                                                                                  int target_placement_index);
+
+boolean check_pin_number_match_phy_pb_graph_pin(t_pb_graph_pin* cur_pb_graph_pin, 
+                                                t_pb_graph_pin* phy_pb_graph_pin);
+
+void link_one_pb_graph_node_pin_to_phy_pb_graph_pin(t_pb_graph_pin* cur_pb_graph_pin, 
+                                                    t_pb_graph_node* phy_pb_graph_node);
+
+void link_pb_graph_node_pins_to_phy_pb_graph_pins(t_pb_graph_node* cur_pb_graph_node, 
+                                                  t_pb_graph_node* phy_pb_graph_node);
+
+void rec_reset_pb_graph_node_rr_node_index_physical_pb(t_pb_graph_node* cur_pb_graph_node);

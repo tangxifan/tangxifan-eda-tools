@@ -451,7 +451,7 @@ void alloc_and_load_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* top_pb_g
 
   /* Count the number of rr_nodes that are required */
   phy_pb_num_rr_nodes = rec_count_rr_graph_nodes_for_phy_pb_graph_node(top_pb_graph_node);
-   
+
   /* Allocate rr_graph */
   alloc_and_load_rr_graph_rr_node(local_rr_graph, phy_pb_num_rr_nodes);
 
@@ -469,9 +469,9 @@ void alloc_and_load_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* top_pb_g
 /* Find the vpack_nets used by this pb
  * And allocate an array for those nets and load it to pb_rr_graph
  */
-void alloc_and_load_pb_rr_graph_nets(INP t_pb* cur_op_pb,
-                                     t_rr_graph* local_rr_graph,
-                                     int L_num_vpack_nets, t_net* L_vpack_net) {
+void alloc_and_load_phy_pb_rr_graph_nets(INP t_pb* cur_op_pb,
+                                         t_rr_graph* local_rr_graph,
+                                         int L_num_vpack_nets, t_net* L_vpack_net) {
   /* Create an array labeling which vpack_net is used in this pb */
   int num_vpack_net_used_in_pb = 0;
   boolean* vpack_net_used_in_pb = NULL; 
@@ -511,19 +511,40 @@ void alloc_and_load_pb_rr_graph_nets(INP t_pb* cur_op_pb,
   /* Allocate net for rr_graph */
   local_rr_graph->num_nets = num_vpack_net_used_in_pb;
   local_rr_graph->net = (t_net**) my_malloc(sizeof(t_net*) * local_rr_graph->num_nets);
+  local_rr_graph->net_to_vpack_net_mapping = (int*) my_malloc(sizeof(int) * local_rr_graph->num_nets);
   
-  /* Fill the net array */
+  /* Fill the net array and net_to_net_mapping */
   net_index = 0;
   for (inet = 0; inet < L_num_vpack_net; inet++) { 
     if (TRUE == vpack_net_used_in_pb[inet]) {
       local_rr_graph->net[net_index] = &L_vpack_net[inet]; 
+      local_rr_graph->net_to_vpack_net_mapping[net_index] = inet; 
       net_index++;
     }
   }
-  assert( net_index == L_num_vpack_net );
- 
+  assert( net_index == local_rr_graph->num_nets );
+
   return;
 }
+
+t_rr_node* get_rr_node_in_pb_rr_graph(t_pb* cur_op_pb,
+                                      int net_index, t_rr_type rr_node_type) {
+  int inode;
+  t_rr_node* found_rr_node = NULL;
+  int num_found = 0;
+   
+  for (inode = 0; inode < cur_op_pb->num_rr_nodes; inode++) {
+    if ((rr_node_type == cur_op_pb->rr_graph[inode].type) 
+       &&(net_index == cur_op_pb->rr_graph[inode].vpack_net_name)) {
+      found_rr_node = &(cur_op_pb->rr_graph[inode]);
+      num_found++;
+    }
+  }
+
+  assert(1 == num_found); /* There should be only one results*/
+  
+  return found_rr_node;
+} 
 
 /* Load mapping information from an op_pb to the net_rr_terminals of a phy_pb rr_graph 
  * This function should do the following tasks:
@@ -533,26 +554,33 @@ void alloc_and_load_pb_rr_graph_nets(INP t_pb* cur_op_pb,
  * 3. Find the SOURCE and SINK rr_nodes related to the pb_graph_pin 
  * 4. Configure the net_rr_terminals with the SINK/SOURCE rr_nodes  
  */
-void load_pb_rr_graph_net_rr_terminals(INP t_pb* cur_op_pb,
-                                       t_rr_graph* local_rr_graph) {
-  int inode;
-   
-  /* Search the rr_node in op_pb and get the pb_graph_pin */
-  for (inode = 0; inode < cur_op_pb->num_rr_nodes; inode++) {
-    /* only consider those has been mapped to a pb_graph_pin */
-    if (NULL == cur_op_pb->rr_graph[inode].pb_graph_pin) {
-      continue;
+void load_phy_pb_rr_graph_net_rr_terminals(INP t_pb* cur_op_pb,
+                                           t_rr_graph* local_rr_graph) {
+  int inet, isink, rr_node_vpack_net_name;
+  t_rr_node* pb_rr_node = NULL;
+  t_rr_type pb_rr_node_type;
+  
+  /* Check each net in the local_rr_graph,
+   * Find the routing resource node in the pb_rr_graph of the cur_op_pb
+   * and annotate in the local_rr_graph
+   * assign the net_rr_terminal with the node index in the local_rr_graph
+   */ 
+  for (inet = 0; inet < local_rr_graph->num_nets; inet++) {
+    /* SINK 0 is the SOURCE nodes  
+     * The rest sink are SINK nodes 
+     */
+    for (isink = 0; isink < local_rr_graph->net[inet]->num_sinks + 1; isink++) {
+      pb_rr_node_type = (0 == isink) ? SOURCE : SINK;
+      rr_node_vpack_net_name = get_rr_graph_net_vpack_net_index(local_rr_graph, inet);
+      pb_rr_node = get_rr_node_in_pb_rr_graph(cur_op_pb, rr_node_vpack_net_name, pb_rr_node_type); 
+      /* If there is rr_node_index_physical_pb, this is also a pin in the physical mode */
+      if (OPEN != pb_rr_node->pb_graph_pin->rr_node_index_physical_pb) {
+        local_rr_graph->net_rr_terminal[inet][0] = pb_rr_node->pb_graph_pin->rr_node_index_physical_pb;
+      } else {
+        /* This is not a pin in the physical mode, find the mapped physical pb_graph_pin */
+        local_rr_graph->net_rr_terminal[inet][0] = pb_rr_node->pb_graph_pin->phy_pb_graph_pin->rr_node_index_physical_pb; 
+      }
     }
-    /* bypass unmapped rr_node */
-    if (OPEN == cur_op_pb->rr_graph[inode].vpack_net_name) {
-      continue;
-    }
-    /* We only care primitive nodes (SOURCE/SINKS) */
-    
-    /* Reach here, it means this net is used in this pb */
-    /* Locate the pin-to-pin mapping information */
-
-    cur_op_pb->rr_graph[inode]
   }
 
   return;
@@ -573,11 +601,15 @@ void alloc_and_load_rr_graph_for_phy_pb(INP t_pb* cur_op_pb,
   /* Create rr_graph */
   alloc_and_load_rr_graph_for_phy_pb_graph_node(cur_phy_pb->pb_graph_head, cur_phy_pb->rr_graph);
 
+  /* Build prev nodes list for rr_nodes */
+  alloc_and_load_prev_node_list_rr_graph_rr_nodes(cur_phy_pb->rr_graph);
+
   /* Allocate structs routing information */
   alloc_and_load_rr_graph_route_structs(cur_phy_pb->rr_graph);
 
   /* Find the nets inside the pb and initialize the rr_graph */
-  alloc_and_load_pb_rr_graph_nets(cur_op_pb, cur_phy_pb->rr_graph, L_num_vpack_nets, L_vpack_net); 
+  alloc_and_load_phy_pb_rr_graph_nets(cur_op_pb, cur_phy_pb->rr_graph,
+                                      L_num_vpack_nets, L_vpack_net); 
 
   /* Allocate net_rr_terminals */
   alloc_rr_graph_net_rr_terminals(cur_phy->rr_graph);
@@ -585,7 +617,7 @@ void alloc_and_load_rr_graph_for_phy_pb(INP t_pb* cur_op_pb,
    * 1. pin-to-pin mapping in pb_graph_node in cur_op_pb
    * 2. rr_graph in the cur_op_pb
    */ 
-  load_pb_rr_graph_net_rr_terminals(cur_op_pb, cur_phy_pb->rr_graph); 
+  load_phy_pb_rr_graph_net_rr_terminals(cur_op_pb, cur_phy_pb->rr_graph); 
 
   return;
 }

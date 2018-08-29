@@ -15,15 +15,11 @@
 #include "util.h"
 #include "physical_types.h"
 #include "vpr_types.h"
-#include "globals.h"
-#include "rr_graph_util.h"
-#include "rr_graph.h"
-#include "rr_graph2.h"
 #include "vpr_utils.h"
 
 /* Include SPICE support headers*/
 #include "linkedlist.h"
-#include "fpga_spice_utils.h"
+#include "fpga_spice_types.h"
 #include "fpga_spice_utils.h"
 
 /* Initial rr_graph */
@@ -39,6 +35,8 @@ void init_rr_graph(INOUTP t_rr_graph* local_rr_graph) {
 
   local_rr_graph->num_nets = 0;
   local_rr_graph->net = NULL;
+  local_rr_graph->net_to_vpack_net_mapping = NULL;
+
   local_rr_graph->net_rr_terminals = NULL;
   local_rr_graph->rr_mem_ch = {NULL, 0, NULL}; 
 
@@ -794,3 +792,138 @@ void free_rr_graph(t_rr_graph* local_rr_graph) {
   return;
 }
 
+void build_prev_node_list_rr_nodes(int LL_num_rr_nodes,
+                                   t_rr_node* LL_rr_node) {
+  int inode, iedge, to_node, cur;
+  int* cur_index = (int*)my_malloc(sizeof(int)*LL_num_rr_nodes);
+  
+  for (inode = 0; inode < LL_num_rr_nodes; inode++) {
+    /* Malloc */
+    LL_rr_node[inode].num_drive_rr_nodes = LL_rr_node[inode].fan_in;
+    if (0 == LL_rr_node[inode].fan_in) {
+     continue;
+    }
+    LL_rr_node[inode].drive_rr_nodes = (t_rr_node**)my_malloc(sizeof(t_rr_node*)*LL_rr_node[inode].num_drive_rr_nodes);
+    LL_rr_node[inode].drive_switches = (int*)my_malloc(sizeof(int)*LL_rr_node[inode].num_drive_rr_nodes);
+  }
+  /* Initialize */
+  for (inode = 0; inode < LL_num_rr_nodes; inode++) {
+    cur_index[inode] = 0;
+    for (iedge = 0; iedge < LL_rr_node[inode].num_drive_rr_nodes; iedge++) {
+      LL_rr_node[inode].drive_rr_nodes[iedge] = NULL;
+      LL_rr_node[inode].drive_switches[iedge] = -1;
+    }
+  }
+  /* Fill */
+  for (inode = 0; inode < LL_num_rr_nodes; inode++) {
+    for (iedge = 0; iedge < LL_rr_node[inode].num_edges; iedge++) {
+      to_node = LL_rr_node[inode].edges[iedge]; 
+      cur = cur_index[to_node];
+      LL_rr_node[to_node].drive_rr_nodes[cur] = &(LL_rr_node[inode]);
+      LL_rr_node[to_node].drive_switches[cur] = LL_rr_node[inode].switches[iedge];
+      /* Update cur_index[to_node]*/
+      assert(NULL != LL_rr_node[to_node].drive_rr_nodes[cur]);
+      cur_index[to_node]++;
+    }
+  }
+  /* Check */
+  for (inode = 0; inode < LL_num_rr_nodes; inode++) {
+    assert(cur_index[inode] == LL_rr_node[inode].num_drive_rr_nodes);
+  }
+
+  return;
+}
+
+void alloc_and_load_prev_node_list_rr_graph_rr_nodes(t_rr_graph* local_rr_graph) {
+  build_prev_node_list_rr_nodes(local_rr_graph->num_rr_nodes, local_rr_graph->rr_node);
+
+  return;
+}
+
+void backannotate_rr_graph_routing_results_to_net_name(t_rr_graph* local_rr_graph) {
+  int inode, jnode, inet;
+  int next_node, iedge;
+  t_trace* tptr;
+  t_rr_type rr_type;
+
+  /* 1st step: Set all the configurations to default.
+   * rr_nodes select edge[0]
+   */
+  for (inode = 0; inode < local_rr_graph->num_rr_nodes; inode++) {
+    local_rr_graph->rr_node[inode].prev_node = OPEN;
+    /* set 0 if we want print all unused mux!!!*/
+    local_rr_graph->rr_node[inode].prev_edge = OPEN;
+    /* Initial all the net_num*/
+    local_rr_graph->rr_node[inode].net_num = OPEN;
+    local_rr_graph->rr_node[inode].vpack_net_num = OPEN;
+  }
+  for (inode = 0; inode < local_rr_graph->num_rr_nodes; inode++) {
+    if (0 == local_rr_graph->rr_node[inode].num_edges) {
+      continue;
+    }  
+    assert(0 < local_rr_graph->rr_node[inode].num_edges);
+    for (iedge = 0; iedge < local_rr_graph->rr_node[inode].num_edges; iedge++) {
+      jnode = local_rr_graph->rr_node[inode].edges[iedge];
+      if (&(local_rr_graph->rr_node[inode]) == local_rr_graph->rr_node[jnode].drive_rr_nodes[0]) {
+        local_rr_graph->rr_node[jnode].prev_node = inode;
+        local_rr_graph->rr_node[jnode].prev_edge = iedge;
+      }
+    }
+  }
+
+  /* 2nd step: With the help of trace, we back-annotate */
+  for (inet = 0; inet < local_rr_graph->num_nets; inet++) {
+    if (TRUE == local_rr_graph->net[inet].is_global) {
+      continue;
+    }
+    tptr = local_rr_graph->trace_head[inet];
+    while (tptr != NULL) {
+      inode = tptr->index;
+      rr_type = local_rr_graph->rr_node[inode].type;
+      /* Net num */
+      local_rr_graph->rr_node[inode].net_num = inet;
+      local_rr_graph->rr_node[inode].vpack_net_num = net_to_vpack_net_mapping[inet];
+      /* assert(OPEN != local_rr_graph->rr_node[inode].net_num); */
+      assert(OPEN != local_rr_graph->rr_node[inode].vpack_net_num);
+      switch (rr_type) {
+      case SINK: 
+        /* Nothing should be done. This supposed to the end of a trace*/
+        break;
+      case IPIN: 
+      case CHANX: 
+      case CHANY: 
+      case OPIN: 
+      case SOURCE: 
+        /* SINK(IO/Pad) is the end of a routing path. Should configure its prev_edge and prev_node*/
+        /* We care the next rr_node, this one is driving, which we have to configure 
+         */
+        assert(NULL != tptr->next);
+        next_node = tptr->next->index;
+        assert((!(0 > next_node))&&(next_node < local_rr_graph->num_rr_nodes));
+        /* Prev_node */
+        local_rr_graph->rr_node[next_node].prev_node = inode;
+        /* Prev_edge */
+        local_rr_graph->rr_node[next_node].prev_edge = OPEN;
+        for (iedge = 0; iedge < local_rr_graph->rr_node[inode].num_edges; iedge++) {
+          if (next_node == local_rr_graph->rr_node[inode].edges[iedge]) {
+            local_rr_graph->rr_node[next_node].prev_edge = iedge;
+            break;
+          }
+        }
+        assert(OPEN != local_rr_graph->rr_node[next_node].prev_edge);
+        break;
+      default:
+        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid traceback element type.\n");
+        exit(1);
+      }
+      tptr = tptr->next;
+    }
+  }
+
+  return;
+}
+
+int get_rr_graph_net_vpack_net_index(t_rr_graph* local_rr_graph,
+                                     int net_index) {
+  return local_rr_graph->net_to_vpack_net_mapping[net_index];
+}
