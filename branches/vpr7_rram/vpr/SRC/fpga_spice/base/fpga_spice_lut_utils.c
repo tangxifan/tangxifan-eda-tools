@@ -46,7 +46,7 @@ char* complete_truth_table_line(int lut_size,
   /*Malloc the completed truth table, lut_size + space + truth_val + '\0'*/
   ret = (char*)my_malloc(sizeof(char)*lut_size + 3);
   /* Split one line of truth table line*/
-  tokens = my_strtok(input_truth_table_line, " ", &num_token); 
+  tokens = fpga_spice_strtok(input_truth_table_line, " ", &num_token); 
   /* Check, only 2 tokens*/
   /* Sometimes, the truth table is ' 0' or ' 1', which corresponds to a constant */
   if (1 == num_token) {

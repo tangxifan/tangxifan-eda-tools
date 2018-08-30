@@ -470,7 +470,7 @@ void dump_verilog_cmos_mux_one_basis_module_structural(FILE* fp,
                                                        int num_input_basis_subckt, 
                                                        t_spice_model* cur_spice_model,
                                                        boolean special_basis) { 
-  int cur_mem, i;
+  int i;
   int num_mem = num_input_basis_subckt;
   /* Get the tgate module name */
   char* tgate_module_name = cur_spice_model->pass_gate_logic->spice_model_name;
@@ -547,9 +547,7 @@ void dump_verilog_rram_mux_one_basis_module_structural(FILE* fp,
                                                        t_spice_model* cur_spice_model) { 
   /* RRAM MUX needs 2*(input_size + 1) memory bits for configuration purpose */
   int num_mem = num_input_basis_subckt + 1;
-  int i, iport, ipin;
-  int find_prog_EN = 0;
-  int find_prog_ENb = 0;
+  int i;
   char* progTE_module_name = "PROG_TE";
   char* progBE_module_name = "PROG_BE";
 
@@ -1062,8 +1060,6 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
   t_spice_model_port** input_port = NULL;
   t_spice_model_port** output_port = NULL;
   t_spice_model_port** sram_port = NULL;
-  t_spice_model* input_invbuf_spice_model = NULL;
-  t_spice_model* output_invbuf_spice_model = NULL;
 
   /* Find the basis subckt*/
   char* mux_basis_subckt_name = NULL;
@@ -1246,7 +1242,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
           }
           fprintf(fp, "mux2_l%d_in[%d], ",
                     spice_mux_arch.num_level - output_port[iport]->lut_frac_level, 
-                    output_port->lut_output_mask[ipin]); /* input port */ 
+                    output_port[iport]->lut_output_mask[ipin]); /* input port */ 
           fprintf(fp, "%s[%d] );", output_port[iport]->prefix, ipin); /* Output port*/
           fprintf(fp, "\n");
           /* If tapered buffer is enabled, bypass the other buffer types */
@@ -1266,7 +1262,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
           }
           fprintf(fp, "mux2_l%d_in[%d], ",
                   spice_mux_arch.num_level - output_port[iport]->lut_frac_level, 
-                  output_port->lut_output_mask[ipin]); /* input port */ 
+                  output_port[iport]->lut_output_mask[ipin]); /* input port */ 
           fprintf(fp, "%s[%d] );", 
                   output_port[iport]->prefix, ipin); /* Output port*/
           fprintf(fp, "\n");
@@ -1284,7 +1280,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
           }
           fprintf(fp, "mux2_l%d_in[%d], ",
                   spice_mux_arch.num_level - output_port[iport]->lut_frac_level, 
-                  output_port->lut_output_mask[ipin]); /* input port */ 
+                  output_port[iport]->lut_output_mask[ipin]); /* input port */ 
           fprintf(fp, "%s[%d] );", output_port[iport]->prefix, ipin); /* Output port*/
           fprintf(fp, "\n");
           break;
@@ -1298,7 +1294,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
         /* Resistance R<given_name> <input> <output> 0*/
         fprintf(fp, "assign mux2_l%d_in[%d] = %s[%d];\n",
                 spice_mux_arch.num_level - output_port[iport]->lut_frac_level,
-                output_port->lut_output_mask[ipin],
+                output_port[iport]->lut_output_mask[ipin],
                 output_port[iport]->prefix, ipin);
       }
     }
@@ -2100,7 +2096,7 @@ void dump_verilog_submodule_one_lut(FILE* fp,
     mode_port_index = iport;
     num_dumped_port++;
   }
-  if (TRUE == verilog_mode->design_tech_info.frac_lut) {
+  if (TRUE == verilog_model->design_tech_info.frac_lut) {
     if (1 != num_dumped_port) {
       vpr_printf(TIO_MESSAGE_ERROR, 
                 "(FILE:%s,LINE[%d]) Fracturable LUT (spice_model_name=%s) must have 1 mode port!\n",
@@ -2120,7 +2116,7 @@ void dump_verilog_submodule_one_lut(FILE* fp,
           input_port[0]->prefix, input_port[0]->prefix);
   } else {
     assert (TRUE == verilog_model->design_tech_info.frac_lut);
-    assert( NULL != verilog_model->input_port[0].tri_state_map );
+    assert( NULL != input_port[0]->tri_state_map );
     /* Add mode selector */
     fprintf(fp, "  wire [0:%d] %s%s;\n", 
             input_port[0]->size - 1, input_port[0]->prefix, mode_inport_postfix);

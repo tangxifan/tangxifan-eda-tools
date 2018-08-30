@@ -22,16 +22,19 @@
 #include "vpr_utils.h"
 #include "path_delay.h"
 #include "stats.h"
+#include "route_common.h"
 
 /* Include spice support headers*/
 #include "read_xml_spice_util.h"
 #include "linkedlist.h"
+#include "fpga_spice_types.h"
 #include "fpga_spice_globals.h"
-#include "spice_globals.h"
 #include "fpga_spice_utils.h"
+#include "fpga_spice_rr_graph_utils.h"
 #include "fpga_spice_lut_utils.h"
 #include "fpga_spice_pbtypes_utils.h"
-#include "fpga_spice_backannotate_utils.h"
+#include "fpga_spice_pb_rr_graph.h"
+#include "fpga_spice_router.h"
 
 /* Get initial value of a Latch/FF output*/
 int get_ff_output_init_val(t_logical_block* ff_logical_block) {
@@ -422,26 +425,6 @@ int is_rr_node_exist_opposite_side_in_sb_info(t_sb cur_sb_info,
   return interc;
 }
 
-/* Check if the drivers for cur_rr_node imply a short connection in this Switch block 
- */
-boolean check_drive_rr_node_imply_short(t_sb cur_sb_info,
-                                        t_rr_node* src_rr_node, 
-                                        int chan_side) {
-  int inode, index, side; 
-
-  assert((CHANX == src_rr_node->type) || (CHANY == src_rr_node->type));
-  
-  for (inode = 0; inode < src_rr_node->num_drive_rr_nodes; inode++) {
-    get_rr_node_side_and_index_in_sb_info(src_rr_node->drive_rr_nodes[inode], cur_sb_info, IN_PORT, &side, &index);
-    /* We need to be sure that drive_rr_node is part of the SB */
-    if (((-1 == index)||(-1 == side)) 
-       && ((CHANX == src_rr_node->drive_rr_nodes[inode]->type)||(CHANY == src_rr_node->drive_rr_nodes[inode]->type))) {
-      return TRUE;
-    }
-  }
-
-  return FALSE;
-} 
 
 /* Get the side and index of a given rr_node in a SB_info 
  * Return cur_rr_node_side & cur_rr_node_index
@@ -479,6 +462,28 @@ void get_rr_node_side_and_index_in_sb_info(t_rr_node* cur_rr_node,
 
   return;
 }
+
+/* Check if the drivers for cur_rr_node imply a short connection in this Switch block 
+ */
+boolean check_drive_rr_node_imply_short(t_sb cur_sb_info,
+                                        t_rr_node* src_rr_node, 
+                                        int chan_side) {
+  int inode, index, side; 
+
+  assert((CHANX == src_rr_node->type) || (CHANY == src_rr_node->type));
+  
+  for (inode = 0; inode < src_rr_node->num_drive_rr_nodes; inode++) {
+    get_rr_node_side_and_index_in_sb_info(src_rr_node->drive_rr_nodes[inode], cur_sb_info, IN_PORT, &side, &index);
+    /* We need to be sure that drive_rr_node is part of the SB */
+    if (((-1 == index)||(-1 == side)) 
+       && ((CHANX == src_rr_node->drive_rr_nodes[inode]->type)||(CHANY == src_rr_node->drive_rr_nodes[inode]->type))) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+} 
+
 
 /* Get the index of a given rr_node in a CB_info */
 int get_rr_node_index_in_cb_info(t_rr_node* cur_rr_node,
@@ -2512,8 +2517,8 @@ void rec_link_primitive_pb_graph_node_pin_to_phy_pb_graph_pin(t_pb_graph_node* t
                                                   * (float) cur_pb_graph_node->placement_index_in_top_node)
                                                   + cur_pb_type->physical_pb_type_index_offset;
   phy_pb_graph_node = rec_get_pb_graph_node_by_pb_type_and_placement_index_in_top_node(top_pb_graph_node, 
-                                                                                       cur_pb_type->physical_pb_type,
-                                                                                       physical_pb_grpah_node_placement_index);
+                                                                                       cur_pb_type->phy_pb_type,
+                                                                                       physical_pb_graph_node_placement_index);
   /* Create linkes between pb_graph_pins and pb_graph_nodes */
   cur_pb_graph_node->physical_pb_graph_node = phy_pb_graph_node; 
   link_pb_graph_node_pins_to_phy_pb_graph_pins(cur_pb_graph_node, cur_pb_graph_node->physical_pb_graph_node);
@@ -2534,17 +2539,17 @@ void annotate_physical_mode_pins_in_pb_graph_node() {
   
   for (itype = 0; itype < num_types; itype++) {
     /* Bybass NULL/EMPTY_TYPE */
-    if (EMPTY_TYPE == &type[itype]) {
+    if (EMPTY_TYPE == &type_descriptors[itype]) {
       continue; 
     }
     /* reset the rr_node_index_physical_pb of each pb_graph_pin to be OPEN ! */
-    rec_reset_pb_graph_node_rr_node_index_physical_pb(top_pb_graph_node);
+    rec_reset_pb_graph_node_rr_node_index_physical_pb(type_descriptors[itype].pb_graph_head);
     /* annotate the physical mode pins in the primitive pb_type*/
-    rec_annotate_pb_type_primitive_node_physical_mode_pin(type[itype].pb_type, type[itype].pb_type);
+    rec_annotate_pb_type_primitive_node_physical_mode_pin(type_descriptors[itype].pb_type, type_descriptors[itype].pb_type);
     /* Recursively find the primitive pb_grpah_nodes */
-    rec_mark_pb_graph_node_primitive_placement_index_in_top_node(type[itype].pb_graph_head, &start_index);
+    rec_mark_pb_graph_node_primitive_placement_index_in_top_node(type_descriptors[itype].pb_graph_head, &start_index);
     /* Recursively link the pb_graph_pin of primitive nodes in operating pb to physical pb */
-    rec_link_primitive_pb_graph_node_pin_to_phy_pb_graph_pin(type[itype].pb_graph_head);
+    rec_link_primitive_pb_graph_node_pin_to_phy_pb_graph_pin(type_descriptors[itype].pb_graph_head, type_descriptors[itype].pb_graph_head);
   }
  
   return;
@@ -2554,19 +2559,20 @@ void annotate_physical_mode_pins_in_pb_graph_node() {
 void alloc_and_load_phy_pb_for_mapped_block(int num_mapped_blocks, t_block* mapped_block,
                                             int L_num_vpack_nets, t_net* L_vpack_net) {
   int iblk;
-  boolean route_sucess = FALSE;
+  t_phy_pb* top_phy_pb = NULL;
+  boolean route_success = FALSE;
 
   for (iblk = 0; iblk < num_mapped_blocks; iblk++) {
-    mapped_block[iblk].phy_pb = (t_phy_pb*) my_calloc(1, sizeof(t_phy_pb)); 
+    top_phy_pb = (t_phy_pb*) my_calloc(1, sizeof(t_phy_pb)); 
     /* Create a pristine pb for pb_graph_nodes in the physical modes */
-    mapped_block[iblk].phy_pb->pb_graph_node = mapped_block[iblk].type->pb_graph_head;
+    top_phy_pb->pb_graph_node = mapped_block[iblk].type->pb_graph_head;
     /* alloc_and_load_pb_stats(maped_block[iblk].phy_pb, num_models, max_nets_in_pb_type); */
-    mapped_block[iblk].phy_pb->parent_pb = NULL;
-    mapped_block[iblk].phy_pb->mode = 0; /* Top-level should have only one mode!!! */
+    top_phy_pb->parent_pb = NULL;
+    top_phy_pb->mode = 0; /* Top-level should have only one mode!!! */
     /* Allocate rr_graph for the phy_pb */
-    alloc_and_load_rr_graph_for_phy_pb(mapped_block[iblk].pb, mapped_block[iblk].phy_pb, L_num_vpack_nets, L_vpack_net); 
+    alloc_and_load_rr_graph_for_phy_pb(mapped_block[iblk].pb, top_phy_pb, L_num_vpack_nets, L_vpack_net); 
     /* Perform routing for the phy_pb !!! */
-    route_success = try_breadth_first_route_pb_rr_graph(mapped_block[iblk].phy_pb->rr_graph);
+    route_success = try_breadth_first_route_pb_rr_graph(top_phy_pb->rr_graph);
     if (TRUE == route_success) { 
       vpr_printf(TIO_MESSAGE_INFO, "Route successfully for %d physical pbs!\r", iblk);
     } else {
@@ -2577,9 +2583,11 @@ void alloc_and_load_phy_pb_for_mapped_block(int num_mapped_blocks, t_block* mapp
       exit(1);
     }
     /* Backannotate routing results to physical pb_rr_graph */
-    backannotate_rr_graph_routing_results_to_net_name(mapped_block[iblk].phy_pb->rr_graph);
+    backannotate_rr_graph_routing_results_to_net_name(top_phy_pb->rr_graph);
     /* Allocate and load child_pb graphs */
-    alloc_and_load_phy_pb_children_for_one_mapped_block(mapped_block[iblk].pb, mapped_block[iblk].phy_pb);
+    alloc_and_load_phy_pb_children_for_one_mapped_block(mapped_block[iblk].pb, top_phy_pb);
+    /* Give top_phy_pb to grid */
+    mapped_block[iblk].phy_pb = (void*)top_phy_pb;
   }
   vpr_printf(TIO_MESSAGE_INFO, "\n");
 
@@ -2590,7 +2598,7 @@ void alloc_and_load_phy_pb_for_mapped_block(int num_mapped_blocks, t_block* mapp
 /* Back-Annotate post routing results to the VPR routing-resource graphs */
 void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
                                             boolean read_activity_file,
-                                            boolean run_parasitic_net_estimation) {
+                                            boolean parasitic_net_estimation_on) {
 
   vpr_printf(TIO_MESSAGE_INFO, "Start backannotating post route information for SPICE modeling...\n");
 
@@ -2627,11 +2635,11 @@ void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
   /* Annotate physical mode pins defined in each primitive pb_type/pb_graph_node */
   vpr_printf(TIO_MESSAGE_INFO, "Annotate physical mode pins for pbs ...\n");
   annotate_physical_mode_pins_in_pb_graph_node();
-  alloc_and_load_phy_pb_for_mapped_block(num_blocks, block, num_vpack_nets, vpack_net);
+  alloc_and_load_phy_pb_for_mapped_block(num_blocks, block, num_logical_nets, vpack_net);
 
   /* Backannotate activity information, initialize the waveform information */
   /* Parasitic Net Activity Estimation */
-  if (TRUE == run_parasitic_net_estimation) {
+  if (TRUE == parasitic_net_estimation_on) {
     vpr_printf(TIO_MESSAGE_INFO, "Parasitic Net Estimation starts...\n");
     parasitic_net_estimation();
   } else {

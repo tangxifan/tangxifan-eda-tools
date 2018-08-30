@@ -16,11 +16,13 @@
 #include "physical_types.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
+#include "route_common.h"
 
 /* Include SPICE support headers*/
 #include "linkedlist.h"
 #include "fpga_spice_types.h"
 #include "fpga_spice_utils.h"
+#include "fpga_spice_rr_graph_utils.h"
 
 /* Initial rr_graph */
 void init_rr_graph(INOUTP t_rr_graph* local_rr_graph) {
@@ -40,7 +42,7 @@ void init_rr_graph(INOUTP t_rr_graph* local_rr_graph) {
   local_rr_graph->net_rr_terminals = NULL;
   local_rr_graph->rr_mem_ch = {NULL, 0, NULL}; 
 
-  local_rr_graph->num_rr_indexex_data = 0;
+  local_rr_graph->num_rr_indexed_data = 0;
   local_rr_graph->rr_indexed_data = NULL;
 
   local_rr_graph->rr_node_route_inf = NULL;
@@ -101,13 +103,58 @@ void alloc_rr_graph_route_static_structs(t_rr_graph* local_rr_graph,
 }
 
 void alloc_and_load_rr_graph_rr_node(INOUTP t_rr_graph* local_rr_graph,
-                                     IN int local_num_rr_nodes) {
+                                     int local_num_rr_nodes) {
   local_rr_graph->num_rr_nodes = local_num_rr_nodes;
   /* Allocate rr_graph */
   local_rr_graph->rr_node = (t_rr_node*) my_calloc(local_rr_graph->num_rr_nodes, sizeof(t_rr_node));
 
   return;
 }
+
+/* Returns the segment number at which the segment this track lies on        *
+ * started.                                                                  */
+int get_rr_graph_seg_start(INP t_seg_details * seg_details, INP int itrack,
+		                   INP int chan_num, INP int seg_num) {
+
+	int seg_start, length, start;
+
+	seg_start = 1;
+	if (FALSE == seg_details[itrack].longline) {
+
+		length = seg_details[itrack].length;
+		start = seg_details[itrack].start;
+
+		/* Start is guaranteed to be between 1 and length.  Hence adding length to *
+		 * the quantity in brackets below guarantees it will be nonnegative.       */
+        /* Original VPR */
+		assert(start > 0);
+        /* end */
+        /* mrFPGA: Xifan TANG */
+        /* assert(is_stack ? start >= 0: start > 0); */
+        /* end */
+		assert(start <= length);
+
+		/* NOTE: Start points are staggered between different channels.
+		 * The start point must stagger backwards as chan_num increases.
+		 * Unidirectional routing expects this to allow the N-to-N 
+		 * assumption to be made with respect to ending wires in the core. */
+        /* mrFPGA: Xifan TANG */
+        /*
+        seg_start = seg_num - (seg_num - (is_stack ? 1 : 0) + length + chan_num - start) % length;
+        seg_start = std::max(seg_start, is_stack ? 0 : 1);
+        */
+        /* end */
+        /* Original VPR */
+		seg_start = seg_num - (seg_num + length + chan_num - start) % length;
+		if (seg_start < 1) {
+			seg_start = 1;
+		}
+        /* end */
+	}
+
+	return seg_start;
+}
+
 
 void load_rr_graph_chan_rr_indices(t_rr_graph* local_rr_graph,
                                    INP int nodes_per_chan, INP int chan_len,
@@ -122,12 +169,7 @@ void load_rr_graph_chan_rr_indices(t_rr_graph* local_rr_graph,
     local_rr_graph->rr_node_indices[type][chan][0].nelem = 0;
     local_rr_graph->rr_node_indices[type][chan][0].list = NULL;
 
-        /* Original VPR */
-    /* for (seg = 1; seg < chan_len; ++seg) { */
-        /* end */
-        /* mrFPGA: Xifan TANG */
-    for (seg = (is_stack ? 0 : 1); seg < chan_len; ++seg) {
-        /* end */
+    for (seg = 1; seg < chan_len; ++seg) { 
       /* Alloc the track inode lookup list */
       local_rr_graph->rr_node_indices[type][chan][seg].nelem = nodes_per_chan;
       local_rr_graph->rr_node_indices[type][chan][seg].list = (int *) my_malloc(
@@ -139,18 +181,18 @@ void load_rr_graph_chan_rr_indices(t_rr_graph* local_rr_graph,
   }
 
     /* Original VPR */
-    /*
   for (chan = 0; chan < num_chans; ++chan) {
     for (seg = 1; seg < chan_len; ++seg) {
-    */
     /* end */
     /* mrFPGA: Xifan TANG */
+    /*
   for (chan = (is_stack ? 1 : 0); chan < num_chans; ++chan) {
     for (seg = (is_stack ? 0 : 1); seg < chan_len; ++seg) {
+    */
     /* end */
       /* Assign an inode to the starts of tracks */
-      for (track = 0; track < indices[type][chan][seg].nelem; ++track) {
-        start = get_seg_start(seg_details, track, chan, seg);
+      for (track = 0; track < local_rr_graph->rr_node_indices[type][chan][seg].nelem; ++track) {
+        start = get_rr_graph_seg_start(seg_details, track, chan, seg);
                 /* Original VPR */
            /* If the start of the wire doesn't have a inode, 
          * assign one to it. */
@@ -171,17 +213,16 @@ void load_rr_graph_chan_rr_indices(t_rr_graph* local_rr_graph,
 }
 
 
-t_ivec *** alloc_and_load_rr_graph_rr_node_indices(t_rr_graph* local_rr_graph,
-                                                   INP int nodes_per_chan, 
-                                                   INP int L_nx, INP int L_ny, t_grid** L_grid, 
-                                                   INOUTP int *index, INP t_seg_details * seg_details) {
+void alloc_and_load_rr_graph_rr_node_indices(t_rr_graph* local_rr_graph,
+                                             INP int nodes_per_chan, 
+                                             INP int L_nx, INP int L_ny, t_grid_tile** L_grid, 
+                                             INOUTP int *index, INP t_seg_details * seg_details) {
 
   /* Allocates and loads all the structures needed for fast lookups of the   *
    * index of an rr_node.  rr_node_indices is a matrix containing the index  *
    * of the *first* rr_node at a given (i,j) location.                       */
 
   int i, j, k, ofs;
-  t_ivec ***indices;
   t_ivec tmp;
   t_type_ptr type;
 
@@ -219,7 +260,7 @@ t_ivec *** alloc_and_load_rr_graph_rr_node_indices(t_rr_graph* local_rr_graph,
             ++(*index);
           }
         }
-        indices[SINK][i][j] = tmp;
+        local_rr_graph->rr_node_indices[SINK][i][j] = tmp;
 
         /* Load the pin lookups. The ptc nums for IPIN and OPIN
          * are disjoint so they can share the list. */
@@ -256,33 +297,32 @@ t_ivec *** alloc_and_load_rr_graph_rr_node_indices(t_rr_graph* local_rr_graph,
 
     /* Original VPR */
   /* Load the data for x and y channels */
-    /*
-  load_chan_rr_indices(nodes_per_chan, L_nx + 1, L_ny + 1, CHANX, seg_details,
-      index, indices);
-  load_chan_rr_indices(nodes_per_chan, L_ny + 1, L_nx + 1, CHANY, seg_details,
-      index, indices);
-    */
+  load_rr_graph_chan_rr_indices(local_rr_graph, nodes_per_chan, L_nx + 1, L_ny + 1, CHANX, seg_details,
+                                index);
+  load_rr_graph_chan_rr_indices(local_rr_graph, nodes_per_chan, L_ny + 1, L_nx + 1, CHANY, seg_details,
+                                index);
     /* end */
     /* mrFPGA : Xifan TANG */
+    /*
   load_rr_graph_chan_rr_indices(local_rr_graph, nodes_per_chan, (is_stack ? L_ny + 1 : L_nx + 1), (is_stack ? L_nx + 1 : L_ny + 1), 
                                 CHANX, seg_details, index);
   load_rr_graph_chan_rr_indices(local_rr_graph, nodes_per_chan, (is_stack ? L_nx + 1 : L_ny + 1), (is_stack ? L_ny + 1 : L_nx + 1), 
                                 CHANY, seg_details, index);
+    */
     /* end */
-
-  return indices;
+  return;
 }
 
 
 
 void alloc_and_load_rr_graph_switch_inf(INOUTP t_rr_graph* local_rr_graph,
-                                        IN int num_switch_inf,
+                                        int num_switch_inf,
                                         INP t_switch_inf* switch_inf) {
   local_rr_graph->num_switch_inf = num_switch_inf;
   /* Allocate memory */
-  local_rr_graph->switch_inf = (t_switch_inf*) my_calloc(local_rr_graph->num_switch_inf, sizeof(t_switch_inf);
+  local_rr_graph->switch_inf = (t_switch_inf*) my_calloc(local_rr_graph->num_switch_inf, sizeof(t_switch_inf));
   /* Create a local copy */
-  memcpy(local_rr_graph->switch_inf, switch_inf, sizeof(switch_inf));
+  memcpy(local_rr_graph->switch_inf, switch_inf, sizeof(t_switch_inf));
 
   return;
 }
@@ -318,7 +358,7 @@ t_heap * get_rr_graph_heap_head(t_rr_graph* local_rr_graph) {
    * returned -- they are just skipped over.                                   */
 
   int ito, ifrom;
-  struct s_heap *heap_head, *temp_ptr;
+  t_heap *heap_head, *temp_ptr;
 
   do {
     if (local_rr_graph->heap_tail == 1) { /* Empty heap. */
@@ -327,7 +367,7 @@ t_heap * get_rr_graph_heap_head(t_rr_graph* local_rr_graph) {
       return (NULL);
     }
 
-    local_rr_graph->heap_head = local_rr_graph->heap[1]; /* Smallest element. */
+    heap_head = local_rr_graph->heap[1]; /* Smallest element. */
 
     /* Now fix up the heap */
 
@@ -348,9 +388,9 @@ t_heap * get_rr_graph_heap_head(t_rr_graph* local_rr_graph) {
       ito = 2 * ifrom;
     }
 
-  } while (local_rr_graph->heap_head->index == OPEN); /* Get another one if invalid entry. */
+  } while (heap_head->index == OPEN); /* Get another one if invalid entry. */
 
-  return (local_rr_graph->heap_head);
+  return (heap_head);
 }
 
 t_linked_f_pointer* alloc_rr_graph_linked_f_pointer(t_rr_graph* local_rr_graph) {
@@ -387,7 +427,7 @@ void add_to_rr_graph_mod_list(t_rr_graph* local_rr_graph,
 
   t_linked_f_pointer *mod_ptr;
 
-  mod_ptr = alloc_linked_f_pointer(local_rr_graph);
+  mod_ptr = alloc_rr_graph_linked_f_pointer(local_rr_graph);
 
   /* Add this element to the start of the modified list. */
 
@@ -427,7 +467,7 @@ void empty_rr_graph_heap(t_rr_graph* local_rr_graph) {
   int i;
 
   for (i = 1; i < local_rr_graph->heap_tail; i++)
-    free_rr_graph_heap_data(local_rr_graph, heap[i]);
+    free_rr_graph_heap_data(local_rr_graph, local_rr_graph->heap[i]);
 
   local_rr_graph->heap_tail = 1;
 
@@ -616,7 +656,7 @@ void add_heap_node_to_rr_graph_heap(t_rr_graph* local_rr_graph,
 
   if (local_rr_graph->heap_tail > local_rr_graph->heap_size) { /* Heap is full */
     local_rr_graph->heap_size *= 2;
-    local_rr_graph->heap = (t_heap **) my_realloc((void *) (heap + 1),
+    local_rr_graph->heap = (t_heap **) my_realloc((void *) (local_rr_graph->heap + 1),
         local_rr_graph->heap_size * sizeof(t_heap *));
     local_rr_graph->heap--; /* heap goes from [1..heap_size] */
   }
@@ -676,7 +716,7 @@ void mark_rr_graph_ends(t_rr_graph* local_rr_graph,
 
   int ipin, inode;
 
-  for (ipin = 1; ipin <= local_rr_graph->net[inet].num_sinks; ipin++) {
+  for (ipin = 1; ipin <= local_rr_graph->net[inet]->num_sinks; ipin++) {
     inode = local_rr_graph->net_rr_terminals[inet][ipin];
     if (inode == OPEN)
       continue;
@@ -696,9 +736,9 @@ void invalidate_rr_graph_heap_entries(t_rr_graph* local_rr_graph,
 
   int i;
 
-  for (i = 1; i < local_rr_grap->heap_tail; i++) {
-    if (local_rr_graph->heap[i]->index == sink_node 
-        && local_rr_graph->heap[i]->u.prev_node == ipin_node) {
+  for (i = 1; i < local_rr_graph->heap_tail; i++) {
+    if ((local_rr_graph->heap[i]->index == sink_node) 
+        && (local_rr_graph->heap[i]->u.prev_node == ipin_node)) {
       local_rr_graph->heap[i]->index = OPEN; /* Invalid. */
     }
   }
@@ -873,7 +913,7 @@ void backannotate_rr_graph_routing_results_to_net_name(t_rr_graph* local_rr_grap
 
   /* 2nd step: With the help of trace, we back-annotate */
   for (inet = 0; inet < local_rr_graph->num_nets; inet++) {
-    if (TRUE == local_rr_graph->net[inet].is_global) {
+    if (TRUE == local_rr_graph->net[inet]->is_global) {
       continue;
     }
     tptr = local_rr_graph->trace_head[inet];
@@ -882,7 +922,7 @@ void backannotate_rr_graph_routing_results_to_net_name(t_rr_graph* local_rr_grap
       rr_type = local_rr_graph->rr_node[inode].type;
       /* Net num */
       local_rr_graph->rr_node[inode].net_num = inet;
-      local_rr_graph->rr_node[inode].vpack_net_num = net_to_vpack_net_mapping[inet];
+      local_rr_graph->rr_node[inode].vpack_net_num = local_rr_graph->net_to_vpack_net_mapping[inet];
       /* assert(OPEN != local_rr_graph->rr_node[inode].net_num); */
       assert(OPEN != local_rr_graph->rr_node[inode].vpack_net_num);
       switch (rr_type) {

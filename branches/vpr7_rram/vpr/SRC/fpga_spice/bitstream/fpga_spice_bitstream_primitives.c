@@ -19,9 +19,11 @@
 #include "rr_graph.h"
 #include "rr_graph_swseg.h"
 #include "vpr_utils.h"
+#include "route_common.h"
 
 /* Include spice support headers*/
 #include "linkedlist.h"
+#include "fpga_spice_types.h"
 #include "fpga_spice_globals.h"
 #include "fpga_spice_utils.h"
 #include "fpga_spice_lut_utils.h"

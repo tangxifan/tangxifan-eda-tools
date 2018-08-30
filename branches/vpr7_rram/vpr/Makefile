@@ -27,7 +27,7 @@ LIB = -lm -lvpr
 FPGA_SPICE_SRC_DIR = SRC/fpga_spice
 SRC_DIR = SRC
 OBJ_DIR = OBJ
-OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/route -ISRC/power -ISRC/mrfpga -ISRC/fpga_spice -ISRC/fpga_spice/base -ISRC/fpga_spice/bitstream -ISRC/fpga_spice/bitstream -ISRC/fpga_spice/clb_pin_remap -ISRC/fpga_spice/spice -ISRC/fpga_spice/verilog -I../libarchfpga -I../printhandler/SRC/TIO_InputOutputHandlers
+OTHER_DIR = -ISRC/util -ISRC/timing -ISRC/pack -ISRC/place -ISRC/base -ISRC/route -ISRC/power -ISRC/mrfpga -ISRC/fpga_spice -ISRC/fpga_spice/base -ISRC/fpga_spice/bitstream -ISRC/fpga_spice/bitstream -ISRC/fpga_spice/clb_pin_remap -ISRC/fpga_spice/spice -ISRC/fpga_spice/verilog  -ISRC/fpga_spice/router -I../libarchfpga -I../printhandler/SRC/TIO_InputOutputHandlers
 
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
 

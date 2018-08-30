@@ -521,11 +521,49 @@ static void ProcessSpiceModelPassGateLogic(ezxml_t Node,
   return;
 }
 
-static void ProcessSpiceModelPort(ezxml_t Node,
-                                  t_spice_model_port* port) {
+static void ProcessSpiceModelPortLutOutputMask(ezxml_t Node,
+                                               t_spice_model_port* port) {
+
   const char* Prop = NULL;
   int ipin;
+  char* Prop_cpy = NULL;
   char* pch = NULL;
+
+  port->lut_output_mask = (int*) my_malloc (sizeof(int) * port->size); 
+
+  Prop = FindProperty(Node, "lut_output_mask", FALSE);
+
+  if (NULL == Prop) {
+    /* give a default value */ 
+    for (ipin = 0; ipin < port->size; ipin++) {
+      port->lut_output_mask[ipin] = ipin;
+    } 
+  } else {
+    /* decode the output_maski, split the string by "," */
+    ipin = 0;
+    Prop_cpy = my_strdup(Prop);
+    pch = strtok(Prop_cpy, ","); 
+    while (NULL != pch) { 
+      port->lut_output_mask[ipin] = my_atoi(pch);
+      ipin++;
+      pch = strtok(NULL, ","); 
+    }
+    /* Error out, fail to match the port size*/
+    if (ipin != port->size) {
+      vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] Invalid lut_output_mask(%s): Fail to match the port size (%d).\n",
+                 Node->line, Prop, port->size);
+      exit(1);
+    }
+  } 
+
+  ezxml_set_attr(Node, "lut_output_mask", NULL);
+
+  return;
+}
+
+
+static void ProcessSpiceModelPort(ezxml_t Node,
+                                  t_spice_model_port* port) {
 
   if (0 == strcmp(FindProperty(Node,"type",TRUE),"input")) {
     port->type = SPICE_MODEL_PORT_INPUT;
@@ -577,30 +615,7 @@ static void ProcessSpiceModelPort(ezxml_t Node,
   ezxml_set_attr(Node, "lut_frac_level", NULL);
 
   /* Output mast of a fracturable LUT, which is to identify which intermediate LUT output will be connected to outputs */
-  port->lut_output_mask = (int*) my_malloc (sizeof(int) * port->size); 
-  Prop = FindProperty(Node, "lut_output_mask", FALSE);
-  if (NULL == Prop) {
-    /* give a default value */ 
-    for (ipin = 0; ipin < port->size; ipin++) {
-      port->lut_output_mask[ipin] = ipin;
-    } 
-  } else {
-    /* decode the output_maski, split the string by "," */
-    ipin = 0;
-    pch = strtok(Prop, ","); 
-    while (NULL != pch) { 
-      port->lut_output_mask[ipin] = my_atoi(pch);
-      ipin++;
-      pch = strtok(NULL, ","); 
-    }
-    /* Error out, fail to match the port size*/
-    if (ipin != port->size) {
-      vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] Invalid lut_output_mask(%s): Fail to match the port size (%d).\n",
-                 Parent->line, Prop, port->size);
-      exit(1);
-    }
-  } 
-  ezxml_set_attr(Node, "lut_output_mask", NULL);
+  ProcessSpiceModelPortLutOutputMask(Node, port);
 
   /* See if this is a global signal 
    * We assume that global signals are shared by all the SPICE Model/blocks.

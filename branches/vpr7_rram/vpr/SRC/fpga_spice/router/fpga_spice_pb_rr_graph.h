@@ -4,18 +4,18 @@ int rec_count_rr_graph_nodes_for_phy_pb_graph_node(t_pb_graph_node* cur_pb_graph
 
 void init_one_rr_node_pack_cost_for_phy_graph_node(INP t_pb_graph_pin* cur_pb_graph_pin,
                                                    INOUTP t_rr_graph* local_rr_graph,
-                                                   IN int cur_rr_node_index,
+                                                   int cur_rr_node_index,
                                                    enum PORTS port_type);
 
 void init_one_rr_node_for_phy_pb_graph_node(INP t_pb_graph_pin* cur_pb_graph_pin,
                                             INOUTP t_rr_graph* local_rr_graph,
-                                            IN int cur_rr_node_index,
+                                            int cur_rr_node_index,
                                             int phy_mode_index, 
                                             t_rr_type rr_node_type);
 
 void connect_one_rr_node_for_phy_pb_graph_node(INP t_pb_graph_pin* cur_pb_graph_pin,
                                                INOUTP t_rr_graph* local_rr_graph,
-                                               IN int cur_rr_node_index,
+                                               int cur_rr_node_index,
                                                int phy_mode_index, 
                                                t_rr_type rr_node_type);
 

@@ -12,15 +12,15 @@ void load_rr_graph_chan_rr_indices(t_rr_graph* local_rr_graph,
                                    INOUTP int *index);
 
 void alloc_and_load_rr_graph_rr_node(INOUTP t_rr_graph* local_rr_graph,
-                                     IN int local_num_rr_nodes);
+                                     int local_num_rr_nodes);
 
-t_ivec *** alloc_and_load_rr_graph_rr_node_indices(t_rr_graph* local_rr_graph,
-                                                   INP int nodes_per_chan, 
-                                                   INP int L_nx, INP int L_ny, t_grid** L_grid, 
-                                                   INOUTP int *index, INP t_seg_details * seg_details);
+void alloc_and_load_rr_graph_rr_node_indices(t_rr_graph* local_rr_graph,
+                                             INP int nodes_per_chan, 
+                                             INP int L_nx, INP int L_ny, t_grid_tile** L_grid, 
+                                             INOUTP int *index, INP t_seg_details * seg_details);
 
 void alloc_and_load_rr_graph_switch_inf(INOUTP t_rr_graph* local_rr_graph,
-                                        IN int num_switch_inf,
+                                        int num_switch_inf,
                                         INP t_switch_inf* switch_inf);
 
 void alloc_and_load_rr_graph_route_structs(t_rr_graph* local_rr_graph);
@@ -75,6 +75,9 @@ void free_rr_graph(t_rr_graph* local_rr_graph);
 
 void free_rr_graph_heap_data(t_rr_graph* local_rr_graph,
                              t_heap *hptr);
+
+void free_rr_graph_traceback(t_rr_graph* local_rr_graph, 
+                             int inet);
 
 void build_prev_node_list_rr_nodes(int LL_num_rr_nodes,
                                    t_rr_node* LL_rr_node);

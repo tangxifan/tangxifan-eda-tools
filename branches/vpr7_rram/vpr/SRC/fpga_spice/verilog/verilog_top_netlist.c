@@ -17,11 +17,13 @@
 #include "vpr_types.h"
 #include "globals.h"
 #include "rr_graph.h"
+#include "route_common.h"
 #include "vpr_utils.h"
 
 /* Include spice support headers*/
 #include "read_xml_spice_util.h"
 #include "linkedlist.h"
+#include "fpga_spice_types.h"
 #include "fpga_spice_utils.h"
 #include "fpga_spice_pbtypes_utils.h"
 #include "fpga_spice_backannotate_utils.h"

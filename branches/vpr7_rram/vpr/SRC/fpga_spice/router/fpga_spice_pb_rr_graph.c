@@ -20,11 +20,13 @@
 #include "rr_graph.h"
 #include "rr_graph2.h"
 #include "vpr_utils.h"
+#include "route_common.h"
 
 /* Include SPICE support headers*/
 #include "linkedlist.h"
+#include "fpga_spice_types.h"
 #include "fpga_spice_utils.h"
-#include "fpga_spice_utils.h"
+#include "fpga_spice_rr_graph_utils.h"
 #include "fpga_spice_bitstream_utils.h"
 #include "fpga_spice_pbtypes_utils.h"
 #include "fpga_spice_globals.h"
@@ -74,7 +76,7 @@ int rec_count_rr_graph_nodes_for_phy_pb_graph_node(t_pb_graph_node* cur_pb_graph
 
 void init_one_rr_node_pack_cost_for_phy_graph_node(INP t_pb_graph_pin* cur_pb_graph_pin,
                                                    INOUTP t_rr_graph* local_rr_graph,
-                                                   IN int cur_rr_node_index,
+                                                   int cur_rr_node_index,
                                                    enum PORTS port_type) {
   switch (port_type) {
   case IN_PORT:
@@ -88,12 +90,12 @@ void init_one_rr_node_pack_cost_for_phy_graph_node(INP t_pb_graph_pin* cur_pb_gr
     /* Routing costs : OUTPUT pins  
      * need to normalize better than 5 
      */
-    local_rr_graph->rr_node[cur_rr_node_index].pack_intrinsic_cost = 1 + (float) local_rr_graph->_rr_node[cur_rr_node_index].num_edges / 5; 
+    local_rr_graph->rr_node[cur_rr_node_index].pack_intrinsic_cost = 1 + (float) local_rr_graph->rr_node[cur_rr_node_index].num_edges / 5; 
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, 
                "(File:%s, [LINE%d]) Invalid rr_node_type (%d)! \n",
-               __FILE__, __LINE__, pb_graph_pin_type); 
+               __FILE__, __LINE__, port_type); 
     exit(1);
   }
 }
@@ -101,7 +103,7 @@ void init_one_rr_node_pack_cost_for_phy_graph_node(INP t_pb_graph_pin* cur_pb_gr
 /* initialize a rr_node in a rr_graph of phyical pb_graph_node */
 void init_one_rr_node_for_phy_pb_graph_node(INP t_pb_graph_pin* cur_pb_graph_pin,
                                             INOUTP t_rr_graph* local_rr_graph,
-                                            IN int cur_rr_node_index,
+                                            int cur_rr_node_index,
                                             int phy_mode_index, 
                                             t_rr_type rr_node_type) {
 
@@ -158,7 +160,7 @@ void init_one_rr_node_for_phy_pb_graph_node(INP t_pb_graph_pin* cur_pb_graph_pin
  */
 void connect_one_rr_node_for_phy_pb_graph_node(INP t_pb_graph_pin* cur_pb_graph_pin,
                                                INOUTP t_rr_graph* local_rr_graph,
-                                               IN int cur_rr_node_index,
+                                               int cur_rr_node_index,
                                                int phy_mode_index, 
                                                t_rr_type rr_node_type) {
   int iedge;
@@ -179,9 +181,9 @@ void connect_one_rr_node_for_phy_pb_graph_node(INP t_pb_graph_pin* cur_pb_graph_
     break;
   case SOURCE:
     /* Connect the SOURCE nodes to the rr_node of cur_pb_graph_pin */
+    assert (0 == local_rr_graph->rr_node[cur_rr_node_index].fan_in);
     assert (1 == local_rr_graph->rr_node[cur_rr_node_index].num_edges);
     local_rr_graph->rr_node[cur_rr_node_index].edges[0] = cur_pb_graph_pin->rr_node_index_physical_pb;
-    assert (1 == local_rr_graph->rr_node[cur_rr_node_index].num_switches);
     local_rr_graph->rr_node[cur_rr_node_index].switches[0] = local_rr_graph->delayless_switch_index;
     break;
   case SINK:
@@ -224,7 +226,7 @@ int rec_init_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph_no
   for (iport = 0; iport < cur_pb_graph_node->num_input_ports; ipin++) {
     for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
       init_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->input_pins[iport][ipin], local_rr_graph,  
-                                             cur_rr_node_index, phy_mode_index, INTRA_CLUSTER_EDGE);
+                                             cur_rr_node_index, phy_mode_idx, INTRA_CLUSTER_EDGE);
       cur_rr_node_index++;
     }
   }
@@ -233,7 +235,7 @@ int rec_init_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph_no
   for (iport = 0; iport < cur_pb_graph_node->num_output_ports; ipin++) {
     for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
       init_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->output_pins[iport][ipin], local_rr_graph,  
-                                             cur_rr_node_index, parent_phy_mode_index, INTRA_CLUSTER_EDGE);
+                                             cur_rr_node_index, parent_phy_mode_idx, INTRA_CLUSTER_EDGE);
       cur_rr_node_index++;
     }
   }
@@ -241,7 +243,7 @@ int rec_init_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph_no
   for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; ipin++) {
     for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
       init_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->clock_pins[iport][ipin], local_rr_graph,  
-                                             cur_rr_node_index, phy_mode_index, INTRA_CLUSTER_EDGE);
+                                             cur_rr_node_index, phy_mode_idx, INTRA_CLUSTER_EDGE);
       cur_rr_node_index++;
     }
   }
@@ -254,7 +256,7 @@ int rec_init_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph_no
     for (iport = 0; iport < cur_pb_graph_node->num_input_ports; ipin++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
         init_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->input_pins[iport][ipin], local_rr_graph,  
-                                               cur_rr_node_index, phy_mode_index, SOURCE);
+                                               cur_rr_node_index, phy_mode_idx, SOURCE);
 
         cur_rr_node_index++;
       }
@@ -265,7 +267,7 @@ int rec_init_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph_no
     for (iport = 0; iport < cur_pb_graph_node->num_output_ports; ipin++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
         init_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->output_pins[iport][ipin], local_rr_graph,  
-                                               cur_rr_node_index, parent_phy_mode_index, SINK);
+                                               cur_rr_node_index, parent_phy_mode_idx, SINK);
 
         cur_rr_node_index++;
       }
@@ -281,7 +283,7 @@ int rec_init_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph_no
     for (iport = 0; iport < cur_pb_graph_node->num_output_ports; ipin++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
         init_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->output_pins[iport][ipin], local_rr_graph,  
-                                               cur_rr_node_index, parent_phy_mode_index, SOURCE);
+                                               cur_rr_node_index, parent_phy_mode_idx, SOURCE);
 
         cur_rr_node_index++;
       }
@@ -292,7 +294,7 @@ int rec_init_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph_no
     for (iport = 0; iport < cur_pb_graph_node->num_input_ports; ipin++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
         init_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->input_pins[iport][ipin], local_rr_graph,  
-                                               cur_rr_node_index, phy_mode_index, SINK);
+                                               cur_rr_node_index, phy_mode_idx, SINK);
 
         cur_rr_node_index++;
       }
@@ -306,8 +308,8 @@ int rec_init_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph_no
   for (ichild = 0; ichild < cur_pb_graph_node->pb_type->modes[phy_mode_idx].num_pb_type_children; ichild++) {
     /* num_pb is the number of such pb_type in a physical mode*/
     for (ipb = 0; ipb < cur_pb_graph_node->pb_type->modes[phy_mode_idx].pb_type_children[ichild].num_pb; ipb++) {
-      cur_num_rr_node_index += rec_init_rr_graph_for_phy_pb_graph_node(&cur_pb_graph_node->child_pb_graph_nodes[phy_mode_idx][ichild][ipb],
-                                                                       local_rr_graph, cur_num_rr_node_index);
+      cur_rr_node_index = rec_init_rr_graph_for_phy_pb_graph_node(&cur_pb_graph_node->child_pb_graph_nodes[phy_mode_idx][ichild][ipb],
+                                                                  local_rr_graph, cur_rr_node_index);
     }
   }
 
@@ -335,7 +337,7 @@ int rec_connect_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph
   for (iport = 0; iport < cur_pb_graph_node->num_input_ports; ipin++) {
     for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
      connect_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->input_pins[iport][ipin], local_rr_graph,  
-                                             cur_rr_node_index, phy_mode_index, INTRA_CLUSTER_EDGE);
+                                              cur_rr_node_index, phy_mode_idx, INTRA_CLUSTER_EDGE);
       cur_rr_node_index++;
     }
   }
@@ -344,7 +346,7 @@ int rec_connect_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph
   for (iport = 0; iport < cur_pb_graph_node->num_output_ports; ipin++) {
     for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
       connect_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->output_pins[iport][ipin], local_rr_graph,  
-                                             cur_rr_node_index, parent_phy_mode_index, INTRA_CLUSTER_EDGE);
+                                             cur_rr_node_index, parent_phy_mode_idx, INTRA_CLUSTER_EDGE);
       cur_rr_node_index++;
     }
   }
@@ -352,7 +354,7 @@ int rec_connect_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph
   for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; ipin++) {
     for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
       connect_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->clock_pins[iport][ipin], local_rr_graph,  
-                                             cur_rr_node_index, phy_mode_index, INTRA_CLUSTER_EDGE);
+                                                cur_rr_node_index, phy_mode_idx, INTRA_CLUSTER_EDGE);
       cur_rr_node_index++;
     }
   }
@@ -365,7 +367,7 @@ int rec_connect_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph
     for (iport = 0; iport < cur_pb_graph_node->num_input_ports; ipin++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
         connect_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->input_pins[iport][ipin], local_rr_graph,  
-                                               cur_rr_node_index, phy_mode_index, SOURCE);
+                                               cur_rr_node_index, phy_mode_idx, SOURCE);
 
         cur_rr_node_index++;
       }
@@ -376,7 +378,7 @@ int rec_connect_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph
     for (iport = 0; iport < cur_pb_graph_node->num_output_ports; ipin++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
         connect_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->output_pins[iport][ipin], local_rr_graph,  
-                                                  cur_rr_node_index, parent_phy_mode_index, SINK);
+                                                  cur_rr_node_index, parent_phy_mode_idx, SINK);
 
         cur_rr_node_index++;
       }
@@ -392,7 +394,7 @@ int rec_connect_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph
     for (iport = 0; iport < cur_pb_graph_node->num_output_ports; ipin++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
         connect_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->output_pins[iport][ipin], local_rr_graph,  
-                                               cur_rr_node_index, parent_phy_mode_index, SOURCE);
+                                                  cur_rr_node_index, parent_phy_mode_idx, SOURCE);
 
         cur_rr_node_index++;
       }
@@ -403,7 +405,7 @@ int rec_connect_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph
     for (iport = 0; iport < cur_pb_graph_node->num_input_ports; ipin++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
         connect_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->input_pins[iport][ipin], local_rr_graph,  
-                                               cur_rr_node_index, phy_mode_index, SINK);
+                                                  cur_rr_node_index, phy_mode_idx, SINK);
 
         cur_rr_node_index++;
       }
@@ -417,14 +419,13 @@ int rec_connect_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph
   for (ichild = 0; ichild < cur_pb_graph_node->pb_type->modes[phy_mode_idx].num_pb_type_children; ichild++) {
     /* num_pb is the number of such pb_type in a physical mode*/
     for (ipb = 0; ipb < cur_pb_graph_node->pb_type->modes[phy_mode_idx].pb_type_children[ichild].num_pb; ipb++) {
-      cur_num_rr_node_index += rec_connect_rr_graph_for_phy_pb_graph_node(&cur_pb_graph_node->child_pb_graph_nodes[phy_mode_idx][ichild][ipb],
-                                                                          local_rr_graph, cur_num_rr_node_index);
+      cur_rr_node_index = rec_connect_rr_graph_for_phy_pb_graph_node(&cur_pb_graph_node->child_pb_graph_nodes[phy_mode_idx][ichild][ipb],
+                                                                     local_rr_graph, cur_rr_node_index);
     }
   }
 
   return cur_rr_node_index;
 }
-
 
 /* Allocate a rr_graph for a given pb_graph node 
  * This is function is a copy of alloc_and_load_rr_graph_for_pb_graph_node
@@ -491,13 +492,13 @@ void alloc_and_load_phy_pb_rr_graph_nets(INP t_pb* cur_op_pb,
       continue;
     }
     /* bypass unmapped rr_node */
-    if (OPEN == cur_op_pb->rr_graph[inode].vpack_net_name) {
+    if (OPEN == cur_op_pb->rr_graph[inode].vpack_net_num) {
       continue;
     }
     /* Reach here, it means this net is used in this pb */
-    assert(   (-1 < cur_op_pb->rr_graph[inode].vpack_net_name)
-           && ( cur_op_pb->rr_graph[inode].vpack_net_name < L_num_vpack_nets));
-    vpack_net_used_in_pb[cur_op_pb->rr_graph[inode].vpack_net_name] = TRUE; 
+    assert(   (-1 < cur_op_pb->rr_graph[inode].vpack_net_num)
+           && ( cur_op_pb->rr_graph[inode].vpack_net_num < L_num_vpack_nets));
+    vpack_net_used_in_pb[cur_op_pb->rr_graph[inode].vpack_net_num] = TRUE; 
   } 
 
   /* Count the number of vpack_net used in this pb  */
@@ -515,7 +516,7 @@ void alloc_and_load_phy_pb_rr_graph_nets(INP t_pb* cur_op_pb,
   
   /* Fill the net array and net_to_net_mapping */
   net_index = 0;
-  for (inet = 0; inet < L_num_vpack_net; inet++) { 
+  for (inet = 0; inet < L_num_vpack_nets; inet++) { 
     if (TRUE == vpack_net_used_in_pb[inet]) {
       local_rr_graph->net[net_index] = &L_vpack_net[inet]; 
       local_rr_graph->net_to_vpack_net_mapping[net_index] = inet; 
@@ -535,7 +536,7 @@ t_rr_node* get_rr_node_in_pb_rr_graph(t_pb* cur_op_pb,
    
   for (inode = 0; inode < cur_op_pb->num_rr_nodes; inode++) {
     if ((rr_node_type == cur_op_pb->rr_graph[inode].type) 
-       &&(net_index == cur_op_pb->rr_graph[inode].vpack_net_name)) {
+       &&(net_index == cur_op_pb->rr_graph[inode].vpack_net_num)) {
       found_rr_node = &(cur_op_pb->rr_graph[inode]);
       num_found++;
     }
@@ -575,10 +576,10 @@ void load_phy_pb_rr_graph_net_rr_terminals(INP t_pb* cur_op_pb,
       pb_rr_node = get_rr_node_in_pb_rr_graph(cur_op_pb, rr_node_vpack_net_name, pb_rr_node_type); 
       /* If there is rr_node_index_physical_pb, this is also a pin in the physical mode */
       if (OPEN != pb_rr_node->pb_graph_pin->rr_node_index_physical_pb) {
-        local_rr_graph->net_rr_terminal[inet][0] = pb_rr_node->pb_graph_pin->rr_node_index_physical_pb;
+        local_rr_graph->net_rr_terminals[inet][0] = pb_rr_node->pb_graph_pin->rr_node_index_physical_pb;
       } else {
         /* This is not a pin in the physical mode, find the mapped physical pb_graph_pin */
-        local_rr_graph->net_rr_terminal[inet][0] = pb_rr_node->pb_graph_pin->phy_pb_graph_pin->rr_node_index_physical_pb; 
+        local_rr_graph->net_rr_terminals[inet][0] = pb_rr_node->pb_graph_pin->physical_pb_graph_pin->rr_node_index_physical_pb; 
       }
     }
   }
@@ -599,7 +600,7 @@ void alloc_and_load_rr_graph_for_phy_pb(INP t_pb* cur_op_pb,
   cur_phy_pb->rr_graph = (t_rr_graph*) my_calloc(1, sizeof(t_rr_graph));
 
   /* Create rr_graph */
-  alloc_and_load_rr_graph_for_phy_pb_graph_node(cur_phy_pb->pb_graph_head, cur_phy_pb->rr_graph);
+  alloc_and_load_rr_graph_for_phy_pb_graph_node(cur_phy_pb->pb_graph_node, cur_phy_pb->rr_graph);
 
   /* Build prev nodes list for rr_nodes */
   alloc_and_load_prev_node_list_rr_graph_rr_nodes(cur_phy_pb->rr_graph);
@@ -612,7 +613,7 @@ void alloc_and_load_rr_graph_for_phy_pb(INP t_pb* cur_op_pb,
                                       L_num_vpack_nets, L_vpack_net); 
 
   /* Allocate net_rr_terminals */
-  alloc_rr_graph_net_rr_terminals(cur_phy->rr_graph);
+  alloc_rr_graph_net_rr_terminals(cur_phy_pb->rr_graph);
   /* Fill the net_rr_terminals with 
    * 1. pin-to-pin mapping in pb_graph_node in cur_op_pb
    * 2. rr_graph in the cur_op_pb

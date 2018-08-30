@@ -20,11 +20,11 @@
 #include "rr_graph.h"
 #include "rr_graph2.h"
 #include "vpr_utils.h"
+#include "route_common.h"
 
 /* Include SPICE support headers*/
 #include "linkedlist.h"
 #include "fpga_spice_types.h"
-#include "fpga_spice_utils.h"
 #include "fpga_spice_utils.h"
 #include "fpga_spice_bitstream_utils.h"
 #include "fpga_spice_pbtypes_utils.h"
@@ -1463,6 +1463,25 @@ t_pb* get_child_pb_for_phy_pb_graph_node(t_pb* cur_pb, int ipb, int jpb) {
   return child_pb;
 }
 
+/* Return a child_phy_pb if it is mapped.*/
+t_phy_pb* get_phy_child_pb_for_phy_pb_graph_node(t_phy_pb* cur_phy_pb, 
+                                                 int ipb, int jpb) {
+  t_phy_pb* child_phy_pb = NULL;
+  
+  /* TODO: more check ? */
+
+  if (NULL == cur_phy_pb) {
+    return NULL;
+  }
+
+  if ((NULL != cur_phy_pb->child_pbs[ipb])&&(NULL != cur_phy_pb->child_pbs[ipb][jpb].name)) {
+    child_phy_pb = &(cur_phy_pb->child_pbs[ipb][jpb]);
+  }
+  
+  return child_phy_pb;
+}
+
+
 /* Count the number of inpad and outpad of a grid (type_descriptor) in default mode */
 void rec_count_num_iopads_pb_type_physical_mode(t_pb_type* cur_pb_type) {
   int mode_index, ipb, jpb;
@@ -2088,8 +2107,7 @@ int count_pin_number_one_port_pb_graph_node(int num_ports, int* num_pins) {
 
 /* Count the number of pins in a pb_graph node */
 int count_pin_number_one_pb_graph_node(t_pb_graph_node* cur_pb_graph_node) {
-  int total_pin = 0;
-  int iport;
+  int total_pins = 0;
 
   /* INPUT port */
   total_pins += count_pin_number_one_port_pb_graph_node(cur_pb_graph_node->num_input_ports,
@@ -2104,7 +2122,7 @@ int count_pin_number_one_pb_graph_node(t_pb_graph_node* cur_pb_graph_node) {
                                                         cur_pb_graph_node->num_clock_pins);
   
 
-  return total_pin;
+  return total_pins;
 }
 
 /* find the number of pb_graph edges with a given physical mode index */
@@ -2137,6 +2155,7 @@ int count_pb_graph_node_output_edge_in_phy_mode(t_pb_graph_pin* cur_pb_graph_pin
 /* With a given name, find the pb_type by recursively traversing the pb_type_tree */
 t_pb_type* rec_get_pb_type_by_name(t_pb_type* cur_pb_type, 
                                    char* pb_type_name) {
+  int imode, ipb;
   t_pb_type* ret_pb_type = NULL;
   t_pb_type* found_pb_type = NULL;
  
@@ -2180,9 +2199,9 @@ void decode_physical_mode_pin_annotation(char* phy_mode_pin,
                                          int* pin_msb, int* pin_lsb) {
   int itoken;
   int num_tokens = 0;
-  char* token = NULL;
+  char** token = NULL;
 
-  token = my_strtok(phy_mode_pin, "[:]", &num_tokens);
+  token = fpga_spice_strtok(phy_mode_pin, "[:]", &num_tokens);
 
   /* 1 == num_token */
   switch (num_tokens) {
@@ -2235,10 +2254,10 @@ void annotate_physical_mode_pin_to_pb_type(t_port* cur_pb_type_port,
   assert ( TRUE == phy_pb_type->parent_mode->define_physical_mode );
 
   /* Decode the physical_mode_pin */
-  decode_physical_mode_pin_annotation(phy_mode_pin, &phy_port_name, &msb, &lsb);
+  decode_physical_mode_pin_annotation(cur_pb_type_port->physical_mode_pin, &phy_port_name, &msb, &lsb);
 
   /* Search phy_pb_port ports */
-  for (iport = 0; iport < phy_pb_type->num_ports; iport) { 
+  for (iport = 0; iport < phy_pb_type->num_ports; iport++) { 
     if (0 == strcmp(phy_port_name, phy_pb_type->ports[iport].name)) {
       /* We got a match! Give the lsb, msb and create a link */
       cur_pb_type_port->phy_pb_type_port = &(phy_pb_type->ports[iport]);
@@ -2251,7 +2270,7 @@ void annotate_physical_mode_pin_to_pb_type(t_port* cur_pb_type_port,
   /* Check if the port is unique */
   assert (1 == port_matched);
   /* Check if the pin number match */
-  assert(!(cur_pb_type_type->phy_pb_type_port->num_pins < (msb - lsb)));
+  assert(!(cur_pb_type_port->phy_pb_type_port->num_pins < (msb - lsb)));
 
   /* Free */  
   my_free(phy_port_name);
@@ -2269,8 +2288,8 @@ void annotate_pb_type_port_to_phy_pb_type(t_pb_type* cur_pb_type,
   assert ( NULL != cur_pb_type->phy_pb_type );
 
   /* Check each port of cur_pb_type */
-  for (iport = 0; iport < cur_pb_type->num_ports; iport) { 
-    annotate_physical_mode_pin_to_pb_type(cur_pb_type->ports[iport], phy_pb_type);
+  for (iport = 0; iport < cur_pb_type->num_ports; iport++) { 
+    annotate_physical_mode_pin_to_pb_type(&(cur_pb_type->ports[iport]), phy_pb_type);
   }
 
   return;
@@ -2280,8 +2299,10 @@ void annotate_pb_type_port_to_phy_pb_type(t_pb_type* cur_pb_type,
 t_pb_graph_node* rec_get_pb_graph_node_by_pb_type_and_placement_index_in_top_node(t_pb_graph_node* cur_pb_graph_node, 
                                                                                   t_pb_type* target_pb_type,
                                                                                   int target_placement_index) {
+  int imode, ipb, jpb;
   t_pb_graph_node* ret_pb_graph_node = NULL;
   t_pb_graph_node* found_pb_graph_node = NULL;
+  t_pb_type* cur_pb_type = cur_pb_graph_node->pb_type;
  
   /* Check if pb_type matches and also the placement_index */ 
   if (( target_pb_type == cur_pb_graph_node->pb_type )
@@ -2296,7 +2317,7 @@ t_pb_graph_node* rec_get_pb_graph_node_by_pb_type_and_placement_index_in_top_nod
     for (ipb = 0; ipb < cur_pb_type->modes[imode].num_pb_type_children; ipb++) {
       /* Each child may exist multiple times in the hierarchy*/
       for (jpb = 0; jpb < cur_pb_type->modes[imode].pb_type_children[ipb].num_pb; jpb++) {
-        found_pb_graph_node = rec_get_pb_graph_node_by_pb_type_and_placement_index_in_top_node(&(cur_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb])i,
+        found_pb_graph_node = rec_get_pb_graph_node_by_pb_type_and_placement_index_in_top_node(&(cur_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb]),
                                                                                                target_pb_type, target_placement_index);
       
         if (NULL == found_pb_graph_node) { /* See if we have found anything*/
@@ -2343,7 +2364,7 @@ void link_one_pb_graph_node_pin_to_phy_pb_graph_pin(t_pb_graph_pin* cur_pb_graph
         continue;
       }
       if (NULL == phy_pb_graph_pin) {
-        phy_pb_graph_pin = phy_pb_graph_node->input_pins[iport][ipin];
+        phy_pb_graph_pin = &(phy_pb_graph_node->input_pins[iport][ipin]);
       } else {
         vpr_printf(TIO_MESSAGE_ERROR,
                    "(File:%s,[LINE%d]) More than one matched pin number found for %s[%d] in %s!\n",
@@ -2359,7 +2380,7 @@ void link_one_pb_graph_node_pin_to_phy_pb_graph_pin(t_pb_graph_pin* cur_pb_graph
         continue;
       }
       if (NULL == phy_pb_graph_pin) {
-        phy_pb_graph_pin = phy_pb_graph_node->output_pins[iport][ipin];
+        phy_pb_graph_pin = &(phy_pb_graph_node->output_pins[iport][ipin]);
       } else {
         vpr_printf(TIO_MESSAGE_ERROR,
                    "(File:%s,[LINE%d]) More than one matched pin number found for %s[%d] in %s!\n",
@@ -2376,7 +2397,7 @@ void link_one_pb_graph_node_pin_to_phy_pb_graph_pin(t_pb_graph_pin* cur_pb_graph
         continue;
       }
       if (NULL == phy_pb_graph_pin) {
-        phy_pb_graph_pin = phy_pb_graph_node->clock_pins[iport][ipin];
+        phy_pb_graph_pin = &(phy_pb_graph_node->clock_pins[iport][ipin]);
       } else {
         vpr_printf(TIO_MESSAGE_ERROR,
                    "(File:%s,[LINE%d]) More than one matched pin number found for %s[%d] in %s!\n",
@@ -2434,7 +2455,7 @@ void link_pb_graph_node_pins_to_phy_pb_graph_pins(t_pb_graph_node* cur_pb_graph_
 }
 
 void rec_reset_pb_graph_node_rr_node_index_physical_pb(t_pb_graph_node* cur_pb_graph_node) {
-  int imode, ipb, jpb;
+  int imode, iport, ipin, ipb, jpb;
   t_pb_type* cur_pb_type = cur_pb_graph_node->pb_type;
 
   for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
@@ -2478,6 +2499,7 @@ void rec_reset_pb_graph_node_rr_node_index_physical_pb(t_pb_graph_node* cur_pb_g
 /* Allocate empty child_phy_pbs according to a pb_graph_node */
 void rec_alloc_phy_pb_children(t_pb_graph_node* cur_pb_graph_node, 
                                t_phy_pb* cur_phy_pb) {
+  int ipb, jpb;
   int phy_mode_index;
   t_pb_type* cur_pb_type = cur_pb_graph_node->pb_type;
   char* phy_pb_name = NULL;
@@ -2506,7 +2528,7 @@ void rec_alloc_phy_pb_children(t_pb_graph_node* cur_pb_graph_node,
     /* Each child may exist multiple times in the hierarchy*/
     for (jpb = 0; jpb < cur_pb_type->modes[phy_mode_index].pb_type_children[ipb].num_pb; jpb++) {
       rec_alloc_phy_pb_children(&(cur_pb_graph_node->child_pb_graph_nodes[phy_mode_index][ipb][jpb]),
-                                cur_phy_pb->child_pbs[ipb][jpb]);
+                                &(cur_phy_pb->child_pbs[ipb][jpb]));
       /* Assign parent_pb */
       cur_phy_pb->child_pbs[ipb][jpb].parent_pb = cur_phy_pb;
       cur_phy_pb->child_pbs[ipb][jpb].mode = phy_mode_index;
@@ -2515,7 +2537,7 @@ void rec_alloc_phy_pb_children(t_pb_graph_node* cur_pb_graph_node,
   }
 
   /* Allocate */
-  cur_phy_pb->child_pbs = (t_phy_pb**) my_calloc(cur_pb_type->modes[phy_mode_index].pb_type_children, sizeof(t_phy_pb*));
+  cur_phy_pb->child_pbs = (t_phy_pb**) my_calloc(cur_pb_type->modes[phy_mode_index].num_pb_type_children, sizeof(t_phy_pb*));
   for (ipb = 0; ipb < cur_pb_type->modes[phy_mode_index].num_pb_type_children; ipb++) {
     cur_phy_pb->child_pbs[ipb] = (t_phy_pb*) my_calloc(cur_pb_type->modes[phy_mode_index].pb_type_children[ipb].num_pb, sizeof(t_phy_pb));
   }
@@ -2526,6 +2548,7 @@ void rec_alloc_phy_pb_children(t_pb_graph_node* cur_pb_graph_node,
 /* With a given name, find the pb_type by recursively traversing the pb_type_tree */
 t_phy_pb* rec_get_phy_pb_by_name(t_phy_pb* cur_phy_pb, 
                                  char* phy_pb_name) {
+  int ipb, jpb;
   t_phy_pb* ret_phy_pb = NULL;
   t_phy_pb* found_phy_pb = NULL;
  
@@ -2538,7 +2561,7 @@ t_phy_pb* rec_get_phy_pb_by_name(t_phy_pb* cur_phy_pb,
     /* Each child may exist multiple times in the hierarchy*/
     for (jpb = 0; jpb < cur_phy_pb->pb_graph_node->pb_type->modes[cur_phy_pb->mode].pb_type_children[ipb].num_pb; jpb++) {
       /* we should make sure this placement index == child_pb_type[jpb]*/
-      found_phy_pb = rec_get_phy_pb_by_name(&(cur_pb_pb->child_pbs[ipb][jpb]), phy_pb_name);
+      found_phy_pb = rec_get_phy_pb_by_name(&(cur_phy_pb->child_pbs[ipb][jpb]), phy_pb_name);
       if (NULL == found_phy_pb) { /* See if we have found anything*/
         continue;
       }
@@ -2559,12 +2582,12 @@ t_phy_pb* rec_get_phy_pb_by_name(t_phy_pb* cur_phy_pb,
 
 
 /* Synchronize the mapped information from operating pb cur_pb to phy_pb */
-void sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb, 
-                                           t_phy_pb* cur_phy_pb) {
+void rec_sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb, 
+                                               t_phy_pb* cur_phy_pb) {
   int ipb, jpb;
   t_pb_graph_node* cur_pb_graph_node = cur_op_pb->pb_graph_node;
   t_pb_type* cur_pb_type = cur_pb_graph_node->pb_type;
-  int mode_index = cur_pb->mode; 
+  int mode_index = cur_op_pb->mode; 
   t_pb* child_pb = NULL;
   char* phy_pb_name = NULL;
   t_phy_pb* phy_pb_to_sync = NULL;
@@ -2583,7 +2606,7 @@ void sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb,
     /* find the child_pb in the current physical pb (cur_phy_pb) */
     phy_pb_to_sync = rec_get_phy_pb_by_name(cur_phy_pb, phy_pb_name);
     /* Check */
-    assert (phy_pb_to_sync->spice_model == cur_pb_type->spice_model);
+    assert (phy_pb_to_sync->pb_graph_node->pb_type->spice_model == cur_pb_type->spice_model);
     /* Re-allocate logical_block array mapped to this pb */
     phy_pb_to_sync->num_logical_blocks++;
     phy_pb_to_sync->logical_block = (int*) my_realloc(phy_pb_to_sync->logical_block, sizeof(int) * phy_pb_to_sync->num_logical_blocks);
@@ -2591,17 +2614,17 @@ void sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb,
     switch (cur_pb_type->class_type) {
     case LUT_CLASS: 
       child_pb = get_lut_child_pb(cur_op_pb, mode_index);
-      phy_pb_to_sync->logical_block[phy_pb_to_syn->num_logical_blocks - 1] = child_pb->logical_block;
+      phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = child_pb->logical_block;
       break;
     case LATCH_CLASS:
-      phy_pb_to_sync->logical_block[phy_pb_to_syn->num_logical_blocks - 1] = cur_op_pb->logical_block;
+      phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = cur_op_pb->logical_block;
       break;
     case MEMORY_CLASS:
       child_pb = get_hardlogic_child_pb(cur_op_pb, mode_index); 
-      phy_pb_to_sync->logical_block[phy_pb_to_syn->num_logical_blocks - 1] = child_pb->logical_block;
+      phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = child_pb->logical_block;
       break;  
     case UNKNOWN_CLASS:
-      phy_pb_to_sync->logical_block[phy_pb_to_syn->num_logical_blocks - 1] = cur_op_pb->logical_block;
+      phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = cur_op_pb->logical_block;
       break;  
     default:
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Unknown class type of pb_type(%s)!\n",
@@ -2619,7 +2642,7 @@ void sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb,
     for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
       /* Refer to pack/output_clustering.c [LINE 392] */
       if ((NULL != cur_op_pb->child_pbs[ipb])&&(NULL != cur_op_pb->child_pbs[ipb][jpb].name)) {
-        sync_op_pb_mapping_to_phy_pb_children(&(cur_op_pb->child_pbs[ipb][jpb], cur_phy_pb);
+        rec_sync_op_pb_mapping_to_phy_pb_children(&(cur_op_pb->child_pbs[ipb][jpb]), cur_phy_pb);
       }
     }
   }
@@ -2629,14 +2652,14 @@ void sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb,
 
 
 /* Allocate pb children for a physical pb, according to the results in cur_pb*/
-void alloc_and_load_phy_pb_children_for_one_mapped_block(t_pb* cur_pb,
+void alloc_and_load_phy_pb_children_for_one_mapped_block(t_pb* cur_op_pb,
                                                          t_phy_pb* cur_phy_pb) {
 
   /* allocate empty child pbs according to pb_graph_node  */
   rec_alloc_phy_pb_children(cur_phy_pb->pb_graph_node, cur_phy_pb);
 
   /* Synchronize the cur_pb to cur_phy_pb */
-  sync_op_pb_mapping_to_phy_pb_children(cur_op_pb, cur_phy_pb);
+  rec_sync_op_pb_mapping_to_phy_pb_children(cur_op_pb, cur_phy_pb);
 
   return;
 }

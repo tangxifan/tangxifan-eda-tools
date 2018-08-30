@@ -7,9 +7,11 @@
 #include "physical_types.h"
 #include "vpr_types.h"
 #include "globals.h"
+#include "route_common.h"
 
+#include "fpga_spice_types.h"
 #include "fpga_spice_rr_graph_utils.h"
-#include "fpga_spice_rr_graph.h"
+#include "fpga_spice_pb_rr_graph.h"
 
 void breadth_first_expand_rr_graph_trace_segment(t_rr_graph* local_rr_graph,
                                                  t_trace *start_ptr, 
@@ -60,7 +62,7 @@ void breadth_first_expand_rr_graph_trace_segment(t_rr_graph* local_rr_graph,
 
     while (next_ptr != NULL) {
       inode = tptr->index;
-      add_node_to_rr_graph_heap(inode, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
+      add_node_to_rr_graph_heap(local_rr_graph, inode, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
 
       if (rr_node[inode].type == INTRA_CLUSTER_EDGE) {
         if(rr_node[inode].pb_graph_pin != NULL && rr_node[inode].pb_graph_pin->num_output_edges == 0) {
@@ -167,7 +169,7 @@ boolean breadth_first_route_one_net_pb_rr_graph(t_rr_graph* local_rr_graph,
   tptr = NULL;
   remaining_connections_to_sink = 0;
 
-  for (i = 1; i <= local_rr_graph->net[inet].num_sinks; i++) { /* Need n-1 wires to connect n pins */
+  for (i = 1; i <= local_rr_graph->net[inet]->num_sinks; i++) { /* Need n-1 wires to connect n pins */
 
     /* Do not connect open terminals */
     if (local_rr_graph->net_rr_terminals[inet][i] == OPEN) {
@@ -233,7 +235,7 @@ boolean feasible_routing_rr_graph(t_rr_graph* local_rr_graph) {
   int inode;
 
   for (inode = 0; inode < local_rr_graph->num_rr_nodes; inode++) {
-    if (local_rr_graph->rr_node[inode].occ > rlocal_rr_graph->r_node[inode].capacity) {
+    if (local_rr_graph->rr_node[inode].occ > local_rr_graph->rr_node[inode].capacity) {
       /*
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]rr_node[%d] occupancy(%d) exceeds its capacity(%d)!\n",
                  __FILE__, __LINE__, inode, rr_node[inode].occ, rr_node[inode].capacity);
@@ -343,6 +345,7 @@ boolean try_breadth_first_route_pb_rr_graph(t_rr_graph* local_rr_graph) {
   boolean success, is_routable;
   int itry, inet, net_index;
   struct s_router_opts router_opts;
+  float pres_fac;
 
   /* Xifan TANG: Count runtime for routing in packing stage */
   clock_t begin, end;
@@ -376,7 +379,7 @@ boolean try_breadth_first_route_pb_rr_graph(t_rr_graph* local_rr_graph) {
 
       if (!is_routable) {
         /* TODO: Inelegant, can be more intelligent */
-        vpr_printf(TIO_MESSAGE_INFO, "Failed routing net %s\n", local_rr_graph->net[net_index].name);
+        vpr_printf(TIO_MESSAGE_INFO, "Failed routing net %s\n", local_rr_graph->net[net_index]->name);
         vpr_printf(TIO_MESSAGE_INFO, "Routing failed. Disconnected rr_graph.\n");
         return FALSE;
       }
@@ -407,7 +410,7 @@ boolean try_breadth_first_route_pb_rr_graph(t_rr_graph* local_rr_graph) {
 
     pres_fac = std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5));
 
-    pathfinder_update_rr_graph_cost(pres_fac, router_opts.acc_fac);
+    pathfinder_update_rr_graph_cost(local_rr_graph, pres_fac, router_opts.acc_fac);
   }
   /* End of packing routing */
   end = clock();

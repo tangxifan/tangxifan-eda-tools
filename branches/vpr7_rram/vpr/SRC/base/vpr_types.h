@@ -604,7 +604,7 @@ struct s_block {
     /* Xifan TANG: FPGA-SPICE 
      * pb for physical model  
      */
-    t_pb* phy_pb;
+    void* phy_pb;
 
 	boolean isFixed;
 

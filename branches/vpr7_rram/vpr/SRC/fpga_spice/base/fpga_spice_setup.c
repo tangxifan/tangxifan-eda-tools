@@ -20,9 +20,11 @@
 #include "vpr_utils.h"
 #include "path_delay.h"
 #include "stats.h"
+#include "route_common.h"
 
 /* Include spice support headers*/
 #include "linkedlist.h"
+#include "fpga_spice_types.h"
 #include "fpga_spice_globals.h"
 #include "fpga_spice_utils.h"
 #include "fpga_spice_backannotate_utils.h"

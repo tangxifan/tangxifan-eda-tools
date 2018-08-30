@@ -106,6 +106,7 @@ int find_path_id_between_pb_rr_nodes(t_rr_node* local_rr_graph,
 
 t_pb* get_child_pb_for_phy_pb_graph_node(t_pb* cur_pb, int ipb, int jpb);
 
+t_phy_pb* get_phy_child_pb_for_phy_pb_graph_node(t_phy_pb* cur_phy_pb, int ipb, int jpb);
 
 enum e_interconnect find_pb_graph_pin_in_edges_interc_type(t_pb_graph_pin pb_graph_pin) ;
 
@@ -152,6 +153,12 @@ enum e_interconnect determine_actual_pb_interc_type(t_interconnect* def_interc,
 int count_pin_number_one_port_pb_graph_node(int num_ports, int* num_pins);
 
 int count_pin_number_one_pb_graph_node(t_pb_graph_node* cur_pb_graph_node);
+ 
+int count_pb_graph_node_input_edge_in_phy_mode(t_pb_graph_pin* cur_pb_graph_pin,
+                                               int phy_mode_index);
+
+int count_pb_graph_node_output_edge_in_phy_mode(t_pb_graph_pin* cur_pb_graph_pin,
+                                                int phy_mode_index);
 
 t_pb_type* rec_get_pb_type_by_name(t_pb_type* cur_pb_type, 
                                    char* pb_type_name);
@@ -180,3 +187,17 @@ void link_pb_graph_node_pins_to_phy_pb_graph_pins(t_pb_graph_node* cur_pb_graph_
                                                   t_pb_graph_node* phy_pb_graph_node);
 
 void rec_reset_pb_graph_node_rr_node_index_physical_pb(t_pb_graph_node* cur_pb_graph_node);
+
+void rec_alloc_phy_pb_children(t_pb_graph_node* cur_pb_graph_node, 
+                               t_phy_pb* cur_phy_pb);
+
+t_phy_pb* rec_get_phy_pb_by_name(t_phy_pb* cur_phy_pb, 
+                                 char* phy_pb_name);
+
+void rec_reset_pb_graph_node_rr_node_index_physical_pb(t_pb_graph_node* cur_pb_graph_node);
+
+void rec_sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb, 
+                                               t_phy_pb* cur_phy_pb);
+
+void alloc_and_load_phy_pb_children_for_one_mapped_block(t_pb* cur_pb,
+                                                         t_phy_pb* cur_phy_pb);

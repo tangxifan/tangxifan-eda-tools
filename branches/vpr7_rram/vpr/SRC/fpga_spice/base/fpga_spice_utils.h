@@ -65,9 +65,9 @@ t_block* search_mapped_block(int x, int y, int z);
 
 
 
-char** my_strtok(char* str, 
-                 char* delims, 
-                 int* len);
+char** fpga_spice_strtok(char* str, 
+                         char* delims, 
+                         int* len);
 
 int get_opposite_side(int side);
 

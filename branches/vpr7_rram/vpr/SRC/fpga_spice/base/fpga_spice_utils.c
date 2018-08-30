@@ -730,9 +730,9 @@ int* my_decimal2binary(int decimal,
  *  tokens[i] (char*) : pointer to a string split by delims
  */
 
-char** my_strtok(char* str, 
-                 char* delims, 
-                 int* len)
+char** fpga_spice_strtok(char* str, 
+                         char* delims, 
+                         int* len)
 {
   char** ret;
   char* result;
