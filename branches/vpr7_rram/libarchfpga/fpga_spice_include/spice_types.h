@@ -183,7 +183,7 @@ struct s_spice_model_port {
   char* tri_state_map;
   /* For frac_lut only */
   int lut_frac_level;
-  char* lut_output_mask;
+  int* lut_output_mask;
 };
 
 struct s_spice_model_wire_param {

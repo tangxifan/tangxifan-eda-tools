@@ -2510,6 +2510,7 @@ void rec_alloc_phy_pb_children(t_pb_graph_node* cur_pb_graph_node,
       /* Assign parent_pb */
       cur_phy_pb->child_pbs[ipb][jpb].parent_pb = cur_phy_pb;
       cur_phy_pb->child_pbs[ipb][jpb].mode = phy_mode_index;
+      cur_phy_pb->child_pbs[ipb][jpb].rr_graph = cur_phy_pb->rr_graph;
     }
   }
 

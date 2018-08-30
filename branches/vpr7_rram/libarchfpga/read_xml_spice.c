@@ -523,6 +523,10 @@ static void ProcessSpiceModelPassGateLogic(ezxml_t Node,
 
 static void ProcessSpiceModelPort(ezxml_t Node,
                                   t_spice_model_port* port) {
+  const char* Prop = NULL;
+  int ipin;
+  char* pch = NULL;
+
   if (0 == strcmp(FindProperty(Node,"type",TRUE),"input")) {
     port->type = SPICE_MODEL_PORT_INPUT;
   } else if (0 == strcmp(FindProperty(Node,"type",TRUE),"output")) {
@@ -548,9 +552,9 @@ static void ProcessSpiceModelPort(ezxml_t Node,
   } 
   ezxml_set_attr(Node, "type", NULL);
   /* Assign prefix and size*/
-  port->prefix = my_strdup(FindProperty(Node,"prefix",TRUE));
+  port->prefix = my_strdup(FindProperty(Node, "prefix", TRUE));
   ezxml_set_attr(Node, "prefix", NULL);
-  port->size = GetIntProperty(Node,"size",TRUE,1);
+  port->size = GetIntProperty(Node, "size", TRUE, 1);
   ezxml_set_attr(Node, "size", NULL);
   
   /* See if this is a mode selector.
@@ -569,11 +573,33 @@ static void ProcessSpiceModelPort(ezxml_t Node,
   ezxml_set_attr(Node, "tri_state_map", NULL);
 
   /* fracturable LUT: define at which level the output should be fractured */
-  port->lut_frac_level = GetIntProperty(Node, "lut_frac_level", FALSE, 0);
+  port->lut_frac_level = GetIntProperty(Node, "lut_frac_level", FALSE, -1);
   ezxml_set_attr(Node, "lut_frac_level", NULL);
 
   /* Output mast of a fracturable LUT, which is to identify which intermediate LUT output will be connected to outputs */
-  port->lut_output_mask = my_strdup(FindProperty(Node, "lut_output_mask", FALSE));
+  port->lut_output_mask = (int*) my_malloc (sizeof(int) * port->size); 
+  Prop = FindProperty(Node, "lut_output_mask", FALSE);
+  if (NULL == Prop) {
+    /* give a default value */ 
+    for (ipin = 0; ipin < port->size; ipin++) {
+      port->lut_output_mask[ipin] = ipin;
+    } 
+  } else {
+    /* decode the output_maski, split the string by "," */
+    ipin = 0;
+    pch = strtok(Prop, ","); 
+    while (NULL != pch) { 
+      port->lut_output_mask[ipin] = my_atoi(pch);
+      ipin++;
+      pch = strtok(NULL, ","); 
+    }
+    /* Error out, fail to match the port size*/
+    if (ipin != port->size) {
+      vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] Invalid lut_output_mask(%s): Fail to match the port size (%d).\n",
+                 Parent->line, Prop, port->size);
+      exit(1);
+    }
+  } 
   ezxml_set_attr(Node, "lut_output_mask", NULL);
 
   /* See if this is a global signal 

@@ -1055,7 +1055,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
                                      int mux_size,
                                      t_spice_model spice_model,
                                      t_spice_mux_arch spice_mux_arch) {
-  int i, num_conf_bits;
+  int i, num_conf_bits, iport, ipin;
   int num_input_port = 0;
   int num_output_port = 0;
   int num_sram_port = 0;
@@ -1098,10 +1098,31 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
   sram_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
 
   /* Asserts*/
-  assert(1 == num_input_port);
-  assert(1 == num_output_port);
-  assert(1 == num_sram_port);
-  assert(1 == output_port[0]->size);
+  if ((SPICE_MODEL_MUX == spice_model.type)
+    || ((SPICE_MODEL_LUT == spice_model.type)
+       && (FALSE == spice_model.design_tech_info.frac_lut))) {
+    assert(1 == num_input_port);
+    assert(1 == num_output_port);
+    assert(1 == num_sram_port);
+    assert(1 == output_port[0]->size);
+  } else {
+    assert((SPICE_MODEL_LUT == spice_model.type) 
+           && (TRUE == spice_model.design_tech_info.frac_lut));
+    assert(1 == num_input_port);
+    assert(2 == num_sram_port);
+    for (iport = 0; iport < num_output_port; iport++) {
+      assert(1 == output_port[iport]->size);
+    }
+  }
+
+  /* Setup a reasonable frac_out level for the output port*/
+  for (iport = 0; iport < num_output_port; iport++) {
+    if (OPEN == output_port[0]->lut_frac_level) { 
+      output_port[0]->lut_frac_level = spice_mux_arch.num_level;
+    } 
+  }
+
+  /* Add Fracturable LUT outputs */
 
   /* We have two types of naming rules in terms of the usage of MUXes: 
    * 1. MUXes, the naming rule is <mux_spice_model_name>_<structure>_size<input_size>
@@ -1211,62 +1232,79 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
   }
 
   /* Output buffer*/
-  if (1 == spice_model.output_buffer->exist) {
-    switch (spice_model.output_buffer->type) {
-    case SPICE_MODEL_BUF_INV:
-      if (TRUE == spice_model.output_buffer->tapered_buf) {
-        break;
+  for (iport = 0; iport < num_output_port; iport++) {
+    for (ipin = 0; ipin < output_port[iport]->size; ipin++) {
+      if (1 == spice_model.output_buffer->exist) {
+       /* Tapered buffer support */
+        if (TRUE == spice_model.output_buffer->tapered_buf) {
+          /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
+          fprintf(fp, "%s buf_out (",
+                  spice_model.output_buffer->spice_model_name); /* subckt name */
+          /* Dump global ports */
+          if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.output_buffer->spice_model, FALSE, FALSE)) {
+            fprintf(fp, ",\n");
+          }
+          fprintf(fp, "mux2_l%d_in[%d], ",
+                    spice_mux_arch.num_level - output_port[iport]->lut_frac_level, 
+                    output_port->lut_output_mask[ipin]); /* input port */ 
+          fprintf(fp, "%s[%d] );", output_port[iport]->prefix, ipin); /* Output port*/
+          fprintf(fp, "\n");
+          /* If tapered buffer is enabled, bypass the other buffer types */
+          continue;
+        }
+        switch (spice_model.output_buffer->type) {
+        case SPICE_MODEL_BUF_INV:
+          if (TRUE == spice_model.output_buffer->tapered_buf) {
+            break;
+          }
+          /* Each inv: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
+          fprintf(fp, "%s inv_out (",
+                  spice_model.output_buffer->spice_model_name); /* Given name*/
+          /* Dump global ports */
+          if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.output_buffer->spice_model, FALSE, FALSE)) {
+            fprintf(fp, ",\n");
+          }
+          fprintf(fp, "mux2_l%d_in[%d], ",
+                  spice_mux_arch.num_level - output_port[iport]->lut_frac_level, 
+                  output_port->lut_output_mask[ipin]); /* input port */ 
+          fprintf(fp, "%s[%d] );", 
+                  output_port[iport]->prefix, ipin); /* Output port*/
+          fprintf(fp, "\n");
+          break;
+        case SPICE_MODEL_BUF_BUF:
+          if (TRUE == spice_model.output_buffer->tapered_buf) {
+            break;
+          }
+          /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
+          fprintf(fp, "%s buf_out (",
+                  spice_model.output_buffer->spice_model_name); /* Given name*/
+          /* Dump global ports */
+          if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.output_buffer->spice_model, FALSE, FALSE)) {
+            fprintf(fp, ",\n");
+          }
+          fprintf(fp, "mux2_l%d_in[%d], ",
+                  spice_mux_arch.num_level - output_port[iport]->lut_frac_level, 
+                  output_port->lut_output_mask[ipin]); /* input port */ 
+          fprintf(fp, "%s[%d] );", output_port[iport]->prefix, ipin); /* Output port*/
+          fprintf(fp, "\n");
+          break;
+        default:
+          vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type for spice_model_buffer.\n",
+                     __FILE__, __LINE__);
+          exit(1);   
+        }
+      } else {
+        /* There is no buffer, I create a zero resisitance between*/
+        /* Resistance R<given_name> <input> <output> 0*/
+        fprintf(fp, "assign mux2_l%d_in[%d] = %s[%d];\n",
+                spice_mux_arch.num_level - output_port[iport]->lut_frac_level,
+                output_port->lut_output_mask[ipin],
+                output_port[iport]->prefix, ipin);
       }
-      /* Each inv: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
-      fprintf(fp, "%s inv_out (",
-              spice_model.output_buffer->spice_model_name); /* Given name*/
-      /* Dump global ports */
-      if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.output_buffer->spice_model, FALSE, FALSE)) {
-        fprintf(fp, ",\n");
-      }
-      fprintf(fp, "mux2_l%d_in[%d], ", 0, 0); /* input port */ 
-      fprintf(fp, "%s );", output_port[0]->prefix); /* Output port*/
-      fprintf(fp, "\n");
-      break;
-    case SPICE_MODEL_BUF_BUF:
-      if (TRUE == spice_model.output_buffer->tapered_buf) {
-        break;
-      }
-      /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
-      fprintf(fp, "%s buf_out (",
-              spice_model.output_buffer->spice_model_name); /* Given name*/
-      /* Dump global ports */
-      if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.output_buffer->spice_model, FALSE, FALSE)) {
-        fprintf(fp, ",\n");
-      }
-      fprintf(fp, "mux2_l%d_in[%d], ", 0, 0); /* input port */ 
-      fprintf(fp, "%s );", output_port[0]->prefix); /* Output port*/
-      fprintf(fp, "\n");
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type for spice_model_buffer.\n",
-                 __FILE__, __LINE__);
-      exit(1);   
     }
-    /* Tapered buffer support */
-    if (TRUE == spice_model.output_buffer->tapered_buf) {
-      /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
-      fprintf(fp, "%s buf_out (",
-              spice_model.output_buffer->spice_model_name); /* subckt name */
-      /* Dump global ports */
-      if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.output_buffer->spice_model, FALSE, FALSE)) {
-        fprintf(fp, ",\n");
-      }
-      fprintf(fp, "mux2_l%d_in[%d], ", 0, 0); /* input port */ 
-      fprintf(fp, "%s );", output_port[0]->prefix); /* Output port*/
-      fprintf(fp, "\n");
-    }
-  } else {
-    /* There is no buffer, I create a zero resisitance between*/
-    /* Resistance R<given_name> <input> <output> 0*/
-    fprintf(fp, "assign mux2_l0_in[0] = %s;\n",output_port[0]->prefix);
   }
- 
+
+   
   fprintf(fp, "endmodule\n");
   fprintf(fp, "//----- END CMOS MUX info: spice_model_name=%s, size=%d -----\n\n", spice_model.name, mux_size);
   fprintf(fp, "\n");
@@ -1973,6 +2011,11 @@ void dump_verilog_submodule_one_lut(FILE* fp,
   t_spice_model_port** input_port = NULL;
   t_spice_model_port** output_port = NULL;
   t_spice_model_port** sram_port = NULL;
+  int iport, ipin;
+  int mode_port_index = OPEN;
+  int mode_lsb = 0;
+  int num_dumped_port = 0;
+  char* mode_inport_postfix = "_mode";
   
   /* Check */
   if (NULL == fp) {
@@ -1996,32 +2039,134 @@ void dump_verilog_submodule_one_lut(FILE* fp,
   sram_port = find_spice_model_ports(verilog_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
 
   /* Asserts*/
-  assert(1 == num_input_port);
-  assert(1 == num_output_port);
-  assert(1 == num_sram_port);
-  assert(1 == output_port[0]->size);
+  if (FALSE == verilog_model->design_tech_info.frac_lut) {
+    /* when fracturable LUT is considered
+     * More than 1 output is allowed  
+     * Only two SRAM ports are allowed
+     */
+    assert(1 == num_input_port);
+    assert(1 == num_output_port);
+    assert(1 == num_sram_port); 
+  } else {
+    assert (TRUE == verilog_model->design_tech_info.frac_lut);
+    /* when fracturable LUT is considered
+     * More than 1 output is allowed  
+     * Only two SRAM ports are allowed
+     */
+    assert(1 == num_input_port);
+    for (iport = 0; iport < num_output_port; iport++) {
+      assert(1 == output_port[iport]->size);
+    }
+    assert(2 == num_sram_port); 
+  }
 
   /* input port */
   fprintf(fp, "input wire [0:%d] %s,\n",  
           input_port[0]->size - 1, input_port[0]->prefix);
   /* Print output ports*/
-  fprintf(fp, "output wire [0:%d] %s,\n", 
-          output_port[0]->size - 1, output_port[0]->prefix);
+  for (iport = 0; iport < num_output_port; iport++) {
+    fprintf(fp, "output wire [0:%d] %s,\n", 
+            output_port[iport]->size - 1, output_port[iport]->prefix);
+  }
   /* Print configuration ports*/
-  fprintf(fp, "input wire [0:%d] %s_out,\n", 
-          sram_port[0]->size - 1, sram_port[0]->prefix);
-  /* Inverted configuration port is not connected to any internal signal of a LUT */
-  fprintf(fp, "input wire [0:%d] %s_outb\n", 
-          sram_port[0]->size - 1, sram_port[0]->prefix);
+  num_dumped_port = 0;
+  for (iport = 0; iport < num_sram_port; iport++) {
+    /* By pass mode select ports */
+    if (TRUE == sram_port[iport]->mode_select) {
+      continue;
+    } 
+    assert(FALSE == sram_port[iport]->mode_select); 
+    fprintf(fp, "input wire [0:%d] %s_out,\n", 
+            sram_port[iport]->size - 1, sram_port[iport]->prefix);
+    /* Inverted configuration port is not connected to any internal signal of a LUT */
+    fprintf(fp, "input wire [0:%d] %s_outb\n", 
+            sram_port[iport]->size - 1, sram_port[iport]->prefix);
+    num_dumped_port++;
+  }
+  assert(1 == num_dumped_port);
+  /* Print mode configuration ports*/
+  num_dumped_port = 0;
+  for (iport = 0; iport < num_sram_port; iport++) {
+    /* By pass mode select ports */
+    if (FALSE == sram_port[iport]->mode_select) {
+      continue;
+    } 
+    assert(TRUE == sram_port[iport]->mode_select); 
+    fprintf(fp, "input wire [0:%d] %s_out,\n", 
+            sram_port[iport]->size - 1, sram_port[iport]->prefix);
+    /* Inverted configuration port is not connected to any internal signal of a LUT */
+    fprintf(fp, "input wire [0:%d] %s_outb\n", 
+            sram_port[iport]->size - 1, sram_port[iport]->prefix);
+    mode_port_index = iport;
+    num_dumped_port++;
+  }
+  if (TRUE == verilog_mode->design_tech_info.frac_lut) {
+    if (1 != num_dumped_port) {
+      vpr_printf(TIO_MESSAGE_ERROR, 
+                "(FILE:%s,LINE[%d]) Fracturable LUT (spice_model_name=%s) must have 1 mode port!\n",
+                __FILE__, __LINE__, verilog_model->name); 
+      exit(1);
+    }
+  }
   /* End of port list */
   fprintf(fp, ");\n");
 
-  /* Create inverted input port */
-  fprintf(fp, "  wire [0:%d] %s_b;\n", 
-          input_port[0]->size - 1, input_port[0]->prefix);
-  /* Create inverters between input port and its inversion */
-  fprintf(fp, "  assign %s_b = ~ %s;\n", 
+  /* Regular ports */
+  if (FALSE == verilog_model->design_tech_info.frac_lut) {
+    fprintf(fp, "  wire [0:%d] %s_b;\n", 
+            input_port[0]->size - 1, input_port[0]->prefix);
+    /* Create inverted input port */
+    fprintf(fp, "  assign %s_b = ~ %s;\n", 
           input_port[0]->prefix, input_port[0]->prefix);
+  } else {
+    assert (TRUE == verilog_model->design_tech_info.frac_lut);
+    assert( NULL != verilog_model->input_port[0].tri_state_map );
+    /* Add mode selector */
+    fprintf(fp, "  wire [0:%d] %s%s;\n", 
+            input_port[0]->size - 1, input_port[0]->prefix, mode_inport_postfix);
+    fprintf(fp, "  wire [0:%d] %s_b;\n", 
+            input_port[0]->size - 1, input_port[0]->prefix);
+    /* Create inverted input port */
+    fprintf(fp, "  assign %s_b = ~ %s%s;\n", 
+            input_port[0]->prefix, 
+            input_port[0]->prefix, mode_inport_postfix);
+    /* Create inverters between input port and its inversion */
+    mode_lsb = 0;
+    for (ipin = 0; ipin < input_port[0]->size; ipin++) {
+      switch (input_port[0]->tri_state_map[ipin]) {  
+      case '-':
+        fprintf(fp, "  assign %s%s[%d] = %s[%d];\n", 
+                input_port[0]->prefix, mode_inport_postfix, ipin, 
+                input_port[0]->prefix, ipin);
+        break;
+      case '0':
+        fprintf(fp, " assign %s%s[%d] = %s[%d] & %s[%d] ",
+                input_port[0]->prefix, mode_inport_postfix, ipin, 
+                input_port[0]->prefix, ipin,
+                sram_port[mode_port_index]->prefix, mode_lsb);
+        mode_lsb++;
+        break;
+      case '1':
+        fprintf(fp, " assign %s%s[%d] = %s[%d] | %s[%d]",
+                input_port[0]->prefix, mode_inport_postfix, ipin, 
+                input_port[0]->prefix, ipin,
+                sram_port[mode_port_index]->prefix, mode_lsb);
+        mode_lsb++;
+        break;
+      default:
+        vpr_printf(TIO_MESSAGE_ERROR, 
+                  "(FILE:%s,LINE[%d]) Invalid LUT tri_state_map = %s ",
+                  __FILE__, __LINE__, input_port[0]->tri_state_map); 
+        exit(1);
+      }
+    }
+    if (mode_lsb != sram_port[mode_port_index]->size) {
+      vpr_printf(TIO_MESSAGE_ERROR, 
+                "(FILE:%s,LINE[%d]) SPICE model LUT (name=%s) has a unmatched tri-state map (%s) implied by mode_port size(%d)!\n",
+                __FILE__, __LINE__, verilog_model->name, input_port[0]->tri_state_map[ipin], input_port[0]->size); 
+      exit(1);
+    }
+  }
  
   /* Internal structure of a LUT */ 
   /* Call the LUT MUX */
@@ -2031,11 +2176,19 @@ void dump_verilog_submodule_one_lut(FILE* fp,
   fprintf(fp, " %s_out,", 
           sram_port[0]->prefix);
   /* Connect MUX output to LUT output */
-  fprintf(fp, " %s,", 
-          output_port[0]->prefix);
+  for (iport = 0; iport < num_output_port; iport++) {
+    fprintf(fp, " %s,", 
+            output_port[iport]->prefix);
+  }
   /* Connect MUX configuration port to LUT inputs */
-  fprintf(fp, " %s,", 
-          input_port[0]->prefix);
+  if (FALSE == verilog_model->design_tech_info.frac_lut) {
+    fprintf(fp, " %s,", 
+            input_port[0]->prefix);
+  } else {
+    assert (TRUE == verilog_model->design_tech_info.frac_lut);
+    fprintf(fp, " %s%s,", 
+            input_port[0]->prefix, mode_inport_postfix);
+  }
   /* Connect MUX inverted configuration port to inverted LUT inputs */
   fprintf(fp, " %s_b", 
           input_port[0]->prefix);
