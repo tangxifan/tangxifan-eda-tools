@@ -75,8 +75,10 @@ struct fpga_spice_phy_pb {
   t_pb_graph_node *pb_graph_node; /* pointer to pb_graph_node this pb corresponds to */
   int  num_logical_blocks;
   int* logical_block; /* If this is a terminating pb, gives the logical (netlist) block that it contains */
+  int* lut_size;
 
   int mode; /* mode that this pb is set to */
+  char* mode_bits; /* Mode bits for the logical block */
 
   t_phy_pb **child_pbs; /* children pbs attached to this pb [0..num_child_pb_types - 1][0..child_type->num_pb - 1] */
   t_phy_pb *parent_pb; /* pointer to parent node */

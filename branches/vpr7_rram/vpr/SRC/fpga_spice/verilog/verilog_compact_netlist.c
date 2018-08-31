@@ -83,7 +83,7 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
     /* Comments: Grid [x][y]*/
     fprintf(fp, "//----- Submodule of type_descriptor: %s[%d] -----\n", phy_block_type->name, iz);
     /* Print a NULL logic block...*/
-    dump_verilog_phy_pb_graph_node_rec(cur_sram_orgz_info, fp, phy_block_type->name, NULL, 
+    dump_verilog_phy_pb_graph_node_rec(cur_sram_orgz_info, fp, phy_block_type->name, 
                                        phy_block_type->pb_graph_head, iz);
     fprintf(fp, "//----- END -----\n\n");
   }

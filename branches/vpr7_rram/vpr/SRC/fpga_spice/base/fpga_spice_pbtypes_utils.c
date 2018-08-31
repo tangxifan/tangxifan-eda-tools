@@ -1936,6 +1936,21 @@ t_pb* get_lut_child_pb(t_pb* cur_lut_pb,
   return (&(cur_lut_pb->child_pbs[0][0])); 
 }
 
+/* Return the child_pb of a LUT pb
+ * Because the mapping information is stored in the child_pb!!!
+ */
+t_phy_pb* get_lut_child_phy_pb(t_phy_pb* cur_lut_pb,
+                               int mode_index) {
+
+  assert(SPICE_MODEL_LUT == cur_lut_pb->pb_graph_node->pb_type->spice_model->type);
+
+  assert(1 == cur_lut_pb->pb_graph_node->pb_type->modes[mode_index].num_pb_type_children);
+  assert(1 == cur_lut_pb->pb_graph_node->pb_type->num_pb);
+
+  return (&(cur_lut_pb->child_pbs[0][0])); 
+}
+
+
 /* Return the child_pb of a hardlogic  pb
  * Because the mapping information is stored in the child_pb!!!
  */
@@ -2515,6 +2530,8 @@ void rec_alloc_phy_pb_children(t_pb_graph_node* cur_pb_graph_node,
   cur_phy_pb->name = phy_pb_name;
   cur_phy_pb->num_logical_blocks = 0;
   cur_phy_pb->logical_block = NULL;
+  cur_phy_pb->lut_size = NULL;
+  cur_phy_pb->lut_pin_remap = NULL;
 
   /* Return if we reach the primitive node */
   if (NULL != cur_pb_type->spice_model) {
@@ -2607,14 +2624,21 @@ void rec_sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb,
     phy_pb_to_sync = rec_get_phy_pb_by_name(cur_phy_pb, phy_pb_name);
     /* Check */
     assert (phy_pb_to_sync->pb_graph_node->pb_type->spice_model == cur_pb_type->spice_model);
+    /* Copy the mode bits */
+    phy_pb_to_sync->mode_bits = my_strdup(cur_pb_type->mode_bits);
     /* Re-allocate logical_block array mapped to this pb */
     phy_pb_to_sync->num_logical_blocks++;
     phy_pb_to_sync->logical_block = (int*) my_realloc(phy_pb_to_sync->logical_block, sizeof(int) * phy_pb_to_sync->num_logical_blocks);
+    phy_pb_to_sync->lut_size = (int*) my_realloc(phy_pb_to_sync->logical_block, sizeof(int) * phy_pb_to_sync->num_logical_blocks);
     /* Synchronize the logic block information */
     switch (cur_pb_type->class_type) {
     case LUT_CLASS: 
       child_pb = get_lut_child_pb(cur_op_pb, mode_index);
       phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = child_pb->logical_block;
+      /* check */
+      assert ( 1 == cur_pb_graph_node->num_input_ports );
+      /* Give the number of LUT inputs of operating pb_graph_node */
+      phy_pb_to_sync->lut_size[phy_pb_to_sync->num_logical_blocks - 1] = cur_pb_graph_node->num_input_pins[0];
       break;
     case LATCH_CLASS:
       phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = cur_op_pb->logical_block;
@@ -2660,6 +2684,66 @@ void alloc_and_load_phy_pb_children_for_one_mapped_block(t_pb* cur_op_pb,
 
   /* Synchronize the cur_pb to cur_phy_pb */
   rec_sync_op_pb_mapping_to_phy_pb_children(cur_op_pb, cur_phy_pb);
+
+  return;
+}
+
+/* Get the vpack_net_num of all the input pins of a LUT physical pb */
+void get_mapped_lut_phy_pb_input_pin_vpack_net_num(t_phy_pb* lut_phy_pb,
+                                                   int* num_lut_pin, int** lut_pin_net) {
+ 
+  int ipin, inode;
+
+  /* Check */ 
+  assert (1 == lut_phy_pb->pb_graph_node->num_input_ports);
+  (*num_lut_pin) = lut_phy_pb->pb_graph_node->num_input_pins[0];  
+ 
+  /* Allocate */
+  (*lut_pin_net) = (int*) my_malloc ((*num_lut_pin) * sizeof(int)); 
+  /* Fill the array */
+  for (ipin = 0; ipin < (*num_lut_pin); ipin++) {
+    inode = lut_phy_pb->pb_graph_node->input_pins[0][ipin].rr_node_index_physical_pb;
+    (*lut_pin_net)[ipin] = lut_phy_pb->rr_graph->rr_node[inode].vpack_net_num;
+  }
+
+  return;
+}
+
+/* Get the vpack_net_num of all the input pins of a LUT physical pb */
+void get_mapped_lut_pb_input_pin_vpack_net_num(t_pb* lut_pb,
+                                               int* num_lut_pin, int** lut_pin_net) {
+  int ipin, inode;
+
+  /* Check */ 
+  assert (1 == lut_pb->pb_graph_node->num_input_ports);
+  (*num_lut_pin) = lut_pb->pb_graph_node->num_input_pins[0];  
+ 
+  /* Allocate */
+  (*lut_pin_net) = (int*) my_malloc ((*num_lut_pin) * sizeof(int)); 
+  /* Fill the array */
+  for (ipin = 0; ipin < (*num_lut_pin); ipin++) {
+    inode = lut_pb->pb_graph_node->input_pins[0][ipin].rr_node_index_physical_pb;
+    (*lut_pin_net)[ipin] = lut_pb->rr_graph[inode].vpack_net_num;
+  }
+
+  return;
+}
+
+/* Get the vpack_net_num of all the input pins of a LUT physical pb */
+void get_lut_logical_block_input_pin_vpack_net_num(t_logical_block* lut_logical_block,
+                                                   int* num_lut_pin, int** lut_pin_net) {
+  int ipin, inode;
+
+  /* Check */ 
+  assert (NULL == lut_logical_block->model->inputs[0].next);
+  (*num_lut_pin) = lut_logical_block->model->inputs[0].size;  
+ 
+  /* Allocate */
+  (*lut_pin_net) = (int*) my_malloc ((*num_lut_pin) * sizeof(int)); 
+  /* Fill the array */
+  for (ipin = 0; ipin < (*num_lut_pin); ipin++) {
+    (*lut_pin_net)[ipin] = lut_logical_block->input_nets[0][ipin];
+  }
 
   return;
 }

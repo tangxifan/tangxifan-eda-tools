@@ -976,8 +976,7 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
                                       char* parent_pin_prefix,
                                       enum e_spice_pin2pin_interc_type pin2pin_interc_type,
                                       t_pb_graph_pin* des_pb_graph_pin,
-                                      t_mode* cur_mode,
-                                      int select_edge) {
+                                      t_mode* cur_mode) {
   int i, iedge, ipin;
   int fan_in = 0;
   t_interconnect* cur_interc = NULL; 
@@ -1145,6 +1144,10 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
                                                             cur_sram_orgz_info->type, 
                                                             fan_in);
 
+    /* Get the number of SRAM bits required by this MUX */
+    num_mux_sram_bits = count_num_sram_bits_one_spice_model(cur_interc->spice_model, 
+                                                            fan_in);
+
     /* Dump the configuration port bus */
     dump_verilog_mux_config_bus(fp, cur_interc->spice_model, cur_sram_orgz_info,
                                 fan_in, cur_num_sram, num_mux_reserved_conf_bits, num_mux_conf_bits); 
@@ -1172,49 +1175,6 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
   
     fprintf(fp, ");\n");
 
-    assert(select_edge < fan_in);
-    /* Disable decode SRAMs, they are the job of bitstream generator */
-    switch (cur_interc->spice_model->design_tech) {
-    case SPICE_MODEL_DESIGN_CMOS:
-      decode_cmos_mux_sram_bits(cur_interc->spice_model, fan_in, select_edge, 
-                                &num_mux_sram_bits, &mux_sram_bits, &mux_level);
-      break;
-    case SPICE_MODEL_DESIGN_RRAM:
-      decode_rram_mux(cur_interc->spice_model, fan_in, select_edge, 
-                      &num_mux_sram_bits, &mux_sram_bits, &mux_level);
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",
-                 __FILE__, __LINE__, cur_interc->spice_model->name);
-    }
-    /* Print the encoding in SPICE netlist for debugging */
-    /*
-    switch (cur_interc->spice_model->design_tech) {
-    case SPICE_MODEL_DESIGN_CMOS:
-      fprintf(fp, "//----- SRAM bits for MUX[%d], level=%d, select_path_id=%d. -----\n", 
-              cur_interc->spice_model->cnt, mux_level, select_edge);
-      fprintf(fp, "//----- From LSB(LEFT) TO MSB (RIGHT) -----\n");
-      fprintf(fp, "//-----");
-      fprint_commented_sram_bits(fp, num_mux_sram_bits, mux_sram_bits);
-      fprintf(fp, "-----\n");
-      break;
-    case SPICE_MODEL_DESIGN_RRAM:
-      fprintf(fp, "//----- BL/WL bits for 4T1R MUX[%d], level=%d, select_path_id=%d. -----\n", 
-              cur_interc->spice_model->cnt, mux_level, select_edge);
-      fprintf(fp, "//----- From LSB(LEFT) TO MSB (RIGHT) -----\n");
-      fprintf(fp, "//---- BL: ");
-      fprint_commented_sram_bits(fp, num_mux_sram_bits/2, mux_sram_bits);
-      fprintf(fp, "-----\n");
-      fprintf(fp, "//----- From LSB(LEFT) TO MSB (RIGHT) -----\n");
-      fprintf(fp, "//---- WL: ");
-      fprint_commented_sram_bits(fp, num_mux_sram_bits/2, mux_sram_bits + num_mux_sram_bits/2);
-      fprintf(fp, "-----\n");
-      break;
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",
-                 __FILE__, __LINE__, cur_interc->spice_model->name);
-    }
-    */
     get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model);
     /* Dump sram modules */
     switch (cur_interc->spice_model->design_tech) {
@@ -1262,16 +1222,9 @@ void dump_verilog_pb_graph_port_interc(t_sram_orgz_info* cur_sram_orgz_info,
                                        FILE* fp,
                                        char* formatted_pin_prefix,
                                        t_pb_graph_node* cur_pb_graph_node,
-                                       t_pb* cur_pb,
                                        enum e_spice_pb_port_type pb_port_type,
-                                       t_mode* cur_mode,
-                                       int is_idle) {
+                                       t_mode* cur_mode) {
   int iport, ipin;
-  int node_index = -1;
-  int prev_node = -1;
-  /* int prev_edge = -1; */
-  int path_id = -1;
-  t_rr_node* pb_rr_nodes = NULL;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -1285,98 +1238,37 @@ void dump_verilog_pb_graph_port_interc(t_sram_orgz_info* cur_sram_orgz_info,
     for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
         /* If this is a idle block, we set 0 to the selected edge*/
-        if (is_idle) {
-          assert(NULL == cur_pb);
-          path_id = 0;
-        } else {
-          /* Get the selected edge of current pin*/
-          assert(NULL != cur_pb);
-          pb_rr_nodes = cur_pb->rr_graph;
-          node_index = cur_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
-          prev_node = pb_rr_nodes[node_index].prev_node;
-          /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
-          /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
-          if (OPEN == prev_node) {
-            path_id = 0; //
-          } else {
-            /* Find the path_id */
-            path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-            assert(-1 != path_id);
-          }
-        }
+        /* Get the selected edge of current pin*/
         dump_verilog_pb_graph_pin_interc(cur_sram_orgz_info,
                                          fp, 
                                          formatted_pin_prefix, /* parent_pin_prefix */
                                          INPUT2INPUT_INTERC,
                                          &(cur_pb_graph_node->input_pins[iport][ipin]),
-                                         cur_mode,
-                                         path_id);
+                                         cur_mode);
       }
     }
     break;
   case SPICE_PB_PORT_OUTPUT:
     for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
-        /* If this is a idle block, we set 0 to the selected edge*/
-        if (is_idle) {
-          assert(NULL == cur_pb);
-          path_id = 0;
-        } else {
-          /* Get the selected edge of current pin*/
-          assert(NULL != cur_pb);
-          pb_rr_nodes = cur_pb->rr_graph;
-          node_index = cur_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
-          prev_node = pb_rr_nodes[node_index].prev_node;
-          /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
-          /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
-          if (OPEN == prev_node) {
-            path_id = 0; //
-          } else {
-            /* Find the path_id */
-            path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-            assert(-1 != path_id);
-          }
-        }
         dump_verilog_pb_graph_pin_interc(cur_sram_orgz_info,
                                          fp, 
                                          formatted_pin_prefix, /* parent_pin_prefix */
                                          OUTPUT2OUTPUT_INTERC,
                                          &(cur_pb_graph_node->output_pins[iport][ipin]),
-                                         cur_mode,
-                                         path_id);
+                                         cur_mode);
       }
     }
     break;
   case SPICE_PB_PORT_CLOCK:
     for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
-        /* If this is a idle block, we set 0 to the selected edge*/
-        if (is_idle) {
-          assert(NULL == cur_pb);
-          path_id = 0;
-        } else {
-          /* Get the selected edge of current pin*/
-          assert(NULL != cur_pb);
-          pb_rr_nodes = cur_pb->rr_graph;
-          node_index = cur_pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster;
-          prev_node = pb_rr_nodes[node_index].prev_node;
-          /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
-          /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
-          if (OPEN == prev_node) {
-            path_id = 0; //
-          } else {
-            /* Find the path_id */
-            path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-            assert(-1 != path_id);
-          }
-        }
         dump_verilog_pb_graph_pin_interc(cur_sram_orgz_info,
                                          fp, 
                                          formatted_pin_prefix, /* parent_pin_prefix */
                                          INPUT2INPUT_INTERC,
                                          &(cur_pb_graph_node->clock_pins[iport][ipin]),
-                                         cur_mode,
-                                         path_id);
+                                         cur_mode);
       }
     }
     break;
@@ -1395,9 +1287,7 @@ void dump_verilog_pb_graph_interc(t_sram_orgz_info* cur_sram_orgz_info,
                                   FILE* fp, 
                                   char* pin_prefix,
                                   t_pb_graph_node* cur_pb_graph_node,
-                                  t_pb* cur_pb,
-                                  int select_mode_index,
-                                  int is_idle) {
+                                  int select_mode_index) {
   int ipb, jpb;
   t_mode* cur_mode = NULL;
   t_pb_type* cur_pb_type = cur_pb_graph_node->pb_type;
@@ -1431,9 +1321,9 @@ void dump_verilog_pb_graph_interc(t_sram_orgz_info* cur_sram_orgz_info,
    *                         input_pins,   edges,       output_pins
    */ 
   dump_verilog_pb_graph_port_interc(cur_sram_orgz_info, fp, formatted_pin_prefix,
-                                    cur_pb_graph_node, cur_pb,
+                                    cur_pb_graph_node, 
                                     SPICE_PB_PORT_OUTPUT,
-                                    cur_mode, is_idle);
+                                    cur_mode);
   
   /* We check input_pins of child_pb_graph_node and its the input_edges
    * Built the interconnections between inputs of cur_pb_graph_node and inputs of child_pb_graph_node
@@ -1445,32 +1335,16 @@ void dump_verilog_pb_graph_interc(t_sram_orgz_info* cur_sram_orgz_info,
   for (ipb = 0; ipb < cur_pb_type->modes[select_mode_index].num_pb_type_children; ipb++) {
     for (jpb = 0; jpb < cur_pb_type->modes[select_mode_index].pb_type_children[ipb].num_pb; jpb++) {
       child_pb_graph_node = &(cur_pb_graph_node->child_pb_graph_nodes[select_mode_index][ipb][jpb]);
-      /* If this is a idle block, we set 0 to the selected edge*/
-     if (is_idle) {
-        assert(NULL == cur_pb);
-        child_pb =  NULL;
-        is_child_pb_idle = is_idle;
-      } else {
-        assert(NULL != cur_pb);
-        child_pb = &(cur_pb->child_pbs[ipb][jpb]);
-        /* Check if child_pb is empty */
-        if (NULL != child_pb->name) { 
-          is_child_pb_idle = 0;
-        } else {
-          is_child_pb_idle = 1;
-          child_pb = NULL;
-        }
-      }
       /* For each child_pb_graph_node input pins*/
       dump_verilog_pb_graph_port_interc(cur_sram_orgz_info, fp, formatted_pin_prefix,
-                                         child_pb_graph_node, child_pb,
+                                         child_pb_graph_node, 
                                          SPICE_PB_PORT_INPUT,
-                                         cur_mode, is_child_pb_idle);
+                                         cur_mode);
       /* TODO: for clock pins, we should do the same work */
       dump_verilog_pb_graph_port_interc(cur_sram_orgz_info, fp, formatted_pin_prefix,
-                                        child_pb_graph_node, child_pb,
+                                        child_pb_graph_node, 
                                         SPICE_PB_PORT_CLOCK,
-                                        cur_mode, is_child_pb_idle);
+                                        cur_mode);
  
     }
   }
@@ -1553,14 +1427,9 @@ void dump_verilog_pb_graph_primitive_node(FILE* fp,
 void dump_verilog_pb_primitive_verilog_model(t_sram_orgz_info* cur_sram_orgz_info,
                                              FILE* fp,
                                              char* subckt_prefix,
-                                             t_pb* prim_pb,
                                              t_pb_graph_node* prim_pb_graph_node,
                                              int pb_index,
-                                             t_spice_model* verilog_model,
-                                             int is_idle) {
-  t_pb_type* prim_pb_type = NULL;
-  t_logical_block* mapped_logical_block = NULL;
-
+                                             t_spice_model* verilog_model) {
   /* Check the file handler*/ 
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
@@ -1569,54 +1438,38 @@ void dump_verilog_pb_primitive_verilog_model(t_sram_orgz_info* cur_sram_orgz_inf
   }
   /* Check cur_pb_graph_node*/
   if (NULL == prim_pb_graph_node) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid cur_pb_graph_node.\n", 
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid prim_pb_graph_node.\n", 
                __FILE__, __LINE__); 
     exit(1);
   }
  
   /* Initialize */ 
-  prim_pb_type = prim_pb_graph_node->pb_type;
-  if (is_idle) {
-    mapped_logical_block = NULL;
-  } else {
-    mapped_logical_block = &logical_block[prim_pb->logical_block];
-  }
-
   /* Asserts*/
   assert(pb_index == prim_pb_graph_node->placement_index);
-  assert(0 == strcmp(verilog_model->name, prim_pb_type->spice_model->name));
-  if (is_idle) {
-    assert(NULL == prim_pb); 
-  } else {
-    if (NULL == prim_pb) {
-      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid prim_pb.\n", 
-                 __FILE__, __LINE__); 
-      exit(1);
-    }
-  }
+  assert(0 == strcmp(verilog_model->name, prim_pb_graph_node->pb_type->spice_model->name));
 
   /* According to different type, we print netlist*/
   switch (verilog_model->type) {
   case SPICE_MODEL_LUT:
     /* If this is a idle block we should set sram_bits to zero*/
-    dump_verilog_pb_primitive_lut(cur_sram_orgz_info, fp, subckt_prefix, mapped_logical_block, prim_pb_graph_node,
+    dump_verilog_pb_primitive_lut(cur_sram_orgz_info, fp, subckt_prefix, prim_pb_graph_node,
                                   pb_index, verilog_model);
     break;
   case SPICE_MODEL_FF:
     assert(NULL != verilog_model->model_netlist);
     /* TODO : We should learn trigger type and initial value!!! and how to apply them!!! */
-    dump_verilog_pb_primitive_hardlogic(cur_sram_orgz_info, fp, subckt_prefix, mapped_logical_block, prim_pb_graph_node,
-                                        pb_index, verilog_model);
+    dump_verilog_pb_generic_primitive(cur_sram_orgz_info, fp, subckt_prefix, prim_pb_graph_node, 
+                                      pb_index, verilog_model);
     break;
   case SPICE_MODEL_IOPAD:
     assert(NULL != verilog_model->model_netlist);
-    dump_verilog_pb_primitive_hardlogic (cur_sram_orgz_info, fp, subckt_prefix, mapped_logical_block, prim_pb_graph_node,
-                                         pb_index, verilog_model);
+    dump_verilog_pb_generic_primitive (cur_sram_orgz_info, fp, subckt_prefix, prim_pb_graph_node,
+                                       pb_index, verilog_model);
     break;
   case SPICE_MODEL_HARDLOGIC:
     assert(NULL != verilog_model->model_netlist);
-    dump_verilog_pb_primitive_hardlogic(cur_sram_orgz_info, fp, subckt_prefix, mapped_logical_block, prim_pb_graph_node,
-                                        pb_index, verilog_model);
+    dump_verilog_pb_generic_primitive(cur_sram_orgz_info, fp, subckt_prefix, prim_pb_graph_node,
+                                      pb_index, verilog_model);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid type of verilog_model(%s), should be [LUT|FF|HARD_LOGIC|IO]!\n",
@@ -1628,580 +1481,16 @@ void dump_verilog_pb_primitive_verilog_model(t_sram_orgz_info* cur_sram_orgz_inf
   return; 
 }
 
-/* Print idle pb_types recursively
- * search the idle_mode until we reach the leaf node
- */
-void dump_verilog_idle_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
-                                         FILE* fp,
-                                         char* subckt_prefix,
-                                         t_pb_graph_node* cur_pb_graph_node,
-                                         int pb_type_index) {
-  int mode_index, ipb, jpb, child_mode_index;
-  t_pb_type* cur_pb_type = NULL;
-  char* subckt_name = NULL;
-  char* formatted_subckt_prefix = format_verilog_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
-  char* pass_on_prefix = NULL;
-  char* child_pb_type_prefix = NULL;
-  char* subckt_port_prefix = NULL;
-
-  int child_pb_num_reserved_conf_bits = 0;
-  int child_pb_num_conf_bits = 0;
-  int child_pb_num_iopads = 0;
-  
-  int num_reserved_conf_bits = 0;
-  int num_conf_bits = 0;
-  int stamped_sram_cnt = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info); 
-  int stamped_sram_lsb = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info); 
-
-  int stamped_iopad_cnt = iopad_verilog_model->cnt;
-
-  /* Check the file handler*/ 
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
-               __FILE__, __LINE__); 
-    exit(1);
-  }
-  /* Check cur_pb_graph_node*/
-  if (NULL == cur_pb_graph_node) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid cur_pb_graph_node.\n", 
-               __FILE__, __LINE__); 
-    exit(1);
-  }
-  cur_pb_type = cur_pb_graph_node->pb_type;
-
-  /* Recursively finish all the child pb_types*/
-  if (NULL == cur_pb_type->spice_model) { 
-    /* Find the mode that define_idle_mode*/
-    mode_index = find_pb_type_idle_mode_index((*cur_pb_type));
-    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
-      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
-        /* Pass the SPICE mode prefix on, 
-         * <subckt_name>mode[<mode_name>]_
-         */
-        pass_on_prefix = (char*)my_malloc(sizeof(char)*
-                           (strlen(formatted_subckt_prefix) + strlen(cur_pb_type->name) + 1 
-                            + strlen(my_itoa(pb_type_index)) + 7 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1 + 1));
-        sprintf(pass_on_prefix, "%s%s_%d__mode_%s__", 
-                formatted_subckt_prefix, cur_pb_type->name, pb_type_index, cur_pb_type->modes[mode_index].name);
-        /* Recursive*/
-        dump_verilog_idle_pb_graph_node_rec(cur_sram_orgz_info, fp, pass_on_prefix,
-                                            &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]), jpb);
-        /* Free */
-        my_free(pass_on_prefix);
-      }
-    }
-  }
-
-  /* Check if this has defined a spice_model*/
-  if (NULL != cur_pb_type->spice_model) {
-    switch (cur_pb_type->class_type) {
-    case LUT_CLASS: 
-      /* Consider the num_pb, create all the subckts*/
-      dump_verilog_pb_primitive_verilog_model(cur_sram_orgz_info, fp, formatted_subckt_prefix, 
-                                              NULL, cur_pb_graph_node, pb_type_index, 
-                                              cur_pb_type->spice_model, 1);
-      /* update the number of SRAM, I/O pads */
-      stamped_sram_cnt += cur_pb_type->default_mode_num_conf_bits;
-      break;
-    case LATCH_CLASS:
-      assert(0 == cur_pb_type->num_modes);
-      /* Consider the num_pb, create all the subckts*/
-      dump_verilog_pb_primitive_verilog_model(cur_sram_orgz_info, fp, formatted_subckt_prefix, 
-                                      NULL, cur_pb_graph_node, pb_type_index, cur_pb_type->spice_model, 1);
-      /* update the number of SRAM, I/O pads */
-      /* update stamped sram counter */
-      stamped_sram_cnt += cur_pb_type->default_mode_num_conf_bits;
-      break;
-    case UNKNOWN_CLASS:
-    case MEMORY_CLASS:
-      /* Consider the num_pb, create all the subckts*/
-      dump_verilog_pb_primitive_verilog_model(cur_sram_orgz_info, fp, formatted_subckt_prefix, 
-                                      NULL, cur_pb_graph_node, pb_type_index, cur_pb_type->spice_model, 1);
-      /* update the number of SRAM, I/O pads */
-      /* update stamped sram counter */
-      stamped_sram_cnt += cur_pb_type->default_mode_num_conf_bits;
-      break;  
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Unknown class type of pb_type(%s)!\n",
-                 __FILE__, __LINE__, cur_pb_type->name);
-      exit(1);
-    }
-    /* Check */
-    assert(stamped_sram_cnt == get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info)); 
-    assert(stamped_iopad_cnt == iopad_verilog_model->cnt); 
-    /* Finish job for primitive node, return */
-    return;
-  }
-
-  /* Find the mode that define_idle_mode*/
-  mode_index = find_pb_type_idle_mode_index((*cur_pb_type));
-  /* Create a new subckt */
-  /* <formatted_subckt_prefix>mode[<mode_name>]
-   */
-  subckt_name = (char*)my_malloc(sizeof(char)*
-                (strlen(formatted_subckt_prefix) + strlen(cur_pb_type->name) + 1 
-                + strlen(my_itoa(pb_type_index)) + 7 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1)); 
-  /* Definition*/
-  sprintf(subckt_name, "%s%s_%d__mode_%s_", 
-          formatted_subckt_prefix, cur_pb_type->name, pb_type_index, cur_pb_type->modes[mode_index].name);
-  /* Comment lines */
-  fprintf(fp, "//----- Idle programmable logic block Verilog module %s -----\n", subckt_name);
-  fprintf(fp, "module %s (", subckt_name);
-  fprintf(fp, "\n");
-  /* Inputs, outputs, inouts, clocks */
-  subckt_port_prefix = (char*)my_malloc(sizeof(char)*
-                                       (5 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1));
-  sprintf(subckt_port_prefix, "mode_%s_", cur_pb_type->modes[mode_index].name);
-  /*
-  dump_verilog_pb_type_ports(fp, subckt_name, 0, cur_pb_type);
-  */
-  /* dump global ports */
-  if (0 < dump_verilog_global_ports(fp, global_ports_head, TRUE)) {
-    fprintf(fp, ",\n");
-  }
-  /* Simplify the port prefix, make SPICE netlist readable */
-  dump_verilog_pb_type_ports(fp, subckt_port_prefix, 0, cur_pb_type, TRUE, FALSE);
-  /* Print Input Pad and Output Pad */
-  dump_verilog_grid_common_port(fp, iopad_verilog_model,
-                                gio_inout_prefix, 
-                                stamped_iopad_cnt, iopad_verilog_model->cnt - 1,
-                                VERILOG_PORT_INPUT);
-  /* Print Configuration ports */
-  /* sram_verilog_model->cnt should be updated because all the child pbs have been dumped
-   * stamped_sram_cnt remains the old sram_verilog_model->cnt before all the child pbs are dumped
-   * Note by far, sram_verilog_model->cnt could be smaller than num_conf_bits
-   * because the interconnection of current pb_type/pb has not yet dumped, which may contain
-   * a few configuration bits. 
-   */
-  num_reserved_conf_bits = cur_pb_type->default_mode_num_reserved_conf_bits;
-  if (0 < num_reserved_conf_bits) {
-    fprintf(fp, ",\n");
-  }
-  dump_verilog_reserved_sram_ports(fp, cur_sram_orgz_info,
-                                   0, num_reserved_conf_bits - 1,
-                                   VERILOG_PORT_INPUT);
-  num_conf_bits = cur_pb_type->default_mode_num_conf_bits;
-  if (0 < num_conf_bits) {
-    fprintf(fp, ",\n");
-  }
-  dump_verilog_sram_ports(fp, cur_sram_orgz_info,
-                          stamped_sram_cnt, stamped_sram_cnt + num_conf_bits - 1,
-                          VERILOG_PORT_INPUT);
-  /* Finish with local vdd and gnd */
-  fprintf(fp, ");\n");
-
-  /* Definition ends*/
-  /* Quote all child pb_types */
-  for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
-    /* Each child may exist multiple times in the hierarchy*/
-    for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
-      /* we should make sure this placement index == child_pb_type[jpb]*/
-      assert(jpb == cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb].placement_index);
-      /* If the pb_type_children is a leaf node, we don't use the mode to name it,
-       * else we can use the mode to name it 
-       */
-      if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) { /* Not a leaf node*/
-        child_mode_index = find_pb_type_idle_mode_index(cur_pb_type->modes[mode_index].pb_type_children[ipb]);
-        fprintf(fp, "%s_%s_%d__mode_%s_ ",
-                subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb, 
-                cur_pb_type->modes[mode_index].pb_type_children[ipb].modes[child_mode_index].name);
-      } else { /* Have a verilog model definition, this is a leaf node*/
-        fprintf(fp, "%s_%s_%d_ ",
-                subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb); 
-      }
-      /* Collect information of child pb_type */
-      child_pb_num_reserved_conf_bits = cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_reserved_conf_bits;
-      child_pb_num_conf_bits = cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_conf_bits;
-      child_pb_num_iopads = cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_iopads;
-
-      /* <formatted_subckt_prefix>mode[<mode_name>]_<child_pb_type_name>[<ipb>]
-       */
-      fprintf(fp, "%s_%d_ (", cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
-      fprintf(fp, "\n");
-      /* dump global ports */
-      /* If the child node is a primitive, we only dump global ports belonging to this primitive */
-      if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) {
-        if (0 < dump_verilog_global_ports(fp, global_ports_head, FALSE)) {
-          fprintf(fp, ",\n");
-        }
-      } else {
-        if (0 < rec_dump_verilog_spice_model_global_ports(fp, 
-                                                          cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model,
-                                                          FALSE, TRUE)) {
-          fprintf(fp, ",\n");
-        }
-      }
-      /* Pass the SPICE mode prefix on, 
-       * <subckt_name>mode[<mode_name>]_<child_pb_type_name>[<jpb>]
-       * <child_pb_type_name>[<jpb>]
-       */
-      /* Simplify the prefix! */
-      child_pb_type_prefix = (char*)my_malloc(sizeof(char)* 
-                                (strlen(cur_pb_type->modes[mode_index].pb_type_children[ipb].name) + 1 
-                                 + strlen(my_itoa(jpb)) + 1 + 1));
-      sprintf(child_pb_type_prefix, "%s_%d_",
-              cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
-      /* Print inputs, outputs, inouts, clocks
-       * NO SRAMs !!! They have already been fixed in the bottom level
-       */
-      dump_verilog_pb_type_ports(fp, child_pb_type_prefix, 0, &(cur_pb_type->modes[mode_index].pb_type_children[ipb]),FALSE, FALSE);
-      /* Print I/O pads */
-      dump_verilog_grid_common_port(fp, iopad_verilog_model,
-                                    gio_inout_prefix, 
-                                    stamped_iopad_cnt,
-                                    stamped_iopad_cnt + child_pb_num_iopads - 1,
-                                    VERILOG_PORT_CONKT);
-      /* update stamped outpad counter */
-      stamped_iopad_cnt += child_pb_num_iopads;
-      /* Print configuration ports */
-      if (0 < child_pb_num_reserved_conf_bits) {
-        fprintf(fp, ",\n");
-      }
-      dump_verilog_reserved_sram_ports(fp, cur_sram_orgz_info,
-                                       0, child_pb_num_reserved_conf_bits - 1,
-                                       VERILOG_PORT_CONKT);
-      if (0 < child_pb_num_conf_bits) {
-        fprintf(fp, ",\n");
-      }
-      dump_verilog_sram_ports(fp, cur_sram_orgz_info,
-                              stamped_sram_cnt,
-                              stamped_sram_cnt + child_pb_num_conf_bits - 1,
-                              VERILOG_PORT_CONKT);
-      /* update stamped sram counter */
-      stamped_sram_cnt += child_pb_num_conf_bits; 
-      fprintf(fp, ");\n"); /* Local vdd and gnd*/
-      /* Finish */
-      my_free(child_pb_type_prefix);
-    }
-  }
-  /* Print interconnections, set is_idle as TRUE*/
-  dump_verilog_pb_graph_interc(cur_sram_orgz_info, fp, subckt_name, cur_pb_graph_node, NULL, mode_index, 1);
-  /* Check each pins of pb_graph_node */ 
-  /* Check and update stamped_sram_cnt */
-  assert(!(stamped_sram_cnt > (stamped_sram_lsb + num_conf_bits)));
-  stamped_sram_cnt = stamped_sram_lsb + num_conf_bits;
-  /* End the subckt */
-  fprintf(fp, "endmodule\n");
-  /* Comment lines */
-  fprintf(fp, "//----- END Idle programmable logic block Verilog module %s -----\n\n", subckt_name);
-  /* Free subckt name*/
-  my_free(subckt_name);
-
-  assert(stamped_sram_cnt == get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info)); 
-  assert(stamped_iopad_cnt == iopad_verilog_model->cnt);
-
-  return;
-}
-
-/* Print SPICE netlist for each pb and corresponding pb_graph_node*/
-void dump_verilog_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
-                                    FILE* fp, 
-                                    char* subckt_prefix, 
-                                    t_pb* cur_pb, 
-                                    t_pb_graph_node* cur_pb_graph_node,
-                                    int pb_type_index) {
-  int mode_index, ipb, jpb, child_mode_index;
-  t_pb_type* cur_pb_type = NULL;
-  char* subckt_name = NULL;
-  char* formatted_subckt_prefix = format_verilog_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
-  char* pass_on_prefix = NULL;
-  char* child_pb_type_prefix = NULL;
-
-  char* subckt_port_prefix = NULL;
-
-  int num_reserved_conf_bits = 0;
-  int num_conf_bits = 0;
-  int child_pb_num_reserved_conf_bits = 0;
-  int child_pb_num_conf_bits = 0;
-  int child_pb_num_iopads = 0;
-
-  int stamped_sram_cnt = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info); 
-  int stamped_sram_lsb = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info); 
-
-  int stamped_iopad_cnt = iopad_verilog_model->cnt;
-  t_pb* child_pb = NULL;
-
-  /* Check the file handler*/ 
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
-               __FILE__, __LINE__); 
-    exit(1);
-  }
-  /* Check cur_pb_graph_node*/
-  if (NULL == cur_pb_graph_node) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid cur_pb_graph_node.\n", 
-               __FILE__, __LINE__); 
-    exit(1);
-  }
-  cur_pb_type = cur_pb_graph_node->pb_type;
-  mode_index = cur_pb->mode; 
-
-  /* Recursively finish all the child pb_types*/
-  if (NULL == cur_pb_type->spice_model) { 
-    /* recursive for the child_pbs*/
-    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
-      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
-        /* Pass the SPICE mode prefix on, 
-         * <subckt_name><pb_type_name>[<pb_index>]_mode[<mode_name>]_
-         */
-        pass_on_prefix = (char*)my_malloc(sizeof(char)*
-                          (strlen(formatted_subckt_prefix) + strlen(cur_pb_type->name) + 1 
-                           + strlen(my_itoa(pb_type_index)) + 7 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1 + 1));
-        sprintf(pass_on_prefix, "%s%s_%d__mode_%s__", 
-                formatted_subckt_prefix, cur_pb_type->name, pb_type_index, cur_pb_type->modes[mode_index].name);
-        /* Recursive*/
-        /* Refer to pack/output_clustering.c [LINE 392] */
-        if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
-          dump_verilog_pb_graph_node_rec(cur_sram_orgz_info, fp, pass_on_prefix, &(cur_pb->child_pbs[ipb][jpb]), 
-                                         cur_pb->child_pbs[ipb][jpb].pb_graph_node, jpb);
-        } else {
-          /* Check if this pb has no children, no children mean idle*/
-          dump_verilog_idle_pb_graph_node_rec(cur_sram_orgz_info, fp, pass_on_prefix,
-                                              cur_pb->child_pbs[ipb][jpb].pb_graph_node, jpb);
-        }
-        /* Free */
-        my_free(pass_on_prefix);
-      }
-    }
-  }
-
-  /* Check if this has defined a spice_model*/
-  if (NULL != cur_pb_type->spice_model) {
-    switch (cur_pb_type->class_type) {
-    case LUT_CLASS: 
-      child_pb = get_lut_child_pb(cur_pb, mode_index);
-      dump_verilog_pb_primitive_verilog_model(cur_sram_orgz_info, fp, formatted_subckt_prefix, 
-                                              child_pb, cur_pb_graph_node, 
-                                              pb_type_index, cur_pb_type->spice_model, 0);
-      /* update the number of SRAM, I/O pads */
-      /* update stamped iopad counter */
-      stamped_iopad_cnt += cur_pb->num_iopads;
-      /* update stamped sram counter */
-      stamped_sram_cnt += cur_pb->num_conf_bits;
-      break;
-    case LATCH_CLASS:
-      assert(0 == cur_pb_type->num_modes);
-      /* Consider the num_pb, create all the subckts*/
-      dump_verilog_pb_primitive_verilog_model(cur_sram_orgz_info, fp, formatted_subckt_prefix, 
-                                              cur_pb, cur_pb_graph_node,
-                                              pb_type_index, cur_pb_type->spice_model, 0);
-      /* update the number of SRAM, I/O pads */
-      /* update stamped iopad counter */
-      stamped_iopad_cnt += cur_pb->num_iopads;
-      /* update stamped sram counter */
-      stamped_sram_cnt += cur_pb->num_conf_bits;
-      break;
-    case MEMORY_CLASS:
-      child_pb = get_hardlogic_child_pb(cur_pb, mode_index); 
-      /* Consider the num_pb, create all the subckts*/
-      dump_verilog_pb_primitive_verilog_model(cur_sram_orgz_info, fp, formatted_subckt_prefix, 
-                                              child_pb, cur_pb_graph_node, 
-                                              pb_type_index, cur_pb_type->spice_model, 0);
-      /* update the number of SRAM, I/O pads */
-      /* update stamped iopad counter */
-      stamped_iopad_cnt += cur_pb->num_iopads;
-      /* update stamped sram counter */
-      stamped_sram_cnt += cur_pb->num_conf_bits;
-      break;  
-    case UNKNOWN_CLASS:
-      /* Consider the num_pb, create all the subckts*/
-      dump_verilog_pb_primitive_verilog_model(cur_sram_orgz_info, fp, formatted_subckt_prefix, 
-                                              cur_pb, cur_pb_graph_node, pb_type_index, cur_pb_type->spice_model, 0);
-      /* update the number of SRAM, I/O pads */
-      /* update stamped iopad counter */
-      stamped_iopad_cnt += cur_pb->num_iopads;
-      /* update stamped sram counter */
-      stamped_sram_cnt += cur_pb->num_conf_bits;
-      break;  
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Unknown class type of pb_type(%s)!\n",
-                 __FILE__, __LINE__, cur_pb_type->name);
-      exit(1);
-    }
-    /* Check */
-    assert(stamped_sram_cnt == get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info)); 
-    assert(stamped_iopad_cnt == iopad_verilog_model->cnt); 
-    /* Finish job for primitive node, return */
-    return;
-  }
-
-  /* Create a new subckt */
-  /* <formatted_subckt_prefix>mode[<mode_name>]
-   */
-  subckt_name = (char*)my_malloc(sizeof(char)*
-                (strlen(formatted_subckt_prefix) + strlen(cur_pb_type->name) + 1 
-                 + strlen(my_itoa(pb_type_index)) + 7 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1)); 
-  /* Definition*/
-  sprintf(subckt_name, "%s%s_%d__mode_%s_", 
-          formatted_subckt_prefix, cur_pb_type->name, pb_type_index, cur_pb_type->modes[mode_index].name);
-  /* Comment lines */
-  fprintf(fp, "//----- Programmable logic block Verilog module %s -----\n", subckt_name);
-  fprintf(fp, "module %s (", subckt_name);
-  /* Inputs, outputs, inouts, clocks */
-  subckt_port_prefix = (char*)my_malloc(sizeof(char)*
-                        (5 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1));
-  sprintf(subckt_port_prefix, "mode_%s_", cur_pb_type->modes[mode_index].name);
-  /*
-  dump_verilog_pb_type_ports(fp, subckt_name, 0, cur_pb_type);
-  */
-  /* Print global set and reset */
-  fprintf(fp, "\n");
-  /* dump global ports */
-  if (0 < dump_verilog_global_ports(fp, global_ports_head, TRUE)) {
-    fprintf(fp, ",\n");
-  }
-  /* Simplify the prefix! Make the SPICE netlist readable*/
-  dump_verilog_pb_type_ports(fp, subckt_port_prefix, 0, cur_pb_type, TRUE, FALSE);
-  /* Print Input Pad and Output Pad */
-  dump_verilog_grid_common_port(fp, iopad_verilog_model,
-                                gio_inout_prefix, 
-                                stamped_iopad_cnt, iopad_verilog_model->cnt - 1,
-                                VERILOG_PORT_INPUT);
-  /* Print Configuration ports */
-  /* sram_verilog_model->cnt should be updated because all the child pbs have been dumped
-   * stamped_sram_cnt remains the old sram_verilog_model->cnt before all the child pbs are dumped
-   * Note by far, sram_verilog_model->cnt could be smaller than num_conf_bits
-   * because the interconnection of current pb_type/pb has not yet dumped, which may contain
-   * a few configuration bits. 
-   */
-  num_reserved_conf_bits = cur_pb->num_reserved_conf_bits;
-  if (0 < num_reserved_conf_bits) {
-    fprintf(fp, ",\n");
-  }
-  dump_verilog_reserved_sram_ports(fp, cur_sram_orgz_info,
-                                   0, num_reserved_conf_bits - 1,
-                                   VERILOG_PORT_INPUT);
-  num_conf_bits = cur_pb->num_conf_bits;
-  if (0 < num_conf_bits) {
-    fprintf(fp, ",\n");
-  }
-  dump_verilog_sram_ports(fp, cur_sram_orgz_info,
-                          stamped_sram_cnt, stamped_sram_cnt + num_conf_bits - 1,
-                          VERILOG_PORT_INPUT);
-  /* Finish with local vdd and gnd */
-  fprintf(fp, ");\n");
-  /* Definition ends*/
-
-  /* Quote all child pb_types */
-  for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
-    /* Each child may exist multiple times in the hierarchy*/
-    for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
-      /* we should make sure this placement index == child_pb_type[jpb]*/
-      assert(jpb == cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb].placement_index);
-      /* <formatted_subckt_prefix>mode[<mode_name>]_<child_pb_type_name>[<ipb>]
-       */
-      /* Find the pb_type_children mode */
-      if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
-        child_mode_index = cur_pb->child_pbs[ipb][jpb].mode; 
-        child_pb_num_reserved_conf_bits = cur_pb->child_pbs[ipb][jpb].num_reserved_conf_bits;
-        child_pb_num_conf_bits = cur_pb->child_pbs[ipb][jpb].num_conf_bits;
-        child_pb_num_iopads = cur_pb->child_pbs[ipb][jpb].num_iopads;
-      } else /*if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model)*/ { /* Find the idle_mode_index, if this is not a leaf node  */
-        child_mode_index = find_pb_type_idle_mode_index(cur_pb_type->modes[mode_index].pb_type_children[ipb]);
-        child_pb_num_reserved_conf_bits = cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_reserved_conf_bits;
-        child_pb_num_conf_bits = cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_conf_bits;
-        child_pb_num_iopads = cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_iopads;
-      }
-      /* If the pb_type_children is a leaf node, we don't use the mode to name it,
-       * else we can use the mode to name it 
-       */
-      if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) { /* Not a leaf node*/
-        fprintf(fp, "%s_%s_%d__mode_%s_ ",
-                subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb, 
-                cur_pb_type->modes[mode_index].pb_type_children[ipb].modes[child_mode_index].name);
-      } else { /* Have a verilog model definition, this is a leaf node*/
-        fprintf(fp, "%s_%s_%d_ ",
-                subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb); 
-      }
-      fprintf(fp, "%s_%d_ (", cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
-      fprintf(fp, "\n");
-      /* dump global ports */
-      /* If the child node is a primitive, we only dump global ports belonging to this primitive */
-      if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) {
-        if (0 < dump_verilog_global_ports(fp, global_ports_head, FALSE)) {
-          fprintf(fp, ",\n");
-        }
-      } else {
-        if (0 < rec_dump_verilog_spice_model_global_ports(fp, 
-                                                          cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model,
-                                                          FALSE, TRUE)) {
-          fprintf(fp, ",\n");
-        }
-      }
-      /* Pass the SPICE mode prefix on, 
-       * <subckt_name>mode[<mode_name>]_<child_pb_type_name>[<jpb>]
-       */
-      /* Simplify the prefix! Make the SPICE netlist readable*/
-      child_pb_type_prefix = (char*)my_malloc(sizeof(char)*
-                             (strlen(cur_pb_type->modes[mode_index].pb_type_children[ipb].name) + 1 
-                              + strlen(my_itoa(jpb)) + 1 + 1));
-      sprintf(child_pb_type_prefix, "%s_%d_", 
-              cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
-      /* Print inputs, outputs, inouts, clocks
-       * NO SRAMs !!! They have already been fixed in the bottom level
-       */
-      dump_verilog_pb_type_ports(fp, child_pb_type_prefix, 0, &(cur_pb_type->modes[mode_index].pb_type_children[ipb]), FALSE, FALSE);
-      /* Print I/O pads */
-      dump_verilog_grid_common_port(fp, iopad_verilog_model,
-                                    gio_inout_prefix, 
-                                    stamped_iopad_cnt,
-                                    stamped_iopad_cnt + child_pb_num_iopads - 1,
-                                    VERILOG_PORT_CONKT);
-      /* update stamped outpad counter */
-      stamped_iopad_cnt += child_pb_num_iopads;
-      /* Print configuration ports */
-      if (0 < child_pb_num_reserved_conf_bits) {
-        fprintf(fp, ",\n");
-      }
-      dump_verilog_reserved_sram_ports(fp, cur_sram_orgz_info,
-                                       0, child_pb_num_reserved_conf_bits - 1,
-                                       VERILOG_PORT_CONKT);
-      if (0 < child_pb_num_conf_bits) {
-        fprintf(fp, ",\n");
-      }
-      dump_verilog_sram_ports(fp, cur_sram_orgz_info,
-                              stamped_sram_cnt,
-                              stamped_sram_cnt + child_pb_num_conf_bits - 1,
-                              VERILOG_PORT_CONKT);
-      /* update stamped sram counter */
-      stamped_sram_cnt += child_pb_num_conf_bits; 
-      
-      fprintf(fp, "); \n"); /* Local vdd and gnd*/
-      my_free(child_pb_type_prefix);
-    }
-  }
-  /* Print interconnections, set is_idle as TRUE*/
-  dump_verilog_pb_graph_interc(cur_sram_orgz_info, fp, subckt_name, cur_pb_graph_node, cur_pb, mode_index, 0);
-  /* Check each pins of pb_graph_node */ 
-  /* Check and update stamped_sram_cnt */
-  assert(!(stamped_sram_cnt > (stamped_sram_lsb + num_conf_bits)));
-  stamped_sram_cnt = stamped_sram_lsb + num_conf_bits;
-  /* End the subckt */
-  fprintf(fp, "endmodule\n");
-  /* Comment lines */
-  fprintf(fp, "//----- END Programmable logic block Verilog module %s -----\n\n", subckt_name);
-
-  /* Free subckt name*/
-  my_free(subckt_name);
-
-  assert(stamped_sram_cnt == get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info)); 
-  assert(stamped_iopad_cnt == iopad_verilog_model->cnt); 
-
-  return;
-}
-
 /* Print physical mode of pb_types and configure it to the idle pb_types recursively
  * search the idle_mode until we reach the leaf node
  */
 void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
                                         FILE* fp,
                                         char* subckt_prefix,
-                                        t_pb* cur_pb, 
                                         t_pb_graph_node* cur_pb_graph_node,
                                         int pb_type_index) {
-  int mode_index, ipb, jpb, child_mode_index, is_idle;
+  int mode_index, ipb, jpb, child_mode_index;
   t_pb_type* cur_pb_type = NULL;
-  t_pb* child_pb = NULL;
   char* subckt_name = NULL;
   char* formatted_subckt_prefix = format_verilog_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
   char* pass_on_prefix = NULL;
@@ -2233,11 +1522,6 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
   }
 
   cur_pb_type = cur_pb_graph_node->pb_type;
-
-  is_idle = 1;
-  if (NULL != cur_pb) {
-    is_idle = 0;
-  }
 
   /* Recursively finish all the child pb_types*/
   if (NULL == cur_pb_type->spice_model) { 
@@ -2256,9 +1540,8 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
         /* Recursive*/
         /* Refer to pack/output_clustering.c [LINE 392] */
         /* Find the child pb that is mapped, and the mapping info is not stored in the physical mode ! */
-        child_pb = get_child_pb_for_phy_pb_graph_node(cur_pb, ipb, jpb);
-        dump_verilog_phy_pb_graph_node_rec(cur_sram_orgz_info, fp, pass_on_prefix, child_pb,
-                                          &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]), jpb);
+        dump_verilog_phy_pb_graph_node_rec(cur_sram_orgz_info, fp, pass_on_prefix, 
+                                           &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]), jpb);
         /* Free */
         my_free(pass_on_prefix);
       }
@@ -2269,33 +1552,22 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
   if (NULL != cur_pb_type->spice_model) {
     switch (cur_pb_type->class_type) {
     case LUT_CLASS: 
-      /* Consider the num_pb, create all the subckts*/
-      if (1 == is_idle) {
-        dump_verilog_pb_primitive_verilog_model(cur_sram_orgz_info, fp, formatted_subckt_prefix, 
-                                                NULL, cur_pb_graph_node, pb_type_index, 
-                                                cur_pb_type->spice_model, is_idle); /* last param means idle */
-      } else {
-        child_pb = get_lut_child_pb(cur_pb, mode_index); 
-        /* Special care for LUT !!!
-         * Mapped logical block information is stored in child_pbs
-         */
-        dump_verilog_pb_primitive_verilog_model(cur_sram_orgz_info, fp, formatted_subckt_prefix, 
-                                                child_pb, cur_pb_graph_node, pb_type_index, 
-                                                cur_pb_type->spice_model, is_idle); /* last param means idle */
-      }
+      dump_verilog_pb_primitive_verilog_model(cur_sram_orgz_info, fp, formatted_subckt_prefix, 
+                                              cur_pb_graph_node, pb_type_index, 
+                                              cur_pb_type->spice_model); /* last param means idle */
     case LATCH_CLASS:
       assert(0 == cur_pb_type->num_modes);
       /* Consider the num_pb, create all the subckts*/
       dump_verilog_pb_primitive_verilog_model(cur_sram_orgz_info, fp, formatted_subckt_prefix, 
-                                              cur_pb, cur_pb_graph_node, pb_type_index, 
-                                              cur_pb_type->spice_model, is_idle); /* last param means idle */
+                                              cur_pb_graph_node,  pb_type_index, 
+                                              cur_pb_type->spice_model); /* last param means idle */
       break;
     case UNKNOWN_CLASS:
     case MEMORY_CLASS:
       /* Consider the num_pb, create all the subckts*/
       dump_verilog_pb_primitive_verilog_model(cur_sram_orgz_info, fp, formatted_subckt_prefix, 
-                                              cur_pb, cur_pb_graph_node, pb_type_index, 
-                                              cur_pb_type->spice_model, is_idle); /* last param means idle */
+                                              cur_pb_graph_node , pb_type_index, 
+                                              cur_pb_type->spice_model); /* last param means idle */
       break;  
     default:
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Unknown class type of pb_type(%s)!\n",
@@ -2455,7 +1727,7 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
     }
   }
   /* Print interconnections, set is_idle as TRUE*/
-  dump_verilog_pb_graph_interc(cur_sram_orgz_info, fp, subckt_name, cur_pb_graph_node, cur_pb, mode_index, is_idle);
+  dump_verilog_pb_graph_interc(cur_sram_orgz_info, fp, subckt_name, cur_pb_graph_node, mode_index);
   /* Check each pins of pb_graph_node */ 
   /* Check and update stamped_sram_cnt */
   assert(!(stamped_sram_cnt > (stamped_sram_lsb + num_conf_bits)));
@@ -2469,82 +1741,6 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
 
   assert(stamped_sram_cnt == get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info)); 
   assert(stamped_iopad_cnt == iopad_verilog_model->cnt);
-
-  return;
-}
-
-/* Print the SPICE netlist of a block that has been mapped */
-void dump_verilog_block(t_sram_orgz_info* cur_sram_orgz_info,
-                        FILE* fp,
-                        char* subckt_name, 
-                        int x,
-                        int y,
-                        int z,
-                        t_type_ptr type_descriptor,
-                        t_block* mapped_block) {
-  t_pb* top_pb = NULL; 
-  t_pb_graph_node* top_pb_graph_node = NULL;
-
-  /* Check the file handler*/ 
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
-               __FILE__, __LINE__); 
-    exit(1);
-  }
-
-  /* check */
-  assert(x == mapped_block->x);
-  assert(y == mapped_block->y);
-  assert(type_descriptor == mapped_block->type);
-  assert(NULL != type_descriptor);
-
-  /* Print SPICE netlist according to the hierachy of type descriptor recursively*/
-  /* Go for the pb_types*/
-  top_pb_graph_node = type_descriptor->pb_graph_head;
-  assert(NULL != top_pb_graph_node);
-  top_pb = mapped_block->pb; 
-  assert(NULL != top_pb);
-
-  /* Recursively find all mode and print netlist*/
-  /* IMPORTANT: type_descriptor just say we have a block that in global view, how it connects to global routing arch.
-   * Inside the type_descripor, there is a top_pb_graph_node(pb_graph_head), describe the top pb_type defined.
-   * The index of such top pb_type is always 0. 
-   */
-  dump_verilog_pb_graph_node_rec(cur_sram_orgz_info, fp, subckt_name, top_pb, top_pb_graph_node, z);
-
-  return;
-}
-
-
-/* Print an idle logic block
- * Find the idle_mode in arch files,
- * And print the verilog netlist into file
- */
-void dump_verilog_idle_block(t_sram_orgz_info* cur_sram_orgz_info,
-                             FILE* fp,
-                             char* subckt_name, 
-                             int x,
-                             int y,
-                             int z,
-                             t_type_ptr type_descriptor) {
-  t_pb_graph_node* top_pb_graph_node = NULL;
-
-  /* Check the file handler*/ 
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
-               __FILE__, __LINE__); 
-    exit(1);
-  }
-
-  /* Ensure we have a valid type_descriptor*/ 
-  assert(NULL != type_descriptor);
-
-  /* Go for the pb_types*/
-  top_pb_graph_node = type_descriptor->pb_graph_head;
-  assert(NULL != top_pb_graph_node);
-
-  /* Recursively find all idle mode and print netlist*/
-  dump_verilog_idle_pb_graph_node_rec(cur_sram_orgz_info, fp, subckt_name, top_pb_graph_node, z);
 
   return;
 }
@@ -2586,7 +1782,7 @@ void dump_verilog_physical_block(t_sram_orgz_info* cur_sram_orgz_info,
   }
 
   /* Recursively find all idle mode and print netlist*/
-  dump_verilog_phy_pb_graph_node_rec(cur_sram_orgz_info, fp, subckt_name, top_pb, top_pb_graph_node, z);
+  dump_verilog_phy_pb_graph_node_rec(cur_sram_orgz_info, fp, subckt_name, top_pb_graph_node, z);
 
   return;
 }
@@ -3080,217 +2276,6 @@ void dump_verilog_io_grid_block_subckt_pins(FILE* fp,
   return;
 }
 
-/* Print the SPICE netlist for a grid blocks */
-void dump_verilog_grid_blocks(t_sram_orgz_info* cur_sram_orgz_info,
-                              char* subckt_dir,
-                              int ix, int iy,
-                              t_arch* arch) {
-  int subckt_name_str_len = 0;
-  char* subckt_name = NULL;
-  t_block* mapped_block = NULL;
-  int iz;
-  int cur_block_index = 0;
-  int capacity; 
-  int cur_num_mem_bit;
-  int num_reserved_conf_bits;
-  int temp_reserved_conf_bits_msb;
-  int temp_conf_bits_lsb, temp_conf_bits_msb;
-  int temp_iopad_lsb, temp_iopad_msb;
-  FILE* fp = NULL;
-  char* fname = NULL;
-
-  /* Check */
-  assert((!(0 > ix))&&(!(ix > (nx + 1)))); 
-  assert((!(0 > iy))&&(!(iy > (ny + 1)))); 
-
-  /* Make a snapshot for the number of memory bits */
-  cur_num_mem_bit = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info); 
-
-  /* Update the grid_index_low for each spice_model */
-  update_spice_models_grid_index_low(ix, iy, arch->spice->num_spice_model, arch->spice->spice_models);
-
-  /* generate_grid_subckt, type_descriptor of each grid defines the capacity,
-   * for example, each grid may contains more than one top-level pb_types, such as I/O
-   */
-  if ((NULL == grid[ix][iy].type)
-     ||(EMPTY_TYPE == grid[ix][iy].type)
-     ||(0 != grid[ix][iy].offset)) {
-    /* Update the grid_index_high for each spice_model */
-    update_spice_models_grid_index_high(ix, iy, arch->spice->num_spice_model, arch->spice->spice_models);
-    return; 
-  }
-
-  /* Create file handler */
-  fp = verilog_create_one_subckt_file(subckt_dir, "Logic Block ", grid_verilog_file_name_prefix, ix, iy, &fname);
-
-  capacity= grid[ix][iy].type->capacity;
-  assert(0 < capacity);
-
-  /* Make the sub-circuit name*/
-  /* Name format: grid[<ix>][<iy>]_*/ 
-  subckt_name_str_len = 4 + 1 + strlen(my_itoa(ix)) + 2 
-                        + strlen(my_itoa(iy)) + 1 + 1 + 1; /* Plus '0' at the end of string*/
-  subckt_name = (char*)my_malloc(sizeof(char)*subckt_name_str_len);
-  sprintf(subckt_name, "grid_%d__%d__", ix, iy);
-
-  cur_block_index = 0;
-  /* check capacity and if this has been mapped */
-  for (iz = 0; iz < capacity; iz++) {
-    /* Check in all the blocks(clustered logic block), there is a match x,y,z*/
-    mapped_block = search_mapped_block(ix, iy, iz); 
-    /* Comments: Grid [x][y]*/
-    fprintf(fp, "//----- Grid[%d][%d] type_descriptor: %s[%d] -----\n", ix, iy, grid[ix][iy].type->name, iz);
-    if (NULL == mapped_block) {
-      /* Print a NULL logic block...*/
-      dump_verilog_idle_block(cur_sram_orgz_info, fp, subckt_name, ix, iy, iz, grid[ix][iy].type);
-    } else {
-      if (iz == mapped_block->z) {
-        // assert(mapped_block == &(block[grid[ix][iy].blocks[cur_block_index]]));
-        cur_block_index++;
-      }
-      /* Print a logic block with specific configurations*/ 
-      dump_verilog_block(cur_sram_orgz_info, fp, subckt_name, ix, iy, iz, grid[ix][iy].type, mapped_block);
-    }
-    fprintf(fp, "//----- END -----\n\n");
-  } 
-  assert(cur_block_index == grid[ix][iy].usage);
-
-  /* Update the grid_index_high for each spice_model */
-  update_spice_models_grid_index_high(ix, iy, arch->spice->num_spice_model, arch->spice->spice_models);
-
-  /* Print grid[x][y] top-level module */
-  fprintf(fp, "//----- Grid[%d][%d], Capactity: %d -----\n", ix, iy, capacity);
-  fprintf(fp, "//----- Top Protocol -----\n");
-  /* Definition */
-  fprintf(fp, "module grid_%d__%d_( \n", ix, iy);
-  fprintf(fp, "\n");
-  /* dump global ports */
-  if (0 < dump_verilog_global_ports(fp, global_ports_head, TRUE)) {
-    fprintf(fp, ",\n");
-  }
-
-  /* Pins */
-  /* Special Care for I/O grid */
-  if (IO_TYPE == grid[ix][iy].type) {
-    dump_verilog_io_grid_pins(fp, ix, iy, 0, TRUE, FALSE);
-  } else {
-    dump_verilog_grid_pins(fp, ix, iy, 0, TRUE, FALSE);
-  }
- 
-  /* IO PAD */
-  dump_verilog_grid_common_port(fp, iopad_verilog_model, gio_inout_prefix, 
-                                iopad_verilog_model->grid_index_low[ix][iy],
-                                iopad_verilog_model->grid_index_high[ix][iy] - 1,
-                                VERILOG_PORT_INPUT); 
-
-  /* Print configuration ports */
-  /* Reserved configuration ports */
-  if (NULL == mapped_block) {
-    num_reserved_conf_bits = grid[ix][iy].type->pb_type->default_mode_num_reserved_conf_bits;
-  } else {
-    num_reserved_conf_bits = mapped_block->pb->num_reserved_conf_bits;
-  }
-  if (0 < num_reserved_conf_bits) {
-    fprintf(fp, ",\n");
-  }
-  dump_verilog_reserved_sram_ports(fp, cur_sram_orgz_info,
-                                   0, 
-                                   num_reserved_conf_bits - 1,
-                                   VERILOG_PORT_INPUT); 
-  /* Normal configuration ports */
-  if (0 < (get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info) - cur_num_mem_bit)) { 
-    fprintf(fp, ",\n");
-    dump_verilog_sram_ports(fp, cur_sram_orgz_info,
-                            cur_num_mem_bit, 
-                            get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info) - 1, 
-                            VERILOG_PORT_INPUT); 
-  }
-  fprintf(fp, ");\n");
-
-  /* Record LSB and MSB of reserved_conf_bits and regular conf_bits in sram_orgz_info */
-  cur_sram_orgz_info->grid_reserved_conf_bits[ix][iy] = num_reserved_conf_bits;
-  cur_sram_orgz_info->grid_conf_bits_lsb[ix][iy] = cur_num_mem_bit;
-  cur_sram_orgz_info->grid_conf_bits_msb[ix][iy] = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info); 
-
-  /* Initialize temporary counter */
-  temp_conf_bits_lsb = cur_num_mem_bit;
-  temp_iopad_lsb = iopad_verilog_model->grid_index_low[ix][iy];
-
-  /* Quote all the sub blocks*/
-  for (iz = 0; iz < capacity; iz++) {
-    /* Check in all the blocks(clustered logic block), there is a match x,y,z*/
-    mapped_block = search_mapped_block(ix, iy, iz); 
-    /* Local Vdd and Gnd, subckt name*/
-    fprintf(fp, "%s ", verilog_get_grid_block_subckt_name(ix, iy, iz, subckt_name, mapped_block));
-    fprintf(fp, " grid_%d__%d__%d_ (", ix, iy, iz);
-    fprintf(fp, "\n");
-    /* dump global ports */
-    if (0 < dump_verilog_global_ports(fp, global_ports_head, FALSE)) {
-      fprintf(fp, ",\n");
-    }
-    /* Print all the pins */
-    /* Special Care for I/O grid */
-    if (IO_TYPE == grid[ix][iy].type) {
-      dump_verilog_io_grid_block_subckt_pins(fp, ix, iy, iz, grid[ix][iy].type);
-    } else {
-      dump_verilog_grid_block_subckt_pins(fp, iz, grid[ix][iy].type);
-    }
-    /* Print configuration ports */
-    if (NULL == mapped_block) {
-      temp_reserved_conf_bits_msb = grid[ix][iy].type->pb_type->default_mode_num_reserved_conf_bits;
-      temp_conf_bits_msb = temp_conf_bits_lsb + grid[ix][iy].type->pb_type->default_mode_num_conf_bits;
-      temp_iopad_msb = temp_iopad_lsb + grid[ix][iy].type->pb_type->default_mode_num_iopads;
-    } else {
-      temp_reserved_conf_bits_msb = mapped_block->pb->num_reserved_conf_bits;
-      temp_conf_bits_msb = temp_conf_bits_lsb + mapped_block->pb->num_conf_bits;
-      temp_iopad_msb = temp_iopad_lsb + mapped_block->pb->num_iopads;
-    }
-    /* Print Input Pad and Output Pad */
-    fprintf(fp, "\n//---- IOPAD ----\n");
-    dump_verilog_grid_common_port(fp, iopad_verilog_model, gio_inout_prefix,
-                                  temp_iopad_lsb,
-                                  temp_iopad_msb - 1,
-                                  VERILOG_PORT_CONKT); 
-    /* Reserved configuration ports */
-    if (0 < temp_reserved_conf_bits_msb) { 
-      fprintf(fp, ",\n");
-      dump_verilog_reserved_sram_ports(fp, cur_sram_orgz_info,
-                                       0, temp_reserved_conf_bits_msb - 1,
-                                       VERILOG_PORT_CONKT); 
-    }
-    /* Normal configuration ports */
-    assert(!(0 > temp_conf_bits_msb - temp_conf_bits_lsb));
-    if (0 < (temp_conf_bits_msb - temp_conf_bits_lsb)) { 
-      fprintf(fp, ",\n");
-      fprintf(fp, "//---- SRAM ----\n");
-      dump_verilog_sram_ports(fp, cur_sram_orgz_info,
-                              temp_conf_bits_lsb, temp_conf_bits_msb - 1, 
-                              VERILOG_PORT_CONKT); 
-    }
-    /* Update temp_sram_lsb */
-    temp_conf_bits_lsb = temp_conf_bits_msb;
-    fprintf(fp, ");\n");
-  }
-
-  fprintf(fp, "endmodule\n");
-  fprintf(fp, "//----- END Top Protocol -----\n");
-  fprintf(fp, "//----- END Grid[%d][%d], Capactity: %d -----\n\n", ix, iy, capacity);
-
-  assert(temp_conf_bits_msb == get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info)); 
-
-  /* Close file*/
-  fclose(fp);
-
-  /* Add fname to the linked list */
-  grid_verilog_subckt_file_path_head = add_one_subckt_file_name_to_llist(grid_verilog_subckt_file_path_head, fname);  
-
-  /* Free */
-  my_free(subckt_name);
-  my_free(fname);
-
-  return;
-}
-
 /* Print the SPICE netlist for a I/O grid blocks */
 void dump_verilog_physical_grid_blocks(t_sram_orgz_info* cur_sram_orgz_info,
                                        char* subckt_dir,
@@ -3507,7 +2492,7 @@ void dump_verilog_logic_blocks(t_sram_orgz_info* cur_sram_orgz_info,
       assert(IO_TYPE != grid[ix][iy].type);
       /* Ensure a valid usage */
       assert((0 == grid[ix][iy].usage)||(0 < grid[ix][iy].usage));
-      dump_verilog_grid_blocks(cur_sram_orgz_info, subckt_dir, ix, iy, arch); 
+      dump_verilog_physical_grid_blocks(cur_sram_orgz_info, subckt_dir, ix, iy, arch); 
     }
   }
 

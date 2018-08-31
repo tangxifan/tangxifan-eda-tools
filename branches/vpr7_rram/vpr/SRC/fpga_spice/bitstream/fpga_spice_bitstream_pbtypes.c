@@ -138,10 +138,9 @@ void fpga_spice_generate_bitstream_pb_graph_pin_interc(enum e_spice_pin2pin_inte
 }
 
 void fpga_spice_generate_bitstream_pb_graph_port_interc(t_pb_graph_node* cur_pb_graph_node,
-                                                        t_pb* cur_pb,
+                                                        t_phy_pb* cur_pb,
                                                         enum e_spice_pb_port_type pb_port_type,
                                                         t_mode* cur_mode,
-                                                        int is_idle,
                                                         t_sram_orgz_info* cur_sram_orgz_info) {
   int iport, ipin;
   int node_index = -1;
@@ -154,24 +153,19 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(t_pb_graph_node* cur_pb_
     for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
         /* If this is a idle block, we set 0 to the selected edge*/
-        if (is_idle) {
-          assert(NULL == cur_pb);
-          path_id = 0;
+        /* Get the selected edge of current pin*/
+        assert(NULL != cur_pb);
+        pb_rr_nodes = cur_pb->rr_graph->rr_node;
+        node_index = cur_pb_graph_node->input_pins[iport][ipin].rr_node_index_physical_pb;
+        prev_node = pb_rr_nodes[node_index].prev_node;
+        /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
+        /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
+        if (OPEN == prev_node) {
+          path_id = 0; //
         } else {
-          /* Get the selected edge of current pin*/
-          assert(NULL != cur_pb);
-          pb_rr_nodes = cur_pb->rr_graph;
-          node_index = cur_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
-          prev_node = pb_rr_nodes[node_index].prev_node;
-          /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
-          /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
-          if (OPEN == prev_node) {
-            path_id = 0; //
-          } else {
-            /* Find the path_id */
-            path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-            assert(-1 != path_id);
-          }
+          /* Find the path_id */
+          path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
+          assert(-1 != path_id);
         }
         fpga_spice_generate_bitstream_pb_graph_pin_interc(INPUT2INPUT_INTERC,
                                                           &(cur_pb_graph_node->input_pins[iport][ipin]),
@@ -184,24 +178,19 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(t_pb_graph_node* cur_pb_
     for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
         /* If this is a idle block, we set 0 to the selected edge*/
-        if (is_idle) {
-          assert(NULL == cur_pb);
-          path_id = 0;
+        /* Get the selected edge of current pin*/
+        assert(NULL != cur_pb);
+        pb_rr_nodes = cur_pb->rr_graph->rr_node;
+        node_index = cur_pb_graph_node->output_pins[iport][ipin].rr_node_index_physical_pb;
+        prev_node = pb_rr_nodes[node_index].prev_node;
+        /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
+        /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
+        if (OPEN == prev_node) {
+          path_id = 0; //
         } else {
-          /* Get the selected edge of current pin*/
-          assert(NULL != cur_pb);
-          pb_rr_nodes = cur_pb->rr_graph;
-          node_index = cur_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
-          prev_node = pb_rr_nodes[node_index].prev_node;
-          /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
-          /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
-          if (OPEN == prev_node) {
-            path_id = 0; //
-          } else {
-            /* Find the path_id */
-            path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-            assert(-1 != path_id);
-          }
+          /* Find the path_id */
+          path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
+          assert(-1 != path_id);
         }
         fpga_spice_generate_bitstream_pb_graph_pin_interc(OUTPUT2OUTPUT_INTERC,
                                                           &(cur_pb_graph_node->output_pins[iport][ipin]),
@@ -214,24 +203,19 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(t_pb_graph_node* cur_pb_
     for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
         /* If this is a idle block, we set 0 to the selected edge*/
-        if (is_idle) {
-          assert(NULL == cur_pb);
-          path_id = 0;
+        /* Get the selected edge of current pin*/
+        assert(NULL != cur_pb);
+        pb_rr_nodes = cur_pb->rr_graph->rr_node;
+        node_index = cur_pb_graph_node->clock_pins[iport][ipin].rr_node_index_physical_pb;
+        prev_node = pb_rr_nodes[node_index].prev_node;
+        /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
+        /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
+        if (OPEN == prev_node) {
+          path_id = 0; //
         } else {
-          /* Get the selected edge of current pin*/
-          assert(NULL != cur_pb);
-          pb_rr_nodes = cur_pb->rr_graph;
-          node_index = cur_pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster;
-          prev_node = pb_rr_nodes[node_index].prev_node;
-          /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
-          /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
-          if (OPEN == prev_node) {
-            path_id = 0; //
-          } else {
-            /* Find the path_id */
-            path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-            assert(-1 != path_id);
-          }
+          /* Find the path_id */
+          path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
+          assert(-1 != path_id);
         }
         fpga_spice_generate_bitstream_pb_graph_pin_interc(INPUT2INPUT_INTERC,
                                                           &(cur_pb_graph_node->clock_pins[iport][ipin]),
@@ -253,20 +237,18 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(t_pb_graph_node* cur_pb_
 
 /* Print the SPICE interconnections according to pb_graph */
 void fpga_spice_generate_bitstream_pb_graph_interc(t_pb_graph_node* cur_pb_graph_node,
-                                                   t_pb* cur_pb,
+                                                   t_phy_pb* cur_pb,
                                                    int select_mode_index,
-                                                   int is_idle,
                                                    t_sram_orgz_info* cur_sram_orgz_info) {
   int ipb, jpb;
   t_mode* cur_mode = NULL;
   t_pb_type* cur_pb_type = cur_pb_graph_node->pb_type;
   t_pb_graph_node* child_pb_graph_node = NULL;
-  t_pb* child_pb = NULL;
-  int is_child_pb_idle = 0;
+  t_phy_pb* child_pb = NULL;
   
   /* Check cur_pb_type*/
-  if (NULL == cur_pb_type) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid cur_pb_type.\n", 
+  if (NULL == cur_pb) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid cur_pb.\n", 
                __FILE__, __LINE__); 
     exit(1);
   }
@@ -285,7 +267,6 @@ void fpga_spice_generate_bitstream_pb_graph_interc(t_pb_graph_node* cur_pb_graph
                                                      cur_pb,
                                                      SPICE_PB_PORT_OUTPUT,
                                                      cur_mode,
-                                                     is_idle,
                                                      cur_sram_orgz_info);
   
   /* We check input_pins of child_pb_graph_node and its the input_edges
@@ -298,35 +279,18 @@ void fpga_spice_generate_bitstream_pb_graph_interc(t_pb_graph_node* cur_pb_graph
   for (ipb = 0; ipb < cur_pb_type->modes[select_mode_index].num_pb_type_children; ipb++) {
     for (jpb = 0; jpb < cur_pb_type->modes[select_mode_index].pb_type_children[ipb].num_pb; jpb++) {
       child_pb_graph_node = &(cur_pb_graph_node->child_pb_graph_nodes[select_mode_index][ipb][jpb]);
-      /* If this is a idle block, we set 0 to the selected edge*/
-      if (is_idle) {
-        assert(NULL == cur_pb);
-        is_child_pb_idle = 1;
-        child_pb = NULL;
-      } else {
-        assert(NULL != cur_pb);
-        child_pb = &(cur_pb->child_pbs[ipb][jpb]);
-        /* Check if child_pb is empty */
-        if (NULL != child_pb->name) { 
-          is_child_pb_idle = 0;
-        } else {
-          is_child_pb_idle = 1;
-          child_pb = NULL;
-        }
-      }
+      child_pb = &(cur_pb->child_pbs[ipb][jpb]);
       /* For each child_pb_graph_node input pins*/
       fpga_spice_generate_bitstream_pb_graph_port_interc(child_pb_graph_node,
                                                          child_pb,
                                                          SPICE_PB_PORT_INPUT,
                                                          cur_mode,
-                                                         is_child_pb_idle,
                                                          cur_sram_orgz_info);
       /* TODO: for clock pins, we should do the same work */
       fpga_spice_generate_bitstream_pb_graph_port_interc(child_pb_graph_node,
                                                          child_pb,
                                                          SPICE_PB_PORT_CLOCK,
                                                          cur_mode,
-                                                         is_child_pb_idle,
                                                          cur_sram_orgz_info);
     }
   }
@@ -335,241 +299,55 @@ void fpga_spice_generate_bitstream_pb_graph_interc(t_pb_graph_node* cur_pb_graph
 }
 
 /* Print the subckt of a primitive pb */
-void fpga_spice_generate_bitstream_pb_primitive(t_pb* prim_pb,
-                                                t_pb_graph_node* prim_pb_graph_node,
-                                                int pb_index,
+void fpga_spice_generate_bitstream_pb_primitive(t_phy_pb* prim_pb,
                                                 t_spice_model* verilog_model,
-                                                int is_idle,
                                                 t_sram_orgz_info* cur_sram_orgz_info) {
-  t_pb_type* prim_pb_type = NULL;
-  t_logical_block* mapped_logical_block = NULL;
 
   /* Check cur_pb_graph_node*/
-  if (NULL == prim_pb_graph_node) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid cur_pb_graph_node.\n", 
+  if (NULL == prim_pb) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid cur_pb.\n", 
                __FILE__, __LINE__); 
     exit(1);
   }
  
-  /* Initialize */ 
-  prim_pb_type = prim_pb_graph_node->pb_type;
-  if (is_idle) {
-    mapped_logical_block = NULL;
-  } else {
-    mapped_logical_block = &logical_block[prim_pb->logical_block];
-  }
-
-  /* Asserts*/
-  assert(pb_index == prim_pb_graph_node->placement_index);
-  assert(0 == strcmp(verilog_model->name, prim_pb_type->spice_model->name));
-  if (is_idle) {
-    assert(NULL == prim_pb); 
-  } else {
-    if (NULL == prim_pb) {
-      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid prim_pb.\n", 
-                 __FILE__, __LINE__); 
-      exit(1);
-    }
-  }
-
   /* According to different type, we print netlist*/
   switch (verilog_model->type) {
   case SPICE_MODEL_LUT:
     /* If this is a idle block we should set sram_bits to zero*/
-    fpga_spice_generate_bitstream_pb_primitive_lut(mapped_logical_block, prim_pb_graph_node,
-                                                   pb_index, verilog_model, cur_sram_orgz_info);
+    fpga_spice_generate_bitstream_pb_primitive_lut(prim_pb, cur_sram_orgz_info);
     break;
   case SPICE_MODEL_FF:
     assert(NULL != verilog_model->model_netlist);
     /* TODO : We should learn trigger type and initial value!!! and how to apply them!!! */
-    fpga_spice_generate_bitstream_pb_primitive_ff(mapped_logical_block, prim_pb_graph_node,
-                                                  pb_index, verilog_model, cur_sram_orgz_info);
+    fpga_spice_generate_bitstream_pb_generic_primitive(prim_pb, cur_sram_orgz_info);
     break;
   case SPICE_MODEL_IOPAD:
     assert(NULL != verilog_model->model_netlist);
-    fpga_spice_generate_bitstream_pb_primitive_io(mapped_logical_block, prim_pb_graph_node,
-                                                  pb_index, verilog_model, cur_sram_orgz_info);
+    fpga_spice_generate_bitstream_pb_generic_primitive(prim_pb, cur_sram_orgz_info);
     break;
   case SPICE_MODEL_HARDLOGIC:
     assert(NULL != verilog_model->model_netlist);
-    fpga_spice_generate_bitstream_pb_primitive_hardlogic(mapped_logical_block, prim_pb_graph_node,
-                                                         pb_index, verilog_model, cur_sram_orgz_info);
+    fpga_spice_generate_bitstream_pb_generic_primitive(prim_pb, cur_sram_orgz_info);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid type of verilog_model(%s), should be [LUT|FF|HARD_LOGIC|IO]!\n",
                __FILE__, __LINE__, verilog_model->name);
     exit(1);
-    break;
   }
  
   return; 
 }
 
-/* Print idle pb_types recursively
- * search the idle_mode until we reach the leaf node
- */
-void fpga_spice_generate_bitstream_idle_pb_graph_node_rec(t_pb_graph_node* cur_pb_graph_node,
-                                                          int pb_type_index,
-                                                          t_sram_orgz_info* cur_sram_orgz_info) {
-  int mode_index, ipb, jpb;
-  t_pb_type* cur_pb_type = NULL;
-
-  /* Check cur_pb_graph_node*/
-  if (NULL == cur_pb_graph_node) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid cur_pb_graph_node.\n", 
-               __FILE__, __LINE__); 
-    exit(1);
-  }
-  cur_pb_type = cur_pb_graph_node->pb_type;
-
-  /* Recursively finish all the child pb_types*/
-  if (NULL == cur_pb_type->spice_model) { 
-    /* Find the mode that define_idle_mode*/
-    mode_index = find_pb_type_idle_mode_index((*cur_pb_type));
-    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
-      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
-        /* Recursive*/
-        fpga_spice_generate_bitstream_idle_pb_graph_node_rec( &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]), 
-                                                              jpb, cur_sram_orgz_info);
-      }
-    }
-  }
-
-  /* Check if this has defined a spice_model*/
-  if (NULL != cur_pb_type->spice_model) {
-    switch (cur_pb_type->class_type) {
-    case LUT_CLASS: 
-      /* Consider the num_pb, create all the subckts*/
-      fpga_spice_generate_bitstream_pb_primitive(NULL, cur_pb_graph_node, pb_type_index, 
-                                                 cur_pb_type->spice_model, 1, 
-                                                 cur_sram_orgz_info);
-      break;
-    case LATCH_CLASS:
-      assert(0 == cur_pb_type->num_modes);
-      /* Consider the num_pb, create all the subckts*/
-      fpga_spice_generate_bitstream_pb_primitive(NULL, cur_pb_graph_node, pb_type_index, 
-                                                 cur_pb_type->spice_model, 1,
-                                                 cur_sram_orgz_info);
-      break;
-    case UNKNOWN_CLASS:
-    case MEMORY_CLASS:
-      /* Consider the num_pb, create all the subckts*/
-      fpga_spice_generate_bitstream_pb_primitive(NULL, cur_pb_graph_node, pb_type_index, 
-                                                 cur_pb_type->spice_model, 1,
-                                                 cur_sram_orgz_info);
-      break;  
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Unknown class type of pb_type(%s)!\n",
-                 __FILE__, __LINE__, cur_pb_type->name);
-      exit(1);
-    }
-    /* Finish job for primitive node, return */
-    return;
-  }
-
-  /* Find the mode that define_idle_mode*/
-  mode_index = find_pb_type_idle_mode_index((*cur_pb_type));
-
-  /* Print interconnections, set is_idle as TRUE*/
-  fpga_spice_generate_bitstream_pb_graph_interc(cur_pb_graph_node, NULL, 
-                                                mode_index, 1, cur_sram_orgz_info);
-  
-  return;
-}
-
-/* Print SPICE netlist for each pb and corresponding pb_graph_node*/
-void fpga_spice_generate_bitstream_pb_graph_node_rec( t_pb* cur_pb, 
-                                                      t_pb_graph_node* cur_pb_graph_node,
-                                                      int pb_type_index,
-                                                      t_sram_orgz_info* cur_sram_orgz_info) {
-  int mode_index, ipb, jpb;
-  t_pb_type* cur_pb_type = NULL;
-  t_pb* child_pb = NULL;
-
-  /* Check cur_pb_graph_node*/
-  if (NULL == cur_pb_graph_node) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid cur_pb_graph_node.\n", 
-               __FILE__, __LINE__); 
-    exit(1);
-  }
-  cur_pb_type = cur_pb_graph_node->pb_type;
-  mode_index = cur_pb->mode; 
-
-  /* Recursively finish all the child pb_types*/
-  if (NULL == cur_pb_type->spice_model) { 
-    /* recursive for the child_pbs*/
-    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
-      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
-        /* Recursive*/
-        /* Refer to pack/output_clustering.c [LINE 392] */
-        if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
-          fpga_spice_generate_bitstream_pb_graph_node_rec( &(cur_pb->child_pbs[ipb][jpb]), 
-                                                           cur_pb->child_pbs[ipb][jpb].pb_graph_node, jpb,
-                                                           cur_sram_orgz_info);
-        } else {
-          /* Check if this pb has no children, no children mean idle*/
-          fpga_spice_generate_bitstream_idle_pb_graph_node_rec( cur_pb->child_pbs[ipb][jpb].pb_graph_node, jpb,
-                                                                cur_sram_orgz_info);
-        }
-      }
-    }
-  }
-
-  /* Check if this has defined a spice_model*/
-  if (NULL != cur_pb_type->spice_model) {
-    switch (cur_pb_type->class_type) {
-    case LUT_CLASS: 
-      child_pb = get_lut_child_pb(cur_pb, mode_index);
-      fpga_spice_generate_bitstream_pb_primitive( child_pb, cur_pb_graph_node, 
-                                                  pb_type_index, cur_pb_type->spice_model, 0, 
-                                                  cur_sram_orgz_info);
-      break;
-    case LATCH_CLASS:
-      assert(0 == cur_pb_type->num_modes);
-      /* Consider the num_pb, create all the subckts*/
-      fpga_spice_generate_bitstream_pb_primitive( cur_pb, cur_pb_graph_node,
-                                                  pb_type_index, cur_pb_type->spice_model, 0, 
-                                                  cur_sram_orgz_info);
-      break;
-    case MEMORY_CLASS:
-      child_pb = get_hardlogic_child_pb(cur_pb, mode_index); 
-      /* Consider the num_pb, create all the subckts*/
-      fpga_spice_generate_bitstream_pb_primitive( child_pb, cur_pb_graph_node, 
-                                                  pb_type_index, cur_pb_type->spice_model, 0, 
-                                                  cur_sram_orgz_info);
-      break;  
-    case UNKNOWN_CLASS:
-      /* Consider the num_pb, create all the subckts*/
-      fpga_spice_generate_bitstream_pb_primitive(cur_pb, cur_pb_graph_node,
-                                                  pb_type_index, cur_pb_type->spice_model, 0, 
-                                                  cur_sram_orgz_info);
-      break;  
-    default:
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Unknown class type of pb_type(%s)!\n",
-                 __FILE__, __LINE__, cur_pb_type->name);
-      exit(1);
-    }
-    /* Finish job for primitive node, return */
-    return;
-  }
-
-  /* Print interconnections, set is_idle as TRUE*/
-  fpga_spice_generate_bitstream_pb_graph_interc(cur_pb_graph_node, cur_pb, 
-                                                mode_index, 0, cur_sram_orgz_info);
-
-  return;
-}
-
 /* Print physical mode of pb_types and configure it to the idle pb_types recursively
  * search the idle_mode until we reach the leaf node
  */
-void fpga_spice_generate_bitstream_phy_pb_graph_node_rec(t_pb* cur_pb, 
+void fpga_spice_generate_bitstream_phy_pb_graph_node_rec(t_phy_pb* cur_pb, 
                                                          t_pb_graph_node* cur_pb_graph_node,
                                                          int pb_type_index,
                                                          t_sram_orgz_info* cur_sram_orgz_info) {
-  int mode_index, ipb, jpb, is_idle;
+  int mode_index, ipb, jpb;
   t_pb_type* cur_pb_type = NULL;
-  t_pb* child_pb = NULL;
+  t_phy_pb* child_pb = NULL;
  
   /* Check cur_pb_graph_node*/
   if (NULL == cur_pb_graph_node) {
@@ -579,11 +357,6 @@ void fpga_spice_generate_bitstream_phy_pb_graph_node_rec(t_pb* cur_pb,
   }
 
   cur_pb_type = cur_pb_graph_node->pb_type;
-
-  is_idle = 1;
-  if (NULL != cur_pb) {
-    is_idle = 0;
-  }
 
   /* Recursively finish all the child pb_types*/
   if (NULL == cur_pb_type->spice_model) { 
@@ -594,7 +367,7 @@ void fpga_spice_generate_bitstream_phy_pb_graph_node_rec(t_pb* cur_pb,
         /* Recursive*/
         /* Refer to pack/output_clustering.c [LINE 392] */
         /* Find the child pb that is mapped, and the mapping info is not stored in the physical mode ! */
-        child_pb = get_child_pb_for_phy_pb_graph_node(cur_pb, ipb, jpb);
+        child_pb = get_phy_child_pb_for_phy_pb_graph_node(cur_pb, ipb, jpb);
         fpga_spice_generate_bitstream_phy_pb_graph_node_rec(child_pb,
                                                             &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]), jpb,
                                                             cur_sram_orgz_info);
@@ -606,32 +379,24 @@ void fpga_spice_generate_bitstream_phy_pb_graph_node_rec(t_pb* cur_pb,
   if (NULL != cur_pb_type->spice_model) {
     switch (cur_pb_type->class_type) {
     case LUT_CLASS: 
-      /* Consider the num_pb, create all the subckts*/
-      if (1 == is_idle) {
-        fpga_spice_generate_bitstream_pb_primitive( NULL, cur_pb_graph_node, pb_type_index, 
-                                                    cur_pb_type->spice_model, is_idle, /* last param means idle */ 
-                                                    cur_sram_orgz_info); 
-      } else {
-        child_pb = get_lut_child_pb(cur_pb, mode_index); 
-        /* Special care for LUT !!!
-         * Mapped logical block information is stored in child_pbs
-         */
-        fpga_spice_generate_bitstream_pb_primitive( child_pb, cur_pb_graph_node, pb_type_index, 
-                                                    cur_pb_type->spice_model, is_idle, /* last param means idle */ 
-                                                    cur_sram_orgz_info); 
-      }
+      /* Special care for LUT !!!
+       * Mapped logical block information is stored in child_pbs
+       */
+      fpga_spice_generate_bitstream_pb_primitive( cur_pb, 
+                                                  cur_pb_type->spice_model,
+                                                  cur_sram_orgz_info); 
     case LATCH_CLASS:
       assert(0 == cur_pb_type->num_modes);
       /* Consider the num_pb, create all the subckts*/
-      fpga_spice_generate_bitstream_pb_primitive( cur_pb, cur_pb_graph_node, pb_type_index, 
-                                                  cur_pb_type->spice_model, is_idle, /* last param means idle */ 
+      fpga_spice_generate_bitstream_pb_primitive( cur_pb,
+                                                  cur_pb_type->spice_model, 
                                                   cur_sram_orgz_info); 
       break;
     case UNKNOWN_CLASS:
     case MEMORY_CLASS:
       /* Consider the num_pb, create all the subckts*/
-      fpga_spice_generate_bitstream_pb_primitive( cur_pb, cur_pb_graph_node, pb_type_index, 
-                                                  cur_pb_type->spice_model, is_idle, /* last param means idle */ 
+      fpga_spice_generate_bitstream_pb_primitive( cur_pb,  
+                                                  cur_pb_type->spice_model, 
                                                   cur_sram_orgz_info); 
       break;  
     default:
@@ -647,64 +412,11 @@ void fpga_spice_generate_bitstream_phy_pb_graph_node_rec(t_pb* cur_pb,
   mode_index = find_pb_type_physical_mode_index((*cur_pb_type));
 
   /* Print interconnections, set is_idle as TRUE*/
-  fpga_spice_generate_bitstream_pb_graph_interc(cur_pb_graph_node, cur_pb, mode_index, is_idle, cur_sram_orgz_info);
+  fpga_spice_generate_bitstream_pb_graph_interc(cur_pb_graph_node, cur_pb, mode_index, cur_sram_orgz_info);
 
   return;
 }
 
-/* Print the SPICE netlist of a block that has been mapped */
-void fpga_spice_generate_bitstream_block(int x, int y, int z,
-                                         t_type_ptr type_descriptor,
-                                         t_block* mapped_block,
-                                         t_sram_orgz_info* cur_sram_orgz_info) {
-  t_pb* top_pb = NULL; 
-  t_pb_graph_node* top_pb_graph_node = NULL;
-
-  /* check */
-  assert(x == mapped_block->x);
-  assert(y == mapped_block->y);
-  assert(type_descriptor == mapped_block->type);
-  assert(NULL != type_descriptor);
-
-  /* Print SPICE netlist according to the hierachy of type descriptor recursively*/
-  /* Go for the pb_types*/
-  top_pb_graph_node = type_descriptor->pb_graph_head;
-  assert(NULL != top_pb_graph_node);
-  top_pb = mapped_block->pb; 
-  assert(NULL != top_pb);
-
-  /* Recursively find all mode and print netlist*/
-  /* IMPORTANT: type_descriptor just say we have a block that in global view, how it connects to global routing arch.
-   * Inside the type_descripor, there is a top_pb_graph_node(pb_graph_head), describe the top pb_type defined.
-   * The index of such top pb_type is always 0. 
-   */
-  fpga_spice_generate_bitstream_pb_graph_node_rec(top_pb, top_pb_graph_node, z, cur_sram_orgz_info);
-
-  return;
-}
-
-
-/* Print an idle logic block
- * Find the idle_mode in arch files,
- * And print the verilog netlist into file
- */
-void fpga_spice_generate_bitstream_idle_block(int x, int y, int z, 
-                                              t_type_ptr type_descriptor, 
-                                              t_sram_orgz_info* cur_sram_orgz_info) {
-  t_pb_graph_node* top_pb_graph_node = NULL;
-
-  /* Ensure we have a valid type_descriptor*/ 
-  assert(NULL != type_descriptor);
-
-  /* Go for the pb_types*/
-  top_pb_graph_node = type_descriptor->pb_graph_head;
-  assert(NULL != top_pb_graph_node);
-
-  /* Recursively find all idle mode and print netlist*/
-  fpga_spice_generate_bitstream_idle_pb_graph_node_rec(top_pb_graph_node, z, cur_sram_orgz_info);
-
-  return;
-}
 
 /* Print an physical logic block
  * Find the physical_mode in arch files,
@@ -715,7 +427,7 @@ void fpga_spice_generate_bitstream_one_physical_block(int x, int y, int z,
                                                       t_sram_orgz_info* cur_sram_orgz_info) {
   t_pb_graph_node* top_pb_graph_node = NULL;
   t_block* mapped_block = NULL;
-  t_pb* top_pb = NULL;
+  t_phy_pb* top_pb = NULL;
 
   /* Ensure we have a valid type_descriptor*/ 
   assert(NULL != type_descriptor);
@@ -727,60 +439,13 @@ void fpga_spice_generate_bitstream_one_physical_block(int x, int y, int z,
   /* Check in all the mapped blocks(clustered logic block), there is a match x,y,z*/
   mapped_block = search_mapped_block(x, y, z); 
   if (NULL != mapped_block) {
-    top_pb = mapped_block->pb; 
+    top_pb = (t_phy_pb*)mapped_block->phy_pb; 
     assert(NULL != top_pb);
   }
 
   /* Recursively find all idle mode and print netlist*/
   fpga_spice_generate_bitstream_phy_pb_graph_node_rec(top_pb, top_pb_graph_node, 
                                                       z, cur_sram_orgz_info);
-
-  return;
-}
-
-/* Print the SPICE netlist for a grid blocks */
-void fpga_spice_generate_bitstream_grid_block(int ix, int iy,
-                                              t_arch* arch,
-                                              t_sram_orgz_info* cur_sram_orgz_info) {
-  t_block* mapped_block = NULL;
-  int iz, capacity;
-  int cur_block_index = 0;
-
-  /* Check */
-  assert((!(0 > ix))&&(!(ix > (nx + 1)))); 
-  assert((!(0 > iy))&&(!(iy > (ny + 1)))); 
-
-  /* generate_grid_subckt, type_descriptor of each grid defines the capacity,
-   * for example, each grid may contains more than one top-level pb_types, such as I/O
-   */
-  if ((NULL == grid[ix][iy].type)
-     ||(EMPTY_TYPE == grid[ix][iy].type)
-     ||(0 != grid[ix][iy].offset)) {
-    return; 
-  }
-
-  capacity= grid[ix][iy].type->capacity;
-  assert(0 < capacity);
-
-  cur_block_index = 0;
-  /* check capacity and if this has been mapped */
-  for (iz = 0; iz < capacity; iz++) {
-    /* Check in all the blocks(clustered logic block), there is a match x,y,z*/
-    mapped_block = search_mapped_block(ix, iy, iz); 
-    /* Comments: Grid [x][y]*/
-    if (NULL == mapped_block) {
-      /* Print a NULL logic block...*/
-      fpga_spice_generate_bitstream_idle_block(ix, iy, iz, grid[ix][iy].type, cur_sram_orgz_info);
-    } else {
-      if (iz == mapped_block->z) {
-        // assert(mapped_block == &(block[grid[ix][iy].blocks[cur_block_index]]));
-        cur_block_index++;
-      }
-      /* Print a logic block with specific configurations*/ 
-      fpga_spice_generate_bitstream_block(ix, iy, iz, grid[ix][iy].type, mapped_block, cur_sram_orgz_info);
-    }
-  } 
-  assert(cur_block_index == grid[ix][iy].usage);
 
   return;
 }
@@ -844,7 +509,7 @@ void fpga_spice_generate_bitstream_logic_block(t_arch* arch,
       assert(IO_TYPE != grid[ix][iy].type);
       /* Ensure a valid usage */
       assert((0 == grid[ix][iy].usage)||(0 < grid[ix][iy].usage));
-      fpga_spice_generate_bitstream_grid_block(ix, iy, arch, cur_sram_orgz_info); 
+      fpga_spice_generate_bitstream_physical_grid_block(ix, iy, arch, cur_sram_orgz_info); 
     }
   }
 

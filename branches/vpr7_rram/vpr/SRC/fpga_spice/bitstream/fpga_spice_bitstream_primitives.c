@@ -31,69 +31,18 @@
 #include "fpga_spice_pbtypes_utils.h"
 #include "fpga_spice_bitstream_utils.h"
 
-/* Subroutines */
-void fpga_spice_generate_bitstream_pb_primitive_ff(t_logical_block* mapped_logical_block,
-                                                  t_pb_graph_node* prim_pb_graph_node,
-                                                  int index,
-                                                  t_spice_model* verilog_model,
-                                                  t_sram_orgz_info* cur_sram_orgz_info) {
-
-  /* Back-annotate to logical block */
-  if (NULL != mapped_logical_block) {
-    mapped_logical_block->mapped_spice_model = verilog_model;
-    mapped_logical_block->mapped_spice_model_index = verilog_model->cnt;
-  }
- 
-  assert(SPICE_MODEL_FF == verilog_model->type);
-
-  verilog_model->cnt++;
-
-  return;
-}
-
-/* Print hardlogic SPICE subckt*/
-void fpga_spice_generate_bitstream_pb_primitive_hardlogic(t_logical_block* mapped_logical_block,
-                                                          t_pb_graph_node* prim_pb_graph_node,
-                                                          int index,
-                                                          t_spice_model* verilog_model,
-                                                          t_sram_orgz_info* cur_sram_orgz_info) {
-
-  /* Back-annotate to logical block */
-  if (NULL != mapped_logical_block) {
-    mapped_logical_block->mapped_spice_model = verilog_model;
-    mapped_logical_block->mapped_spice_model_index = verilog_model->cnt;
-  }
-  
-  /* Asserts */
-  assert(SPICE_MODEL_HARDLOGIC == verilog_model->type);
-  
-  verilog_model->cnt++;
-
-  return;
-}
-
-/* Dump a I/O pad primitive node */
-void fpga_spice_generate_bitstream_pb_primitive_io(t_logical_block* mapped_logical_block,
-                                                   t_pb_graph_node* prim_pb_graph_node,
-                                                   int index,
-                                                   t_spice_model* verilog_model,
-                                                   t_sram_orgz_info* cur_sram_orgz_info) {
-  int num_pad_port = 0; /* INOUT port */
-  t_spice_model_port** pad_ports = NULL;
-  int num_input_port = 0;
-  t_spice_model_port** input_ports = NULL;
-  int num_output_port = 0;
-  t_spice_model_port** output_ports = NULL;
-  int num_clock_port = 0;
-  t_spice_model_port** clock_ports = NULL;
+/* Generate the bitstream of a generic primitive node: 
+ * this node can be HARD LOGIC, IO, FF  */
+void fpga_spice_generate_bitstream_pb_generic_primitive(t_phy_pb* prim_phy_pb,
+                                                        t_sram_orgz_info* cur_sram_orgz_info) {
   int num_sram_port = 0;
   t_spice_model_port** sram_ports = NULL;
+
+  t_spice_model* verilog_model = NULL;
   
-  int i;
+  int i, mapped_logical_block_index;
   int num_sram = 0;
   int* sram_bits = NULL;
-
-  t_pb_type* prim_pb_type = NULL;
 
   /* For each SRAM, we could have multiple BLs/WLs */
   int num_bl_ports = 0;
@@ -107,30 +56,38 @@ void fpga_spice_generate_bitstream_pb_primitive_io(t_logical_block* mapped_logic
   int cur_num_sram = 0;
   t_spice_model* mem_model = NULL;
 
-  /* Ensure a valid pb_graph_node */ 
-  if (NULL == prim_pb_graph_node) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid prim_pb_graph_node!\n",
+  /* Ensure a valid physical pritimive pb */ 
+  if (NULL == prim_phy_pb) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid prim_phy_pb!\n",
                __FILE__, __LINE__);
     exit(1);
   }
 
+  /* Asserts, supportee SPICE MODELs  */
+  assert((SPICE_MODEL_IOPAD == verilog_model->type)
+         || (SPICE_MODEL_HARDLOGIC == verilog_model->type)
+         || (SPICE_MODEL_FF == verilog_model->type));
+
+  verilog_model = prim_phy_pb->pb_graph_node->pb_type->spice_model;
+
   /* Find ports*/
-  pad_ports = find_spice_model_ports(verilog_model, SPICE_MODEL_PORT_INOUT, &num_pad_port, TRUE);
-  input_ports = find_spice_model_ports(verilog_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
-  output_ports = find_spice_model_ports(verilog_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
-  clock_ports = find_spice_model_ports(verilog_model, SPICE_MODEL_PORT_CLOCK, &num_clock_port, TRUE);
   sram_ports = find_spice_model_ports(verilog_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
-
-  /* Check */
-  assert((1 == num_sram_port)&&(NULL != sram_ports)&&(1 == sram_ports[0]->size));
-
-  /* Asserts */
-  assert(SPICE_MODEL_IOPAD == verilog_model->type); /* Support IO PAD which matches the physical design */
+  
+  /* if there is no SRAM ports, we can return */
+  if ( 0 == num_sram_port) {
+    /* Back-annotate to logical block */
+    for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
+      mapped_logical_block_index = prim_phy_pb->logical_block[i];
+      logical_block[mapped_logical_block_index].mapped_spice_model = verilog_model;
+      logical_block[mapped_logical_block_index].mapped_spice_model_index = verilog_model->cnt;
+    }
+    /* Update the verilog_model counter */
+    verilog_model->cnt++;
+    return;
+  }
   
   /* Initialize */
   get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model);
-
-  prim_pb_type = prim_pb_graph_node->pb_type;
 
   num_sram = count_num_sram_bits_one_spice_model(verilog_model, -1);
 
@@ -158,12 +115,10 @@ void fpga_spice_generate_bitstream_pb_primitive_io(t_logical_block* mapped_logic
   }
 
   /* Check */
-  assert((1 == num_sram_port)&&(NULL != sram_ports)&&(1 == sram_ports[0]->size));
   /* what is the SRAM bit of a mode? */
   /* If logical block is not NULL, we need to decode the sram bit */
-  if (NULL != mapped_logical_block) {
-    assert(NULL != mapped_logical_block->pb->pb_graph_node->pb_type->mode_bits);
-    sram_bits = decode_mode_bits(mapped_logical_block->pb->pb_graph_node->pb_type->mode_bits, &expected_num_sram);
+  if (NULL != prim_phy_pb->mode_bits) {
+    sram_bits = decode_mode_bits(prim_phy_pb->mode_bits, &expected_num_sram);
     assert(expected_num_sram == num_sram);
   } else {
     /* Initialize */
@@ -198,9 +153,10 @@ void fpga_spice_generate_bitstream_pb_primitive_io(t_logical_block* mapped_logic
   }
  
   /* Back-annotate to logical block */
-  if (NULL != mapped_logical_block) {
-    mapped_logical_block->mapped_spice_model = verilog_model;
-    mapped_logical_block->mapped_spice_model_index = verilog_model->cnt;
+  for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
+    mapped_logical_block_index = prim_phy_pb->logical_block[i];
+    logical_block[mapped_logical_block_index].mapped_spice_model = verilog_model;
+    logical_block[mapped_logical_block_index].mapped_spice_model_index = verilog_model->cnt;
   }
 
   /* Synchronize the internal counters of sram_orgz_info with generated bitstreams*/
@@ -210,36 +166,41 @@ void fpga_spice_generate_bitstream_pb_primitive_io(t_logical_block* mapped_logic
   verilog_model->cnt++;
 
   /*Free*/ 
-  my_free(input_ports);
-  my_free(output_ports);
-  my_free(pad_ports);
-  my_free(clock_ports);
   my_free(sram_ports);
   my_free(sram_bits);
+  my_free(bl_port);
+  my_free(wl_port);
 
   return;
 }
 
-void fpga_spice_generate_bitstream_pb_primitive_lut(t_logical_block* mapped_logical_block,
-                                                    t_pb_graph_node* cur_pb_graph_node,
-                                                    int index,
-                                                    t_spice_model* verilog_model,
+void fpga_spice_generate_bitstream_pb_primitive_lut(t_phy_pb* prim_phy_pb,
                                                     t_sram_orgz_info* cur_sram_orgz_info) {
-  int i;
+
+  t_spice_model* verilog_model = NULL;
+  int i, j, offset;
+  int* lut_sram_bits = NULL; /* decoded SRAM bits */ 
+  int* mode_sram_bits = NULL; /* decoded SRAM bits */ 
   int* sram_bits = NULL; /* decoded SRAM bits */ 
-  int truth_table_length = 0;
-  char** truth_table = NULL;
+  int* truth_table_length = 0;
+  char*** truth_table = NULL;
+  int lut_truth_table_length = 0;
+  char** lut_truth_table = NULL;
   int lut_size = 0;
   int num_input_port = 0;
   t_spice_model_port** input_ports = NULL;
-  int num_output_port = 0;
-  t_spice_model_port** output_ports = NULL;
   int num_sram_port = 0;
   t_spice_model_port** sram_ports = NULL;
+  t_spice_model_port* lut_sram_port = NULL;
+  t_spice_model_port* mode_bit_port = NULL;
+  int num_lut_pin_nets;
+  int* lut_pin_net;
+  int mapped_logical_block_index;
 
-  t_pb_type* cur_pb_type = NULL;
   int cur_num_sram = 0;
   int num_sram = 0;
+  int num_lut_sram = 0;
+  int num_mode_sram = 0;
   /* For each SRAM, we could have multiple BLs/WLs */
   int num_bl_ports = 0;
   t_spice_model_port** bl_port = NULL;
@@ -248,33 +209,42 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(t_logical_block* mapped_logi
   int num_bl_per_sram = 0;
   int num_wl_per_sram = 0;
   t_spice_model* mem_model = NULL;
+  int expected_num_sram = 0;
 
-  /* Ensure a valid pb_graph_node */ 
-  if (NULL == cur_pb_graph_node) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid cur_pb_graph_node!\n",
+  /* Ensure a valid physical pritimive pb */ 
+  if (NULL == prim_phy_pb) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid prim_phy_pb!\n",
                __FILE__, __LINE__);
     exit(1);
   }
+
   /* Asserts */
   assert(SPICE_MODEL_LUT == verilog_model->type);
 
-  /* Check if this is an idle logical block mapped*/
-  if (NULL != mapped_logical_block) {
-    truth_table = assign_lut_truth_table(mapped_logical_block, &truth_table_length); 
-    /* Back-annotate to logical block */
-    mapped_logical_block->mapped_spice_model = verilog_model;
-    mapped_logical_block->mapped_spice_model_index = verilog_model->cnt;
-  }
-  /* Determine size of LUT*/
+  verilog_model = prim_phy_pb->pb_graph_node->pb_type->spice_model;
+
+  /* Find the input ports for LUT size */
   input_ports = find_spice_model_ports(verilog_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
-  output_ports = find_spice_model_ports(verilog_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
   assert(1 == num_input_port);
-  assert(1 == num_output_port);
   lut_size = input_ports[0]->size;
-  assert(1 == output_ports[0]->size);
-  /* Find SRAM ports */
+
+  /* Find SRAM ports for truth tables and mode bits */
   sram_ports = find_spice_model_ports(verilog_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
-  assert(1 == num_sram_port);
+  assert((1 == num_sram_port) || (2 == num_sram_port));
+  for (i = 0; i < num_sram_port; i++) {
+    if (FALSE == sram_ports[i]->mode_select) {
+      lut_sram_port = sram_ports[i];
+      num_lut_sram =  sram_ports[i]->size;
+      assert (num_lut_sram == (int)pow(2.,(double)(lut_size)));
+    } else {
+      assert (TRUE == sram_ports[i]->mode_select);
+      mode_bit_port = sram_ports[i];
+      num_mode_sram = sram_ports[i]->size;
+    }
+  }
+  /* Must have a lut_sram_port, while mode_bit_port is optional */
+  assert (NULL != lut_sram_port);
+
   /* Count the number of configuration bits */
   num_sram = count_num_sram_bits_one_spice_model(verilog_model, -1);
   /* Get memory model */
@@ -303,14 +273,62 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(t_logical_block* mapped_logi
                __FILE__, __LINE__);
     exit(1);
   }
-
+  
+  /* Allocate truth tables  */
+  truth_table_length = (int*) my_malloc (sizeof(int) * prim_phy_pb->num_logical_blocks);
+  truth_table = (char***) my_malloc (sizeof(char**) * prim_phy_pb->num_logical_blocks);
+  
+  /* Find truth tables and decode them one by one 
+   * Fracturable LUT may have multiple truth tables,
+   * which should be grouped in a unique one 
+   */
+  for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
+    mapped_logical_block_index = prim_phy_pb->logical_block[i]; 
+    /* Get the mapped vpack_net_num of this physical LUT pb */
+    get_mapped_lut_phy_pb_input_pin_vpack_net_num(prim_phy_pb, &num_lut_pin_nets, &lut_pin_net);
+    /* consider LUT pin remapping when assign lut truth tables */
+    /* Match truth table and post-routing results */
+    truth_table[i] = assign_post_routing_lut_truth_table(&logical_block[mapped_logical_block_index], 
+                                                         num_lut_pin_nets, lut_pin_net, &truth_table_length[i]); 
+  }
+  /* Conject all the truth tables we have */
+  lut_truth_table_length = 0;
+  for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
+    lut_truth_table_length += truth_table_length[i];
+  }
+  /* Allocate */
+  lut_truth_table = (char**) my_malloc (sizeof(char*) * lut_truth_table_length);
+  /* FIll the truth table */
+  offset = 0;
+  for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
+    for (j = 0; j < truth_table_length[i]; j++) {
+      lut_truth_table[offset + j] = truth_table[i][j];
+    }
+    offset += truth_table_length[i];
+  }
   /* Generate sram bits*/
-  /* TODO: Match truth table and post-routing results */
-  sram_bits = generate_lut_sram_bits(truth_table_length, truth_table, 
-                                     lut_size, sram_ports[0]->default_val);
+  lut_sram_bits = generate_lut_sram_bits(lut_truth_table_length, lut_truth_table, 
+                                         lut_size, lut_sram_port->default_val);
 
-  /* Print the subckts*/ 
-  cur_pb_type = cur_pb_graph_node->pb_type;
+  /* Add mode bits */
+  if (NULL != mode_bit_port) {
+    assert (NULL != prim_phy_pb->mode_bits);
+    mode_sram_bits = decode_mode_bits(prim_phy_pb->mode_bits, &expected_num_sram);
+    assert(expected_num_sram == num_mode_sram);
+  } else {
+    /* Initialize */
+    mode_sram_bits = (int*)my_calloc(num_mode_sram, sizeof(int));
+    for (i = 0; i < num_sram; i++) { 
+      mode_sram_bits[i] = sram_ports[0]->default_val;
+    }
+  }
+
+  /* Merge the SRAM bits from LUT SRAMs and Mode selection */
+  num_sram = num_lut_sram + num_mode_sram; 
+  sram_bits = (int*)my_calloc(num_sram, sizeof(int));
+  /* LUT SRAMs go first and then mode bits */
+  memcpy(sram_bits, lut_sram_bits, num_lut_sram * sizeof(int));
+  memcpy(sram_bits + num_lut_sram, mode_sram_bits, num_mode_sram * sizeof(int));
 
   /* Decode the SRAM bits to BL/WL bits. */ 
   switch (cur_sram_orgz_info->type) {
@@ -346,14 +364,31 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(t_logical_block* mapped_logi
   /* Synchronize the internal counters of sram_orgz_info with generated bitstreams*/
   add_sram_conf_bits_to_sram_orgz_info(cur_sram_orgz_info, verilog_model);
 
+  /* Back-annotate to logical block */
+  for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
+    mapped_logical_block_index = prim_phy_pb->logical_block[i];
+    logical_block[mapped_logical_block_index].mapped_spice_model = verilog_model;
+    logical_block[mapped_logical_block_index].mapped_spice_model_index = verilog_model->cnt;
+  }
+
   /* Update counter */
   verilog_model->cnt++;
 
   /*Free*/
   my_free(input_ports);
-  my_free(output_ports);
   my_free(sram_ports);
   my_free(sram_bits);
+  my_free(lut_sram_bits);
+  my_free(mode_sram_bits);
+  my_free(lut_pin_net);
+  my_free(lut_truth_table);
+  for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
+    for (j = 0; j < truth_table_length[i]; j++) {
+      my_free(truth_table[i][j]);
+    }
+    my_free(truth_table[i]);
+  }
+  my_free(truth_table_length);
 
   return;
 }

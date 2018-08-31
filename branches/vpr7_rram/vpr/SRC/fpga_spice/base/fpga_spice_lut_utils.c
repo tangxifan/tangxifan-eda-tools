@@ -22,12 +22,15 @@
 #include "rr_graph.h"
 #include "rr_graph2.h"
 #include "vpr_utils.h"
+#include "route_common.h"
 
 /* Include SPICE support headers*/
 #include "quicksort.h"
 #include "linkedlist.h"
+#include "fpga_spice_types.h"
 #include "fpga_spice_globals.h"
 #include "fpga_spice_utils.h"
+#include "fpga_spice_pbtypes_utils.h"
 
 
 char* complete_truth_table_line(int lut_size,
@@ -235,17 +238,26 @@ int* generate_lut_sram_bits(int truth_table_len,
   return ret;
 }
 
+/* Provide the truth table of a mapped logical block 
+ * 1. Reorgainze the truth table to be consistent with the mapped nets of a LUT
+ * 2. Allocate the truth table in a clean char array and return
+ */
 char** assign_lut_truth_table(t_logical_block* mapped_logical_block,
                               int* truth_table_length) {
   char** truth_table = NULL;
   t_linked_vptr* head = NULL;
   int cur = 0;
+  int inet, jnet;
+  int* lut_to_lb_net_mapping = NULL;
+  int num_lb_pin = 0;
+  int* lb_pin_vpack_net_num = NULL;
 
   if (NULL == mapped_logical_block) {
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid mapped_logical_block!\n",
                __FILE__, __LINE__);
     exit(1);
   }
+
   /* Count the lines of truth table*/
   head = mapped_logical_block->truth_table;
   while(head) {
@@ -258,7 +270,88 @@ char** assign_lut_truth_table(t_logical_block* mapped_logical_block,
   cur = 0;
   head = mapped_logical_block->truth_table;
   while(head) {
-    truth_table[cur] = my_strdup((char*)head->data_vptr);
+    truth_table[cur] = my_strdup((char*)(head->data_vptr));
+    head = head->next;
+    cur++;
+  }
+  assert(cur == (*truth_table_length));
+
+  return truth_table;
+}
+
+
+/* Provide the truth table of a mapped logical block 
+ * 1. Reorgainze the truth table to be consistent with the mapped nets of a LUT
+ * 2. Allocate the truth table in a clean char array and return
+ */
+char** assign_post_routing_lut_truth_table(t_logical_block* mapped_logical_block,
+                                           int lut_size, int* lut_pin_vpack_net_num,
+                                           int* truth_table_length) {
+  char** truth_table = NULL;
+  t_linked_vptr* head = NULL;
+  int cur = 0;
+  int inet, jnet;
+  int* lut_to_lb_net_mapping = NULL;
+  int num_lb_pin = 0;
+  int* lb_pin_vpack_net_num = NULL;
+
+  if (NULL == mapped_logical_block) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid mapped_logical_block!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /* Allocate */
+  lut_to_lb_net_mapping = (int*) my_malloc (sizeof(int) * lut_size);
+  /* Find nets mapped to a logical block */
+  get_lut_logical_block_input_pin_vpack_net_num(mapped_logical_block,
+                                                &num_lb_pin, &lb_pin_vpack_net_num);
+  /* Create a pin-to-pin net_num mapping */
+  for (inet = 0; inet < lut_size; inet++) {
+    lut_to_lb_net_mapping[inet] = OPEN;
+    /* Bypass open nets */
+    if (OPEN  == lut_pin_vpack_net_num[inet]) {
+      continue;
+    }
+    assert (OPEN  != lut_pin_vpack_net_num[inet]);
+    /* Find the position (offset) of each vpack_net_num in lb_pins */
+    for (jnet = 0; jnet < num_lb_pin; jnet++) {
+      if (lut_pin_vpack_net_num[inet] == lb_pin_vpack_net_num[jnet]) {
+        lut_to_lb_net_mapping[inet] = jnet; 
+        break;
+      }  
+    } 
+    /* We must find one ! */ 
+    assert (OPEN != lut_to_lb_net_mapping[inet]);
+  } 
+
+  /* Count the lines of truth table*/
+  head = mapped_logical_block->truth_table;
+  while(head) {
+    (*truth_table_length)++;
+    head = head->next;
+  }
+  /* Allocate truth_tables */
+  truth_table = (char**)my_malloc(sizeof(char*)*(*truth_table_length));
+  /* Fill truth_tables*/
+  cur = 0;
+  head = mapped_logical_block->truth_table;
+  while(head) {
+    /* Handle the truth table pin remapping */
+    truth_table[cur] = (char*) my_calloc (lut_size + 3, sizeof(char)); /* last 3 bits are space + on/off set + \0 */
+    for (inet = 0; inet < lut_size; inet++) {
+      /* Open net implies a don't care */
+      if (OPEN  == lut_pin_vpack_net_num[inet]) {
+        truth_table[cur][inet] = '-';
+        continue;
+      }
+      /* Find the desired truth table bit */
+      truth_table[cur][inet] = ((char*)(head->data_vptr))[lut_to_lb_net_mapping[inet]];
+    }
+    /* Add string ends */
+    truth_table[cur][lut_size] = ' ';
+    truth_table[cur][lut_size + 1] = ((char*)(head->data_vptr))[strlen((char*)(head->data_vptr)) - 1];
+    truth_table[cur][lut_size + 2] = '\0';
     head = head->next;
     cur++;
   }

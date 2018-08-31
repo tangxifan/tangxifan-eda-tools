@@ -138,6 +138,9 @@ void init_grids_num_mode_bits();
 t_pb* get_lut_child_pb(t_pb* cur_lut_pb,
                        int mode_index);
 
+t_phy_pb* get_lut_child_phy_pb(t_phy_pb* cur_lut_pb,
+                               int mode_index);
+
 t_pb* get_hardlogic_child_pb(t_pb* cur_hardlogic_pb,
                              int mode_index);
 
@@ -201,3 +204,12 @@ void rec_sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb,
 
 void alloc_and_load_phy_pb_children_for_one_mapped_block(t_pb* cur_pb,
                                                          t_phy_pb* cur_phy_pb);
+
+void get_mapped_lut_phy_pb_input_pin_vpack_net_num(t_phy_pb* lut_phy_pb,
+                                                   int* num_lut_pin, int** lut_pin_net);
+
+void get_mapped_lut_pb_input_pin_vpack_net_num(t_pb* lut_pb,
+                                               int* num_lut_pin, int** lut_pin_net);
+
+void get_lut_logical_block_input_pin_vpack_net_num(t_logical_block* lut_logical_block,
+                                                   int* num_lut_pin, int** lut_pin_net);
