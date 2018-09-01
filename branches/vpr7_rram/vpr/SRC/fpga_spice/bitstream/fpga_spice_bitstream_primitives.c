@@ -64,11 +64,11 @@ void fpga_spice_generate_bitstream_pb_generic_primitive(t_phy_pb* prim_phy_pb,
   }
 
   /* Asserts, supportee SPICE MODELs  */
+  verilog_model = prim_phy_pb->pb_graph_node->pb_type->spice_model;
+
   assert((SPICE_MODEL_IOPAD == verilog_model->type)
          || (SPICE_MODEL_HARDLOGIC == verilog_model->type)
          || (SPICE_MODEL_FF == verilog_model->type));
-
-  verilog_model = prim_phy_pb->pb_graph_node->pb_type->spice_model;
 
   /* Find ports*/
   sram_ports = find_spice_model_ports(verilog_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
@@ -194,7 +194,7 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(t_phy_pb* prim_phy_pb,
   t_spice_model_port* lut_sram_port = NULL;
   t_spice_model_port* mode_bit_port = NULL;
   int num_lut_pin_nets;
-  int* lut_pin_net;
+  int* lut_pin_net = NULL;
   int mapped_logical_block_index;
 
   int cur_num_sram = 0;

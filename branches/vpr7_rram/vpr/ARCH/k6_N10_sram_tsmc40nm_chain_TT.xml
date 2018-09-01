@@ -550,7 +550,7 @@
                 <input name="cin" num_pins="1"/>
                 <output name="out" num_pins="2"/>
                 <output name="cout" num_pins="1"/>
-                <pb_type name="frac_lut6" blif_model=".frac_lut6" num_pb="1" spice_model_name="frac_lut6">
+                <pb_type name="frac_lut6" blif_model=".frac_lut6" mode_bits="11" num_pb="1" spice_model_name="frac_lut6">
                   <input name="in" num_pins="6"/>
                   <output name="lut6_out" num_pins="1"/>
                   <output name="lut5_out" num_pins="2"/>

@@ -1087,9 +1087,7 @@ int rec_count_num_conf_bits_pb(t_pb* cur_pb,
 /* Initialize the number of configuraion bits for one grid */
 void init_one_grid_num_conf_bits(int ix, int iy, 
                                  t_sram_orgz_info* cur_sram_orgz_info) {
-  t_block* mapped_block = NULL;
   int iz;
-  int cur_block_index = 0;
   int capacity; 
 
   /* Check */
@@ -1108,22 +1106,8 @@ void init_one_grid_num_conf_bits(int ix, int iy,
   /* check capacity and if this has been mapped */
   for (iz = 0; iz < capacity; iz++) {
     /* Check in all the blocks(clustered logic block), there is a match x,y,z*/
-    mapped_block = search_mapped_block(ix, iy, iz); 
     rec_count_num_conf_bits_pb_type_physical_mode(grid[ix][iy].type->pb_type, cur_sram_orgz_info);
-    /* Comments: Grid [x][y]*/
-    if (NULL == mapped_block) {
-      /* Print a consider a idle pb_type ...*/
-      rec_count_num_conf_bits_pb_type_default_mode(grid[ix][iy].type->pb_type, cur_sram_orgz_info);
-    } else {
-      if (iz == mapped_block->z) {
-        // assert(mapped_block == &(block[grid[ix][iy].blocks[cur_block_index]]));
-        cur_block_index++;
-      }
-      rec_count_num_conf_bits_pb(mapped_block->pb, cur_sram_orgz_info);
-    }
   } 
-
-  assert(cur_block_index == grid[ix][iy].usage);
 
   return;
 }
@@ -1639,9 +1623,7 @@ void rec_count_num_iopads_pb(t_pb* cur_pb) {
 
 /* Initialize the number of configuraion bits for one grid */
 void init_one_grid_num_iopads(int ix, int iy) {
-  t_block* mapped_block = NULL;
   int iz;
-  int cur_block_index = 0;
   int capacity; 
 
   /* Check */
@@ -1660,22 +1642,8 @@ void init_one_grid_num_iopads(int ix, int iy) {
   /* check capacity and if this has been mapped */
   for (iz = 0; iz < capacity; iz++) {
     /* Check in all the blocks(clustered logic block), there is a match x,y,z*/
-    mapped_block = search_mapped_block(ix, iy, iz); 
     rec_count_num_iopads_pb_type_physical_mode(grid[ix][iy].type->pb_type);
-    /* Comments: Grid [x][y]*/
-    if (NULL == mapped_block) {
-      /* Print a consider a idle pb_type ...*/
-      rec_count_num_iopads_pb_type_default_mode(grid[ix][iy].type->pb_type);
-    } else {
-      if (iz == mapped_block->z) {
-        // assert(mapped_block == &(block[grid[ix][iy].blocks[cur_block_index]]));
-        cur_block_index++;
-      }
-      rec_count_num_iopads_pb(mapped_block->pb);
-    }
   } 
-
-  assert(cur_block_index == grid[ix][iy].usage);
 
   return;
 }
@@ -2535,7 +2503,7 @@ void rec_alloc_phy_pb_children(t_pb_graph_node* cur_pb_graph_node,
   cur_phy_pb->logical_block = NULL;
   cur_phy_pb->lut_size = NULL;
   cur_phy_pb->lut_pin_remap = NULL;
-  cur_phy_pb->mode_bits = NULL;
+  cur_phy_pb->mode_bits = my_strdup(cur_pb_type->mode_bits); /* copy the default mode_bits */
 
   /* Return if we reach the primitive node */
   if (NULL != cur_pb_type->spice_model) {
@@ -2554,11 +2522,12 @@ void rec_alloc_phy_pb_children(t_pb_graph_node* cur_pb_graph_node,
     cur_phy_pb->child_pbs[ipb] = (t_phy_pb*) my_calloc(cur_pb_type->modes[phy_mode_index].pb_type_children[ipb].num_pb, sizeof(t_phy_pb));
     /* Each child may exist multiple times in the hierarchy*/
     for (jpb = 0; jpb < cur_pb_type->modes[phy_mode_index].pb_type_children[ipb].num_pb; jpb++) {
-      rec_alloc_phy_pb_children(&(cur_pb_graph_node->child_pb_graph_nodes[phy_mode_index][ipb][jpb]),
-                                &(cur_phy_pb->child_pbs[ipb][jpb]));
       /* Assign parent_pb */
       cur_phy_pb->child_pbs[ipb][jpb].parent_pb = cur_phy_pb;
       cur_phy_pb->child_pbs[ipb][jpb].rr_graph = cur_phy_pb->rr_graph;
+      /* Contine recursively */
+      rec_alloc_phy_pb_children(&(cur_pb_graph_node->child_pb_graph_nodes[phy_mode_index][ipb][jpb]),
+                                &(cur_phy_pb->child_pbs[ipb][jpb]));
     }
   }
 
@@ -2632,6 +2601,9 @@ void rec_sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb,
     phy_pb_to_sync = rec_get_phy_pb_by_name(cur_phy_pb, phy_pb_name);
     /* Check */
     /* Copy the mode bits */
+    if (NULL != phy_pb_to_sync->mode_bits) { /* Free the default mode bits if we have any */
+      my_free(phy_pb_to_sync->mode_bits);
+    }
     phy_pb_to_sync->mode_bits = my_strdup(cur_pb_type->mode_bits);
     /* Re-allocate logical_block array mapped to this pb */
     phy_pb_to_sync->num_logical_blocks++;
