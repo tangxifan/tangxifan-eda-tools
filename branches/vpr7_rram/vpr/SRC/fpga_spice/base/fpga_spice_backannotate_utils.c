@@ -70,13 +70,13 @@ int get_lut_output_init_val(t_logical_block* lut_logical_block) {
   assert((NULL != lut_logical_block->pb)
         && ( NULL != lut_logical_block->pb->pb_graph_node)
         && ( NULL != lut_logical_block->pb->pb_graph_node->pb_type));
-  lut_spice_model = lut_logical_block->pb->pb_graph_node->pb_type->parent_mode->parent_pb_type->spice_model;
+  lut_spice_model = lut_logical_block->pb->pb_graph_node->pb_type->parent_mode->parent_pb_type->phy_pb_type->spice_model;
 
   assert(SPICE_MODEL_LUT == lut_spice_model->type);
 
   sram_ports = find_spice_model_ports(lut_spice_model, SPICE_MODEL_PORT_SRAM, 
                                       &num_sram_port, TRUE);
-  assert(1 == num_sram_port);
+  assert((1 == num_sram_port) || (2 == num_sram_port));
 
   /* Get the truth table */
   truth_table = assign_lut_truth_table(lut_logical_block, &truth_table_length); 
@@ -133,7 +133,7 @@ int get_logical_block_output_init_val(t_logical_block* cur_logical_block) {
   assert((NULL != cur_logical_block->pb)
         && ( NULL != cur_logical_block->pb->pb_graph_node)
         && ( NULL != cur_logical_block->pb->pb_graph_node->pb_type));
-  cur_spice_model = cur_logical_block->pb->pb_graph_node->pb_type->parent_mode->parent_pb_type->spice_model;
+  cur_spice_model = cur_logical_block->pb->pb_graph_node->pb_type->parent_mode->parent_pb_type->phy_pb_type->spice_model;
 
   /* Switch to specific cases*/
   switch (cur_spice_model->type) {
@@ -845,6 +845,14 @@ void set_one_pb_rr_node_default_prev_node_edge(t_rr_node* pb_rr_graph,
     break;
   }
 
+  /* prev_node may not exist since some pb_graph_pin is accessible in some mode, we do not need to find a prev_edge  */
+  if (OPEN == prev_node) { 
+    /* backannotate */
+    pb_rr_graph[node_index].prev_node = prev_node;
+    pb_rr_graph[node_index].prev_edge = prev_edge;
+    return;
+  }
+
   /* Find prev_edge */
   for (iedge = 0; iedge < pb_rr_graph[prev_node].pb_graph_pin->num_output_edges; iedge++) {
     check_pb_graph_edge(*(pb_rr_graph[prev_node].pb_graph_pin->output_edges[iedge]));
@@ -1007,6 +1015,14 @@ void set_one_pb_rr_node_net_num(t_rr_node* pb_rr_graph,
 
   prev_node = pb_rr_graph[node_index].prev_node;
   prev_edge = pb_rr_graph[node_index].prev_edge;
+  
+  /* Some node may be disconnected */
+  if (OPEN == prev_node) {
+    pb_rr_graph[node_index].net_num = OPEN;
+    pb_rr_graph[node_index].vpack_net_num = OPEN;
+    return;
+  }
+
   assert(OPEN != prev_node); 
   assert(OPEN != prev_edge); 
 
@@ -2391,11 +2407,13 @@ void rec_annotate_pb_type_primitive_node_physical_mode_pin(t_pb_type* top_pb_typ
   int imode, ipb, iport;
 
   /* See if this is a primitive pb_graph_node */
-  if (NULL == cur_pb_type->spice_model) { 
+  if ((NULL == cur_pb_type->physical_pb_type_name) 
+     && (NULL == cur_pb_type->spice_model_name)) { 
     /* Check each mode*/
     for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
-      /* bypass physical modes */
-      if (imode == find_pb_type_physical_mode_index((*cur_pb_type))) {
+      /* bypass physical modes only when there are more than 1 modes available ! */
+      if ((1 == cur_pb_type->modes[imode].define_physical_mode) 
+          &&(1 < cur_pb_type->num_modes)) {
         continue;
       }
       /* Quote all child pb_types */
@@ -2409,11 +2427,13 @@ void rec_annotate_pb_type_primitive_node_physical_mode_pin(t_pb_type* top_pb_typ
   }
 
   /* Reach here, it means a primitive mode */ 
-  assert (NULL != cur_pb_type->spice_model);
-  /* Check the physical pb_type  */
   assert (NULL != cur_pb_type->physical_pb_type_name);
+  /* Check the physical pb_type  */
   /* Find the physical_pb_type with the name provided */
   cur_pb_type->phy_pb_type = rec_get_pb_type_by_name(top_pb_type, cur_pb_type->physical_pb_type_name);
+  vpr_printf(TIO_MESSAGE_INFO,
+             "Link physical pb_type (name=%s) for pb_type (name=%s)!\n",
+             cur_pb_type->physical_pb_type_name, cur_pb_type->name);
   /* Check: We should find one! */
   if (NULL == cur_pb_type->phy_pb_type) {
     vpr_printf(TIO_MESSAGE_ERROR,
@@ -2443,18 +2463,56 @@ void rec_annotate_pb_type_primitive_node_physical_mode_pin(t_pb_type* top_pb_typ
   return;
 }
 
+/* Annotate the physical_mode_pin in pb_type ports,
+ * Go recursively until we reach a primtiive node 
+ */
+void rec_annotate_phy_pb_type_primitive_node_physical_mode_pin(t_pb_type* top_pb_type,
+                                                               t_pb_type* cur_pb_type) {
+  int phy_mode_idx, ipb, iport;
+
+  /* See if this is a primitive pb_graph_node */
+  if ((NULL == cur_pb_type->spice_model_name)  
+     &&(NULL == cur_pb_type->physical_pb_type_name)) { 
+    cur_pb_type->phy_pb_type = NULL;
+    /* we only care physical modes */
+    phy_mode_idx = find_pb_type_physical_mode_index((*cur_pb_type));
+    /* Quote all child pb_types */
+    for (ipb = 0; ipb < cur_pb_type->modes[phy_mode_idx].num_pb_type_children; ipb++) {
+      /* we should make sure this placement index == child_pb_type[jpb]*/
+      rec_annotate_phy_pb_type_primitive_node_physical_mode_pin(top_pb_type,
+                                                                &(cur_pb_type->modes[phy_mode_idx].pb_type_children[ipb]));
+    }
+    return;
+  }
+
+  /* Reach here, it means a primitive mode */ 
+  assert (NULL != cur_pb_type->spice_model_name);
+  /* Check the physical pb_type  */
+  /* Find the physical_pb_type with the name provided */
+  cur_pb_type->phy_pb_type = cur_pb_type;
+  /* Now we are sure about the phy_pb_type that is found */
+  /* Find matched port one by one */
+  for (iport = 0; iport < cur_pb_type->num_ports; iport++) { 
+    cur_pb_type->ports[iport].phy_pb_type_port = &(cur_pb_type->ports[iport]); 
+    cur_pb_type->ports[iport].phy_pb_type_port_lsb = 0; 
+    cur_pb_type->ports[iport].phy_pb_type_port_msb = cur_pb_type->ports[iport].num_pins - 1; 
+  }
+
+  return;
+}
+
 /* Go recursively visiting each primitive node in the pb_graph_node 
  * Label the primitive node with a placement index which is unique at the top-level node 
  */
-void rec_mark_pb_graph_node_primitive_placement_index_in_top_node(t_pb_graph_node* cur_pb_graph_node,
-                                                                  int* start_index) {
+void rec_mark_pb_graph_node_primitive_placement_index_in_top_node(t_pb_graph_node* cur_pb_graph_node) {
   int imode, ipb, jpb;
   t_pb_type* cur_pb_type = NULL;
 
   cur_pb_type = cur_pb_graph_node->pb_type;
 
   /* See if this is a primitive pb_graph_node */
-  if (NULL == cur_pb_type->spice_model) { 
+  if ((NULL == cur_pb_type->physical_pb_type_name)
+    &&(NULL == cur_pb_type->spice_model_name)) { 
     /* Check each mode*/
     for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
       /* Quote all child pb_types */
@@ -2463,8 +2521,7 @@ void rec_mark_pb_graph_node_primitive_placement_index_in_top_node(t_pb_graph_nod
         for (jpb = 0; jpb < cur_pb_type->modes[imode].pb_type_children[ipb].num_pb; jpb++) {
           /* we should make sure this placement index == child_pb_type[jpb]*/
           assert(jpb == cur_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb].placement_index);
-          rec_mark_pb_graph_node_primitive_placement_index_in_top_node(&(cur_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb]), 
-                                                                       start_index);
+          rec_mark_pb_graph_node_primitive_placement_index_in_top_node(&(cur_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb]));
         }
       }
     }
@@ -2472,11 +2529,10 @@ void rec_mark_pb_graph_node_primitive_placement_index_in_top_node(t_pb_graph_nod
   }
 
   /* Reach here, it means a primitive mode */ 
-  assert (NULL != cur_pb_type->spice_model );
+  assert (NULL != cur_pb_type->phy_pb_type );
   /* Label placement_index_in_top_node */ 
-  cur_pb_graph_node->placement_index = (*start_index);
-  /* Increament the counter */
-  (*start_index)++;
+  cur_pb_graph_node->placement_index_in_top_node = cur_pb_type->temp_placement_index;
+  cur_pb_type->temp_placement_index++;
 
   return;
 }
@@ -2493,15 +2549,23 @@ void rec_link_primitive_pb_graph_node_pin_to_phy_pb_graph_pin(t_pb_graph_node* t
   cur_pb_type = cur_pb_graph_node->pb_type;
 
   /* See if this is a primitive pb_graph_node */
-  if (NULL == cur_pb_type->spice_model) { 
+  if ((NULL == cur_pb_type->physical_pb_type_name) 
+     && (NULL == cur_pb_type->spice_model_name)) { 
     /* Check each mode*/
     for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
+      /* bypass physical modes only when there are more than 1 modes available ! */
+      if ((1 == cur_pb_type->modes[imode].define_physical_mode) 
+          &&(1 < cur_pb_type->num_modes)) {
+        continue;
+      }
       /* Quote all child pb_types */
       for (ipb = 0; ipb < cur_pb_type->modes[imode].num_pb_type_children; ipb++) {
         /* Each child may exist multiple times in the hierarchy*/
         for (jpb = 0; jpb < cur_pb_type->modes[imode].pb_type_children[ipb].num_pb; jpb++) {
           /* we should make sure this placement index == child_pb_type[jpb]*/
+          if (jpb != cur_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb].placement_index) {
           assert(jpb == cur_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb].placement_index);
+          }
           rec_link_primitive_pb_graph_node_pin_to_phy_pb_graph_pin(top_pb_graph_node,
                                                                    &(cur_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb]));
         }
@@ -2511,7 +2575,7 @@ void rec_link_primitive_pb_graph_node_pin_to_phy_pb_graph_pin(t_pb_graph_node* t
   }
 
   /* Reach here, it means a primitive mode */ 
-  assert (NULL != cur_pb_type->spice_model);
+  assert (NULL != cur_pb_type->phy_pb_type);
   /* Get the physical pb_graph_node with the scaled placement_index! */
   physical_pb_graph_node_placement_index = (int) (cur_pb_type->physical_pb_type_index_factor 
                                                   * (float) cur_pb_graph_node->placement_index_in_top_node)
@@ -2519,6 +2583,7 @@ void rec_link_primitive_pb_graph_node_pin_to_phy_pb_graph_pin(t_pb_graph_node* t
   phy_pb_graph_node = rec_get_pb_graph_node_by_pb_type_and_placement_index_in_top_node(top_pb_graph_node, 
                                                                                        cur_pb_type->phy_pb_type,
                                                                                        physical_pb_graph_node_placement_index);
+  assert(NULL != phy_pb_graph_node);
   /* Create linkes between pb_graph_pins and pb_graph_nodes */
   cur_pb_graph_node->physical_pb_graph_node = phy_pb_graph_node; 
   link_pb_graph_node_pins_to_phy_pb_graph_pins(cur_pb_graph_node, cur_pb_graph_node->physical_pb_graph_node);
@@ -2535,19 +2600,24 @@ void rec_link_primitive_pb_graph_node_pin_to_phy_pb_graph_pin(t_pb_graph_node* t
  */
 void annotate_physical_mode_pins_in_pb_graph_node() {
   int itype;
-  int start_index = 0;
   
   for (itype = 0; itype < num_types; itype++) {
     /* Bybass NULL/EMPTY_TYPE */
     if (EMPTY_TYPE == &type_descriptors[itype]) {
       continue; 
     }
+    /* reset phy_pb_type in all the pb_types  */
+    rec_reset_pb_type_phy_pb_type(type_descriptors[itype].pb_type);
     /* reset the rr_node_index_physical_pb of each pb_graph_pin to be OPEN ! */
     rec_reset_pb_graph_node_rr_node_index_physical_pb(type_descriptors[itype].pb_graph_head);
+    /* annotate the physical mode pins in the physical primitive pb_type*/
+    rec_annotate_phy_pb_type_primitive_node_physical_mode_pin(type_descriptors[itype].pb_type, type_descriptors[itype].pb_type);
     /* annotate the physical mode pins in the primitive pb_type*/
     rec_annotate_pb_type_primitive_node_physical_mode_pin(type_descriptors[itype].pb_type, type_descriptors[itype].pb_type);
+    /* reset temp_placement_index in all the pb_types  */
+    rec_reset_pb_type_temp_placement_index(type_descriptors[itype].pb_type);
     /* Recursively find the primitive pb_grpah_nodes */
-    rec_mark_pb_graph_node_primitive_placement_index_in_top_node(type_descriptors[itype].pb_graph_head, &start_index);
+    rec_mark_pb_graph_node_primitive_placement_index_in_top_node(type_descriptors[itype].pb_graph_head);
     /* Recursively link the pb_graph_pin of primitive nodes in operating pb to physical pb */
     rec_link_primitive_pb_graph_node_pin_to_phy_pb_graph_pin(type_descriptors[itype].pb_graph_head, type_descriptors[itype].pb_graph_head);
   }
@@ -2570,11 +2640,12 @@ void alloc_and_load_phy_pb_for_mapped_block(int num_mapped_blocks, t_block* mapp
     top_phy_pb->parent_pb = NULL;
     top_phy_pb->mode = 0; /* Top-level should have only one mode!!! */
     /* Allocate rr_graph for the phy_pb */
+    vpr_printf(TIO_MESSAGE_INFO, "Allocating routing resource graph for %d physical pb!\n", iblk);
     alloc_and_load_rr_graph_for_phy_pb(mapped_block[iblk].pb, top_phy_pb, L_num_vpack_nets, L_vpack_net); 
     /* Perform routing for the phy_pb !!! */
     route_success = try_breadth_first_route_pb_rr_graph(top_phy_pb->rr_graph);
     if (TRUE == route_success) { 
-      vpr_printf(TIO_MESSAGE_INFO, "Route successfully for %d physical pbs!\r", iblk);
+      vpr_printf(TIO_MESSAGE_INFO, "Route successfully for %d physical pbs!\n", iblk);
     } else {
       assert(FALSE == route_success);
       vpr_printf(TIO_MESSAGE_ERROR,
@@ -2584,6 +2655,7 @@ void alloc_and_load_phy_pb_for_mapped_block(int num_mapped_blocks, t_block* mapp
     }
     /* Backannotate routing results to physical pb_rr_graph */
     backannotate_rr_graph_routing_results_to_net_name(top_phy_pb->rr_graph);
+    vpr_printf(TIO_MESSAGE_INFO, "Backannotate routing results successfully for %d physical pbs!\n", iblk);
     /* Allocate and load child_pb graphs */
     alloc_and_load_phy_pb_children_for_one_mapped_block(mapped_block[iblk].pb, top_phy_pb);
     /* Give top_phy_pb to grid */

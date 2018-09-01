@@ -154,17 +154,24 @@ void match_pb_types_spice_model_rec(t_pb_type* cur_pb_type,
     return;
   }
 
-  /* If there is a spice_model_name, this is a leaf node!*/
-  if (NULL != cur_pb_type->spice_model_name) {
+  /* If there is a spice_model_name or refer to a physical pb type , this is a leaf node!*/
+  if ((NULL != cur_pb_type->spice_model_name) || (NULL != cur_pb_type->physical_pb_type_name))  {
     /* What annoys me is VPR create a sub pb_type for each lut which suppose to be a leaf node
      * This may bring software convience but ruins SPICE modeling
      */
+    /* if this is not a physical pb_type, we do not care the spice model name and associated checking */
+    if (NULL != cur_pb_type->physical_pb_type_name) {
+      vpr_printf(TIO_MESSAGE_INFO, "(File:%s,LINE[%d]) Bypass spice model checking for pb_type(%s)!\n",
+                 __FILE__, __LINE__, cur_pb_type->name);
+      return;
+    }
     /* Let's find a matched spice model!*/
     printf("INFO: matching cur_pb_type=%s with spice_model_name=%s...\n",cur_pb_type->name, cur_pb_type->spice_model_name);
     assert(NULL == cur_pb_type->spice_model);
     cur_pb_type->spice_model = find_name_matched_spice_model(cur_pb_type->spice_model_name, num_spice_model, spice_models);
     if (NULL == cur_pb_type->spice_model) {
-      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,LINE[%d]) Fail to find a defined SPICE model called %s, in pb_type(%s)!\n",__FILE__, __LINE__, cur_pb_type->spice_model_name, cur_pb_type->name);
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,LINE[%d]) Fail to find a defined SPICE model called %s, in pb_type(%s)!\n",
+                 __FILE__, __LINE__, cur_pb_type->spice_model_name, cur_pb_type->name);
       exit(1);
     }
     /* Map pb_type ports to SPICE model ports*/
@@ -586,9 +593,13 @@ static
 void rec_identify_pb_type_idle_mode(t_pb_type* cur_pb_type) {
   int imode, ichild, idle_mode_idx;
 
-  /* Find idle mode index */
-  idle_mode_idx = find_pb_type_idle_mode_index(*cur_pb_type);
-  cur_pb_type->modes[idle_mode_idx].define_idle_mode = TRUE;
+  /* Do it only when we have modes */
+  if ( 0 < cur_pb_type->num_modes) {
+    /* Find idle mode index */
+    idle_mode_idx = find_pb_type_idle_mode_index(*cur_pb_type);
+    cur_pb_type->modes[idle_mode_idx].define_idle_mode = TRUE;
+    return;
+  }
 
   /* Traverse all the modes for identifying idle mode */
   for (imode = 0; cur_pb_type->num_modes; imode++) {
@@ -611,19 +622,22 @@ void rec_identify_pb_type_phy_mode(t_pb_type* cur_pb_type) {
   int imode, ichild, phy_mode_idx;
   
   /* Only try to find physical mode when parent is a physical mode or this is the top cur_pb_type! */
-  if ((NULL == cur_pb_type->parent_mode)
-     || (TRUE == cur_pb_type->parent_mode->define_physical_mode)) {
-    /* Find physical mode index */
-    phy_mode_idx = find_pb_type_physical_mode_index(*cur_pb_type);
-    cur_pb_type->modes[phy_mode_idx].define_physical_mode = TRUE;
-  } else { 
-    /* The parent must not be a physical mode*/
-    assert (FALSE == cur_pb_type->parent_mode->define_physical_mode);
-    phy_mode_idx = -1;
-    /* Traverse all the modes for identifying idle mode */
-    for (imode = 0; cur_pb_type->num_modes; imode++) {
-      cur_pb_type->modes[imode].define_physical_mode = FALSE;
+  if ( 0 < cur_pb_type->num_modes) {
+    if ((NULL == cur_pb_type->parent_mode)
+       || (TRUE == cur_pb_type->parent_mode->define_physical_mode)) {
+      /* Find physical mode index */
+      phy_mode_idx = find_pb_type_physical_mode_index(*cur_pb_type);
+      cur_pb_type->modes[phy_mode_idx].define_physical_mode = TRUE;
+    } else { 
+      /* The parent must not be a physical mode*/
+      assert (FALSE == cur_pb_type->parent_mode->define_physical_mode);
+      phy_mode_idx = -1;
+      /* Traverse all the modes for identifying idle mode */
+      for (imode = 0; cur_pb_type->num_modes; imode++) {
+        cur_pb_type->modes[imode].define_physical_mode = FALSE;
+      }
     }
+    return;
   }
 
   /* Traverse all the modes for identifying idle mode */
@@ -707,9 +721,9 @@ void rec_add_pb_type_keywords_to_list(t_pb_type* cur_pb_type,
         if (NULL == cur_pb_type->modes[imode].pb_type_children[jpb].spice_model) {
           rec_add_pb_type_keywords_to_list(&(cur_pb_type->modes[imode].pb_type_children[jpb]),
                                              cur, keywords, pass_on_prefix);
-          my_free(pass_on_prefix);
         }
       }
+      my_free(pass_on_prefix);
     }
   }
 

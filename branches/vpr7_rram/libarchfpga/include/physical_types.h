@@ -641,6 +641,7 @@ struct s_pb_type {
 	struct s_pb_type* phy_pb_type;
     float physical_pb_type_index_factor;
     int physical_pb_type_index_offset;
+    int temp_placement_index;
     /* END */
 
 	/* Power related members */

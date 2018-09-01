@@ -172,28 +172,31 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
 
   dump_verilog_sram_config_bus_internal_wires(fp, cur_sram_orgz_info, 
                                               cur_num_sram, cur_num_sram + num_sram - 1);
-  switch (cur_sram_orgz_info->type) {
-  case SPICE_SRAM_MEMORY_BANK:
-    /* Local wires */
-    /* Find the number of BLs/WLs of each SRAM */
-    /* Detect the SRAM SPICE model linked to this SRAM port */
-    assert(NULL != sram_ports[0]->spice_model);
-    assert(SPICE_MODEL_SRAM == sram_ports[0]->spice_model->type);
-    find_bl_wl_ports_spice_model(sram_ports[0]->spice_model, 
-                                 &num_bl_ports, &bl_port, &num_wl_ports, &wl_port); 
-    assert(1 == num_bl_ports);
-    assert(1 == num_wl_ports);
-    num_bl_per_sram = bl_port[0]->size; 
-    num_wl_per_sram = wl_port[0]->size; 
-    break;
-  case SPICE_SRAM_STANDALONE:
-  case SPICE_SRAM_SCAN_CHAIN:
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid SRAM organization type!\n",
-               __FILE__, __LINE__);
-    exit(1);
-  }
+
+  if (0 < num_sram_port) {
+    switch (cur_sram_orgz_info->type) {
+    case SPICE_SRAM_MEMORY_BANK:
+      /* Local wires */
+      /* Find the number of BLs/WLs of each SRAM */
+      /* Detect the SRAM SPICE model linked to this SRAM port */
+      assert(NULL != sram_ports[0]->spice_model);
+      assert(SPICE_MODEL_SRAM == sram_ports[0]->spice_model->type);
+      find_bl_wl_ports_spice_model(sram_ports[0]->spice_model, 
+                                   &num_bl_ports, &bl_port, &num_wl_ports, &wl_port); 
+      assert(1 == num_bl_ports);
+      assert(1 == num_wl_ports);
+      num_bl_per_sram = bl_port[0]->size; 
+      num_wl_per_sram = wl_port[0]->size; 
+      break;
+    case SPICE_SRAM_STANDALONE:
+    case SPICE_SRAM_SCAN_CHAIN:
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid SRAM organization type!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+  } 
   /* Definition ends*/
 
   /* Dump the configuration port bus */
@@ -462,9 +465,10 @@ void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
   }
   /* Specify outputs are wires */
   pb_type_output_ports = find_pb_type_ports_match_spice_model_port_type(cur_pb_type, SPICE_MODEL_PORT_OUTPUT, &num_pb_type_output_port); 
-  assert(1 == num_pb_type_output_port);
-  fprintf(fp, "wire [0:%d] %s__%s;\n",
-          output_ports[0]->size - 1, port_prefix, pb_type_output_ports[0]->name);
+  for (i = 0; i < num_pb_type_output_port; i++) {
+    fprintf(fp, "wire [0:%d] %s__%s;\n",
+            output_ports[i]->size - 1, port_prefix, pb_type_output_ports[i]->name);
+  }
   for (i = 0; i < output_ports[0]->size; i++) {
     fprintf(fp, "assign %s__%s_%d_ = %s__%s[%d];\n",
                 port_prefix, pb_type_output_ports[0]->name, i,

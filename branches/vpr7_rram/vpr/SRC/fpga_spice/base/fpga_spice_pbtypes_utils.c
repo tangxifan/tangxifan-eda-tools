@@ -533,7 +533,8 @@ void rec_mark_pb_graph_node_temp_net_num(t_pb_graph_node* cur_pb_graph_node) {
 
   mark_pb_graph_node_clock_pins_temp_net_num(cur_pb_graph_node, mode_index);
 
-  if (NULL != cur_pb_graph_node->pb_type->spice_model) {
+  if ((NULL != cur_pb_graph_node->pb_type->spice_model) 
+    || (NULL != cur_pb_graph_node->pb_type->phy_pb_type)) {
     return;
   }
 
@@ -865,7 +866,8 @@ int rec_count_num_conf_bits_pb_type_default_mode(t_pb_type* cur_pb_type,
   cur_pb_type->default_mode_num_conf_bits = 0;
 
   /* Recursively finish all the child pb_types*/
-  if (NULL == cur_pb_type->spice_model) { 
+  if ((NULL == cur_pb_type->spice_model_name) 
+     && (NULL == cur_pb_type->physical_pb_type_name)) {
     /* Find the mode that define_idle_mode*/
     mode_index = find_pb_type_idle_mode_index((*cur_pb_type));
     for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
@@ -876,12 +878,13 @@ int rec_count_num_conf_bits_pb_type_default_mode(t_pb_type* cur_pb_type,
   }
 
   /* Check if this has defined a spice_model*/
-  if (NULL != cur_pb_type->spice_model) {
-    sum_num_conf_bits = count_num_conf_bits_one_spice_model(cur_pb_type->spice_model, cur_sram_orgz_info->type, 0);
+  if ((NULL != cur_pb_type->spice_model_name)
+     || (NULL != cur_pb_type->physical_pb_type_name)) {
+    sum_num_conf_bits = count_num_conf_bits_one_spice_model(cur_pb_type->phy_pb_type->spice_model, cur_sram_orgz_info->type, 0);
     cur_pb_type->default_mode_num_conf_bits = sum_num_conf_bits;
     /* calculate the number of reserved configuration bits */
     cur_pb_type->default_mode_num_reserved_conf_bits = 
-         count_num_reserved_conf_bits_one_spice_model(cur_pb_type->spice_model,
+         count_num_reserved_conf_bits_one_spice_model(cur_pb_type->phy_pb_type->spice_model,
                                                       cur_sram_orgz_info->type, 0);
   } else { /* Count the sum of configuration bits of all the children pb_types */
     /* Find the mode that define_idle_mode*/
@@ -929,7 +932,8 @@ int rec_count_num_conf_bits_pb_type_physical_mode(t_pb_type* cur_pb_type,
   cur_pb_type->physical_mode_num_conf_bits = 0;
 
   /* Recursively finish all the child pb_types*/
-  if (NULL == cur_pb_type->spice_model) { 
+  if ((NULL == cur_pb_type->spice_model_name) 
+     && (NULL == cur_pb_type->physical_pb_type_name)) { 
     /* Find the mode that define_idle_mode*/
     mode_index = find_pb_type_physical_mode_index((*cur_pb_type));
     for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
@@ -940,12 +944,13 @@ int rec_count_num_conf_bits_pb_type_physical_mode(t_pb_type* cur_pb_type,
   }
 
   /* Check if this has defined a spice_model*/
-  if (NULL != cur_pb_type->spice_model) {
-    sum_num_conf_bits = count_num_conf_bits_one_spice_model(cur_pb_type->spice_model, cur_sram_orgz_info->type, 0);
+  if ((NULL != cur_pb_type->spice_model_name)
+     || (NULL != cur_pb_type->physical_pb_type_name)) { 
+    sum_num_conf_bits = count_num_conf_bits_one_spice_model(cur_pb_type->phy_pb_type->spice_model, cur_sram_orgz_info->type, 0);
     cur_pb_type->physical_mode_num_conf_bits = sum_num_conf_bits;
     /* calculate the number of reserved configuration bits */
     cur_pb_type->physical_mode_num_reserved_conf_bits = 
-         count_num_reserved_conf_bits_one_spice_model(cur_pb_type->spice_model,
+         count_num_reserved_conf_bits_one_spice_model(cur_pb_type->phy_pb_type->spice_model,
                                                       cur_sram_orgz_info->type, 0);
   } else { /* Count the sum of configuration bits of all the children pb_types */
     /* Find the mode that define_idle_mode*/
@@ -1007,7 +1012,8 @@ int rec_count_num_conf_bits_pb(t_pb* cur_pb,
   cur_pb->num_conf_bits = 0;
 
   /* Recursively finish all the child pb_types*/
-  if (NULL == cur_pb_type->spice_model) { 
+  if ((NULL == cur_pb_type->spice_model_name) 
+    &&(NULL == cur_pb_type->physical_pb_type_name)) { 
     /* recursive for the child_pbs*/
     for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
       for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) { 
@@ -1025,13 +1031,14 @@ int rec_count_num_conf_bits_pb(t_pb* cur_pb,
   }
 
   /* Check if this has defined a spice_model*/
-  if (NULL != cur_pb_type->spice_model) {
-    sum_num_conf_bits += count_num_conf_bits_one_spice_model(cur_pb_type->spice_model, 
+  if ((NULL != cur_pb_type->spice_model_name)
+    ||(NULL != cur_pb_type->physical_pb_type_name)) { 
+    sum_num_conf_bits += count_num_conf_bits_one_spice_model(cur_pb_type->phy_pb_type->spice_model, 
                                                              cur_sram_orgz_info->type, 0);
     cur_pb->num_conf_bits = sum_num_conf_bits;
     /* calculate the number of reserved configuration bits */
     cur_pb->num_reserved_conf_bits = 
-         count_num_reserved_conf_bits_one_spice_model(cur_pb_type->spice_model,
+         count_num_reserved_conf_bits_one_spice_model(cur_pb_type->phy_pb_type->spice_model,
                                                       cur_sram_orgz_info->type, 0);
  
   } else {
@@ -1490,7 +1497,8 @@ void rec_count_num_iopads_pb_type_physical_mode(t_pb_type* cur_pb_type) {
   cur_pb_type->physical_mode_num_iopads = 0;
 
   /* Recursively finish all the child pb_types*/
-  if (NULL == cur_pb_type->spice_model) { 
+  if ((NULL == cur_pb_type->spice_model) 
+    && (NULL == cur_pb_type->phy_pb_type)) { 
     /* Find the mode that define_idle_mode*/
     mode_index = find_pb_type_physical_mode_index((*cur_pb_type));
     for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
@@ -1501,8 +1509,9 @@ void rec_count_num_iopads_pb_type_physical_mode(t_pb_type* cur_pb_type) {
   }
 
   /* Check if this has defined a spice_model*/
-  if (NULL != cur_pb_type->spice_model) {
-    if (SPICE_MODEL_IOPAD == cur_pb_type->spice_model->type) {
+  if ((NULL != cur_pb_type->spice_model) 
+     || (NULL != cur_pb_type->phy_pb_type)) { 
+    if (SPICE_MODEL_IOPAD == cur_pb_type->phy_pb_type->spice_model->type) {
       sum_num_iopads = 1;
       cur_pb_type->physical_mode_num_iopads = sum_num_iopads;
     }
@@ -1533,36 +1542,26 @@ void rec_count_num_iopads_pb_type_default_mode(t_pb_type* cur_pb_type) {
   cur_pb_type->default_mode_num_iopads = 0;
 
   /* Recursively finish all the child pb_types*/
-  if (NULL == cur_pb_type->spice_model) { 
+  if ((NULL == cur_pb_type->spice_model_name) 
+     && (NULL == cur_pb_type->physical_pb_type_name)) { 
     /* Find the mode that define_idle_mode*/
     mode_index = find_pb_type_idle_mode_index((*cur_pb_type));
     for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
       for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) { 
         rec_count_num_iopads_pb_type_default_mode(&(cur_pb_type->modes[mode_index].pb_type_children[ipb]));
+        sum_num_iopads += cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_iopads;
+        cur_pb_type->default_mode_num_iopads = sum_num_iopads;
       }
     }
   }
 
   /* Check if this has defined a spice_model*/
-  if (NULL != cur_pb_type->spice_model) {
-    if (SPICE_MODEL_IOPAD == cur_pb_type->spice_model->type) {
+  if ((NULL != cur_pb_type->spice_model_name) 
+     && (NULL != cur_pb_type->physical_pb_type_name)) { 
+    if (SPICE_MODEL_IOPAD == cur_pb_type->phy_pb_type->spice_model->type) {
       sum_num_iopads = 1;
       cur_pb_type->default_mode_num_iopads = sum_num_iopads;
     }
-  } else { /* Count the sum of configuration bits of all the children pb_types */
-    /* Find the mode that define_idle_mode*/
-    mode_index = find_pb_type_idle_mode_index((*cur_pb_type));
-    /* Quote all child pb_types */
-    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
-      /* Each child may exist multiple times in the hierarchy*/
-      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
-        /* Count in the number of configuration bits of on child pb_type */
-        sum_num_iopads += cur_pb_type->modes[mode_index].pb_type_children[ipb].default_mode_num_iopads;
-      }
-    }
-    /* Count the number of configuration bits of interconnection */
-    /* Update the info in pb_type */
-    cur_pb_type->default_mode_num_iopads = sum_num_iopads;
   }
 
   return;
@@ -1589,7 +1588,8 @@ void rec_count_num_iopads_pb(t_pb* cur_pb) {
   cur_pb->num_iopads = 0;
 
   /* Recursively finish all the child pb_types*/
-  if (NULL == cur_pb_type->spice_model) { 
+  if ((NULL == cur_pb_type->spice_model_name) 
+     &&(NULL == cur_pb_type->physical_pb_type_name)) { 
     /* recursive for the child_pbs*/
     for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
       for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) { 
@@ -1606,8 +1606,9 @@ void rec_count_num_iopads_pb(t_pb* cur_pb) {
   }
 
   /* Check if this has defined a spice_model*/
-  if (NULL != cur_pb_type->spice_model) {
-    if (SPICE_MODEL_IOPAD == cur_pb_type->spice_model->type) {
+  if ((NULL != cur_pb_type->spice_model) 
+     ||(NULL != cur_pb_type->physical_pb_type_name)) { 
+    if (SPICE_MODEL_IOPAD == cur_pb_type->phy_pb_type->spice_model->type) {
       sum_num_iopads = 1;
       cur_pb->num_iopads = sum_num_iopads;
     }
@@ -1928,7 +1929,7 @@ void init_grids_num_mode_bits() {
 t_pb* get_lut_child_pb(t_pb* cur_lut_pb,
                        int mode_index) {
 
-  assert(SPICE_MODEL_LUT == cur_lut_pb->pb_graph_node->pb_type->spice_model->type);
+  assert(SPICE_MODEL_LUT == cur_lut_pb->pb_graph_node->pb_type->phy_pb_type->spice_model->type);
 
   assert(1 == cur_lut_pb->pb_graph_node->pb_type->modes[mode_index].num_pb_type_children);
   assert(1 == cur_lut_pb->pb_graph_node->pb_type->num_pb);
@@ -2179,13 +2180,15 @@ t_pb_type* rec_get_pb_type_by_name(t_pb_type* cur_pb_type,
     ret_pb_type = cur_pb_type;
   }
 
+  /* return when we meet the primitive node */
+  if ( (NULL != cur_pb_type->physical_pb_type_name)
+     || (NULL != cur_pb_type->spice_model_name)) {
+     return ret_pb_type;
+  }
+
   /* We cannot find what we want this level, go recursively */
   /* Check each mode*/
   for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
-    /* bypass physical modes */
-    if (imode == find_pb_type_physical_mode_index((*cur_pb_type))) {
-      continue;
-    }
      /* Quote all child pb_types */
     for (ipb = 0; ipb < cur_pb_type->modes[imode].num_pb_type_children; ipb++) {
       /* we should make sure this placement index == child_pb_type[jpb]*/
@@ -2492,7 +2495,7 @@ void rec_reset_pb_graph_node_rr_node_index_physical_pb(t_pb_graph_node* cur_pb_g
   }
 
   /* END until primitive node */
-  if (NULL != cur_pb_type->spice_model) {
+  if ((NULL != cur_pb_type->spice_model_name) || (NULL != cur_pb_type->physical_pb_type_name)) {
     return;
   }
 
@@ -2532,31 +2535,31 @@ void rec_alloc_phy_pb_children(t_pb_graph_node* cur_pb_graph_node,
   cur_phy_pb->logical_block = NULL;
   cur_phy_pb->lut_size = NULL;
   cur_phy_pb->lut_pin_remap = NULL;
+  cur_phy_pb->mode_bits = NULL;
 
   /* Return if we reach the primitive node */
   if (NULL != cur_pb_type->spice_model) {
     return;
   }
 
-  /* Contine recursively */
+  /* Assign the mode */
   phy_mode_index = find_pb_type_physical_mode_index((*cur_pb_type));
+  cur_phy_pb->mode = phy_mode_index;
+  /* Contine recursively */
+  /* Allocate */
+  cur_phy_pb->child_pbs = (t_phy_pb**) my_calloc(cur_pb_type->modes[phy_mode_index].num_pb_type_children, sizeof(t_phy_pb*));
   /* Quote all child pb_types */
   for (ipb = 0; ipb < cur_pb_type->modes[phy_mode_index].num_pb_type_children; ipb++) {
+    /* Allocate */
+    cur_phy_pb->child_pbs[ipb] = (t_phy_pb*) my_calloc(cur_pb_type->modes[phy_mode_index].pb_type_children[ipb].num_pb, sizeof(t_phy_pb));
     /* Each child may exist multiple times in the hierarchy*/
     for (jpb = 0; jpb < cur_pb_type->modes[phy_mode_index].pb_type_children[ipb].num_pb; jpb++) {
       rec_alloc_phy_pb_children(&(cur_pb_graph_node->child_pb_graph_nodes[phy_mode_index][ipb][jpb]),
                                 &(cur_phy_pb->child_pbs[ipb][jpb]));
       /* Assign parent_pb */
       cur_phy_pb->child_pbs[ipb][jpb].parent_pb = cur_phy_pb;
-      cur_phy_pb->child_pbs[ipb][jpb].mode = phy_mode_index;
       cur_phy_pb->child_pbs[ipb][jpb].rr_graph = cur_phy_pb->rr_graph;
     }
-  }
-
-  /* Allocate */
-  cur_phy_pb->child_pbs = (t_phy_pb**) my_calloc(cur_pb_type->modes[phy_mode_index].num_pb_type_children, sizeof(t_phy_pb*));
-  for (ipb = 0; ipb < cur_pb_type->modes[phy_mode_index].num_pb_type_children; ipb++) {
-    cur_phy_pb->child_pbs[ipb] = (t_phy_pb*) my_calloc(cur_pb_type->modes[phy_mode_index].pb_type_children[ipb].num_pb, sizeof(t_phy_pb));
   }
 
   return;
@@ -2572,6 +2575,11 @@ t_phy_pb* rec_get_phy_pb_by_name(t_phy_pb* cur_phy_pb,
   /* Check the name of this pb_type */ 
   if (0 == strcmp(cur_phy_pb->name, phy_pb_name)) {
     ret_phy_pb = cur_phy_pb;
+  }
+
+  /* return when we meet the primitive node */
+  if (NULL !=  cur_phy_pb->pb_graph_node->pb_type->spice_model) {
+     return ret_phy_pb;
   }
 
   for (ipb = 0; ipb < cur_phy_pb->pb_graph_node->pb_type->modes[cur_phy_pb->mode].num_pb_type_children; ipb++) {
@@ -2610,7 +2618,7 @@ void rec_sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb,
   t_phy_pb* phy_pb_to_sync = NULL;
 
   /* Return if we reach the primitive node */
-  if (NULL != cur_pb_type->spice_model) {
+  if ((NULL != cur_pb_type->physical_pb_type_name) || (NULL != cur_pb_type->spice_model_name)) {
     /* Check */
     assert(NULL != cur_pb_type->phy_pb_type);
     assert(NULL != cur_pb_graph_node->physical_pb_graph_node);
@@ -2623,7 +2631,6 @@ void rec_sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb,
     /* find the child_pb in the current physical pb (cur_phy_pb) */
     phy_pb_to_sync = rec_get_phy_pb_by_name(cur_phy_pb, phy_pb_name);
     /* Check */
-    assert (phy_pb_to_sync->pb_graph_node->pb_type->spice_model == cur_pb_type->spice_model);
     /* Copy the mode bits */
     phy_pb_to_sync->mode_bits = my_strdup(cur_pb_type->mode_bits);
     /* Re-allocate logical_block array mapped to this pb */
@@ -2732,7 +2739,7 @@ void get_mapped_lut_pb_input_pin_vpack_net_num(t_pb* lut_pb,
 /* Get the vpack_net_num of all the input pins of a LUT physical pb */
 void get_lut_logical_block_input_pin_vpack_net_num(t_logical_block* lut_logical_block,
                                                    int* num_lut_pin, int** lut_pin_net) {
-  int ipin, inode;
+  int ipin;
 
   /* Check */ 
   assert (NULL == lut_logical_block->model->inputs[0].next);
@@ -2747,3 +2754,54 @@ void get_lut_logical_block_input_pin_vpack_net_num(t_logical_block* lut_logical_
 
   return;
 }
+
+/* Reset the temp_placement_index in pb_type to be 0 */
+void rec_reset_pb_type_temp_placement_index(t_pb_type* cur_pb_type) {
+  int imode, ipb;
+ 
+  cur_pb_type->temp_placement_index = 0;
+
+  /* See when we reach the primitive  */ 
+  if ( (NULL != cur_pb_type->physical_pb_type_name)
+     || (NULL != cur_pb_type->spice_model_name)) {
+    return;
+  }
+
+  /* We cannot find what we want this level, go recursively */
+  /* Check each mode*/
+  for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
+     /* Quote all child pb_types */
+    for (ipb = 0; ipb < cur_pb_type->modes[imode].num_pb_type_children; ipb++) {
+      /* we should make sure this placement index == child_pb_type[jpb]*/
+      rec_reset_pb_type_temp_placement_index(&(cur_pb_type->modes[imode].pb_type_children[ipb]));
+    }
+  }
+
+  return;
+}
+
+/* Reset the phy_pb_type in pb_type to be 0 */
+void rec_reset_pb_type_phy_pb_type(t_pb_type* cur_pb_type) {
+  int imode, ipb;
+ 
+  cur_pb_type->phy_pb_type = NULL;
+
+  /* See when we reach the primitive  */ 
+  if ( (NULL != cur_pb_type->physical_pb_type_name)
+     || (NULL != cur_pb_type->spice_model_name)) {
+    return;
+  }
+
+  /* We cannot find what we want this level, go recursively */
+  /* Check each mode*/
+  for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
+     /* Quote all child pb_types */
+    for (ipb = 0; ipb < cur_pb_type->modes[imode].num_pb_type_children; ipb++) {
+      /* we should make sure this placement index == child_pb_type[jpb]*/
+      rec_reset_pb_type_phy_pb_type(&(cur_pb_type->modes[imode].pb_type_children[ipb]));
+    }
+  }
+
+  return;
+}
+

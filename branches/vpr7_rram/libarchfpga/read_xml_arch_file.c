@@ -935,6 +935,9 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
 	pb_type->physical_pb_type_index_factor = GetFloatProperty(Parent, "physical_pb_type_index_factor", FALSE, 1.0);
 	ezxml_set_attr(Parent, "physical_pb_type_index_factor", NULL);
 
+	pb_type->physical_pb_type_index_offset = GetIntProperty(Parent, "physical_pb_type_index_offset", FALSE, 0);
+	ezxml_set_attr(Parent, "physical_pb_type_index_offset", NULL);
+
     /* END */
 
 	assert(pb_type->num_pb > 0);
@@ -1109,11 +1112,15 @@ static void ProcessPb_Type(INOUTP ezxml_t Parent, t_pb_type * pb_type,
             /* We need to identify the physical mode that refers to physical design interests */
             pb_type->idle_mode_name = my_strdup(FindProperty(Parent,"idle_mode_name", FALSE)); 
             ezxml_set_attr(Parent,"idle_mode_name",NULL);
-            pb_type->physical_mode_name = my_strdup(FindProperty(Parent,"physical_mode_name", FALSE)); 
-            ezxml_set_attr(Parent,"physical_mode_name",NULL);
-            /*END*/
             if (NULL == pb_type->idle_mode_name) {
               pb_type->idle_mode_name = my_strdup(pb_type->name); 
+            }
+            /* Only when the parent mode is a physical mode, we can do this */
+            pb_type->physical_mode_name = my_strdup(FindProperty(Parent, "physical_mode_name", FALSE)); 
+            ezxml_set_attr(Parent,"physical_mode_name",NULL);
+            if (((NULL == pb_type->physical_mode_name) && (NULL == pb_type->parent_mode)) 
+               || ((NULL == pb_type->physical_mode_name) && (NULL != pb_type->parent_mode) && (1 == pb_type->parent_mode->define_physical_mode))) {
+              pb_type->physical_mode_name = my_strdup(pb_type->name); 
             }
             /*END*/
 			ProcessMode(Parent, &pb_type->modes[i], &default_leakage_mode, do_spice);
@@ -1473,25 +1480,32 @@ static void ProcessMode(INOUTP ezxml_t Parent, t_mode * mode,
      * The mode should herit the define_spice_model from its parent
      */
     if (do_spice) {
-      if (0 == strcmp(mode->name, mode->parent_pb_type->idle_mode_name)) {
-        if (NULL == mode->parent_pb_type->parent_mode) {
-          mode->define_idle_mode = 1;
+        if (0 == strcmp(mode->name, mode->parent_pb_type->idle_mode_name)) {
+          if (NULL == mode->parent_pb_type->parent_mode) {
+            mode->define_idle_mode = 1;
+          } else {
+            mode->define_idle_mode = mode->parent_pb_type->parent_mode->define_idle_mode;
+          }
         } else {
-          mode->define_idle_mode = mode->parent_pb_type->parent_mode->define_idle_mode;
+          mode->define_idle_mode = 0;
         }
-      } else {
-        mode->define_idle_mode = 0;
-      }
-      /* For physical design mode */
-      if (0 == strcmp(mode->name, mode->parent_pb_type->physical_mode_name)) {
-        if (NULL == mode->parent_pb_type->parent_mode) {
-          mode->define_physical_mode = 1;
+        /* For physical design mode
+         * This is different from idle mode:
+         * If the parent is not a physical mode, then this is definitely not a physical mode     
+         */
+        if (NULL == mode->parent_pb_type->physical_mode_name) {
+          mode->define_physical_mode = 0;
         } else {
-          mode->define_physical_mode = mode->parent_pb_type->parent_mode->define_physical_mode;
+          if (0 == strcmp(mode->name, mode->parent_pb_type->physical_mode_name)) {
+            if (NULL == mode->parent_pb_type->parent_mode) {
+              mode->define_physical_mode = 1;
+            } else {
+              mode->define_physical_mode = mode->parent_pb_type->parent_mode->define_physical_mode;
+            }
+          } else {
+            mode->define_physical_mode = 0;
+          }
         }
-      } else {
-        mode->define_physical_mode = 0;
-      }
     }
     /* Spice Model Support: Xifan TANG
      * More option: specify if this mode is available during packing 
@@ -2246,6 +2260,9 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 			sizeof(t_mode_power));
     /* Xifan TANG: LUT default idle mode */
     lut_pb_type->modes[0].define_idle_mode = 1;
+    /* Xifan TANG: LUT default physical mode */
+    lut_pb_type->modes[0].define_physical_mode = lut_pb_type->parent_mode->define_physical_mode;
+    /* END */
 
 	/* Process interconnect */
 	/* TODO: add timing annotations to route-through */
@@ -2336,6 +2353,7 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 
     /* Xifan TANG: LUT default idle mode */
     lut_pb_type->modes[1].define_idle_mode = 0;
+    lut_pb_type->modes[1].define_physical_mode = lut_pb_type->parent_mode->define_physical_mode;
 	/* moved annotations to child so delete old annotations */
 	for (i = 0; i < lut_pb_type->num_annotations; i++) {
 		for (j = 0; j < lut_pb_type->annotations[i].num_value_prop_pairs; j++) {
@@ -2477,6 +2495,7 @@ static void ProcessMemoryClass(INOUTP t_pb_type *mem_pb_type) {
 
     /* Xifan TANG: Memory default idle mode */
     mem_pb_type->modes[0].define_idle_mode = 1;
+    mem_pb_type->modes[0].define_physical_mode = mem_pb_type->parent_mode->define_physical_mode;
 
 	/* Process interconnect */
 	i_inter = 0;

@@ -219,9 +219,8 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(t_phy_pb* prim_phy_pb,
   }
 
   /* Asserts */
+  verilog_model = prim_phy_pb->pb_graph_node->pb_type->phy_pb_type->spice_model;
   assert(SPICE_MODEL_LUT == verilog_model->type);
-
-  verilog_model = prim_phy_pb->pb_graph_node->pb_type->spice_model;
 
   /* Find the input ports for LUT size */
   input_ports = find_spice_model_ports(verilog_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);

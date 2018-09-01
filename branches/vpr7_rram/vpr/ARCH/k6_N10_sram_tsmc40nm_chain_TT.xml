@@ -208,7 +208,7 @@
         <port type="output" prefix="out" size="1"/>
         <wire_param model_type="pie" res_val="0" cap_val="0" level="1"/> <!-- model_type could be T, res_val cap_val should be defined -->
       </spice_model>
-      <spice_model type="mux" name="mux_2level" prefix="mux_2level" is_default="1" dump_structural_verilog="true">
+      <spice_model type="mux" name="mux_2level" prefix="mux_2level" dump_structural_verilog="true">
         <design_technology type="cmos" structure="multi-level" num_level="2"/>
         <input_buffer exist="on" spice_model_name="INVTX1"/>
         <output_buffer exist="on" spice_model_name="INVTX1"/>
@@ -228,7 +228,7 @@
         <port type="output" prefix="out" size="1"/>
         <port type="sram" prefix="sram" size="1"/>
       </spice_model>
-      <spice_model type="mux" name="mux_1level_tapbuf" prefix="mux_1level_tapbuf" dump_structural_verilog="true">
+      <spice_model type="mux" name="mux_1level_tapbuf" prefix="mux_1level_tapbuf" is_default="1" dump_structural_verilog="true">
         <design_technology type="cmos" structure="one-level"/>
         <input_buffer exist="on" spice_model_name="INVTX1"/>
         <output_buffer exist="on" spice_model_name="tap_buf4"/>
@@ -267,9 +267,9 @@
         <lut_input_buffer exist="on" spice_model_name="buf4"/>
         <pass_gate_logic spice_model_name="TGATE"/>
         <port type="input" prefix="in" size="6" tri_state_map="----11"/>
-        <port type="output" prefix="lut4out" size="4" lut_frac_level="4" lut_output_mask="0,1,2,3"/>
-        <port type="output" prefix="lut5out" size="2" lut_frac_level="5" lut_output_mask="0,1"/>
-        <port type="output" prefix="lut6out" size="1" lut_output_mask="1"/>
+        <port type="output" prefix="lut4_out" size="4" lut_frac_level="4" lut_output_mask="0,1,2,3"/>
+        <port type="output" prefix="lut5_out" size="2" lut_frac_level="5" lut_output_mask="0,1"/>
+        <port type="output" prefix="lut6_out" size="1" lut_output_mask="1"/>
         <port type="sram" prefix="sram" size="64"/>
         <port type="sram" prefix="mode" size="2" mode_select="true" spice_model_name="sram6T_blwl" default_val="1"/>
       </spice_model>
@@ -340,20 +340,9 @@
          <output_buffer exist="on" spice_model_name="INVTX1"/>
          <port type="input" prefix="a" size="1"/>
          <port type="input" prefix="b" size="1"/>
+         <port type="input" prefix="cin" size="1"/>
          <port type="output" prefix="sumout" size="1"/>
          <port type="output" prefix="cout" size="1"/>
-      </spice_model>
-      <spice_model type="hard_logic" name="fle_phy" prefix="fle_phy" spice_netlist="/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/fle_phy.sp" verilog_netlist="/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/fle_phy.v">
-         <design_technology type="cmos"/>
-         <input_buffer exist="on" spice_model_name="INVTX1"/>
-         <output_buffer exist="on" spice_model_name="INVTX1"/>
-         <port type="input" prefix="in" size="6"/>
-         <port type="input" prefix="cin" size="1"/>
-         <port type="output" prefix="out" size="2"/>
-         <port type="output" prefix="cout" size="1"/>
-         <port type="sram" prefix="sram_lut" size="64" spice_model_name="sram6T_blwl" default_val="1"/>
-         <port type="sram" prefix="sram_mode" size="2" mode_select="true" spice_model_name="sram6T_blwl" default_val="1"/>
-         <port type="sram" prefix="sram_mux" size="4" spice_model_name="sram6T_blwl" default_val="1"/>
       </spice_model>
     </module_spice_models>
   </spice_settings>
@@ -478,8 +467,8 @@
 	     today and that is when you timing analyze them.
 	     -->
       <mode name="inpad">
-        <pb_type name="inpad" blif_model=".input" num_pb="1" spice_model_name="iopad" mode_bits="1">
-          <output name="inpad" num_pins="1"/>
+        <pb_type name="inpad" blif_model=".input" num_pb="1" physical_pb_type_name="iopad" mode_bits="1">
+          <output name="inpad" num_pins="1" physical_mode_pin="inpad"/>
         </pb_type>
         <interconnect>
           <direct name="inpad" input="inpad.inpad" output="io.inpad">
@@ -488,8 +477,8 @@
         </interconnect>
       </mode>
       <mode name="outpad">
-        <pb_type name="outpad" blif_model=".output" num_pb="1" spice_model_name="iopad" mode_bits="1">
-          <input name="outpad" num_pins="1"/>
+        <pb_type name="outpad" blif_model=".output" num_pb="1" physical_pb_type_name="iopad" mode_bits="1">
+          <input name="outpad" num_pins="1" physical_mode_pin="outpad"/>
         </pb_type>
         <interconnect>
           <direct name="outpad" input="io.outpad" output="outpad.outpad">
@@ -532,7 +521,7 @@
 	   assume, but note that the total routing area really includes the crossbar, which would push
 	   routing area up significantly, we estimate into the ~70% range. 
 	   -->
-      <pb_type name="clb" area="53894" physical_mode_name="fle">
+      <pb_type name="clb" area="53894">
         <input name="I" num_pins="40" equivalent="true"/>
         <input name="cin" num_pins="1"/>
         <output name="O" num_pins="20" equivalent="false"/>
@@ -576,20 +565,20 @@
                 </pb_type>
                 <interconnect> 
                   <direct name="direct_fraclut_in" input="frac_logic.in[5:0]" output="frac_lut6.in[5:0]"/>
-                  <direct name="direct_cin" input="frac_logic.cin" output="adder[0].cin"/>
-                  <direct name="direct_carry" input="adder[0].cout" output="adder[1].cin"/>
-                  <direct name="direct_cout" input="adder[0].cout" output="frac_logic.cout"/>
-                  <direct name="direct_lut4carry0" input="frac_lut6.lut4_out[0]" output="adder[0].a"/>
-                  <direct name="direct_lut4carry1" input="frac_lut6.lut4_out[1]" output="adder[0].b"/>
-                  <direct name="direct_lut4carry2" input="frac_lut6.lut4_out[2]" output="adder[1].a"/>
-                  <direct name="direct_lut4carry3" input="frac_lut6.lut4_out[3]" output="adder[1].b"/>
-                  <mux name="mux1" input="adder[0].cout frac_lut6.lut5_out[0]" output="frac_logic.out[0]">
-                    <mode_select mode_name="n2_lut5.arithmetic" in_port="adder[0].cout" out_port="frac_logic.out[0]"/>
+                  <direct name="direct_cin" input="frac_logic.cin" output="adder_phy[0].cin"/>
+                  <direct name="direct_carry" input="adder_phy[0].cout" output="adder_phy[1].cin"/>
+                  <direct name="direct_cout" input="adder_phy[0].cout" output="frac_logic.cout"/>
+                  <direct name="direct_lut4carry0" input="frac_lut6.lut4_out[0]" output="adder_phy[0].a"/>
+                  <direct name="direct_lut4carry1" input="frac_lut6.lut4_out[1]" output="adder_phy[0].b"/>
+                  <direct name="direct_lut4carry2" input="frac_lut6.lut4_out[2]" output="adder_phy[1].a"/>
+                  <direct name="direct_lut4carry3" input="frac_lut6.lut4_out[3]" output="adder_phy[1].b"/>
+                  <mux name="mux1" input="adder_phy[0].cout frac_lut6.lut5_out[0]" output="frac_logic.out[0]">
+                    <mode_select mode_name="n2_lut5.arithmetic" in_port="adder_phy[0].cout" out_port="frac_logic.out[0]"/>
                     <mode_select mode_name="n2_lut5.blut5" in_port="frac_lut6.lut5_out[0]" out_port="frac_logic.out[0]"/>
                     <mode_select mode_name="n1_lut6" in_port="frac_lut6.lut5_out[0]" out_port="frac_logic.out[0]"/>
                   </mux>
-                  <mux name="mux2" input="adder[1].cout frac_lut6.lut5_out[1] frac_lut6.lut6_out[0]" output="frac_logic.out[1]">
-                    <mode_select mode_name="n2_lut5.arithmetic" in_port="adder[1].cout" out_port="frac_logic.out[1]"/>
+                  <mux name="mux2" input="adder_phy[1].cout frac_lut6.lut5_out[1] frac_lut6.lut6_out[0]" output="frac_logic.out[1]">
+                    <mode_select mode_name="n2_lut5.arithmetic" in_port="adder_phy[1].cout" out_port="frac_logic.out[1]"/>
                     <mode_select mode_name="n2_lut5.blut5" in_port="frac_lut6.lut5_out[1]" out_port="frac_logic.out[1]"/>
                     <mode_select mode_name="n1_lut6" in_port="frac_lut6.lut6_out[0]" out_port="frac_logic.out[1]"/>
                   </mux>
@@ -599,17 +588,17 @@
                 <input name="D" num_pins="1" port_class="D"/>
                 <output name="Q" num_pins="1" port_class="Q"/>
                 <clock name="clk" num_pins="1" port_class="clock"/>
-                <T_setup value="66e-12" port="ff.D" clock="clk"/>
-                <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
+                <T_setup value="66e-12" port="ff_phy.D" clock="clk"/>
+                <T_clock_to_Q max="124e-12" port="ff_phy.Q" clock="clk"/>
               </pb_type>
               <interconnect> 
-                <complete name="direct_clk" input="fle.clk" output="ff[1:0].clk"/>
+                <complete name="direct_clk" input="fle.clk" output="ff_phy[1:0].clk"/>
                 <direct name="direct_in" input="fle.in[5:0]" output="frac_logic.in[5:0]"/>
                 <direct name="direct_cin" input="fle.cin" output="frac_logic.cin"/>
                 <direct name="direct_cout" input="frac_logic.cout" output="fle.cout"/>
-                <mux name="mux1" input="ff[0].Q frac_logic.out[0]" output="fle.out[0]">
+                <mux name="mux1" input="ff_phy[0].Q frac_logic.out[0]" output="fle.out[0]">
                 </mux>
-                <mux name="mux2" input="ff[1].Q frac_logic.out[1]" output="fle.out[1]">
+                <mux name="mux2" input="ff_phy[1].Q frac_logic.out[1]" output="fle.out[1]">
                 </mux>
               </interconnect>
           </mode>
@@ -621,7 +610,7 @@
               <output name="out" num_pins="2"/>
               <output name="cout" num_pins="1"/>
               <clock name="clk" num_pins="1"/>
-              <pb_type name="ble5" num_pb="2">
+              <pb_type name="ble5" num_pb="2" idle_mode_name="blut5">
                 <input name="in" num_pins="5"/>
                 <input name="cin" num_pins="1"/>
                 <output name="out" num_pins="1"/>
@@ -633,7 +622,7 @@
                     <output name="out" num_pins="1"/>
                     <clock name="clk" num_pins="1"/> 
                     <!-- Regular LUT mode -->
-                    <pb_type name="lut5" blif_model=".names" num_pb="1" class="lut" spice_model_name="frac_lut6" mode_bits="10" physical_pb_type_name="frac_lut6" physical_pb_type_index_factor="0.5">
+                    <pb_type name="lut5" blif_model=".names" num_pb="1" class="lut" mode_bits="10" physical_pb_type_name="frac_lut6" physical_pb_type_index_factor="0.5">
                       <input name="in" num_pins="5" port_class="lut_in" physical_mode_pin="in[5:0]"/>
                       <output name="out" num_pins="1" port_class="lut_out" physical_mode_pin="lut5_out[0]"/>
                       <!-- LUT timing using delay matrix -->
@@ -654,10 +643,10 @@
                       </delay_matrix>
                     </pb_type>       
                     
-                    <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
-                      <input name="D" num_pins="1" port_class="D" physical_mode_pin="ff.D"/>
-                      <output name="Q" num_pins="1" port_class="Q" physical_mode_pin="ff.Q"/>
-                      <clock name="clk" num_pins="1" port_class="clock" physical_mode_pin="ff.clk"/>
+                    <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop" physical_pb_type_name="ff_phy">
+                      <input name="D" num_pins="1" port_class="D" physical_mode_pin="D"/>
+                      <output name="Q" num_pins="1" port_class="Q" physical_mode_pin="Q"/>
+                      <clock name="clk" num_pins="1" port_class="clock" physical_mode_pin="clk"/>
                       <T_setup value="66e-12" port="ff.D" clock="clk"/>
                       <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
                     </pb_type>
@@ -687,7 +676,7 @@
                     <output name="cout" num_pins="1"/>
                     <clock name="clk" num_pins="1"/> 
                     <!-- Special dual-LUT mode that drives adder only -->
-                    <pb_type name="lut4" blif_model=".names" num_pb="2" class="lut" spice_model_name="frac_lut6" mode_bits="00" physical_pb_type_name="frac_lut6" physical_pb_type_index_factor="0.25">
+                    <pb_type name="lut4" blif_model=".names" num_pb="2" class="lut" mode_bits="00" physical_pb_type_name="frac_lut6" physical_pb_type_index_factor="0.25">
                       <input name="in" num_pins="4" port_class="lut_in" physical_mode_pin="in[4:0]"/>
                       <output name="out" num_pins="1" port_class="lut_out" physical_mode_pin="lut4_out"/>
                       <!-- LUT timing using delay matrix -->
@@ -706,11 +695,11 @@
                       </delay_matrix>
                     </pb_type>    
                     <pb_type name="adder" blif_model=".subckt adder" num_pb="1" physical_pb_type_name="adder_phy">
-                      <input name="a" num_pins="1" physical_mode_pin="adder.a"/>
-                      <input name="b" num_pins="1" physical_mode_pin="adder.b"/>
-                      <input name="cin" num_pins="1" physical_mode_pin="adder.cin"/>                      
-                      <output name="cout" num_pins="1" physical_mode_pin="adder.cout"/>
-                      <output name="sumout" num_pins="1" physical_mode_pin="adder.sumout"/>
+                      <input name="a" num_pins="1" physical_mode_pin="a"/>
+                      <input name="b" num_pins="1" physical_mode_pin="b"/>
+                      <input name="cin" num_pins="1" physical_mode_pin="cin"/>                      
+                      <output name="cout" num_pins="1" physical_mode_pin="cout"/>
+                      <output name="sumout" num_pins="1" physical_mode_pin="sumout"/>
                       <delay_constant max="0.3e-9" in_port="adder.a" out_port="adder.sumout"/>
                       <delay_constant max="0.3e-9" in_port="adder.b" out_port="adder.sumout"/>
                       <delay_constant max="0.3e-9" in_port="adder.cin" out_port="adder.sumout"/>
@@ -795,7 +784,7 @@
               <input name="in" num_pins="6"/>
               <output name="out" num_pins="1"/>
               <clock name="clk" num_pins="1"/> 
-              <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut" spice_model_name="frac_lut6" mode_bits="11" physical_pb_type_name="frac_lut6" spice_model_sram_offset="0">
+              <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut" mode_bits="11" physical_pb_type_name="frac_lut6" spice_model_sram_offset="0">
                 <input name="in" num_pins="6" port_class="lut_in" physical_mode_pin="in[5:0]"/>
                 <output name="out" num_pins="1" port_class="lut_out" physical_mode_pin="lut6_out[0]"/>
                 <!-- LUT timing using delay matrix -->
@@ -817,7 +806,7 @@
                   261e-12
                 </delay_matrix>
               </pb_type>
-              <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop" physical_pb_type_name="ff_phy" physical_pb_type_index_factor="2">
+              <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop" physical_pb_type_name="ff_phy" physical_pb_type_index_factor="2" physical_pb_type_index_offset="1">
                 <input name="D" num_pins="1" port_class="D" physical_mode_pin="D"/>
                 <output name="Q" num_pins="1" port_class="Q" physical_mode_pin="Q"/>
                 <clock name="clk" num_pins="1" port_class="clock" physical_mode_pin="clk"/>
@@ -831,7 +820,7 @@
                   <pack_pattern name="ble6" in_port="lut6.out" out_port="ff.D"/>
                 </direct>
                 <direct name="direct3" input="ble6.clk" output="ff.clk"/>                    
-                <mux name="mux1" input="ff.Q lut6.out" output="ble6.out" spice_model_sram_offset="1">
+                <mux name="mux1" input="ff.Q lut6.out" output="ble6.out">
                   <delay_constant max="25e-12" in_port="lut6.out" out_port="ble6.out" />
                   <delay_constant max="45e-12" in_port="ff.Q" out_port="ble6.out" />
                 </mux>
@@ -854,7 +843,7 @@
            Since all our outputs LUT outputs go to a BLE output, and have a delay of 
            25 ps to do so, we subtract 25 ps from the 100 ps delay of a feedback
            to get the part that should be marked on the crossbar.	 -->
-          <complete name="crossbar" input="clb.I fle[9:0].out" output="fle[9:0].in">
+          <complete name="crossbar" input="clb.I fle[9:0].out" output="fle[9:0].in" spice_model_name="mux_2level">
             <delay_constant max="95e-12" in_port="clb.I" out_port="fle[9:0].in" />
             <delay_constant max="75e-12" in_port="fle[9:0].out" out_port="fle[9:0].in" />
           </complete>

@@ -213,3 +213,7 @@ void get_mapped_lut_pb_input_pin_vpack_net_num(t_pb* lut_pb,
 
 void get_lut_logical_block_input_pin_vpack_net_num(t_logical_block* lut_logical_block,
                                                    int* num_lut_pin, int** lut_pin_net);
+
+void rec_reset_pb_type_temp_placement_index(t_pb_type* cur_pb_type);
+
+void rec_reset_pb_type_phy_pb_type(t_pb_type* cur_pb_type);

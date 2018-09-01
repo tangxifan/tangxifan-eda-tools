@@ -1,10 +1,12 @@
 <!-- 
-  Flagship Heterogeneous Architecture (No Carry Chains) for VTR 7.0.
+  Flagship Heterogeneous Architecture with Carry Chains for VTR 7.0.
 
   - 40 nm technology
   - General purpose logic block: 
     K = 6, N = 10, fracturable 6 LUTs (can operate as one 6-LUT or two 5-LUTs with all 5 inputs shared) 
     with optionally registered outputs
+    Each 5-LUT has an arithemtic mode that converts it to a single-bit adder with both inputs driven by 4-LUTs (both 4-LUTs share all 4 inputs)
+    Carry chain links to vertically adjacent logic blocks
   - Memory size 32 Kbits, memory aspect ratios vary from a data width of 1 to data width of 64.  
     Height = 6, found on every (8n+2)th column
   - Multiplier modes: one 36x36, two 18x18, each 18x18 can also operate as two 9x9.  
@@ -37,15 +39,15 @@
   Chiasson. We use a 96 nm half-pitch (corresponding to mid-level metal stack 40 nm routing) and 
   take the R and C data from the ITRS roadmap.  
 
- For the general purpose logic block, we assume that the area and delays of the Stratix IV 
+  For the general purpose logic block, we assume that the area and delays of the Stratix IV 
   crossbar is close enough to the crossbar modelled here.  We use 40 inputs and 20 feedback lines in 
-  the cluster and a full crossbar, leading to 60:1 multiplexers in front of each BLE input.
+  the cluster and a full crossbar, leading to 53:1 multiplexers in front of each BLE input.
   Stratix IV uses 52 inputs and 20 feedback lines, but only a half-populated crossbar, leading to 
   36:1 multiplexers.  We require 60 such multiplexers, while Stratix IV requires 88 for its more
   complex fracturable BLEs + the extra control signals. We justify this rough approximation as follows: 
   The Stratix IV crossbar has more inputs (72 vs. 60) and 
   outputs (88 vs. 60) than our full crossbar which should increase its area and delay, but the 
-  Stratix IV crossbar is also 50% sparse (each mux is 36:1 instead of 60:1) which should reduce its 
+  Stratix IV crossbar is also 50% sparse (each mux is 36:1 instead of 53:1) which should reduce its 
   area and delay.  The total number of crossbar switch points is roughly similar between the two 
   architectures (3160 for SIV and 3600 for the academic architecture below), so we use the area 
   & delay of the Stratix IV crossbar as a rough approximation of our crossbar.
@@ -54,6 +56,17 @@
   delays measured from Stratix IV which is dependant on the input used (ie. some 
   LUT inputs are faster than others).  The CAD tools at the time of VTR 7 does 
   not consider differences in LUT input delays.
+
+  Adder delays obtained as approximate values from a Stratix IV EP4SE230F29C3 device.  
+  Delay obtained by compiling a 256 bit adder (registered inputs and outputs, 
+  all pins except clock virtual) then measuring the delays in chip-planner, 
+  sumout delay = 0.271ns to 0.348 ns, intra-block carry delay = 0.011 ns, 
+  inter-block carry delay = 0.327 ns.  Given this data, I will approximate 
+  sumout 0.3 ns, intra-block carry-delay = 0.01 ns, and 
+  inter-block carry-delay = 0.16 ns (since Altera inter-block carry delay has 
+  overhead that we don't have, I'll approximate the delay of a simpler chain at 
+  one half what they have.  This is very rough, anything from 0.01ns to 0.327ns 
+  can be justified).
 
   Logic block area numbers obtained by scaling overall tile area of a 65nm 
   Stratix III device, (as given in Wong, Betz and Rose, FPGA 2011) to 40 nm, then subtracting out 
@@ -71,9 +84,10 @@
 
   Authors: Jason Luu, Jeff Goeders, Vaughn Betz
 -->
-
-<architecture>
-
+  
+  
+  <architecture>
+  
   <!-- 
        ODIN II specific config begins 
        Describes the types of user-specified netlist blocks (in blif, this corresponds to 
@@ -92,28 +106,6 @@
         <port name="inpad"/>
       </output_ports>
     </model>
-    <model name="multiply">
-      <input_ports>
-        <port name="a"/>
-        <port name="b"/>
-      </input_ports>
-      <output_ports>
-        <port name="out"/>
-      </output_ports>
-    </model>
-
-    <model name="single_port_ram">
-      <input_ports>
-        <port name="we"/>     <!-- control -->
-        <port name="addr"/>  <!-- address lines -->
-        <port name="data"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
-        <port name="clk" is_clock="1"/>  <!-- memories are often clocked -->
-      </input_ports>
-      <output_ports>
-        <port name="out"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
-      </output_ports>
-    </model>
-
     <model name="adder">
       <input_ports>
         <port name="a"/>
@@ -125,7 +117,36 @@
         <port name="sumout"/>
       </output_ports>
     </model>
-
+    <model name="frac_lut6">
+      <input_ports>
+        <port name="in"/>
+      </input_ports>
+      <output_ports>
+        <port name="lut6_out"/>
+        <port name="lut5_out"/>
+        <port name="lut4_out"/>
+      </output_ports>
+    </model>
+    <model name="multiply">
+      <input_ports>
+        <port name="a"/>
+        <port name="b"/>
+      </input_ports>
+      <output_ports>
+        <port name="out"/>
+      </output_ports>
+    </model>
+    <model name="single_port_ram">
+      <input_ports>
+        <port name="we"/>     <!-- control -->
+        <port name="addr"/>  <!-- address lines -->
+        <port name="data"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+        <port name="clk" is_clock="1"/>  <!-- memories are often clocked -->
+      </input_ports>
+      <output_ports>
+        <port name="out"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
+      </output_ports>
+    </model>
     <!--model name="dual_port_ram">
       <input_ports-->
         <!--port name="we1"/-->     <!-- write enable -->
@@ -144,20 +165,9 @@
 
   </models>
   <!-- ODIN II specific config ends -->
-
+ 
   <!-- Physical descriptions begin -->
   <layout auto="1.0"/>
-  <!--layout width="5" height="5"/-->
-
-  <!--mrFPGA_settings--> 
-    <!-- below is the timing parameters for a single memristor device (or so called RRAM) -->
-    <!--mrFPGA R="1e3" C="2.24e-17" Tdel="0"-->
-      <!-- below is the timing parameters for the buffers to insert in channels -->
-      <!--buffer R="193.5" Cin="3.66e-15" Cout="3.56e-15" Tdel="6.14e-12"/-->
-      <!--cblock R_opin_cblock="193.5" T_opin_cblock="6.14e-12"/-->
-    <!--/mrFPGA-->
-  <!--/mrFPGA_settings-->
-
   <spice_settings>
     <parameters>
       <options sim_temp="25" post="off" captab="off" fast="on"/>
@@ -254,7 +264,6 @@
         <port type="output" prefix="out" size="1"/>
         <port type="sram" prefix="sram" size="1"/>
       </spice_model>
-
       <spice_model type="mux" name="mux_1level_tapbuf" prefix="mux_1level_tapbuf" dump_structural_verilog="true">
         <design_technology type="cmos" structure="one-level"/>
         <input_buffer exist="on" spice_model_name="INVTX1"/>
@@ -277,15 +286,28 @@
          <port type="output" prefix="Q" size="1"/>
          <port type="clock" prefix="clk" size="1" is_global="true" default_val="0" />
       </spice_model>
-      <spice_model type="lut" name="lut6" prefix="lut6" dump_structural_verilog="true">
+      <spice_model type="lut" name="lut5" prefix="lut5" dump_structural_verilog="true">
         <design_technology type="cmos"/>
         <input_buffer exist="on" spice_model_name="INVTX1"/>
         <output_buffer exist="on" spice_model_name="INVTX1"/>
         <lut_input_buffer exist="on" spice_model_name="buf4"/>
         <pass_gate_logic spice_model_name="TGATE"/>
-        <port type="input" prefix="in" size="6"/>
+        <port type="input" prefix="in" size="5"/>
         <port type="output" prefix="out" size="1"/>
+        <port type="sram" prefix="sram" size="32"/>
+      </spice_model>
+      <spice_model type="lut" name="frac_lut6" prefix="frac_lut6" dump_structural_verilog="true">
+        <design_technology type="cmos" fracturable_lut="true"/>
+        <input_buffer exist="on" spice_model_name="INVTX1"/>
+        <output_buffer exist="on" spice_model_name="INVTX1"/>
+        <lut_input_buffer exist="on" spice_model_name="buf4"/>
+        <pass_gate_logic spice_model_name="TGATE"/>
+        <port type="input" prefix="in" size="6" tri_state_map="----11"/>
+        <port type="output" prefix="lut4out" size="4" lut_frac_level="4" lut_output_mask="0,1,2,3"/>
+        <port type="output" prefix="lut5out" size="2" lut_frac_level="5" lut_output_mask="0,1"/>
+        <port type="output" prefix="lut6out" size="1" lut_output_mask="1"/>
         <port type="sram" prefix="sram" size="64"/>
+        <port type="sram" prefix="mode" size="2" mode_select="true" spice_model_name="sram6T_blwl" default_val="1"/>
       </spice_model>
       <spice_model type="sram" name="sram6T" prefix="sram" spice_netlist="/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/sram.sp" verilog_netlist="/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/sram.v" >
         <design_technology type="cmos"/>
@@ -329,19 +351,8 @@
         <port type="input" prefix="zin" size="1" is_global="true" default_val="0" />
         <port type="output" prefix="inpad" size="1"/>
       </spice_model>
-      <!-- Hard logic definition for carry chains -->
-      <spice_model type="hard_logic" name="adder_1bit" prefix="adder_1bit" spice_netlist="/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/adder.sp" verilog_netlist="/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/adder.v">
-         <design_technology type="cmos"/>
-         <input_buffer exist="on" spice_model_name="INVTX1"/>
-         <output_buffer exist="on" spice_model_name="INVTX1"/>
-         <port type="input" prefix="a" size="1"/>
-         <port type="input" prefix="b" size="1"/>
-         <port type="input" prefix="cin" size="1"/>
-         <port type="output" prefix="cout" size="1"/>
-         <port type="output" prefix="sumout" size="1"/>
-      </spice_model>
       <!-- Hard logic definition for heterogenous blocks -->
-      <spice_model type="hard_logic" name="ram_32768x1" prefix="ram_32767x1" spice_netlist="/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/ram.sp" verilog_netlist="/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/ram.v">
+     <spice_model type="hard_logic" name="ram_32768x1" prefix="ram_32767x1" spice_netlist="/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/ram.sp" verilog_netlist="/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/ram.v">
          <design_technology type="cmos"/>
          <input_buffer exist="on" spice_model_name="INVTX1"/>
          <output_buffer exist="on" spice_model_name="INVTX1"/>
@@ -358,6 +369,27 @@
          <port type="input" prefix="a" size="36"/>
          <port type="input" prefix="b" size="36"/>
          <port type="output" prefix="out" size="72"/>
+      </spice_model>
+      <spice_model type="hard_logic" name="adder" prefix="adder" spice_netlist="/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/adder.sp" verilog_netlist="/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/adder.v">
+         <design_technology type="cmos"/>
+         <input_buffer exist="on" spice_model_name="INVTX1"/>
+         <output_buffer exist="on" spice_model_name="INVTX1"/>
+         <port type="input" prefix="a" size="1"/>
+         <port type="input" prefix="b" size="1"/>
+         <port type="output" prefix="sumout" size="1"/>
+         <port type="output" prefix="cout" size="1"/>
+      </spice_model>
+      <spice_model type="hard_logic" name="fle_phy" prefix="fle_phy" spice_netlist="/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/fle_phy.sp" verilog_netlist="/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/fle_phy.v">
+         <design_technology type="cmos"/>
+         <input_buffer exist="on" spice_model_name="INVTX1"/>
+         <output_buffer exist="on" spice_model_name="INVTX1"/>
+         <port type="input" prefix="in" size="6"/>
+         <port type="input" prefix="cin" size="1"/>
+         <port type="output" prefix="out" size="2"/>
+         <port type="output" prefix="cout" size="1"/>
+         <port type="sram" prefix="sram_lut" size="64" spice_model_name="sram6T_blwl" default_val="1"/>
+         <port type="sram" prefix="sram_mode" size="2" mode_select="true" spice_model_name="sram6T_blwl" default_val="1"/>
+         <port type="sram" prefix="sram_mux" size="4" spice_model_name="sram6T_blwl" default_val="1"/>
       </spice_model>
     </module_spice_models>
   </spice_settings>
@@ -451,10 +483,6 @@
     </pattern>
   </switch_segment_patterns-->
 
-    <directlist>
-      <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
-    </directlist>
-
   <complexblocklist>
 
     <!-- Define I/O pads begin -->
@@ -465,8 +493,8 @@
       <output name="inpad" num_pins="1"/>
 
       <!-- physical design description -->
-      <mode name="io_phy" available_in_packing="false">
-        <pb_type name="iopad" blif_model=".subckt io" num_pb="1" spice_model_name="iopad" mode_bits_offset="0">
+      <mode name="io_phy" disabled_in_packing="true">
+        <pb_type name="iopad" blif_model=".subckt io" num_pb="1" spice_model_name="iopad">
           <input name="outpad" num_pins="1"/>
           <output name="inpad" num_pins="1"/>
         </pb_type>
@@ -486,7 +514,7 @@
 	     today and that is when you timing analyze them.
 	     -->
       <mode name="inpad">
-        <pb_type name="inpad" blif_model=".input" num_pb="1" spice_model_name="iopad" mode_bits="0" mode_bit_offset="0">
+        <pb_type name="inpad" blif_model=".input" num_pb="1" spice_model_name="iopad" mode_bits="1">
           <output name="inpad" num_pins="1"/>
         </pb_type>
         <interconnect>
@@ -496,7 +524,7 @@
         </interconnect>
       </mode>
       <mode name="outpad">
-        <pb_type name="outpad" blif_model=".output" num_pb="1" spice_model_name="iopad" mode_bits="1" mode_bit_offset="0">
+        <pb_type name="outpad" blif_model=".output" num_pb="1" spice_model_name="iopad" mode_bits="1">
           <input name="outpad" num_pins="1"/>
         </pb_type>
         <interconnect>
@@ -529,7 +557,8 @@
     </pb_type>
     <!-- Define I/O pads ends -->
 
-    <!-- Define general purpose logic block (CLB) begin -->
+
+      <!-- Define general purpose logic block (CLB) begin -->
 	  <!--- Area calculation: Total Stratix IV tile area is about 8100 um^2, and a minimum width transistor 
 	   area is 60 L^2 yields a tile area of 84375 MWTAs.
 	   Routing at W=300 is 30481 MWTAs, leaving us with a total of 53000 MWTAs for logic block area 
@@ -539,30 +568,89 @@
 	   assume, but note that the total routing area really includes the crossbar, which would push
 	   routing area up significantly, we estimate into the ~70% range. 
 	   -->
-    <pb_type name="clb" area="53894" opin_to_cb="false">
-      <pin_equivalence_auto_detect input_ports ="off" output_ports="off"/>
-      <input name="I" num_pins="40" equivalent="true"/>
-      <input name="cin" num_pins="1"/>
-      <output name="O" num_pins="20" equivalent="false"/>
-      <output name="cout" num_pins="1"/>
-      <!--input name="I" num_pins="40" equivalent="true"/-->
-      <!--output name="O" num_pins="20" equivalent="false"/-->
-      <clock name="clk" num_pins="1"/>
-
-      <!-- Describe fracturable logic element.  
-             Each fracturable logic element has a 6-LUT that can alternatively operate as two 5-LUTs with shared inputs. 
-             The outputs of the fracturable logic element can be optionally registered
-        For spice modeling: in each primitive pb_type, user should define a spice_model_name that linkes to the
-        defined spice models
-        -->
-      <pb_type name="fle" num_pb="10" idle_mode_name="n2_lut5" physical_mode_name="n2_lut5">
-        <input name="in" num_pins="6"/>
+      <pb_type name="clb" area="53894" physical_mode_name="fle">
+        <input name="I" num_pins="40" equivalent="true"/>
         <input name="cin" num_pins="1"/>
-        <output name="out" num_pins="2"/>
+        <output name="O" num_pins="20" equivalent="false"/>
         <output name="cout" num_pins="1"/>
         <clock name="clk" num_pins="1"/>
-        <!--  Fracturable LUT definition begins -->
-        <mode name="n2_lut5">
+
+        <!-- Describe fracturable logic element.  
+             Each fracturable logic element has a 6-LUT that can alternatively operate as two 5-LUTs with shared inputs. 
+             The outputs of the fracturable logic element can be optionally registered
+        -->
+        <pb_type name="fle" num_pb="10" physical_mode_name="fle_phy" idle_mode_name="n2_lut5">
+          <input name="in" num_pins="6"/>
+          <input name="cin" num_pins="1"/>
+          <output name="out" num_pins="2"/>
+          <output name="cout" num_pins="1"/>
+          <clock name="clk" num_pins="1"/>
+     
+          <mode name="fle_phy" disabled_in_packing="true">
+            <!--pb_type name="fle_phy" num_pb="1" spice_model_name="fle_phy">
+              <input name="in" num_pins="6"/>
+              <input name="cin" num_pins="1"/>
+              <output name="cout" num_pins="2"/>
+              <clock name="clk" num_pins="1"/-->
+              <pb_type name="frac_logic" num_pb="1">
+                <input name="in" num_pins="6"/>
+                <input name="cin" num_pins="1"/>
+                <output name="out" num_pins="2"/>
+                <output name="cout" num_pins="1"/>
+                <pb_type name="frac_lut6" blif_model=".frac_lut6" num_pb="1" spice_model_name="frac_lut6">
+                  <input name="in" num_pins="6"/>
+                  <output name="lut6_out" num_pins="1"/>
+                  <output name="lut5_out" num_pins="2"/>
+                  <output name="lut4_out" num_pins="4"/>
+                </pb_type>       
+                <pb_type name="adder_phy" blif_model=".subckt adder" num_pb="2" spice_model_name="adder">
+                  <input name="a" num_pins="1"/>
+                  <input name="b" num_pins="1"/>
+                  <input name="cin" num_pins="1"/>                      
+                  <output name="cout" num_pins="1"/>
+                  <output name="sumout" num_pins="1"/>
+                </pb_type>
+                <interconnect> 
+                  <direct name="direct_fraclut_in" input="frac_logic.in[5:0]" output="frac_lut6.in[5:0]"/>
+                  <direct name="direct_cin" input="frac_logic.cin" output="adder_phy[0].cin"/>
+                  <direct name="direct_carry" input="adder_phy[0].cout" output="adder_phy[1].cin"/>
+                  <direct name="direct_cout" input="adder_phy[0].cout" output="frac_logic.cout"/>
+                  <direct name="direct_lut4carry0" input="frac_lut6.lut4_out[0]" output="adder_phy[0].a"/>
+                  <direct name="direct_lut4carry1" input="frac_lut6.lut4_out[1]" output="adder_phy[0].b"/>
+                  <direct name="direct_lut4carry2" input="frac_lut6.lut4_out[2]" output="adder_phy[1].a"/>
+                  <direct name="direct_lut4carry3" input="frac_lut6.lut4_out[3]" output="adder_phy[1].b"/>
+                  <mux name="mux1" input="adder_phy[0].cout frac_lut6.lut5_out[0]" output="frac_logic.out[0]">
+                    <mode_select mode_name="n2_lut5.arithmetic" in_port="adder_phy[0].cout" out_port="frac_logic.out[0]"/>
+                    <mode_select mode_name="n2_lut5.blut5" in_port="frac_lut6.lut5_out[0]" out_port="frac_logic.out[0]"/>
+                    <mode_select mode_name="n1_lut6" in_port="frac_lut6.lut5_out[0]" out_port="frac_logic.out[0]"/>
+                  </mux>
+                  <mux name="mux2" input="adder_phy[1].cout frac_lut6.lut5_out[1] frac_lut6.lut6_out[0]" output="frac_logic.out[1]">
+                    <mode_select mode_name="n2_lut5.arithmetic" in_port="adder_phy[1].cout" out_port="frac_logic.out[1]"/>
+                    <mode_select mode_name="n2_lut5.blut5" in_port="frac_lut6.lut5_out[1]" out_port="frac_logic.out[1]"/>
+                    <mode_select mode_name="n1_lut6" in_port="frac_lut6.lut6_out[0]" out_port="frac_logic.out[1]"/>
+                  </mux>
+                </interconnect> 
+              </pb_type>
+              <pb_type name="ff_phy" blif_model=".latch" num_pb="2" class="flipflop" spice_model_name="static_dff">
+                <input name="D" num_pins="1" port_class="D"/>
+                <output name="Q" num_pins="1" port_class="Q"/>
+                <clock name="clk" num_pins="1" port_class="clock"/>
+                <T_setup value="66e-12" port="ff_phy.D" clock="clk"/>
+                <T_clock_to_Q max="124e-12" port="ff_phy.Q" clock="clk"/>
+              </pb_type>
+              <interconnect> 
+                <complete name="direct_clk" input="fle.clk" output="ff_phy[1:0].clk"/>
+                <direct name="direct_in" input="fle.in[5:0]" output="frac_logic.in[5:0]"/>
+                <direct name="direct_cin" input="fle.cin" output="frac_logic.cin"/>
+                <direct name="direct_cout" input="frac_logic.cout" output="fle.cout"/>
+                <mux name="mux1" input="ff_phy[0].Q frac_logic.out[0]" output="fle.out[0]">
+                </mux>
+                <mux name="mux2" input="ff_phy[1].Q frac_logic.out[1]" output="fle.out[1]">
+                </mux>
+              </interconnect>
+          </mode>
+          <mode name="n2_lut5">
+            <!-- multi-mode support -->
             <pb_type name="lut5inter" num_pb="1">
               <input name="in" num_pins="5"/>
               <input name="cin" num_pins="1"/>
@@ -581,9 +669,9 @@
                     <output name="out" num_pins="1"/>
                     <clock name="clk" num_pins="1"/> 
                     <!-- Regular LUT mode -->
-                    <pb_type name="lut5" blif_model=".names" num_pb="1" class="lut">
-                      <input name="in" num_pins="5" port_class="lut_in"/>
-                      <output name="out" num_pins="1" port_class="lut_out"/>
+                    <pb_type name="lut5" blif_model=".names" num_pb="1" class="lut" spice_model_name="frac_lut6" mode_bits="10" physical_pb_type_name="frac_lut6" physical_pb_type_index_factor="0.5">
+                      <input name="in" num_pins="5" port_class="lut_in" physical_mode_pin="in[5:0]"/>
+                      <output name="out" num_pins="1" port_class="lut_out" physical_mode_pin="lut5_out[0]"/>
                       <!-- LUT timing using delay matrix -->
                         <!-- These are the physical delay inputs on a Stratix IV LUT but because VPR cannot do LUT rebalancing,
                            we instead take the average of these numbers to get more stable results
@@ -603,21 +691,19 @@
                     </pb_type>       
                     
                     <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
-                      <input name="D" num_pins="1" port_class="D"/>
-                      <output name="Q" num_pins="1" port_class="Q"/>
-                      <clock name="clk" num_pins="1" port_class="clock"/>
+                      <input name="D" num_pins="1" port_class="D" physical_mode_pin="ff.D"/>
+                      <output name="Q" num_pins="1" port_class="Q" physical_mode_pin="ff.Q"/>
+                      <clock name="clk" num_pins="1" port_class="clock" physical_mode_pin="ff.clk"/>
                       <T_setup value="66e-12" port="ff.D" clock="clk"/>
                       <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
                     </pb_type>
-
-
                     <interconnect>
                       <direct name="direct1" input="flut5.in" output="lut5.in"/>
                       <direct name="direct2" input="lut5.out" output="ff.D">
                         <pack_pattern name="ble5" in_port="lut5.out" out_port="ff.D"/>
                       </direct>
                       <direct name="direct3" input="flut5.clk" output="ff.clk"/>                    
-                      <mux name="mux1" input="ff.Q lut5.out" output="flut5.out">
+                      <mux name="mux1" input="ff.Q lut5.out" output="flut5.out" spice_model_sram_offset="0">
                         <delay_constant max="25e-12" in_port="lut5.out" out_port="flut5.out" />
                         <delay_constant max="45e-12" in_port="ff.Q" out_port="flut5.out" />
                       </mux>
@@ -637,9 +723,9 @@
                     <output name="cout" num_pins="1"/>
                     <clock name="clk" num_pins="1"/> 
                     <!-- Special dual-LUT mode that drives adder only -->
-                    <pb_type name="lut4" blif_model=".names" num_pb="2" class="lut">
-                      <input name="in" num_pins="4" port_class="lut_in"/>
-                      <output name="out" num_pins="1" port_class="lut_out"/>
+                    <pb_type name="lut4" blif_model=".names" num_pb="2" class="lut" spice_model_name="frac_lut6" mode_bits="00" physical_pb_type_name="frac_lut6" physical_pb_type_index_factor="0.25">
+                      <input name="in" num_pins="4" port_class="lut_in" physical_mode_pin="in[4:0]"/>
+                      <output name="out" num_pins="1" port_class="lut_out" physical_mode_pin="lut4_out"/>
                       <!-- LUT timing using delay matrix -->
                       <!-- These are the physical delay inputs on a Stratix IV LUT but because VPR cannot do LUT rebalancing,
                              we instead take the average of these numbers to get more stable results
@@ -655,12 +741,12 @@
                         195e-12
                       </delay_matrix>
                     </pb_type>    
-                    <pb_type name="adder" blif_model=".subckt adder" num_pb="1">
-                      <input name="a" num_pins="1"/>
-                      <input name="b" num_pins="1"/>
-                      <input name="cin" num_pins="1"/>                      
-                      <output name="cout" num_pins="1"/>
-                      <output name="sumout" num_pins="1"/>
+                    <pb_type name="adder" blif_model=".subckt adder" num_pb="1" physical_pb_type_name="adder_phy">
+                      <input name="a" num_pins="1" physical_mode_pin="adder.a"/>
+                      <input name="b" num_pins="1" physical_mode_pin="adder.b"/>
+                      <input name="cin" num_pins="1" physical_mode_pin="adder.cin"/>                      
+                      <output name="cout" num_pins="1" physical_mode_pin="adder.cout"/>
+                      <output name="sumout" num_pins="1" physical_mode_pin="adder.sumout"/>
                       <delay_constant max="0.3e-9" in_port="adder.a" out_port="adder.sumout"/>
                       <delay_constant max="0.3e-9" in_port="adder.b" out_port="adder.sumout"/>
                       <delay_constant max="0.3e-9" in_port="adder.cin" out_port="adder.sumout"/>
@@ -668,10 +754,10 @@
                       <delay_constant max="0.3e-9" in_port="adder.b" out_port="adder.cout"/>
                       <delay_constant max="0.01e-9" in_port="adder.cin" out_port="adder.cout"/>
                     </pb_type>
-                    <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
-                      <input name="D" num_pins="1" port_class="D"/>
-                      <output name="Q" num_pins="1" port_class="Q"/>
-                      <clock name="clk" num_pins="1" port_class="clock"/>
+                    <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop" physical_pb_type_name="ff_phy">
+                      <input name="D" num_pins="1" port_class="D" physical_mode_pin="D"/>
+                      <output name="Q" num_pins="1" port_class="Q" physical_mode_pin="Q"/>
+                      <clock name="clk" num_pins="1" port_class="clock" physical_mode_pin="clk"/>
                       <T_setup value="66e-12" port="ff.D" clock="clk"/>
                       <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
                     </pb_type>
@@ -693,7 +779,7 @@
                         <pack_pattern name="chain" in_port="adder.cout" out_port="arithmetic.cout"/>
                       </direct>
                       <mux name="sumout" input="ff.Q adder.sumout" output="arithmetic.out">
-                        <delay_constant max="25e-12" in_port="adder.sumout" out_port="arithmetic.out" />
+                        <delay_constant max="25e-12" in_port="adder.sumout" out_port="arithmetic.out"/>
                         <delay_constant max="45e-12" in_port="ff.Q" out_port="arithmetic.out" />
                       </mux>
                     </interconnect>
@@ -740,20 +826,16 @@
               </direct>
             </interconnect>
           </mode> <!-- n2_lut5 -->
-        <!-- 6-LUT mode definition begin -->
-        <mode name="n1_lut6">
-          <!-- Define 6-LUT mode -->
-          <pb_type name="ble6" num_pb="1">
-            <input name="in" num_pins="6"/>
-            <output name="out" num_pins="1"/>
-            <clock name="clk" num_pins="1"/> 
-
-            <!-- Define LUT -->
-            <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut" spice_model_name="lut6">
-              <input name="in" num_pins="6" port_class="lut_in"/>
-              <output name="out" num_pins="1" port_class="lut_out"/>
-              <!-- LUT timing using delay matrix -->
-              <!-- These are the physical delay inputs on a Stratix IV LUT but because VPR cannot do LUT rebalancing,
+          <mode name="n1_lut6">
+            <pb_type name="ble6" num_pb="1">
+              <input name="in" num_pins="6"/>
+              <output name="out" num_pins="1"/>
+              <clock name="clk" num_pins="1"/> 
+              <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut" spice_model_name="frac_lut6" mode_bits="11" physical_pb_type_name="frac_lut6" spice_model_sram_offset="0">
+                <input name="in" num_pins="6" port_class="lut_in" physical_mode_pin="in[5:0]"/>
+                <output name="out" num_pins="1" port_class="lut_out" physical_mode_pin="lut6_out[0]"/>
+                <!-- LUT timing using delay matrix -->
+                <!-- These are the physical delay inputs on a Stratix IV LUT but because VPR cannot do LUT rebalancing,
                        we instead take the average of these numbers to get more stable results
                   82e-12
                   173e-12
@@ -762,106 +844,93 @@
                   398e-12
                   397e-12
                   -->
-              <delay_matrix type="max" in_port="lut6.in" out_port="lut6.out">
-                127e-12
-                127e-12
-                127e-12
-                127e-12
-                127e-12
-                127e-12
-              </delay_matrix>
-            </pb_type>
+                <delay_matrix type="max" in_port="lut6.in" out_port="lut6.out">
+                  261e-12
+                  261e-12
+                  261e-12
+                  261e-12
+                  261e-12
+                  261e-12
+                </delay_matrix>
+              </pb_type>
+              <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop" physical_pb_type_name="ff_phy" physical_pb_type_index_factor="2" physical_pb_type_index_offset="2">
+                <input name="D" num_pins="1" port_class="D" physical_mode_pin="D"/>
+                <output name="Q" num_pins="1" port_class="Q" physical_mode_pin="Q"/>
+                <clock name="clk" num_pins="1" port_class="clock" physical_mode_pin="clk"/>
+                <T_setup value="66e-12" port="ff.D" clock="clk"/>
+                <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
+              </pb_type>
 
-            <!-- Define flip-flop -->
-            <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop" spice_model_name="static_dff">
-              <input name="D" num_pins="1" port_class="D"/>
-              <output name="Q" num_pins="1" port_class="Q"/>
-              <clock name="clk" num_pins="1" port_class="clock"/>
-              <T_setup value="29e-12" port="ff.D" clock="clk"/>
-              <T_clock_to_Q max="16e-12" port="ff.Q" clock="clk"/>
+              <interconnect>
+                <direct name="direct1" input="ble6.in" output="lut6[0:0].in"/>
+                <direct name="direct2" input="lut6.out" output="ff.D">
+                  <pack_pattern name="ble6" in_port="lut6.out" out_port="ff.D"/>
+                </direct>
+                <direct name="direct3" input="ble6.clk" output="ff.clk"/>                    
+                <mux name="mux1" input="ff.Q lut6.out" output="ble6.out">
+                  <delay_constant max="25e-12" in_port="lut6.out" out_port="ble6.out" />
+                  <delay_constant max="45e-12" in_port="ff.Q" out_port="ble6.out" />
+                </mux>
+              </interconnect>
             </pb_type>
-
             <interconnect>
-              <direct name="direct1" input="ble6.in" output="lut6[0:0].in"/>
-              <direct name="direct2" input="lut6.out" output="ff.D">
-                <!-- Advanced user option that tells CAD tool to find LUT+FF pairs in netlist -->
-                <pack_pattern name="ble6" in_port="lut6.out" out_port="ff.D"/>
-              </direct>
-              <direct name="direct3" input="ble6.clk" output="ff.clk"/>                    
-              <mux name="mux1" input="ff.Q lut6.out" output="ble6.out" spice_model_name="mux_1level_tapbuf">
-                <!-- LUT to output is faster than FF to output on a Stratix IV -->
-                <delay_constant max="42.06e-12" in_port="lut6.out" out_port="ble6.out" />
-                <delay_constant max="42.06e-12" in_port="ff.Q" out_port="ble6.out" />
-              </mux>
+              <direct name="direct1" input="fle.in" output="ble6.in"/>
+              <direct name="direct2" input="ble6.out" output="fle.out[0:0]"/>
+              <direct name="direct3" input="fle.clk" output="ble6.clk"/>
             </interconnect>
-          </pb_type>
-          <interconnect>
-            <direct name="direct1" input="fle.in" output="ble6.in"/>
-            <direct name="direct2" input="ble6.out" output="fle.out[0:0]"/>
-            <direct name="direct3" input="fle.clk" output="ble6.clk"/>
-          </interconnect>
-        </mode>
-        <!-- 6-LUT mode definition end -->
-      </pb_type>
-      <interconnect>
-        <!-- We use a full crossbar to get logical equivalence at inputs of CLB 
-		     The delays below come from Stratix IV. the delay through a connection block
-		     input mux + the crossbar in Stratix IV is 167 ps. We already have a 72 ps 
-		     delay on the connection block input mux (modeled by Ian Kuon), so the remaining
-		     delay within the crossbar is 95 ps. 
-		     The delays of cluster feedbacks in Stratix IV is 100 ps, when driven by a LUT.
-		     Since all our outputs LUT outputs go to a BLE output, and have a delay of 
-		     25 ps to do so, we subtract 25 ps from the 100 ps delay of a feedback
-		     to get the part that should be marked on the crossbar.	 -->
-        <complete name="crossbar" input="clb.I fle[9:0].out" output="fle[9:0].in" spice_model_name="mux_2level">
-          <delay_constant max="53.44e-12" in_port="clb.I" out_port="fle[9:0].in" />
-          <delay_constant max="53.44e-12" in_port="fle[9:0].out" out_port="fle[9:0].in" />
-        </complete>
-        <complete name="clks" input="clb.clk" output="fle[9:0].clk">
-        </complete>
+          </mode> <!-- n1_lut6 -->
+        </pb_type>
+        <interconnect>
+          <!-- We use a full crossbar to get logical equivalence at inputs of CLB 
+           The delays below come from Stratix IV. the delay through a connection block
+           input mux + the crossbar in Stratix IV is 167 ps. We already have a 72 ps 
+           delay on the connection block input mux (modeled by Ian Kuon), so the remaining
+           delay within the crossbar is 95 ps. 
+           The delays of cluster feedbacks in Stratix IV is 100 ps, when driven by a LUT.
+           Since all our outputs LUT outputs go to a BLE output, and have a delay of 
+           25 ps to do so, we subtract 25 ps from the 100 ps delay of a feedback
+           to get the part that should be marked on the crossbar.	 -->
+          <complete name="crossbar" input="clb.I fle[9:0].out" output="fle[9:0].in">
+            <delay_constant max="95e-12" in_port="clb.I" out_port="fle[9:0].in" />
+            <delay_constant max="75e-12" in_port="fle[9:0].out" out_port="fle[9:0].in" />
+          </complete>
+          <complete name="clks" input="clb.clk" output="fle[9:0].clk">
+          </complete>
 
-        <!-- This way of specifying direct connection to clb outputs is important because this architecture uses automatic spreading of opins.  
-               By grouping to output pins in this fashion, if a logic block is completely filled by 6-LUTs, 
-               then the outputs those 6-LUTs take get evenly distributed across all four sides of the CLB instead of clumped on two sides (which is what happens with a more
-               naive specification).
+          <!-- This way of specifying direct connection to clb outputs is important because this architecture uses automatic spreading of opins.  
+                 By grouping to output pins in this fashion, if a logic block is completely filled by 6-LUTs, 
+                 then the outputs those 6-LUTs take get evenly distributed across all four sides of the CLB instead of clumped on two sides (which is what happens with a more
+                 naive specification).
           -->
-        <direct name="clbouts1" input="fle[9:0].out[0:0]" output="clb.O[9:0]"/>
-        <direct name="clbouts2" input="fle[9:0].out[1:1]" output="clb.O[19:10]"/>
-        <!-- Carry chain links -->
-        <direct name="carry_in" input="clb.cin" output="fle[0:0].cin">
-          <!-- Put all inter-block carry chain delay on this one edge -->
-          <delay_constant max="0.16e-9" in_port="clb.cin" out_port="fle[0:0].cin"/>
-          <pack_pattern name="chain" in_port="clb.cin" out_port="fle[0:0].cin"/>
-        </direct>
-        <direct name="carry_out" input="fle[9:9].cout" output="clb.cout">
-          <pack_pattern name="chain" in_port="fle[9:9].cout" out_port="clb.cout"/>
-        </direct>
-        <direct name="carry_link" input="fle[8:0].cout" output="fle[9:1].cin">
-          <pack_pattern name="chain" in_port="fle[8:0].cout" out_port="fle[9:1].cin"/>
-        </direct>
-      </interconnect>
+          <direct name="clbouts1" input="fle[9:0].out[0:0]" output="clb.O[9:0]"/>
+          <direct name="clbouts2" input="fle[9:0].out[1:1]" output="clb.O[19:10]"/>
 
-      <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
-      <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10">
-        <pin name="cin" fc_type="frac" fc_val="0"/>
-        <pin name="cout" fc_type="frac" fc_val="0"/>
-      </fc>
+          <!-- Carry chain links -->
+          <direct name="carry_in" input="clb.cin" output="fle[0:0].cin">
+            <!-- Put all inter-block carry chain delay on this one edge -->
+            <delay_constant max="0.16e-9" in_port="clb.cin" out_port="fle[0:0].cin"/>
+            <pack_pattern name="chain" in_port="clb.cin" out_port="fle[0:0].cin"/>
+          </direct>
+          <direct name="carry_out" input="fle[9:9].cout" output="clb.cout">
+            <pack_pattern name="chain" in_port="fle[9:9].cout" out_port="clb.cout"/>
+          </direct>
+          <direct name="carry_link" input="fle[8:0].cout" output="fle[9:1].cin">
+            <pack_pattern name="chain" in_port="fle[8:0].cout" out_port="fle[9:1].cin"/>
+          </direct>
+        </interconnect>
 
-      <!--pinlocations pattern="spread"/-->
-      <pinlocations pattern="custom">
-        <loc side="top">clb.clk clb.cin</loc>
-        <loc side="right">clb.I[19:0] clb.O[9:0] </loc>
-        <loc side="bottom">clb.I[39:20] clb.O[19:10] clb.cout</loc>
-      </pinlocations>
+        <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10">
+          <pin name="cin" fc_type="frac" fc_val="0"/>
+          <pin name="cout" fc_type="frac" fc_val="0"/>
+        </fc>
 
-      <!-- Place this general purpose logic block in any unspecified column -->
-      <gridlocations>
-        <loc type="fill" priority="1"/>
-      </gridlocations>
-    </pb_type>
-    <!-- Define general purpose logic block (CLB) ends -->
-
-    <!-- Define fracturable multiplier begin -->
+        <pinlocations pattern="spread"/>
+        <gridlocations>
+          <loc type="fill" priority="1"/>
+        </gridlocations>
+      </pb_type>
+      <!-- Define general purpose logic block (CLB) ends -->
+   <!-- Define fracturable multiplier begin -->
     <!-- This multiplier can operate as a 36x36 multiplier that can fracture to two 18x18 multipliers each of which can further fracture to two 9x9 multipliers 
 	   For delay modelling, the 36x36 DSP multiplier in Stratix IV has a delay of 1.523 ns + 1.93 ns
 	    = 3.45 ns. The 18x18 mode doesn't need to sum four 18x18 multipliers, so it is a bit
@@ -1028,12 +1097,12 @@
 
   </complexblocklist>
   <power>
-    <local_interconnect C_wire="0"/>
-    <mux_transistor_size mux_transistor_size="5"/>
+    <local_interconnect C_wire="2.5e-10"/>
+    <mux_transistor_size mux_transistor_size="3"/>
     <FF_size FF_size="4"/>
-    <LUT_transistor_size LUT_transistor_size="5"/> 
+    <LUT_transistor_size LUT_transistor_size="4"/> 
   </power>
   <clocks>
-    <clock buffer_size="auto" C_wire="0"/>
+    <clock buffer_size="auto" C_wire="2.5e-10"/>
   </clocks>
 </architecture>

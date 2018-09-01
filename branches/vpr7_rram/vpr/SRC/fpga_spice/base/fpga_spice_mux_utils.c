@@ -821,11 +821,12 @@ void stats_mux_spice_model_pb_type_rec(t_llist** muxes_head,
   }
 
   /* If there is spice_model_name, this is a leaf node!*/
-  if (NULL != cur_pb_type->spice_model_name) {
+  if ((NULL != cur_pb_type->spice_model_name) 
+     || (NULL != cur_pb_type->physical_pb_type_name)) {
     /* What annoys me is VPR create a sub pb_type for each lut which suppose to be a leaf node
      * This may bring software convience but ruins SPICE modeling
      */
-    assert(NULL != cur_pb_type->spice_model);
+    assert(NULL != cur_pb_type->phy_pb_type->spice_model);
     return;
   }
   /* Traversal the hierarchy*/
@@ -973,7 +974,6 @@ t_llist* stats_spice_muxes(int num_switches,
                            t_switch_inf* switches,
                            t_spice* spice,
                            t_det_routing_arch* routing_arch) {
-  int iedge;
   int itype;
   int imodel;
   /* Linked-list to store the information of Multiplexers*/

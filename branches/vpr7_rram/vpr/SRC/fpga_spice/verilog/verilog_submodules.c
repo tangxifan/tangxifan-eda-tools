@@ -1107,7 +1107,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
     assert(1 == num_input_port);
     assert(2 == num_sram_port);
     for (iport = 0; iport < num_output_port; iport++) {
-      assert(1 == output_port[iport]->size);
+      assert(0 < output_port[iport]->size);
     }
   }
 
@@ -1135,7 +1135,6 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
       fprintf(fp, ",\n");
     }
     /* Print input ports*/
-    assert(mux_size == num_conf_bits);
     fprintf(fp, "input wire [0:%d] %s,\n", num_conf_bits - 1,  input_port[0]->prefix);
     /* Print output ports*/
     fprintf(fp, "output wire %s,\n", output_port[0]->prefix);
@@ -2051,7 +2050,7 @@ void dump_verilog_submodule_one_lut(FILE* fp,
      */
     assert(1 == num_input_port);
     for (iport = 0; iport < num_output_port; iport++) {
-      assert(1 == output_port[iport]->size);
+      assert(0 < output_port[iport]->size);
     }
     assert(2 == num_sram_port); 
   }

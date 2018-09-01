@@ -100,12 +100,63 @@ void init_one_rr_node_pack_cost_for_phy_graph_node(INP t_pb_graph_pin* cur_pb_gr
   }
 }
 
+
+/* Override the fan-in and fan-out for a top/primitive pb_graph_node */
+void override_one_rr_node_for_top_primitive_phy_pb_graph_node(INP t_pb_graph_pin* cur_pb_graph_pin,
+                                                              INOUTP t_rr_graph* local_rr_graph,
+                                                              int cur_rr_node_index,
+                                                              boolean is_top_pb_graph_node,
+                                                              boolean is_primitive_pb_graph_node) {
+  /* check : must be either a top_pb_graph_node or a primitive_pb_graph_node */
+  if ((FALSE == is_top_pb_graph_node) && (FALSE == is_primitive_pb_graph_node)) {
+    return;
+  }
+
+  /* depends on the port type  */
+  switch (cur_pb_graph_pin->port->type) {
+  case IN_PORT:
+    if (TRUE == is_top_pb_graph_node) {
+      /* Top-level IN_PORT should only has 1 fan-in */
+      local_rr_graph->rr_node[cur_rr_node_index].fan_in = 1;
+      return;
+    }
+    if (TRUE == is_primitive_pb_graph_node) {
+      /* Primitive-level IN_PORT should only has 1 output edge */
+      local_rr_graph->rr_node[cur_rr_node_index].num_edges = 1;
+      return;
+    }
+    break;
+  case OUT_PORT:
+    if (TRUE == is_top_pb_graph_node) {
+      /* Top-level OUT_PORT should only has 1 output edge */
+      local_rr_graph->rr_node[cur_rr_node_index].num_edges = 1;
+      return;
+    }
+    if (TRUE == is_primitive_pb_graph_node) {
+      /* Primitive-level OUT_PORT should only has 1 fan-in */
+      local_rr_graph->rr_node[cur_rr_node_index].fan_in = 1;
+      return;
+    }
+    break;    
+  default: 
+    vpr_printf(TIO_MESSAGE_ERROR, 
+               "(File:%s, [LINE%d]) Invalid rr_node_type (%d)! \n",
+               __FILE__, __LINE__, cur_pb_graph_pin->port->type); 
+    exit(1);
+  }
+
+  return;
+}
+
 /* initialize a rr_node in a rr_graph of phyical pb_graph_node */
 void init_one_rr_node_for_phy_pb_graph_node(INP t_pb_graph_pin* cur_pb_graph_pin,
                                             INOUTP t_rr_graph* local_rr_graph,
                                             int cur_rr_node_index,
-                                            int phy_mode_index, 
-                                            t_rr_type rr_node_type) {
+                                            int fan_in_phy_mode_index, 
+                                            int fan_out_phy_mode_index, 
+                                            t_rr_type rr_node_type,
+                                            boolean is_top_pb_graph_node,
+                                            boolean is_primitive_pb_graph_node) {
 
   switch (rr_node_type) {
   case INTRA_CLUSTER_EDGE: 
@@ -113,9 +164,12 @@ void init_one_rr_node_for_phy_pb_graph_node(INP t_pb_graph_pin* cur_pb_graph_pin
     cur_pb_graph_pin->rr_node_index_physical_pb = cur_rr_node_index;
     local_rr_graph->rr_node[cur_rr_node_index].pb_graph_pin = cur_pb_graph_pin;
     /* Get the number of input edges that belong to physical mode only! */
-    local_rr_graph->rr_node[cur_rr_node_index].fan_in = count_pb_graph_node_input_edge_in_phy_mode(cur_pb_graph_pin, phy_mode_index);
+    local_rr_graph->rr_node[cur_rr_node_index].fan_in = count_pb_graph_node_input_edge_in_phy_mode(cur_pb_graph_pin, fan_in_phy_mode_index);
     /* Get the number of output edges that belong to physical mode only! */
-    local_rr_graph->rr_node[cur_rr_node_index].num_edges = count_pb_graph_node_output_edge_in_phy_mode(cur_pb_graph_pin, phy_mode_index);
+    local_rr_graph->rr_node[cur_rr_node_index].num_edges = count_pb_graph_node_output_edge_in_phy_mode(cur_pb_graph_pin, fan_out_phy_mode_index);
+    /* Override for special rr_nodes : at top-level and primitive nodes */
+    override_one_rr_node_for_top_primitive_phy_pb_graph_node(cur_pb_graph_pin, local_rr_graph, cur_rr_node_index, 
+                                                             is_top_pb_graph_node, is_primitive_pb_graph_node);
     /* Routing costs */ 
     init_one_rr_node_pack_cost_for_phy_graph_node(cur_pb_graph_pin, local_rr_graph, cur_rr_node_index, cur_pb_graph_pin->port->type);
     break;
@@ -190,7 +244,9 @@ void connect_one_rr_node_for_phy_pb_graph_node(INP t_pb_graph_pin* cur_pb_graph_
     /* Connect the rr_node of cur_pb_graph_pin to the SINK */
     assert (1 == local_rr_graph->rr_node[cur_rr_node_index].fan_in);
     assert (0 == local_rr_graph->rr_node[cur_rr_node_index].num_edges);
+    if (1 != local_rr_graph->rr_node[cur_pb_graph_pin->rr_node_index_physical_pb].num_edges) {
     assert (1 == local_rr_graph->rr_node[cur_pb_graph_pin->rr_node_index_physical_pb].num_edges);
+    }
     local_rr_graph->rr_node[cur_pb_graph_pin->rr_node_index_physical_pb].edges[0] = cur_rr_node_index;
     local_rr_graph->rr_node[cur_pb_graph_pin->rr_node_index_physical_pb].switches[0] = local_rr_graph->delayless_switch_index;
     break;
@@ -208,9 +264,9 @@ void connect_one_rr_node_for_phy_pb_graph_node(INP t_pb_graph_pin* cur_pb_graph_
 /* Recursively configure all the rr_nodes in the rr_graph
  * Initialize the routing cost, fan-in rr_nodes and fan-out rr_nodes, and switches  
  */
-int rec_init_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph_node, 
+void rec_init_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph_node, 
                                             INOUTP t_rr_graph* local_rr_graph,
-                                            int cur_rr_node_index) {
+                                            int* cur_rr_node_index) {
   boolean is_top_pb_graph_node = (boolean) (NULL == cur_pb_graph_node->parent_pb_graph_node);
   boolean is_primitive_pb_graph_node = (boolean) (NULL != cur_pb_graph_node->pb_type->spice_model);
   int phy_mode_idx = -1;
@@ -220,31 +276,39 @@ int rec_init_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph_no
 
   /* Find the physical mode in the next level! */
   phy_mode_idx = find_pb_type_physical_mode_index(*(cur_pb_graph_node->pb_type));
-  parent_phy_mode_idx = find_pb_type_physical_mode_index(*(cur_pb_graph_node->parent_pb_graph_node->pb_type));
+  /* There is no parent mode index for top-level node */
+  if (FALSE == is_top_pb_graph_node) { 
+    parent_phy_mode_idx = find_pb_type_physical_mode_index(*(cur_pb_graph_node->parent_pb_graph_node->pb_type));
+  } else {
+    parent_phy_mode_idx = phy_mode_idx;
+  }
 
   /* Configure rr_nodes with the information of pb_graph_pin  */
-  for (iport = 0; iport < cur_pb_graph_node->num_input_ports; ipin++) {
+  for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
     for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
       init_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->input_pins[iport][ipin], local_rr_graph,  
-                                             cur_rr_node_index, phy_mode_idx, INTRA_CLUSTER_EDGE);
-      cur_rr_node_index++;
+                                             *cur_rr_node_index, parent_phy_mode_idx, phy_mode_idx, INTRA_CLUSTER_EDGE,
+                                             is_top_pb_graph_node, is_primitive_pb_graph_node);
+      (*cur_rr_node_index)++;
     }
   }
 
   /* Importantly, the interconnection for output ports belong to the parent pb_graph_node */
-  for (iport = 0; iport < cur_pb_graph_node->num_output_ports; ipin++) {
+  for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
     for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
       init_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->output_pins[iport][ipin], local_rr_graph,  
-                                             cur_rr_node_index, parent_phy_mode_idx, INTRA_CLUSTER_EDGE);
-      cur_rr_node_index++;
+                                             *cur_rr_node_index, phy_mode_idx, parent_phy_mode_idx, INTRA_CLUSTER_EDGE,
+                                             is_top_pb_graph_node, is_primitive_pb_graph_node);
+      (*cur_rr_node_index)++;
     }
   }
 
-  for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; ipin++) {
+  for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
     for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
       init_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->clock_pins[iport][ipin], local_rr_graph,  
-                                             cur_rr_node_index, phy_mode_idx, INTRA_CLUSTER_EDGE);
-      cur_rr_node_index++;
+                                             *cur_rr_node_index, parent_phy_mode_idx, phy_mode_idx, INTRA_CLUSTER_EDGE,
+                                             is_top_pb_graph_node, is_primitive_pb_graph_node);
+      (*cur_rr_node_index)++;
     }
   }
 
@@ -253,23 +317,38 @@ int rec_init_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph_no
     /* Configure SOURCE and SINK rr_node: 
      * input_pins should have a SOURCE node
      */
-    for (iport = 0; iport < cur_pb_graph_node->num_input_ports; ipin++) {
+    for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
         init_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->input_pins[iport][ipin], local_rr_graph,  
-                                               cur_rr_node_index, phy_mode_idx, SOURCE);
+                                               *cur_rr_node_index, phy_mode_idx, phy_mode_idx, SOURCE,
+                                               is_top_pb_graph_node, is_primitive_pb_graph_node);
 
-        cur_rr_node_index++;
+        (*cur_rr_node_index)++;
       }
     }
     /* Configure SOURCE and SINK rr_node: 
+     * clock_pins should have a SOURCE node
+     */
+    for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
+        init_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->clock_pins[iport][ipin], local_rr_graph,  
+                                               *cur_rr_node_index, phy_mode_idx, phy_mode_idx, SOURCE,
+                                               is_top_pb_graph_node, is_primitive_pb_graph_node);
+
+        (*cur_rr_node_index)++;
+      }
+    }
+
+    /* Configure SOURCE and SINK rr_node: 
      * output_pins should have a SINK node 
      */
-    for (iport = 0; iport < cur_pb_graph_node->num_output_ports; ipin++) {
+    for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
         init_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->output_pins[iport][ipin], local_rr_graph,  
-                                               cur_rr_node_index, parent_phy_mode_idx, SINK);
+                                               *cur_rr_node_index, phy_mode_idx, phy_mode_idx, SINK,
+                                               is_top_pb_graph_node, is_primitive_pb_graph_node);
 
-        cur_rr_node_index++;
+        (*cur_rr_node_index)++;
       }
     }
     /* Finish adding SOURCE and SINKs */
@@ -280,48 +359,62 @@ int rec_init_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph_no
     /* Configure SOURCE and SINK rr_node: 
      * output_pins should have a SOURCE node
      */
-    for (iport = 0; iport < cur_pb_graph_node->num_output_ports; ipin++) {
+    for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
         init_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->output_pins[iport][ipin], local_rr_graph,  
-                                               cur_rr_node_index, parent_phy_mode_idx, SOURCE);
+                                               *cur_rr_node_index, phy_mode_idx, parent_phy_mode_idx,  SOURCE,
+                                               is_top_pb_graph_node, is_primitive_pb_graph_node);
 
-        cur_rr_node_index++;
+        (*cur_rr_node_index)++;
       }
     }
     /* Configure SOURCE and SINK rr_node: 
      * input_pins should have a SINK node 
      */
-    for (iport = 0; iport < cur_pb_graph_node->num_input_ports; ipin++) {
+    for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
         init_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->input_pins[iport][ipin], local_rr_graph,  
-                                               cur_rr_node_index, phy_mode_idx, SINK);
+                                               *cur_rr_node_index, parent_phy_mode_idx, phy_mode_idx, SINK,
+                                               is_top_pb_graph_node, is_primitive_pb_graph_node);
 
-        cur_rr_node_index++;
+        (*cur_rr_node_index)++;
+      }
+    }
+    /* Configure SOURCE and SINK rr_node: 
+     * clock_pins should have a SINK node 
+     */
+    for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
+        init_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->clock_pins[iport][ipin], local_rr_graph,  
+                                               *cur_rr_node_index, parent_phy_mode_idx, phy_mode_idx, SINK,
+                                               is_top_pb_graph_node, is_primitive_pb_graph_node);
+
+        (*cur_rr_node_index)++;
       }
     }
     /* Finish adding SOURCE and SINKs */
 
-    return cur_rr_node_index;
+    return;
   }
 
   /* Go recursively to the lower levels */
   for (ichild = 0; ichild < cur_pb_graph_node->pb_type->modes[phy_mode_idx].num_pb_type_children; ichild++) {
     /* num_pb is the number of such pb_type in a physical mode*/
     for (ipb = 0; ipb < cur_pb_graph_node->pb_type->modes[phy_mode_idx].pb_type_children[ichild].num_pb; ipb++) {
-      cur_rr_node_index = rec_init_rr_graph_for_phy_pb_graph_node(&cur_pb_graph_node->child_pb_graph_nodes[phy_mode_idx][ichild][ipb],
-                                                                  local_rr_graph, cur_rr_node_index);
+      rec_init_rr_graph_for_phy_pb_graph_node(&cur_pb_graph_node->child_pb_graph_nodes[phy_mode_idx][ichild][ipb],
+                                              local_rr_graph, cur_rr_node_index);
     }
   }
 
-  return cur_rr_node_index;
+  return;
 }
 
 /* Recursively connect all the rr_nodes in the rr_graph
  * output_edges, output_switches 
  */
-int rec_connect_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph_node, 
-                                               INOUTP t_rr_graph* local_rr_graph,
-                                               int cur_rr_node_index) {
+void rec_connect_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph_node, 
+                                                INOUTP t_rr_graph* local_rr_graph,
+                                                int* cur_rr_node_index) {
   boolean is_top_pb_graph_node = (boolean) (NULL == cur_pb_graph_node->parent_pb_graph_node);
   boolean is_primitive_pb_graph_node = (boolean) (NULL != cur_pb_graph_node->pb_type->spice_model);
   int phy_mode_idx = -1;
@@ -331,31 +424,36 @@ int rec_connect_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph
 
   /* Find the physical mode in the next level! */
   phy_mode_idx = find_pb_type_physical_mode_index(*(cur_pb_graph_node->pb_type));
-  parent_phy_mode_idx = find_pb_type_physical_mode_index(*(cur_pb_graph_node->parent_pb_graph_node->pb_type));
+  /* There is no parent mode index for top-level node */
+  if (FALSE == is_top_pb_graph_node) { 
+    parent_phy_mode_idx = find_pb_type_physical_mode_index(*(cur_pb_graph_node->parent_pb_graph_node->pb_type));
+  } else {
+    parent_phy_mode_idx = phy_mode_idx;
+  }
 
   /* Configure rr_nodes with the information of pb_graph_pin  */
-  for (iport = 0; iport < cur_pb_graph_node->num_input_ports; ipin++) {
+  for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
     for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
-     connect_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->input_pins[iport][ipin], local_rr_graph,  
-                                              cur_rr_node_index, phy_mode_idx, INTRA_CLUSTER_EDGE);
-      cur_rr_node_index++;
+      connect_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->input_pins[iport][ipin], local_rr_graph,  
+                                                *cur_rr_node_index, phy_mode_idx, INTRA_CLUSTER_EDGE);
+      (*cur_rr_node_index)++;
     }
   }
 
   /* Importantly, the interconnection for output ports belong to the parent pb_graph_node */
-  for (iport = 0; iport < cur_pb_graph_node->num_output_ports; ipin++) {
+  for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
     for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
       connect_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->output_pins[iport][ipin], local_rr_graph,  
-                                             cur_rr_node_index, parent_phy_mode_idx, INTRA_CLUSTER_EDGE);
-      cur_rr_node_index++;
+                                                *cur_rr_node_index, parent_phy_mode_idx, INTRA_CLUSTER_EDGE);
+      (*cur_rr_node_index)++;
     }
   }
 
-  for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; ipin++) {
+  for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
     for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
       connect_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->clock_pins[iport][ipin], local_rr_graph,  
-                                                cur_rr_node_index, phy_mode_idx, INTRA_CLUSTER_EDGE);
-      cur_rr_node_index++;
+                                                *cur_rr_node_index, phy_mode_idx, INTRA_CLUSTER_EDGE);
+      (*cur_rr_node_index)++;
     }
   }
 
@@ -364,23 +462,34 @@ int rec_connect_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph
     /* Configure SOURCE and SINK rr_node: 
      * input_pins should have a SOURCE node
      */
-    for (iport = 0; iport < cur_pb_graph_node->num_input_ports; ipin++) {
+    for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
         connect_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->input_pins[iport][ipin], local_rr_graph,  
-                                               cur_rr_node_index, phy_mode_idx, SOURCE);
+                                                  *cur_rr_node_index, phy_mode_idx, SOURCE);
 
-        cur_rr_node_index++;
+        (*cur_rr_node_index)++;
+      }
+    }
+    /* Configure SOURCE and SINK rr_node: 
+     * clock_pins should have a SOURCE node
+     */
+    for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
+        connect_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->clock_pins[iport][ipin], local_rr_graph,  
+                                                  *cur_rr_node_index, phy_mode_idx, SOURCE);
+
+        (*cur_rr_node_index)++;
       }
     }
     /* Configure SOURCE and SINK rr_node: 
      * output_pins should have a SINK node 
      */
-    for (iport = 0; iport < cur_pb_graph_node->num_output_ports; ipin++) {
+    for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
         connect_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->output_pins[iport][ipin], local_rr_graph,  
-                                                  cur_rr_node_index, parent_phy_mode_idx, SINK);
+                                                  *cur_rr_node_index, parent_phy_mode_idx, SINK);
 
-        cur_rr_node_index++;
+        (*cur_rr_node_index)++;
       }
     }
     /* Finish adding SOURCE and SINKs */
@@ -391,40 +500,51 @@ int rec_connect_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph
     /* Configure SOURCE and SINK rr_node: 
      * output_pins should have a SOURCE node
      */
-    for (iport = 0; iport < cur_pb_graph_node->num_output_ports; ipin++) {
+    for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
         connect_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->output_pins[iport][ipin], local_rr_graph,  
-                                                  cur_rr_node_index, parent_phy_mode_idx, SOURCE);
+                                                  *cur_rr_node_index, parent_phy_mode_idx, SOURCE);
 
-        cur_rr_node_index++;
+        (*cur_rr_node_index)++;
       }
     }
     /* Configure SOURCE and SINK rr_node: 
      * input_pins should have a SINK node 
      */
-    for (iport = 0; iport < cur_pb_graph_node->num_input_ports; ipin++) {
+    for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
         connect_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->input_pins[iport][ipin], local_rr_graph,  
-                                                  cur_rr_node_index, phy_mode_idx, SINK);
+                                                  *cur_rr_node_index, phy_mode_idx, SINK);
 
-        cur_rr_node_index++;
+        (*cur_rr_node_index)++;
+      }
+    }
+    /* Configure SOURCE and SINK rr_node: 
+     * clock_pins should have a SINK node 
+     */
+    for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
+        connect_one_rr_node_for_phy_pb_graph_node(&cur_pb_graph_node->clock_pins[iport][ipin], local_rr_graph,  
+                                                  *cur_rr_node_index, phy_mode_idx, SINK);
+
+        (*cur_rr_node_index)++;
       }
     }
     /* Finish adding SOURCE and SINKs */
 
-    return cur_rr_node_index;
+    return;
   }
 
   /* Go recursively to the lower levels */
   for (ichild = 0; ichild < cur_pb_graph_node->pb_type->modes[phy_mode_idx].num_pb_type_children; ichild++) {
     /* num_pb is the number of such pb_type in a physical mode*/
     for (ipb = 0; ipb < cur_pb_graph_node->pb_type->modes[phy_mode_idx].pb_type_children[ichild].num_pb; ipb++) {
-      cur_rr_node_index = rec_connect_rr_graph_for_phy_pb_graph_node(&cur_pb_graph_node->child_pb_graph_nodes[phy_mode_idx][ichild][ipb],
-                                                                     local_rr_graph, cur_rr_node_index);
+      rec_connect_rr_graph_for_phy_pb_graph_node(&cur_pb_graph_node->child_pb_graph_nodes[phy_mode_idx][ichild][ipb],
+                                                 local_rr_graph, cur_rr_node_index);
     }
   }
 
-  return cur_rr_node_index;
+  return;
 }
 
 /* Allocate a rr_graph for a given pb_graph node 
@@ -448,7 +568,7 @@ int rec_connect_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* cur_pb_graph
 void alloc_and_load_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* top_pb_graph_node, 
                                                   OUTP t_rr_graph* local_rr_graph) {
 
-  int index, phy_pb_num_rr_nodes;
+  int phy_pb_num_rr_nodes, check_point;
 
   /* Count the number of rr_nodes that are required */
   phy_pb_num_rr_nodes = rec_count_rr_graph_nodes_for_phy_pb_graph_node(top_pb_graph_node);
@@ -457,12 +577,14 @@ void alloc_and_load_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* top_pb_g
   alloc_and_load_rr_graph_rr_node(local_rr_graph, phy_pb_num_rr_nodes);
 
   /* Fill basic information for the rr_graph  */ 
-  index = rec_init_rr_graph_for_phy_pb_graph_node(top_pb_graph_node, local_rr_graph, 0);
-  assert (index == local_rr_graph->num_rr_nodes); 
+  check_point = 0;
+  rec_init_rr_graph_for_phy_pb_graph_node(top_pb_graph_node, local_rr_graph, &check_point);
+  assert (check_point == local_rr_graph->num_rr_nodes); 
 
   /* Fill edges and switches for the rr_graph */
-  index = rec_connect_rr_graph_for_phy_pb_graph_node(top_pb_graph_node, local_rr_graph, 0);
-  assert (index == local_rr_graph->num_rr_nodes); 
+  check_point = 0;
+  rec_connect_rr_graph_for_phy_pb_graph_node(top_pb_graph_node, local_rr_graph, &check_point);
+  assert (check_point == local_rr_graph->num_rr_nodes); 
 
   return;
 }
