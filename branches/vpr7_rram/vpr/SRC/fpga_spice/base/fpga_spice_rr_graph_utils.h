@@ -45,6 +45,8 @@ t_trace* update_rr_graph_traceback(t_rr_graph* local_rr_graph,
 
 void reset_rr_graph_path_costs(t_rr_graph* local_rr_graph);
 
+void alloc_rr_graph_rr_indexed_data(t_rr_graph* local_rr_graph, int L_num_rr_indexed_data);
+
 float get_rr_graph_rr_cong_cost(t_rr_graph* local_rr_graph,
                                 int rr_node_index);
 
@@ -88,3 +90,6 @@ void backannotate_rr_graph_routing_results_to_net_name(t_rr_graph* local_rr_grap
 
 int get_rr_graph_net_vpack_net_index(t_rr_graph* local_rr_graph,
                                      int net_index);
+
+int get_rr_graph_net_index_with_vpack_net(t_rr_graph* local_rr_graph,
+                                          int vpack_net_index);

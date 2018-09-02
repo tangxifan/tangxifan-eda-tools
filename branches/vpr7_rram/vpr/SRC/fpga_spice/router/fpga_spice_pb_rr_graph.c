@@ -239,16 +239,20 @@ void connect_one_rr_node_for_phy_pb_graph_node(INP t_pb_graph_pin* cur_pb_graph_
     assert (1 == local_rr_graph->rr_node[cur_rr_node_index].num_edges);
     local_rr_graph->rr_node[cur_rr_node_index].edges[0] = cur_pb_graph_pin->rr_node_index_physical_pb;
     local_rr_graph->rr_node[cur_rr_node_index].switches[0] = local_rr_graph->delayless_switch_index;
+    /* Fix the connection */
+    local_rr_graph->rr_node[cur_pb_graph_pin->rr_node_index_physical_pb].prev_node = cur_rr_node_index;
+    local_rr_graph->rr_node[cur_pb_graph_pin->rr_node_index_physical_pb].prev_edge = 0;
     break;
   case SINK:
     /* Connect the rr_node of cur_pb_graph_pin to the SINK */
     assert (1 == local_rr_graph->rr_node[cur_rr_node_index].fan_in);
     assert (0 == local_rr_graph->rr_node[cur_rr_node_index].num_edges);
-    if (1 != local_rr_graph->rr_node[cur_pb_graph_pin->rr_node_index_physical_pb].num_edges) {
     assert (1 == local_rr_graph->rr_node[cur_pb_graph_pin->rr_node_index_physical_pb].num_edges);
-    }
     local_rr_graph->rr_node[cur_pb_graph_pin->rr_node_index_physical_pb].edges[0] = cur_rr_node_index;
     local_rr_graph->rr_node[cur_pb_graph_pin->rr_node_index_physical_pb].switches[0] = local_rr_graph->delayless_switch_index;
+    /* Fix the connection */
+    local_rr_graph->rr_node[cur_rr_node_index].prev_node = cur_pb_graph_pin->rr_node_index_physical_pb;
+    local_rr_graph->rr_node[cur_rr_node_index].prev_edge = 0;
     break;
   default: 
     vpr_printf(TIO_MESSAGE_ERROR, 
@@ -647,8 +651,7 @@ void mark_vpack_net_used_in_pb(t_pb* cur_op_pb,
   }
 
   /* recursive for the child_pbs*/
-  if ((NULL == cur_pb_type->spice_model_name) 
-     && (NULL == cur_pb_type->physical_pb_type_name)) {
+  if (FALSE == is_primitive_pb_type(cur_pb_type)) { 
     for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
       for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
         /* Recursive*/
@@ -713,127 +716,125 @@ void alloc_and_load_phy_pb_rr_graph_nets(INP t_pb* cur_op_pb,
 }
 
 /* Find the rr_node in the primitive node of a pb_rr_graph*/ 
-t_rr_node* find_primitive_rr_node_in_pb_rr_graph(t_pb* cur_op_pb, t_pb_graph_pin* cur_pb_graph_pin,
-                                                 int net_index, t_rr_type rr_node_type) {
-  int inode, prev_node, edge_node, iedge;
-  t_rr_node* found_rr_node = NULL;
-  int num_found = 0;
+void sync_pb_graph_pin_vpack_net_num_to_phy_pb(t_pb* cur_op_pb, t_pb_graph_pin* cur_pb_graph_pin,
+                                               t_rr_graph* local_rr_graph) {
+  int inode, jnode, iedge, next_node;
+  int rr_node_net_num;
 
   inode = cur_pb_graph_pin->pin_count_in_cluster;
+  /* bypass non-exist physical pb_graph_pins */
+  if (NULL == cur_pb_graph_pin->physical_pb_graph_pin) {
+    return;
+  }
+  jnode = cur_pb_graph_pin->physical_pb_graph_pin->rr_node_index_physical_pb; 
    
-  /* Check three cases: 1. current node  */
-  if ((rr_node_type == cur_op_pb->rr_graph[inode].type) 
-     && (net_index == cur_op_pb->rr_graph[inode].vpack_net_num)) {
-    found_rr_node = &(cur_op_pb->rr_graph[inode]);
-    num_found++;
-  }
-  /* Check three cases: 2. precedent of current node, maybe a SOURCE */
-  if (1 == cur_op_pb->rr_graph[inode].fan_in) {
-    prev_node = cur_op_pb->rr_graph[inode].prev_node;
-    if ((OPEN != prev_node)
-      && (SOURCE == cur_op_pb->rr_graph[prev_node].type)
-      && (rr_node_type == cur_op_pb->rr_graph[prev_node].type) 
-      && (net_index == cur_op_pb->rr_graph[prev_node].vpack_net_num)) {
-      found_rr_node = &(cur_op_pb->rr_graph[prev_node]);
-      num_found++;
-    } 
+  /* If we have a valid vpack_net_num */
+  if (OPEN == cur_op_pb->rr_graph[inode].vpack_net_num) {
+    /* Give default value */
+    local_rr_graph->rr_node[jnode].net_num = OPEN;
+    local_rr_graph->rr_node[jnode].vpack_net_num = OPEN;
+    return;
   }
 
-  /* Check three cases: 3. precedent of current node, maybe a SINK */
-  for (iedge = 0; iedge < cur_op_pb->rr_graph[inode].num_edges; iedge++) {
-    edge_node = cur_op_pb->rr_graph[inode].edges[iedge];
-    if ((OPEN != edge_node)
-      && (SINK == cur_op_pb->rr_graph[edge_node].type)
-      && (rr_node_type == cur_op_pb->rr_graph[edge_node].type) 
-      && (net_index == cur_op_pb->rr_graph[edge_node].vpack_net_num)) {
-      found_rr_node = &(cur_op_pb->rr_graph[edge_node]);
-      num_found++;
-    } 
+  /* Synchronize depending on the rr_node type */
+  switch (local_rr_graph->rr_node[jnode].type) {
+  case SOURCE:
+  case SINK:
+    /* SOURCE or SINK: we are done, just synchronize the vpack_net_num and we can return*/
+    rr_node_net_num = get_rr_graph_net_index_with_vpack_net(local_rr_graph, cur_op_pb->rr_graph[inode].vpack_net_num);
+    assert (( -1 < rr_node_net_num ) && (rr_node_net_num < local_rr_graph->num_nets));
+    local_rr_graph->rr_node[jnode].net_num = rr_node_net_num;
+    local_rr_graph->rr_node[jnode].vpack_net_num = cur_op_pb->rr_graph[inode].vpack_net_num;
+  case INTRA_CLUSTER_EDGE:
+    /* We need to find a SOURCE or a SINK nodes! */
+    /* Check driving rr_nodes */
+    for (iedge = 0; iedge < local_rr_graph->rr_node[jnode].num_drive_rr_nodes; iedge++) {
+      if (SOURCE != local_rr_graph->rr_node[jnode].drive_rr_nodes[iedge]->type) {
+        continue;
+      }
+      /* Give the vpack_net_num to the SOURCE nodes */
+      rr_node_net_num = get_rr_graph_net_index_with_vpack_net(local_rr_graph, cur_op_pb->rr_graph[inode].vpack_net_num);
+      assert (( -1 < rr_node_net_num ) && (rr_node_net_num < local_rr_graph->num_nets));
+      local_rr_graph->rr_node[jnode].drive_rr_nodes[iedge]->net_num = rr_node_net_num;
+      local_rr_graph->rr_node[jnode].drive_rr_nodes[iedge]->vpack_net_num = cur_op_pb->rr_graph[inode].vpack_net_num;
+    }
+    /* Check the output rr_nodes */
+    for (iedge = 0; iedge < local_rr_graph->rr_node[jnode].num_edges; iedge++) {
+      next_node = local_rr_graph->rr_node[jnode].edges[0];
+      if (SINK != local_rr_graph->rr_node[next_node].type) {
+        continue;
+      }
+      /* Give the vpack_net_num to the SOURCE nodes */
+      rr_node_net_num = get_rr_graph_net_index_with_vpack_net(local_rr_graph, cur_op_pb->rr_graph[inode].vpack_net_num);
+      assert (( -1 < rr_node_net_num ) && (rr_node_net_num < local_rr_graph->num_nets));
+      local_rr_graph->rr_node[next_node].net_num = rr_node_net_num;
+      local_rr_graph->rr_node[next_node].vpack_net_num = cur_op_pb->rr_graph[inode].vpack_net_num;
+    }
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, 
+               "(File:%s, [LINE%d]) Invalid rr_node_type (%d)! \n",
+               __FILE__, __LINE__, local_rr_graph->rr_node[jnode].type); 
+    exit(1);
   }
-  
-  assert ((0 == num_found) || (1 == num_found));
 
-  return found_rr_node;
+  return;
 } 
 
 /* Recursively visit all the child pbs and 
- * mark the used vpack_net_num in the list
+ * synchronize the vpack_net_num of the top-level/primitive pb_graph_pin
+ * to the physical pb rr_node nodes 
  */
-t_rr_node* rec_find_rr_node_in_pb_rr_graph(t_pb* cur_op_pb,
-                                           int net_index, t_rr_type rr_node_type) {
+void rec_sync_pb_vpack_net_num_to_phy_pb_rr_graph(t_pb* cur_op_pb,
+                                                  t_rr_graph* local_rr_graph) {
   int mode_index, ipb, jpb; 
   int iport, ipin;
   t_pb_type* cur_pb_type = NULL;
-  t_rr_node* found_rr_node = NULL;
-  t_rr_node* ret_rr_node = NULL;
-  int num_found = 0;
 
   cur_pb_type = cur_op_pb->pb_graph_node->pb_type;
   mode_index = cur_op_pb->mode; 
   
   /* Mark all the nets at this level */
-  if ((NULL != cur_pb_type->spice_model_name) 
-     || (NULL != cur_pb_type->physical_pb_type_name)) {
-    for (iport = 0; iport < cur_op_pb->pb_graph_node->num_input_ports; iport++) {
-      for (ipin = 0; ipin < cur_op_pb->pb_graph_node->num_input_pins[iport]; ipin++) {
-        found_rr_node = find_primitive_rr_node_in_pb_rr_graph(cur_op_pb, &(cur_op_pb->pb_graph_node->input_pins[iport][ipin]),
-                                                              net_index, rr_node_type);
-        if (NULL != found_rr_node) {
-          ret_rr_node = found_rr_node;
-          num_found++;
-        }
-      }
+  for (iport = 0; iport < cur_op_pb->pb_graph_node->num_input_ports; iport++) {
+    for (ipin = 0; ipin < cur_op_pb->pb_graph_node->num_input_pins[iport]; ipin++) {
+      sync_pb_graph_pin_vpack_net_num_to_phy_pb(cur_op_pb, &(cur_op_pb->pb_graph_node->input_pins[iport][ipin]),
+                                                local_rr_graph);
     }
-  
-    for (iport = 0; iport < cur_op_pb->pb_graph_node->num_output_ports; iport++) {
-      for (ipin = 0; ipin < cur_op_pb->pb_graph_node->num_output_pins[iport]; ipin++) {
-        found_rr_node = find_primitive_rr_node_in_pb_rr_graph(cur_op_pb, &(cur_op_pb->pb_graph_node->output_pins[iport][ipin]),
-                                                              net_index, rr_node_type);
-        if (NULL != found_rr_node) {
-          ret_rr_node = found_rr_node;
-          num_found++;
-        }
-      }
+  }
+ 
+  for (iport = 0; iport < cur_op_pb->pb_graph_node->num_output_ports; iport++) {
+    for (ipin = 0; ipin < cur_op_pb->pb_graph_node->num_output_pins[iport]; ipin++) {
+      sync_pb_graph_pin_vpack_net_num_to_phy_pb(cur_op_pb, &(cur_op_pb->pb_graph_node->output_pins[iport][ipin]),
+                                                local_rr_graph);
     }
-  
-    for (iport = 0; iport < cur_op_pb->pb_graph_node->num_clock_ports; iport++) {
-      for (ipin = 0; ipin < cur_op_pb->pb_graph_node->num_clock_pins[iport]; ipin++) {
-        found_rr_node = find_primitive_rr_node_in_pb_rr_graph(cur_op_pb, &(cur_op_pb->pb_graph_node->clock_pins[iport][ipin]),
-                                                              net_index, rr_node_type);
-        if (NULL != found_rr_node) {
-          ret_rr_node = found_rr_node;
-          num_found++;
-        }
-      }
+  }
+ 
+  for (iport = 0; iport < cur_op_pb->pb_graph_node->num_clock_ports; iport++) {
+    for (ipin = 0; ipin < cur_op_pb->pb_graph_node->num_clock_pins[iport]; ipin++) {
+      sync_pb_graph_pin_vpack_net_num_to_phy_pb(cur_op_pb, &(cur_op_pb->pb_graph_node->clock_pins[iport][ipin]),
+                                                local_rr_graph);
     }
-
-    assert ((0 == num_found) || (1 == num_found));
-    return ret_rr_node;
+  }
+   
+  /* Return if we reach the primitive  */
+  if (TRUE == is_primitive_pb_type(cur_pb_type)) { 
+    return;
   }
   
   /* recursive for the child_pbs*/
-  if ((NULL == cur_pb_type->spice_model_name) 
-     && (NULL == cur_pb_type->physical_pb_type_name)) {
-    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
-      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
-        /* Recursive*/
-        /* Refer to pack/output_clustering.c [LINE 392] */
-        if ((NULL != cur_op_pb->child_pbs[ipb])&&(NULL != cur_op_pb->child_pbs[ipb][jpb].name)) {
-          found_rr_node = rec_find_rr_node_in_pb_rr_graph(&(cur_op_pb->child_pbs[ipb][jpb]), 
-                                                          net_index, rr_node_type);
-
-          if (NULL != found_rr_node) {
-            ret_rr_node = found_rr_node;
-            num_found++;
-          }
-        }
+  assert (FALSE == is_primitive_pb_type(cur_pb_type));
+  for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+    for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+      /* Recursive*/
+      /* Refer to pack/output_clustering.c [LINE 392] */
+      if ((NULL != cur_op_pb->child_pbs[ipb])&&(NULL != cur_op_pb->child_pbs[ipb][jpb].name)) {
+        rec_sync_pb_vpack_net_num_to_phy_pb_rr_graph(&(cur_op_pb->child_pbs[ipb][jpb]), 
+                                                     local_rr_graph);
       }
     }
-    assert ((0 == num_found) || (1 == num_found));
-    return ret_rr_node;
   }
 
-  return ret_rr_node;
+  return;
 }
 
 
@@ -845,36 +846,67 @@ t_rr_node* rec_find_rr_node_in_pb_rr_graph(t_pb* cur_op_pb,
  * 3. Find the SOURCE and SINK rr_nodes related to the pb_graph_pin 
  * 4. Configure the net_rr_terminals with the SINK/SOURCE rr_nodes  
  */
-void load_phy_pb_rr_graph_net_rr_terminals(INP t_pb* cur_op_pb,
-                                           t_rr_graph* local_rr_graph) {
-  int inet, isink, rr_node_vpack_net_name;
-  t_rr_node* pb_rr_node = NULL;
-  t_rr_type pb_rr_node_type;
+void alloc_and_load_phy_pb_rr_graph_net_rr_terminals(INP t_pb* cur_op_pb,
+                                                     t_rr_graph* local_rr_graph) {
+  int inet, inode, rr_node_net_name;
+  int* net_cur_sink = (int*) my_calloc(local_rr_graph->num_nets, sizeof(int));
   
   /* Check each net in the local_rr_graph,
    * Find the routing resource node in the pb_rr_graph of the cur_op_pb
    * and annotate in the local_rr_graph
    * assign the net_rr_terminal with the node index in the local_rr_graph
+   * Two steps to go:
+   * 1. synchronize the vpack_net_num of pb_graph_pin (rr_node) in op_pb
+   *    to the local rr_graph (SINK and SOURCE nodes!)
+   * 2. Annotate the net_rr_terminals by sweeping the rr_node in local_rr_graph
    */ 
-  for (inet = 0; inet < local_rr_graph->num_nets; inet++) {
-    /* SINK 0 is the SOURCE nodes  
-     * The rest sink are SINK nodes 
-     */
-    for (isink = 0; isink < local_rr_graph->net[inet]->num_sinks + 1; isink++) {
-      pb_rr_node_type = (0 == isink) ? SOURCE : SINK;
-      rr_node_vpack_net_name = get_rr_graph_net_vpack_net_index(local_rr_graph, inet);
-      pb_rr_node = rec_find_rr_node_in_pb_rr_graph(cur_op_pb, rr_node_vpack_net_name, pb_rr_node_type); 
-      /* check */
-      assert (NULL != pb_rr_node);
-      /* If there is rr_node_index_physical_pb, this is also a pin in the physical mode */
-      if (OPEN != pb_rr_node->pb_graph_pin->rr_node_index_physical_pb) {
-        local_rr_graph->net_rr_terminals[inet][0] = pb_rr_node->pb_graph_pin->rr_node_index_physical_pb;
-      } else {
-        /* This is not a pin in the physical mode, find the mapped physical pb_graph_pin */
-        local_rr_graph->net_rr_terminals[inet][0] = pb_rr_node->pb_graph_pin->physical_pb_graph_pin->rr_node_index_physical_pb; 
+  rec_sync_pb_vpack_net_num_to_phy_pb_rr_graph(cur_op_pb, local_rr_graph);
+
+  /* Allocate net_rr_terminals */
+  alloc_rr_graph_net_rr_terminals(local_rr_graph);
+
+  for (inode = 0; inode < local_rr_graph->num_rr_nodes; inode++) {
+    /* We only care the SOURCE and SINK nodes */
+    switch (local_rr_graph->rr_node[inode].type) {
+    case SOURCE:
+      /* SOURCE is easy: give the rr_node id to first terminal of the vpack_net */
+      rr_node_net_name = local_rr_graph->rr_node[inode].net_num;
+      if (OPEN == rr_node_net_name) {
+        break;
       }
+      local_rr_graph->net_rr_terminals[rr_node_net_name][0] = inode; 
+      break;
+    case SINK:
+      /* SINK: we need to record the sink we considered */
+      rr_node_net_name = local_rr_graph->rr_node[inode].net_num;
+      if (OPEN == rr_node_net_name) {
+        break;
+      }
+      local_rr_graph->net_rr_terminals[rr_node_net_name][net_cur_sink[rr_node_net_name]] = inode; 
+      net_cur_sink[rr_node_net_name]++;
+      break;
+    case INTRA_CLUSTER_EDGE:
+      /* Nothing to do */
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, 
+                 "(File:%s, [LINE%d]) Invalid rr_node_type (%d)! \n",
+                 __FILE__, __LINE__, local_rr_graph->rr_node[inode].type); 
+      exit(1);
     }
   }
+  /* Check */
+  for (inet = 0; inet < local_rr_graph->num_nets; inet++) {
+    assert ( net_cur_sink[inet] == local_rr_graph->net_num_sinks[inet] );
+  }
+
+  return;
+}
+
+void alloc_pb_rr_graph_rr_indexed_data(t_rr_graph* local_rr_graph) {
+  /* inside a cluster, I do not consider rr_indexed_data cost, set to 1 since other costs are multiplied by it */
+  alloc_rr_graph_rr_indexed_data(local_rr_graph, 1);
+  local_rr_graph->rr_indexed_data[0].base_cost = 1;
 
   return;
 }
@@ -903,14 +935,16 @@ void alloc_and_load_rr_graph_for_phy_pb(INP t_pb* cur_op_pb,
   /* Find the nets inside the pb and initialize the rr_graph */
   alloc_and_load_phy_pb_rr_graph_nets(cur_op_pb, cur_phy_pb->rr_graph,
                                       L_num_vpack_nets, L_vpack_net); 
+  /* Allocate trace in rr_graph */
+  alloc_rr_graph_route_static_structs(cur_phy_pb->rr_graph, nx * ny); /* TODO: nx * ny should be reduced for pb-only routing */
 
-  /* Allocate net_rr_terminals */
-  alloc_rr_graph_net_rr_terminals(cur_phy_pb->rr_graph);
+  alloc_pb_rr_graph_rr_indexed_data(cur_phy_pb->rr_graph);
+
   /* Fill the net_rr_terminals with 
    * 1. pin-to-pin mapping in pb_graph_node in cur_op_pb
    * 2. rr_graph in the cur_op_pb
    */ 
-  load_phy_pb_rr_graph_net_rr_terminals(cur_op_pb, cur_phy_pb->rr_graph); 
+  alloc_and_load_phy_pb_rr_graph_net_rr_terminals(cur_op_pb, cur_phy_pb->rr_graph); 
 
   return;
 }

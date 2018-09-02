@@ -24,6 +24,7 @@ struct fpga_spice_rr_graph {
   int num_nets; /* number of nets to route */
   t_net** net; /* nets to route, this is pointer to the existing nets */
   int* net_to_vpack_net_mapping;
+  int* net_num_sinks;
 
   /* Gives the rr_node indices of net terminals. */
   int **net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */

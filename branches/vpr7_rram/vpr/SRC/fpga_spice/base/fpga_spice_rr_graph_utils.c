@@ -75,12 +75,22 @@ void init_rr_graph(INOUTP t_rr_graph* local_rr_graph) {
 }
 
 void alloc_rr_graph_net_rr_terminals(t_rr_graph* local_rr_graph) {
-  int inet;
+  int inet, inode, num_sinks_in_rr_graph, rr_node_vpack_net_name;
 
   local_rr_graph->net_rr_terminals = (int **) my_malloc(local_rr_graph->num_nets * sizeof(int *));
+  local_rr_graph->net_num_sinks = (int *) my_calloc(local_rr_graph->num_nets, sizeof(int));
 
   for (inet = 0; inet < local_rr_graph->num_nets; inet++) {
-    local_rr_graph->net_rr_terminals[inet] = (int *) my_chunk_malloc((local_rr_graph->net[inet]->num_sinks + 1) * sizeof(int),
+    /* Count how many SINKs we have in the rr_graph that is mapped to this net */
+    num_sinks_in_rr_graph = 0;
+    for (inode = 0; inode < local_rr_graph->num_rr_nodes; inode++) {
+      if ((SINK == local_rr_graph->rr_node[inode].type)
+        && (inet == local_rr_graph->rr_node[inode].net_num)) {
+        num_sinks_in_rr_graph++;
+      }
+    }
+    local_rr_graph->net_num_sinks[inet] = num_sinks_in_rr_graph;
+    local_rr_graph->net_rr_terminals[inet] = (int *) my_chunk_malloc((num_sinks_in_rr_graph + 1) * sizeof(int),
                                                                       &local_rr_graph->rr_mem_ch);
   }
 
@@ -611,6 +621,12 @@ void reset_rr_graph_path_costs(t_rr_graph* local_rr_graph) {
   return;
 }
 
+void alloc_rr_graph_rr_indexed_data(t_rr_graph* local_rr_graph, int L_num_rr_indexed_data) {
+  local_rr_graph->num_rr_indexed_data = L_num_rr_indexed_data;
+  local_rr_graph->rr_indexed_data = (t_rr_indexed_data *) my_calloc(L_num_rr_indexed_data, sizeof(t_rr_indexed_data));
+
+  return;
+}
 
 /* a copy of get_rr_cong_cost, 
  * I remove all the use of global variables */
@@ -967,3 +983,21 @@ int get_rr_graph_net_vpack_net_index(t_rr_graph* local_rr_graph,
                                      int net_index) {
   return local_rr_graph->net_to_vpack_net_mapping[net_index];
 }
+
+int get_rr_graph_net_index_with_vpack_net(t_rr_graph* local_rr_graph,
+                                          int vpack_net_index) {
+  int inet, ret;
+  int num_found = 0;
+
+  for (inet = 0; inet < local_rr_graph->num_nets; inet++) {
+    if (vpack_net_index == local_rr_graph->net_to_vpack_net_mapping[inet]) {
+      num_found = 0;
+      ret = inet;
+    }
+  }
+  /* assert */
+  assert ((0 == num_found ) || (1 == num_found));
+
+  return ret;
+}
+

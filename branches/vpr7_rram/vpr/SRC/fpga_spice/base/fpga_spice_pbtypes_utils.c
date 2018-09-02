@@ -2463,7 +2463,7 @@ void rec_reset_pb_graph_node_rr_node_index_physical_pb(t_pb_graph_node* cur_pb_g
   }
 
   /* END until primitive node */
-  if ((NULL != cur_pb_type->spice_model_name) || (NULL != cur_pb_type->physical_pb_type_name)) {
+  if (TRUE == is_primitive_pb_type(cur_pb_type)) { 
     return;
   }
 
@@ -2740,8 +2740,7 @@ void rec_reset_pb_type_temp_placement_index(t_pb_type* cur_pb_type) {
   cur_pb_type->temp_placement_index = 0;
 
   /* See when we reach the primitive  */ 
-  if ( (NULL != cur_pb_type->physical_pb_type_name)
-     || (NULL != cur_pb_type->spice_model_name)) {
+  if (TRUE == is_primitive_pb_type(cur_pb_type)) { 
     return;
   }
 
@@ -2765,8 +2764,7 @@ void rec_reset_pb_type_phy_pb_type(t_pb_type* cur_pb_type) {
   cur_pb_type->phy_pb_type = NULL;
 
   /* See when we reach the primitive  */ 
-  if ( (NULL != cur_pb_type->physical_pb_type_name)
-     || (NULL != cur_pb_type->spice_model_name)) {
+  if (TRUE == is_primitive_pb_type(cur_pb_type)) { 
     return;
   }
 

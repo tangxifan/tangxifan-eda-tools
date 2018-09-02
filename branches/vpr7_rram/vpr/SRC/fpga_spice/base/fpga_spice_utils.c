@@ -3015,6 +3015,13 @@ boolean check_subckt_file_exist_in_llist(t_llist* subckt_llist_head,
   return FALSE;
 }
 
+/* Identify if this is a primitive pb_type */
+boolean is_primitive_pb_type(t_pb_type* cur_pb_type) {
 
-
+  if ((NULL != cur_pb_type->spice_model_name) 
+     || (NULL != cur_pb_type->physical_pb_type_name)) {
+    return TRUE;
+  }
+  return FALSE;
+}
     

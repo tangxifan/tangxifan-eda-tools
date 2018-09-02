@@ -355,3 +355,5 @@ t_llist* add_one_subckt_file_name_to_llist(t_llist* cur_head,
 
 boolean check_subckt_file_exist_in_llist(t_llist* subckt_llist_head,
                                          char* subckt_file_name);
+
+boolean is_primitive_pb_type(t_pb_type* cur_pb_type);

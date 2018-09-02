@@ -249,10 +249,6 @@ char** assign_lut_truth_table(t_logical_block* mapped_logical_block,
   char** truth_table = NULL;
   t_linked_vptr* head = NULL;
   int cur = 0;
-  int inet, jnet;
-  int* lut_to_lb_net_mapping = NULL;
-  int num_lb_pin = 0;
-  int* lb_pin_vpack_net_num = NULL;
 
   if (NULL == mapped_logical_block) {
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid mapped_logical_block!\n",
