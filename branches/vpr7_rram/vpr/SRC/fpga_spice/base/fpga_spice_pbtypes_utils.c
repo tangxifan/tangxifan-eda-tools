@@ -2608,18 +2608,22 @@ void rec_sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb,
     /* Re-allocate logical_block array mapped to this pb */
     phy_pb_to_sync->num_logical_blocks++;
     phy_pb_to_sync->logical_block = (int*) my_realloc(phy_pb_to_sync->logical_block, sizeof(int) * phy_pb_to_sync->num_logical_blocks);
-    phy_pb_to_sync->lut_size = (int*) my_realloc(phy_pb_to_sync->logical_block, sizeof(int) * phy_pb_to_sync->num_logical_blocks);
+    phy_pb_to_sync->lut_size = (int*) my_realloc(phy_pb_to_sync->lut_size, sizeof(int) * phy_pb_to_sync->num_logical_blocks);
     /* Synchronize the logic block information */
     switch (cur_pb_type->class_type) {
     case LUT_CLASS: 
+      /* Give phy_pb_type a LUT CLASS */
       child_pb = get_lut_child_pb(cur_op_pb, mode_index);
-      phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = child_pb->logical_block;
       /* check */
+      assert (LUT_CLASS == cur_pb_type->phy_pb_type->class_type);
+      assert (VPACK_COMB == logical_block[child_pb->logical_block].type);
       assert ( 1 == cur_pb_graph_node->num_input_ports );
+      phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = child_pb->logical_block;
       /* Give the number of LUT inputs of operating pb_graph_node */
       phy_pb_to_sync->lut_size[phy_pb_to_sync->num_logical_blocks - 1] = cur_pb_graph_node->num_input_pins[0];
       break;
     case LATCH_CLASS:
+      assert (VPACK_LATCH == logical_block[cur_op_pb->logical_block].type);
       phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = cur_op_pb->logical_block;
       break;
     case MEMORY_CLASS:
@@ -2627,6 +2631,8 @@ void rec_sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb,
       phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = child_pb->logical_block;
       break;  
     case UNKNOWN_CLASS:
+      assert ((VPACK_INPAD == logical_block[cur_op_pb->logical_block].type)
+             ||(VPACK_OUTPAD == logical_block[cur_op_pb->logical_block].type));
       phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = cur_op_pb->logical_block;
       break;  
     default:

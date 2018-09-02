@@ -1555,6 +1555,7 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
       dump_verilog_pb_primitive_verilog_model(cur_sram_orgz_info, fp, formatted_subckt_prefix, 
                                               cur_pb_graph_node, pb_type_index, 
                                               cur_pb_type->spice_model); /* last param means idle */
+      break;
     case LATCH_CLASS:
       assert(0 == cur_pb_type->num_modes);
       /* Consider the num_pb, create all the subckts*/

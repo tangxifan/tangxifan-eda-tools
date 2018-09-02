@@ -559,27 +559,6 @@ void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
    */
   fprintf(fp, ");\n");
 
-  /* Print the encoding in SPICE netlist for debugging */
-  /* SRAM bits are decoded in bitstream generator! NOT here 
-  if (NULL != mapped_logical_block) {
-    fprintf(fp, "//----- Truth Table for LUT node (%s). -----\n", 
-                mapped_logical_block->name);
-  }
-  fprintf(fp, "//----- Truth Table for LUT[%d], size=%d. -----\n", 
-          verilog_model->cnt, lut_size);
-  for (i = 0; i < truth_table_length; i++) {
-    fprintf(fp,"//  %s \n", truth_table[i]);
-  } 
-  */
-
-  /* SRAM bits are decoded in bitstream generator! NOT here 
-  fprintf(fp, "//----- SRAM bits for LUT[%d], size=%d, num_sram=%d. -----\n", 
-          verilog_model->cnt, lut_size, num_sram);
-  fprintf(fp, "//-----");
-  fprint_commented_sram_bits(fp, num_sram, sram_bits);
-  fprintf(fp, "-----\n");
-  */
-
   /* Call SRAM subckts only 
    * when Configuration organization style is memory bank */
   /* No. of SRAMs is different from the number of configuration lines.

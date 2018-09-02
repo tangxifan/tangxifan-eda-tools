@@ -2431,6 +2431,10 @@ void rec_annotate_pb_type_primitive_node_physical_mode_pin(t_pb_type* top_pb_typ
   /* Check the physical pb_type  */
   /* Find the physical_pb_type with the name provided */
   cur_pb_type->phy_pb_type = rec_get_pb_type_by_name(top_pb_type, cur_pb_type->physical_pb_type_name);
+  /* Overwrite class type */
+  if (UNKNOWN_CLASS != cur_pb_type->class_type) {
+    cur_pb_type->phy_pb_type->class_type = cur_pb_type->class_type;
+  }
   vpr_printf(TIO_MESSAGE_INFO,
              "Link physical pb_type (name=%s) for pb_type (name=%s)!\n",
              cur_pb_type->physical_pb_type_name, cur_pb_type->name);
@@ -2490,6 +2494,10 @@ void rec_annotate_phy_pb_type_primitive_node_physical_mode_pin(t_pb_type* top_pb
   /* Check the physical pb_type  */
   /* Find the physical_pb_type with the name provided */
   cur_pb_type->phy_pb_type = cur_pb_type;
+  /* Overwrite class type */
+  if (UNKNOWN_CLASS != cur_pb_type->class_type) {
+    cur_pb_type->phy_pb_type->class_type = cur_pb_type->class_type;
+  }
   /* Now we are sure about the phy_pb_type that is found */
   /* Find matched port one by one */
   for (iport = 0; iport < cur_pb_type->num_ports; iport++) { 

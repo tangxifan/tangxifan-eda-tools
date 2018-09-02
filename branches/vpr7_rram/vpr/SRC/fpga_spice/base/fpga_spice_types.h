@@ -1,5 +1,7 @@
 /* Define the basic data structures used for FPGA-SPICE */
 
+#define DEFAULT_PATH_ID 0
+
 /* Key data structure for router: routing resource graph 
  * This data structure store the key parameters that
  * models a routing resource graph used by router.

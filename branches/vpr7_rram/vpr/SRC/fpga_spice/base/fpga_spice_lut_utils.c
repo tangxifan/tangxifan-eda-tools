@@ -211,7 +211,9 @@ int* generate_lut_sram_bits(int truth_table_len,
     }
   }
   //printf("on_set=%d off_set=%d", on_set, off_set);
+  if (1 != (on_set + off_set)) {
   assert(1 == (on_set + off_set));
+  }
 
   if (1 == on_set) {
     /* Initial all sram bits to 0*/

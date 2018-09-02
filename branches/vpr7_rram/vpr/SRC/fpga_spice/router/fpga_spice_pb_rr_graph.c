@@ -589,6 +589,81 @@ void alloc_and_load_rr_graph_for_phy_pb_graph_node(INP t_pb_graph_node* top_pb_g
   return;
 }
 
+/* Check the vpack_net_num of a rr_node mapped to a pb_graph_pin and 
+ * mark the used vpack_net_num in the list
+ */
+void mark_vpack_net_used_in_pb_pin(t_pb* cur_op_pb, t_pb_graph_pin* cur_pb_graph_pin,
+                                   int L_num_vpack_nets, boolean* vpack_net_used_in_pb) {
+  int inode;
+
+  assert (NULL != cur_pb_graph_pin);
+
+  inode = cur_pb_graph_pin->pin_count_in_cluster;
+
+  /* bypass unmapped rr_node */
+  if (OPEN == cur_op_pb->rr_graph[inode].vpack_net_num) {
+    return;
+  }
+  /* Reach here, it means this net is used in this pb */
+  assert(   (-1 < cur_op_pb->rr_graph[inode].vpack_net_num)
+         && ( cur_op_pb->rr_graph[inode].vpack_net_num < L_num_vpack_nets));
+  vpack_net_used_in_pb[cur_op_pb->rr_graph[inode].vpack_net_num] = TRUE; 
+
+  return;
+}
+
+/* Recursively visit all the child pbs and 
+ * mark the used vpack_net_num in the list
+ */
+void mark_vpack_net_used_in_pb(t_pb* cur_op_pb,
+                               int L_num_vpack_nets, boolean* vpack_net_used_in_pb) {
+  int mode_index, ipb, jpb; 
+  int iport, ipin;
+  t_pb_type* cur_pb_type = NULL;
+
+  cur_pb_type = cur_op_pb->pb_graph_node->pb_type;
+  mode_index = cur_op_pb->mode; 
+  
+  /* Mark all the nets at this level */
+  for (iport = 0; iport < cur_op_pb->pb_graph_node->num_input_ports; iport++) {
+    for (ipin = 0; ipin < cur_op_pb->pb_graph_node->num_input_pins[iport]; ipin++) {
+      mark_vpack_net_used_in_pb_pin(cur_op_pb, &(cur_op_pb->pb_graph_node->input_pins[iport][ipin]),
+                                    L_num_vpack_nets, vpack_net_used_in_pb);
+    }
+  }
+
+  for (iport = 0; iport < cur_op_pb->pb_graph_node->num_output_ports; iport++) {
+    for (ipin = 0; ipin < cur_op_pb->pb_graph_node->num_output_pins[iport]; ipin++) {
+      mark_vpack_net_used_in_pb_pin(cur_op_pb, &(cur_op_pb->pb_graph_node->output_pins[iport][ipin]),
+                                    L_num_vpack_nets, vpack_net_used_in_pb);
+    }
+  }
+
+  for (iport = 0; iport < cur_op_pb->pb_graph_node->num_clock_ports; iport++) {
+    for (ipin = 0; ipin < cur_op_pb->pb_graph_node->num_clock_pins[iport]; ipin++) {
+      mark_vpack_net_used_in_pb_pin(cur_op_pb, &(cur_op_pb->pb_graph_node->clock_pins[iport][ipin]),
+                                    L_num_vpack_nets, vpack_net_used_in_pb);
+    }
+  }
+
+  /* recursive for the child_pbs*/
+  if ((NULL == cur_pb_type->spice_model_name) 
+     && (NULL == cur_pb_type->physical_pb_type_name)) {
+    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+        /* Recursive*/
+        /* Refer to pack/output_clustering.c [LINE 392] */
+        if ((NULL != cur_op_pb->child_pbs[ipb])&&(NULL != cur_op_pb->child_pbs[ipb][jpb].name)) {
+          mark_vpack_net_used_in_pb(&(cur_op_pb->child_pbs[ipb][jpb]), 
+                                    L_num_vpack_nets, vpack_net_used_in_pb); 
+        }
+      }
+    }
+  }
+
+  return;
+}
+
 /* Find the vpack_nets used by this pb
  * And allocate an array for those nets and load it to pb_rr_graph
  */
@@ -598,7 +673,7 @@ void alloc_and_load_phy_pb_rr_graph_nets(INP t_pb* cur_op_pb,
   /* Create an array labeling which vpack_net is used in this pb */
   int num_vpack_net_used_in_pb = 0;
   boolean* vpack_net_used_in_pb = NULL; 
-  int inet, inode, net_index;
+  int inet, net_index;
   
   /* Allocate */ 
   vpack_net_used_in_pb = (boolean*)my_malloc(sizeof(boolean) * L_num_vpack_nets);
@@ -607,21 +682,8 @@ void alloc_and_load_phy_pb_rr_graph_nets(INP t_pb* cur_op_pb,
     vpack_net_used_in_pb[inet] = FALSE;
   }
 
-  /* Check each net_name in the rr_graph of cur_op_pb */
-  for (inode = 0; inode < cur_op_pb->num_rr_nodes; inode++) {
-    /* only consider those has been mapped to a pb_graph_pin */
-    if (NULL == cur_op_pb->rr_graph[inode].pb_graph_pin) {
-      continue;
-    }
-    /* bypass unmapped rr_node */
-    if (OPEN == cur_op_pb->rr_graph[inode].vpack_net_num) {
-      continue;
-    }
-    /* Reach here, it means this net is used in this pb */
-    assert(   (-1 < cur_op_pb->rr_graph[inode].vpack_net_num)
-           && ( cur_op_pb->rr_graph[inode].vpack_net_num < L_num_vpack_nets));
-    vpack_net_used_in_pb[cur_op_pb->rr_graph[inode].vpack_net_num] = TRUE; 
-  } 
+  /* Build vpack_net_used_in_pb */
+  mark_vpack_net_used_in_pb(cur_op_pb, L_num_vpack_nets, vpack_net_used_in_pb);
 
   /* Count the number of vpack_net used in this pb  */
   num_vpack_net_used_in_pb = 0;
@@ -650,24 +712,130 @@ void alloc_and_load_phy_pb_rr_graph_nets(INP t_pb* cur_op_pb,
   return;
 }
 
-t_rr_node* get_rr_node_in_pb_rr_graph(t_pb* cur_op_pb,
-                                      int net_index, t_rr_type rr_node_type) {
-  int inode;
+/* Find the rr_node in the primitive node of a pb_rr_graph*/ 
+t_rr_node* find_primitive_rr_node_in_pb_rr_graph(t_pb* cur_op_pb, t_pb_graph_pin* cur_pb_graph_pin,
+                                                 int net_index, t_rr_type rr_node_type) {
+  int inode, prev_node, edge_node, iedge;
   t_rr_node* found_rr_node = NULL;
   int num_found = 0;
+
+  inode = cur_pb_graph_pin->pin_count_in_cluster;
    
-  for (inode = 0; inode < cur_op_pb->num_rr_nodes; inode++) {
-    if ((rr_node_type == cur_op_pb->rr_graph[inode].type) 
-       &&(net_index == cur_op_pb->rr_graph[inode].vpack_net_num)) {
-      found_rr_node = &(cur_op_pb->rr_graph[inode]);
+  /* Check three cases: 1. current node  */
+  if ((rr_node_type == cur_op_pb->rr_graph[inode].type) 
+     && (net_index == cur_op_pb->rr_graph[inode].vpack_net_num)) {
+    found_rr_node = &(cur_op_pb->rr_graph[inode]);
+    num_found++;
+  }
+  /* Check three cases: 2. precedent of current node, maybe a SOURCE */
+  if (1 == cur_op_pb->rr_graph[inode].fan_in) {
+    prev_node = cur_op_pb->rr_graph[inode].prev_node;
+    if ((OPEN != prev_node)
+      && (SOURCE == cur_op_pb->rr_graph[prev_node].type)
+      && (rr_node_type == cur_op_pb->rr_graph[prev_node].type) 
+      && (net_index == cur_op_pb->rr_graph[prev_node].vpack_net_num)) {
+      found_rr_node = &(cur_op_pb->rr_graph[prev_node]);
       num_found++;
-    }
+    } 
   }
 
-  assert(1 == num_found); /* There should be only one results*/
+  /* Check three cases: 3. precedent of current node, maybe a SINK */
+  for (iedge = 0; iedge < cur_op_pb->rr_graph[inode].num_edges; iedge++) {
+    edge_node = cur_op_pb->rr_graph[inode].edges[iedge];
+    if ((OPEN != edge_node)
+      && (SINK == cur_op_pb->rr_graph[edge_node].type)
+      && (rr_node_type == cur_op_pb->rr_graph[edge_node].type) 
+      && (net_index == cur_op_pb->rr_graph[edge_node].vpack_net_num)) {
+      found_rr_node = &(cur_op_pb->rr_graph[edge_node]);
+      num_found++;
+    } 
+  }
   
+  assert ((0 == num_found) || (1 == num_found));
+
   return found_rr_node;
 } 
+
+/* Recursively visit all the child pbs and 
+ * mark the used vpack_net_num in the list
+ */
+t_rr_node* rec_find_rr_node_in_pb_rr_graph(t_pb* cur_op_pb,
+                                           int net_index, t_rr_type rr_node_type) {
+  int mode_index, ipb, jpb; 
+  int iport, ipin;
+  t_pb_type* cur_pb_type = NULL;
+  t_rr_node* found_rr_node = NULL;
+  t_rr_node* ret_rr_node = NULL;
+  int num_found = 0;
+
+  cur_pb_type = cur_op_pb->pb_graph_node->pb_type;
+  mode_index = cur_op_pb->mode; 
+  
+  /* Mark all the nets at this level */
+  if ((NULL != cur_pb_type->spice_model_name) 
+     || (NULL != cur_pb_type->physical_pb_type_name)) {
+    for (iport = 0; iport < cur_op_pb->pb_graph_node->num_input_ports; iport++) {
+      for (ipin = 0; ipin < cur_op_pb->pb_graph_node->num_input_pins[iport]; ipin++) {
+        found_rr_node = find_primitive_rr_node_in_pb_rr_graph(cur_op_pb, &(cur_op_pb->pb_graph_node->input_pins[iport][ipin]),
+                                                              net_index, rr_node_type);
+        if (NULL != found_rr_node) {
+          ret_rr_node = found_rr_node;
+          num_found++;
+        }
+      }
+    }
+  
+    for (iport = 0; iport < cur_op_pb->pb_graph_node->num_output_ports; iport++) {
+      for (ipin = 0; ipin < cur_op_pb->pb_graph_node->num_output_pins[iport]; ipin++) {
+        found_rr_node = find_primitive_rr_node_in_pb_rr_graph(cur_op_pb, &(cur_op_pb->pb_graph_node->output_pins[iport][ipin]),
+                                                              net_index, rr_node_type);
+        if (NULL != found_rr_node) {
+          ret_rr_node = found_rr_node;
+          num_found++;
+        }
+      }
+    }
+  
+    for (iport = 0; iport < cur_op_pb->pb_graph_node->num_clock_ports; iport++) {
+      for (ipin = 0; ipin < cur_op_pb->pb_graph_node->num_clock_pins[iport]; ipin++) {
+        found_rr_node = find_primitive_rr_node_in_pb_rr_graph(cur_op_pb, &(cur_op_pb->pb_graph_node->clock_pins[iport][ipin]),
+                                                              net_index, rr_node_type);
+        if (NULL != found_rr_node) {
+          ret_rr_node = found_rr_node;
+          num_found++;
+        }
+      }
+    }
+
+    assert ((0 == num_found) || (1 == num_found));
+    return ret_rr_node;
+  }
+  
+  /* recursive for the child_pbs*/
+  if ((NULL == cur_pb_type->spice_model_name) 
+     && (NULL == cur_pb_type->physical_pb_type_name)) {
+    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+        /* Recursive*/
+        /* Refer to pack/output_clustering.c [LINE 392] */
+        if ((NULL != cur_op_pb->child_pbs[ipb])&&(NULL != cur_op_pb->child_pbs[ipb][jpb].name)) {
+          found_rr_node = rec_find_rr_node_in_pb_rr_graph(&(cur_op_pb->child_pbs[ipb][jpb]), 
+                                                          net_index, rr_node_type);
+
+          if (NULL != found_rr_node) {
+            ret_rr_node = found_rr_node;
+            num_found++;
+          }
+        }
+      }
+    }
+    assert ((0 == num_found) || (1 == num_found));
+    return ret_rr_node;
+  }
+
+  return ret_rr_node;
+}
+
 
 /* Load mapping information from an op_pb to the net_rr_terminals of a phy_pb rr_graph 
  * This function should do the following tasks:
@@ -695,7 +863,9 @@ void load_phy_pb_rr_graph_net_rr_terminals(INP t_pb* cur_op_pb,
     for (isink = 0; isink < local_rr_graph->net[inet]->num_sinks + 1; isink++) {
       pb_rr_node_type = (0 == isink) ? SOURCE : SINK;
       rr_node_vpack_net_name = get_rr_graph_net_vpack_net_index(local_rr_graph, inet);
-      pb_rr_node = get_rr_node_in_pb_rr_graph(cur_op_pb, rr_node_vpack_net_name, pb_rr_node_type); 
+      pb_rr_node = rec_find_rr_node_in_pb_rr_graph(cur_op_pb, rr_node_vpack_net_name, pb_rr_node_type); 
+      /* check */
+      assert (NULL != pb_rr_node);
       /* If there is rr_node_index_physical_pb, this is also a pin in the physical mode */
       if (OPEN != pb_rr_node->pb_graph_pin->rr_node_index_physical_pb) {
         local_rr_graph->net_rr_terminals[inet][0] = pb_rr_node->pb_graph_pin->rr_node_index_physical_pb;
