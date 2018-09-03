@@ -1275,11 +1275,17 @@ void update_one_grid_pack_prev_node_edge(int x, int y) {
         /* Find the pb net_num and update OPIN net_num */
         pin_global_rr_node_id = get_rr_node_index(x, y, OPIN, ipin, rr_node_indices);
         if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
-          local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
-          local_rr_graph[ipin].net_num = OPEN;
-          local_rr_graph[ipin].vpack_net_num = OPEN;
+          if (TRUE == vpack_net[local_rr_graph[ipin].net_num].is_global) {
+            local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
+            local_rr_graph[ipin].vpack_net_num = local_rr_graph[ipin].net_num;
+            local_rr_graph[ipin].net_num = vpack_to_clb_net_mapping[local_rr_graph[ipin].net_num];
+          } else {
+            local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
+            local_rr_graph[ipin].net_num = OPEN;
+            local_rr_graph[ipin].vpack_net_num = OPEN;
           //local_rr_graph[ipin].prev_node = 0;
           //local_rr_graph[ipin].prev_edge = 0;
+          }
           continue; /* bypass non-mapped OPIN */
         } 
         /* back annotate pb ! */
@@ -1319,13 +1325,20 @@ void update_one_grid_pack_prev_node_edge(int x, int y) {
       } else if (RECEIVER == type->class_inf[class_id].type) {
         /* Find the global rr_node net_num and update pb net_num */
         pin_global_rr_node_id = get_rr_node_index(x, y, IPIN, ipin, rr_node_indices);
+        /* Special for global net, preserve them in the local rr_graph */
         /* Get the index of Vpack net from global rr_node net_num (clb_net index)*/
         if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
-          local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
-          local_rr_graph[ipin].net_num = OPEN;
-          local_rr_graph[ipin].vpack_net_num = OPEN;
+          if (TRUE == vpack_net[local_rr_graph[ipin].net_num].is_global) {
+            local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
+            local_rr_graph[ipin].vpack_net_num = local_rr_graph[ipin].net_num;
+            local_rr_graph[ipin].net_num = vpack_to_clb_net_mapping[local_rr_graph[ipin].net_num];
+          } else {
+            local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
+            local_rr_graph[ipin].net_num = OPEN;
+            local_rr_graph[ipin].vpack_net_num = OPEN;
           //local_rr_graph[ipin].prev_node = 0;
           //local_rr_graph[ipin].prev_edge = 0;
+          }
           continue; /* bypass non-mapped IPIN */
         }
         /* back annotate pb ! */

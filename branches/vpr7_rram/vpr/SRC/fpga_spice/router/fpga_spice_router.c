@@ -64,8 +64,9 @@ void breadth_first_expand_rr_graph_trace_segment(t_rr_graph* local_rr_graph,
       inode = tptr->index;
       add_node_to_rr_graph_heap(local_rr_graph, inode, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
 
-      if (rr_node[inode].type == INTRA_CLUSTER_EDGE) {
-        if(rr_node[inode].pb_graph_pin != NULL && rr_node[inode].pb_graph_pin->num_output_edges == 0) {
+      if (local_rr_graph->rr_node[inode].type == INTRA_CLUSTER_EDGE) {
+        if ((local_rr_graph->rr_node[inode].pb_graph_pin != NULL)
+         && (local_rr_graph->rr_node[inode].pb_graph_pin->num_output_edges == 0)) {
           last_ipin_node = inode;
         }
       }
@@ -92,8 +93,10 @@ void breadth_first_expand_rr_graph_trace_segment(t_rr_graph* local_rr_graph,
      * IPIN I just used (since they would result in congestion).  Scan through   *
      * the heap to do this.                                                      */
 
-    invalidate_heap_entries(sink_node, last_ipin_node);
+    invalidate_rr_graph_heap_entries(local_rr_graph, sink_node, last_ipin_node);
   }
+
+  return;
 }
 
 void breadth_first_expand_rr_graph_neighbours(t_rr_graph* local_rr_graph,
@@ -169,7 +172,7 @@ boolean breadth_first_route_one_net_pb_rr_graph(t_rr_graph* local_rr_graph,
   tptr = NULL;
   remaining_connections_to_sink = 0;
 
-  for (i = 1; i <= local_rr_graph->net_num_sinks[inet]; i++) { /* Need n-1 wires to connect n pins */
+  for (i = 1; i < local_rr_graph->net_num_sinks[inet] + 1; i++) { /* Need n-1 wires to connect n pins */
 
     /* Do not connect open terminals */
     if (local_rr_graph->net_rr_terminals[inet][i] == OPEN) {
@@ -382,6 +385,8 @@ boolean try_breadth_first_route_pb_rr_graph(t_rr_graph* local_rr_graph) {
         vpr_printf(TIO_MESSAGE_INFO, "Failed routing net %s\n", local_rr_graph->net[net_index]->name);
         vpr_printf(TIO_MESSAGE_INFO, "Routing failed. Disconnected rr_graph.\n");
         return FALSE;
+      } else {
+        vpr_printf(TIO_MESSAGE_INFO, "Succeed routing net %s\n", local_rr_graph->net[net_index]->name);
       }
 
       pathfinder_update_rr_graph_one_cost(local_rr_graph, local_rr_graph->trace_head[net_index], 1, pres_fac);

@@ -888,6 +888,8 @@ void alloc_and_load_phy_pb_rr_graph_net_rr_terminals(INP t_pb* cur_op_pb,
       if (OPEN == rr_node_net_name) {
         break;
       }
+      /* Make sure we do not overwrite on the source */
+      assert ( 0 < net_cur_sink[rr_node_net_name] );
       local_rr_graph->net_rr_terminals[rr_node_net_name][net_cur_sink[rr_node_net_name]] = inode; 
       net_cur_sink[rr_node_net_name]++;
       break;
@@ -903,8 +905,12 @@ void alloc_and_load_phy_pb_rr_graph_net_rr_terminals(INP t_pb* cur_op_pb,
   }
   /* Check */
   for (inet = 0; inet < local_rr_graph->num_nets; inet++) {
-    assert ( net_cur_sink[inet] == local_rr_graph->net_num_sinks[inet] );
+    /* Count in the first node is SOURCE not the SINK */
+    assert ( net_cur_sink[inet] == local_rr_graph->net_num_sinks[inet] + 1);
   }
+
+  /* Free */
+  my_free(net_cur_sink);
 
   return;
 }

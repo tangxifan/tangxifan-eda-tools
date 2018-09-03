@@ -596,6 +596,8 @@
                 <direct name="direct_in" input="fle.in[5:0]" output="frac_logic.in[5:0]"/>
                 <direct name="direct_cin" input="fle.cin" output="frac_logic.cin"/>
                 <direct name="direct_cout" input="frac_logic.cout" output="fle.cout"/>
+                <direct name="direct_frac_out1" input="frac_logic.out[0]" output="ff_phy[0].D"/>
+                <direct name="direct_frac_out2" input="frac_logic.out[1]" output="ff_phy[1].D"/>
                 <mux name="mux1" input="ff_phy[0].Q frac_logic.out[0]" output="fle.out[0]">
                 </mux>
                 <mux name="mux2" input="ff_phy[1].Q frac_logic.out[1]" output="fle.out[1]">

@@ -75,7 +75,7 @@ void init_rr_graph(INOUTP t_rr_graph* local_rr_graph) {
 }
 
 void alloc_rr_graph_net_rr_terminals(t_rr_graph* local_rr_graph) {
-  int inet, inode, num_sinks_in_rr_graph, rr_node_vpack_net_name;
+  int inet, isink, inode, num_sinks_in_rr_graph, rr_node_vpack_net_name;
 
   local_rr_graph->net_rr_terminals = (int **) my_malloc(local_rr_graph->num_nets * sizeof(int *));
   local_rr_graph->net_num_sinks = (int *) my_calloc(local_rr_graph->num_nets, sizeof(int));
@@ -89,9 +89,15 @@ void alloc_rr_graph_net_rr_terminals(t_rr_graph* local_rr_graph) {
         num_sinks_in_rr_graph++;
       }
     }
-    local_rr_graph->net_num_sinks[inet] = num_sinks_in_rr_graph + 1; /* Consider the SOURCE (index=0), a special SINK */
+    local_rr_graph->net_num_sinks[inet] = num_sinks_in_rr_graph; 
+    /* Consider the SOURCE (index=0), a special SINK */
     local_rr_graph->net_rr_terminals[inet] = (int *) my_chunk_malloc((num_sinks_in_rr_graph + 1) * sizeof(int),
                                                                       &local_rr_graph->rr_mem_ch);
+    /* Initialize all terminal to be OPEN */
+    local_rr_graph->net_rr_terminals[inet][0] = OPEN;
+    for (isink = 1; isink < local_rr_graph->net_num_sinks[inet] + 1; isink++) {
+      local_rr_graph->net_rr_terminals[inet][isink] = OPEN;
+    }
   }
 
   return;
@@ -706,8 +712,9 @@ void add_node_to_rr_graph_heap(t_rr_graph* local_rr_graph,
 
   struct s_heap *hptr;
 
-  if (cost >= local_rr_graph->rr_node_route_inf[inode].path_cost)
+  if (cost >= local_rr_graph->rr_node_route_inf[inode].path_cost) {
     return;
+  }
 
   hptr = alloc_rr_graph_heap_data(local_rr_graph);
   hptr->index = inode;
@@ -732,12 +739,14 @@ void mark_rr_graph_ends(t_rr_graph* local_rr_graph,
 
   int ipin, inode;
 
-  for (ipin = 1; ipin <= local_rr_graph->net_num_sinks[inet]; ipin++) {
+  for (ipin = 1; ipin < local_rr_graph->net_num_sinks[inet] + 1; ipin++) {
     inode = local_rr_graph->net_rr_terminals[inet][ipin];
-    if (inode == OPEN)
+    if (inode == OPEN) {
       continue;
+    }
     local_rr_graph->rr_node_route_inf[inode].target_flag++;
-    assert(local_rr_graph->rr_node_route_inf[inode].target_flag > 0 && local_rr_graph->rr_node_route_inf[inode].target_flag <= local_rr_graph->rr_node[inode].capacity);
+    assert((local_rr_graph->rr_node_route_inf[inode].target_flag > 0) 
+        && (local_rr_graph->rr_node_route_inf[inode].target_flag <= local_rr_graph->rr_node[inode].capacity));
   }
 
   return;
@@ -758,6 +767,8 @@ void invalidate_rr_graph_heap_entries(t_rr_graph* local_rr_graph,
       local_rr_graph->heap[i]->index = OPEN; /* Invalid. */
     }
   }
+
+  return;
 }
 
 float get_rr_graph_rr_node_pack_intrinsic_cost(t_rr_graph* local_rr_graph,
