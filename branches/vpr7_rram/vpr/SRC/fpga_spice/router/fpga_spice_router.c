@@ -169,7 +169,7 @@ boolean breadth_first_route_one_net_pb_rr_graph(t_rr_graph* local_rr_graph,
   tptr = NULL;
   remaining_connections_to_sink = 0;
 
-  for (i = 1; i <= local_rr_graph->net[inet]->num_sinks; i++) { /* Need n-1 wires to connect n pins */
+  for (i = 1; i <= local_rr_graph->net_num_sinks[inet]; i++) { /* Need n-1 wires to connect n pins */
 
     /* Do not connect open terminals */
     if (local_rr_graph->net_rr_terminals[inet][i] == OPEN) {

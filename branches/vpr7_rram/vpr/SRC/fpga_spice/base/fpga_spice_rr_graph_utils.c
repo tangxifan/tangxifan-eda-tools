@@ -89,7 +89,7 @@ void alloc_rr_graph_net_rr_terminals(t_rr_graph* local_rr_graph) {
         num_sinks_in_rr_graph++;
       }
     }
-    local_rr_graph->net_num_sinks[inet] = num_sinks_in_rr_graph;
+    local_rr_graph->net_num_sinks[inet] = num_sinks_in_rr_graph + 1; /* Consider the SOURCE (index=0), a special SINK */
     local_rr_graph->net_rr_terminals[inet] = (int *) my_chunk_malloc((num_sinks_in_rr_graph + 1) * sizeof(int),
                                                                       &local_rr_graph->rr_mem_ch);
   }
@@ -732,7 +732,7 @@ void mark_rr_graph_ends(t_rr_graph* local_rr_graph,
 
   int ipin, inode;
 
-  for (ipin = 1; ipin <= local_rr_graph->net[inet]->num_sinks; ipin++) {
+  for (ipin = 1; ipin <= local_rr_graph->net_num_sinks[inet]; ipin++) {
     inode = local_rr_graph->net_rr_terminals[inet][ipin];
     if (inode == OPEN)
       continue;

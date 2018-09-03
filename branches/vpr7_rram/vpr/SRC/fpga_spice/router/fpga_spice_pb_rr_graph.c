@@ -760,7 +760,7 @@ void sync_pb_graph_pin_vpack_net_num_to_phy_pb(t_pb* cur_op_pb, t_pb_graph_pin* 
     }
     /* Check the output rr_nodes */
     for (iedge = 0; iedge < local_rr_graph->rr_node[jnode].num_edges; iedge++) {
-      next_node = local_rr_graph->rr_node[jnode].edges[0];
+      next_node = local_rr_graph->rr_node[jnode].edges[iedge];
       if (SINK != local_rr_graph->rr_node[next_node].type) {
         continue;
       }
@@ -850,6 +850,12 @@ void alloc_and_load_phy_pb_rr_graph_net_rr_terminals(INP t_pb* cur_op_pb,
                                                      t_rr_graph* local_rr_graph) {
   int inet, inode, rr_node_net_name;
   int* net_cur_sink = (int*) my_calloc(local_rr_graph->num_nets, sizeof(int));
+
+  /* Initialize */
+  for (inet = 0; inet < local_rr_graph->num_nets; inet++) {
+    /* SINK index starts from 1!!!*/
+    net_cur_sink[inet] = 1;
+  }
   
   /* Check each net in the local_rr_graph,
    * Find the routing resource node in the pb_rr_graph of the cur_op_pb
