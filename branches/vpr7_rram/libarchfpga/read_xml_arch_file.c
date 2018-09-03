@@ -1302,6 +1302,10 @@ static void ProcessPb_TypePort(INOUTP ezxml_t Parent, t_port * port,
     port->physical_mode_pin = my_strdup(Prop);
 	ezxml_set_attr(Parent, "physical_mode_pin", NULL);
 
+    port->physical_mode_pin_rotate_offset = GetIntProperty(Parent, "physical_mode_pin_rotate_offset", FALSE, 0);
+	ezxml_set_attr(Parent, "physical_mode_pin_rotate_offset", NULL);
+    /* END */
+
 	if (0 == strcmp(Parent->name, "input")) {
 		port->type = IN_PORT;
 		port->is_clock = FALSE;

@@ -883,14 +883,6 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb) {
   if (NULL == cur_pb) {
     return;
   }
-
-  /* Reach a leaf, return */
-  if ((0 == cur_pb->pb_graph_node->pb_type->num_modes)
-     ||(NULL == cur_pb->child_pbs)) {
-    return;
-  }
-
-  select_mode_index = cur_pb->mode; 
   
   /* For all the input/output/clock pins of this pb,
    * check the net_num and assign default prev_node, prev_edge 
@@ -903,6 +895,7 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb) {
    *                                         |
    *                         input_pins,   edges,       output_pins
    */ 
+  select_mode_index = cur_pb->mode; 
   for (iport = 0; iport < cur_pb->pb_graph_node->num_output_ports; iport++) {
     for (ipin = 0; ipin < cur_pb->pb_graph_node->num_output_pins[iport]; ipin++) {
       /* Get the selected edge of current pin*/
@@ -919,6 +912,12 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb) {
     }
   }
 
+  /* Reach a leaf, return */
+  if ((0 == cur_pb->pb_graph_node->pb_type->num_modes)
+     ||(NULL == cur_pb->child_pbs)) {
+    return;
+  }
+  
   /* We check input_pins of child_pb_graph_node and its the input_edges
    * Built the interconnections between inputs of cur_pb_graph_node and inputs of child_pb_graph_node
    *   cur_pb_graph_node.input_pins -----------------> child_pb_graph_node.input_pins
@@ -926,6 +925,7 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb) {
    *                                         |
    *                         input_pins,   edges,       output_pins
    */ 
+  select_mode_index = cur_pb->mode; 
   for (ipb = 0; ipb < cur_pb->pb_graph_node->pb_type->modes[select_mode_index].num_pb_type_children; ipb++) {
     for (jpb = 0; jpb < cur_pb->pb_graph_node->pb_type->modes[select_mode_index].pb_type_children[ipb].num_pb; jpb++) {
       child_pb_graph_node = &(cur_pb->pb_graph_node->child_pb_graph_nodes[select_mode_index][ipb][jpb]);
@@ -940,7 +940,7 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb) {
             set_one_pb_rr_node_default_prev_node_edge(pb_rr_nodes, 
                                                       &(child_pb_graph_node->input_pins[iport][ipin]),
                                                       select_mode_index); 
-           } else {
+          } else {
              pb_rr_nodes[node_index].vpack_net_num = pb_rr_nodes[node_index].net_num;
           }
         }
@@ -963,7 +963,7 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb) {
       }
     }
   }
-  
+
   /* Go recursively */ 
   for (ipb = 0; ipb < cur_pb->pb_graph_node->pb_type->modes[select_mode_index].num_pb_type_children; ipb++) {
     for (jpb = 0; jpb < cur_pb->pb_graph_node->pb_type->modes[select_mode_index].pb_type_children[ipb].num_pb; jpb++) {
@@ -984,9 +984,11 @@ void back_annotate_pb_rr_node_map_info() {
   /* Foreach grid */
   for (iblk = 0; iblk < num_blocks; iblk++) {
     /* By pass IO */
+    /* 
     if (IO_TYPE == block[iblk].type) {
-      continue;
+     continue; 
     }
+    */
     back_annotate_one_pb_rr_node_map_info_rec(block[iblk].pb);
   }  
 
@@ -1227,7 +1229,8 @@ void back_annotate_rr_node_map_info() {
         assert(OPEN != rr_node[next_node].prev_edge);
         break;
       default:
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid traceback element type.\n");
+        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid traceback element type.\n",
+                   __FILE__, __LINE__);
         exit(1);
       }
       tptr = tptr->next;
@@ -1254,16 +1257,24 @@ void update_one_grid_pack_prev_node_edge(int x, int y) {
   assert((!(y < 0))&&(y < (ny + 2)));  
 
   type = grid[x][y].type;
-  /* Bypass IO_TYPE*/
-  if ((EMPTY_TYPE == type)||(IO_TYPE == type)) {
-  //if ((EMPTY_TYPE == type)) {
+  /* Bypass EMPTY_TYPE*/
+  if ((EMPTY_TYPE == type)) {
     return;
   }   
+ 
   for (iblk = 0; iblk < grid[x][y].usage; iblk++) {
     blk_id = grid[x][y].blocks[iblk];
     if ((IO_TYPE != type)) {
       assert(block[blk_id].x == x);
       assert(block[blk_id].y == y);
+      assert(OPEN != blk_id);
+    }
+    /* Bypass invalide block id 
+     * block id could be invalid in IO blocks
+     * TODO: figure out why, now I just bypass  
+     */
+    if (OPEN == blk_id) {  
+      continue;
     }
     pb = block[blk_id].pb;
     assert(NULL != pb);
@@ -1291,14 +1302,14 @@ void update_one_grid_pack_prev_node_edge(int x, int y) {
         /* back annotate pb ! */
         rr_node[pin_global_rr_node_id].pb = pb;
         vpack_net_id = clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num];
-        //printf("Update post-route pb_rr_graph output: vpack_net_name = %s\n", 
-        //        vpack_net[vpack_net_id].name);
         /* Special for IO_TYPE */
-        if (IO_TYPE == type) {
-          assert(local_rr_graph[ipin].net_num == rr_node[pin_global_rr_node_id].vpack_net_num);
-          local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
-          continue;
-        }
+        /* Some block is broken in linking to pb_graph pin 
+         * Bypass it now. TODO: find out why!!!   
+         */
+        if ((IO_TYPE == type)
+           &&(NULL == local_rr_graph[ipin].pb_graph_pin)) {
+          continue; 
+        } 
         assert(ipin == local_rr_graph[ipin].pb_graph_pin->pin_count_in_cluster);
         /* Update net_num */
         local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
@@ -1344,14 +1355,14 @@ void update_one_grid_pack_prev_node_edge(int x, int y) {
         /* back annotate pb ! */
         rr_node[pin_global_rr_node_id].pb = pb;
         vpack_net_id = clb_to_vpack_net_mapping[rr_node[pin_global_rr_node_id].net_num];
-        //printf("Update post-route pb_rr_graph input: vpack_net_name = %s\n", 
-        //        vpack_net[vpack_net_id].name);
         /* Special for IO_TYPE */
-        if (IO_TYPE == type) {
-          assert(local_rr_graph[ipin].net_num == rr_node[pin_global_rr_node_id].vpack_net_num);
-          local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
-          continue;
-        }
+        /* Some block is broken in linking to pb_graph pin 
+         * Bypass it now. TODO: find out why!!!   
+         */
+        if ((IO_TYPE == type)
+           &&(NULL == local_rr_graph[ipin].pb_graph_pin)) {
+          continue; 
+        } 
         assert(ipin == local_rr_graph[ipin].pb_graph_pin->pin_count_in_cluster);
         /* Update net_num */
         local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
@@ -1398,7 +1409,7 @@ void update_grid_pbs_post_route_rr_graph() {
   for (ix = 0; ix < (nx + 2); ix++) {
     for (iy = 0; iy < (ny + 2); iy++) {
       type = grid[ix][iy].type;
-      if (NULL != type) {
+      if ((NULL != type) && (EMPTY_TYPE != type)) {
         /* Backup the packing prev_node and prev_edge */
         update_one_grid_pack_prev_node_edge(ix, iy);
       }

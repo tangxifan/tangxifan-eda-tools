@@ -2180,7 +2180,8 @@ t_pb_type* rec_get_pb_type_by_name(t_pb_type* cur_pb_type,
 }
 
 /* Decode an annotation (a string): <port_name>[<msb>:<lsb>] */
-void decode_physical_mode_pin_annotation(char* phy_mode_pin,
+void decode_physical_mode_pin_annotation(int phy_pb_type_port_size,
+                                         char* phy_mode_pin,
                                          char** port_name,
                                          int* pin_msb, int* pin_lsb) {
   int itoken;
@@ -2193,7 +2194,7 @@ void decode_physical_mode_pin_annotation(char* phy_mode_pin,
   switch (num_tokens) {
   case 1:
     (*port_name) = my_strdup(phy_mode_pin);
-    (*pin_msb) = 0;
+    (*pin_msb) = phy_pb_type_port_size - 1;
     (*pin_lsb) = 0;
     break;
   case 2:
@@ -2239,11 +2240,12 @@ void annotate_physical_mode_pin_to_pb_type(t_port* cur_pb_type_port,
   /* Check */
   assert ( TRUE == phy_pb_type->parent_mode->define_physical_mode );
 
-  /* Decode the physical_mode_pin */
-  decode_physical_mode_pin_annotation(cur_pb_type_port->physical_mode_pin, &phy_port_name, &msb, &lsb);
-
   /* Search phy_pb_port ports */
   for (iport = 0; iport < phy_pb_type->num_ports; iport++) { 
+    /* Decode the physical_mode_pin */
+    decode_physical_mode_pin_annotation(phy_pb_type->ports[iport].num_pins, 
+                                        cur_pb_type_port->physical_mode_pin, 
+                                        &phy_port_name, &msb, &lsb);
     if (0 == strcmp(phy_port_name, phy_pb_type->ports[iport].name)) {
       /* We got a match! Give the lsb, msb and create a link */
       cur_pb_type_port->phy_pb_type_port = &(phy_pb_type->ports[iport]);
@@ -2251,15 +2253,15 @@ void annotate_physical_mode_pin_to_pb_type(t_port* cur_pb_type_port,
       cur_pb_type_port->phy_pb_type_port_lsb = lsb;      
       port_matched++;
     }
+    /* free */
+    my_free(phy_port_name);
   }
 
   /* Check if the port is unique */
   assert (1 == port_matched);
   /* Check if the pin number match */
-  assert(!(cur_pb_type_port->phy_pb_type_port->num_pins < (msb - lsb)));
-
-  /* Free */  
-  my_free(phy_port_name);
+  assert(cur_pb_type_port->phy_pb_type_port->num_pins > 
+          (cur_pb_type_port->phy_pb_type_port_msb - cur_pb_type_port->phy_pb_type_port_lsb));
 
   return;
 }
@@ -2330,8 +2332,12 @@ boolean check_pin_number_match_phy_pb_graph_pin(t_pb_graph_pin* cur_pb_graph_pin
                                                 t_pb_graph_pin* phy_pb_graph_pin) {
   boolean pin_number_match = FALSE;
 
+  /* Consider the rotation of cur_pb_graph_pin in pin_number */
   if ( (cur_pb_graph_pin->port->phy_pb_type_port == phy_pb_graph_pin->port)
-     &&(cur_pb_graph_pin->pin_number + cur_pb_graph_pin->port->phy_pb_type_port_lsb == phy_pb_graph_pin->pin_number)) {
+     &&(cur_pb_graph_pin->pin_number 
+      + cur_pb_graph_pin->port->phy_pb_type_port_lsb 
+      + cur_pb_graph_pin->port->phy_mode_pin_rotate_offset_acc
+      == phy_pb_graph_pin->pin_number )) {
     pin_number_match = TRUE;
   }
   return pin_number_match; 
@@ -2398,11 +2404,32 @@ void link_one_pb_graph_node_pin_to_phy_pb_graph_pin(t_pb_graph_pin* cur_pb_graph
   if (NULL == phy_pb_graph_pin) {
     vpr_printf(TIO_MESSAGE_ERROR,
                "(File:%s,[LINE%d]) No matched pin number found for %s[%d] in %s!\n",
-                __FILE__, __LINE__, cur_pb_graph_pin->port->name, cur_pb_graph_pin->pin_number, phy_pb_graph_node->pb_type->name);
+                __FILE__, __LINE__, 
+               cur_pb_graph_pin->port->name, 
+               cur_pb_graph_pin->pin_number, 
+               phy_pb_graph_node->pb_type->name);
     exit(1);
   }
   /* Create the link */
   cur_pb_graph_pin->physical_pb_graph_pin = phy_pb_graph_pin;
+  printf (" match pin (%s[%d]->%s[%d]) to (%s[%d]->%s[%d]) rotate_offset_acc=%d\n",
+          cur_pb_graph_pin->parent_node->pb_type->name,
+          cur_pb_graph_pin->parent_node->placement_index,
+          cur_pb_graph_pin->port->name, cur_pb_graph_pin->pin_number,
+          phy_pb_graph_pin->parent_node->pb_type->name,
+          phy_pb_graph_pin->parent_node->placement_index,
+          phy_pb_graph_pin->port->name, phy_pb_graph_pin->pin_number,
+          cur_pb_graph_pin->port->phy_mode_pin_rotate_offset_acc
+         );
+  /* Accumulate the phy_mode_pin offset when we have a matched */
+  if (0 != cur_pb_graph_pin->port->physical_mode_pin_rotate_offset) {
+    cur_pb_graph_pin->port->phy_mode_pin_rotate_offset_acc += cur_pb_graph_pin->port->physical_mode_pin_rotate_offset;
+  }
+  /* Reset to lsb when we exceed the msb */
+  if (cur_pb_graph_pin->port->phy_pb_type_port_msb < 
+      phy_pb_graph_pin->pin_number + cur_pb_graph_pin->port->phy_mode_pin_rotate_offset_acc) {
+    cur_pb_graph_pin->port->phy_mode_pin_rotate_offset_acc = 0;
+  }
 
   return;
 }

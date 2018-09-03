@@ -166,7 +166,8 @@ int count_pb_graph_node_output_edge_in_phy_mode(t_pb_graph_pin* cur_pb_graph_pin
 t_pb_type* rec_get_pb_type_by_name(t_pb_type* cur_pb_type, 
                                    char* pb_type_name);
 
-void decode_physical_mode_pin_annotation(char* phy_mode_pin,
+void decode_physical_mode_pin_annotation(int phy_pb_type_port_size,
+                                         char* phy_mode_pin,
                                          char** port_name,
                                          int* pin_msb, int* pin_lsb);
 

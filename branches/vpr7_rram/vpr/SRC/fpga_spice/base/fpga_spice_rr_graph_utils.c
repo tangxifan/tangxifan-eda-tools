@@ -940,9 +940,11 @@ void backannotate_rr_graph_routing_results_to_net_name(t_rr_graph* local_rr_grap
 
   /* 2nd step: With the help of trace, we back-annotate */
   for (inet = 0; inet < local_rr_graph->num_nets; inet++) {
+    /*
     if (TRUE == local_rr_graph->net[inet]->is_global) {
       continue;
     }
+    */
     tptr = local_rr_graph->trace_head[inet];
     while (tptr != NULL) {
       inode = tptr->index;
@@ -960,6 +962,7 @@ void backannotate_rr_graph_routing_results_to_net_name(t_rr_graph* local_rr_grap
       case CHANX: 
       case CHANY: 
       case OPIN: 
+      case INTRA_CLUSTER_EDGE: 
       case SOURCE: 
         /* SINK(IO/Pad) is the end of a routing path. Should configure its prev_edge and prev_node*/
         /* We care the next rr_node, this one is driving, which we have to configure 
@@ -980,7 +983,8 @@ void backannotate_rr_graph_routing_results_to_net_name(t_rr_graph* local_rr_grap
         assert(OPEN != local_rr_graph->rr_node[next_node].prev_edge);
         break;
       default:
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid traceback element type.\n");
+        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid traceback element type.\n",
+                   __FILE__, __LINE__);
         exit(1);
       }
       tptr = tptr->next;

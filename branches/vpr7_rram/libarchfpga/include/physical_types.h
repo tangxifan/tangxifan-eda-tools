@@ -264,6 +264,8 @@ struct s_port {
      * mapped SPICE model port */
     t_spice_model_port* spice_model_port;
     char* physical_mode_pin;
+    int physical_mode_pin_rotate_offset; /* The pin number will rotate by an offset unit when mapping to physical modes */
+    int phy_mode_pin_rotate_offset_acc; /* The pin number will rotate by an offset unit when mapping to physical modes */
     t_port* phy_pb_type_port;
     int phy_pb_type_port_lsb;
     int phy_pb_type_port_msb;

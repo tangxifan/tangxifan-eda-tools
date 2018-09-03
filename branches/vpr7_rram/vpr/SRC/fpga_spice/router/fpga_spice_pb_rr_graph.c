@@ -730,9 +730,11 @@ void sync_pb_graph_pin_vpack_net_num_to_phy_pb(t_pb* cur_op_pb, t_pb_graph_pin* 
    
   /* If we have a valid vpack_net_num */
   if (OPEN == cur_op_pb->rr_graph[inode].vpack_net_num) {
-    /* Give default value */
+    /* Do not overwrite because this rr_node may have been updated! */
+    /*  
     local_rr_graph->rr_node[jnode].net_num = OPEN;
     local_rr_graph->rr_node[jnode].vpack_net_num = OPEN;
+    */
     return;
   }
 
