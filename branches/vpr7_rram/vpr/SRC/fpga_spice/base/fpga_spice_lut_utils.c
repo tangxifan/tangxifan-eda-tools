@@ -62,11 +62,14 @@ char* complete_truth_table_line(int lut_size,
 
   /* In Most cases, there should be 2 tokens. */
   assert(2 == num_token);
+  /* We may have two truth table from two LUTs which contain both 0 and 1*/
+  /*
   if ((0 != strcmp(tokens[1], "1"))&&(0 != strcmp(tokens[1], "0"))) {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Last token of truth table line should be [0|1]!\n",
                __FILE__, __LINE__); 
     exit(1);
   }
+  */
   /* Complete the truth table line*/
   cover_len = strlen(tokens[0]); 
   assert((cover_len < lut_size)||(cover_len == lut_size));
@@ -107,7 +110,9 @@ void configure_lut_sram_bits_per_line_rec(int** sram_bits,
 
   /* Check the length of sram bits and truth table line */
   //assert((sizeof(int)*num_sram_bit) == sizeof(*sram_bits)); /*TODO: fix this assert*/
-  assert((unsigned)(lut_size + 1 + 1)== strlen(truth_table_line)); /* lut_size + space + '1' */
+  if ((unsigned)(lut_size + 1 + 1) != strlen(truth_table_line)){ /* lut_size + space + '1' */
+  assert((unsigned)(lut_size + 1 + 1) == strlen(truth_table_line)); /* lut_size + space + '1' */
+  }
   /* End of truth_table_line should be "space" and "1" */ 
   assert((0 == strcmp(" 1", truth_table_line + lut_size))||(0 == strcmp(" 0", truth_table_line + lut_size)));
   /* Make sure before start point there is no '-' */
@@ -204,15 +209,6 @@ int* generate_lut_sram_bits(int truth_table_len,
     //printf("truth_table[%d] = %s\n", i, truth_table[i]);
     completed_truth_table[i] = complete_truth_table_line(lut_size, truth_table[i]);
     //printf("Completed_truth_table[%d] = %s\n", i, completed_truth_table[i]);
-    if (0 == strcmp(" 1", completed_truth_table[i] + lut_size)) {
-      on_set = 1;
-    } else if (0 == strcmp(" 0", completed_truth_table[i] + lut_size)) {
-      off_set = 1;
-    }
-  }
-  //printf("on_set=%d off_set=%d", on_set, off_set);
-  if (1 != (on_set + off_set)) {
-  assert(1 == (on_set + off_set));
   }
 
   if (1 == on_set) {
@@ -292,6 +288,7 @@ char** assign_post_routing_lut_truth_table(t_logical_block* mapped_logical_block
   int* lut_to_lb_net_mapping = NULL;
   int num_lb_pin = 0;
   int* lb_pin_vpack_net_num = NULL;
+  int lb_truth_table_size = 0;
 
   if (NULL == mapped_logical_block) {
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid mapped_logical_block!\n",
@@ -319,10 +316,11 @@ char** assign_post_routing_lut_truth_table(t_logical_block* mapped_logical_block
         break;
       }  
     } 
-    /* We must find one ! */ 
-    assert (OPEN != lut_to_lb_net_mapping[inet]);
+    /* Not neccesary to find a one, some luts just share part of their pins  */ 
   } 
 
+  /* Initialization */
+  (*truth_table_length) = 0;
   /* Count the lines of truth table*/
   head = mapped_logical_block->truth_table;
   while(head) {
@@ -336,20 +334,22 @@ char** assign_post_routing_lut_truth_table(t_logical_block* mapped_logical_block
   head = mapped_logical_block->truth_table;
   while(head) {
     /* Handle the truth table pin remapping */
-    truth_table[cur] = (char*) my_calloc (lut_size + 3, sizeof(char)); /* last 3 bits are space + on/off set + \0 */
+    truth_table[cur] = (char*) my_malloc((lut_size + 3) * sizeof(char));
+    /* Initialize */
+    lb_truth_table_size = strlen((char*)(head->data_vptr));
+    memcpy(truth_table[cur] + lut_size, (char*)(head->data_vptr) + lb_truth_table_size - 2, 3);
+    /* Add */
     for (inet = 0; inet < lut_size; inet++) {
-      /* Open net implies a don't care */
-      if (OPEN  == lut_pin_vpack_net_num[inet]) {
+      /* Open net implies a don't care, or some nets are not in the list  */
+      if ((OPEN  == lut_pin_vpack_net_num[inet]) 
+        || (OPEN == lut_to_lb_net_mapping[inet])) {
         truth_table[cur][inet] = '-';
         continue;
       }
       /* Find the desired truth table bit */
       truth_table[cur][inet] = ((char*)(head->data_vptr))[lut_to_lb_net_mapping[inet]];
     }
-    /* Add string ends */
-    truth_table[cur][lut_size] = ' ';
-    truth_table[cur][lut_size + 1] = ((char*)(head->data_vptr))[strlen((char*)(head->data_vptr)) - 1];
-    truth_table[cur][lut_size + 2] = '\0';
+    
     head = head->next;
     cur++;
   }

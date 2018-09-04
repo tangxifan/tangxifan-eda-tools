@@ -447,7 +447,7 @@
 
       <!-- physical design description -->
       <mode name="io_phy" disabled_in_packing="true">
-        <pb_type name="iopad" blif_model=".subckt io" num_pb="1" spice_model_name="iopad">
+        <pb_type name="iopad" blif_model=".subckt io" num_pb="1" spice_model_name="iopad" mode_bits="1">
           <input name="outpad" num_pins="1"/>
           <output name="inpad" num_pins="1"/>
         </pb_type>

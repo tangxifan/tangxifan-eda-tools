@@ -1481,8 +1481,7 @@ void rec_count_num_iopads_pb_type_physical_mode(t_pb_type* cur_pb_type) {
   cur_pb_type->physical_mode_num_iopads = 0;
 
   /* Recursively finish all the child pb_types*/
-  if ((NULL == cur_pb_type->spice_model) 
-    && (NULL == cur_pb_type->phy_pb_type)) { 
+  if (FALSE == is_primitive_pb_type(cur_pb_type)) { 
     /* Find the mode that define_idle_mode*/
     mode_index = find_pb_type_physical_mode_index((*cur_pb_type));
     for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
@@ -1493,8 +1492,7 @@ void rec_count_num_iopads_pb_type_physical_mode(t_pb_type* cur_pb_type) {
   }
 
   /* Check if this has defined a spice_model*/
-  if ((NULL != cur_pb_type->spice_model) 
-     || (NULL != cur_pb_type->phy_pb_type)) { 
+  if (TRUE == is_primitive_pb_type(cur_pb_type)) { 
     if (SPICE_MODEL_IOPAD == cur_pb_type->phy_pb_type->spice_model->type) {
       sum_num_iopads = 1;
       cur_pb_type->physical_mode_num_iopads = sum_num_iopads;

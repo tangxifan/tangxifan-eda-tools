@@ -331,7 +331,7 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(t_phy_pb* prim_phy_pb,
     /* Generate sram bits*/
     lut_sram_bits = generate_lut_sram_bits(lut_truth_table_length, lut_truth_table, 
                                            lut_size, lut_sram_port->default_val);
-    /* Free */
+    /* Free */ 
     my_free(lut_pin_net);
     my_free(lut_truth_table);
     for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
