@@ -327,7 +327,9 @@ int find_pb_type_physical_mode_index(t_pb_type cur_pb_type) {
       num_phy_mode++;
     }
   } 
+  if (1 != num_phy_mode) { 
   assert(1 == num_phy_mode); 
+  }
 
   return phy_mode_index;
 }

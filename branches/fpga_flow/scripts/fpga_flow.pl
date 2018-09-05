@@ -1349,7 +1349,7 @@ sub run_cirkit_mig_mccl_map($ $ $) {
   my ($fpga_synthesis_method) = ("if");
   #my ($fpga_synthesis_method) = ("fpga");
   
-    my ($ABC_CMD_FH) = (FileHandle->new);
+  my ($ABC_CMD_FH) = (FileHandle->new);
   if ($ABC_CMD_FH->open("> $abc_cmd_log")) {
     print "INFO: auto generating cmds for ABC ($abc_cmd_log) ...\n";
   } else {
@@ -1389,6 +1389,10 @@ sub run_cirkit_mig_mccl_map($ $ $) {
 
 sub init_fpga_spice_task($) {
   my ($task_file) = @_;
+  my ($task_dir_path, $task_filename) = &split_prog_path($task_file);
+
+  &generate_path($task_dir_path);
+
   # Open the task file handler
   my ($TASKFH) = (FileHandle->new);
   if ($TASKFH->open("> $task_file")) {

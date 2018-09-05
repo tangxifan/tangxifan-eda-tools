@@ -1242,7 +1242,6 @@ void rec_sync_pb_post_routing_vpack_net_num(t_pb* cur_pb) {
   int ipb, jpb, select_mode_index;
   int iport, ipin, node_index;
   t_rr_node* pb_rr_nodes = NULL;
-  t_pb_graph_node* child_pb_graph_node;
  
   /* Return when we meet a null pb */ 
   if (NULL == cur_pb) {
@@ -1311,11 +1310,9 @@ void rec_sync_pb_post_routing_vpack_net_num(t_pb* cur_pb) {
  * so we just update the vpack_net_num and net_num in all the hierachy level 
  */
 void update_one_io_grid_pack_net_num(int x, int y) {
-  int iblk, blk_id, ipin, iedge, jedge, inode;
-  int pin_global_rr_node_id, vpack_net_id, class_id;
+  int iblk, blk_id;
   t_type_ptr type = NULL;
   t_pb* pb = NULL;
-  t_rr_node* local_rr_graph = NULL;
 
   /* Assert */
   assert((!(x < 0))&&(x < (nx + 2)));  
@@ -2501,7 +2498,7 @@ void parasitic_net_estimation() {
  */
 void rec_annotate_pb_type_primitive_node_physical_mode_pin(t_pb_type* top_pb_type,
                                                            t_pb_type* cur_pb_type) {
-  int imode, ipb, iport;
+  int imode, ipb;
 
   /* See if this is a primitive pb_graph_node */
   if (FALSE == is_primitive_pb_type(cur_pb_type)) { 
@@ -2591,6 +2588,12 @@ void rec_annotate_phy_pb_type_primitive_node_physical_mode_pin(t_pb_type* top_pb
     }
     /* return when it is a primitive node */
     if (TRUE == is_primitive_pb_type(cur_pb_type)) { 
+      /* ONLY FOR PRIMITIVE NODE: Copy the pb_type_name from the name of cur_pb_type */
+      cur_pb_type->physical_pb_type_name = my_strdup(cur_pb_type->name);
+      /* Copy the name of ports to the physical_mode_pin to the port itself  */
+      for (iport = 0; iport < cur_pb_type->num_ports; iport++) { 
+        cur_pb_type->ports[iport].physical_mode_pin = my_strdup(cur_pb_type->ports[iport].name); 
+      }
       return;
     }
   }

@@ -2263,9 +2263,9 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 	lut_pb_type->modes[0].mode_power = (t_mode_power*) my_calloc(1,
 			sizeof(t_mode_power));
     /* Xifan TANG: LUT default idle mode */
-    lut_pb_type->modes[0].define_idle_mode = 1;
-    /* Xifan TANG: LUT default physical mode */
-    lut_pb_type->modes[0].define_physical_mode = lut_pb_type->parent_mode->define_physical_mode;
+    lut_pb_type->modes[0].define_idle_mode = 0;
+    /* Xifan TANG: LUT default physical mode: special for LUT: mode 1 should never to be true */
+    lut_pb_type->modes[0].define_physical_mode = FALSE;
     /* END */
 
 	/* Process interconnect */
@@ -2356,7 +2356,7 @@ void ProcessLutClass(INOUTP t_pb_type *lut_pb_type) {
 			lut_pb_type->modes[1].pb_type_children);
 
     /* Xifan TANG: LUT default idle mode */
-    lut_pb_type->modes[1].define_idle_mode = 0;
+    lut_pb_type->modes[1].define_idle_mode = 1;
     lut_pb_type->modes[1].define_physical_mode = lut_pb_type->parent_mode->define_physical_mode;
 	/* moved annotations to child so delete old annotations */
 	for (i = 0; i < lut_pb_type->num_annotations; i++) {

@@ -620,9 +620,9 @@ void rec_identify_pb_type_idle_mode(t_pb_type* cur_pb_type) {
 static 
 void rec_identify_pb_type_phy_mode(t_pb_type* cur_pb_type) {
   int imode, ichild, phy_mode_idx;
-  
+
   /* Only try to find physical mode when parent is a physical mode or this is the top cur_pb_type! */
-  if ( 0 < cur_pb_type->num_modes) {
+  if (FALSE == is_primitive_pb_type(cur_pb_type)) {
     if ((NULL == cur_pb_type->parent_mode)
        || (TRUE == cur_pb_type->parent_mode->define_physical_mode)) {
       /* Find physical mode index */
