@@ -2258,7 +2258,24 @@ void annotate_physical_mode_pin_to_pb_type(t_port* cur_pb_type_port,
   }
 
   /* Check if the port is unique */
-  assert (1 == port_matched);
+  if (0 == port_matched) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(File:%s,[LINE%d])Unable to match the port (%s) of %s in its physical pb_type %s!\n",
+               __FILE__, __LINE__,
+              cur_pb_type_port->name, cur_pb_type_port->parent_pb_type->name,
+              phy_pb_type->name);
+    exit(1);
+  }
+  if (1 < port_matched) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(File:%s,[LINE%d])More than 1 port is matched for the port (%s) of %s in its physical pb_type %s!\n",
+               __FILE__, __LINE__,
+              cur_pb_type_port->name, cur_pb_type_port->parent_pb_type->name,
+              phy_pb_type->name);
+    exit(1);
+  }
+  assert (1 == port_matched );
+
   /* Check if the pin number match */
   assert(cur_pb_type_port->phy_pb_type_port->num_pins > 
           (cur_pb_type_port->phy_pb_type_port_msb - cur_pb_type_port->phy_pb_type_port_lsb));
