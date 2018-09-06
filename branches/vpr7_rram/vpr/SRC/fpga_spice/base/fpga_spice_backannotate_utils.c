@@ -104,12 +104,20 @@ int get_lut_output_init_val(t_logical_block* lut_logical_block) {
     for (i = 0; i < lut_size; i++) {
       input_net_index = lut_logical_block->input_nets[0][i]; 
       input_init_val[i] = vpack_net[input_net_index].spice_net_info->init_val;
+      if ((1 != input_init_val[i]) && (0 != input_init_val[i])) {
+        assert ((1 == input_init_val[i]) || (0 == input_init_val[i]));
+      }
     } 
-
+    
     init_path_id = determine_lut_path_id(lut_size, input_init_val);
     /* Check */  
     assert((!(0 > init_path_id))&&(init_path_id < (int)pow(2.,(double)lut_size)));
     output_init_val = sram_bits[init_path_id]; 
+  }
+
+  /* Check */
+  if ((1 != output_init_val) && (0 != output_init_val)) {
+    assert ((1 == output_init_val) || (0 == output_init_val));
   }
    
   /*Free*/
@@ -118,6 +126,7 @@ int get_lut_output_init_val(t_logical_block* lut_logical_block) {
   }
   free(truth_table);
   my_free(sram_bits);
+  my_free(input_init_val);
 
   return output_init_val;
 }
@@ -765,7 +774,7 @@ void backannotate_clb_nets_act_info() {
   for (inet = 0; inet < num_logical_nets; inet++) {
     if (NULL == vpack_net[inet].spice_net_info) {
       /* Allocate */
-      vpack_net[inet].spice_net_info = (t_spice_net_info*)my_malloc(sizeof(t_spice_net_info));
+      vpack_net[inet].spice_net_info = (t_spice_net_info*)my_calloc(1, sizeof(t_spice_net_info));
     } 
     /* Initialize to zero */
     init_spice_net_info(vpack_net[inet].spice_net_info);
@@ -786,7 +795,7 @@ void backannotate_clb_nets_act_info() {
   for (inet = 0; inet < num_nets; inet++) {
     if (NULL == clb_net[inet].spice_net_info) {
       /* Allocate */
-      clb_net[inet].spice_net_info = (t_spice_net_info*)my_malloc(sizeof(t_spice_net_info));
+      clb_net[inet].spice_net_info = (t_spice_net_info*)my_calloc(1, sizeof(t_spice_net_info));
     } 
     /* Initialize to zero */
     init_spice_net_info(clb_net[inet].spice_net_info);

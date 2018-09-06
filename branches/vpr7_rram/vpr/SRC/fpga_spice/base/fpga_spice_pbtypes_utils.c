@@ -535,8 +535,7 @@ void rec_mark_pb_graph_node_temp_net_num(t_pb_graph_node* cur_pb_graph_node) {
 
   mark_pb_graph_node_clock_pins_temp_net_num(cur_pb_graph_node, mode_index);
 
-  if ((NULL != cur_pb_graph_node->pb_type->spice_model) 
-    || (NULL != cur_pb_graph_node->pb_type->phy_pb_type)) {
+  if (TRUE == is_primitive_pb_type(cur_pb_graph_node->pb_type)) {
     return;
   }
 
@@ -624,14 +623,12 @@ void rec_mark_one_pb_unused_pb_graph_node_temp_net_num(t_pb* cur_pb) {
   /* Check */
   assert(NULL != cur_pb);
 
-  if (NULL != cur_pb->pb_graph_node->pb_type->spice_model) {
+  if (TRUE == is_primitive_pb_type(cur_pb->pb_graph_node->pb_type)) {
     return;
   }
+
   /* Go recursively ... */
   mode_index = cur_pb->mode;
-  if (!(0 < cur_pb->pb_graph_node->pb_type->num_modes)) {
-    return;
-  }
   for (ipb = 0; ipb < cur_pb->pb_graph_node->pb_type->modes[mode_index].num_pb_type_children; ipb++) {
     for (jpb = 0; jpb < cur_pb->pb_graph_node->pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
       /* Refer to pack/output_clustering.c [LINE 392] */
@@ -1926,7 +1923,7 @@ t_phy_pb* get_lut_child_phy_pb(t_phy_pb* cur_lut_pb,
 t_pb* get_hardlogic_child_pb(t_pb* cur_hardlogic_pb,
                              int mode_index) {
 
-  assert(SPICE_MODEL_HARDLOGIC == cur_hardlogic_pb->pb_graph_node->pb_type->spice_model->type);
+  assert(SPICE_MODEL_HARDLOGIC == cur_hardlogic_pb->pb_graph_node->pb_type->phy_pb_type->spice_model->type);
 
   assert(1 == cur_hardlogic_pb->pb_graph_node->pb_type->modes[mode_index].num_pb_type_children);
   assert(1 == cur_hardlogic_pb->pb_graph_node->pb_type->num_pb);
@@ -2665,19 +2662,34 @@ void rec_sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb,
       phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = child_pb->logical_block;
       /* Give the number of LUT inputs of operating pb_graph_node */
       phy_pb_to_sync->lut_size[phy_pb_to_sync->num_logical_blocks - 1] = cur_pb_graph_node->num_input_pins[0];
+      if (OPEN == child_pb->logical_block) {
+        phy_pb_to_sync->num_logical_blocks--;
+      }
       break;
     case LATCH_CLASS:
       assert (VPACK_LATCH == logical_block[cur_op_pb->logical_block].type);
       phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = cur_op_pb->logical_block;
+      if (OPEN == cur_op_pb->logical_block) {
+        phy_pb_to_sync->num_logical_blocks--;
+      }
       break;
     case MEMORY_CLASS:
+      /* TODO: some memory pb has OPEN logical block .... Find out why
+       * To be safe, we identify if the logical block index is valid here  
+       */
       child_pb = get_hardlogic_child_pb(cur_op_pb, mode_index); 
       phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = child_pb->logical_block;
+      if (OPEN == child_pb->logical_block) {
+        phy_pb_to_sync->num_logical_blocks--;
+      }
       break;  
     case UNKNOWN_CLASS:
       assert ((VPACK_INPAD == logical_block[cur_op_pb->logical_block].type)
              ||(VPACK_OUTPAD == logical_block[cur_op_pb->logical_block].type));
       phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = cur_op_pb->logical_block;
+      if (OPEN == cur_op_pb->logical_block) {
+        phy_pb_to_sync->num_logical_blocks--;
+      }
       break;  
     default:
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Unknown class type of pb_type(%s)!\n",

@@ -174,12 +174,43 @@ void configure_lut_sram_bits_per_line_rec(int** sram_bits,
   return; 
 }
 
+/* Determine if the truth table of a LUT is a on-set or a off-set */
+int determine_lut_truth_table_on_set(int truth_table_len,
+                                     char** truth_table) {
+  int on_set = 0;
+  int off_set = 0;
+  int i, tt_line_len;
+
+  for (i = 0; i < truth_table_len; i++) {
+    tt_line_len = strlen(truth_table[i]);
+    switch (truth_table[i][tt_line_len - 1]) {
+    case '1':
+      on_set = 1;
+      break;
+    case '0':
+      off_set = 1;
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid truth_table_line ending(=%c)!\n",
+                 __FILE__, __LINE__, truth_table[i][tt_line_len - 1]);
+      exit(1);
+    }
+  }
+
+  /* Prefer on_set if both are true */
+  if (1 == (on_set + off_set)) {
+    on_set = 1; off_set = 0;
+  }
+
+  return on_set;
+}
+
 int* generate_lut_sram_bits(int truth_table_len,
                             char** truth_table,
                             int lut_size,
                             int default_sram_bit_value) {
   int num_sram = (int)pow(2.,(double)(lut_size));
-  int* ret = (int*)my_malloc(sizeof(int)*num_sram); 
+  int* ret = (int*)my_calloc(num_sram, sizeof(int)); 
   char** completed_truth_table = (char**)my_malloc(sizeof(char*)*truth_table_len);
   int on_set = 0;
   int off_set = 0;
@@ -201,6 +232,9 @@ int* generate_lut_sram_bits(int truth_table_len,
                  __FILE__, __LINE__, default_sram_bit_value);
       exit(1);
     }
+  } else {
+    on_set = determine_lut_truth_table_on_set(truth_table_len, truth_table);
+    off_set = 1 - on_set;
   }
 
   /* Read in truth table lines, decode one by one */
