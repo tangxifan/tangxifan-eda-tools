@@ -503,7 +503,7 @@ void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
   /* Connect outputs*/
   fprintf(fp, "//----- Input and output ports -----\n");
   dump_verilog_pb_type_bus_ports(fp, port_prefix, 0, cur_pb_type, FALSE, TRUE); 
-  fprintf(fp, "//----- SRAM ports -----\n");
+  fprintf(fp, "\n//----- SRAM ports -----\n");
 
   /* check */
   assert (num_sram == num_lut_sram + num_mode_sram);
@@ -522,12 +522,13 @@ void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
                                   cur_num_sram, cur_num_sram + num_lut_sram - 1, 
                                   1, VERILOG_PORT_CONKT);
     if (0 < num_mode_sram) {
+      fprintf(fp, ", ");
       dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
-                                 cur_num_sram, cur_num_sram + num_mode_sram - 1, 
+                                 cur_num_sram + num_lut_sram, cur_num_sram + num_lut_sram + num_mode_sram - 1, 
                                  1, VERILOG_PORT_CONKT);
       fprintf(fp, ", ");
       dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
-                                    cur_num_sram, cur_num_sram + num_mode_sram - 1, 
+                                    cur_num_sram + num_lut_sram, cur_num_sram + num_lut_sram + num_mode_sram - 1, 
                                     1, VERILOG_PORT_CONKT);
     }
     break;
@@ -541,11 +542,11 @@ void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
                                   1, VERILOG_PORT_CONKT);
     if (0 < num_mode_sram) {
       dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
-                                 cur_num_sram, cur_num_sram + num_mode_sram - 1, 
+                                 cur_num_sram + num_lut_sram, cur_num_sram + num_lut_sram + num_mode_sram - 1, 
                                  1, VERILOG_PORT_CONKT);
       fprintf(fp, ", ");
       dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
-                                    cur_num_sram, cur_num_sram + num_mode_sram - 1, 
+                                    cur_num_sram + num_lut_sram, cur_num_sram + num_lut_sram + num_mode_sram - 1, 
                                     1, VERILOG_PORT_CONKT);
     }
     break;

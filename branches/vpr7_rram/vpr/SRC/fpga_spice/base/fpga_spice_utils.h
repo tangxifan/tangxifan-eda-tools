@@ -357,3 +357,7 @@ boolean check_subckt_file_exist_in_llist(t_llist* subckt_llist_head,
                                          char* subckt_file_name);
 
 boolean is_primitive_pb_type(t_pb_type* cur_pb_type);
+
+void rec_stats_spice_model_global_ports(t_spice_model* cur_spice_model,
+                                        boolean recursive,
+                                        t_llist** spice_model_head);
