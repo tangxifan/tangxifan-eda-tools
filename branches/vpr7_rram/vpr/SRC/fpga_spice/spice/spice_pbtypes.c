@@ -2369,6 +2369,14 @@ void generate_spice_logic_blocks(char* subckt_dir,
     /* TODO: replace with physical block generator */
     fprint_grid_physical_blocks(subckt_dir, ix, iy, arch); 
   }
+  /* Top side : x = 1 .. nx + 1, y = nx + 1  */
+  iy = ny + 1;
+  for (ix = 1; ix < (nx + 1); ix++) {
+    /* Ensure this is a io */
+    assert(IO_TYPE == grid[ix][iy].type);
+    /* TODO: replace with physical block generator */
+    fprint_grid_physical_blocks(subckt_dir, ix, iy, arch); 
+  }
   /* Right side : x = nx + 1, y = 1 .. ny*/
   ix = nx + 1;
   for (iy = 1; iy < (ny + 1); iy++) {
@@ -2379,14 +2387,6 @@ void generate_spice_logic_blocks(char* subckt_dir,
   }
   /* Bottom  side : x = 1 .. nx + 1, y = 0 */
   iy = 0;
-  for (ix = 1; ix < (nx + 1); ix++) {
-    /* Ensure this is a io */
-    assert(IO_TYPE == grid[ix][iy].type);
-    /* TODO: replace with physical block generator */
-    fprint_grid_physical_blocks(subckt_dir, ix, iy, arch); 
-  }
-  /* Top side : x = 1 .. nx + 1, y = nx + 1  */
-  iy = ny + 1;
   for (ix = 1; ix < (nx + 1); ix++) {
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);

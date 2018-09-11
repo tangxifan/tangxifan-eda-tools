@@ -2506,20 +2506,7 @@ void dump_verilog_logic_blocks(t_sram_orgz_info* cur_sram_orgz_info,
     assert(IO_TYPE == grid[ix][iy].type);
     dump_verilog_physical_grid_blocks(cur_sram_orgz_info, subckt_dir, ix, iy, arch); 
   }
-  /* Right side : x = nx + 1, y = 1 .. ny*/
-  ix = nx + 1;
-  for (iy = 1; iy < (ny + 1); iy++) {
-    /* Ensure this is a io */
-    assert(IO_TYPE == grid[ix][iy].type);
-    dump_verilog_physical_grid_blocks(cur_sram_orgz_info, subckt_dir, ix, iy, arch); 
-  }
-  /* Bottom  side : x = 1 .. nx + 1, y = 0 */
-  iy = 0;
-  for (ix = 1; ix < (nx + 1); ix++) {
-    /* Ensure this is a io */
-    assert(IO_TYPE == grid[ix][iy].type);
-    dump_verilog_physical_grid_blocks(cur_sram_orgz_info, subckt_dir, ix, iy, arch); 
-  }
+
   /* Top side : x = 1 .. nx + 1, y = nx + 1  */
   iy = ny + 1;
   for (ix = 1; ix < (nx + 1); ix++) {
@@ -2528,6 +2515,21 @@ void dump_verilog_logic_blocks(t_sram_orgz_info* cur_sram_orgz_info,
     dump_verilog_physical_grid_blocks(cur_sram_orgz_info, subckt_dir, ix, iy, arch); 
   }
 
+  /* Right side : x = nx + 1, y = 1 .. ny*/
+  ix = nx + 1;
+  for (iy = 1; iy < (ny + 1); iy++) {
+    /* Ensure this is a io */
+    assert(IO_TYPE == grid[ix][iy].type);
+    dump_verilog_physical_grid_blocks(cur_sram_orgz_info, subckt_dir, ix, iy, arch); 
+  }
+
+  /* Bottom  side : x = 1 .. nx + 1, y = 0 */
+  iy = 0;
+  for (ix = 1; ix < (nx + 1); ix++) {
+    /* Ensure this is a io */
+    assert(IO_TYPE == grid[ix][iy].type);
+    dump_verilog_physical_grid_blocks(cur_sram_orgz_info, subckt_dir, ix, iy, arch); 
+  }
   /* Output a header file for all the logic blocks */
   vpr_printf(TIO_MESSAGE_INFO,"Generating header file for grid submodules...\n");
   dump_verilog_subckt_header_file(grid_verilog_subckt_file_path_head,

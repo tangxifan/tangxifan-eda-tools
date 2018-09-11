@@ -1022,6 +1022,22 @@ void fprint_call_defined_grids(FILE* fp) {
     fprintf(fp, "gvdd_io 0 grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
   }
 
+  /* TOP side */
+  iy = ny + 1;
+  for (ix = 1; ix < (nx + 1); ix++) {
+    /* Bypass EMPTY grid */
+    if (EMPTY_TYPE == grid[ix][iy].type) {
+      continue;
+    }
+    assert(IO_TYPE == grid[ix][iy].type);
+    fprintf(fp, "Xgrid[%d][%d] ", ix, iy);
+    fprintf(fp, "\n");
+    fprint_io_grid_pins(fp, ix, iy, 1);
+    fprintf(fp, "+ ");
+    /* Connect to a speical vdd port for statistics power */
+    fprintf(fp, "gvdd_io 0 grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
+  } 
+
   /* RIGHT side */
   ix = nx + 1;
   for (iy = 1; iy < (ny + 1); iy++) {
@@ -1040,22 +1056,6 @@ void fprint_call_defined_grids(FILE* fp) {
 
   /* BOTTOM side */
   iy = 0;
-  for (ix = 1; ix < (nx + 1); ix++) {
-    /* Bypass EMPTY grid */
-    if (EMPTY_TYPE == grid[ix][iy].type) {
-      continue;
-    }
-    assert(IO_TYPE == grid[ix][iy].type);
-    fprintf(fp, "Xgrid[%d][%d] ", ix, iy);
-    fprintf(fp, "\n");
-    fprint_io_grid_pins(fp, ix, iy, 1);
-    fprintf(fp, "+ ");
-    /* Connect to a speical vdd port for statistics power */
-    fprintf(fp, "gvdd_io 0 grid[%d][%d]\n", ix, iy); /* Call the name of subckt */ 
-  } 
-
-  /* TOP side */
-  iy = ny + 1;
   for (ix = 1; ix < (nx + 1); ix++) {
     /* Bypass EMPTY grid */
     if (EMPTY_TYPE == grid[ix][iy].type) {

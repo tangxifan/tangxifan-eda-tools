@@ -306,7 +306,7 @@
         <input_buffer exist="on" spice_model_name="INVTX1"/>
         <output_buffer exist="on" spice_model_name="INVTX1"/>
         <lut_input_buffer exist="on" spice_model_name="buf4"/>
-        <pass_gate_logic spice_model_name="TGATE"/>
+   <pass_gate_logic spice_model_name="TGATE"/>
         <port type="input" prefix="in" size="5"/>
         <port type="output" prefix="out" size="1"/>
         <port type="sram" prefix="sram" size="32"/>

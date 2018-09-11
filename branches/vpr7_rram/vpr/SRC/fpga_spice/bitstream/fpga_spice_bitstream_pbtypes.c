@@ -545,6 +545,15 @@ void fpga_spice_generate_bitstream_logic_block(t_arch* arch,
     assert(IO_TYPE == grid[ix][iy].type);
     fpga_spice_generate_bitstream_physical_grid_block(ix, iy, arch, cur_sram_orgz_info); 
   }
+
+  /* Top side : x = 1 .. nx + 1, y = nx + 1  */
+  iy = ny + 1;
+  for (ix = 1; ix < (nx + 1); ix++) {
+    /* Ensure this is a io */
+    assert(IO_TYPE == grid[ix][iy].type);
+    fpga_spice_generate_bitstream_physical_grid_block(ix, iy, arch, cur_sram_orgz_info); 
+  }
+
   /* Right side : x = nx + 1, y = 1 .. ny*/
   ix = nx + 1;
   for (iy = 1; iy < (ny + 1); iy++) {
@@ -559,14 +568,6 @@ void fpga_spice_generate_bitstream_logic_block(t_arch* arch,
     assert(IO_TYPE == grid[ix][iy].type);
     fpga_spice_generate_bitstream_physical_grid_block(ix, iy, arch, cur_sram_orgz_info); 
   }
-  /* Top side : x = 1 .. nx + 1, y = nx + 1  */
-  iy = ny + 1;
-  for (ix = 1; ix < (nx + 1); ix++) {
-    /* Ensure this is a io */
-    assert(IO_TYPE == grid[ix][iy].type);
-    fpga_spice_generate_bitstream_physical_grid_block(ix, iy, arch, cur_sram_orgz_info); 
-  }
-
   /* Free */
    
   return; 
