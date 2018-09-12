@@ -1645,6 +1645,7 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
   fprintf(fp, ");\n");
 
   /* Definition ends*/
+
   /* Quote all child pb_types */
   for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
     /* Each child may exist multiple times in the hierarchy*/
@@ -1655,7 +1656,7 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
        * else we can use the mode to name it 
        */
       if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) { /* Not a leaf node*/
-        child_mode_index = find_pb_type_idle_mode_index(cur_pb_type->modes[mode_index].pb_type_children[ipb]);
+        child_mode_index = find_pb_type_physical_mode_index(cur_pb_type->modes[mode_index].pb_type_children[ipb]);
         fprintf(fp, "%s_%s_%d__mode_%s_ ",
                 subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb, 
                 cur_pb_type->modes[mode_index].pb_type_children[ipb].modes[child_mode_index].name);

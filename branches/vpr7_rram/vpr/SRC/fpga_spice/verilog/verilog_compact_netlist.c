@@ -53,6 +53,7 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
   char* fname = NULL;  
   FILE* fp = NULL;
   char* title = my_strcat("FPGA Verilog Netlist for Design: ", phy_block_type->name);
+  char* subckt_name = "grid_";
 
   /* Check */
   if (IO_TYPE == phy_block_type) {
@@ -83,7 +84,7 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
     /* Comments: Grid [x][y]*/
     fprintf(fp, "//----- Submodule of type_descriptor: %s[%d] -----\n", phy_block_type->name, iz);
     /* Print a NULL logic block...*/
-    dump_verilog_phy_pb_graph_node_rec(cur_sram_orgz_info, fp, phy_block_type->name, 
+    dump_verilog_phy_pb_graph_node_rec(cur_sram_orgz_info, fp, subckt_name, 
                                        phy_block_type->pb_graph_head, iz);
     fprintf(fp, "//----- END -----\n\n");
   }
@@ -141,7 +142,7 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
   /* Quote all the sub blocks*/
   for (iz = 0; iz < phy_block_type->capacity; iz++) {
     /* Local Vdd and Gnd, subckt name*/
-    fprintf(fp, "%s ", compact_verilog_get_grid_phy_block_subckt_name(phy_block_type, iz, phy_block_type->name));
+    fprintf(fp, "%s ", compact_verilog_get_grid_phy_block_subckt_name(phy_block_type, iz, subckt_name));
     fprintf(fp, " grid_%s_%d_ (", phy_block_type->name, iz);
     fprintf(fp, "\n");
     /* dump global ports */
