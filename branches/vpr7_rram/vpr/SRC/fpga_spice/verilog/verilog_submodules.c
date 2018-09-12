@@ -1053,7 +1053,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
                                      int mux_size,
                                      t_spice_model spice_model,
                                      t_spice_mux_arch spice_mux_arch) {
-  int i, num_conf_bits, iport, ipin;
+  int i, num_conf_bits, iport, ipin, num_mode_bits;
   int num_input_port = 0;
   int num_output_port = 0;
   int num_sram_port = 0;
@@ -1113,8 +1113,8 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
 
   /* Setup a reasonable frac_out level for the output port*/
   for (iport = 0; iport < num_output_port; iport++) {
-    if (OPEN == output_port[0]->lut_frac_level) { 
-      output_port[0]->lut_frac_level = spice_mux_arch.num_level;
+    if (OPEN == output_port[iport]->lut_frac_level) { 
+      output_port[iport]->lut_frac_level = spice_mux_arch.num_level;
     } 
   }
 
@@ -1126,6 +1126,10 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
    */
   num_conf_bits = count_num_sram_bits_one_spice_model(&spice_model, 
                                                       mux_size);
+  num_mode_bits = count_num_mode_bits_one_spice_model(&spice_model); 
+  /* Knock out the SRAM bits for the mode selection, they are separated dealed */
+  num_conf_bits = num_conf_bits - num_mode_bits;
+
   if (SPICE_MODEL_LUT == spice_model.type) {
     /* Special for LUT MUX */
     fprintf(fp, "//------ CMOS MUX info: spice_model_name= %s_MUX, size=%d -----\n", spice_model.name, mux_size);
@@ -1137,7 +1141,9 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
     /* Print input ports*/
     fprintf(fp, "input wire [0:%d] %s,\n", num_conf_bits - 1,  input_port[0]->prefix);
     /* Print output ports*/
-    fprintf(fp, "output wire %s,\n", output_port[0]->prefix);
+    for (iport = 0; iport < num_output_port; iport++) {
+      fprintf(fp, "output wire [0:%d] %s,\n", output_port[iport]->size - 1, output_port[iport]->prefix);
+    }
     /* Print configuration ports*/
     /* The configuration port in MUX context is the input port in LUT context ! */
     fprintf(fp, "input wire [0:%d] %s,\n", 
@@ -2086,6 +2092,7 @@ void dump_verilog_submodule_one_lut(FILE* fp,
     if (FALSE == sram_port[iport]->mode_select) {
       continue;
     } 
+    fprintf(fp, ",\n");
     assert(TRUE == sram_port[iport]->mode_select); 
     fprintf(fp, "input wire [0:%d] %s_out,\n", 
             sram_port[iport]->size - 1, sram_port[iport]->prefix);

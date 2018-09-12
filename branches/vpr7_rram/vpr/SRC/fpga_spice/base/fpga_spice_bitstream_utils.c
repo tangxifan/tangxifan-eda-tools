@@ -223,6 +223,72 @@ int count_num_sram_bits_one_spice_model(t_spice_model* cur_spice_model,
   return -1;
 }
 
+int count_num_mode_bits_one_generic_spice_model(t_spice_model* cur_spice_model) {
+  int iport;
+  int num_mode_bits = 0;
+  int num_sram_port = 0;
+  t_spice_model_port** sram_ports = NULL;
+
+  /* Other block, we just count the number SRAM ports defined by user */
+  sram_ports = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
+  /* TODO: could be more smart! 
+   * Support Non-volatile RRAM-based SRAM */
+  if (0 < num_sram_port) {
+    assert(NULL != sram_ports);
+    for (iport = 0; iport < num_sram_port; iport++) {
+      assert(NULL != sram_ports[iport]->spice_model);
+      if (FALSE == sram_ports[iport]->mode_select) {
+        continue;
+      }
+      num_mode_bits += sram_ports[iport]->size;
+      /* TODO: could be more smart! 
+       * Support Non-volatile RRAM-based SRAM */
+      switch (cur_spice_model->design_tech) {
+      case SPICE_MODEL_DESIGN_RRAM:
+      /* Non-volatile SRAM requires 2 BLs and 2 WLs for each 1 memory bit, 
+       * Number of memory bits is still same as CMOS SRAM
+       */
+      case SPICE_MODEL_DESIGN_CMOS:
+        break;
+      default:
+        vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of LUT(name: %s)\n",
+                   __FILE__, __LINE__, cur_spice_model->name); 
+        exit(1);
+      }
+    }
+  }
+
+  /* Free */
+  my_free(sram_ports);
+
+  return num_mode_bits;
+}
+
+
+/* Count the number of configuration bits of a spice model */
+int count_num_mode_bits_one_spice_model(t_spice_model* cur_spice_model) {
+  assert(NULL != cur_spice_model);
+
+  /* Only LUT and MUX requires configuration bits*/
+  switch (cur_spice_model->type) {
+  case SPICE_MODEL_LUT:
+  case SPICE_MODEL_MUX:
+  case SPICE_MODEL_WIRE:
+  case SPICE_MODEL_FF:
+  case SPICE_MODEL_SRAM:
+  case SPICE_MODEL_HARDLOGIC:
+  case SPICE_MODEL_SCFF:
+  case SPICE_MODEL_IOPAD:
+    return count_num_mode_bits_one_generic_spice_model(cur_spice_model);
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid spice_model_type!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+
+  return -1;
+}
+
+
 /* For a non-volatile SRAM, we determine its number of reserved conf. bits */
 int count_num_reserved_conf_bits_one_rram_sram_spice_model(t_spice_model* cur_spice_model,
                                                            enum e_sram_orgz cur_sram_orgz_type) {

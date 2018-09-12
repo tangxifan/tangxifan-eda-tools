@@ -92,7 +92,7 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
   fprintf(fp, "//----- %s, Capactity: %d -----\n", phy_block_type->name, phy_block_type->capacity);
   fprintf(fp, "//----- Top Protocol -----\n");
   /* Definition */
-  fprintf(fp, "module grid_%s_( \n", phy_block_type->name);
+  fprintf(fp, "module grid_%s ( \n", phy_block_type->name);
   fprintf(fp, "\n");
   /* dump global ports */
   if (0 < dump_verilog_global_ports(fp, global_ports_head, TRUE)) {
