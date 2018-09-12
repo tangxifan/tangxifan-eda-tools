@@ -44,7 +44,7 @@
 static 
 char* generate_compact_verilog_grid_module_name_prefix(t_type_ptr phy_block_type,
                                                        int border_side) {
-  char* subckt_name = grid_verilog_file_name_prefix;
+  char* subckt_name = my_strdup(grid_verilog_file_name_prefix);
 
   /* Check */
   if (IO_TYPE == phy_block_type) {
@@ -272,6 +272,7 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
   FILE* fp = NULL;
   char* title = my_strcat("FPGA Verilog Netlist for Design: ", phy_block_type->name);
   char* subckt_name = NULL;
+  char* subckt_name_prefix = NULL;
 
   /* Check */
   if (IO_TYPE == phy_block_type) {
@@ -296,7 +297,7 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
   } 
 
   /* Subckt name */
-  subckt_name = generate_compact_verilog_grid_module_name_prefix(phy_block_type, border_side);
+  subckt_name_prefix = generate_compact_verilog_grid_module_name_prefix(phy_block_type, border_side);
 
   if (IO_TYPE == phy_block_type) {
     vpr_printf(TIO_MESSAGE_INFO, "Writing FPGA Verilog Netlist (%s) for logic block %s at %s side ...\n",
@@ -315,10 +316,13 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
     /* Comments: Grid [x][y]*/
     fprintf(fp, "//----- Submodule of type_descriptor: %s[%d] -----\n", phy_block_type->name, iz);
     /* Print a NULL logic block...*/
-    dump_verilog_phy_pb_graph_node_rec(cur_sram_orgz_info, fp, subckt_name, 
+    dump_verilog_phy_pb_graph_node_rec(cur_sram_orgz_info, fp, subckt_name_prefix, 
                                        phy_block_type->pb_graph_head, iz);
     fprintf(fp, "//----- END -----\n\n");
   }
+
+  /* Subckt name */
+  subckt_name = generate_compact_verilog_grid_module_name(phy_block_type, border_side);
 
   /* Create top module and call all the defined submodule */
   fprintf(fp, "//----- %s, Capactity: %d -----\n", phy_block_type->name, phy_block_type->capacity);
@@ -431,6 +435,8 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
 
   /* Free */
   my_free(fname);
+  my_free(subckt_name);
+  my_free(subckt_name_prefix);
 
   return;
 }
