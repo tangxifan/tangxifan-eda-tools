@@ -616,16 +616,6 @@ void dump_verilog_defined_grids(t_sram_orgz_info* cur_sram_orgz_info,
   } 
 
   /* IO Grids */
-  /* LEFT side */
-  ix = 0;
-  for (iy = 1; iy < (ny + 1); iy++) {
-    /* Bypass EMPTY grid */
-    if (EMPTY_TYPE == grid[ix][iy].type) {
-      continue;
-    }
-    assert(IO_TYPE == grid[ix][iy].type);
-    dump_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
-  }
   /* TOP side */
   iy = ny + 1;
   for (ix = 1; ix < (nx + 1); ix++) {
@@ -658,6 +648,18 @@ void dump_verilog_defined_grids(t_sram_orgz_info* cur_sram_orgz_info,
     assert(IO_TYPE == grid[ix][iy].type);
     dump_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
   } 
+
+  /* LEFT side */
+  ix = 0;
+  for (iy = 1; iy < (ny + 1); iy++) {
+    /* Bypass EMPTY grid */
+    if (EMPTY_TYPE == grid[ix][iy].type) {
+      continue;
+    }
+    assert(IO_TYPE == grid[ix][iy].type);
+    dump_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
+  }
+
 
   return;
 }

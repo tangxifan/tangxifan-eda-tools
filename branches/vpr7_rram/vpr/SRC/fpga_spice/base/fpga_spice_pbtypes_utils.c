@@ -1125,13 +1125,14 @@ void init_grids_num_conf_bits(t_sram_orgz_info* cur_sram_orgz_info) {
   
   /* Consider the IO pads */
   vpr_printf(TIO_MESSAGE_INFO, "INFO: Initializing number of configuration bits of I/O grids...\n");
-  /* Left side: x = 0, y = 1 .. ny*/
-  ix = 0;
-  for (iy = 1; iy < (ny + 1); iy++) {
+  /* Top side : x = 1 .. nx + 1, y = nx + 1  */
+  iy = ny + 1;
+  for (ix = 1; ix < (nx + 1); ix++) {
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
     init_one_grid_num_conf_bits(ix, iy, cur_sram_orgz_info);
   }
+
   /* Right side : x = nx + 1, y = 1 .. ny*/
   ix = nx + 1;
   for (iy = 1; iy < (ny + 1); iy++) {
@@ -1139,6 +1140,7 @@ void init_grids_num_conf_bits(t_sram_orgz_info* cur_sram_orgz_info) {
     assert(IO_TYPE == grid[ix][iy].type);
     init_one_grid_num_conf_bits(ix, iy, cur_sram_orgz_info);
   }
+
   /* Bottom  side : x = 1 .. nx + 1, y = 0 */
   iy = 0;
   for (ix = 1; ix < (nx + 1); ix++) {
@@ -1146,9 +1148,10 @@ void init_grids_num_conf_bits(t_sram_orgz_info* cur_sram_orgz_info) {
     assert(IO_TYPE == grid[ix][iy].type);
     init_one_grid_num_conf_bits(ix, iy, cur_sram_orgz_info);
   }
-  /* Top side : x = 1 .. nx + 1, y = nx + 1  */
-  iy = ny + 1;
-  for (ix = 1; ix < (nx + 1); ix++) {
+
+  /* Left side: x = 0, y = 1 .. ny*/
+  ix = 0;
+  for (iy = 1; iy < (ny + 1); iy++) {
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
     init_one_grid_num_conf_bits(ix, iy, cur_sram_orgz_info);
@@ -1659,9 +1662,9 @@ void init_grids_num_iopads() {
   
   /* Consider the IO pads */
   vpr_printf(TIO_MESSAGE_INFO, "INFO: Initializing number of I/O pads in I/O grids...\n");
-  /* Left side: x = 0, y = 1 .. ny*/
-  ix = 0;
-  for (iy = 1; iy < (ny + 1); iy++) {
+  /* Top side : x = 1 .. nx + 1, y = nx + 1  */
+  iy = ny + 1;
+  for (ix = 1; ix < (nx + 1); ix++) {
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
     init_one_grid_num_iopads(ix, iy);
@@ -1680,9 +1683,9 @@ void init_grids_num_iopads() {
     assert(IO_TYPE == grid[ix][iy].type);
     init_one_grid_num_iopads(ix, iy);
   }
-  /* Top side : x = 1 .. nx + 1, y = nx + 1  */
-  iy = ny + 1;
-  for (ix = 1; ix < (nx + 1); ix++) {
+  /* Left side: x = 0, y = 1 .. ny*/
+  ix = 0;
+  for (iy = 1; iy < (ny + 1); iy++) {
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
     init_one_grid_num_iopads(ix, iy);

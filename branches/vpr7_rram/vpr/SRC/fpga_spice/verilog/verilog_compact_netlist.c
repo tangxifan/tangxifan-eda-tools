@@ -38,9 +38,227 @@
 #include "verilog_top_netlist.h"
 #include "verilog_compact_netlist_utils.h"
 
+/* ONLY for compact Verilog netlists:
+ * Generate uniformly the prefix of the module name for each grid  
+ */
+static 
+char* generate_compact_verilog_grid_module_name_prefix(t_type_ptr phy_block_type,
+                                                       int border_side) {
+  char* subckt_name = grid_verilog_file_name_prefix;
+
+  /* Check */
+  if (IO_TYPE == phy_block_type) {
+    assert( (-1 < border_side) && (border_side < 4));
+  }
+
+  if (IO_TYPE == phy_block_type) {
+    subckt_name = my_strcat(subckt_name, convert_side_index_to_string(border_side));
+    subckt_name = my_strcat(subckt_name, "_");
+  }
+
+  return subckt_name;
+}
+
+
+/* ONLY for compact Verilog netlists:
+ * Generate uniformly the module name for each grid  
+ */
+static 
+char* generate_compact_verilog_grid_module_name(t_type_ptr phy_block_type,
+                                                int border_side) {
+  char* subckt_name = NULL;
+
+  subckt_name = generate_compact_verilog_grid_module_name_prefix(phy_block_type, border_side);
+
+  subckt_name = my_strcat(subckt_name, phy_block_type->name);
+
+  return subckt_name;
+}
+
+/* ONLY for compact Verilog netlists:
+ * Update the grid_index_low and grid_index_high for each spice_models 
+ * Currently, we focus on three spice_models: SRAMs/SCFFs/IOPADs
+ */
+static 
+void compact_verilog_update_one_spice_model_grid_index(t_type_ptr phy_block_type,
+                                                       int grid_x, int grid_y, 
+                                                       int num_spice_models, 
+                                                       t_spice_model* spice_model) {
+  int i;
+  int stamped_cnt = 0;
+
+  for (i = 0; i < num_spice_models; i++) {
+    /* Only LUT and MUX requires configuration bits*/
+    switch (spice_model[i].type) {
+    case SPICE_MODEL_INVBUF:
+    case SPICE_MODEL_PASSGATE:
+    case SPICE_MODEL_LUT:
+    case SPICE_MODEL_MUX:
+    case SPICE_MODEL_WIRE:
+    case SPICE_MODEL_CHAN_WIRE:
+    case SPICE_MODEL_FF:
+    case SPICE_MODEL_HARDLOGIC:
+      break;
+    case SPICE_MODEL_SCFF:
+    case SPICE_MODEL_SRAM:
+      stamped_cnt = spice_model[i].cnt;
+      spice_model[i].grid_index_low[grid_x][grid_y] = stamped_cnt; 
+      spice_model[i].grid_index_high[grid_x][grid_y] = stamped_cnt + phy_block_type->pb_type->physical_mode_num_conf_bits;
+      spice_model[i].cnt = spice_model[i].grid_index_high[grid_x][grid_y];
+      break;
+    case SPICE_MODEL_IOPAD:
+      stamped_cnt = spice_model[i].cnt;
+      spice_model[i].grid_index_low[grid_x][grid_y] = stamped_cnt; 
+      spice_model[i].grid_index_high[grid_x][grid_y] = stamped_cnt + phy_block_type->pb_type->physical_mode_num_iopads;
+      spice_model[i].cnt = spice_model[i].grid_index_high[grid_x][grid_y];
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid spice_model_type!\n", __FILE__, __LINE__);
+      exit(1);
+    }
+  }
+
+  return;
+}
+
+/* ONLY for compact Verilog netlists:
+ * Update the grid_index_low and grid_index_high in sram_orgz_info 
+ */
+static 
+void compact_verilog_update_sram_orgz_info_grid_index(t_sram_orgz_info* cur_sram_orgz_info,
+                                                      t_type_ptr phy_block_type,
+                                                      int grid_x, int grid_y, int* cur_num_conf_bits) {
+
+  cur_sram_orgz_info->grid_reserved_conf_bits[grid_x][grid_y] = phy_block_type->pb_type->physical_mode_num_reserved_conf_bits;
+
+  cur_sram_orgz_info->grid_conf_bits_lsb[grid_x][grid_y] = (*cur_num_conf_bits);
+
+  cur_sram_orgz_info->grid_conf_bits_msb[grid_x][grid_y] = (*cur_num_conf_bits);
+
+  cur_sram_orgz_info->grid_conf_bits_msb[grid_x][grid_y] += phy_block_type->pb_type->physical_mode_num_conf_bits;
+
+  /* Update the counter */
+  (*cur_num_conf_bits) = cur_sram_orgz_info->grid_conf_bits_msb[grid_x][grid_y];
+
+  return;
+}
+
+/* ONLY for compact Verilog netlists:
+ * Update the grid_index_low and grid_index_high for each spice_models
+ * Currently, we focus on three spice_models: SRAMs/SCFFs/IOPADs
+ * IMPORTANT: The sequence of for loop should be consistent with 
+ * 1. bitstream logic block 
+ * 2. verilog pbtypes logic block 
+ * 2. spice pbtypes logic block 
+ */
+static 
+void compact_verilog_update_grid_spice_model_and_sram_orgz_info(t_sram_orgz_info* cur_sram_orgz_info,
+                                                                int num_spice_models, 
+                                                                t_spice_model* spice_model) {
+  int ix, iy;
+  int stamped_num_conf_bits = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info);
+
+  /* Check the grid*/
+  if ((0 == nx)||(0 == ny)) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid grid size (nx=%d, ny=%d)!\n", __FILE__, __LINE__, nx, ny);
+    return;    
+  }
+
+  vpr_printf(TIO_MESSAGE_INFO,"Grid size of FPGA: nx=%d ny=%d\n", nx + 1, ny + 1);
+  assert(NULL != grid);
+ 
+  /* Print the core logic block one by one
+   * Note ix=0 and ix = nx + 1 are IO pads. They surround the core logic blocks
+   */
+  vpr_printf(TIO_MESSAGE_INFO,"Generating core grids...\n");
+  for (ix = 1; ix < (nx + 1); ix++) {
+    for (iy = 1; iy < (ny + 1); iy++) {
+      /* Ensure this is not a io */
+      assert(IO_TYPE != grid[ix][iy].type);
+      /* Update the grid index low and high */ 
+      compact_verilog_update_one_spice_model_grid_index(grid[ix][iy].type,
+                                                        ix, iy,
+                                                        num_spice_models, spice_model);
+      /* Update all the sram bits */
+      compact_verilog_update_sram_orgz_info_grid_index(cur_sram_orgz_info,
+                                                       grid[ix][iy].type,
+                                                       ix, iy, &stamped_num_conf_bits);
+    }
+  }
+
+  vpr_printf(TIO_MESSAGE_INFO,"Generating IO grids...\n");
+  /* Print the IO pads */
+  /* Top side : x = 1 .. nx + 1, y = nx + 1  */
+  iy = ny + 1;
+  for (ix = 1; ix < (nx + 1); ix++) {
+    /* Ensure this is a io */
+    assert(IO_TYPE == grid[ix][iy].type);
+    /* Update the grid index low and high */
+    compact_verilog_update_one_spice_model_grid_index(grid[ix][iy].type,
+                                                      ix, iy,
+                                                      num_spice_models, spice_model);
+    /* Update all the sram bits */
+    compact_verilog_update_sram_orgz_info_grid_index(cur_sram_orgz_info,
+                                                     grid[ix][iy].type,
+                                                     ix, iy, &stamped_num_conf_bits);
+  }
+
+  /* Right side : x = nx + 1, y = 1 .. ny*/
+  ix = nx + 1;
+  for (iy = 1; iy < (ny + 1); iy++) {
+    /* Ensure this is a io */
+    assert(IO_TYPE == grid[ix][iy].type);
+    /* Update the grid index low and high */
+    compact_verilog_update_one_spice_model_grid_index(grid[ix][iy].type,
+                                                      ix, iy,
+                                                      num_spice_models, spice_model);
+    /* Update all the sram bits */
+    compact_verilog_update_sram_orgz_info_grid_index(cur_sram_orgz_info,
+                                                     grid[ix][iy].type,
+                                                     ix, iy, &stamped_num_conf_bits);
+  }
+
+  /* Bottom  side : x = 1 .. nx + 1, y = 0 */
+  iy = 0;
+  for (ix = 1; ix < (nx + 1); ix++) {
+    /* Ensure this is a io */
+    assert(IO_TYPE == grid[ix][iy].type);
+    /* Update the grid index low and high */
+    compact_verilog_update_one_spice_model_grid_index(grid[ix][iy].type,
+                                                      ix, iy,
+                                                      num_spice_models, spice_model);
+    /* Update all the sram bits */
+    compact_verilog_update_sram_orgz_info_grid_index(cur_sram_orgz_info,
+                                                     grid[ix][iy].type,
+                                                     ix, iy, &stamped_num_conf_bits);
+  }
+  /* Left side: x = 0, y = 1 .. ny*/
+  ix = 0;
+  for (iy = 1; iy < (ny + 1); iy++) {
+    /* Ensure this is a io */
+    assert(IO_TYPE == grid[ix][iy].type);
+    /* Update the grid index low and high */
+    compact_verilog_update_one_spice_model_grid_index(grid[ix][iy].type,
+                                                      ix, iy,
+                                                      num_spice_models, spice_model);
+    /* Update all the sram bits */
+    compact_verilog_update_sram_orgz_info_grid_index(cur_sram_orgz_info,
+                                                     grid[ix][iy].type,
+                                                     ix, iy, &stamped_num_conf_bits);
+  }
+
+  /* Update num_mem_bits */
+  update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info, stamped_num_conf_bits);
+
+  /* Free */
+   
+  return;
+}
+
 /* Create a Verilog file and dump a module consisting of a I/O block,
  * The pins appear in the port list will depend on the selected border side
  */
+static 
 void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_info, 
                                              char* subckt_dir_path,
                                              t_type_ptr phy_block_type,
@@ -53,7 +271,7 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
   char* fname = NULL;  
   FILE* fp = NULL;
   char* title = my_strcat("FPGA Verilog Netlist for Design: ", phy_block_type->name);
-  char* subckt_name = "grid_";
+  char* subckt_name = NULL;
 
   /* Check */
   if (IO_TYPE == phy_block_type) {
@@ -62,6 +280,11 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
 
   /* Give a name to the Verilog netlist */
   fname = my_strcat(format_dir_path(subckt_dir_path), phy_block_type->name);
+  /* Give a special name to IO blocks */
+  if (IO_TYPE == phy_block_type) {
+    fname = my_strcat(fname, "_");
+    fname = my_strcat(fname, convert_side_index_to_string(border_side));
+  }
   fname = my_strcat(fname, verilog_netlist_file_postfix); 
 
   /* Create file handler */
@@ -72,8 +295,16 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
     exit(1);
   } 
 
-  vpr_printf(TIO_MESSAGE_INFO, "Writing FPGA Verilog Netlist for logic block %s...\n",
-             phy_block_type->name);
+  /* Subckt name */
+  subckt_name = generate_compact_verilog_grid_module_name_prefix(phy_block_type, border_side);
+
+  if (IO_TYPE == phy_block_type) {
+    vpr_printf(TIO_MESSAGE_INFO, "Writing FPGA Verilog Netlist (%s) for logic block %s at %s side ...\n",
+               fname, phy_block_type->name, convert_side_index_to_string(border_side));
+  } else { 
+    vpr_printf(TIO_MESSAGE_INFO, "Writing FPGA Verilog Netlist (%s) for logic block %s...\n",
+               fname, phy_block_type->name);
+  }
 
   /* Print the title */
   dump_verilog_file_header(fp, title);
@@ -93,7 +324,7 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
   fprintf(fp, "//----- %s, Capactity: %d -----\n", phy_block_type->name, phy_block_type->capacity);
   fprintf(fp, "//----- Top Protocol -----\n");
   /* Definition */
-  fprintf(fp, "module grid_%s ( \n", phy_block_type->name);
+  fprintf(fp, "module %s ( \n", subckt_name);
   fprintf(fp, "\n");
   /* dump global ports */
   if (0 < dump_verilog_global_ports(fp, global_ports_head, TRUE)) {
@@ -112,8 +343,8 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
 
   /* I/O PAD */
   dump_verilog_grid_common_port(fp, iopad_verilog_model, gio_inout_prefix, 
-                                0, phy_block_type->capacity - 1,
-                                VERILOG_PORT_INPUT); 
+                                0, phy_block_type->pb_type->physical_mode_num_iopads - 1,
+                                VERILOG_PORT_INOUT); 
 
   /* Print configuration ports */
   /* Reserved configuration ports */
@@ -213,9 +444,17 @@ void dump_compact_verilog_logic_blocks(t_sram_orgz_info* cur_sram_orgz_info,
                                        char* subckt_dir,
                                        t_arch* arch) {
   int itype, iside, num_sides;
+  int* stamped_spice_model_cnt = NULL;
+  int stamped_num_mem_bits = 0;
  
   num_sides = 4;
 
+  /* Create a snapshot on spice_model counter */
+  stamped_spice_model_cnt = snapshot_spice_model_counter(arch->spice->num_spice_model, 
+                                                         arch->spice->spice_models);
+  /* Create a snapshot on sram_orgz_info */
+  stamped_num_mem_bits = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info);
+ 
   /* Enumerate the types, dump one Verilog module for each */
   for (itype = 0; itype < num_types; itype++) {
     if (EMPTY_TYPE == &type_descriptors[itype]) {
@@ -241,6 +480,22 @@ void dump_compact_verilog_logic_blocks(t_sram_orgz_info* cur_sram_orgz_info,
     }
   }
 
+  /* Recover spice_model counter */
+  set_spice_model_counter(arch->spice->num_spice_model, 
+                          arch->spice->spice_models,
+                          stamped_spice_model_cnt);
+  /* Recover num_mem_bits to sram_orgz_info */
+  update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info, stamped_num_mem_bits);
+
+  /* Update the grid_index low and high for spice models 
+   * THIS FUNCTION MUST GO AFTER OUTPUTING PHYSICAL LOGIC BLOCKS!!!
+   */
+  compact_verilog_update_grid_spice_model_and_sram_orgz_info(cur_sram_orgz_info,
+                                                             arch->spice->num_spice_model, 
+                                                             arch->spice->spice_models);
+  /* Free */
+  my_free (stamped_spice_model_cnt); 
+
   return;
 }
 
@@ -250,7 +505,8 @@ void dump_compact_verilog_logic_blocks(t_sram_orgz_info* cur_sram_orgz_info,
 static 
 void dump_compact_verilog_defined_one_grid(t_sram_orgz_info* cur_sram_orgz_info,
                                            FILE* fp,
-                                           int ix, int iy) {
+                                           int ix, int iy, int border_side) {
+  char* subckt_name = NULL;
    
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
@@ -262,11 +518,13 @@ void dump_compact_verilog_defined_one_grid(t_sram_orgz_info* cur_sram_orgz_info,
     ||(0 != grid[ix][iy].offset)) {
     return;
   }
+
+  subckt_name = generate_compact_verilog_grid_module_name(grid[ix][iy].type, border_side);
  
   /* Comment lines */
   fprintf(fp, "//----- BEGIN Call Grid[%d][%d] module -----\n", ix, iy);
   /* Print the Grid module */
-  fprintf(fp, "grid_%s  ", grid[ix][iy].type->name); /* Call the name of subckt */ 
+  fprintf(fp, "%s  ", subckt_name); /* Call the name of subckt */ 
   fprintf(fp, "grid_%d__%d_ ", ix, iy);
   fprintf(fp, "(");
   fprintf(fp, "\n");
@@ -332,21 +590,11 @@ void dump_compact_verilog_defined_grids(t_sram_orgz_info* cur_sram_orgz_info,
         continue;
       }
       assert(IO_TYPE != grid[ix][iy].type);
-      dump_compact_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
+      dump_compact_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy, -1);
     }
   } 
 
   /* IO Grids */
-  /* LEFT side */
-  ix = 0;
-  for (iy = 1; iy < (ny + 1); iy++) {
-    /* Bypass EMPTY grid */
-    if (EMPTY_TYPE == grid[ix][iy].type) {
-      continue;
-    }
-    assert(IO_TYPE == grid[ix][iy].type);
-    dump_compact_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
-  }
   /* TOP side */
   iy = ny + 1;
   for (ix = 1; ix < (nx + 1); ix++) {
@@ -355,7 +603,7 @@ void dump_compact_verilog_defined_grids(t_sram_orgz_info* cur_sram_orgz_info,
       continue;
     }
     assert(IO_TYPE == grid[ix][iy].type);
-    dump_compact_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
+    dump_compact_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy, 0);
   } 
   /* RIGHT side */
   ix = nx + 1;
@@ -365,7 +613,7 @@ void dump_compact_verilog_defined_grids(t_sram_orgz_info* cur_sram_orgz_info,
       continue;
     }
     assert(IO_TYPE == grid[ix][iy].type);
-    dump_compact_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
+    dump_compact_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy, 1);
   }
 
   /* BOTTOM side */
@@ -376,8 +624,19 @@ void dump_compact_verilog_defined_grids(t_sram_orgz_info* cur_sram_orgz_info,
       continue;
     }
     assert(IO_TYPE == grid[ix][iy].type);
-    dump_compact_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
+    dump_compact_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy, 2);
   } 
+  /* LEFT side */
+  ix = 0;
+  for (iy = 1; iy < (ny + 1); iy++) {
+    /* Bypass EMPTY grid */
+    if (EMPTY_TYPE == grid[ix][iy].type) {
+      continue;
+    }
+    assert(IO_TYPE == grid[ix][iy].type);
+    dump_compact_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy, 3);
+  }
+
 
   return;
 }

@@ -1475,7 +1475,6 @@ void dump_verilog_pb_primitive_verilog_model(t_sram_orgz_info* cur_sram_orgz_inf
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid type of verilog_model(%s), should be [LUT|FF|HARD_LOGIC|IO]!\n",
                __FILE__, __LINE__, verilog_model->name);
     exit(1);
-    break;
   }
  
   return; 
@@ -1619,7 +1618,7 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
   dump_verilog_grid_common_port(fp, iopad_verilog_model,
                                 gio_inout_prefix, 
                                 stamped_iopad_cnt, iopad_verilog_model->cnt - 1,
-                                VERILOG_PORT_INPUT);
+                                VERILOG_PORT_INOUT);
   /* Print Configuration ports */
   /* sram_verilog_model->cnt should be updated because all the child pbs have been dumped
    * stamped_sram_cnt remains the old sram_verilog_model->cnt before all the child pbs are dumped
@@ -1737,7 +1736,7 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
   /* End the subckt */
   fprintf(fp, "endmodule\n");
   /* Comment lines */
-  fprintf(fp, "//----- END Idle programmable logic block Verilog module %s -----\n\n", subckt_name);
+  fprintf(fp, "//----- END Physical  programmable logic block Verilog module %s -----\n\n", subckt_name);
   /* Free subckt name*/
   my_free(subckt_name);
 
@@ -2500,14 +2499,6 @@ void dump_verilog_logic_blocks(t_sram_orgz_info* cur_sram_orgz_info,
 
   vpr_printf(TIO_MESSAGE_INFO,"Generating IO grids...\n");
   /* Print the IO pads */
-  /* Left side: x = 0, y = 1 .. ny*/
-  ix = 0;
-  for (iy = 1; iy < (ny + 1); iy++) {
-    /* Ensure this is a io */
-    assert(IO_TYPE == grid[ix][iy].type);
-    dump_verilog_physical_grid_blocks(cur_sram_orgz_info, subckt_dir, ix, iy, arch); 
-  }
-
   /* Top side : x = 1 .. nx + 1, y = nx + 1  */
   iy = ny + 1;
   for (ix = 1; ix < (nx + 1); ix++) {
@@ -2531,6 +2522,14 @@ void dump_verilog_logic_blocks(t_sram_orgz_info* cur_sram_orgz_info,
     assert(IO_TYPE == grid[ix][iy].type);
     dump_verilog_physical_grid_blocks(cur_sram_orgz_info, subckt_dir, ix, iy, arch); 
   }
+  /* Left side: x = 0, y = 1 .. ny*/
+  ix = 0;
+  for (iy = 1; iy < (ny + 1); iy++) {
+    /* Ensure this is a io */
+    assert(IO_TYPE == grid[ix][iy].type);
+    dump_verilog_physical_grid_blocks(cur_sram_orgz_info, subckt_dir, ix, iy, arch); 
+  }
+
   /* Output a header file for all the logic blocks */
   vpr_printf(TIO_MESSAGE_INFO,"Generating header file for grid submodules...\n");
   dump_verilog_subckt_header_file(grid_verilog_subckt_file_path_head,

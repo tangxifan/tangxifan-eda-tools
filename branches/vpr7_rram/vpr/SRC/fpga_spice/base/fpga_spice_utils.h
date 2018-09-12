@@ -361,3 +361,10 @@ boolean is_primitive_pb_type(t_pb_type* cur_pb_type);
 void rec_stats_spice_model_global_ports(t_spice_model* cur_spice_model,
                                         boolean recursive,
                                         t_llist** spice_model_head);
+
+int* snapshot_spice_model_counter(int num_spice_models,
+                                  t_spice_model* spice_model);
+
+void set_spice_model_counter(int num_spice_models,
+                             t_spice_model* spice_model,
+                             int* spice_model_counter);

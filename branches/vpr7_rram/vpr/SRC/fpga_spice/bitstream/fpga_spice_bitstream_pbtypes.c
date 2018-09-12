@@ -538,14 +538,6 @@ void fpga_spice_generate_bitstream_logic_block(t_arch* arch,
 
   vpr_printf(TIO_MESSAGE_INFO,"Generating bitstream for IO grids...\n");
   /* Print the IO pads */
-  /* Left side: x = 0, y = 1 .. ny*/
-  ix = 0;
-  for (iy = 1; iy < (ny + 1); iy++) {
-    /* Ensure this is a io */
-    assert(IO_TYPE == grid[ix][iy].type);
-    fpga_spice_generate_bitstream_physical_grid_block(ix, iy, arch, cur_sram_orgz_info); 
-  }
-
   /* Top side : x = 1 .. nx + 1, y = nx + 1  */
   iy = ny + 1;
   for (ix = 1; ix < (nx + 1); ix++) {
@@ -568,6 +560,14 @@ void fpga_spice_generate_bitstream_logic_block(t_arch* arch,
     assert(IO_TYPE == grid[ix][iy].type);
     fpga_spice_generate_bitstream_physical_grid_block(ix, iy, arch, cur_sram_orgz_info); 
   }
+  /* Left side: x = 0, y = 1 .. ny*/
+  ix = 0;
+  for (iy = 1; iy < (ny + 1); iy++) {
+    /* Ensure this is a io */
+    assert(IO_TYPE == grid[ix][iy].type);
+    fpga_spice_generate_bitstream_physical_grid_block(ix, iy, arch, cur_sram_orgz_info); 
+  }
+
   /* Free */
    
   return; 

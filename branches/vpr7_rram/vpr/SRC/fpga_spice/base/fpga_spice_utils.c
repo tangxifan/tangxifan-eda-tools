@@ -3072,3 +3072,30 @@ void rec_stats_spice_model_global_ports(t_spice_model* cur_spice_model,
   return;
 }
 
+/* Create a snapshot on spice_model counter */
+int* snapshot_spice_model_counter(int num_spice_models,
+                                  t_spice_model* spice_model) {
+  int i;
+  int* snapshot = (int*) my_calloc(num_spice_models, sizeof(int));
+
+  for (i = 0; i < num_spice_models; i++) {
+    snapshot[i] = spice_model[i].cnt;
+  }
+
+  return snapshot;
+}
+                                  
+
+void set_spice_model_counter(int num_spice_models,
+                             t_spice_model* spice_model,
+                             int* spice_model_counter) {
+  int i;
+
+  for (i = 0; i < num_spice_models; i++) {
+    spice_model[i].cnt = spice_model_counter[i];
+  }
+
+  return;
+}
+
+

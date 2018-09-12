@@ -471,14 +471,10 @@ int rec_dump_verilog_spice_model_global_ports(FILE* fp,
     /* We have some port to dump ! 
      * Print a comment line 
      */
-    if (0 == dumped_port_cnt) {
-      fprintf(fp, "//----- BEGIN Global ports of SPICE_MODEL(%s) -----\n",
-                  cur_spice_model->name);
-    }
-
     /* Check if we need to dump a comma */
     if (TRUE == dump_comma) {
-      fprintf(fp, ",\n");
+      fprintf(fp, ", //----- Global port of SPICE_MODEL(%s) -----\n",
+                  cur_spice_model->name);
     }
     if (TRUE == dump_port_type) {
       fprintf(fp, "%s [0:%d] %s", 
@@ -504,8 +500,6 @@ int rec_dump_verilog_spice_model_global_ports(FILE* fp,
    */
   if (0 < dumped_port_cnt) {
     fprintf(fp, "\n");
-    fprintf(fp, "//----- END Global ports of SPICE_MODEL(%s)-----\n",
-                cur_spice_model->name);
   }
 
   /* Free linked list */
@@ -532,7 +526,7 @@ int dump_verilog_global_ports(FILE* fp, t_llist* head,
                __FILE__, __LINE__); 
   }
 
-  fprintf(fp, "//----- BEGIN Global ports -----\n");
+  /* fprintf(fp, "//----- BEGIN Global ports -----\n"); */
   while(NULL != temp) {
     cur_global_port = (t_spice_model_port*)(temp->dptr); 
     if (TRUE == dump_port_type) {
@@ -549,13 +543,13 @@ int dump_verilog_global_ports(FILE* fp, t_llist* head,
     if (NULL != temp->next) {
      fprintf(fp, ",");
     }
-    fprintf(fp, "\n");
+    fprintf(fp, " //---- global port \n");
     /* Update counter */
     dumped_port_cnt++;
     /* Go to the next */
     temp = temp->next;
   }
-  fprintf(fp, "//----- END Global ports -----\n");
+  /* fprintf(fp, "//----- END Global ports -----\n"); */
 
   return dumped_port_cnt;
 }
@@ -1762,7 +1756,7 @@ void dump_verilog_grid_common_port(FILE* fp, t_spice_model* cur_verilog_model,
   }
 
   assert(NULL != cur_verilog_model);
-  if (0 >  msb- lsb) {
+  if (0 >  msb - lsb) {
     return;
   }
 
