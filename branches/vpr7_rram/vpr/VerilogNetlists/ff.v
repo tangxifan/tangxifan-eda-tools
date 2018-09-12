@@ -76,7 +76,6 @@ module sc_dff_compact (
 /* Global ports go first */
 input reset, // Reset input 
 input clk, // Clock Input
-input clkb, // Clock Input
 /* Local ports follow */
 input D, // Data Input
 output Q, // Q output 

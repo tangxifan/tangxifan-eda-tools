@@ -320,7 +320,7 @@
         <port type="input" prefix="in" size="6" tri_state_map="----11"/>
         <port type="output" prefix="lut4_out" size="4" lut_frac_level="4" lut_output_mask="0,1,2,3"/>
         <port type="output" prefix="lut5_out" size="2" lut_frac_level="5" lut_output_mask="0,1"/>
-        <port type="output" prefix="lut6_out" size="1" lut_output_mask="1"/>
+        <port type="output" prefix="lut6_out" size="1" lut_output_mask="0"/>
         <port type="sram" prefix="sram" size="64"/>
         <port type="sram" prefix="mode" size="2" mode_select="true" spice_model_name="sram6T_blwl" default_val="1"/>
       </spice_model>
@@ -350,7 +350,7 @@
          <output_buffer exist="on" spice_model_name="INVTX1"/>
          <pass_gate_logic spice_model_name="TGATE"/>
          <port type="input" prefix="D" size="1"/>
-         <port type="input" prefix="pset" size="1" is_global="true" default_val="0" is_set="true"/>
+         <!--port type="input" prefix="pset" size="1" is_global="true" default_val="0" is_set="true"/ -->
          <port type="input" prefix="preset" size="1" is_global="true" default_val="0" is_reset="true"/>
          <port type="output" prefix="Q" size="2"/>
          <port type="clock" prefix="prog_clk" size="1" is_global="true" default_val="0" is_prog="true"/>
@@ -607,9 +607,9 @@
                 <output name="cout" num_pins="1"/>
                 <pb_type name="frac_lut6" blif_model=".frac_lut6" mode_bits="11" num_pb="1" spice_model_name="frac_lut6">
                   <input name="in" num_pins="6"/>
-                  <output name="lut6_out" num_pins="1"/>
-                  <output name="lut5_out" num_pins="2"/>
                   <output name="lut4_out" num_pins="4"/>
+                  <output name="lut5_out" num_pins="2"/>
+                  <output name="lut6_out" num_pins="1"/>
                 </pb_type>       
                 <pb_type name="adder_phy" blif_model=".subckt adder" num_pb="2" spice_model_name="adder">
                   <input name="a" num_pins="1"/>

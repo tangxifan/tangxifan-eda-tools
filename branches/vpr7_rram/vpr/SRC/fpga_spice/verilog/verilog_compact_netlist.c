@@ -103,13 +103,13 @@ void compact_verilog_update_one_spice_model_grid_index(t_type_ptr phy_block_type
     case SPICE_MODEL_SRAM:
       stamped_cnt = spice_model[i].cnt;
       spice_model[i].grid_index_low[grid_x][grid_y] = stamped_cnt; 
-      spice_model[i].grid_index_high[grid_x][grid_y] = stamped_cnt + phy_block_type->pb_type->physical_mode_num_conf_bits;
+      spice_model[i].grid_index_high[grid_x][grid_y] = stamped_cnt + phy_block_type->capacity * phy_block_type->pb_type->physical_mode_num_conf_bits;
       spice_model[i].cnt = spice_model[i].grid_index_high[grid_x][grid_y];
       break;
     case SPICE_MODEL_IOPAD:
       stamped_cnt = spice_model[i].cnt;
       spice_model[i].grid_index_low[grid_x][grid_y] = stamped_cnt; 
-      spice_model[i].grid_index_high[grid_x][grid_y] = stamped_cnt + phy_block_type->pb_type->physical_mode_num_iopads;
+      spice_model[i].grid_index_high[grid_x][grid_y] = stamped_cnt + phy_block_type->capacity * phy_block_type->pb_type->physical_mode_num_iopads;
       spice_model[i].cnt = spice_model[i].grid_index_high[grid_x][grid_y];
       break;
     default:
@@ -135,7 +135,7 @@ void compact_verilog_update_sram_orgz_info_grid_index(t_sram_orgz_info* cur_sram
 
   cur_sram_orgz_info->grid_conf_bits_msb[grid_x][grid_y] = (*cur_num_conf_bits);
 
-  cur_sram_orgz_info->grid_conf_bits_msb[grid_x][grid_y] += phy_block_type->pb_type->physical_mode_num_conf_bits;
+  cur_sram_orgz_info->grid_conf_bits_msb[grid_x][grid_y] += phy_block_type->capacity * phy_block_type->pb_type->physical_mode_num_conf_bits;
 
   /* Update the counter */
   (*cur_num_conf_bits) = cur_sram_orgz_info->grid_conf_bits_msb[grid_x][grid_y];
@@ -347,7 +347,7 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
 
   /* I/O PAD */
   dump_verilog_grid_common_port(fp, iopad_verilog_model, gio_inout_prefix, 
-                                0, phy_block_type->pb_type->physical_mode_num_iopads - 1,
+                                0, phy_block_type->capacity * phy_block_type->pb_type->physical_mode_num_iopads - 1,
                                 VERILOG_PORT_INOUT); 
 
   /* Print configuration ports */
@@ -377,7 +377,7 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
   /* Quote all the sub blocks*/
   for (iz = 0; iz < phy_block_type->capacity; iz++) {
     /* Local Vdd and Gnd, subckt name*/
-    fprintf(fp, "%s ", compact_verilog_get_grid_phy_block_subckt_name(phy_block_type, iz, subckt_name));
+    fprintf(fp, "%s ", compact_verilog_get_grid_phy_block_subckt_name(phy_block_type, iz, subckt_name_prefix));
     fprintf(fp, " grid_%s_%d_ (", phy_block_type->name, iz);
     fprintf(fp, "\n");
     /* dump global ports */

@@ -171,23 +171,23 @@ int count_num_sram_bits_one_generic_spice_model(t_spice_model* cur_spice_model) 
    * Support Non-volatile RRAM-based SRAM */
   if (0 < num_sram_port) {
     assert(NULL != sram_ports);
-    for (iport = 0; iport < num_sram_port; iport++) {
-      assert(NULL != sram_ports[iport]->spice_model);
-      num_sram_bits += sram_ports[iport]->size;
-      /* TODO: could be more smart! 
-       * Support Non-volatile RRAM-based SRAM */
-      switch (cur_spice_model->design_tech) {
-      case SPICE_MODEL_DESIGN_RRAM:
-      /* Non-volatile SRAM requires 2 BLs and 2 WLs for each 1 memory bit, 
-       * Number of memory bits is still same as CMOS SRAM
-       */
-      case SPICE_MODEL_DESIGN_CMOS:
-        break;
-      default:
-        vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of LUT(name: %s)\n",
-                   __FILE__, __LINE__, cur_spice_model->name); 
-        exit(1);
-      }
+  }
+  for (iport = 0; iport < num_sram_port; iport++) {
+    assert(NULL != sram_ports[iport]->spice_model);
+    num_sram_bits += sram_ports[iport]->size;
+    /* TODO: could be more smart! 
+    * Support Non-volatile RRAM-based SRAM */
+    switch (cur_spice_model->design_tech) {
+    case SPICE_MODEL_DESIGN_RRAM:
+    /* Non-volatile SRAM requires 2 BLs and 2 WLs for each 1 memory bit, 
+     * Number of memory bits is still same as CMOS SRAM
+     */
+    case SPICE_MODEL_DESIGN_CMOS:
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of LUT(name: %s)\n",
+                 __FILE__, __LINE__, cur_spice_model->name); 
+      exit(1);
     }
   }
 

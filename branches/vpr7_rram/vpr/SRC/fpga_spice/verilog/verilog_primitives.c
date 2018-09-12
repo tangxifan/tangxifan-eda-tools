@@ -232,11 +232,11 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
   /* Connect srams: TODO: to find the SRAM model used by this Verilog model */
   if (0 < num_sram) {
     dump_verilog_sram_one_outport(fp, cur_sram_orgz_info,
-                                  cur_num_sram, cur_num_sram + num_sram,
+                                  cur_num_sram, cur_num_sram + num_sram - 1,
                                   0, VERILOG_PORT_CONKT);
     fprintf(fp, ", ");
     dump_verilog_sram_one_outport(fp, cur_sram_orgz_info,
-                                  cur_num_sram, cur_num_sram + num_sram,
+                                  cur_num_sram, cur_num_sram + num_sram - 1,
                                   1, VERILOG_PORT_CONKT);
   }
   

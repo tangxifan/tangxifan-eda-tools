@@ -2145,14 +2145,14 @@ void dump_verilog_submodule_one_lut(FILE* fp,
                 input_port[0]->prefix, ipin);
         break;
       case '0':
-        fprintf(fp, "  assign %s%s[%d] = %s[%d] & %s[%d]; \n",
+        fprintf(fp, "  assign %s%s[%d] = %s[%d] & %s_out[%d]; \n",
                 input_port[0]->prefix, mode_inport_postfix, ipin, 
                 input_port[0]->prefix, ipin,
                 sram_port[mode_port_index]->prefix, mode_lsb);
         mode_lsb++;
         break;
       case '1':
-        fprintf(fp, "  assign %s%s[%d] = %s[%d] | %s[%d]; \n",
+        fprintf(fp, "  assign %s%s[%d] = %s[%d] | %s_out[%d]; \n",
                 input_port[0]->prefix, mode_inport_postfix, ipin, 
                 input_port[0]->prefix, ipin,
                 sram_port[mode_port_index]->prefix, mode_lsb);
