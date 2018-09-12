@@ -1157,7 +1157,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
     /* Print input ports*/
     fprintf(fp, "input wire [0:%d] %s,\n", mux_size - 1,  input_port[0]->prefix);
     /* Print output ports*/
-    fprintf(fp, "output wire %s,\n", output_port[0]->prefix);
+    fprintf(fp, "output wire [0:%d] %s,\n", output_port[0]->size - 1, output_port[0]->prefix);
     /* Print configuration ports*/
     fprintf(fp, "input wire [0:%d] %s,\n", 
             num_conf_bits - 1, sram_port[0]->prefix);
@@ -1239,8 +1239,9 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
        /* Tapered buffer support */
         if (TRUE == spice_model.output_buffer->tapered_buf) {
           /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
-          fprintf(fp, "%s buf_out (",
-                  spice_model.output_buffer->spice_model_name); /* subckt name */
+          fprintf(fp, "%s buf_out_%d_%d (",
+                  spice_model.output_buffer->spice_model_name,
+                  iport, ipin); /* subckt name */
           /* Dump global ports */
           if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.output_buffer->spice_model, FALSE, FALSE)) {
             fprintf(fp, ",\n");
@@ -1259,8 +1260,9 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
             break;
           }
           /* Each inv: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
-          fprintf(fp, "%s inv_out (",
-                  spice_model.output_buffer->spice_model_name); /* Given name*/
+          fprintf(fp, "%s inv_out_%d_%d (",
+                  spice_model.output_buffer->spice_model_name,
+                  iport, ipin); /* Given name*/
           /* Dump global ports */
           if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.output_buffer->spice_model, FALSE, FALSE)) {
             fprintf(fp, ",\n");
@@ -1277,8 +1279,9 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
             break;
           }
           /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
-          fprintf(fp, "%s buf_out (",
-                  spice_model.output_buffer->spice_model_name); /* Given name*/
+          fprintf(fp, "%s buf_out_%d_%d (",
+                  spice_model.output_buffer->spice_model_name,
+                  iport, ipin); /* Given name*/
           /* Dump global ports */
           if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.output_buffer->spice_model, FALSE, FALSE)) {
             fprintf(fp, ",\n");
