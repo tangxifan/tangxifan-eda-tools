@@ -1,0 +1,38 @@
+# editor backup files
+*~
+
+# log files
+**/logs
+*.log
+
+# Jupyter /iPython 
+.ipynb_checkpoints/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# vpr
+*.out
+*.place
+*.route
+*.net
+*.rpt
+
+# FPGA-SPICE
+*.tr
+*.lis
+*.mt
+
+# FPGA-Verilog
+
+# FPGA-bitstream
+*.bitstream
+
+# build files
+*.d
+*.o
+*.a
+vpr7_rram/vpr/vpr
+vpr7_rram/printhandler/printhandlerdemo
+vpr7_rram/libarchfpga/read_arch
+vpr7_rram/pcre/pcredemo
