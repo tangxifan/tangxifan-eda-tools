@@ -112,9 +112,8 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
   /* Generate Subckt for pb_type*/
   /* Simplify the port prefix, make SPICE netlist readable */
   port_prefix = (char*)my_malloc(sizeof(char)*
-                (strlen(prim_pb_type->name) + 1
-                 + strlen(my_itoa(index)) + 1 + 1));
-  sprintf(port_prefix, "%s_%d_", prim_pb_type->name, index);
+                (strlen(prim_pb_type->name) + 1));
+  sprintf(port_prefix, "%s", prim_pb_type->name);
 
   /* Print Comment lines depends on the type of this SPICE model */
   fprintf(fp, "//----- %s Verilog module: %s%s -----\n", 
@@ -417,13 +416,12 @@ void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
 
   /* Simplify the prefix, make the SPICE netlist readable*/
   port_prefix = (char*)my_malloc(sizeof(char)*
-                (strlen(cur_pb_type->name) + 1 +
-                 strlen(my_itoa(index)) + 1 + 1));
-  sprintf(port_prefix, "%s_%d_", cur_pb_type->name, index);
+                (strlen(cur_pb_type->name) + 1));
+  sprintf(port_prefix, "%s", cur_pb_type->name);
 
   /* Subckt definition*/
-  fprintf(fp, "module %s%s_%d_ (", 
-          formatted_subckt_prefix, cur_pb_type->name, index);
+  fprintf(fp, "module %s%s (", 
+          formatted_subckt_prefix, cur_pb_type->name);
   fprintf(fp, "\n");
   /* Only dump the global ports belonging to a spice_model */
   if (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model, TRUE, TRUE)) {

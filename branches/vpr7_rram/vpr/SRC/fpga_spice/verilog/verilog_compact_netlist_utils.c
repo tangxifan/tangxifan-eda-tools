@@ -245,10 +245,10 @@ char* compact_verilog_get_grid_phy_block_subckt_name(t_type_ptr grid_type_descri
   assert(-1 < phy_mode_index);
 
   ret = (char*)my_malloc(sizeof(char)* 
-             (strlen(formatted_subckt_prefix) + strlen(grid_type_descriptor->name) + 1
-             + strlen(my_itoa(z)) + 7 + strlen(grid_type_descriptor->pb_type->modes[phy_mode_index].name) + 1 + 1)); 
-  sprintf(ret, "%s%s_%d__mode_%s_", formatted_subckt_prefix,
-          grid_type_descriptor->name, z, grid_type_descriptor->pb_type->modes[phy_mode_index].name);
+             (strlen(formatted_subckt_prefix) + strlen(grid_type_descriptor->name)  
+              + 6 + strlen(grid_type_descriptor->pb_type->modes[phy_mode_index].name) + 1 + 1)); 
+  sprintf(ret, "%s%s_mode_%s_", formatted_subckt_prefix,
+          grid_type_descriptor->name, grid_type_descriptor->pb_type->modes[phy_mode_index].name);
 
   return ret;
 }                        

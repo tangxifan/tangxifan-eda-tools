@@ -1480,8 +1480,9 @@ void dump_verilog_pb_primitive_verilog_model(t_sram_orgz_info* cur_sram_orgz_inf
   return; 
 }
 
-/* Print physical mode of pb_types and configure it to the idle pb_types recursively
- * search the idle_mode until we reach the leaf node
+/* Print physical mode of pb_types and configure it to the physical pb_types recursively
+ * search the physical_mode until we reach the leaf node
+ * Now we only dump one Verilog for each pb_type, and instance them when num_pb > 1
  */
 void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
                                         FILE* fp,
@@ -1506,6 +1507,9 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
   int stamped_sram_lsb = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info); 
 
   int stamped_iopad_cnt = iopad_verilog_model->cnt;
+
+  /* A flag to mark if verilog module has been dumped */
+  boolean verilog_module_dumped = FALSE;
   
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -1527,15 +1531,20 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
     /* Find the mode that define_idle_mode*/
     mode_index = find_pb_type_physical_mode_index((*cur_pb_type));
     for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+      /* Initialize that the current verilog module has not been dumped */
+      verilog_module_dumped = FALSE;
       for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+        if (TRUE == verilog_module_dumped) {
+          continue;
+        }
         /* Pass the SPICE mode prefix on, 
          * <subckt_name>mode[<mode_name>]_
          */
         pass_on_prefix = (char*)my_malloc(sizeof(char)*
-                           (strlen(formatted_subckt_prefix) + strlen(cur_pb_type->name) + 1 
-                            + strlen(my_itoa(pb_type_index)) + 7 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1 + 1));
-        sprintf(pass_on_prefix, "%s%s_%d__mode_%s__", 
-                formatted_subckt_prefix, cur_pb_type->name, pb_type_index, cur_pb_type->modes[mode_index].name);
+                           (strlen(formatted_subckt_prefix) + strlen(cur_pb_type->name)  
+                            + 6 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1 + 1));
+        sprintf(pass_on_prefix, "%s%s_mode_%s__", 
+                formatted_subckt_prefix, cur_pb_type->name, cur_pb_type->modes[mode_index].name);
         /* Recursive*/
         /* Refer to pack/output_clustering.c [LINE 392] */
         /* Find the child pb that is mapped, and the mapping info is not stored in the physical mode ! */
@@ -1543,6 +1552,8 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
                                            &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]), jpb);
         /* Free */
         my_free(pass_on_prefix);
+        /* Make the current module has been dumped */
+        verilog_module_dumped = TRUE;
       }
     }
   }
@@ -1592,11 +1603,11 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
   /* <formatted_subckt_prefix>mode[<mode_name>]
    */
   subckt_name = (char*)my_malloc(sizeof(char)*
-                (strlen(formatted_subckt_prefix) + strlen(cur_pb_type->name) + 1 
-                + strlen(my_itoa(pb_type_index)) + 7 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1)); 
+                (strlen(formatted_subckt_prefix) + strlen(cur_pb_type->name)  
+                + 6 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1)); 
   /* Definition*/
-  sprintf(subckt_name, "%s%s_%d__mode_%s_", 
-          formatted_subckt_prefix, cur_pb_type->name, pb_type_index, cur_pb_type->modes[mode_index].name);
+  sprintf(subckt_name, "%s%s_mode_%s_", 
+          formatted_subckt_prefix, cur_pb_type->name, cur_pb_type->modes[mode_index].name);
   /* Comment lines */
   fprintf(fp, "//----- Physical programmable logic block Verilog module %s -----\n", subckt_name);
   fprintf(fp, "module %s (", subckt_name);
@@ -1656,12 +1667,12 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
        */
       if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) { /* Not a leaf node*/
         child_mode_index = find_pb_type_physical_mode_index(cur_pb_type->modes[mode_index].pb_type_children[ipb]);
-        fprintf(fp, "%s_%s_%d__mode_%s_ ",
-                subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb, 
+        fprintf(fp, "%s_%s_mode_%s_ ",
+                subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, 
                 cur_pb_type->modes[mode_index].pb_type_children[ipb].modes[child_mode_index].name);
       } else { /* Have a verilog model definition, this is a leaf node*/
-        fprintf(fp, "%s_%s_%d_ ",
-                subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb); 
+        fprintf(fp, "%s_%s ",
+                subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name); 
       }
       /* Collect information of child pb_type */
       child_pb_num_reserved_conf_bits = cur_pb_type->modes[mode_index].pb_type_children[ipb].physical_mode_num_reserved_conf_bits;
@@ -1731,8 +1742,11 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
   dump_verilog_pb_graph_interc(cur_sram_orgz_info, fp, subckt_name, cur_pb_graph_node, mode_index);
   /* Check each pins of pb_graph_node */ 
   /* Check and update stamped_sram_cnt */
+  /* Now we only dump one Verilog for each pb_type, and instance them when num_pb > 1
+   * the asserts are no longer valid 
   assert(!(stamped_sram_cnt > (stamped_sram_lsb + num_conf_bits)));
   stamped_sram_cnt = stamped_sram_lsb + num_conf_bits;
+  */
   /* End the subckt */
   fprintf(fp, "endmodule\n");
   /* Comment lines */
@@ -1740,8 +1754,10 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
   /* Free subckt name*/
   my_free(subckt_name);
 
+  /*
   assert(stamped_sram_cnt == get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info)); 
   assert(stamped_iopad_cnt == iopad_verilog_model->cnt);
+  */
 
   return;
 }

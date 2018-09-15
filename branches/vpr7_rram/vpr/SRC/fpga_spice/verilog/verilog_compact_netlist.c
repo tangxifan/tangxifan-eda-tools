@@ -273,6 +273,7 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
   char* title = my_strcat("FPGA Verilog Netlist for Design: ", phy_block_type->name);
   char* subckt_name = NULL;
   char* subckt_name_prefix = NULL;
+  boolean verilog_module_dumped = FALSE;
 
   /* Check */
   if (IO_TYPE == phy_block_type) {
@@ -313,12 +314,18 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
 
   /* Dump all the submodules */
   for (iz = 0; iz < phy_block_type->capacity; iz++) {
+    /* We only need to output one Verilog module, others are instanced */
+    if (TRUE == verilog_module_dumped) {
+      continue;
+    }
     /* Comments: Grid [x][y]*/
-    fprintf(fp, "//----- Submodule of type_descriptor: %s[%d] -----\n", phy_block_type->name, iz);
+    fprintf(fp, "//----- Submodule of type_descriptor: %s -----\n", phy_block_type->name);
     /* Print a NULL logic block...*/
     dump_verilog_phy_pb_graph_node_rec(cur_sram_orgz_info, fp, subckt_name_prefix, 
                                        phy_block_type->pb_graph_head, iz);
     fprintf(fp, "//----- END -----\n\n");
+    /* Switch Flag on dumping verilog module */
+    verilog_module_dumped = TRUE;
   }
 
   /* Subckt name */
