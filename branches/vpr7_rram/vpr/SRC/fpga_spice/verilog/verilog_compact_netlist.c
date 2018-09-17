@@ -440,6 +440,9 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
   /* Close file handler */
   fclose(fp); 
 
+  /* Add fname to the linked list */
+  grid_verilog_subckt_file_path_head = add_one_subckt_file_name_to_llist(grid_verilog_subckt_file_path_head, fname);  
+
   /* Free */
   my_free(fname);
   my_free(subckt_name);
@@ -492,6 +495,13 @@ void dump_compact_verilog_logic_blocks(t_sram_orgz_info* cur_sram_orgz_info,
 
     }
   }
+
+  /* Output a header file for all the logic blocks */
+  vpr_printf(TIO_MESSAGE_INFO,"Generating header file for grid submodules...\n");
+  dump_verilog_subckt_header_file(grid_verilog_subckt_file_path_head,
+                                  subckt_dir,
+                                  logic_block_verilog_file_name);
+
 
   /* Recover spice_model counter */
   set_spice_model_counter(arch->spice->num_spice_model, 
