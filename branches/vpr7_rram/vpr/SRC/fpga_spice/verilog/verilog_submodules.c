@@ -1102,7 +1102,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
     assert(1 == num_input_port);
     assert(1 == num_output_port);
     assert(1 == num_sram_port);
-    assert(1 == output_port[0]->size);
+    assert(1 == output_port[0]->size); 
   } else {
     assert((SPICE_MODEL_LUT == spice_model.type) 
            && (TRUE == spice_model.design_tech_info.frac_lut));
@@ -1115,7 +1115,11 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
 
   /* Setup a reasonable frac_out level for the output port*/
   for (iport = 0; iport < num_output_port; iport++) {
-    if (OPEN == output_port[iport]->lut_frac_level) { 
+    /* We always initialize the lut_frac_level when there is only 1 output!
+     * It should be pointed the last level! 
+     */
+    if ((OPEN == output_port[iport]->lut_frac_level) 
+       && (0 == num_output_port)) {
       output_port[iport]->lut_frac_level = spice_mux_arch.num_level;
     } 
   }
@@ -1248,6 +1252,8 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
           if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.output_buffer->spice_model, FALSE, FALSE)) {
             fprintf(fp, ",\n");
           }
+          /* check */
+          assert ( -1 < spice_mux_arch.num_level - output_port[iport]->lut_frac_level );
           fprintf(fp, "mux2_l%d_in[%d], ",
                     spice_mux_arch.num_level - output_port[iport]->lut_frac_level, 
                     output_port[iport]->lut_output_mask[ipin]); /* input port */ 
@@ -1269,6 +1275,8 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
           if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.output_buffer->spice_model, FALSE, FALSE)) {
             fprintf(fp, ",\n");
           }
+          /* check */
+          assert ( -1 < spice_mux_arch.num_level - output_port[iport]->lut_frac_level );
           fprintf(fp, "mux2_l%d_in[%d], ",
                   spice_mux_arch.num_level - output_port[iport]->lut_frac_level, 
                   output_port[iport]->lut_output_mask[ipin]); /* input port */ 
@@ -1288,6 +1296,8 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
           if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.output_buffer->spice_model, FALSE, FALSE)) {
             fprintf(fp, ",\n");
           }
+          /* check */
+          assert ( -1 < spice_mux_arch.num_level - output_port[iport]->lut_frac_level );
           fprintf(fp, "mux2_l%d_in[%d], ",
                   spice_mux_arch.num_level - output_port[iport]->lut_frac_level, 
                   output_port[iport]->lut_output_mask[ipin]); /* input port */ 
@@ -1300,6 +1310,8 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
           exit(1);   
         }
       } else {
+        /* check */
+        assert ( -1 < spice_mux_arch.num_level - output_port[iport]->lut_frac_level );
         /* There is no buffer, I create a zero resisitance between*/
         /* Resistance R<given_name> <input> <output> 0*/
         fprintf(fp, "assign mux2_l%d_in[%d] = %s[%d];\n",
