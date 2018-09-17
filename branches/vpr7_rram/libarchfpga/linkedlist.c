@@ -152,7 +152,6 @@ boolean check_dptr_exist_in_llist(t_llist* head, void* data_ptr) {
   }
 
   return FALSE;
-
 }
 
 /* Free a linked list, Make sure before this function,

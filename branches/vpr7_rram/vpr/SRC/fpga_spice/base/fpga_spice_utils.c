@@ -3062,8 +3062,11 @@ void rec_stats_spice_model_global_ports(t_spice_model* cur_spice_model,
      /* Check if this ports exists in the linked list */
     } else if (FALSE == check_dptr_exist_in_llist((*spice_model_head),
                                                   (void*)(&cur_spice_model->ports[iport]))) {
-      /* Non-exist in the current linked-list, a new node is required */
-      temp = insert_llist_node(*spice_model_head);
+      /* Non-exist in the current linked-list, a new node is required 
+       * Go to the tail of the linked-list and add a new node  
+       */
+      temp = search_llist_tail(*spice_model_head);
+      temp = insert_llist_node(temp);
       /* Configure the data pointer of linked list */
       temp->dptr = (void*) (&cur_spice_model->ports[iport]);
     }
