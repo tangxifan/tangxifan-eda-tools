@@ -689,7 +689,7 @@ void dump_compact_verilog_top_netlist(t_sram_orgz_info* cur_sram_orgz_info,
     exit(1);
   } 
   
-  vpr_printf(TIO_MESSAGE_INFO, "Writing FPGA Top-level Verilog Netlist for %s...\n", circuit_name);
+  vpr_printf(TIO_MESSAGE_INFO, "Writing FPGA Top-level Compact Verilog Netlist for %s...\n", circuit_name);
  
   /* Print the title */
   dump_verilog_file_header(fp, title);

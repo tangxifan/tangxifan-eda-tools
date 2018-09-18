@@ -344,12 +344,13 @@ void vpr_fpga_spice_generate_bitstream(t_vpr_setup vpr_setup,
   init_sram_orgz_info_reserved_blwl(*cur_sram_orgz_info, vpr_setup.RoutingArch.num_switch, 
                                     switch_inf, Arch.spice, &vpr_setup.RoutingArch);
 
-  /* Logic blocks */
-  fpga_spice_generate_bitstream_logic_block(&Arch, *cur_sram_orgz_info);
-
   /* Routing: Connection Boxes and Switch Boxes */
   fpga_spice_generate_bitstream_routing_resources(Arch, &vpr_setup.RoutingArch, *cur_sram_orgz_info,
                                                   num_rr_nodes, rr_node, rr_node_indices);
+
+  /* Logic blocks */
+  fpga_spice_generate_bitstream_logic_block(&Arch, *cur_sram_orgz_info);
+
 
   /* Dump bitstream file */
   dump_fpga_spice_bitstream(bitstream_file_path, chomped_circuit_name, *cur_sram_orgz_info);

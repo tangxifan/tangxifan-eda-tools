@@ -1119,7 +1119,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
      * It should be pointed the last level! 
      */
     if ((OPEN == output_port[iport]->lut_frac_level) 
-       && (0 == num_output_port)) {
+       || (1 == num_output_port)) {
       output_port[iport]->lut_frac_level = spice_mux_arch.num_level;
     } 
   }
