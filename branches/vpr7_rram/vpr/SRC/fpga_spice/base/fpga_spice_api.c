@@ -61,8 +61,7 @@ void vpr_fpga_spice_tool_suites(t_vpr_setup vpr_setup,
     vpr_fpga_spice_bitstream_generator(vpr_setup, Arch, vpr_setup.FileNameOpts.CircuitName, &sram_bitstream_orgz_info);
     /* Free sram_orgz_info */
     free_sram_orgz_info(sram_bitstream_orgz_info,
-                        sram_bitstream_orgz_info->type,
-                        nx + 2, ny + 2);
+                        sram_bitstream_orgz_info->type);
   }
 
   /* Free */

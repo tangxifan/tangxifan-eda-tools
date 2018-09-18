@@ -291,9 +291,13 @@ void init_sram_orgz_info(t_sram_orgz_info* cur_sram_orgz_info,
                          t_spice_model* cur_mem_model, 
                          int grid_nx, int grid_ny);
 
+t_sram_orgz_info* snapshot_sram_orgz_info(t_sram_orgz_info* src_sram_orgz_info);
+
+t_sram_orgz_info* diff_sram_orgz_info(t_sram_orgz_info* des_sram_orgz_info, 
+                                      t_sram_orgz_info* base_sram_orgz_info);
+
 void free_sram_orgz_info(t_sram_orgz_info* cur_sram_orgz_info,
-                         enum e_sram_orgz cur_sram_orgz_type,
-                         int grid_nx, int grid_ny);
+                         enum e_sram_orgz cur_sram_orgz_type);
 
 void update_sram_orgz_info_reserved_blwl(t_sram_orgz_info* cur_sram_orgz_info,
                                          int updated_reserved_bl, int updated_reserved_wl);
@@ -311,6 +315,12 @@ void update_sram_orgz_info_num_blwl(t_sram_orgz_info* cur_sram_orgz_info,
 
 void get_sram_orgz_info_mem_model(t_sram_orgz_info* cur_sram_orgz_info,
                                   t_spice_model** mem_model_ptr);
+
+void update_sram_orgz_info_mem_model(t_sram_orgz_info* cur_sram_orgz_info,
+                                     t_spice_model* cur_mem_model);
+
+void copy_sram_orgz_info(t_sram_orgz_info* des_sram_orgz_info,
+                         t_sram_orgz_info* src_sram_orgz_info);
 
 void init_reserved_syntax_char(t_reserved_syntax_char* cur_reserved_syntax_char,
                                char cur_syntax_char, boolean cur_verilog_reserved, boolean cur_spice_reserved);
@@ -368,3 +378,4 @@ int* snapshot_spice_model_counter(int num_spice_models,
 void set_spice_model_counter(int num_spice_models,
                              t_spice_model* spice_model,
                              int* spice_model_counter);
+

@@ -2402,6 +2402,8 @@ void init_sram_orgz_info(t_sram_orgz_info* cur_sram_orgz_info,
 
   cur_sram_orgz_info->type = cur_sram_orgz_type;
   cur_sram_orgz_info->conf_bit_head = NULL; /* Configuration bits will be allocated later */
+
+  cur_sram_orgz_info->dump_mem_outports = FALSE; /* by default use the compact output style */
   
   /* According to the type, we allocate structs */
   switch (cur_sram_orgz_info->type) {
@@ -2432,6 +2434,9 @@ void init_sram_orgz_info(t_sram_orgz_info* cur_sram_orgz_info,
   }
 
   /* Alloc the configuration bit information per grid */
+  cur_sram_orgz_info->grid_nx = grid_nx;
+  cur_sram_orgz_info->grid_ny = grid_ny;
+
   cur_sram_orgz_info->grid_reserved_conf_bits = (int**)my_malloc(grid_nx*sizeof(int*));
   for (i = 0; i < grid_nx; i++) {
     cur_sram_orgz_info->grid_reserved_conf_bits[i] = (int*)my_calloc(grid_ny, sizeof(int));
@@ -2450,9 +2455,9 @@ void init_sram_orgz_info(t_sram_orgz_info* cur_sram_orgz_info,
   return;
 }
 
+
 void free_sram_orgz_info(t_sram_orgz_info* cur_sram_orgz_info,
-                         enum e_sram_orgz cur_sram_orgz_type,
-                         int grid_nx, int grid_ny) {
+                         enum e_sram_orgz cur_sram_orgz_type) {
   int i;
   t_llist* temp = NULL;
 
@@ -2489,17 +2494,17 @@ void free_sram_orgz_info(t_sram_orgz_info* cur_sram_orgz_info,
   free_llist(cur_sram_orgz_info->conf_bit_head);
 
   /* Free the configuration bit information per grid */
-  for (i = 0; i < grid_nx; i++) {
+  for (i = 0; i < cur_sram_orgz_info->grid_nx; i++) {
     my_free(cur_sram_orgz_info->grid_reserved_conf_bits[i]);
   }
   my_free(cur_sram_orgz_info->grid_reserved_conf_bits);
 
-  for (i = 0; i < grid_nx; i++) {
+  for (i = 0; i < cur_sram_orgz_info->grid_nx; i++) {
     my_free(cur_sram_orgz_info->grid_conf_bits_lsb[i]);
   }
   my_free(cur_sram_orgz_info->grid_conf_bits_lsb);
 
-  for (i = 0; i < grid_nx; i++) {
+  for (i = 0; i < cur_sram_orgz_info->grid_nx; i++) {
     my_free(cur_sram_orgz_info->grid_conf_bits_msb[i]);
   }
   my_free(cur_sram_orgz_info->grid_conf_bits_msb);
@@ -2760,6 +2765,152 @@ void get_sram_orgz_info_mem_model(t_sram_orgz_info* cur_sram_orgz_info,
   
   return;
 }
+
+void update_sram_orgz_info_mem_model(t_sram_orgz_info* cur_sram_orgz_info,
+                                     t_spice_model* cur_mem_model) {
+  assert(NULL != cur_sram_orgz_info);
+
+  /* According to the type, we allocate structs */
+  switch (cur_sram_orgz_info->type) {
+  case SPICE_SRAM_STANDALONE:
+    cur_sram_orgz_info->standalone_sram_info->mem_model = cur_mem_model;
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+    cur_sram_orgz_info->scff_info->mem_model = cur_mem_model;
+    break;
+  case SPICE_SRAM_MEMORY_BANK:
+    cur_sram_orgz_info->mem_bank_info->mem_model = cur_mem_model;
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid type of SRAM organization!",
+               __FILE__, __LINE__ );
+    exit(1); 
+  }
+
+  return;
+}
+
+
+/* Copy from a src sram_orgz_info to a des sram_orgz_info 
+ * The des_orgz_info must be allocated before!!!
+ */
+void copy_sram_orgz_info(t_sram_orgz_info* des_sram_orgz_info,
+                         t_sram_orgz_info* src_sram_orgz_info) {
+  t_spice_model* src_mem_model = NULL;
+  int src_num_mem_bits, src_num_bl, src_num_wl;
+  int ix, iy;
+
+  get_sram_orgz_info_mem_model(src_sram_orgz_info, &src_mem_model);
+  
+  /* Start copying */
+  des_sram_orgz_info->type = src_sram_orgz_info->type;
+  update_sram_orgz_info_mem_model(des_sram_orgz_info, src_mem_model);
+  update_sram_orgz_info_num_mem_bit(des_sram_orgz_info, 
+                                    get_sram_orgz_info_num_mem_bit(src_sram_orgz_info));
+  /* According to the type, we create the diff. */
+  switch (des_sram_orgz_info->type) {
+  case SPICE_SRAM_MEMORY_BANK:
+    get_sram_orgz_info_num_blwl(src_sram_orgz_info, &src_num_bl, &src_num_wl);
+    update_sram_orgz_info_num_blwl(des_sram_orgz_info, src_num_bl, src_num_wl);
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+    break;
+  case SPICE_SRAM_STANDALONE:
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid type of SRAM organization!",
+               __FILE__, __LINE__ );
+    exit(1); 
+  }
+  /* Copy conf bits */
+  for  (ix = 0; ix < des_sram_orgz_info->grid_nx; ix++) {
+    for  (iy = 0; iy < des_sram_orgz_info->grid_ny; iy++) {
+      des_sram_orgz_info->grid_reserved_conf_bits[ix][iy] = src_sram_orgz_info->grid_reserved_conf_bits[ix][iy];
+      des_sram_orgz_info->grid_conf_bits_lsb[ix][iy] = src_sram_orgz_info->grid_conf_bits_lsb[ix][iy];
+      des_sram_orgz_info->grid_conf_bits_msb[ix][iy] = src_sram_orgz_info->grid_conf_bits_msb[ix][iy];
+    }
+  }
+
+  return;
+}
+
+/* Create a snapshot on the sram_orgz_info, 
+ * return the snapshot
+ */
+t_sram_orgz_info* snapshot_sram_orgz_info(t_sram_orgz_info* src_sram_orgz_info) {
+  t_sram_orgz_info* des_sram_orgz_info = NULL;
+  t_spice_model* src_mem_model = NULL;
+  
+  /* allocate the snapshot */
+  des_sram_orgz_info = alloc_one_sram_orgz_info();
+
+  /* initialize the snapshot */
+  get_sram_orgz_info_mem_model(src_sram_orgz_info, &src_mem_model);
+  init_sram_orgz_info(des_sram_orgz_info, src_sram_orgz_info->type, 
+                      src_mem_model, src_sram_orgz_info->grid_nx, src_sram_orgz_info->grid_ny);
+
+  /* Start copying */
+  copy_sram_orgz_info( des_sram_orgz_info,
+                       src_sram_orgz_info);
+
+  return des_sram_orgz_info;
+}
+
+/* Compare the two sram_orgz_info and store the difference in the sram_orgz_info to return */
+t_sram_orgz_info* diff_sram_orgz_info(t_sram_orgz_info* des_sram_orgz_info, 
+                                      t_sram_orgz_info* base_sram_orgz_info) {
+  t_sram_orgz_info* diff_sram_orgz_info = NULL;
+  t_spice_model* base_mem_model = NULL;
+  t_spice_model* des_mem_model = NULL;
+  int des_num_wl, base_num_wl;
+  int des_num_bl, base_num_bl;
+  int ix, iy;
+
+  /* Check: we have the same memory organization type */
+  assert ( des_sram_orgz_info->type == base_sram_orgz_info->type );
+  get_sram_orgz_info_mem_model(base_sram_orgz_info, &base_mem_model);
+  get_sram_orgz_info_mem_model(des_sram_orgz_info, &des_mem_model);
+  assert (des_mem_model == base_mem_model);
+  assert (des_sram_orgz_info->grid_nx == base_sram_orgz_info->grid_nx);
+  assert (des_sram_orgz_info->grid_ny == base_sram_orgz_info->grid_ny);
+
+  /* allocate the diff copy */
+  diff_sram_orgz_info = alloc_one_sram_orgz_info();
+  init_sram_orgz_info(diff_sram_orgz_info, des_sram_orgz_info->type, 
+                      des_mem_model, des_sram_orgz_info->grid_nx, des_sram_orgz_info->grid_ny);
+
+  /* initialize the diff_copy */
+  update_sram_orgz_info_num_mem_bit(diff_sram_orgz_info, 
+                                    get_sram_orgz_info_num_mem_bit(des_sram_orgz_info) - get_sram_orgz_info_num_mem_bit(base_sram_orgz_info));
+  /* According to the type, we create the diff. */
+  switch (des_sram_orgz_info->type) {
+  case SPICE_SRAM_MEMORY_BANK:
+    get_sram_orgz_info_num_blwl(des_sram_orgz_info, &des_num_bl, &des_num_wl);
+    get_sram_orgz_info_num_blwl(base_sram_orgz_info, &base_num_bl, &base_num_wl);
+    update_sram_orgz_info_num_blwl(diff_sram_orgz_info, des_num_bl - base_num_bl, des_num_wl - base_num_wl);
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+    break;
+  case SPICE_SRAM_STANDALONE:
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid type of SRAM organization!",
+               __FILE__, __LINE__ );
+    exit(1); 
+  }
+
+  /* Copy conf bits */
+  for  (ix = 0; ix < diff_sram_orgz_info->grid_nx; ix++) {
+    for  (iy = 0; iy < diff_sram_orgz_info->grid_ny; iy++) {
+      diff_sram_orgz_info->grid_reserved_conf_bits[ix][iy] = des_sram_orgz_info->grid_reserved_conf_bits[ix][iy] - base_sram_orgz_info->grid_reserved_conf_bits[ix][iy];
+      diff_sram_orgz_info->grid_conf_bits_lsb[ix][iy] = des_sram_orgz_info->grid_conf_bits_lsb[ix][iy] - base_sram_orgz_info->grid_conf_bits_lsb[ix][iy];
+      diff_sram_orgz_info->grid_conf_bits_msb[ix][iy] = des_sram_orgz_info->grid_conf_bits_msb[ix][iy] - base_sram_orgz_info->grid_conf_bits_msb[ix][iy];
+    }
+  }
+
+  return diff_sram_orgz_info;
+}
+
 
 /* Manipulating functions for struct t_reserved_syntax_char */
 void init_reserved_syntax_char(t_reserved_syntax_char* cur_reserved_syntax_char,

@@ -127,18 +127,28 @@ void compact_verilog_update_one_spice_model_grid_index(t_type_ptr phy_block_type
 static 
 void compact_verilog_update_sram_orgz_info_grid_index(t_sram_orgz_info* cur_sram_orgz_info,
                                                       t_type_ptr phy_block_type,
-                                                      int grid_x, int grid_y, int* cur_num_conf_bits) {
+                                                      int grid_x, int grid_y) { 
+  int cur_num_conf_bits;
+  int cur_num_bl, cur_num_wl;
+
+  cur_num_conf_bits = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info); 
+  get_sram_orgz_info_num_blwl(cur_sram_orgz_info, &cur_num_bl, &cur_num_wl); 
 
   cur_sram_orgz_info->grid_reserved_conf_bits[grid_x][grid_y] = phy_block_type->pb_type->physical_mode_num_reserved_conf_bits;
 
-  cur_sram_orgz_info->grid_conf_bits_lsb[grid_x][grid_y] = (*cur_num_conf_bits);
+  cur_sram_orgz_info->grid_conf_bits_lsb[grid_x][grid_y] = cur_num_conf_bits;
 
-  cur_sram_orgz_info->grid_conf_bits_msb[grid_x][grid_y] = (*cur_num_conf_bits);
+  cur_sram_orgz_info->grid_conf_bits_msb[grid_x][grid_y] = cur_num_conf_bits;
 
   cur_sram_orgz_info->grid_conf_bits_msb[grid_x][grid_y] += phy_block_type->capacity * phy_block_type->pb_type->physical_mode_num_conf_bits;
 
+  cur_num_conf_bits = cur_sram_orgz_info->grid_conf_bits_msb[grid_x][grid_y];
+  cur_num_bl = cur_sram_orgz_info->grid_conf_bits_msb[grid_x][grid_y];
+  cur_num_wl = cur_sram_orgz_info->grid_conf_bits_msb[grid_x][grid_y];
+
   /* Update the counter */
-  (*cur_num_conf_bits) = cur_sram_orgz_info->grid_conf_bits_msb[grid_x][grid_y];
+  update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info, cur_num_conf_bits);
+  update_sram_orgz_info_num_blwl(cur_sram_orgz_info, cur_num_bl, cur_num_wl);
 
   return;
 }
@@ -156,7 +166,7 @@ void compact_verilog_update_grid_spice_model_and_sram_orgz_info(t_sram_orgz_info
                                                                 int num_spice_models, 
                                                                 t_spice_model* spice_model) {
   int ix, iy;
-  int stamped_num_conf_bits = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info);
+
 
   /* Check the grid*/
   if ((0 == nx)||(0 == ny)) {
@@ -175,6 +185,14 @@ void compact_verilog_update_grid_spice_model_and_sram_orgz_info(t_sram_orgz_info
     for (iy = 1; iy < (ny + 1); iy++) {
       /* Ensure this is not a io */
       assert(IO_TYPE != grid[ix][iy].type);
+      /* Bypass empty type */
+      if (EMPTY_TYPE == grid[ix][iy].type) {
+        continue;
+      }
+      /* Bypass non-zero offset grid: heterogeneous block may occupy multiple grids */
+      if (0 < grid[ix][iy].offset) {
+        continue;
+      } 
       /* Update the grid index low and high */ 
       compact_verilog_update_one_spice_model_grid_index(grid[ix][iy].type,
                                                         ix, iy,
@@ -182,7 +200,7 @@ void compact_verilog_update_grid_spice_model_and_sram_orgz_info(t_sram_orgz_info
       /* Update all the sram bits */
       compact_verilog_update_sram_orgz_info_grid_index(cur_sram_orgz_info,
                                                        grid[ix][iy].type,
-                                                       ix, iy, &stamped_num_conf_bits);
+                                                       ix, iy);
     }
   }
 
@@ -200,7 +218,7 @@ void compact_verilog_update_grid_spice_model_and_sram_orgz_info(t_sram_orgz_info
     /* Update all the sram bits */
     compact_verilog_update_sram_orgz_info_grid_index(cur_sram_orgz_info,
                                                      grid[ix][iy].type,
-                                                     ix, iy, &stamped_num_conf_bits);
+                                                     ix, iy);
   }
 
   /* Right side : x = nx + 1, y = 1 .. ny*/
@@ -215,7 +233,7 @@ void compact_verilog_update_grid_spice_model_and_sram_orgz_info(t_sram_orgz_info
     /* Update all the sram bits */
     compact_verilog_update_sram_orgz_info_grid_index(cur_sram_orgz_info,
                                                      grid[ix][iy].type,
-                                                     ix, iy, &stamped_num_conf_bits);
+                                                     ix, iy);
   }
 
   /* Bottom  side : x = 1 .. nx + 1, y = 0 */
@@ -230,7 +248,7 @@ void compact_verilog_update_grid_spice_model_and_sram_orgz_info(t_sram_orgz_info
     /* Update all the sram bits */
     compact_verilog_update_sram_orgz_info_grid_index(cur_sram_orgz_info,
                                                      grid[ix][iy].type,
-                                                     ix, iy, &stamped_num_conf_bits);
+                                                     ix, iy);
   }
   /* Left side: x = 0, y = 1 .. ny*/
   ix = 0;
@@ -244,11 +262,9 @@ void compact_verilog_update_grid_spice_model_and_sram_orgz_info(t_sram_orgz_info
     /* Update all the sram bits */
     compact_verilog_update_sram_orgz_info_grid_index(cur_sram_orgz_info,
                                                      grid[ix][iy].type,
-                                                     ix, iy, &stamped_num_conf_bits);
+                                                     ix, iy);
   }
 
-  /* Update num_mem_bits */
-  update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info, stamped_num_conf_bits);
 
   /* Free */
    
@@ -461,15 +477,13 @@ void dump_compact_verilog_logic_blocks(t_sram_orgz_info* cur_sram_orgz_info,
                                        t_arch* arch) {
   int itype, iside, num_sides;
   int* stamped_spice_model_cnt = NULL;
-  int stamped_num_mem_bits = 0;
- 
-  num_sides = 4;
+  t_sram_orgz_info* stamped_sram_orgz_info = NULL;
 
   /* Create a snapshot on spice_model counter */
   stamped_spice_model_cnt = snapshot_spice_model_counter(arch->spice->num_spice_model, 
                                                          arch->spice->spice_models);
   /* Create a snapshot on sram_orgz_info */
-  stamped_num_mem_bits = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info);
+  stamped_sram_orgz_info = snapshot_sram_orgz_info(cur_sram_orgz_info);
  
   /* Enumerate the types, dump one Verilog module for each */
   for (itype = 0; itype < num_types; itype++) {
@@ -477,6 +491,7 @@ void dump_compact_verilog_logic_blocks(t_sram_orgz_info* cur_sram_orgz_info,
     /* Bypass empty type or NULL */
       continue;
     } else if (IO_TYPE == &type_descriptors[itype]) {
+      num_sides = 4;
     /* Special for I/O block, generate one module for each border side */
       for (iside = 0; iside < num_sides; iside++) {
         dump_compact_verilog_one_physical_block(cur_sram_orgz_info, subckt_dir, 
@@ -507,8 +522,9 @@ void dump_compact_verilog_logic_blocks(t_sram_orgz_info* cur_sram_orgz_info,
   set_spice_model_counter(arch->spice->num_spice_model, 
                           arch->spice->spice_models,
                           stamped_spice_model_cnt);
-  /* Recover num_mem_bits to sram_orgz_info */
-  update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info, stamped_num_mem_bits);
+
+  /* Restore sram_orgz_info to the base */ 
+  copy_sram_orgz_info (cur_sram_orgz_info, stamped_sram_orgz_info);
 
   /* Update the grid_index low and high for spice models 
    * THIS FUNCTION MUST GO AFTER OUTPUTING PHYSICAL LOGIC BLOCKS!!!
@@ -517,6 +533,7 @@ void dump_compact_verilog_logic_blocks(t_sram_orgz_info* cur_sram_orgz_info,
                                                              arch->spice->num_spice_model, 
                                                              arch->spice->spice_models);
   /* Free */
+  free_sram_orgz_info(stamped_sram_orgz_info, stamped_sram_orgz_info->type);
   my_free (stamped_spice_model_cnt); 
 
   return;

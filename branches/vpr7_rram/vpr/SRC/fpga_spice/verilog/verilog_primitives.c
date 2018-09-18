@@ -532,16 +532,17 @@ void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
     break;
   case SPICE_SRAM_MEMORY_BANK:
     dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
-                                  cur_num_sram, cur_num_sram + num_sram - 1, 
+                                  cur_num_sram, cur_num_sram + num_lut_sram - 1, 
                                   0, VERILOG_PORT_CONKT);
     fprintf(fp, ", ");
     dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
-                                  cur_num_sram, cur_num_sram + num_sram - 1, 
+                                  cur_num_sram, cur_num_sram + num_lut_sram - 1, 
                                   1, VERILOG_PORT_CONKT);
     if (0 < num_mode_sram) {
-      dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
+      fprintf(fp, ", ");
+      dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
                                  cur_num_sram + num_lut_sram, cur_num_sram + num_lut_sram + num_mode_sram - 1, 
-                                 1, VERILOG_PORT_CONKT);
+                                 0, VERILOG_PORT_CONKT);
       fprintf(fp, ", ");
       dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
                                     cur_num_sram + num_lut_sram, cur_num_sram + num_lut_sram + num_mode_sram - 1, 

@@ -412,8 +412,7 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
 
   /* Free sram_orgz_info */
   free_sram_orgz_info(sram_spice_orgz_info,
-                      sram_spice_orgz_info->type,
-                      nx + 2, ny + 2);
+                      sram_spice_orgz_info->type);
   /* Free tb_llist */
   free_spice_tb_llist(); 
   /* Free */

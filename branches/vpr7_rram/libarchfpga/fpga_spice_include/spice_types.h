@@ -473,11 +473,17 @@ struct s_sram_orgz_info {
   t_scff_info* scff_info; /* Only be allocated when orgz type is scan-chain */
   t_standalone_sram_info* standalone_sram_info; /* Only be allocated when orgz type is standalone */
   
+  /* verification mode: output the output nodes */
+  boolean dump_mem_outports;
+  
   /* Head of configuration bits,
    * which is assigned according to orgz_type */
   t_llist* conf_bit_head; 
 
+
   /* Conf bits information per grid */
+  int grid_nx; /* grid size */ 
+  int grid_ny;
   int** grid_reserved_conf_bits;
   int** grid_conf_bits_lsb;
   int** grid_conf_bits_msb;

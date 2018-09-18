@@ -1090,6 +1090,10 @@ static void SetupSynVerilogOpts(t_options Options,
     syn_verilog_opts->output_compact_netlist = TRUE;
   }
 
+  if (Options.Count[OT_FPGA_VERILOG_SYN_VERIFICATION_NETLIST]) {
+    syn_verilog_opts->output_verification_netlist = TRUE;
+  }
+
   if (Options.Count[OT_FPGA_VERILOG_SYN_TB_SERIAL_CONFIG_MODE]) {
     syn_verilog_opts->tb_serial_config_mode = TRUE;
   }

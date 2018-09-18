@@ -514,6 +514,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
       return Args;
     case OT_FPGA_VERILOG_SYN_COMPACT_NETLIST:
       return Args;
+    case OT_FPGA_VERILOG_SYN_VERIFICATION_NETLIST:
+      return Args;
     case OT_FPGA_VERILOG_SYN_TB_SERIAL_CONFIG_MODE:
       return Args;
     case OT_FPGA_SPICE_RENAME_ILLEGAL_PORT:

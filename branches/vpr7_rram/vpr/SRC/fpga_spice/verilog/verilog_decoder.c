@@ -184,3 +184,24 @@ void dump_verilog_decoder(t_sram_orgz_info* cur_sram_orgz_info,
   
   return;
 }
+
+
+void dump_verilog_mem_decoders(t_sram_orgz_info* cur_sram_orgz_info,
+                               char* submodule_dir_path) {
+  switch(cur_sram_orgz_info->type) {
+  case SPICE_SRAM_STANDALONE:
+  case SPICE_SRAM_SCAN_CHAIN:
+    break;
+  case SPICE_SRAM_MEMORY_BANK:
+    /* Dump verilog decoder */
+    dump_verilog_decoder(cur_sram_orgz_info, submodule_dir_path);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  return;
+}
+

@@ -57,7 +57,6 @@ void fpga_spice_generate_bitstream_pb_generic_primitive(t_phy_pb* prim_phy_pb,
   int cur_num_sram = 0;
   t_spice_model* mem_model = NULL;
 
-
   /* Ensure a valid physical pritimive pb */ 
   if (NULL == prim_pb_type) {
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid prim_pb_type!\n",
@@ -136,6 +135,7 @@ void fpga_spice_generate_bitstream_pb_generic_primitive(t_phy_pb* prim_phy_pb,
   /* SRAM_bit will be later reconfigured according to operating mode */
   switch (cur_sram_orgz_info->type) {
   case SPICE_SRAM_MEMORY_BANK:
+    cur_num_sram = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info);
     for (i = 0; i < num_sram; i++) {
       /* Decode the SRAM bits to BL/WL bits.
        * first half part is BL, the other half part is WL 

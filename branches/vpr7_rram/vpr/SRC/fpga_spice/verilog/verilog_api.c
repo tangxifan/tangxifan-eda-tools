@@ -184,8 +184,9 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   sram_verilog_model = Arch.sram_inf.verilog_sram_inf_orgz->spice_model;
   /* initialize the SRAM organization information struct */
   sram_verilog_orgz_info = alloc_one_sram_orgz_info();
-  sram_verilog_orgz_info->type = Arch.sram_inf.verilog_sram_inf_orgz->type;
-  init_sram_orgz_info(sram_verilog_orgz_info, sram_verilog_orgz_info->type, sram_verilog_model, nx + 2, ny + 2);
+  init_sram_orgz_info(sram_verilog_orgz_info, Arch.sram_inf.verilog_sram_inf_orgz->type, sram_verilog_model, nx + 2, ny + 2);
+  sram_verilog_orgz_info->dump_mem_outports = vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.output_verification_netlist;
+
   /* Check all the SRAM port is using the correct SRAM SPICE MODEL */
   config_spice_models_sram_port_spice_model(Arch.spice->num_spice_model, 
                                             Arch.spice->spice_models,
@@ -231,19 +232,7 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   }
 
   /* Dump decoder modules only when memory bank is required */
-  switch(sram_verilog_orgz_info->type) {
-  case SPICE_SRAM_STANDALONE:
-  case SPICE_SRAM_SCAN_CHAIN:
-    break;
-  case SPICE_SRAM_MEMORY_BANK:
-    /* Dump verilog decoder */
-    dump_verilog_decoder(sram_verilog_orgz_info, submodule_dir_path);
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
-               __FILE__, __LINE__);
-    exit(1);
-  }
+  dump_verilog_mem_decoders(sram_verilog_orgz_info, submodule_dir_path);
 
   /* Dump top-level verilog */
   if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.output_compact_netlist) {
@@ -277,8 +266,7 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
    * Free the allocated sram_orgz_info before, we start bitstream generation !
    */
   free_sram_orgz_info(sram_verilog_orgz_info,
-                      sram_verilog_orgz_info->type,
-                      nx + 2, ny + 2);
+                      sram_verilog_orgz_info->type);
 
   /* Force enable bitstream generator when we need to output Verilog top testbench*/  
   if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.dump_syn_verilog_top_testbench) {
@@ -312,8 +300,7 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
      * Free the allocated sram_orgz_info before, we start bitstream generation !
      */
     free_sram_orgz_info(sram_verilog_orgz_info,
-                        sram_verilog_orgz_info->type,
-                        nx + 2, ny + 2);
+                        sram_verilog_orgz_info->type);
   }
   
   /* End time count */

@@ -947,7 +947,7 @@ void ProcessSpiceSRAMOrganization(INOUTP ezxml_t Node,
     cur_sram_inf_orgz->type = SPICE_SRAM_STANDALONE; /* Default */
   } else if (0 == strcmp("scan-chain", Prop)) {
     cur_sram_inf_orgz->type = SPICE_SRAM_SCAN_CHAIN;
-  } else if (0 == strcmp("memory_bank", Prop)) {
+  } else if (0 == strcmp("memory-bank", Prop)) {
     cur_sram_inf_orgz->type = SPICE_SRAM_MEMORY_BANK;
    } else if (0 == strcmp("standalone", Prop)) {
     cur_sram_inf_orgz->type = SPICE_SRAM_STANDALONE;
