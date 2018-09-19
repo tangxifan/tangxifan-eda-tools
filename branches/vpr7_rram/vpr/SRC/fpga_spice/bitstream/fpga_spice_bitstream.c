@@ -341,7 +341,7 @@ void vpr_fpga_spice_generate_bitstream(t_vpr_setup vpr_setup,
   zero_spice_models_cnt(Arch.spice->num_spice_model, Arch.spice->spice_models);
 
   /* Generate Bitstreams 
-   * Bitstream generation must follow the sequence: grid => CB => SB 
+   * Bitstream generation must follow the sequence: CB => SB => Grid 
    * (To be consistent with Verilog Generator !!!)
    */
   init_sram_orgz_info_reserved_blwl(*cur_sram_orgz_info, vpr_setup.RoutingArch.num_switch, 
@@ -352,6 +352,7 @@ void vpr_fpga_spice_generate_bitstream(t_vpr_setup vpr_setup,
   fpga_spice_generate_bitstream_routing_resources(routing_bitstream_log_file_path,
                                                   Arch, &vpr_setup.RoutingArch, *cur_sram_orgz_info,
                                                   num_rr_nodes, rr_node, rr_node_indices);
+
 
   /* Logic blocks */
   lb_bitstream_log_file_path = my_strcat(circuit_name, fpga_spice_bitstream_logic_block_log_file_postfix);

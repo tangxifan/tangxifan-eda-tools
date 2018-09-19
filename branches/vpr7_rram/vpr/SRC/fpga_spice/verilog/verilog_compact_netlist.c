@@ -766,18 +766,18 @@ void dump_compact_verilog_top_netlist(t_sram_orgz_info* cur_sram_orgz_info,
 
   dump_verilog_top_netlist_internal_wires(cur_sram_orgz_info, fp);
 
-  /* Quote defined Logic blocks subckts (Grids) */
-  dump_compact_verilog_defined_grids(cur_sram_orgz_info, fp);
-
   /* Quote Routing structures: Channels */
   dump_verilog_defined_channels(fp, LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
 
-  /* Quote Routing structures: Connection Boxes */
-  dump_verilog_defined_connection_boxes(cur_sram_orgz_info, fp); 
-  
   /* Quote Routing structures: Switch Boxes */
   dump_verilog_defined_switch_boxes(cur_sram_orgz_info, fp); 
 
+  /* Quote Routing structures: Connection Boxes */
+  dump_verilog_defined_connection_boxes(cur_sram_orgz_info, fp); 
+
+  /* Quote defined Logic blocks subckts (Grids) */
+  dump_compact_verilog_defined_grids(cur_sram_orgz_info, fp);
+  
   /* Apply CLB to CLB direct connections */
   dump_verilog_clb2clb_directs(fp, num_clb2clb_directs, clb2clb_direct);
 

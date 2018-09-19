@@ -727,18 +727,19 @@ void generate_spice_subckts(char* subckt_dir,
   generate_spice_wires(subckt_dir, arch->num_segments, arch->Segments,
                        arch->spice->num_spice_model, arch->spice->spice_models);
 
-  /*5. Generate LUTs */
+  /* 5. Generate LUTs */
   vpr_printf(TIO_MESSAGE_INFO,"Writing SPICE LUTs...\n");
   generate_spice_luts(subckt_dir, arch->spice->num_spice_model, arch->spice->spice_models);
- 
-  /* 6. Generate Logic Blocks */
-  vpr_printf(TIO_MESSAGE_INFO,"Writing Logic Blocks...\n");
-  generate_spice_logic_blocks(subckt_dir, arch);
 
-  /* 7. Generate Routing architecture*/
+  /* 6. Generate Routing architecture*/
   vpr_printf(TIO_MESSAGE_INFO, "Writing Routing Resources....\n");
   generate_spice_routing_resources(subckt_dir, (*arch), routing_arch, 
                                    num_rr_nodes, rr_node, rr_node_indices);
+ 
+  /* 7. Generate Logic Blocks */
+  vpr_printf(TIO_MESSAGE_INFO,"Writing Logic Blocks...\n");
+  generate_spice_logic_blocks(subckt_dir, arch);
+
 
   return;
 }
