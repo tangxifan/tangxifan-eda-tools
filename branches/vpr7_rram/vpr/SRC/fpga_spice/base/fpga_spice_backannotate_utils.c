@@ -2843,6 +2843,9 @@ void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
   annotate_physical_mode_pins_in_pb_graph_node();
   alloc_and_load_phy_pb_for_mapped_block(num_blocks, block, num_logical_nets, vpack_net);
 
+  vpr_printf(TIO_MESSAGE_INFO, "Generate SPICE name tags for phy_pbs...\n");
+  gen_spice_name_tags_all_phy_pbs();
+
   /* Backannotate activity information, initialize the waveform information */
   /* Parasitic Net Activity Estimation */
   if (TRUE == parasitic_net_estimation_on) {

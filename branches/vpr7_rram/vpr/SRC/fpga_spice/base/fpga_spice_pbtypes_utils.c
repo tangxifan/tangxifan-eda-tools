@@ -86,6 +86,60 @@ int find_parent_pb_type_child_index(t_pb_type* parent_pb_type,
 /* Rule in generating a unique name: 
  * name of current pb =  <parent_pb_name_tag>_<cur_pb_graph_node>[index]
  */
+void gen_spice_name_tag_phy_pb_rec(t_phy_pb* cur_phy_pb,
+                                   char* prefix) {
+  char* prefix_rec = NULL; 
+  int ipb, jpb, mode_index; 
+
+  mode_index = cur_phy_pb->mode;
+
+  /* Free previous name_tag if there is */
+  /* my_free(cur_pb->spice_name_tag); */
+
+  /* Generate the name_tag */
+  if ((0 < cur_phy_pb->pb_graph_node->pb_type->num_modes)
+    &&(NULL == cur_phy_pb->pb_graph_node->pb_type->spice_model_name)) {
+    prefix_rec = (char*)my_malloc(sizeof(char)*(strlen(prefix) + 1 + strlen(cur_phy_pb->pb_graph_node->pb_type->name) + 1
+                                              + strlen(my_itoa(cur_phy_pb->pb_graph_node->placement_index)) + 7 + strlen(cur_phy_pb->pb_graph_node->pb_type->modes[mode_index].name) + 2 ));
+    sprintf(prefix_rec, "%s_%s[%d]_mode[%s]", 
+            prefix, cur_phy_pb->pb_graph_node->pb_type->name, cur_phy_pb->pb_graph_node->placement_index, cur_phy_pb->pb_graph_node->pb_type->modes[mode_index].name);
+    cur_phy_pb->spice_name_tag = my_strdup(prefix_rec);
+  } else {
+    assert((0 == cur_phy_pb->pb_graph_node->pb_type->num_modes)
+          ||(NULL != cur_phy_pb->pb_graph_node->pb_type->spice_model_name));
+    prefix_rec = (char*)my_malloc(sizeof(char)*(strlen(prefix) + 1 + strlen(cur_phy_pb->pb_graph_node->pb_type->name) + 1
+                                              + strlen(my_itoa(cur_phy_pb->pb_graph_node->placement_index)) + 2 ));
+    sprintf(prefix_rec, "%s_%s[%d]", 
+            prefix, cur_phy_pb->pb_graph_node->pb_type->name, cur_phy_pb->pb_graph_node->placement_index);
+    cur_phy_pb->spice_name_tag = my_strdup(prefix_rec);
+  }
+
+  /* When reach the leaf, we directly return */
+  /* Recursive until reach the leaf */
+  if ((0 == cur_phy_pb->pb_graph_node->pb_type->num_modes)
+     ||(NULL == cur_phy_pb->child_pbs)) {
+    return;
+  }
+  for (ipb = 0; ipb < cur_phy_pb->pb_graph_node->pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+    for (jpb = 0; jpb < cur_phy_pb->pb_graph_node->pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+      /* Refer to pack/output_clustering.c [LINE 392] */
+      //if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) { 
+        /* Try to simplify the name tag... to avoid exceeding the length of SPICE name (up to 1024 chars) */
+        /* gen_spice_name_tag_pb_rec(&(cur_pb->child_pbs[ipb][jpb]),prefix); */
+        gen_spice_name_tag_phy_pb_rec(&(cur_phy_pb->child_pbs[ipb][jpb]),prefix_rec); 
+      //}
+    }
+  }
+ 
+  my_free(prefix_rec);
+ 
+  return;
+}
+
+
+/* Rule in generating a unique name: 
+ * name of current pb =  <parent_pb_name_tag>_<cur_pb_graph_node>[index]
+ */
 void gen_spice_name_tag_pb_rec(t_pb* cur_pb,
                                char* prefix) {
   char* prefix_rec = NULL; 
@@ -152,6 +206,24 @@ void gen_spice_name_tags_all_pbs() {
 
   return;
 }
+
+/* Generate a unique name tag for each pb, 
+ * to identify it in both SPICE netlist and Power Modeling.
+ */
+void gen_spice_name_tags_all_phy_pbs() {
+  int iblk;
+  char* prefix = NULL;
+
+  for (iblk = 0; iblk < num_blocks; iblk++) {
+    prefix = (char*)my_malloc(sizeof(char)*(5 + strlen(my_itoa(block[iblk].x)) + 2 + strlen(my_itoa(block[iblk].y)) + 2));
+    sprintf(prefix, "grid[%d][%d]", block[iblk].x, block[iblk].y);
+    gen_spice_name_tag_phy_pb_rec((t_phy_pb*)block[iblk].phy_pb, prefix);
+    my_free(prefix);
+  }
+
+  return;
+}
+
 
 int find_pb_mapped_logical_block_rec(t_pb* cur_pb,
                                      t_spice_model* pb_spice_model, 

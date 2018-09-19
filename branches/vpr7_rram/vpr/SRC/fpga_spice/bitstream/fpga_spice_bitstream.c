@@ -298,6 +298,9 @@ void vpr_fpga_spice_generate_bitstream(t_vpr_setup vpr_setup,
   char* chomped_parent_dir = NULL;
   char* chomped_circuit_name = NULL;
 
+  char* routing_bitstream_log_file_path = NULL;
+  char* lb_bitstream_log_file_path = NULL;
+
   /* Check if the routing architecture we support*/
   if (UNI_DIRECTIONAL != vpr_setup.RoutingArch.directionality) {
     vpr_printf(TIO_MESSAGE_ERROR, "FPGA Bitstream Generator only support uni-directional routing architecture!\n");
@@ -345,11 +348,15 @@ void vpr_fpga_spice_generate_bitstream(t_vpr_setup vpr_setup,
                                     switch_inf, Arch.spice, &vpr_setup.RoutingArch);
 
   /* Routing: Connection Boxes and Switch Boxes */
-  fpga_spice_generate_bitstream_routing_resources(Arch, &vpr_setup.RoutingArch, *cur_sram_orgz_info,
+  routing_bitstream_log_file_path = my_strcat(circuit_name, fpga_spice_bitstream_routing_log_file_postfix);
+  fpga_spice_generate_bitstream_routing_resources(routing_bitstream_log_file_path,
+                                                  Arch, &vpr_setup.RoutingArch, *cur_sram_orgz_info,
                                                   num_rr_nodes, rr_node, rr_node_indices);
 
   /* Logic blocks */
-  fpga_spice_generate_bitstream_logic_block(&Arch, *cur_sram_orgz_info);
+  lb_bitstream_log_file_path = my_strcat(circuit_name, fpga_spice_bitstream_logic_block_log_file_postfix);
+  fpga_spice_generate_bitstream_logic_block(lb_bitstream_log_file_path,
+                                            &Arch, *cur_sram_orgz_info);
 
 
   /* Dump bitstream file */

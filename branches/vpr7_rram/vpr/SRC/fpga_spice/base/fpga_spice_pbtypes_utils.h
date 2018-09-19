@@ -8,10 +8,15 @@ int find_parent_pb_type_child_index(t_pb_type* parent_pb_type,
                                     int mode_index,
                                     t_pb_type* child_pb_type);
 
+void gen_spice_name_tag_phy_pb_rec(t_phy_pb* cur_phy_pb,
+                                   char* prefix);
+
 void gen_spice_name_tag_pb_rec(t_pb* cur_pb,
                                char* prefix);
 
 void gen_spice_name_tags_all_pbs();
+
+void gen_spice_name_tags_all_phy_pbs();
 
 int find_pb_mapped_logical_block_rec(t_pb* cur_pb,
                                      t_spice_model* pb_spice_model, 

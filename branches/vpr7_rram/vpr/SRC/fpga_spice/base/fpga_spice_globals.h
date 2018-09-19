@@ -32,3 +32,5 @@ extern t_llist* reserved_syntax_char_head;
  
 extern char* renaming_report_postfix;
 extern char* fpga_spice_bitstream_output_file_postfix;
+extern char* fpga_spice_bitstream_logic_block_log_file_postfix;
+extern char* fpga_spice_bitstream_routing_log_file_postfix;

@@ -40,12 +40,13 @@
  *                                         |
  *                         input_pins,   edges,       output_pins
  */ 
-void fpga_spice_generate_bitstream_pb_graph_pin_interc(enum e_spice_pin2pin_interc_type pin2pin_interc_type,
+void fpga_spice_generate_bitstream_pb_graph_pin_interc(FILE* fp,
+                                                       enum e_spice_pin2pin_interc_type pin2pin_interc_type,
                                                        t_pb_graph_pin* des_pb_graph_pin,
                                                        t_mode* cur_mode,
                                                        int select_edge,
                                                        t_sram_orgz_info* cur_sram_orgz_info) {
-  int iedge;
+  int iedge, ilevel;
   int fan_in = 0;
   t_interconnect* cur_interc = NULL; 
   enum e_interconnect verilog_interc_type = DIRECT_INTERC;
@@ -54,6 +55,13 @@ void fpga_spice_generate_bitstream_pb_graph_pin_interc(enum e_spice_pin2pin_inte
   int* mux_sram_bits = NULL;
   int mux_level = 0;
   int cur_bl, cur_wl;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
 
   /* 1. identify pin interconnection type, 
    * 2. Identify the number of fan-in (Consider interconnection edges of only selected mode)
@@ -118,6 +126,15 @@ void fpga_spice_generate_bitstream_pb_graph_pin_interc(enum e_spice_pin2pin_inte
       vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",
                  __FILE__, __LINE__, cur_interc->spice_model->name);
     }
+    
+    /* Print the encoding in SPICE netlist for debugging */
+    fprintf(fp, "***** SRAM bits for MUX[%d], mux_size=%d, level=%d, select_path_id=%d. *****\n", 
+            cur_interc->spice_model->cnt, fan_in, mux_level, select_edge);
+    fprintf(fp, "*****");
+    for (ilevel = 0; ilevel < num_mux_sram_bits; ilevel++) {
+      fprintf(fp, "%d", mux_sram_bits[ilevel]);
+    }
+    fprintf(fp, "*****\n\n");
   
     /* Store the configuraion bit to linked-list */
     add_mux_conf_bits_to_llist(fan_in, cur_sram_orgz_info, 
@@ -137,7 +154,8 @@ void fpga_spice_generate_bitstream_pb_graph_pin_interc(enum e_spice_pin2pin_inte
   return;
 }
 
-void fpga_spice_generate_bitstream_pb_graph_port_interc(t_pb_graph_node* cur_pb_graph_node,
+void fpga_spice_generate_bitstream_pb_graph_port_interc(FILE* fp,
+                                                        t_pb_graph_node* cur_pb_graph_node,
                                                         t_phy_pb* cur_pb,
                                                         enum e_spice_pb_port_type pb_port_type,
                                                         t_mode* cur_mode,
@@ -171,7 +189,7 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(t_pb_graph_node* cur_pb_
             assert(-1 != path_id);
           }
         }
-        fpga_spice_generate_bitstream_pb_graph_pin_interc(INPUT2INPUT_INTERC,
+        fpga_spice_generate_bitstream_pb_graph_pin_interc(fp, INPUT2INPUT_INTERC,
                                                           &(cur_pb_graph_node->input_pins[iport][ipin]),
                                                           cur_mode,
                                                           path_id, cur_sram_orgz_info);
@@ -200,7 +218,7 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(t_pb_graph_node* cur_pb_
             assert(-1 != path_id);
           }
         }
-        fpga_spice_generate_bitstream_pb_graph_pin_interc(OUTPUT2OUTPUT_INTERC,
+        fpga_spice_generate_bitstream_pb_graph_pin_interc(fp, OUTPUT2OUTPUT_INTERC,
                                                           &(cur_pb_graph_node->output_pins[iport][ipin]),
                                                           cur_mode,
                                                           path_id, cur_sram_orgz_info);
@@ -229,7 +247,7 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(t_pb_graph_node* cur_pb_
             assert(-1 != path_id);
           }
         }
-        fpga_spice_generate_bitstream_pb_graph_pin_interc(INPUT2INPUT_INTERC,
+        fpga_spice_generate_bitstream_pb_graph_pin_interc(fp, INPUT2INPUT_INTERC,
                                                           &(cur_pb_graph_node->clock_pins[iport][ipin]),
                                                           cur_mode,
                                                           path_id, cur_sram_orgz_info);
@@ -248,7 +266,8 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(t_pb_graph_node* cur_pb_
 }
 
 /* Print the SPICE interconnections according to pb_graph */
-void fpga_spice_generate_bitstream_pb_graph_interc(t_pb_graph_node* cur_pb_graph_node,
+void fpga_spice_generate_bitstream_pb_graph_interc(FILE* fp,
+                                                   t_pb_graph_node* cur_pb_graph_node,
                                                    t_phy_pb* cur_pb,
                                                    int select_mode_index,
                                                    t_sram_orgz_info* cur_sram_orgz_info) {
@@ -264,6 +283,13 @@ void fpga_spice_generate_bitstream_pb_graph_interc(t_pb_graph_node* cur_pb_graph
                __FILE__, __LINE__); 
     exit(1);
   }
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
   
   /* Assign current mode */
   cur_mode = &(cur_pb_graph_node->pb_type->modes[select_mode_index]);
@@ -275,7 +301,7 @@ void fpga_spice_generate_bitstream_pb_graph_interc(t_pb_graph_node* cur_pb_graph
    *                                         |
    *                         input_pins,   edges,       output_pins
    */ 
-  fpga_spice_generate_bitstream_pb_graph_port_interc(cur_pb_graph_node,
+  fpga_spice_generate_bitstream_pb_graph_port_interc(fp, cur_pb_graph_node,
                                                      cur_pb,
                                                      SPICE_PB_PORT_OUTPUT,
                                                      cur_mode,
@@ -298,13 +324,13 @@ void fpga_spice_generate_bitstream_pb_graph_interc(t_pb_graph_node* cur_pb_graph
         child_pb = &(cur_pb->child_pbs[ipb][jpb]);
       }
       /* For each child_pb_graph_node input pins*/
-      fpga_spice_generate_bitstream_pb_graph_port_interc(child_pb_graph_node,
+      fpga_spice_generate_bitstream_pb_graph_port_interc(fp, child_pb_graph_node,
                                                          child_pb,
                                                          SPICE_PB_PORT_INPUT,
                                                          cur_mode,
                                                          cur_sram_orgz_info);
       /* TODO: for clock pins, we should do the same work */
-      fpga_spice_generate_bitstream_pb_graph_port_interc(child_pb_graph_node,
+      fpga_spice_generate_bitstream_pb_graph_port_interc(fp, child_pb_graph_node,
                                                          child_pb,
                                                          SPICE_PB_PORT_CLOCK,
                                                          cur_mode,
@@ -316,7 +342,8 @@ void fpga_spice_generate_bitstream_pb_graph_interc(t_pb_graph_node* cur_pb_graph
 }
 
 /* Print the subckt of a primitive pb */
-void fpga_spice_generate_bitstream_pb_primitive(t_phy_pb* prim_pb,
+void fpga_spice_generate_bitstream_pb_primitive(FILE* fp,
+                                                t_phy_pb* prim_pb,
                                                 t_pb_type* prim_pb_type,
                                                 t_sram_orgz_info* cur_sram_orgz_info) {
  /* Check cur_pb_graph_node*/
@@ -327,24 +354,31 @@ void fpga_spice_generate_bitstream_pb_primitive(t_phy_pb* prim_pb,
   }
   assert (TRUE == prim_pb_type->parent_mode->define_physical_mode); 
 
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
   /* According to different type, we print netlist*/
   switch (prim_pb_type->spice_model->type) {
   case SPICE_MODEL_LUT:
     /* If this is a idle block we should set sram_bits to zero*/
-    fpga_spice_generate_bitstream_pb_primitive_lut(prim_pb, prim_pb_type, cur_sram_orgz_info);
+    fpga_spice_generate_bitstream_pb_primitive_lut(fp, prim_pb, prim_pb_type, cur_sram_orgz_info);
     break;
   case SPICE_MODEL_FF:
     assert(NULL != prim_pb_type->spice_model->model_netlist);
     /* TODO : We should learn trigger type and initial value!!! and how to apply them!!! */
-    fpga_spice_generate_bitstream_pb_generic_primitive(prim_pb, prim_pb_type, cur_sram_orgz_info);
+    fpga_spice_generate_bitstream_pb_generic_primitive(fp, prim_pb, prim_pb_type, cur_sram_orgz_info);
     break;
   case SPICE_MODEL_IOPAD:
     assert(NULL != prim_pb_type->spice_model->model_netlist);
-    fpga_spice_generate_bitstream_pb_generic_primitive(prim_pb, prim_pb_type, cur_sram_orgz_info);
+    fpga_spice_generate_bitstream_pb_generic_primitive(fp, prim_pb, prim_pb_type, cur_sram_orgz_info);
     break;
   case SPICE_MODEL_HARDLOGIC:
     assert(NULL != prim_pb_type->spice_model->model_netlist);
-    fpga_spice_generate_bitstream_pb_generic_primitive(prim_pb, prim_pb_type, cur_sram_orgz_info);
+    fpga_spice_generate_bitstream_pb_generic_primitive(fp, prim_pb, prim_pb_type, cur_sram_orgz_info);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid type of verilog_model(%s), should be [LUT|FF|HARD_LOGIC|IO]!\n",
@@ -358,7 +392,8 @@ void fpga_spice_generate_bitstream_pb_primitive(t_phy_pb* prim_pb,
 /* Print physical mode of pb_types and configure it to the idle pb_types recursively
  * search the idle_mode until we reach the leaf node
  */
-void fpga_spice_generate_bitstream_phy_pb_graph_node_rec(t_phy_pb* cur_pb, 
+void fpga_spice_generate_bitstream_phy_pb_graph_node_rec(FILE* fp,
+                                                         t_phy_pb* cur_pb, 
                                                          t_pb_graph_node* cur_pb_graph_node,
                                                          int pb_type_index,
                                                          t_sram_orgz_info* cur_sram_orgz_info) {
@@ -369,6 +404,13 @@ void fpga_spice_generate_bitstream_phy_pb_graph_node_rec(t_phy_pb* cur_pb,
   /* Check cur_pb_graph_node*/
   if (NULL == cur_pb_graph_node) {
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid cur_pb_graph_node.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
                __FILE__, __LINE__); 
     exit(1);
   }
@@ -390,7 +432,7 @@ void fpga_spice_generate_bitstream_phy_pb_graph_node_rec(t_phy_pb* cur_pb,
           assert (NULL != cur_pb);
           child_pb = get_phy_child_pb_for_phy_pb_graph_node(cur_pb, ipb, jpb);
         }
-        fpga_spice_generate_bitstream_phy_pb_graph_node_rec(child_pb,
+        fpga_spice_generate_bitstream_phy_pb_graph_node_rec(fp, child_pb,
                                                             &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]), jpb,
                                                             cur_sram_orgz_info);
       }
@@ -404,21 +446,21 @@ void fpga_spice_generate_bitstream_phy_pb_graph_node_rec(t_phy_pb* cur_pb,
       /* Special care for LUT !!!
        * Mapped logical block information is stored in child_pbs
        */
-      fpga_spice_generate_bitstream_pb_primitive( cur_pb, 
+      fpga_spice_generate_bitstream_pb_primitive( fp, cur_pb, 
                                                   cur_pb_type,
                                                   cur_sram_orgz_info); 
       break;
     case LATCH_CLASS:
       assert(0 == cur_pb_type->num_modes);
       /* Consider the num_pb, create all the subckts*/
-      fpga_spice_generate_bitstream_pb_primitive( cur_pb,
+      fpga_spice_generate_bitstream_pb_primitive( fp, cur_pb,
                                                   cur_pb_type, 
                                                   cur_sram_orgz_info); 
       break;
     case UNKNOWN_CLASS:
     case MEMORY_CLASS:
       /* Consider the num_pb, create all the subckts*/
-      fpga_spice_generate_bitstream_pb_primitive( cur_pb,  
+      fpga_spice_generate_bitstream_pb_primitive( fp, cur_pb,  
                                                   cur_pb_type, 
                                                   cur_sram_orgz_info); 
       break;  
@@ -435,7 +477,7 @@ void fpga_spice_generate_bitstream_phy_pb_graph_node_rec(t_phy_pb* cur_pb,
   mode_index = find_pb_type_physical_mode_index((*cur_pb_type));
 
   /* Print interconnections, set is_idle as TRUE*/
-  fpga_spice_generate_bitstream_pb_graph_interc(cur_pb_graph_node, cur_pb, mode_index, cur_sram_orgz_info);
+  fpga_spice_generate_bitstream_pb_graph_interc(fp, cur_pb_graph_node, cur_pb, mode_index, cur_sram_orgz_info);
 
   return;
 }
@@ -445,7 +487,8 @@ void fpga_spice_generate_bitstream_phy_pb_graph_node_rec(t_phy_pb* cur_pb,
  * Find the physical_mode in arch files,
  * And print the verilog netlist into file
  */
-void fpga_spice_generate_bitstream_one_physical_block(int x, int y, int z,
+void fpga_spice_generate_bitstream_one_physical_block(FILE* fp,
+                                                      int x, int y, int z,
                                                       t_type_ptr type_descriptor,
                                                       t_sram_orgz_info* cur_sram_orgz_info) {
   t_pb_graph_node* top_pb_graph_node = NULL;
@@ -454,6 +497,13 @@ void fpga_spice_generate_bitstream_one_physical_block(int x, int y, int z,
 
   /* Ensure we have a valid type_descriptor*/ 
   assert(NULL != type_descriptor);
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
 
   /* Go for the pb_types*/
   top_pb_graph_node = type_descriptor->pb_graph_head;
@@ -467,14 +517,15 @@ void fpga_spice_generate_bitstream_one_physical_block(int x, int y, int z,
   }
 
   /* Recursively find all idle mode and print netlist*/
-  fpga_spice_generate_bitstream_phy_pb_graph_node_rec(top_pb, top_pb_graph_node, 
+  fpga_spice_generate_bitstream_phy_pb_graph_node_rec(fp, top_pb, top_pb_graph_node, 
                                                       z, cur_sram_orgz_info);
 
   return;
 }
 
 /* Print the SPICE netlist for a I/O grid blocks */
-void fpga_spice_generate_bitstream_physical_grid_block(int ix, int iy,
+void fpga_spice_generate_bitstream_physical_grid_block(FILE* fp,
+                                                       int ix, int iy,
                                                        t_arch* arch,
                                                        t_sram_orgz_info* cur_sram_orgz_info) {
   int iz;
@@ -483,6 +534,13 @@ void fpga_spice_generate_bitstream_physical_grid_block(int ix, int iy,
   /* Check */
   assert((!(0 > ix))&&(!(ix > (nx + 1)))); 
   assert((!(0 > iy))&&(!(iy > (ny + 1)))); 
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
 
   /* generate_grid_subckt, type_descriptor of each grid defines the capacity,
    * for example, each grid may contains more than one top-level pb_types, such as I/O
@@ -499,7 +557,7 @@ void fpga_spice_generate_bitstream_physical_grid_block(int ix, int iy,
   /* check capacity and if this has been mapped */
   for (iz = 0; iz < capacity; iz++) {
     /* Print a NULL logic block...*/
-    fpga_spice_generate_bitstream_one_physical_block(ix, iy, iz, grid[ix][iy].type, cur_sram_orgz_info);
+    fpga_spice_generate_bitstream_one_physical_block(fp, ix, iy, iz, grid[ix][iy].type, cur_sram_orgz_info);
   } 
 
   return;
@@ -510,9 +568,21 @@ void fpga_spice_generate_bitstream_physical_grid_block(int ix, int iy,
  * will be printed. May have an additional option that only
  * output the used logic blocks 
  */
-void fpga_spice_generate_bitstream_logic_block(t_arch* arch,
+void fpga_spice_generate_bitstream_logic_block(char* lb_bitstream_log_file_path,
+                                               t_arch* arch,
                                                t_sram_orgz_info* cur_sram_orgz_info) {
   int ix, iy; 
+  FILE* fp = NULL;
+
+  /* Create a file handler */
+  fp = fopen(lb_bitstream_log_file_path, "w");
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Failure in creating log file %s",
+               __FILE__, __LINE__, lb_bitstream_log_file_path); 
+    exit(1);
+  } 
   
   /* Check the grid*/
   if ((0 == nx)||(0 == ny)) {
@@ -532,7 +602,7 @@ void fpga_spice_generate_bitstream_logic_block(t_arch* arch,
       assert(IO_TYPE != grid[ix][iy].type);
       /* Ensure a valid usage */
       assert((0 == grid[ix][iy].usage)||(0 < grid[ix][iy].usage));
-      fpga_spice_generate_bitstream_physical_grid_block(ix, iy, arch, cur_sram_orgz_info); 
+      fpga_spice_generate_bitstream_physical_grid_block(fp, ix, iy, arch, cur_sram_orgz_info); 
     }
   }
 
@@ -543,7 +613,7 @@ void fpga_spice_generate_bitstream_logic_block(t_arch* arch,
   for (ix = 1; ix < (nx + 1); ix++) {
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
-    fpga_spice_generate_bitstream_physical_grid_block(ix, iy, arch, cur_sram_orgz_info); 
+    fpga_spice_generate_bitstream_physical_grid_block(fp, ix, iy, arch, cur_sram_orgz_info); 
   }
 
   /* Right side : x = nx + 1, y = 1 .. ny*/
@@ -551,22 +621,25 @@ void fpga_spice_generate_bitstream_logic_block(t_arch* arch,
   for (iy = 1; iy < (ny + 1); iy++) {
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
-    fpga_spice_generate_bitstream_physical_grid_block(ix, iy, arch, cur_sram_orgz_info); 
+    fpga_spice_generate_bitstream_physical_grid_block(fp, ix, iy, arch, cur_sram_orgz_info); 
   }
   /* Bottom  side : x = 1 .. nx + 1, y = 0 */
   iy = 0;
   for (ix = 1; ix < (nx + 1); ix++) {
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
-    fpga_spice_generate_bitstream_physical_grid_block(ix, iy, arch, cur_sram_orgz_info); 
+    fpga_spice_generate_bitstream_physical_grid_block(fp, ix, iy, arch, cur_sram_orgz_info); 
   }
   /* Left side: x = 0, y = 1 .. ny*/
   ix = 0;
   for (iy = 1; iy < (ny + 1); iy++) {
     /* Ensure this is a io */
     assert(IO_TYPE == grid[ix][iy].type);
-    fpga_spice_generate_bitstream_physical_grid_block(ix, iy, arch, cur_sram_orgz_info); 
+    fpga_spice_generate_bitstream_physical_grid_block(fp, ix, iy, arch, cur_sram_orgz_info); 
   }
+
+  /* Close log file */
+  fclose(fp);
 
   /* Free */
    

@@ -41,3 +41,5 @@ boolean run_testbench_load_extraction = TRUE;
 
 char* renaming_report_postfix = "_io_renaming.rpt";
 char* fpga_spice_bitstream_output_file_postfix = ".bitstream";
+char* fpga_spice_bitstream_logic_block_log_file_postfix = "_lb_bitstream.log";
+char* fpga_spice_bitstream_routing_log_file_postfix = "_routing_bitstream.log";

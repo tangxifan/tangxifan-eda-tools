@@ -33,7 +33,8 @@
 
 /* Generate the bitstream of a generic primitive node: 
  * this node can be HARD LOGIC, IO, FF  */
-void fpga_spice_generate_bitstream_pb_generic_primitive(t_phy_pb* prim_phy_pb,
+void fpga_spice_generate_bitstream_pb_generic_primitive(FILE* fp,
+                                                        t_phy_pb* prim_phy_pb,
                                                         t_pb_type* prim_pb_type,
                                                         t_sram_orgz_info* cur_sram_orgz_info) {
   int num_sram_port = 0;
@@ -69,6 +70,13 @@ void fpga_spice_generate_bitstream_pb_generic_primitive(t_phy_pb* prim_phy_pb,
     assert (prim_phy_pb->pb_graph_node->pb_type->phy_pb_type == prim_pb_type);
   }
   assert (NULL != prim_pb_type->spice_model);
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
 
   verilog_model = prim_pb_type->spice_model; 
 
@@ -169,6 +177,20 @@ void fpga_spice_generate_bitstream_pb_generic_primitive(t_phy_pb* prim_phy_pb,
   /* Synchronize the internal counters of sram_orgz_info with generated bitstreams*/
   add_sram_conf_bits_to_sram_orgz_info(cur_sram_orgz_info, verilog_model);
 
+  /* Print the encoding in SPICE netlist for debugging */
+  if (NULL != prim_phy_pb) {
+    fprintf(fp, "***** Logic Block %s *****\n", 
+            prim_phy_pb->spice_name_tag);
+  }
+  fprintf(fp, "***** SRAM bits for %s[%d] *****\n", 
+          verilog_model->name, verilog_model->cnt);
+  fprintf(fp, "*****");
+  for (i = 0; i < num_sram; i++) {
+    fprintf(fp, "%d", sram_bits[i]);
+  }
+  fprintf(fp, "*****\n");
+
+
   /* Update the verilog_model counter */
   verilog_model->cnt++;
 
@@ -181,7 +203,8 @@ void fpga_spice_generate_bitstream_pb_generic_primitive(t_phy_pb* prim_phy_pb,
   return;
 }
 
-void fpga_spice_generate_bitstream_pb_primitive_lut(t_phy_pb* prim_phy_pb,
+void fpga_spice_generate_bitstream_pb_primitive_lut(FILE* fp,
+                                                    t_phy_pb* prim_phy_pb,
                                                     t_pb_type* prim_pb_type,
                                                     t_sram_orgz_info* cur_sram_orgz_info) {
 
@@ -404,6 +427,29 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(t_phy_pb* prim_phy_pb,
       logical_block[mapped_logical_block_index].mapped_spice_model_index = verilog_model->cnt;
     }
   }
+
+  /* Print the encoding in SPICE netlist for debugging */
+  if (NULL != prim_phy_pb) {
+    fprintf(fp, "***** Logic Block %s *****\n", 
+            prim_phy_pb->spice_name_tag);
+  }
+  fprintf(fp, "***** LUT SRAM bits for %s[%d] *****\n", 
+          verilog_model->name, verilog_model->cnt);
+  fprintf(fp, "*****");
+  for (i = 0; i < num_lut_sram; i++) {
+    fprintf(fp, "%d", lut_sram_bits[i]);
+  }
+  fprintf(fp, "*****\n");
+  if (0 < num_mode_sram) {
+    fprintf(fp, "***** LUT Mode bits for %s[%d] *****\n", 
+            verilog_model->name, verilog_model->cnt);
+    fprintf(fp, "*****");
+    for (i = 0; i < num_mode_sram; i++) {
+      fprintf(fp, "%d", mode_sram_bits[i]);
+    }
+    fprintf(fp, "*****\n");
+  }
+
   /* Update counter */
   verilog_model->cnt++;
 
