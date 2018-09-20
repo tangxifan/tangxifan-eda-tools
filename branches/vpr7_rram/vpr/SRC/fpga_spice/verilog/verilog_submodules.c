@@ -2362,8 +2362,6 @@ void dump_verilog_submodule_one_mem(FILE* fp,
     return;
   }
 
-  /* Generate subckt name */
-  mem_subckt_name = generate_verilog_subckt_name(verilog_model, verilog_mem_posfix);
 
   /* Currently, Only support one mem_model for each SPICE MODEL  */
   for (iport = 0; iport < num_sram_port; iport++) {
@@ -2378,6 +2376,9 @@ void dump_verilog_submodule_one_mem(FILE* fp,
       exit(1);
     }
   }
+
+  /* Generate subckt name */
+  mem_subckt_name = generate_verilog_mem_subckt_name(verilog_model, mem_model, verilog_mem_posfix);
 
   num_conf_bits = count_num_sram_bits_one_spice_model(verilog_model, -1);
   
