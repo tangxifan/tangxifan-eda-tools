@@ -214,6 +214,8 @@ struct s_spice_model_design_tech_info {
   /* Mux information only */
   enum e_spice_model_structure structure;
   int mux_num_level;
+  boolean add_const_input;
+  int const_input_val;
   /* Power gate information */
   boolean power_gated;
   /* LUT information */
@@ -352,7 +354,8 @@ struct s_spice {
 /* Information needed to build a Multiplexer architecture*/
 struct s_spice_mux_arch {
   enum e_spice_model_structure structure;
-  int num_input;
+  int num_input; /* All Inputs including those connect to constant generator */
+  int num_data_input; /* Inputs for multiplexing datapath signals*/ 
   int num_level;
   int num_input_basis;
   int num_input_last_level;

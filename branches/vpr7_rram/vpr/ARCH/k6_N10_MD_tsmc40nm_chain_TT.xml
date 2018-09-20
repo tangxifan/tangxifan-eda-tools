@@ -208,8 +208,8 @@
         <port type="output" prefix="out" size="1"/>
         <wire_param model_type="pie" res_val="0" cap_val="0" level="1"/> <!-- model_type could be T, res_val cap_val should be defined -->
       </spice_model>
-      <spice_model type="mux" name="mux_2level" prefix="mux_2level" dump_structural_verilog="false">
-        <design_technology type="cmos" structure="multi-level" num_level="2"/>
+      <spice_model type="mux" name="mux_2level" prefix="mux_2level" dump_structural_verilog="true">
+        <design_technology type="cmos" structure="multi-level" num_level="2" add_const_input="true" const_input_val="1"/>
         <input_buffer exist="on" spice_model_name="INVTX1"/>
         <output_buffer exist="on" spice_model_name="INVTX1"/>
         <!--mux2to1 subckt_name="mux2to1"/-->
@@ -218,8 +218,8 @@
         <port type="output" prefix="out" size="1"/>
         <port type="sram" prefix="sram" size="1"/>
       </spice_model>
-      <spice_model type="mux" name="mux_2level_tapbuf" prefix="mux_2level_tapbuf" dump_structural_verilog="false">
-        <design_technology type="cmos" structure="multi-level" num_level="2"/>
+      <spice_model type="mux" name="mux_2level_tapbuf" prefix="mux_2level_tapbuf" dump_structural_verilog="true">
+        <design_technology type="cmos" structure="multi-level" num_level="2" add_const_input="true" const_input_val="1"/>
         <input_buffer exist="on" spice_model_name="INVTX1"/>
         <output_buffer exist="on" spice_model_name="tap_buf4"/>
         <!--mux2to1 subckt_name="mux2to1"/-->
@@ -228,8 +228,8 @@
         <port type="output" prefix="out" size="1"/>
         <port type="sram" prefix="sram" size="1"/>
       </spice_model>
-      <spice_model type="mux" name="mux_1level_tapbuf" prefix="mux_1level_tapbuf" is_default="1" dump_structural_verilog="false">
-        <design_technology type="cmos" structure="one-level"/>
+      <spice_model type="mux" name="mux_1level_tapbuf" prefix="mux_1level_tapbuf" is_default="1" dump_structural_verilog="true">
+        <design_technology type="cmos" structure="one-level" add_const_input="true" const_input_val="1"/>
         <input_buffer exist="on" spice_model_name="INVTX1"/>
         <output_buffer exist="on" spice_model_name="tap_buf4"/>
         <!--mux2to1 subckt_name="mux2to1"/-->

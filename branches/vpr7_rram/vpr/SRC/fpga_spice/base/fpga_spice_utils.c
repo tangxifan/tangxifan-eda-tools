@@ -612,7 +612,7 @@ char* fpga_spice_create_one_subckt_filename(char* file_name_prefix,
   char* fname = NULL;
 
   fname = (char*) my_malloc(sizeof(char) * (strlen(file_name_prefix)
-                            + strlen(my_itoa(subckt_x)) + strlen(my_itoa(subckt_y))
+                            + strlen(my_itoa(subckt_x)) + 1 + strlen(my_itoa(subckt_y))
                             + strlen(file_name_postfix) + 1));
 
   sprintf(fname, "%s%d_%d%s", 

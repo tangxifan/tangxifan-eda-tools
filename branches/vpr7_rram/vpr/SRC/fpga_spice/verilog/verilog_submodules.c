@@ -1224,6 +1224,17 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
               spice_mux_arch.input_offset[i]);
     }
   }
+  /* Special: for the last inputs, we connect to VDD|GND 
+   * TODO: create an option to select the connection VDD or GND  
+   */
+  if ((SPICE_MODEL_MUX == spice_model.type)
+     && (TRUE == spice_model.design_tech_info.add_const_input)) { 
+    assert ( (0 == spice_model.design_tech_info.const_input_val) 
+            || (1 == spice_model.design_tech_info.const_input_val) );
+    fprintf(fp, "assign mux2_l%d_in[%d] = 1'b%d;\n", 
+            spice_mux_arch.input_level[mux_size], 
+            spice_mux_arch.input_offset[mux_size], spice_model.design_tech_info.const_input_val);
+  }
 
   /* Output buffer*/
   for (iport = 0; iport < num_output_port; iport++) {

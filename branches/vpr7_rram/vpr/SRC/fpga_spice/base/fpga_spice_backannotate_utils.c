@@ -43,6 +43,18 @@ int get_ff_output_init_val(t_logical_block* ff_logical_block) {
   return ff_logical_block->init_val;
 }
 
+int determine_rr_node_default_prev_node(t_rr_node* cur_rr_node) {
+  int default_prev_node = DEFAULT_PREV_NODE;
+
+  /* Judge if the prev_node should be */
+  if ((NULL != switch_inf[cur_rr_node->driver_switch].spice_model) 
+     && (TRUE == switch_inf[cur_rr_node->driver_switch].spice_model->design_tech_info.add_const_input)) {
+    default_prev_node = OPEN; /* The constant input will be the last input!!! */
+  } 
+
+  return default_prev_node;
+}
+
 /* Get initial value of a mapped  LUT output*/
 int get_lut_output_init_val(t_logical_block* lut_logical_block) {
   int i;
@@ -624,7 +636,7 @@ void rec_backannotate_rr_node_net_num(int LL_num_rr_nodes,
    */
   for (iedge = 0; iedge < LL_rr_node[src_node_index].num_edges; iedge++) {
     to_node = LL_rr_node[src_node_index].edges[iedge];
-    assert(OPEN != LL_rr_node[to_node].prev_node);
+    /* assert(OPEN != LL_rr_node[to_node].prev_node); */
     if (src_node_index == LL_rr_node[to_node].prev_node) {
       assert(iedge == LL_rr_node[to_node].prev_edge);
       /* assert(LL_rr_node[src_node_index].net_num == LL_rr_node[to_node].net_num); */
@@ -1162,7 +1174,7 @@ void backannotate_pb_rr_nodes_net_info() {
 /* Mark the prev_edge and prev_node of all the rr_nodes in global routing */
 static 
 void back_annotate_rr_node_map_info() {
-  int inode, jnode, inet;
+  int inode, jnode, inet, default_prev_node;
   int next_node, iedge;
   t_trace* tptr;
   t_rr_type rr_type;
@@ -1184,8 +1196,11 @@ void back_annotate_rr_node_map_info() {
     }  
     assert(0 < rr_node[inode].num_edges);
     for (iedge = 0; iedge < rr_node[inode].num_edges; iedge++) {
-      jnode = rr_node[inode].edges[iedge];
-      if (&(rr_node[inode]) == rr_node[jnode].drive_rr_nodes[0]) {
+      jnode =  rr_node[inode].edges[iedge];
+      default_prev_node = determine_rr_node_default_prev_node(&rr_node[jnode]);
+      if (DEFAULT_PREV_NODE == default_prev_node) {
+        rr_node[jnode].prev_node = default_prev_node;
+      } else if (&(rr_node[inode]) == rr_node[jnode].drive_rr_nodes[default_prev_node]) {
         rr_node[jnode].prev_node = inode;
         rr_node[jnode].prev_edge = iedge;
       }
@@ -1388,7 +1403,8 @@ void update_one_grid_pack_net_num(int x, int y) {
         /* Find the pb net_num and update OPIN net_num */
         pin_global_rr_node_id = get_rr_node_index(x, y, OPIN, ipin, rr_node_indices);
         if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
-          if (TRUE == vpack_net[local_rr_graph[ipin].net_num].is_global) {
+          if ( (OPEN != local_rr_graph[ipin].net_num)
+              && (TRUE == vpack_net[local_rr_graph[ipin].net_num].is_global)) {
             local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
             local_rr_graph[ipin].vpack_net_num = local_rr_graph[ipin].net_num;
             local_rr_graph[ipin].net_num = vpack_to_clb_net_mapping[local_rr_graph[ipin].net_num];
@@ -1433,7 +1449,8 @@ void update_one_grid_pack_net_num(int x, int y) {
         /* Special for global net, preserve them in the local rr_graph */
         /* Get the index of Vpack net from global rr_node net_num (clb_net index)*/
         if (OPEN == rr_node[pin_global_rr_node_id].net_num) {
-          if (TRUE == vpack_net[local_rr_graph[ipin].net_num].is_global) {
+          if ( (OPEN != local_rr_graph[ipin].net_num)
+              && (TRUE == vpack_net[local_rr_graph[ipin].net_num].is_global)) {
             local_rr_graph[ipin].net_num_in_pack = local_rr_graph[ipin].net_num;
             local_rr_graph[ipin].vpack_net_num = local_rr_graph[ipin].net_num;
             local_rr_graph[ipin].net_num = vpack_to_clb_net_mapping[local_rr_graph[ipin].net_num];
@@ -2774,12 +2791,12 @@ void alloc_and_load_phy_pb_for_mapped_block(int num_mapped_blocks, t_block* mapp
     top_phy_pb->parent_pb = NULL;
     top_phy_pb->mode = 0; /* Top-level should have only one mode!!! */
     /* Allocate rr_graph for the phy_pb */
-    vpr_printf(TIO_MESSAGE_INFO, "Allocating routing resource graph for %d physical pb!\n", iblk);
+    vpr_printf(TIO_MESSAGE_INFO, "Allocating routing resource graph for %d physical pb!\r", iblk);
     alloc_and_load_rr_graph_for_phy_pb(mapped_block[iblk].pb, top_phy_pb, L_num_vpack_nets, L_vpack_net); 
     /* Perform routing for the phy_pb !!! */
     route_success = try_breadth_first_route_pb_rr_graph(top_phy_pb->rr_graph);
     if (TRUE == route_success) { 
-      vpr_printf(TIO_MESSAGE_INFO, "Route successfully for %d physical pbs!\n", iblk);
+      vpr_printf(TIO_MESSAGE_INFO, "Route successfully for %d physical pbs!\r", iblk);
     } else {
       assert(FALSE == route_success);
       vpr_printf(TIO_MESSAGE_ERROR,

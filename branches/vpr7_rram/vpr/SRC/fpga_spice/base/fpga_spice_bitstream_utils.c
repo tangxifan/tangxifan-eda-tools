@@ -101,21 +101,25 @@ int count_num_sram_bits_one_lut_spice_model(t_spice_model* cur_spice_model) {
 int count_num_sram_bits_one_mux_spice_model(t_spice_model* cur_spice_model,
                                             int mux_size) {
   int num_sram_bits = 0;
+  int num_input_size = mux_size;
 
   assert(SPICE_MODEL_MUX == cur_spice_model->type);
 
   assert((2 == mux_size)||(2 < mux_size));
+
+  num_input_size = get_mux_full_input_size (cur_spice_model, mux_size);
+
   /* Number of configuration bits depends on the MUX structure */
   switch (cur_spice_model->design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
-    num_sram_bits = determine_tree_mux_level(mux_size);
+    num_sram_bits = determine_tree_mux_level(num_input_size);
     break;
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
-    num_sram_bits = mux_size;
+    num_sram_bits = num_input_size;
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
     num_sram_bits = cur_spice_model->design_tech_info.mux_num_level
-                    * determine_num_input_basis_multilevel_mux(mux_size, 
+                    * determine_num_input_basis_multilevel_mux(num_input_size, 
                       cur_spice_model->design_tech_info.mux_num_level);
     break;
   default:
@@ -124,7 +128,7 @@ int count_num_sram_bits_one_mux_spice_model(t_spice_model* cur_spice_model,
     exit(1);
   }
   /* For 2:1 MUX, whatever structure, there is only one level */
-  if (2 == mux_size) {
+  if (2 == num_input_size) {
     num_sram_bits = 1;
   }
   /* Also the number of configuration bits depends on the technology*/
@@ -141,7 +145,7 @@ int count_num_sram_bits_one_mux_spice_model(t_spice_model* cur_spice_model,
       num_sram_bits = (num_sram_bits + 1);
     }
     /* For 2:1 MUX, whatever structure, there is only one level */
-    if (2 == mux_size) {
+    if (2 == num_input_size) {
       num_sram_bits = 3;
     } 
     break;
@@ -375,10 +379,13 @@ int count_num_reserved_conf_bits_one_mux_spice_model(t_spice_model* cur_spice_mo
                                                      enum e_sram_orgz cur_sram_orgz_type,
                                                      int mux_size) {
   int num_reserved_conf_bits = 0;
+  int num_input_size = mux_size;
 
   /* Check */
   assert(SPICE_MODEL_MUX == cur_spice_model->type);
   assert((2 == mux_size)||(2 < mux_size));
+
+  num_input_size = get_mux_full_input_size(cur_spice_model, mux_size);
 
   /* Number of configuration bits depends on the MUX structure */
   switch (cur_spice_model->design_tech_info.structure) {
@@ -386,11 +393,11 @@ int count_num_reserved_conf_bits_one_mux_spice_model(t_spice_model* cur_spice_mo
     num_reserved_conf_bits = 2;
     break;
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
-    num_reserved_conf_bits = mux_size;
+    num_reserved_conf_bits = num_input_size;
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
     num_reserved_conf_bits = cur_spice_model->design_tech_info.mux_num_level * 
-                             determine_num_input_basis_multilevel_mux(mux_size, 
+                             determine_num_input_basis_multilevel_mux(num_input_size, 
                              cur_spice_model->design_tech_info.mux_num_level);
     break;
   default:
@@ -399,7 +406,7 @@ int count_num_reserved_conf_bits_one_mux_spice_model(t_spice_model* cur_spice_mo
     exit(1);
   }
   /* For 2:1 MUX, whatever structure, there is only one level */
-  if (2 == mux_size) {
+  if (2 == num_input_size) {
     num_reserved_conf_bits = 2;
   }
   /* Also the number of configuration bits depends on the technology*/
@@ -411,7 +418,7 @@ int count_num_reserved_conf_bits_one_mux_spice_model(t_spice_model* cur_spice_mo
       * we only need 1 additional BL and WL for each MUX level.
       */
       /* For 2:1 MUX, whatever structure, there is only one level */
-      if (2 == mux_size) {
+      if (2 == num_input_size) {
         num_reserved_conf_bits = 2;
       } 
       break;
@@ -428,7 +435,7 @@ int count_num_reserved_conf_bits_one_mux_spice_model(t_spice_model* cur_spice_mo
         num_reserved_conf_bits = 0;
       }
       /* For 2:1 MUX, whatever structure, there is only one level */
-      if (2 == mux_size) {
+      if (2 == num_input_size) {
         num_reserved_conf_bits = 0;
       } 
       break;
@@ -609,22 +616,26 @@ int count_num_conf_bits_one_mux_spice_model(t_spice_model* cur_spice_model,
                                             enum e_sram_orgz cur_sram_orgz_type,
                                             int mux_size) {
   int num_conf_bits = 0;
+  int num_input_size = mux_size;
 
   assert(NULL != cur_spice_model);
   assert(SPICE_MODEL_MUX == cur_spice_model->type);
 
   assert((2 == mux_size)||(2 < mux_size));
+
+  num_input_size = get_mux_full_input_size(cur_spice_model, mux_size);
+
   /* Number of configuration bits depends on the MUX structure */
   switch (cur_spice_model->design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
-    num_conf_bits = determine_tree_mux_level(mux_size);
+    num_conf_bits = determine_tree_mux_level(num_input_size);
     break;
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
-    num_conf_bits = mux_size;
+    num_conf_bits = num_input_size;
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
     num_conf_bits = cur_spice_model->design_tech_info.mux_num_level
-                    * determine_num_input_basis_multilevel_mux(mux_size, 
+                    * determine_num_input_basis_multilevel_mux(num_input_size, 
                       cur_spice_model->design_tech_info.mux_num_level);
     break;
   default:
@@ -633,7 +644,7 @@ int count_num_conf_bits_one_mux_spice_model(t_spice_model* cur_spice_model,
     exit(1);
   }
   /* For 2:1 MUX, whatever structure, there is only one level */
-  if (2 == mux_size) {
+  if (2 == num_input_size) {
     num_conf_bits = 1;
   }
   /* Also the number of configuration bits depends on the technology*/
@@ -646,7 +657,7 @@ int count_num_conf_bits_one_mux_spice_model(t_spice_model* cur_spice_model,
       */
       num_conf_bits = cur_spice_model->design_tech_info.mux_num_level;
       /* For 2:1 MUX, whatever structure, there is only one level */
-      if (2 == mux_size) {
+      if (2 == num_input_size) {
         num_conf_bits = 1;
       } 
       break;

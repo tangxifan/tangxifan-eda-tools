@@ -354,16 +354,6 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(FILE* fp,
     /* Generate sram bits*/
     lut_sram_bits = generate_lut_sram_bits(lut_truth_table_length, lut_truth_table, 
                                            lut_size, lut_sram_port->default_val);
-    /* Free */ 
-    my_free(lut_pin_net);
-    my_free(lut_truth_table);
-    for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
-      for (j = 0; j < truth_table_length[i]; j++) {
-        my_free(truth_table[i][j]);
-      }
-      my_free(truth_table[i]);
-    }
-    my_free(truth_table_length);
   }
   
   /* Add mode bits */
@@ -432,6 +422,12 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(FILE* fp,
   if (NULL != prim_phy_pb) {
     fprintf(fp, "***** Logic Block %s *****\n", 
             prim_phy_pb->spice_name_tag);
+    for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
+      mapped_logical_block_index = prim_phy_pb->logical_block[i];
+      fprintf(fp, "***** Mapped Logic Block[%d] %s *****\n",
+              i, logical_block[mapped_logical_block_index].name);
+    }
+    fprintf(fp, "\n");
   }
   fprintf(fp, "***** LUT SRAM bits for %s[%d] *****\n", 
           verilog_model->name, verilog_model->cnt);
@@ -454,6 +450,17 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(FILE* fp,
   verilog_model->cnt++;
 
   /*Free*/
+  if (NULL != prim_phy_pb) {
+    my_free(lut_pin_net);
+    my_free(lut_truth_table);
+    for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
+      for (j = 0; j < truth_table_length[i]; j++) {
+        my_free(truth_table[i][j]);
+      }
+      my_free(truth_table[i]);
+    }
+    my_free(truth_table_length);
+  }
   my_free(input_ports);
   my_free(sram_ports);
   my_free(sram_bits);

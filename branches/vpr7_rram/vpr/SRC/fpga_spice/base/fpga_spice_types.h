@@ -1,6 +1,9 @@
 /* Define the basic data structures used for FPGA-SPICE */
 
-#define DEFAULT_PATH_ID 0
+#define DEFAULT_SWITCH_ID 0
+#define DEFAULT_PATH_ID -1
+#define DEFAULT_MUX_PATH_ID 0
+#define DEFAULT_PREV_NODE -1
 
 /* Key data structure for router: routing resource graph 
  * This data structure store the key parameters that

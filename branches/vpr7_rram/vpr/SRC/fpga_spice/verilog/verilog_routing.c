@@ -762,16 +762,12 @@ void dump_verilog_switch_box_mux(t_sram_orgz_info* cur_sram_orgz_info,
   fprintf(fp, ");\n");
 
   /* Configuration bits for this MUX*/
-  path_id = -1;
+  path_id = DEFAULT_PATH_ID;
   for (inode = 0; inode < mux_size; inode++) {
     if (drive_rr_nodes[inode] == &(rr_node[cur_rr_node->prev_node])) {
       path_id = inode;
       break;
     }
-  }
-
-  if (!((-1 != path_id)&&(path_id < mux_size))) {
-  assert((-1 != path_id)&&(path_id < mux_size));
   }
 
   /* Depend on both technology and structure of this MUX*/
@@ -971,12 +967,12 @@ void dump_verilog_switch_box_interc(t_sram_orgz_info* cur_sram_orgz_info,
   } else if (1 == num_drive_rr_nodes) {
     /* Print a direct connection*/
     dump_verilog_switch_box_short_interc(cur_sram_orgz_info, fp, cur_sb_info, chan_side, cur_rr_node, 
-                                         num_drive_rr_nodes, drive_rr_nodes[0]);
+                                         num_drive_rr_nodes, drive_rr_nodes[DEFAULT_SWITCH_ID]);
   } else if (1 < num_drive_rr_nodes) {
     /* Print the multiplexer, fan_in >= 2 */
     dump_verilog_switch_box_mux(cur_sram_orgz_info, fp, cur_sb_info, chan_side, cur_rr_node, 
                                 num_drive_rr_nodes, drive_rr_nodes, 
-                                cur_rr_node->drive_switches[0]);
+                                cur_rr_node->drive_switches[DEFAULT_SWITCH_ID]);
   } /*Nothing should be done else*/ 
 
   /* Free */
@@ -1403,16 +1399,15 @@ void dump_verilog_connection_box_mux(t_sram_orgz_info* cur_sram_orgz_info,
   drive_rr_nodes = src_rr_node->drive_rr_nodes; 
 
   /* Configuration bits for MUX*/
-  path_id = -1;
+  path_id = DEFAULT_PATH_ID;
   for (inode = 0; inode < mux_size; inode++) {
     if (drive_rr_nodes[inode] == &(rr_node[src_rr_node->prev_node])) {
       path_id = inode;
       break;
     }
   }
-  assert((-1 != path_id)&&(path_id < mux_size));
 
-  switch_index = src_rr_node->drive_switches[path_id];
+  switch_index = src_rr_node->drive_switches[DEFAULT_SWITCH_ID];
 
   verilog_model = switch_inf[switch_index].spice_model;
 

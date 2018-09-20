@@ -811,11 +811,19 @@ static void ProcessSpiceModel(ezxml_t Parent,
            spice_model->design_tech_info.structure = SPICE_MODEL_STRUCTURE_TREE;
         }
       }
+      /* Parse the const inputs */
+      spice_model->design_tech_info.add_const_input = GetBooleanProperty(Node, "add_const_input", FALSE, FALSE);
+      spice_model->design_tech_info.const_input_val = GetIntProperty(Node, "const_input_val", FALSE, 0);
     } else {
-      /* Default: tree */
+      /* Default: tree, no const_inputs */
       spice_model->design_tech_info.structure = SPICE_MODEL_STRUCTURE_TREE;
+      spice_model->design_tech_info.add_const_input = FALSE;
+      spice_model->design_tech_info.const_input_val = 0;
     }
 	ezxml_set_attr(Node, "structure", NULL);
+	ezxml_set_attr(Node, "add_const_input", NULL);
+	ezxml_set_attr(Node, "const_input_val", NULL);
+
     if (SPICE_MODEL_STRUCTURE_MULTILEVEL == spice_model->design_tech_info.structure) {
       spice_model->design_tech_info.mux_num_level = GetIntProperty(Node,"num_level",TRUE,1);
       /* For num_level == 1, auto convert to one-level structure */

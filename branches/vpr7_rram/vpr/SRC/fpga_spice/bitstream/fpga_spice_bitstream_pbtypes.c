@@ -196,7 +196,7 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(FILE* fp,
           } else {
             /* Find the path_id */
             path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-            assert(-1 != path_id);
+            assert(DEFAULT_PATH_ID != path_id);
           }
         }
         fpga_spice_generate_bitstream_pb_graph_pin_interc(fp, INPUT2INPUT_INTERC,
@@ -228,7 +228,7 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(FILE* fp,
           } else {
             /* Find the path_id */
             path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-            assert(-1 != path_id);
+            assert(DEFAULT_PATH_ID != path_id);
           }
         }
         fpga_spice_generate_bitstream_pb_graph_pin_interc(fp, OUTPUT2OUTPUT_INTERC,
@@ -260,7 +260,7 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(FILE* fp,
           } else {
             /* Find the path_id */
             path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-            assert(-1 != path_id);
+            assert(DEFAULT_PATH_ID != path_id);
           }
         }
         fpga_spice_generate_bitstream_pb_graph_pin_interc(fp, INPUT2INPUT_INTERC,

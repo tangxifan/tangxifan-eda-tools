@@ -27,6 +27,12 @@ int* decode_tree_mux_sram_bits(int fan_in,
                                int mux_level,
                                int path_id);
 
+int get_mux_default_path_id(t_spice_model* mux_spice_model,
+                            int mux_size, int path_id);
+
+int get_mux_full_input_size(t_spice_model* mux_spice_model,
+                            int mux_size);
+
 void decode_cmos_mux_sram_bits(t_spice_model* mux_spice_model,
                                int mux_size, int path_id, 
                                int* bit_len, int** conf_bits, int* mux_level);

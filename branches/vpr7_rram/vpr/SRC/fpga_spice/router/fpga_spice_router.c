@@ -386,7 +386,9 @@ boolean try_breadth_first_route_pb_rr_graph(t_rr_graph* local_rr_graph) {
         vpr_printf(TIO_MESSAGE_INFO, "Routing failed. Disconnected rr_graph.\n");
         return FALSE;
       } else {
+        /*
         vpr_printf(TIO_MESSAGE_INFO, "Succeed routing net %s\n", local_rr_graph->net[net_index]->name);
+        */
       }
 
       pathfinder_update_rr_graph_one_cost(local_rr_graph, local_rr_graph->trace_head[net_index], 1, pres_fac);

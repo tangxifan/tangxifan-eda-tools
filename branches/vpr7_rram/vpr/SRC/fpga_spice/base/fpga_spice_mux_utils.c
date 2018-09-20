@@ -342,44 +342,89 @@ int* decode_tree_mux_sram_bits(int fan_in,
   return ret;
 }
 
+int get_mux_default_path_id(t_spice_model* mux_spice_model,
+                            int mux_size, int path_id) {
+  int default_path_id;
+
+  assert(SPICE_MODEL_MUX == mux_spice_model->type);
+
+  if (TRUE == mux_spice_model->design_tech_info.add_const_input) {
+    default_path_id = mux_size; /* When there is a constant input, use the last path */
+  } else {
+    default_path_id = DEFAULT_MUX_PATH_ID; /* When there is no constant input, use the default one */
+  }
+
+  return default_path_id; 
+}
+
+int get_mux_full_input_size(t_spice_model* mux_spice_model,
+                            int mux_size) {
+  int full_input_size = mux_size;
+
+  assert ((SPICE_MODEL_MUX == mux_spice_model->type) 
+         || (SPICE_MODEL_LUT == mux_spice_model->type));
+
+  if (SPICE_MODEL_LUT == mux_spice_model->type) {
+    return full_input_size;
+  }
+
+  if (TRUE == mux_spice_model->design_tech_info.add_const_input) {
+    full_input_size = mux_size + 1;
+  }
+  
+  return full_input_size;
+}
+
 void decode_cmos_mux_sram_bits(t_spice_model* mux_spice_model,
                                int mux_size, int path_id, 
                                int* bit_len, int** conf_bits, int* mux_level) {
+  int num_mux_input = 0;
+  int datapath_id = path_id;
+
   /* Check */
   assert(NULL != mux_level);
   assert(NULL != bit_len);
   assert(NULL != conf_bits);
-  assert((-1 < path_id)&&(path_id < mux_size));
   assert(SPICE_MODEL_MUX == mux_spice_model->type);
   assert(SPICE_MODEL_DESIGN_CMOS == mux_spice_model->design_tech);
-  
+
+  /* Handle DEFAULT PATH ID */
+  if (DEFAULT_PATH_ID == datapath_id) {
+    datapath_id = get_mux_default_path_id(mux_spice_model, mux_size, path_id);
+  } else { 
+    assert((DEFAULT_PATH_ID < datapath_id)&&(datapath_id < mux_size));
+  }
+
+  /* We have an additional input (last input) connected to a constant */
+  num_mux_input = get_mux_full_input_size(mux_spice_model, mux_size);
+
   /* Initialization */
   (*bit_len) = 0;
   (*conf_bits) = NULL;
 
   /* Special for MUX-2: whatever structure it is, it has always one-level and one configuration bit */
-  if (2 == mux_size) {
+  if (2 == num_mux_input) {
     (*bit_len) = 1;
     (*mux_level) = 1;
-    (*conf_bits) = decode_tree_mux_sram_bits(mux_size, (*mux_level), path_id); 
+    (*conf_bits) = decode_tree_mux_sram_bits(num_mux_input, (*mux_level), datapath_id); 
     return;
   }
   /* Other general cases */ 
   switch (mux_spice_model->design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
-    (*mux_level) = determine_tree_mux_level(mux_size);
+    (*mux_level) = determine_tree_mux_level(num_mux_input);
     (*bit_len) = (*mux_level);
-    (*conf_bits) = decode_tree_mux_sram_bits(mux_size, (*mux_level), path_id); 
+    (*conf_bits) = decode_tree_mux_sram_bits(num_mux_input, (*mux_level), datapath_id); 
     break;
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
     (*mux_level) = 1;
-    (*bit_len) = mux_size;
-    (*conf_bits) = decode_onelevel_mux_sram_bits(mux_size, (*mux_level), path_id); 
+    (*bit_len) = num_mux_input;
+    (*conf_bits) = decode_onelevel_mux_sram_bits(num_mux_input, (*mux_level), datapath_id); 
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
     (*mux_level) = mux_spice_model->design_tech_info.mux_num_level;
-    (*bit_len) = determine_num_input_basis_multilevel_mux(mux_size, (*mux_level)) * (*mux_level);
-    (*conf_bits) = decode_multilevel_mux_sram_bits(mux_size, (*mux_level), path_id); 
+    (*bit_len) = determine_num_input_basis_multilevel_mux(num_mux_input, (*mux_level)) * (*mux_level);
+    (*conf_bits) = decode_multilevel_mux_sram_bits(num_mux_input, (*mux_level), datapath_id); 
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for mux_spice_model (%s)!\n",
@@ -446,22 +491,32 @@ void decode_multilevel_4t1r_mux(int num_level, int num_input_basis,
 void decode_rram_mux(t_spice_model* mux_spice_model,
                      int mux_size, int path_id,
                      int* bit_len, int** conf_bits, int* mux_level) {
-  int num_level, num_input_basis;
+  int num_level, num_input_basis, num_mux_input;
+  int datapath_id = path_id;
 
   /* Check */
   assert(NULL != mux_level);
   assert(NULL != bit_len);
   assert(NULL != conf_bits);
-  assert((-1 < path_id)&&(path_id < mux_size));
   assert(SPICE_MODEL_MUX == mux_spice_model->type);
   assert(SPICE_MODEL_DESIGN_RRAM == mux_spice_model->design_tech);
+
+  /* Handle DEFAULT PATH ID */
+  if (DEFAULT_PATH_ID == datapath_id) {
+    datapath_id = get_mux_default_path_id(mux_spice_model, mux_size, path_id);
+  } else {
+    assert((DEFAULT_PATH_ID < datapath_id)&&(datapath_id < mux_size));
+  }
+
+  /* We have an additional input (last input) connected to a constant */
+  num_mux_input = get_mux_full_input_size(mux_spice_model, mux_size);
   
   /* Initialization */
   (*mux_level) = 0;
   (*bit_len) = 0;
   (*conf_bits) = NULL;
 
-  (*bit_len) = 2 * count_num_sram_bits_one_spice_model(mux_spice_model, mux_size);
+  (*bit_len) = 2 * count_num_sram_bits_one_spice_model(mux_spice_model, num_mux_input);
   
   /* Switch cases: MUX structure */
   switch (mux_spice_model->design_tech_info.structure) {
@@ -471,13 +526,13 @@ void decode_rram_mux(t_spice_model* mux_spice_model,
     break;
   case SPICE_MODEL_STRUCTURE_TREE:
     /* Number of configuration bits is num_level* 2*(basis+1) */
-    num_level = determine_tree_mux_level(mux_size); 
+    num_level = determine_tree_mux_level(num_mux_input); 
     num_input_basis = 2;
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
     /* Number of configuration bits is num_level* 2*(basis+1) */
     num_level = mux_spice_model->design_tech_info.mux_num_level; 
-    num_input_basis = determine_num_input_basis_multilevel_mux(mux_size, num_level);
+    num_input_basis = determine_num_input_basis_multilevel_mux(num_mux_input, num_level);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid MUX structure!\n", 
@@ -492,12 +547,12 @@ void decode_rram_mux(t_spice_model* mux_spice_model,
   /* Switch cases: MUX structure */
   switch (mux_spice_model->design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
-    decode_one_level_4t1r_mux(path_id, (*bit_len), (*conf_bits)); 
+    decode_one_level_4t1r_mux(datapath_id, (*bit_len), (*conf_bits)); 
     break;
   case SPICE_MODEL_STRUCTURE_TREE:
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-    decode_multilevel_4t1r_mux(num_level, num_input_basis, mux_size, 
-                                       path_id, (*bit_len), (*conf_bits)); 
+    decode_multilevel_4t1r_mux(num_level, num_input_basis, num_mux_input, 
+                               datapath_id, (*bit_len), (*conf_bits)); 
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid MUX structure!\n", 
@@ -525,31 +580,34 @@ void init_spice_mux_arch(t_spice_model* spice_model,
 
   /* Basic info*/
   spice_mux_arch->structure = spice_model->design_tech_info.structure;
-  spice_mux_arch->num_input = mux_size;
+  spice_mux_arch->num_data_input = mux_size;
+  /* We create an additional input for MUX, which is connected to a constant VDD|GND */
+  spice_mux_arch->num_input = get_mux_full_input_size(spice_model, mux_size);
+
   /* For different structure */
   switch (spice_model->design_tech_info.structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     spice_mux_arch->num_level = determine_tree_mux_level(spice_mux_arch->num_input);
     spice_mux_arch->num_input_basis = 2;
     /* Determine the level and index of per MUX inputs*/
-    spice_mux_arch->num_input_last_level = tree_mux_last_level_input_num(spice_mux_arch->num_level, mux_size);
+    spice_mux_arch->num_input_last_level = tree_mux_last_level_input_num(spice_mux_arch->num_level, spice_mux_arch->num_input);
     break;
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
     spice_mux_arch->num_level = 1;
-    spice_mux_arch->num_input_basis = mux_size;
+    spice_mux_arch->num_input_basis = spice_mux_arch->num_input;
     /* Determine the level and index of per MUX inputs*/
-    spice_mux_arch->num_input_last_level = mux_size;
+    spice_mux_arch->num_input_last_level = spice_mux_arch->num_input;
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
     /* Handle speical case: input size is 2 */
-    if (2 == mux_size) { 
+    if (2 == spice_mux_arch->num_input) { 
       spice_mux_arch->num_level = 1;
     } else {
       spice_mux_arch->num_level = spice_model->design_tech_info.mux_num_level;
     }
-    spice_mux_arch->num_input_basis = determine_num_input_basis_multilevel_mux(mux_size, spice_mux_arch->num_level);
+    spice_mux_arch->num_input_basis = determine_num_input_basis_multilevel_mux(spice_mux_arch->num_input, spice_mux_arch->num_level);
     /* Determine the level and index of per MUX inputs*/
-    spice_mux_arch->num_input_last_level = multilevel_mux_last_level_input_num(spice_mux_arch->num_level, spice_mux_arch->num_input_basis, mux_size);
+    spice_mux_arch->num_input_last_level = multilevel_mux_last_level_input_num(spice_mux_arch->num_level, spice_mux_arch->num_input_basis, spice_mux_arch->num_input);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",

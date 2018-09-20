@@ -19,9 +19,11 @@
 #include "rr_graph.h"
 #include "rr_graph2.h"
 #include "vpr_utils.h"
+#include "route_common.h"
 
 /* Include SPICE support headers*/
 #include "linkedlist.h"
+#include "fpga_spice_types.h"
 #include "fpga_spice_utils.h"
 #include "fpga_spice_backannotate_utils.h"
 #include "fpga_spice_globals.h"
@@ -96,7 +98,7 @@ void fpga_spice_generate_bitstream_switch_box_mux(FILE* fp,
   verilog_model = switch_inf[switch_index].spice_model;
 
   /* Configuration bits for this MUX*/
-  path_id = -1;
+  path_id = DEFAULT_PATH_ID;
   for (inode = 0; inode < mux_size; inode++) {
     if (drive_rr_nodes[inode] == &(rr_node[cur_rr_node->prev_node])) {
       path_id = inode;
@@ -104,7 +106,8 @@ void fpga_spice_generate_bitstream_switch_box_mux(FILE* fp,
     }
   }
 
-  assert((-1 != path_id)&&(path_id < mux_size));
+  assert((DEFAULT_PATH_ID ==  path_id) || 
+        ((DEFAULT_PATH_ID < path_id) &&(path_id < mux_size)));
 
   /* Depend on both technology and structure of this MUX*/
   switch (verilog_model->design_tech) {
@@ -193,13 +196,13 @@ void fpga_spice_generate_bitstream_switch_box_interc(FILE* fp,
     /* Print a direct connection*/
     fpga_spice_generate_bitstream_switch_box_short_interc(cur_sb_info, cur_sram_orgz_info,
                                                           chan_side, cur_rr_node, 
-                                                          num_drive_rr_nodes, drive_rr_nodes[0]);
+                                                          num_drive_rr_nodes, drive_rr_nodes[DEFAULT_SWITCH_ID]);
   } else if (1 < num_drive_rr_nodes) {
     /* Print the multiplexer, fan_in >= 2 */
     fpga_spice_generate_bitstream_switch_box_mux(fp, cur_sb_info, cur_sram_orgz_info,
                                                  chan_side, cur_rr_node, 
                                                  num_drive_rr_nodes, drive_rr_nodes, 
-                                                 cur_rr_node->drive_switches[0]);
+                                                 cur_rr_node->drive_switches[DEFAULT_SWITCH_ID]);
   } /*Nothing should be done else*/ 
 
   /* Free */
@@ -316,16 +319,17 @@ void fpga_spice_generate_bitstream_connection_box_mux(FILE* fp,
   drive_rr_nodes = src_rr_node->drive_rr_nodes; 
 
   /* Configuration bits for MUX*/
-  path_id = -1;
+  path_id = DEFAULT_PATH_ID;
   for (inode = 0; inode < mux_size; inode++) {
     if (drive_rr_nodes[inode] == &(rr_node[src_rr_node->prev_node])) {
       path_id = inode;
       break;
     }
   }
-  assert((-1 != path_id)&&(path_id < mux_size));
+  assert((DEFAULT_PATH_ID ==  path_id) || 
+        ((DEFAULT_PATH_ID < path_id) &&(path_id < mux_size)));
 
-  switch_index = src_rr_node->drive_switches[path_id];
+  switch_index = src_rr_node->drive_switches[DEFAULT_SWITCH_ID];
 
   verilog_model = switch_inf[switch_index].spice_model;
 
