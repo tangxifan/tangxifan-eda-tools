@@ -78,6 +78,8 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
   t_spice_model* mem_model = NULL;
   int cur_bl, cur_wl;
 
+  char* mem_subckt_name = NULL;
+
   /* Ensure a valid file handler*/ 
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler!\n",
@@ -169,8 +171,10 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
   /* Local vdd and gnd*/
   fprintf(fp, ");\n");
 
-  dump_verilog_sram_config_bus_internal_wires(fp, cur_sram_orgz_info, 
-                                              cur_num_sram, cur_num_sram + num_sram - 1);
+  if (0 < num_sram_port) {
+    dump_verilog_sram_config_bus_internal_wires(fp, cur_sram_orgz_info, 
+                                                cur_num_sram, cur_num_sram + num_sram - 1);
+  }
 
   if (0 < num_sram_port) {
     switch (cur_sram_orgz_info->type) {
@@ -205,7 +209,7 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
                                 cur_num_sram, num_reserved_conf_bits, num_conf_bits); 
   }
 
-  /* Call the I/O subckt*/
+  /* Call the subckt*/
   fprintf(fp, "%s %s_%d_ (", verilog_model->name, verilog_model->prefix, verilog_model->cnt);
   fprintf(fp, "\n");
   /* Only dump the global ports belonging to a spice_model 
@@ -260,12 +264,15 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
   }
   */
 
-  /* Call SRAM subckts only 
-   * when Configuration organization style is memory bank */
-  num_sram = count_num_sram_bits_one_spice_model(verilog_model, -1);
-  for (i = 0; i < num_sram; i++) {
-    dump_verilog_sram_submodule(fp, cur_sram_orgz_info,
-                                mem_model); /* use the mem_model in cur_sram_orgz_info */
+  /* Call the memory module defined for this SRAM-based MUX! */
+  if (0 < num_sram_port) {
+    mem_subckt_name = generate_verilog_mem_subckt_name(verilog_model, mem_model, verilog_mem_posfix);
+    fprintf(fp, "%s %s_%d_ ( \n", 
+            mem_subckt_name, mem_subckt_name, verilog_model->cnt);
+    dump_verilog_mem_sram_submodule(fp, cur_sram_orgz_info, mem_model, cur_num_sram, cur_num_sram + num_sram - 1); 
+    fprintf(fp, ");\n");
+    /* update the number of memory bits */
+    update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info, cur_num_sram + num_sram);
   }
 
   /* End */
@@ -333,6 +340,7 @@ void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
   int num_reserved_conf_bits = 0;
   int cur_bl, cur_wl;
   t_spice_model* mem_model = NULL;
+  char* mem_subckt_name = NULL;
 
   /* Ensure a valid file handler*/ 
   if (NULL == fp) {
@@ -565,18 +573,16 @@ void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
    * Especially when SRAMs/RRAMs are configured with BL/WLs
    */
   num_sram = count_num_sram_bits_one_spice_model(verilog_model, -1);
-  for (i = 0; i < num_sram; i++) {
-    /* Dump the configuration port bus */
-    /*TODO: to be more smart!!! num_reserved_conf_bits and num_conf_bits/num_sram should be determined by each mem_bit */ 
-    cur_num_sram = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info);
-    dump_verilog_mem_config_bus(fp, mem_model, cur_sram_orgz_info,
-                                cur_num_sram, num_reserved_conf_bits, num_conf_bits/num_sram); 
-    /* This function should be called in the very end, 
-     * because we update the counter of mem_model after each sram submodule is dumped !!!
-     */
-    dump_verilog_sram_submodule(fp, cur_sram_orgz_info,
-                                mem_model); /* use the mem_model in cur_sram_orgz_info */
-  }
+  cur_num_sram = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info);
+
+  /* Call the memory module defined for this SRAM-based MUX! */
+  mem_subckt_name = generate_verilog_mem_subckt_name(verilog_model, mem_model, verilog_mem_posfix);
+  fprintf(fp, "%s %s_%d_ ( \n", 
+          mem_subckt_name, mem_subckt_name, verilog_model->cnt);
+  dump_verilog_mem_sram_submodule(fp, cur_sram_orgz_info, mem_model, cur_num_sram, cur_num_sram + num_sram - 1); 
+  fprintf(fp, ");\n");
+  /* update the number of memory bits */
+  update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info, cur_num_sram + num_sram);
 
   /* End of subckt*/
   fprintf(fp, "endmodule\n");
@@ -593,6 +599,7 @@ void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
   my_free(input_ports);
   my_free(output_ports);
   my_free(sram_ports);
+  my_free(mem_subckt_name);
   /* my_free(sram_bits); */
   my_free(port_prefix);
 

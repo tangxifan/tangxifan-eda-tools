@@ -2009,12 +2009,13 @@ void check_sram_spice_model_ports(t_spice_model* cur_spice_model,
       num_global_ports++;
     }
   }
-  if (1 != (num_output_ports - num_global_ports)) {
+  if ((1 != (num_output_ports - num_global_ports))
+     && (2 != (num_output_ports - num_global_ports))) {
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) SRAM SPICE MODEL should have only 1 non-global output port!\n",
                __FILE__, __LINE__);
     num_err++;
-    if (2 != output_ports[0]->size) {
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) SRAM SPICE MODEL should have a output port with size 2!\n",
+    if (1 != output_ports[0]->size) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) SRAM SPICE MODEL should have a output port with size 1!\n",
                  __FILE__, __LINE__);
       num_err++;
     }

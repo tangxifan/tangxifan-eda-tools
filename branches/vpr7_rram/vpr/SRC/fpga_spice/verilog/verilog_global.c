@@ -17,12 +17,14 @@ char* logic_block_verilog_file_name = "logic_blocks.v";
 char* luts_verilog_file_name = "luts.v";
 char* routing_verilog_file_name = "routing.v";
 char* muxes_verilog_file_name = "muxes.v";
+char* memories_verilog_file_name = "memories.v";
 char* wires_verilog_file_name = "wires.v";
 char* essentials_verilog_file_name = "inv_buf_passgate.v";
 char* decoders_verilog_file_name = "decoders.v";
 
 char* verilog_mux_basis_posfix = "_basis";
 char* verilog_mux_special_basis_posfix = "_special_basis";
+char* verilog_mem_posfix = "_mem";
 
 /* Prefix for subckt Verilog netlists */
 char* grid_verilog_file_name_prefix = "grid_";

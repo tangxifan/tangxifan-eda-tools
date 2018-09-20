@@ -763,10 +763,16 @@ void dump_verilog_sram_one_port(FILE* fp,
     mem_model = cur_sram_orgz_info->scff_info->mem_model;
     if (0 == port_type_index) {
       port_name = "scff_in";
-    } else {
-      assert(1 == port_type_index);
+    } else if (1 == port_type_index) {
       port_name = "scff_out";
       /* Special case: scan-chain ff output should be an output always */
+      if (VERILOG_PORT_INPUT == dump_port_type) {
+        actual_dump_port_type = VERILOG_PORT_OUTPUT;
+      }
+    } else {
+      assert(2 == port_type_index);
+      port_name = "scff_outb";
+     /* Special case: scan-chain ff output should be an output always */
       if (VERILOG_PORT_INPUT == dump_port_type) {
         actual_dump_port_type = VERILOG_PORT_OUTPUT;
       }
@@ -948,6 +954,7 @@ void dump_verilog_reserved_sram_ports(FILE* fp,
  
   return;
 }
+
 
 /* Dump a verilog submodule of SRAMs in MUX, according to SRAM organization type */
 void dump_verilog_mux_sram_submodule(FILE* fp, t_sram_orgz_info* cur_sram_orgz_info,
@@ -1873,6 +1880,294 @@ void dump_verilog_toplevel_one_grid_side_pin_with_given_index(FILE* fp, t_rr_typ
               __FILE__, __LINE__, x, y, height, side, pin_index);
     exit(1);
   } 
+
+  return;
+}
+
+/* Generate the subckt name for a MUX module/submodule */
+char* generate_verilog_subckt_name(t_spice_model* spice_model, 
+                                   char* postfix) {
+  char* subckt_name = NULL;
+
+  subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_model->name) 
+                                  + strlen(postfix) + 1)); 
+  sprintf(subckt_name, "%s%s",
+          spice_model->name, postfix);
+
+  return subckt_name;
+}
+
+/* Generate the subckt name for a MUX module/submodule */
+char* generate_verilog_mem_subckt_name(t_spice_model* spice_model, 
+                                       t_spice_model* mem_model,
+                                       char* postfix) {
+  char* subckt_name = NULL;
+
+  subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_model->name) 
+                                 + strlen(mem_model->name) + 1 + strlen(postfix) + 1)); 
+  sprintf(subckt_name, "%s_%s%s",
+          spice_model->name, mem_model->name, postfix);
+
+  return subckt_name;
+}
+
+
+/* Generate the subckt name for a MUX module/submodule */
+char* generate_verilog_mux_subckt_name(t_spice_model* spice_model, 
+                                       int mux_size, char* postfix) {
+  char* mux_subckt_name = NULL;
+
+  mux_subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_model->name) + 5 
+                                     + strlen(my_itoa(mux_size)) + strlen(postfix) + 1)); 
+  sprintf(mux_subckt_name, "%s_size%d%s",
+          spice_model->name, mux_size, postfix);
+
+  return mux_subckt_name;
+}
+
+enum e_dump_verilog_port_type 
+convert_spice_model_port_type_to_verilog_port_type(enum e_spice_model_port_type spice_model_port_type) {
+  enum e_dump_verilog_port_type verilog_port_type; 
+
+  switch (spice_model_port_type) {
+  case SPICE_MODEL_PORT_INPUT: 
+    verilog_port_type = VERILOG_PORT_INPUT;
+    break;
+  case SPICE_MODEL_PORT_OUTPUT: 
+    verilog_port_type = VERILOG_PORT_OUTPUT;
+    break;
+  case SPICE_MODEL_PORT_INOUT: 
+    verilog_port_type = VERILOG_PORT_INOUT;
+    break;
+  case SPICE_MODEL_PORT_CLOCK: 
+  case SPICE_MODEL_PORT_SRAM:
+  case SPICE_MODEL_PORT_BL:
+  case SPICE_MODEL_PORT_BLB:
+  case SPICE_MODEL_PORT_WL:
+  case SPICE_MODEL_PORT_WLB:
+    verilog_port_type = VERILOG_PORT_INPUT;
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of Verilog port to be dumped !\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  return verilog_port_type;
+}
+
+void dump_verilog_mem_module_one_port_map(FILE* fp,
+                                          t_spice_model* mem_model,
+                                          enum e_spice_model_port_type port_type_to_dump,
+                                          boolean dump_port_type,
+                                          int index, int num_mem, boolean dump_last_comma) {
+  int iport;
+  int cnt = 0;
+  enum e_dump_verilog_port_type verilog_port_type; 
+  int lsb = 0;
+
+  for (iport = 0; iport < mem_model->num_port; iport++) {
+    /* bypass global ports */
+    if (TRUE == mem_model->ports[iport].is_global) {
+      continue;
+    }
+    /* bypass non-input ports */
+    if (port_type_to_dump != mem_model->ports[iport].type) {
+      continue;
+    }
+    if ( 0 < cnt ) {
+      fprintf(fp, ",\n");
+    }
+    if (TRUE == dump_port_type) {
+      verilog_port_type = convert_spice_model_port_type_to_verilog_port_type(port_type_to_dump);
+    } else {
+      assert (FALSE == dump_port_type);
+      verilog_port_type = VERILOG_PORT_CONKT;
+    }
+    /* The LSB depends on the port size */
+    assert (-1 < index);
+    lsb = index * mem_model->ports[iport].size;
+    dump_verilog_generic_port(fp, verilog_port_type,
+                              mem_model->ports[iport].prefix, lsb, lsb + num_mem * mem_model->ports[iport].size - 1);
+    cnt++;
+  }
+
+  if ((0 < cnt) && (TRUE == dump_last_comma)) {
+    fprintf(fp, ",\n");
+  }
+
+  return;
+}
+
+/* Output the ports of a SRAM MUX */
+void dump_verilog_mem_module_port_map(FILE* fp, 
+                                      t_spice_model* mem_model,
+                                      boolean dump_port_type,
+                                      int lsb, int num_mem) {
+  /* Here we force the sequence of ports: of a memory subumodule:
+   * 1. Global ports 
+   * 2. input ports 
+   * 3. output ports 
+   * 4. bl ports 
+   * 5. wl ports 
+   * 6. blb ports 
+   * 7. wlb ports 
+   * Other ports are not accepted!!! 
+   */
+  /* 1. Global ports!  */
+  if (0 < rec_dump_verilog_spice_model_global_ports(fp, mem_model, TRUE, TRUE)) {
+    fprintf(fp, ",\n");
+  }
+  /* 2. input ports */ 
+  dump_verilog_mem_module_one_port_map(fp, mem_model, SPICE_MODEL_PORT_INPUT, dump_port_type, lsb, num_mem, TRUE);
+
+  /* 3. output ports */ 
+  dump_verilog_mem_module_one_port_map(fp, mem_model, SPICE_MODEL_PORT_OUTPUT, dump_port_type, lsb, num_mem, TRUE);
+
+  /* 4. bl ports */ 
+  dump_verilog_mem_module_one_port_map(fp, mem_model, SPICE_MODEL_PORT_BL, dump_port_type, lsb, num_mem, TRUE);
+
+  /* 5. wl ports */ 
+  dump_verilog_mem_module_one_port_map(fp, mem_model, SPICE_MODEL_PORT_WL, dump_port_type, lsb, num_mem, TRUE);
+
+  /* 6. blb ports */ 
+  dump_verilog_mem_module_one_port_map(fp, mem_model, SPICE_MODEL_PORT_BLB, dump_port_type, lsb, num_mem, TRUE);
+
+  /* 7. wlb ports */ 
+  dump_verilog_mem_module_one_port_map(fp, mem_model, SPICE_MODEL_PORT_WLB, dump_port_type, lsb, num_mem, FALSE);
+
+  return;
+} 
+
+/* Dump a verilog submodule in the mem submodule (part of MUX, LUT and other ), according to SRAM organization type */
+void dump_verilog_mem_sram_submodule(FILE* fp,
+                                     t_sram_orgz_info* cur_sram_orgz_info,
+                                     t_spice_model* cur_sram_verilog_model,
+                                     int lsb, int msb) {
+  int cur_bl, cur_wl;
+  int num_bl_ports, num_wl_ports;
+  t_spice_model_port** bl_port = NULL;
+  t_spice_model_port** wl_port = NULL;
+  int num_blb_ports, num_wlb_ports;
+  t_spice_model_port** blb_port = NULL;
+  t_spice_model_port** wlb_port = NULL;
+
+  int num_bl_per_sram = 0;
+  int num_wl_per_sram = 0;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  assert(NULL != cur_sram_orgz_info);
+  assert(NULL != cur_sram_verilog_model);
+  assert((SPICE_MODEL_SRAM == cur_sram_verilog_model->type)
+        || (SPICE_MODEL_SCFF == cur_sram_verilog_model->type));
+
+  switch (cur_sram_orgz_info->type) {
+  case SPICE_SRAM_MEMORY_BANK:
+    /* Detect the SRAM SPICE model linked to this SRAM port */
+    find_bl_wl_ports_spice_model(cur_sram_verilog_model, 
+                                 &num_bl_ports, &bl_port, &num_wl_ports, &wl_port); 
+    assert(1 == num_bl_ports);
+    assert(1 == num_wl_ports);
+    num_bl_per_sram = bl_port[0]->size; 
+    num_wl_per_sram = wl_port[0]->size; 
+    /* Find the BLB and WLB port, if there is any */
+    find_blb_wlb_ports_spice_model(cur_sram_verilog_model, 
+                                   &num_blb_ports, &blb_port, &num_wlb_ports, &wlb_port); 
+    if (1 == num_blb_ports) {
+      assert(num_bl_per_sram == blb_port[0]->size);
+    } else {
+      assert(0 == num_blb_ports);
+    }
+    if (1 == num_wlb_ports) {
+      assert(num_wl_per_sram == wlb_port[0]->size);
+    } else {
+      assert(0 == num_wlb_ports);
+    }
+
+    /* Only dump the global ports belonging to a spice_model */
+    if (0 < rec_dump_verilog_spice_model_global_ports(fp, cur_sram_verilog_model, FALSE, TRUE)) {
+      fprintf(fp, ",\n");
+    }
+
+    dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
+                                      lsb, msb,
+                                      0, VERILOG_PORT_CONKT);
+    fprintf(fp, ",");
+    dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
+                                      lsb, msb,
+                                      0, VERILOG_PORT_CONKT);
+    fprintf(fp, ",");
+    dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
+                                      lsb, msb,
+                                      1, VERILOG_PORT_CONKT);
+    fprintf(fp, ",");
+    get_sram_orgz_info_num_blwl(cur_sram_orgz_info, &cur_bl, &cur_wl); 
+    /* Connect to Bit lines and Word lines, consider each conf_bit */
+    dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
+                                lsb, msb,
+                                0, VERILOG_PORT_CONKT);
+
+    dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
+                                lsb, msb,
+                                1, VERILOG_PORT_CONKT);
+    /* If we have a BLB or WLB, we need to dump inverted config_bus */
+    if (1 == num_blb_ports) { 
+      fprintf(fp, ", ");
+      dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
+                                 lsb, msb,
+                                 2, VERILOG_PORT_CONKT);
+    }
+    if (1 == num_wlb_ports) { 
+      fprintf(fp, ", ");
+      dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
+                                 lsb, msb,
+                                 3, VERILOG_PORT_CONKT);
+    }
+
+    fprintf(fp, ");\n");  //
+    break;
+  case SPICE_SRAM_STANDALONE:
+    /* SRAM subckts*/
+    /* Only dump the global ports belonging to a spice_model */
+    if (0 < rec_dump_verilog_spice_model_global_ports(fp, cur_sram_verilog_model, FALSE, TRUE)) {
+      fprintf(fp, ",\n");
+    }
+    fprintf(fp, "%s_out[%d:%d], ", 
+            cur_sram_verilog_model->prefix, lsb, msb); /* Input*/
+    fprintf(fp, "%s_out[%d:%d], %s_outb[%d:%d] ", 
+            cur_sram_verilog_model->prefix, lsb, msb, 
+            cur_sram_verilog_model->prefix, lsb, msb); /* Outputs */
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+    /* Only dump the global ports belonging to a spice_model */
+    if (0 < rec_dump_verilog_spice_model_global_ports(fp, cur_sram_verilog_model, FALSE, TRUE)) {
+      fprintf(fp, ",\n");
+    }
+    /* Input of Scan-chain DFF, should be connected to the output of its precedent */
+    dump_verilog_sram_one_port(fp, cur_sram_orgz_info,
+                               lsb, msb,
+                               0, VERILOG_PORT_CONKT);
+    fprintf(fp, ", \n");  //
+    /* Output of Scan-chain DFF, should be connected to the output of its successor */
+    dump_verilog_sram_one_port(fp, cur_sram_orgz_info,
+                               lsb, msb,
+                               1, VERILOG_PORT_CONKT);
+    fprintf(fp, ", \n");  //
+    dump_verilog_sram_one_port(fp, cur_sram_orgz_info,
+                               lsb, msb,
+                               2, VERILOG_PORT_CONKT);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid SRAM organization type!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
 
   return;
 }

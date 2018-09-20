@@ -134,3 +134,32 @@ void dump_verilog_toplevel_one_grid_side_pin_with_given_index(FILE* fp, t_rr_typ
                                                               int pin_index, int side,
                                                               int x, int y,
                                                               boolean dump_port_type);
+
+char* generate_verilog_subckt_name(t_spice_model* spice_model, 
+                                   char* postfix);
+
+char* generate_verilog_mem_subckt_name(t_spice_model* spice_model, 
+                                       t_spice_model* mem_model,
+                                       char* postfix);
+
+char* generate_verilog_mux_subckt_name(t_spice_model* spice_model, 
+                                       int mux_size, char* postfix);
+
+enum e_dump_verilog_port_type 
+convert_spice_model_port_type_to_verilog_port_type(enum e_spice_model_port_type spice_model_port_type);
+
+void dump_verilog_mem_module_one_port_map(FILE* fp,
+                                          t_spice_model* mem_model,
+                                          enum e_spice_model_port_type port_type_to_dump,
+                                          boolean dump_port_type,
+                                          int index, int num_mem, boolean dump_last_comma);
+
+void dump_verilog_mem_module_port_map(FILE* fp, 
+                                      t_spice_model* mem_model,
+                                      boolean dump_port_type,
+                                      int lsb, int num_mem);
+
+void dump_verilog_mem_sram_submodule(FILE* fp,
+                                     t_sram_orgz_info* cur_sram_orgz_info,
+                                     t_spice_model* cur_sram_verilog_model,
+                                     int lsb, int msb);

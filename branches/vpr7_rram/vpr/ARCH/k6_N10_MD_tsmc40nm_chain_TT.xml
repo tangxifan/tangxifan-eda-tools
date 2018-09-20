@@ -287,7 +287,8 @@
         <output_buffer exist="on" spice_model_name="INVTX1"/>
         <pass_gate_logic spice_model_name="TGATE"/>
         <port type="input" prefix="in" size="1"/>
-        <port type="output" prefix="out" size="2"/>
+        <port type="output" prefix="out" size="1"/>
+        <port type="output" prefix="outb" size="1"/>
         <port type="bl" prefix="bl" size="1" default_val="0" inv_spice_model_name="INVTX1"/>
         <port type="blb" prefix="blb" size="1" default_val="1" inv_spice_model_name="INVTX1"/>
         <port type="wl" prefix="wl" size="1" default_val="0" inv_spice_model_name="INVTX1"/>

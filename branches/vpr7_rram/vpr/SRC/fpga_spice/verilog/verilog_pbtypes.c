@@ -1000,6 +1000,7 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
   int num_mux_reserved_conf_bits = 0;
   int cur_bl, cur_wl;
   t_spice_model* mem_model = NULL;
+  char* mem_subckt_name = NULL;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -1179,11 +1180,14 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
     /* Dump sram modules */
     switch (cur_interc->spice_model->design_tech) {
     case SPICE_MODEL_DESIGN_CMOS:
-      /* SRAM-based MUX required dumping SRAMs! */
-      for (i = 0; i < num_mux_sram_bits; i++) {
-        dump_verilog_mux_sram_submodule(fp, cur_sram_orgz_info, cur_interc->spice_model, fan_in,
-                                        mem_model); /* use the mem_model in cur_sram_orgz_info */
-      }
+      /* Call the memory module defined for this SRAM-based MUX! */
+      mem_subckt_name = generate_verilog_mux_subckt_name(cur_interc->spice_model, fan_in, verilog_mem_posfix);
+      fprintf(fp, "%s %s_%d_ ( \n", 
+              mem_subckt_name, mem_subckt_name, cur_interc->spice_model->cnt);
+      dump_verilog_mem_sram_submodule(fp, cur_sram_orgz_info, mem_model, cur_num_sram, cur_num_sram + num_mux_conf_bits - 1); 
+      fprintf(fp, ");\n");
+      /* update the number of memory bits */
+      update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info, cur_num_sram + num_mux_conf_bits);
       break;
     case SPICE_MODEL_DESIGN_RRAM:
       /* RRAM-based MUX does not need any SRAM dumping
@@ -1207,6 +1211,7 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
     my_free(mux_sram_bits);
     my_free(src_pin_prefix);
     my_free(des_pin_prefix);
+    my_free(mem_subckt_name);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid interconnection type for %s (Arch[LINE%d])!\n",
@@ -1500,7 +1505,8 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
   int child_pb_num_reserved_conf_bits = 0;
   int child_pb_num_conf_bits = 0;
   int child_pb_num_iopads = 0;
-  
+
+  t_spice_model* mem_model = NULL;  
   int num_reserved_conf_bits = 0;
   int num_conf_bits = 0;
   int stamped_sram_cnt = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info); 
@@ -1735,6 +1741,8 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
       /* update stamped sram counter */
       stamped_sram_cnt += child_pb_num_conf_bits; 
       fprintf(fp, ");\n"); /* Local vdd and gnd*/
+      /* Update mem bits */
+      update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info, stamped_sram_cnt);
       my_free(child_pb_type_prefix);
     }
   }

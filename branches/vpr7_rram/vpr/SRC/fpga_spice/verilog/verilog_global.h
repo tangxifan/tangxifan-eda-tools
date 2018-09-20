@@ -9,11 +9,13 @@ extern char* logic_block_verilog_file_name;
 extern char* luts_verilog_file_name;
 extern char* routing_verilog_file_name;
 extern char* muxes_verilog_file_name;
+extern char* memories_verilog_file_name;
 extern char* wires_verilog_file_name;
 extern char* essentials_verilog_file_name;
 extern char* decoders_verilog_file_name;
 extern char* verilog_mux_basis_posfix;
 extern char* verilog_mux_special_basis_posfix;
+extern char* verilog_mem_posfix;
 
 /* Prefix for subckt Verilog netlists */
 extern char* grid_verilog_file_name_prefix;

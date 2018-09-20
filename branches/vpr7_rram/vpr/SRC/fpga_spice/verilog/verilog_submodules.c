@@ -815,15 +815,9 @@ void dump_verilog_mux_basis_module(FILE* fp,
 
   /* Prepare the basis subckt name:
    */
-  mux_basis_subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_mux_model->spice_model->name) + 5 
-                                           + strlen(my_itoa(spice_mux_model->size)) + strlen(verilog_mux_basis_posfix) + 1)); 
-  sprintf(mux_basis_subckt_name, "%s_size%d%s",
-          spice_mux_model->spice_model->name, spice_mux_model->size, verilog_mux_basis_posfix);
+  mux_basis_subckt_name = generate_verilog_mux_subckt_name(spice_mux_model->spice_model, spice_mux_model->size, verilog_mux_basis_posfix);
 
-  special_basis_subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_mux_model->spice_model->name) + 5 
-                                           + strlen(my_itoa(spice_mux_model->size)) + strlen(verilog_mux_special_basis_posfix) + 1)); 
-  sprintf(special_basis_subckt_name, "%s_size%d%s",
-          spice_mux_model->spice_model->name, spice_mux_model->size, verilog_mux_special_basis_posfix);
+  special_basis_subckt_name = generate_verilog_mux_subckt_name(spice_mux_model->spice_model, spice_mux_model->size, verilog_mux_special_basis_posfix);
 
   /* deteremine the number of inputs of basis subckt */ 
   num_input_basis_subckt = spice_mux_model->spice_mux_arch->num_input_basis;
@@ -1067,17 +1061,10 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
   char* mux_basis_subckt_name = NULL;
   char* mux_special_basis_subckt_name = NULL;
 
-  mux_basis_subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_model.name) + 5 
-                                           + strlen(my_itoa(mux_size)) + strlen(verilog_mux_basis_posfix) + 1)); 
-  sprintf(mux_basis_subckt_name, "%s_size%d%s",
-          spice_model.name, mux_size, verilog_mux_basis_posfix);
+  mux_basis_subckt_name = generate_verilog_mux_subckt_name(&spice_model, mux_size, verilog_mux_basis_posfix);
 
-  mux_special_basis_subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_model.name) + 5 
-                                           + strlen(my_itoa(spice_mux_arch.num_input)) 
-                                           + strlen(verilog_mux_special_basis_posfix) + 1)); 
-  sprintf(mux_special_basis_subckt_name, "%s_size%d%s",
-          spice_model.name, spice_mux_arch.num_input, verilog_mux_special_basis_posfix);
-
+  mux_special_basis_subckt_name = generate_verilog_mux_subckt_name(&spice_model, mux_size, verilog_mux_special_basis_posfix);
+ 
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
@@ -1566,17 +1553,10 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
   char* mux_basis_subckt_name = NULL;
   char* mux_special_basis_subckt_name = NULL;
 
-  mux_basis_subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_model.name) + 5 
-                                           + strlen(my_itoa(mux_size)) + strlen(verilog_mux_basis_posfix) + 1)); 
-  sprintf(mux_basis_subckt_name, "%s_size%d%s",
-          spice_model.name, mux_size, verilog_mux_basis_posfix);
+  mux_basis_subckt_name = generate_verilog_mux_subckt_name(&spice_model, mux_size, verilog_mux_basis_posfix);
 
-  mux_special_basis_subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_model.name) + 5 
-                                           + strlen(my_itoa(spice_mux_arch.num_input)) 
-                                           + strlen(verilog_mux_special_basis_posfix) + 1)); 
-  sprintf(mux_special_basis_subckt_name, "%s_size%d%s",
-          spice_model.name, spice_mux_arch.num_input, verilog_mux_special_basis_posfix);
-
+  mux_special_basis_subckt_name = generate_verilog_mux_subckt_name(&spice_model, mux_size, verilog_mux_special_basis_posfix);
+ 
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
@@ -1768,6 +1748,139 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
   return;
 }
 
+/* Dump a memory submodule for the MUX */
+void dump_verilog_cmos_mux_mem_submodule(FILE* fp,
+                                         int mux_size,
+                                         t_spice_model spice_model,
+                                         t_spice_mux_arch spice_mux_arch) {
+  int i, num_conf_bits;
+
+  int num_sram_port = 0;
+  t_spice_model_port** sram_port = NULL;
+
+  /* Find the basis subckt*/
+  char* mux_mem_subckt_name = NULL;
+  t_spice_model* mem_model = NULL;
+ 
+  /* Make sure we have a valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  /* We only do this for MUX not LUT
+   * LUT memory block added at top-level 
+   */
+  assert((SPICE_MODEL_MUX == spice_model.type)||(SPICE_MODEL_LUT == spice_model.type)); 
+  if (SPICE_MODEL_LUT == spice_model.type) {
+    return;
+  }
+
+  /* Ensure we have a CMOS MUX */
+  assert(SPICE_MODEL_DESIGN_CMOS == spice_model.design_tech);
+
+  /* Generate subckt name */
+  mux_mem_subckt_name = generate_verilog_mux_subckt_name(&spice_model, mux_size, verilog_mem_posfix);
+
+  /* Get SRAM port */
+  sram_port = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
+
+  /* Asserts*/
+  assert ((1 == num_sram_port) && (NULL != sram_port));
+  assert (NULL != sram_port[0]->spice_model);
+  assert ((SPICE_MODEL_SCFF == sram_port[0]->spice_model->type) 
+       || (SPICE_MODEL_SRAM == sram_port[0]->spice_model->type));
+
+  /* Get the memory model */
+  mem_model = sram_port[0]->spice_model;
+
+  /* We have two types of naming rules in terms of the usage of MUXes: 
+   * 1. MUXes, the naming rule is <mux_spice_model_name>_<structure>_size<input_size>
+   * 2. LUTs, the naming rule is <lut_spice_model_name>_mux_size<sram_port_size>
+   */
+  num_conf_bits = count_num_sram_bits_one_spice_model(&spice_model, 
+                                                      mux_size);
+
+  fprintf(fp, "//----- CMOS MUX info: spice_model_name=%s, size=%d, structure: %s -----\n", 
+            spice_model.name, mux_size, gen_str_spice_model_structure(spice_model.design_tech_info.structure));
+  fprintf(fp, "module %s (", mux_mem_subckt_name);
+  /* Here we force the sequence of ports: of a memory subumodule:
+   * 1. Global ports 
+   * 2. input ports 
+   * 3. output ports 
+   * 4. bl/wl ports 
+   */
+  dump_verilog_mem_module_port_map(fp, mem_model, TRUE, 0, num_conf_bits); 
+  fprintf(fp, ");\n");
+
+  /* Dump all the submodules */
+  for (i = 0 ; i < num_conf_bits; i++) { 
+    fprintf(fp, "%s %s_%d_ ( ",
+            mem_model->name, mem_model->prefix, i);
+    dump_verilog_mem_module_port_map(fp, mem_model, FALSE, i, 1); 
+    fprintf(fp, ");\n");
+  }
+
+  /* END of this submodule */
+  fprintf(fp, "endmodule\n");
+
+  /* Free */
+  my_free(mux_mem_subckt_name);
+
+  return;
+}
+
+/** Dump a verilog module for a MUX
+ * We always dump a basis submodule for a MUX
+ * whatever structure it is: one-level, two-level or multi-level
+ */
+void dump_verilog_mux_mem_module(FILE* fp, 
+                                 t_spice_mux_model* spice_mux_model) {
+  /* Make sure we have a valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
+    exit(1);
+  }  
+  /* Make sure we have a valid spice_model*/
+  if (NULL == spice_mux_model) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid spice_mux_model!\n",__FILE__, __LINE__); 
+    exit(1);
+  }
+  /* Make sure we have a valid spice_model*/
+  if (NULL == spice_mux_model->spice_model) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid spice_model!\n",__FILE__, __LINE__); 
+    exit(1);
+  }
+
+  /* Check the mux size */
+  if (spice_mux_model->size < 2) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid MUX size(=%d)! Should be at least 2.\n",
+               __FILE__, __LINE__, spice_mux_model->size); 
+    exit(1);
+  }
+
+  /* Print the definition of subckt*/
+  /* Check the design technology*/
+  switch (spice_mux_model->spice_model->design_tech) {
+  case SPICE_MODEL_DESIGN_CMOS:
+    dump_verilog_cmos_mux_mem_submodule(fp, spice_mux_model->size,
+                                        *(spice_mux_model->spice_model), 
+                                        *(spice_mux_model->spice_mux_arch));
+    break;
+  case SPICE_MODEL_DESIGN_RRAM:
+    /* We do not need a memory submodule for RRAM MUX,
+     * RRAM are embedded in the datapath  
+     */ 
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of MUX(name: %s)\n",
+               __FILE__, __LINE__, spice_mux_model->spice_model->name); 
+    exit(1);
+  }
+
+  return;
+}
+
 /** Dump a verilog module for a MUX
  * We always dump a basis submodule for a MUX
  * whatever structure it is: one-level, two-level or multi-level
@@ -1828,12 +1941,10 @@ void dump_verilog_mux_module(FILE* fp,
   return;
 }
 
-
 /*** Top-level function *****/
 
 /* We should count how many multiplexers with different sizes are needed */
 
-/**/
 void dump_verilog_submodule_muxes(t_sram_orgz_info* cur_sram_orgz_info,
                                   char* submodule_dir,
                                   int num_switch,
@@ -2224,6 +2335,78 @@ void dump_verilog_submodule_one_lut(FILE* fp,
   return;
 }
 
+/* Dump one module of a LUT */
+void dump_verilog_submodule_one_mem(FILE* fp, 
+                                    t_spice_model* verilog_model) {
+  int iport, ipin, pin_index;
+  int num_conf_bits, num_mode_bits;
+  int lsb = 0;
+
+  int num_sram_port = 0;
+  t_spice_model_port** sram_port = NULL;
+  t_spice_model* mem_model = NULL;
+
+  /* Find the basis subckt*/
+  char* mem_subckt_name = NULL;
+ 
+  /* Make sure we have a valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  sram_port = find_spice_model_ports(verilog_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
+
+  /* Return if there is no sram port */
+  if (0 == num_sram_port) {
+    return;
+  }
+
+  /* Generate subckt name */
+  mem_subckt_name = generate_verilog_subckt_name(verilog_model, verilog_mem_posfix);
+
+  /* Currently, Only support one mem_model for each SPICE MODEL  */
+  for (iport = 0; iport < num_sram_port; iport++) {
+    if (NULL == mem_model) {
+      mem_model = sram_port[iport]->spice_model;
+      continue;
+    } 
+    if ( mem_model != sram_port[iport]->spice_model ) {
+      vpr_printf(TIO_MESSAGE_ERROR,
+                 "(FILE:%s,LINE[%d]) Different memory model has been found for a spice_model %s! Currently only support unified memory model\n",
+                 __FILE__, __LINE__, verilog_model->name); 
+      exit(1);
+    }
+  }
+
+  num_conf_bits = count_num_sram_bits_one_spice_model(verilog_model, -1);
+  
+  fprintf(fp, "//----- CMOS Mem info: spice_model_name=%s -----\n", 
+            verilog_model->name);
+  fprintf(fp, "module %s (", mem_subckt_name);
+  dump_verilog_mem_module_port_map(fp, mem_model, TRUE, 0, num_conf_bits); 
+  fprintf(fp, ");\n");
+ 
+  /* For each SRAM port we generate mem subckt */
+  pin_index = 0;
+  /* Dump all the submodules */
+  for (ipin = 0 ; ipin < num_conf_bits; ipin++) { 
+    fprintf(fp, "%s %s_%d_ ( ",
+            mem_model->name, mem_model->prefix, ipin);
+    dump_verilog_mem_module_port_map(fp, mem_model, FALSE, pin_index, 1); 
+    fprintf(fp, ");\n");
+    pin_index++;
+  }
+
+  /* END of this submodule */
+  fprintf(fp, "endmodule\n");
+
+  /* Free */
+  my_free(mem_subckt_name);
+
+
+}
+
 /* Dump verilog top-level module for LUTs */
 void dump_verilog_submodule_luts(char* submodule_dir,
                                  int num_spice_model,
@@ -2395,6 +2578,116 @@ void dump_verilog_submodule_wires(char* subckt_dir,
   return;
 }
 
+void dump_verilog_submodule_memories(t_sram_orgz_info* cur_sram_orgz_info,
+                                     char* submodule_dir,
+                                     int num_switch,
+                                     t_switch_inf* switches,
+                                     t_spice* spice,
+                                     t_det_routing_arch* routing_arch) {
+  
+  /* Statisitcs for input sizes and structures of MUXes 
+   * used in FPGA architecture 
+   */
+  /* We have linked list whichs stores spice model information of multiplexer*/
+  t_llist* muxes_head = NULL; 
+  t_llist* temp = NULL;
+  FILE* fp = NULL;
+  char* verilog_name = my_strcat(submodule_dir, memories_verilog_file_name);
+  int num_input_ports = 0;
+  t_spice_model_port** input_ports = NULL;
+  int num_sram_ports = 0;
+  t_spice_model_port** sram_ports = NULL;
+
+  int num_input_basis = 0;
+  t_spice_mux_model* cur_spice_mux_model = NULL;
+  
+  int imodel;
+
+  /* Alloc the muxes*/
+  muxes_head = stats_spice_muxes(num_switch, switches, spice, routing_arch);
+
+  /* Print the muxes netlist*/
+  fp = fopen(verilog_name, "w");
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in create subckt SPICE netlist %s",
+                __FILE__, __LINE__, verilog_name); 
+    exit(1);
+  } 
+  /* Generate the descriptions*/
+  dump_verilog_file_header(fp,"Memories used in FPGA");
+
+  /* Print mux netlist one by one*/
+  temp = muxes_head;
+  while(temp) {
+    assert(NULL != temp->dptr);
+    cur_spice_mux_model = (t_spice_mux_model*)(temp->dptr);
+    /* Bypass the spice models who has a user-defined subckt */
+    if (NULL != cur_spice_mux_model->spice_model->verilog_netlist) {
+      input_ports = find_spice_model_ports(cur_spice_mux_model->spice_model, SPICE_MODEL_PORT_INPUT, &num_input_ports, TRUE);
+      sram_ports = find_spice_model_ports(cur_spice_mux_model->spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_ports, TRUE);
+      assert(0 != num_input_ports);
+      assert(0 != num_sram_ports);
+      /* Check the Input port size */
+      if (cur_spice_mux_model->size != input_ports[0]->size) {
+        vpr_printf(TIO_MESSAGE_ERROR, 
+                   "(File:%s,[LINE%d])User-defined MUX SPICE MODEL(%s) size(%d) unmatch with the architecture needs(%d)!\n",
+                   __FILE__, __LINE__, cur_spice_mux_model->spice_model->name, input_ports[0]->size,cur_spice_mux_model->size);
+        exit(1);
+      }
+      /* Check the SRAM port size */
+      num_input_basis = determine_num_input_basis_multilevel_mux(cur_spice_mux_model->size, 
+                                                                 cur_spice_mux_model->spice_model->design_tech_info.mux_num_level);
+      if ((num_input_basis * cur_spice_mux_model->spice_model->design_tech_info.mux_num_level) != sram_ports[0]->size) {
+        vpr_printf(TIO_MESSAGE_ERROR, 
+                   "(File:%s,[LINE%d])User-defined MUX SPICE MODEL(%s) SRAM size(%d) unmatch with the num of level(%d)!\n",
+                   __FILE__, __LINE__, cur_spice_mux_model->spice_model->name, sram_ports[0]->size, cur_spice_mux_model->spice_model->design_tech_info.mux_num_level*num_input_basis);
+        exit(1);
+      }
+      /* Move on to the next*/
+      temp = temp->next;
+      /* Free */
+      my_free(input_ports);
+      my_free(sram_ports);
+      continue;
+    }
+    /* Generate the spice_mux_arch */
+    cur_spice_mux_model->spice_mux_arch = (t_spice_mux_arch*)my_malloc(sizeof(t_spice_mux_arch));
+    init_spice_mux_arch(cur_spice_mux_model->spice_model, cur_spice_mux_model->spice_mux_arch, cur_spice_mux_model->size);
+    /* Print the mux mem subckt */
+    dump_verilog_mux_mem_module(fp, cur_spice_mux_model);
+    /* Update the statistics*/
+    /* Move on to the next*/
+    temp = temp->next;
+  }
+
+  /* remember to free the linked list*/
+  free_muxes_llist(muxes_head);
+
+  /* Search all the other SPICE models and create memory module */
+  for (imodel = 0; imodel < spice->num_spice_model; imodel++) {
+    /* Bypass MUX */
+    if (SPICE_MODEL_MUX == spice->spice_models[imodel].type) {
+      continue;
+    }
+    /* We only care those with SRAM ports */
+    sram_ports = find_spice_model_ports(&(spice->spice_models[imodel]), SPICE_MODEL_PORT_SRAM, &num_sram_ports, TRUE);
+    if (0 == num_sram_ports) {
+      continue;
+    }
+    /* Create a memory submodule */
+    dump_verilog_submodule_one_mem(fp, &(spice->spice_models[imodel]));
+  }
+
+  /* Free strings */
+  free(verilog_name);
+
+  /* Close the file*/
+  fclose(fp);
+
+  return;
+}
+
+
 
 /* Dump verilog files of submodules to be used in FPGA components :
  * 1. MUXes
@@ -2424,6 +2717,11 @@ void dump_verilog_submodules(t_sram_orgz_info* cur_sram_orgz_info,
   vpr_printf(TIO_MESSAGE_INFO, "Generating modules of hardwires...\n");
   dump_verilog_submodule_wires(submodule_dir, Arch.num_segments, Arch.Segments,
                                Arch.spice->num_spice_model, Arch.spice->spice_models);
+
+  /* 4. Memories */
+  vpr_printf(TIO_MESSAGE_INFO, "Generating modules of memories...\n");
+  dump_verilog_submodule_memories(cur_sram_orgz_info, submodule_dir, routing_arch->num_switch, 
+                                  switch_inf, Arch.spice, routing_arch);
 
   return;
 }

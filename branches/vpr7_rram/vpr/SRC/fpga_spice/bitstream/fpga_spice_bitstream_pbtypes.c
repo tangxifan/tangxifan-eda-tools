@@ -166,10 +166,20 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(FILE* fp,
   int path_id = -1;
   t_rr_node* pb_rr_nodes = NULL;
 
+  if (NULL != cur_pb) {
+    fprintf(fp, "***** Logic block:%s *****\n", 
+            cur_pb->spice_name_tag);
+    fprintf(fp, "***** Pb_graph_node: %s[%d]*****\n", 
+            cur_pb_graph_node->pb_type->name, cur_pb_graph_node->placement_index);
+  }
+
   switch (pb_port_type) {
   case SPICE_PB_PORT_INPUT:
     for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
+        fprintf(fp, "***** Input Port: %s[%d]*****\n", 
+                cur_pb_graph_node->input_pins[iport][ipin].port->name, 
+                cur_pb_graph_node->input_pins[iport][ipin].pin_number);
         /* If this is a idle block, we set 0 to the selected edge*/
         /* Get the selected edge of current pin*/
         if (NULL == cur_pb) {
@@ -182,7 +192,7 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(FILE* fp,
           /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
           /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
           if (OPEN == prev_node) {
-            path_id = 0; //
+            path_id = DEFAULT_PATH_ID; //
           } else {
             /* Find the path_id */
             path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
@@ -199,6 +209,9 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(FILE* fp,
   case SPICE_PB_PORT_OUTPUT:
     for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
+        fprintf(fp, "***** Output Port: %s[%d]*****\n", 
+                cur_pb_graph_node->output_pins[iport][ipin].port->name, 
+                cur_pb_graph_node->output_pins[iport][ipin].pin_number);
         /* If this is a idle block, we set 0 to the selected edge*/
         /* Get the selected edge of current pin*/
         if (NULL == cur_pb) {
@@ -211,7 +224,7 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(FILE* fp,
           /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
           /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
           if (OPEN == prev_node) {
-            path_id = 0; //
+            path_id = DEFAULT_PATH_ID; //
           } else {
             /* Find the path_id */
             path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
@@ -228,6 +241,9 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(FILE* fp,
   case SPICE_PB_PORT_CLOCK:
     for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
+        fprintf(fp, "***** Clock Port: %s[%d]*****\n", 
+                cur_pb_graph_node->clock_pins[iport][ipin].port->name, 
+                cur_pb_graph_node->clock_pins[iport][ipin].pin_number);
         /* If this is a idle block, we set 0 to the selected edge*/
         /* Get the selected edge of current pin*/
         if (NULL == cur_pb) {
@@ -240,7 +256,7 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(FILE* fp,
           /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
           /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
           if (OPEN == prev_node) {
-            path_id = 0; //
+            path_id = DEFAULT_PATH_ID; //
           } else {
             /* Find the path_id */
             path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
