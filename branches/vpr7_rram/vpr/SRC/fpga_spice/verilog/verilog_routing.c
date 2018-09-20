@@ -821,9 +821,10 @@ void dump_verilog_switch_box_mux(t_sram_orgz_info* cur_sram_orgz_info,
   case SPICE_MODEL_DESIGN_CMOS:
     /* Call the memory module defined for this SRAM-based MUX! */
     mem_subckt_name = generate_verilog_mux_subckt_name(verilog_model, mux_size, verilog_mem_posfix);
-    fprintf(fp, "%s %s_%d_ ( \n", 
+    fprintf(fp, "%s %s_%d_ ( ", 
             mem_subckt_name, mem_subckt_name, verilog_model->cnt);
-    dump_verilog_mem_sram_submodule(fp, cur_sram_orgz_info, mem_model, cur_num_sram, cur_num_sram + num_mux_conf_bits - 1); 
+    dump_verilog_mem_sram_submodule(fp, cur_sram_orgz_info, verilog_model, mux_size, mem_model, 
+                                    cur_num_sram, cur_num_sram + num_mux_conf_bits - 1); 
     fprintf(fp, ");\n");
     /* update the number of memory bits */
     update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info, cur_num_sram + num_mux_conf_bits);
@@ -1539,9 +1540,10 @@ void dump_verilog_connection_box_mux(t_sram_orgz_info* cur_sram_orgz_info,
   case SPICE_MODEL_DESIGN_CMOS:
     /* Call the memory module defined for this SRAM-based MUX! */
     mem_subckt_name = generate_verilog_mux_subckt_name(verilog_model, mux_size, verilog_mem_posfix);
-    fprintf(fp, "%s %s_%d_ ( \n", 
+    fprintf(fp, "%s %s_%d_ ( ", 
             mem_subckt_name, mem_subckt_name, verilog_model->cnt);
-    dump_verilog_mem_sram_submodule(fp, cur_sram_orgz_info, mem_model, cur_num_sram, cur_num_sram + num_mux_conf_bits - 1); 
+    dump_verilog_mem_sram_submodule(fp, cur_sram_orgz_info, verilog_model, mux_size, mem_model, 
+                                    cur_num_sram, cur_num_sram + num_mux_conf_bits - 1); 
     fprintf(fp, ");\n");
     /* update the number of memory bits */
     update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info, cur_num_sram + num_mux_conf_bits);

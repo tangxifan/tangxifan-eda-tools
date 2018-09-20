@@ -1956,11 +1956,11 @@ convert_spice_model_port_type_to_verilog_port_type(enum e_spice_model_port_type 
   return verilog_port_type;
 }
 
-void dump_verilog_mem_module_one_port_map(FILE* fp,
-                                          t_spice_model* mem_model,
-                                          enum e_spice_model_port_type port_type_to_dump,
-                                          boolean dump_port_type,
-                                          int index, int num_mem, boolean dump_last_comma) {
+int dump_verilog_mem_module_one_port_map(FILE* fp,
+                                         t_spice_model* mem_model,
+                                         enum e_spice_model_port_type port_type_to_dump,
+                                         boolean dump_port_type,
+                                         int index, int num_mem, boolean dump_first_comma) {
   int iport;
   int cnt = 0;
   enum e_dump_verilog_port_type verilog_port_type; 
@@ -1975,7 +1975,8 @@ void dump_verilog_mem_module_one_port_map(FILE* fp,
     if (port_type_to_dump != mem_model->ports[iport].type) {
       continue;
     }
-    if ( 0 < cnt ) {
+    if (((0 == cnt) && (TRUE == dump_first_comma))
+       || (0 < cnt)) {
       fprintf(fp, ",\n");
     }
     if (TRUE == dump_port_type) {
@@ -1992,11 +1993,7 @@ void dump_verilog_mem_module_one_port_map(FILE* fp,
     cnt++;
   }
 
-  if ((0 < cnt) && (TRUE == dump_last_comma)) {
-    fprintf(fp, ",\n");
-  }
-
-  return;
+  return cnt;
 }
 
 /* Output the ports of a SRAM MUX */
@@ -2004,6 +2001,7 @@ void dump_verilog_mem_module_port_map(FILE* fp,
                                       t_spice_model* mem_model,
                                       boolean dump_port_type,
                                       int lsb, int num_mem) {
+  boolean dump_first_comma = FALSE;
   /* Here we force the sequence of ports: of a memory subumodule:
    * 1. Global ports 
    * 2. input ports 
@@ -2016,25 +2014,56 @@ void dump_verilog_mem_module_port_map(FILE* fp,
    */
   /* 1. Global ports!  */
   if (0 < rec_dump_verilog_spice_model_global_ports(fp, mem_model, TRUE, TRUE)) {
-    fprintf(fp, ",\n");
+    dump_first_comma = TRUE;
   }
+
   /* 2. input ports */ 
-  dump_verilog_mem_module_one_port_map(fp, mem_model, SPICE_MODEL_PORT_INPUT, dump_port_type, lsb, num_mem, TRUE);
+  if (0 < dump_verilog_mem_module_one_port_map(fp, mem_model, SPICE_MODEL_PORT_INPUT, 
+                                                dump_port_type, lsb, num_mem, dump_first_comma)) {
+    dump_first_comma = TRUE;
+  } else {
+    dump_first_comma = FALSE;
+  }
 
   /* 3. output ports */ 
-  dump_verilog_mem_module_one_port_map(fp, mem_model, SPICE_MODEL_PORT_OUTPUT, dump_port_type, lsb, num_mem, TRUE);
+  if (0 < dump_verilog_mem_module_one_port_map(fp, mem_model, SPICE_MODEL_PORT_OUTPUT, 
+                                               dump_port_type, lsb, num_mem, dump_first_comma)) {
+    dump_first_comma = TRUE;
+  } else {
+    dump_first_comma = FALSE;
+  }
 
   /* 4. bl ports */ 
-  dump_verilog_mem_module_one_port_map(fp, mem_model, SPICE_MODEL_PORT_BL, dump_port_type, lsb, num_mem, TRUE);
+  if (0 < dump_verilog_mem_module_one_port_map(fp, mem_model, SPICE_MODEL_PORT_BL, 
+                                               dump_port_type, lsb, num_mem, dump_first_comma)) {
+    dump_first_comma = TRUE;
+  } else {
+    dump_first_comma = FALSE;
+  }
 
   /* 5. wl ports */ 
-  dump_verilog_mem_module_one_port_map(fp, mem_model, SPICE_MODEL_PORT_WL, dump_port_type, lsb, num_mem, TRUE);
+  if (0 < dump_verilog_mem_module_one_port_map(fp, mem_model, SPICE_MODEL_PORT_WL, 
+                                               dump_port_type, lsb, num_mem, dump_first_comma)) {
+    dump_first_comma = TRUE;
+  } else {
+    dump_first_comma = FALSE;
+  }
 
   /* 6. blb ports */ 
-  dump_verilog_mem_module_one_port_map(fp, mem_model, SPICE_MODEL_PORT_BLB, dump_port_type, lsb, num_mem, TRUE);
+  if (0 < dump_verilog_mem_module_one_port_map(fp, mem_model, SPICE_MODEL_PORT_BLB, 
+                                               dump_port_type, lsb, num_mem, dump_first_comma)) {
+    dump_first_comma = TRUE;
+  } else {
+    dump_first_comma = FALSE;
+  }
 
   /* 7. wlb ports */ 
-  dump_verilog_mem_module_one_port_map(fp, mem_model, SPICE_MODEL_PORT_WLB, dump_port_type, lsb, num_mem, FALSE);
+  if (0 < dump_verilog_mem_module_one_port_map(fp, mem_model, SPICE_MODEL_PORT_WLB, 
+                                               dump_port_type, lsb, num_mem, dump_first_comma)) {
+    dump_first_comma = TRUE;
+  } else {
+    dump_first_comma = FALSE;
+  }
 
   return;
 } 
@@ -2042,6 +2071,7 @@ void dump_verilog_mem_module_port_map(FILE* fp,
 /* Dump a verilog submodule in the mem submodule (part of MUX, LUT and other ), according to SRAM organization type */
 void dump_verilog_mem_sram_submodule(FILE* fp,
                                      t_sram_orgz_info* cur_sram_orgz_info,
+                                     t_spice_model* cur_verilog_model, int mux_size,
                                      t_spice_model* cur_sram_verilog_model,
                                      int lsb, int msb) {
   int cur_bl, cur_wl;
@@ -2095,14 +2125,26 @@ void dump_verilog_mem_sram_submodule(FILE* fp,
       fprintf(fp, ",\n");
     }
 
+    if (SPICE_MODEL_MUX == cur_verilog_model->type) {
+      fprintf(fp, "%s_size%d_%d_", 
+              cur_verilog_model->name, mux_size, cur_verilog_model->cnt);
+    }
     dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
                                       lsb, msb,
                                       0, VERILOG_PORT_CONKT);
     fprintf(fp, ",");
+    if (SPICE_MODEL_MUX == cur_verilog_model->type) {
+      fprintf(fp, "%s_size%d_%d_", 
+              cur_verilog_model->name, mux_size, cur_verilog_model->cnt);
+    }
     dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
                                       lsb, msb,
                                       0, VERILOG_PORT_CONKT);
     fprintf(fp, ",");
+    if (SPICE_MODEL_MUX == cur_verilog_model->type) {
+      fprintf(fp, "%s_size%d_%d_", 
+              cur_verilog_model->name, mux_size, cur_verilog_model->cnt);
+    }
     dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
                                       lsb, msb,
                                       1, VERILOG_PORT_CONKT);
@@ -2112,6 +2154,7 @@ void dump_verilog_mem_sram_submodule(FILE* fp,
     dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
                                 lsb, msb,
                                 0, VERILOG_PORT_CONKT);
+    fprintf(fp, ",");
 
     dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 
                                 lsb, msb,
@@ -2130,7 +2173,6 @@ void dump_verilog_mem_sram_submodule(FILE* fp,
                                  3, VERILOG_PORT_CONKT);
     }
 
-    fprintf(fp, ");\n");  //
     break;
   case SPICE_SRAM_STANDALONE:
     /* SRAM subckts*/
@@ -2149,16 +2191,28 @@ void dump_verilog_mem_sram_submodule(FILE* fp,
     if (0 < rec_dump_verilog_spice_model_global_ports(fp, cur_sram_verilog_model, FALSE, TRUE)) {
       fprintf(fp, ",\n");
     }
+    if (SPICE_MODEL_MUX == cur_verilog_model->type) {
+      fprintf(fp, "%s_%d_", 
+              cur_verilog_model->name, mux_size);
+    }
     /* Input of Scan-chain DFF, should be connected to the output of its precedent */
     dump_verilog_sram_one_port(fp, cur_sram_orgz_info,
                                lsb, msb,
                                0, VERILOG_PORT_CONKT);
     fprintf(fp, ", \n");  //
+    if (SPICE_MODEL_MUX == cur_verilog_model->type) {
+      fprintf(fp, "%s_size%d_%d_", 
+              cur_verilog_model->name, mux_size, cur_verilog_model->cnt);
+    }
     /* Output of Scan-chain DFF, should be connected to the output of its successor */
     dump_verilog_sram_one_port(fp, cur_sram_orgz_info,
                                lsb, msb,
                                1, VERILOG_PORT_CONKT);
     fprintf(fp, ", \n");  //
+    if (SPICE_MODEL_MUX == cur_verilog_model->type) {
+      fprintf(fp, "%s_size%d_%d_", 
+              cur_verilog_model->name, mux_size, cur_verilog_model->cnt);
+    }
     dump_verilog_sram_one_port(fp, cur_sram_orgz_info,
                                lsb, msb,
                                2, VERILOG_PORT_CONKT);

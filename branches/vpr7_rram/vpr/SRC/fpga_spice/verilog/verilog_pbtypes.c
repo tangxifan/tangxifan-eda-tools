@@ -1182,9 +1182,10 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
     case SPICE_MODEL_DESIGN_CMOS:
       /* Call the memory module defined for this SRAM-based MUX! */
       mem_subckt_name = generate_verilog_mux_subckt_name(cur_interc->spice_model, fan_in, verilog_mem_posfix);
-      fprintf(fp, "%s %s_%d_ ( \n", 
+      fprintf(fp, "%s %s_%d_ ( ", 
               mem_subckt_name, mem_subckt_name, cur_interc->spice_model->cnt);
-      dump_verilog_mem_sram_submodule(fp, cur_sram_orgz_info, mem_model, cur_num_sram, cur_num_sram + num_mux_conf_bits - 1); 
+      dump_verilog_mem_sram_submodule(fp, cur_sram_orgz_info, cur_interc->spice_model, fan_in,
+                                      mem_model, cur_num_sram, cur_num_sram + num_mux_conf_bits - 1); 
       fprintf(fp, ");\n");
       /* update the number of memory bits */
       update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info, cur_num_sram + num_mux_conf_bits);

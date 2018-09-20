@@ -148,11 +148,11 @@ char* generate_verilog_mux_subckt_name(t_spice_model* spice_model,
 enum e_dump_verilog_port_type 
 convert_spice_model_port_type_to_verilog_port_type(enum e_spice_model_port_type spice_model_port_type);
 
-void dump_verilog_mem_module_one_port_map(FILE* fp,
-                                          t_spice_model* mem_model,
-                                          enum e_spice_model_port_type port_type_to_dump,
-                                          boolean dump_port_type,
-                                          int index, int num_mem, boolean dump_last_comma);
+int dump_verilog_mem_module_one_port_map(FILE* fp,
+                                         t_spice_model* mem_model,
+                                         enum e_spice_model_port_type port_type_to_dump,
+                                         boolean dump_port_type,
+                                         int index, int num_mem);
 
 void dump_verilog_mem_module_port_map(FILE* fp, 
                                       t_spice_model* mem_model,
@@ -161,5 +161,6 @@ void dump_verilog_mem_module_port_map(FILE* fp,
 
 void dump_verilog_mem_sram_submodule(FILE* fp,
                                      t_sram_orgz_info* cur_sram_orgz_info,
+                                     t_spice_model* cur_verilog_model, int mux_size,
                                      t_spice_model* cur_sram_verilog_model,
                                      int lsb, int msb);

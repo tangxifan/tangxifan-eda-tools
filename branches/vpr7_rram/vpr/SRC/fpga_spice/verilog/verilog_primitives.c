@@ -267,9 +267,10 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
   /* Call the memory module defined for this SRAM-based MUX! */
   if (0 < num_sram_port) {
     mem_subckt_name = generate_verilog_mem_subckt_name(verilog_model, mem_model, verilog_mem_posfix);
-    fprintf(fp, "%s %s_%d_ ( \n", 
+    fprintf(fp, "%s %s_%d_ ( ", 
             mem_subckt_name, mem_subckt_name, verilog_model->cnt);
-    dump_verilog_mem_sram_submodule(fp, cur_sram_orgz_info, mem_model, cur_num_sram, cur_num_sram + num_sram - 1); 
+    dump_verilog_mem_sram_submodule(fp, cur_sram_orgz_info, verilog_model, -1, 
+                                    mem_model, cur_num_sram, cur_num_sram + num_sram - 1); 
     fprintf(fp, ");\n");
     /* update the number of memory bits */
     update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info, cur_num_sram + num_sram);
@@ -577,9 +578,10 @@ void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
 
   /* Call the memory module defined for this SRAM-based MUX! */
   mem_subckt_name = generate_verilog_mem_subckt_name(verilog_model, mem_model, verilog_mem_posfix);
-  fprintf(fp, "%s %s_%d_ ( \n", 
+  fprintf(fp, "%s %s_%d_ ( ", 
           mem_subckt_name, mem_subckt_name, verilog_model->cnt);
-  dump_verilog_mem_sram_submodule(fp, cur_sram_orgz_info, mem_model, cur_num_sram, cur_num_sram + num_sram - 1); 
+  dump_verilog_mem_sram_submodule(fp, cur_sram_orgz_info, verilog_model, -1, 
+                                  mem_model, cur_num_sram, cur_num_sram + num_sram - 1); 
   fprintf(fp, ");\n");
   /* update the number of memory bits */
   update_sram_orgz_info_num_mem_bit(cur_sram_orgz_info, cur_num_sram + num_sram);
