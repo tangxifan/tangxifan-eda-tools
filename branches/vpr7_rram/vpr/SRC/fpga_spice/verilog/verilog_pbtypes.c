@@ -1015,7 +1015,7 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
    */
   fan_in = 0;
   cur_interc = NULL;
-  verilog_find_interc_fan_in_des_pb_graph_pin(des_pb_graph_pin, cur_mode, &cur_interc, &fan_in);
+  find_interc_fan_in_des_pb_graph_pin(des_pb_graph_pin, cur_mode, &cur_interc, &fan_in);
   if ((NULL == cur_interc)||(0 == fan_in)) { 
     /* No interconnection matched */
     /* Connect this pin to GND for better convergence */

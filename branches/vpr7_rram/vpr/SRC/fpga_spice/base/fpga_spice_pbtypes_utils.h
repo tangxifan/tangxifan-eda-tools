@@ -122,6 +122,10 @@ void find_interc_fan_in_des_pb_graph_pin(t_pb_graph_pin* des_pb_graph_pin,
                                          t_interconnect** cur_interc,
                                          int* fan_in) ; 
 
+void find_interc_des_pb_graph_pin(t_pb_graph_pin* des_pb_graph_pin,
+                                  int cur_mode,
+                                  t_interconnect** cur_interc); 
+
 void rec_count_num_iopads_pb_type_physical_mode(t_pb_type* cur_pb_type);
 
 void rec_count_num_iopads_pb_type_default_mode(t_pb_type* cur_pb_type);

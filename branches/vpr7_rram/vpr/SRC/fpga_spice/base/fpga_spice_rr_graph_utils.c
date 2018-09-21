@@ -22,6 +22,7 @@
 #include "linkedlist.h"
 #include "fpga_spice_types.h"
 #include "fpga_spice_utils.h"
+#include "fpga_spice_pbtypes_utils.h"
 #include "fpga_spice_rr_graph_utils.h"
 
 /* Initial rr_graph */
@@ -924,6 +925,7 @@ void backannotate_rr_graph_routing_results_to_net_name(t_rr_graph* local_rr_grap
     local_rr_graph->rr_node[inode].net_num = OPEN;
     local_rr_graph->rr_node[inode].vpack_net_num = OPEN;
   }
+  /*
   for (inode = 0; inode < local_rr_graph->num_rr_nodes; inode++) {
     if (0 == local_rr_graph->rr_node[inode].num_edges) {
       continue;
@@ -937,7 +939,7 @@ void backannotate_rr_graph_routing_results_to_net_name(t_rr_graph* local_rr_grap
       }
     }
   }
-
+  */
   /* 2nd step: With the help of trace, we back-annotate */
   for (inet = 0; inet < local_rr_graph->num_nets; inet++) {
     /*

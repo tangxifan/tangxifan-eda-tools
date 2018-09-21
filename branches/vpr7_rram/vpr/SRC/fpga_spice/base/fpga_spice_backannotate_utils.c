@@ -840,6 +840,7 @@ void set_one_pb_rr_node_default_prev_node_edge(t_rr_node* pb_rr_graph,
                                                t_pb_graph_pin* des_pb_graph_pin,
                                                int mode_index) {
   int iedge, node_index, prev_node, prev_edge;
+  t_interconnect* cur_interc = NULL; 
 
   assert(NULL != des_pb_graph_pin);
   assert(NULL != pb_rr_graph);

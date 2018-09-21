@@ -1511,6 +1511,32 @@ void find_interc_fan_in_des_pb_graph_pin(t_pb_graph_pin* des_pb_graph_pin,
   return;
 }
 
+void find_interc_des_pb_graph_pin(t_pb_graph_pin* des_pb_graph_pin,
+                                  int cur_mode_index,
+                                  t_interconnect** cur_interc) { 
+  int iedge;
+  
+  (*cur_interc) = NULL;
+
+  /* Search the input edges only, stats on the size of MUX we may need (fan-in) */
+  for (iedge = 0; iedge < des_pb_graph_pin->num_input_edges; iedge++) {
+    /* 1. First, we should make sure this interconnect is in the selected mode!!!*/
+    if (cur_mode_index == des_pb_graph_pin->input_edges[iedge]->interconnect->parent_mode_index) {
+      /* Check this edge*/
+      check_pb_graph_edge(*(des_pb_graph_pin->input_edges[iedge]));
+      /* Record the interconnection*/
+      if (NULL == (*cur_interc)) {
+        (*cur_interc) = des_pb_graph_pin->input_edges[iedge]->interconnect;
+      } else { /* Make sure the interconnections for this pin is the same!*/
+        assert((*cur_interc) == des_pb_graph_pin->input_edges[iedge]->interconnect);
+      }
+    }
+  }
+
+  return;
+}
+
+
 /* Return a child_pb if it is mapped.*/
 t_pb* get_child_pb_for_phy_pb_graph_node(t_pb* cur_pb, int ipb, int jpb) {
   t_pb* child_pb = NULL;
