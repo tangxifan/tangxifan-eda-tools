@@ -305,7 +305,7 @@ void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
                                    t_pb_graph_node* prim_pb_graph_node,
                                    int index,
                                    t_spice_model* verilog_model) {
-  int i, mapped_logical_block_index;
+  int i, ipin, mapped_logical_block_index;
   int lut_size = 0;
   int num_input_port = 0;
   t_spice_model_port** input_ports = NULL;
@@ -476,10 +476,14 @@ void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
     fprintf(fp, "wire [0:%d] %s__%s;\n",
             output_ports[i]->size - 1, port_prefix, pb_type_output_ports[i]->name);
   }
-  for (i = 0; i < output_ports[0]->size; i++) {
-    fprintf(fp, "assign %s__%s_%d_ = %s__%s[%d];\n",
-                port_prefix, pb_type_output_ports[0]->name, i,
-                port_prefix, pb_type_output_ports[0]->name, i);
+  /* Make sure we have the same number outputs */
+  assert (num_pb_type_output_port == num_output_port);
+  for (i = 0; i < num_output_port; i++) {
+    for (ipin = 0; ipin < output_ports[i]->size; ipin++) {
+      fprintf(fp, "assign %s__%s_%d_ = %s__%s[%d];\n",
+                  port_prefix, pb_type_output_ports[i]->name, ipin,
+                  port_prefix, pb_type_output_ports[i]->name, ipin);
+    }
   }
 
   /* Specify SRAM output are wires */

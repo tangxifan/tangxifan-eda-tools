@@ -545,6 +545,31 @@ t_spice_transistor_type* find_mosfet_tech_lib(t_spice_tech_lib tech_lib,
   return ret; 
 }
 
+/* Converter an integer to a binary string */
+char* my_itobin(int in_int, int bin_len) {
+  char* ret = (char*) my_calloc (bin_len + 1, sizeof(char));
+  int i, temp;
+
+  /* Make sure we do not have any overflow! */
+  assert ( (-1 < in_int) && (in_int < pow(2., bin_len)) );
+
+  /* Initialize */
+  for (i = 0; i < bin_len - 1; i++) {
+    ret[i] = '0';
+  }
+  sprintf(ret + bin_len - 1, "%s", "0");
+  
+  temp = in_int;
+  for (i = 0; i < bin_len; i++) {
+    if (1 == temp % 2) { 
+      ret[i] = '1'; 
+    }
+    temp = temp / 2;
+  }
+ 
+  return ret;
+}
+
 /* Convert a integer to a string*/
 char* my_itoa(int input) {
   char* ret = NULL;
@@ -3253,4 +3278,51 @@ void set_spice_model_counter(int num_spice_models,
   return;
 }
 
+/* Find the vpack_net_num of the outputs of the logical_block */
+void get_logical_block_output_vpack_net_num(t_logical_block* cur_logical_block,
+                                            int* num_lb_output_ports, int** num_lb_output_pins, 
+                                            int*** lb_output_vpack_net_num) {
+  int iport, ipin; 
+  int num_output_ports = 0;
+  int* num_output_pins = NULL;
+  t_model_ports* head = NULL;
+  int total_num_nets = 0;
+  int** output_vpack_net_num = NULL;
+
+  assert (NULL != cur_logical_block);
+
+  /* Count how many outputs we have */  
+  head = cur_logical_block->model->outputs; 
+  while (NULL != head) {
+    num_output_ports++; 
+    head = head->next;
+  }
+  /* Allocate */ 
+  num_output_pins = (int*) my_calloc(num_output_ports, sizeof(int));
+  output_vpack_net_num = (int**) my_calloc(num_output_ports, sizeof(int*));
+  /* Fill the array */
+  iport = 0;
+  head = cur_logical_block->model->outputs; 
+  while (NULL != head) {
+    num_output_pins[iport] = head->size; 
+    output_vpack_net_num[iport] = (int*) my_calloc(num_output_pins[iport], sizeof(int));
+    /* Fill the array */
+    for (ipin = 0; ipin < num_output_pins[iport]; ipin++) {
+      output_vpack_net_num[iport][ipin] = cur_logical_block->output_nets[iport][ipin];
+    }
+    /* Go to the next */
+    head = head->next;
+    /* Update counter */
+    iport++;
+  }
+ 
+  assert (iport == num_output_ports);
+
+  /* Assign return values */
+  (*num_lb_output_ports) = num_output_ports;
+  (*num_lb_output_pins) = num_output_pins;
+  (*lb_output_vpack_net_num) = output_vpack_net_num;
+    
+  return;
+}
 

@@ -623,7 +623,7 @@
                     <output name="out" num_pins="1"/>
                     <clock name="clk" num_pins="1"/> 
                     <!-- Regular LUT mode -->
-                    <pb_type name="lut5" blif_model=".names" num_pb="1" class="lut" mode_bits="10" physical_pb_type_name="frac_lut6" physical_pb_type_index_factor="0.5">
+                    <pb_type name="lut5" blif_model=".names" num_pb="1" class="lut" mode_bits="01" physical_pb_type_name="frac_lut6" physical_pb_type_index_factor="0.5">
                       <input name="in" num_pins="5" port_class="lut_in" physical_mode_pin="in[5:0]"/>
                       <output name="out" num_pins="1" port_class="lut_out" physical_mode_pin="lut5_out" physical_mode_pin_rotate_offset="1"/>
                       <!-- LUT timing using delay matrix -->
@@ -677,7 +677,7 @@
                     <output name="cout" num_pins="1"/>
                     <clock name="clk" num_pins="1"/> 
                     <!-- Special dual-LUT mode that drives adder only -->
-                    <pb_type name="lut4" blif_model=".names" num_pb="2" class="lut" mode_bits="00" physical_pb_type_name="frac_lut6" physical_pb_type_index_factor="0.25">
+                    <pb_type name="lut4" blif_model=".names" num_pb="2" class="lut" mode_bits="11" physical_pb_type_name="frac_lut6" physical_pb_type_index_factor="0.25">
                       <input name="in" num_pins="4" port_class="lut_in" physical_mode_pin="in[4:0]"/>
                       <output name="out" num_pins="1" port_class="lut_out" physical_mode_pin="lut4_out" physical_mode_pin_rotate_offset="1"/>
                       <!-- LUT timing using delay matrix -->
@@ -785,7 +785,7 @@
               <input name="in" num_pins="6"/>
               <output name="out" num_pins="1"/>
               <clock name="clk" num_pins="1"/> 
-              <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut" mode_bits="11" physical_pb_type_name="frac_lut6" spice_model_sram_offset="0">
+              <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut" mode_bits="00" physical_pb_type_name="frac_lut6" spice_model_sram_offset="0">
                 <input name="in" num_pins="6" port_class="lut_in" physical_mode_pin="in[5:0]"/>
                 <output name="out" num_pins="1" port_class="lut_out" physical_mode_pin="lut6_out[0]"/>
                 <!-- LUT timing using delay matrix -->

@@ -17,7 +17,7 @@ output Q // Q output
 reg q_reg;
 
 //-------------Code Starts Here---------
-always @ ( posedge clk or reset or set)
+always @ ( posedge clk or posedge reset or posedge set)
 if (reset) begin
   q_reg <= 1'b0;
 end else if (set) begin
@@ -51,7 +51,7 @@ output Qb // Q output
 reg q_reg;
 
 //-------------Code Starts Here---------
-always @ ( posedge clk or reset or set)
+always @ ( posedge clk or posedge reset or posedge set)
 if (reset) begin
   q_reg <= 1'b0;
 end else if (set) begin
@@ -85,7 +85,7 @@ output Qb // Q output
 reg q_reg;
 
 //-------------Code Starts Here---------
-always @ ( posedge clk or reset)
+always @ ( posedge clk or posedge reset)
 if (reset) begin
   q_reg <= 1'b0;
 end else begin

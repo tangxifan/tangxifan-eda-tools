@@ -46,6 +46,8 @@ t_spice_model_port** find_spice_model_config_done_ports(t_spice_model* spice_mod
 t_spice_transistor_type* find_mosfet_tech_lib(t_spice_tech_lib tech_lib,
                                               e_spice_trans_type trans_type);
 
+char* my_itobin(int in_int, int bin_len);
+
 char* my_itoa(int input);
 
 char* fpga_spice_create_one_subckt_filename(char* file_name_prefix,
@@ -379,3 +381,6 @@ void set_spice_model_counter(int num_spice_models,
                              t_spice_model* spice_model,
                              int* spice_model_counter);
 
+void get_logical_block_output_vpack_net_num(INP t_logical_block* cur_logical_block,
+                                            OUTP int* num_lb_output_ports, OUTP int** num_lb_output_pins, 
+                                            OUTP int*** lb_output_vpack_net_num);

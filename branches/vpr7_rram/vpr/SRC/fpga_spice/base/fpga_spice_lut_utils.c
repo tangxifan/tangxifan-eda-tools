@@ -390,6 +390,114 @@ char** assign_post_routing_lut_truth_table(t_logical_block* mapped_logical_block
   assert(cur == (*truth_table_length));
 
   return truth_table;
+} 
+
+/* Find the output port of LUT that this logical block is mapped to */
+t_pb_graph_pin* get_mapped_lut_phy_pb_output_pin(t_phy_pb* lut_phy_pb, 
+                                                 t_logical_block* lut_logical_block) {
+  int iport, ipin;
+  int num_lut_output_ports;
+  int* num_lut_output_pins;
+  int** lut_output_vpack_net_num;
+  int pin_rr_node_index;
+  t_pb_graph_pin* ret_pin = NULL; /* The pin to return */
+  int found_num_pins = 0;
+
+  /* Find the vpack_net_num of the output of the lut_logical_block */
+  get_logical_block_output_vpack_net_num(lut_logical_block, 
+                                         &num_lut_output_ports, 
+                                         &num_lut_output_pins, 
+                                         &lut_output_vpack_net_num);
+
+  /* Check */
+  assert ( 1 == num_lut_output_ports);
+  assert ( 1 == num_lut_output_pins[0]);
+  assert ( OPEN != lut_output_vpack_net_num[0][0]);
+
+  /* Search the output pins of lut_phy_pb in rr_graph in find */
+  for (iport = 0; iport < lut_phy_pb->pb_graph_node->num_output_ports; iport++) {
+    for (ipin = 0; ipin < lut_phy_pb->pb_graph_node->num_output_pins[iport]; ipin++) {
+      /* Get the rr_node index of the pin */ 
+      pin_rr_node_index = lut_phy_pb->pb_graph_node->output_pins[iport][ipin].rr_node_index_physical_pb;
+      /* Get the vpack_net_num in the local rr_graph, see if we have a match */
+      if (lut_output_vpack_net_num[0][0] != lut_phy_pb->rr_graph->rr_node[pin_rr_node_index].vpack_net_num) {
+        continue;
+      }
+      /* Reach here, it means we have a match! */
+      ret_pin = &(lut_phy_pb->pb_graph_node->output_pins[iport][ipin]);
+      found_num_pins++;
+    }
+  }
+
+  /* We should have only one match! */
+  assert (1 == found_num_pins);
+
+  /* Free */
+  my_free(num_lut_output_pins);
+  for (iport = 0; iport < num_lut_output_ports; iport++) {
+    my_free(lut_output_vpack_net_num);
+  }
+  
+  return ret_pin; 
+}
+
+/* Get LUT fracturable level of a pb_graph_pin */
+int get_pb_graph_pin_lut_frac_level(t_pb_graph_pin* out_pb_graph_pin) {
+  /* search the corresponding spice_model_port */
+  return out_pb_graph_pin->port->spice_model_port->lut_frac_level;
+}
+
+/* Get LUT output mask  of a pb_graph_pin */
+int get_pb_graph_pin_lut_output_mask(t_pb_graph_pin* out_pb_graph_pin) {
+  int pin_number = out_pb_graph_pin->pin_number;
+  /* search the corresponding spice_model_port */
+  return out_pb_graph_pin->port->spice_model_port->lut_output_mask[pin_number];
+}
+
+/* Adapt truth table for a fracturable LUT
+ * Determine fixed input bits for this truth table:
+ * 1. input bits within frac_level (all '-' if not specified) 
+ * 2. input bits outside frac_level, decoded to its output mask (0 -> first part -> all '1') 
+ */
+void adapt_truth_table_for_frac_lut(t_phy_pb* prim_phy_pb, 
+                                    t_logical_block* lut_logical_block, 
+                                    int truth_table_length, 
+                                    char** truth_table) {
+  t_pb_graph_pin* out_pb_graph_pin = NULL;
+  int lut_frac_level;
+  int lut_output_mask;
+  int i, lut_size, num_mask_bits;
+  int temp;
+  char* mask_bits  = NULL;
+
+  /* Find the output port of LUT that this logical block is mapped to */
+  out_pb_graph_pin = get_mapped_lut_phy_pb_output_pin(prim_phy_pb, lut_logical_block); 
+  /* find the corresponding SPICE model output port and assoicated lut_output_mask */
+  lut_frac_level = get_pb_graph_pin_lut_frac_level(out_pb_graph_pin);
+  lut_output_mask = get_pb_graph_pin_lut_output_mask(out_pb_graph_pin);
+
+  /* Apply modification to the truth table */
+  for (i = 0; i < truth_table_length; i++) {
+    /* Last two chars are fixed */
+    lut_size = strlen(truth_table[i]) - 2;
+    /* Get the number of bits to be masked (modified) */
+    num_mask_bits = lut_size - lut_frac_level;
+    /* Check if we need to modify any bits */
+    assert (-1 < num_mask_bits);
+    if ( 0 == num_mask_bits ) {
+      continue;
+    }
+    /* Modify bits starting from lut_frac_level */
+    /* decode the lut_output_mask to LUT input codes */ 
+    temp = pow(2., num_mask_bits) - 1 - lut_output_mask;
+    mask_bits = my_itobin(temp, num_mask_bits);
+    /* copy the bits to the truth table line */
+    memcpy(truth_table[i] + lut_frac_level, mask_bits, num_mask_bits);
+    /* free */
+    my_free(mask_bits);
+  }
+
+  return;
 }
 
 int determine_lut_path_id(int lut_size,

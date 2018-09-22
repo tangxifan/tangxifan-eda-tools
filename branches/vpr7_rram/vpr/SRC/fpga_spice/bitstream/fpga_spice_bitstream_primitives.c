@@ -321,6 +321,10 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(FILE* fp,
     /* Allocate truth tables  */
     truth_table_length = (int*) my_malloc (sizeof(int) * prim_phy_pb->num_logical_blocks);
     truth_table = (char***) my_malloc (sizeof(char**) * prim_phy_pb->num_logical_blocks);
+
+    /* Output log for debugging purpose */
+    fprintf(fp, "***** Logic Block %s *****\n", 
+            prim_phy_pb->spice_name_tag);
     
     /* Find truth tables and decode them one by one 
      * Fracturable LUT may have multiple truth tables,
@@ -335,6 +339,30 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(FILE* fp,
       /* Match truth table and post-routing results */
       truth_table[i] = assign_post_routing_lut_truth_table(&logical_block[mapped_logical_block_index], 
                                                            num_lut_pin_nets, lut_pin_net, &truth_table_length[i]); 
+      /* Adapt truth table for a fracturable LUT
+       * TODO: Determine fixed input bits for this truth table:
+       * 1. input bits within frac_level (all '-' if not specified) 
+       * 2. input bits outside frac_level, decoded to its output mask (0 -> first part -> all '1') 
+       */
+      adapt_truth_table_for_frac_lut(prim_phy_pb, &logical_block[mapped_logical_block_index], 
+                                     truth_table_length[i], truth_table[i]);
+      /* Output log for debugging purpose */
+      fprintf(fp, "***** Mapped Logic Block[%d] %s *****\n",
+              i, logical_block[mapped_logical_block_index].name);
+      fprintf(fp, "***** Net map *****\n");
+      for (j = 0; j < num_lut_pin_nets; j++) {
+        if (OPEN == lut_pin_net[j]) {
+          fprintf(fp, "OPEN, ");
+        } else {
+          assert (OPEN != lut_pin_net[j]);
+          fprintf(fp, "%s, ", vpack_net[lut_pin_net[j]].name);
+        }
+      }  
+      fprintf(fp, "\n");
+      fprintf(fp, "***** Truth Table *****\n");
+      for (j = 0; j < truth_table_length[i]; j++) {
+        fprintf(fp, "%s\n", truth_table[i][j]);
+      }
     }
     /* Conject all the truth tables we have */
     lut_truth_table_length = 0;
@@ -420,14 +448,6 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(FILE* fp,
 
   /* Print the encoding in SPICE netlist for debugging */
   if (NULL != prim_phy_pb) {
-    fprintf(fp, "***** Logic Block %s *****\n", 
-            prim_phy_pb->spice_name_tag);
-    for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
-      mapped_logical_block_index = prim_phy_pb->logical_block[i];
-      fprintf(fp, "***** Mapped Logic Block[%d] %s *****\n",
-              i, logical_block[mapped_logical_block_index].name);
-    }
-    fprintf(fp, "\n");
   }
   fprintf(fp, "***** LUT SRAM bits for %s[%d] *****\n", 
           verilog_model->name, verilog_model->cnt);
