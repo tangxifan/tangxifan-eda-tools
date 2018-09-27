@@ -2162,14 +2162,16 @@ void check_ff_spice_model_ports(t_spice_model* cur_spice_model,
       num_err++;
     }
   } else {
-    if (1 != num_output_ports) {
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) SCFF SPICE MODEL should have only 1 output port!\n",
+    if (2 != num_output_ports) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) SCFF SPICE MODEL should have 2 output ports!\n",
                __FILE__, __LINE__);
       num_err++;
-      if (2 != output_ports[0]->size) {
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) SCFF SPICE MODEL: the output port with size 2!\n",
-                   __FILE__, __LINE__);
-        num_err++;
+      for (iport = 0; iport < num_output_ports; iport++) { 
+        if (1 != output_ports[iport]->size) {
+          vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]) SCFF SPICE MODEL: the output port (%s) should have a size of 1!\n",
+                     __FILE__, __LINE__, output_ports[iport]->prefix);
+          num_err++;
+        }
       }
     }
   }

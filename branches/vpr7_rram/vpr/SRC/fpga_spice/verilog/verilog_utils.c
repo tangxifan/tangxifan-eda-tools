@@ -2013,7 +2013,7 @@ void dump_verilog_mem_module_port_map(FILE* fp,
    * Other ports are not accepted!!! 
    */
   /* 1. Global ports!  */
-  if (0 < rec_dump_verilog_spice_model_global_ports(fp, mem_model, TRUE, TRUE)) {
+  if (0 < rec_dump_verilog_spice_model_global_ports(fp, mem_model, dump_port_type, TRUE)) {
     dump_first_comma = TRUE;
   }
 
@@ -2191,31 +2191,26 @@ void dump_verilog_mem_sram_submodule(FILE* fp,
     if (0 < rec_dump_verilog_spice_model_global_ports(fp, cur_sram_verilog_model, FALSE, TRUE)) {
       fprintf(fp, ",\n");
     }
-    if (SPICE_MODEL_MUX == cur_verilog_model->type) {
-      fprintf(fp, "%s_%d_", 
-              cur_verilog_model->name, mux_size);
-    }
     /* Input of Scan-chain DFF, should be connected to the output of its precedent */
     dump_verilog_sram_one_port(fp, cur_sram_orgz_info,
                                lsb, msb,
                                0, VERILOG_PORT_CONKT);
     fprintf(fp, ", \n");  //
-    if (SPICE_MODEL_MUX == cur_verilog_model->type) {
-      fprintf(fp, "%s_size%d_%d_", 
-              cur_verilog_model->name, mux_size, cur_verilog_model->cnt);
-    }
     /* Output of Scan-chain DFF, should be connected to the output of its successor */
     dump_verilog_sram_one_port(fp, cur_sram_orgz_info,
                                lsb, msb,
                                1, VERILOG_PORT_CONKT);
     fprintf(fp, ", \n");  //
     if (SPICE_MODEL_MUX == cur_verilog_model->type) {
-      fprintf(fp, "%s_size%d_%d_", 
-              cur_verilog_model->name, mux_size, cur_verilog_model->cnt);
+      dump_verilog_mux_sram_one_outport(fp, cur_sram_orgz_info, 
+                                        cur_verilog_model, mux_size,
+                                        lsb, msb,
+                                        1, VERILOG_PORT_CONKT);
+    } else {
+      dump_verilog_sram_one_port(fp, cur_sram_orgz_info,
+                                 lsb, msb,
+                                 2, VERILOG_PORT_CONKT);
     }
-    dump_verilog_sram_one_port(fp, cur_sram_orgz_info,
-                               lsb, msb,
-                               2, VERILOG_PORT_CONKT);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid SRAM organization type!\n",
