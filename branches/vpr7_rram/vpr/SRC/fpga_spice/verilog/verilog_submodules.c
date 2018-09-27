@@ -2360,8 +2360,7 @@ void dump_verilog_submodule_one_lut(FILE* fp,
 void dump_verilog_submodule_one_mem(FILE* fp, 
                                     t_spice_model* verilog_model) {
   int iport, ipin, pin_index;
-  int num_conf_bits, num_mode_bits;
-  int lsb = 0;
+  int num_conf_bits;
 
   int num_sram_port = 0;
   t_spice_model_port** sram_port = NULL;

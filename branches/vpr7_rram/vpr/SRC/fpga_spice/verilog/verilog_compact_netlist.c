@@ -751,7 +751,7 @@ void dump_compact_verilog_top_netlist(t_sram_orgz_info* cur_sram_orgz_info,
   case SPICE_SRAM_MEMORY_BANK:
     /* Include verilog decoder */
     fprintf(fp, "//----- Include subckt netlists: Decoders (controller for memeory bank) -----\n");
-    temp_include_file_path = my_strcat(formatted_subckt_dir_path, decoders_verilog_file_name);
+    temp_include_file_path = my_strcat(formatted_subckt_dir_path, config_peripheral_verilog_file_name);
     fprintf(fp, "// `include \"%s\"\n", temp_include_file_path);
     my_free(temp_include_file_path);
     break;

@@ -1370,7 +1370,7 @@ void dump_verilog_connection_box_mux(t_sram_orgz_info* cur_sram_orgz_info,
                                      FILE* fp,
                                      t_cb* cur_cb_info,
                                      t_rr_node* src_rr_node) {
-  int i, mux_size, cur_num_sram, input_cnt = 0;
+  int mux_size, cur_num_sram, input_cnt = 0;
   t_rr_node** drive_rr_nodes = NULL;
   int inode, mux_level, path_id, switch_index;
   t_spice_model* verilog_model = NULL;

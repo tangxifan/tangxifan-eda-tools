@@ -55,7 +55,6 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
   int num_sram_port = 0;
   t_spice_model_port** sram_ports = NULL;
   
-  int i, mapped_logical_block_index;
   int num_sram = 0;
   /* int* sram_bits = NULL; */
 
@@ -70,7 +69,6 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
   t_spice_model_port** wl_port = NULL;
   int num_bl_per_sram = 0;
   int num_wl_per_sram = 0;
-  int expected_num_sram;
 
   int cur_num_sram = 0;
   int num_conf_bits = 0;
@@ -305,7 +303,7 @@ void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
                                    t_pb_graph_node* prim_pb_graph_node,
                                    int index,
                                    t_spice_model* verilog_model) {
-  int i, ipin, mapped_logical_block_index;
+  int i, ipin;
   int lut_size = 0;
   int num_input_port = 0;
   t_spice_model_port** input_ports = NULL;

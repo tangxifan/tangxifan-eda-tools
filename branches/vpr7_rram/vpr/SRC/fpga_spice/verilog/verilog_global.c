@@ -20,11 +20,12 @@ char* muxes_verilog_file_name = "muxes.v";
 char* memories_verilog_file_name = "memories.v";
 char* wires_verilog_file_name = "wires.v";
 char* essentials_verilog_file_name = "inv_buf_passgate.v";
-char* decoders_verilog_file_name = "decoders.v";
+char* config_peripheral_verilog_file_name = "config_peripherals.v";
 
 char* verilog_mux_basis_posfix = "_basis";
 char* verilog_mux_special_basis_posfix = "_special_basis";
 char* verilog_mem_posfix = "_mem";
+char* verilog_config_peripheral_prefix = "config_peripheral";
 
 /* Prefix for subckt Verilog netlists */
 char* grid_verilog_file_name_prefix = "grid_";
@@ -48,3 +49,21 @@ t_llist* grid_verilog_subckt_file_path_head  = NULL;
 t_llist* routing_verilog_subckt_file_path_head = NULL;
 
 int verilog_default_signal_init_value = 0;
+
+char* top_netlist_bl_enable_port_name = "en_bl";
+char* top_netlist_wl_enable_port_name = "en_wl";
+char* top_netlist_bl_data_in_port_name = "data_in";
+char* top_netlist_addr_bl_port_name = "addr_bl";
+char* top_netlist_addr_wl_port_name = "addr_wl";
+char* top_netlist_array_bl_port_name = "bl_bus";
+char* top_netlist_array_wl_port_name = "wl_bus";
+char* top_netlist_array_blb_port_name = "blb_bus";
+char* top_netlist_array_wlb_port_name = "wlb_bus";
+char* top_netlist_reserved_bl_port_postfix = "_reserved_bl";
+char* top_netlist_reserved_wl_port_postfix = "_reserved_wl";
+char* top_netlist_normal_bl_port_postfix = "_bl";
+char* top_netlist_normal_wl_port_postfix = "_wl";
+char* top_netlist_normal_blb_port_postfix = "_blb";
+char* top_netlist_normal_wlb_port_postfix = "_wlb";
+char* top_netlist_scan_chain_head_prefix = "sc_in";
+

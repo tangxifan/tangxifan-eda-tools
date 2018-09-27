@@ -232,7 +232,7 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   }
 
   /* Dump decoder modules only when memory bank is required */
-  dump_verilog_mem_decoders(sram_verilog_orgz_info, submodule_dir_path);
+  dump_verilog_config_peripherals(sram_verilog_orgz_info, submodule_dir_path);
 
   /* Dump top-level verilog */
   if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.output_compact_netlist) {

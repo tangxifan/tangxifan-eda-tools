@@ -76,7 +76,7 @@ void init_rr_graph(INOUTP t_rr_graph* local_rr_graph) {
 }
 
 void alloc_rr_graph_net_rr_terminals(t_rr_graph* local_rr_graph) {
-  int inet, isink, inode, num_sinks_in_rr_graph, rr_node_vpack_net_name;
+  int inet, isink, inode, num_sinks_in_rr_graph;
 
   local_rr_graph->net_rr_terminals = (int **) my_malloc(local_rr_graph->num_nets * sizeof(int *));
   local_rr_graph->net_num_sinks = (int *) my_calloc(local_rr_graph->num_nets, sizeof(int));
@@ -909,7 +909,7 @@ void alloc_and_load_prev_node_list_rr_graph_rr_nodes(t_rr_graph* local_rr_graph)
 }
 
 void backannotate_rr_graph_routing_results_to_net_name(t_rr_graph* local_rr_graph) {
-  int inode, jnode, inet;
+  int inode, inet;
   int next_node, iedge;
   t_trace* tptr;
   t_rr_type rr_type;

@@ -39,25 +39,6 @@
 #include "verilog_decoder.h"
 #include "verilog_top_netlist.h"
 
-
-/* Global varaiable only accessible in this source file*/
-static char* top_netlist_bl_enable_port_name = "en_bl";
-static char* top_netlist_wl_enable_port_name = "en_wl";
-static char* top_netlist_bl_data_in_port_name = "data_in";
-static char* top_netlist_addr_bl_port_name = "addr_bl";
-static char* top_netlist_addr_wl_port_name = "addr_wl";
-static char* top_netlist_array_bl_port_name = "bl_bus";
-static char* top_netlist_array_wl_port_name = "wl_bus";
-static char* top_netlist_array_blb_port_name = "blb_bus";
-static char* top_netlist_array_wlb_port_name = "wlb_bus";
-static char* top_netlist_reserved_bl_port_postfix = "_reserved_bl";
-static char* top_netlist_reserved_wl_port_postfix = "_reserved_wl";
-static char* top_netlist_normal_bl_port_postfix = "_bl";
-static char* top_netlist_normal_wl_port_postfix = "_wl";
-static char* top_netlist_normal_blb_port_postfix = "_blb";
-static char* top_netlist_normal_wlb_port_postfix = "_wlb";
-static char* top_netlist_scan_chain_head_prefix = "sc_in";
-
 static float verilog_sim_timescale = 1e-9; // Verilog Simulation time scale (minimum time unit) : 1ns
 static char* top_tb_reset_port_name = "greset";
 static char* top_tb_set_port_name = "gset";
@@ -73,90 +54,18 @@ static char* top_tb_clock_reg_postfix = "_reg";
 
 /******** Subroutines ***********/
 
-static 
-void dump_verilog_top_netlist_memory_bank_ports(t_sram_orgz_info* cur_sram_orgz_info, 
-                                                FILE* fp, 
-                                                enum e_dump_verilog_port_type dump_port_type) {
-  t_spice_model* mem_model = NULL;
-  int num_array_bl, num_array_wl;
-  int bl_decoder_size, wl_decoder_size;
-  char split_sign;
-
-  split_sign = determine_verilog_generic_port_split_sign(dump_port_type);
-
-  /* Only accept two types of dump_port_type here! */
-  assert((VERILOG_PORT_INPUT == dump_port_type)||(VERILOG_PORT_CONKT == dump_port_type));
-
-  /* Check */
-  assert (cur_sram_orgz_info->type == SPICE_SRAM_MEMORY_BANK);
-
-  /* A valid file handler */
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
-    exit(1);
-  }
-
-  /* Depending on the memory technology*/
-  get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model);
-  assert(NULL != mem_model);
-
-  determine_blwl_decoder_size(cur_sram_orgz_info,
-                              &num_array_bl, &num_array_wl, &bl_decoder_size, &wl_decoder_size);
-
-  /* Depend on the memory technology */
-  switch (mem_model->design_tech) {
-  case SPICE_MODEL_DESIGN_CMOS:
-    dump_verilog_generic_port(fp, dump_port_type,
-                              top_netlist_bl_enable_port_name, 0, 0);
-    fprintf(fp, "%c //--- BL enable port \n", split_sign);
-    dump_verilog_generic_port(fp, dump_port_type,
-                              top_netlist_wl_enable_port_name, 0, 0);
-    fprintf(fp, "%c //--- WL enable port \n", split_sign);
-    dump_verilog_generic_port(fp, dump_port_type,
-                              top_netlist_bl_data_in_port_name, 0, 0);
-    fprintf(fp, "%c //--- BL data input port \n", split_sign);
-    break;
-  case SPICE_MODEL_DESIGN_RRAM: 
-    dump_verilog_generic_port(fp, dump_port_type,
-                              top_netlist_bl_enable_port_name, 0, 0);
-    fprintf(fp, "%c //--- BL enable port \n", split_sign);
-    dump_verilog_generic_port(fp, dump_port_type,
-                              top_netlist_wl_enable_port_name, 0, 0);
-    fprintf(fp, "%c //--- WL enable port \n", split_sign);
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
-               __FILE__, __LINE__);
-    exit(1);
-  }
-
-  dump_verilog_generic_port(fp, dump_port_type,
-                            top_netlist_addr_bl_port_name, bl_decoder_size - 1, 0);
-  fprintf(fp, "%c //--- Address of bit lines \n", split_sign);
-  dump_verilog_generic_port(fp, dump_port_type,
-                            top_netlist_addr_wl_port_name, wl_decoder_size - 1, 0);
-  fprintf(fp, " //--- Address of word lines \n");
-  
-  return;
-}
-
 /* Connect BLs and WLs to configuration bus in the top-level Verilog netlist*/
 static 
 void dump_verilog_top_netlist_memory_bank_internal_wires(t_sram_orgz_info* cur_sram_orgz_info, 
                                                          FILE* fp) {
   t_spice_model* mem_model = NULL;
-  int iinv, icol, irow;
   int num_bl, num_wl;
   int num_array_bl, num_array_wl;
   int num_reserved_bl, num_reserved_wl;
-  int cur_bl_lsb, cur_wl_lsb;
-  int cur_bl_msb, cur_wl_msb;
   int bl_decoder_size, wl_decoder_size;
   int num_blb_ports, num_wlb_ports;
   t_spice_model_port** blb_port = NULL;
   t_spice_model_port** wlb_port = NULL;
-  t_spice_model* blb_inv_spice_model = NULL;
-  t_spice_model* wlb_inv_spice_model = NULL;
   
   /* Check */
   assert (cur_sram_orgz_info->type == SPICE_SRAM_MEMORY_BANK);
@@ -222,78 +131,12 @@ void dump_verilog_top_netlist_memory_bank_internal_wires(t_sram_orgz_info* cur_s
             0, num_wl - 1, mem_model->prefix, top_netlist_normal_wl_port_postfix);
     /* Declare inverted wires if needed */
     if (1 == num_blb_ports) {
-      fprintf(fp, "  wire [%d:%d] %s%s; //---- Inverted Normal Bit lines \n",
+      fprintf(fp, " wire [%d:%d] %s%s; //---- Inverted Normal Bit lines \n",
               0, num_bl - 1, mem_model->prefix, top_netlist_normal_blb_port_postfix);
-      /* get inv_spice_model */
-      blb_inv_spice_model = blb_port[0]->inv_spice_model;
-      /* Make an inversion of the BL */
-      for (iinv = 0; iinv < num_array_bl - 1; iinv++) {
-        fprintf(fp, " %s %s_blb_%d (%s[%d], %s[%d]);\n",
-                blb_inv_spice_model->name, blb_inv_spice_model->prefix, 
-                iinv, 
-                top_netlist_array_bl_port_name, iinv,
-                top_netlist_array_blb_port_name, iinv);
-      }
     }
     if (1 == num_wlb_ports) {
-      fprintf(fp, "  wire [%d:%d] %s%s; //---- Inverted Normal Word lines \n",
+      fprintf(fp, " wire [%d:%d] %s%s; //---- Inverted Normal Word lines \n",
               0, num_wl - 1, mem_model->prefix, top_netlist_normal_wlb_port_postfix);
-      /* get inv_spice_model */
-      wlb_inv_spice_model = wlb_port[0]->inv_spice_model;
-      /* Make an inversion of the WL */
-      for (iinv = 0; iinv < num_array_wl - 1; iinv++) {
-        fprintf(fp, " %s %s_wlb_%d (%s[%d], %s[%d]);\n",
-                wlb_inv_spice_model->name, wlb_inv_spice_model->prefix, 
-                iinv, 
-                top_netlist_array_wl_port_name, iinv,
-                top_netlist_array_wlb_port_name, iinv);
-      }
-    }
-    /* Connections for columns */
-    for (icol = 0; icol < num_array_bl; icol++) {
-      cur_bl_lsb = icol * num_array_bl; 
-      cur_bl_msb = (icol + 1) * num_array_bl - 1; 
-      /* Check if the msb exceeds the upbound of num_bl */
-      if (cur_bl_msb > num_bl - 1) {
-        cur_bl_msb = num_bl - 1;
-      }
-      /* connect to the BLs of all the SRAMs in the column */
-      fprintf(fp, "  assign %s%s[%d:%d] = %s[%d:%d];\n",
-              mem_model->prefix, top_netlist_normal_bl_port_postfix, cur_bl_lsb, cur_bl_msb,
-              top_netlist_array_bl_port_name, 0, cur_bl_msb - cur_bl_lsb);
-      if (1 == num_blb_ports) {
-        fprintf(fp, "  assign %s%s[%d:%d] = %s[%d:%d];\n",
-                mem_model->prefix, top_netlist_normal_blb_port_postfix, cur_bl_lsb, cur_bl_msb,
-                top_netlist_array_blb_port_name, 0, cur_bl_msb - cur_bl_lsb);
-      }
-      /* Finish if MSB meets the upbound */
-      if (cur_bl_msb == num_bl - 1) {
-        break;
-      }
-    }
-    /* Connections for rows */
-    for (irow = 0; irow < num_array_wl; irow++) {
-      cur_wl_lsb = irow * num_array_wl; 
-      cur_wl_msb = (irow + 1) * num_array_wl - 1; 
-      /* Check if the msb exceeds the upbound of num_bl */
-      if (cur_wl_msb > num_wl - 1) {
-        cur_wl_msb = num_wl - 1;
-      }
-      /* connect to the BLs of all the SRAMs in the column */
-      for (icol = cur_wl_lsb; icol < cur_wl_msb + 1; icol++) {
-        fprintf(fp, "    assign %s%s[%d] = %s[%d];\n",
-                mem_model->prefix, top_netlist_normal_wl_port_postfix, icol,
-                top_netlist_array_wl_port_name, irow);
-        if (1 == num_wlb_ports) {
-          fprintf(fp, "    assign %s%s[%d] = %s[%d];\n",
-                  mem_model->prefix, top_netlist_normal_wlb_port_postfix, icol,
-                  top_netlist_array_wlb_port_name, irow);
-        }
-      }
-      /* Finish if MSB meets the upbound */
-      if (cur_wl_msb == num_wl - 1) {
-        break;
-      }
     }
     break; 
   case SPICE_MODEL_DESIGN_RRAM: 
@@ -309,19 +152,6 @@ void dump_verilog_top_netlist_memory_bank_internal_wires(t_sram_orgz_info* cur_s
             num_reserved_bl, num_array_bl - 1, mem_model->prefix, top_netlist_normal_bl_port_postfix);
     fprintf(fp, "  wire [%d:%d] %s%s; //---- Normal Word lines \n",
             num_reserved_wl, num_array_wl - 1, mem_model->prefix, top_netlist_normal_wl_port_postfix);
-    /* Connect reserved conf_bits and normal conf_bits to the bus */
-    fprintf(fp, "  assign %s%s[0:%d] = %s[0:%d];\n",
-            mem_model->prefix, top_netlist_reserved_bl_port_postfix, num_reserved_bl - 1,
-            top_netlist_array_bl_port_name, num_reserved_bl - 1);
-    fprintf(fp, "  assign %s%s[0:%d] = %s[0:%d];\n",
-            mem_model->prefix, top_netlist_reserved_wl_port_postfix, num_reserved_wl - 1,
-            top_netlist_array_wl_port_name, num_reserved_wl - 1);
-    fprintf(fp, "  assign %s%s[%d:%d] = %s[%d:%d];\n",
-            mem_model->prefix, top_netlist_normal_bl_port_postfix, num_reserved_bl, num_array_bl - 1, 
-            top_netlist_array_bl_port_name, num_reserved_bl, num_array_bl - 1);
-    fprintf(fp, "  assign %s%s[%d:%d] = %s[%d:%d];\n",
-            mem_model->prefix, top_netlist_normal_wl_port_postfix, num_reserved_wl, num_array_wl - 1,
-            top_netlist_array_wl_port_name, num_reserved_wl, num_array_wl - 1);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
@@ -386,10 +216,11 @@ void dump_verilog_top_netlist_scan_chain_internal_wires(t_sram_orgz_info* cur_sr
           num_scffs - 1, scff_mem_model->prefix);
 
   /* Exception for head: connect to primary inputs */ 
+  /*
   fprintf(fp, "  assign %s_scff_in[%d] = %s;\n",
           scff_mem_model->prefix, 0,
           top_netlist_scan_chain_head_prefix);
-
+  */
   /* Connected the scan-chain flip-flops */
   /* Ensure we are in the correct range */
   /*
@@ -463,7 +294,7 @@ void dump_verilog_top_module_ports(t_sram_orgz_info* cur_sram_orgz_info,
     /* Definition ends */
     break;
   case SPICE_SRAM_MEMORY_BANK:
-    dump_verilog_top_netlist_memory_bank_ports(cur_sram_orgz_info, fp, dump_port_type);
+    dump_verilog_decoder_memory_bank_ports(cur_sram_orgz_info, fp, dump_port_type);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
@@ -1260,7 +1091,6 @@ void dump_verilog_clb2clb_directs(FILE* fp,
 static 
 void dump_verilog_configuration_circuits_standalone_srams(t_sram_orgz_info* cur_sram_orgz_info, 
                                                           FILE* fp) {
-  int i;
   /* Check */
   assert(SPICE_SRAM_STANDALONE == cur_sram_orgz_info->type);
   if (NULL == fp) {
@@ -1270,16 +1100,18 @@ void dump_verilog_configuration_circuits_standalone_srams(t_sram_orgz_info* cur_
 
   /* Dump each SRAM */
   fprintf(fp, "//------ Standalone SRAMs -----\n");
-  for (i = 0; i < sram_verilog_model->cnt; i++) {
-    fprintf(fp, "%s %s_%d (\n", 
-            sram_verilog_model->name, sram_verilog_model->prefix, i);
-    /* Input and 2 outputs */
-    fprintf(fp, "%s_in[%d] %s_out[%d] %s_outb[%d] ",
-            sram_verilog_model->prefix, i,
-            sram_verilog_model->prefix, i,
-            sram_verilog_model->prefix, i);
-    fprintf(fp, ");\n");
-  }
+  fprintf(fp, "%s %s_0_ (\n", 
+              verilog_config_peripheral_prefix,
+              verilog_config_peripheral_prefix);
+  fprintf(fp, "%s_in[%d:%d],\n",
+              sram_verilog_model->prefix, 
+              0, sram_verilog_model->cnt - 1);
+  fprintf(fp, "%s_out[%d:%d],\n",
+              sram_verilog_model->prefix, 
+              0, sram_verilog_model->cnt - 1);
+  fprintf(fp, "%s_outb[%d:%d]);\n",
+              sram_verilog_model->prefix, 
+              0, sram_verilog_model->cnt - 1);
   fprintf(fp, "//------ END Standalone SRAMs -----\n");
 
   return;
@@ -1290,7 +1122,6 @@ void dump_verilog_configuration_circuits_standalone_srams(t_sram_orgz_info* cur_
 static 
 void dump_verilog_configuration_circuits_scan_chains(t_sram_orgz_info* cur_sram_orgz_info, 
                                                      FILE* fp) {
-  int i;
   /* Check */
   assert(SPICE_SRAM_SCAN_CHAIN == cur_sram_orgz_info->type);
   if (NULL == fp) {
@@ -1299,19 +1130,15 @@ void dump_verilog_configuration_circuits_scan_chains(t_sram_orgz_info* cur_sram_
   } 
 
   /* Dump each Scan-chain FF */
-  fprintf(fp, "//------ Scan-chain FFs -----\n");
-  for (i = 0; i < sram_verilog_model->cnt; i++) {
-    /* Connect the head of current scff to the tail of previous scff*/
-    if (0 < i) {
-      fprintf(fp, "        ");
-      fprintf(fp, "assign ");
-      dump_verilog_sram_one_port(fp, cur_sram_orgz_info, i, i, 0, VERILOG_PORT_CONKT);
-      fprintf(fp, " = ");
-      dump_verilog_sram_one_port(fp, cur_sram_orgz_info, i - 1, i - 1, 1, VERILOG_PORT_CONKT);
-      fprintf(fp, ";\n");
-    }
-  }
-  fprintf(fp, "//------ END Scan-chain FFs -----\n");
+  fprintf(fp, "//------ Configuration peripheral for Scan-chain FFs -----\n");
+  fprintf(fp, "%s %s_0_ (\n", 
+              verilog_config_peripheral_prefix,
+              verilog_config_peripheral_prefix);
+  dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 0, sram_verilog_model->cnt - 1, 0, VERILOG_PORT_CONKT);
+  fprintf(fp, ",\n");
+  dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 0, sram_verilog_model->cnt - 1, 1, VERILOG_PORT_CONKT);
+  fprintf(fp, ");\n");
+  fprintf(fp, "//------ END Configuration peripheral Scan-chain FFs -----\n");
 
   return;
 }
@@ -1320,9 +1147,14 @@ void dump_verilog_configuration_circuits_scan_chains(t_sram_orgz_info* cur_sram_
 static 
 void dump_verilog_configuration_circuits_memory_bank(FILE* fp, 
                                                      t_sram_orgz_info* cur_sram_orgz_info) {
-  int bl_decoder_size, wl_decoder_size;
+  int num_bl, num_wl;
+  int num_reserved_bl, num_reserved_wl;
   int num_array_bl, num_array_wl;
+  int bl_decoder_size, wl_decoder_size;
   t_spice_model* mem_model = NULL;
+  int num_blb_ports, num_wlb_ports;
+  t_spice_model_port** blb_port = NULL;
+  t_spice_model_port** wlb_port = NULL;
 
   /* Check */
   assert(SPICE_SRAM_MEMORY_BANK == cur_sram_orgz_info->type);
@@ -1333,56 +1165,83 @@ void dump_verilog_configuration_circuits_memory_bank(FILE* fp,
     exit(1);
   } 
 
-  determine_blwl_decoder_size(cur_sram_orgz_info,
-                              &num_array_bl, &num_array_wl, &bl_decoder_size, &wl_decoder_size);
+  /* Get the total number of BLs and WLs */
+  get_sram_orgz_info_num_blwl(cur_sram_orgz_info, &num_bl, &num_wl);
+  /* Get the reserved BLs and WLs */
+  get_sram_orgz_info_reserved_blwl(cur_sram_orgz_info, &num_reserved_bl, &num_reserved_wl);
+
   /* Get memory model */
   get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model);
   assert(NULL != mem_model);
 
-  /* Comment lines */
-  fprintf(fp, "//----- BEGIN call decoders for memory bank controller -----\n");
+  determine_blwl_decoder_size(cur_sram_orgz_info,
+                              &num_array_bl, &num_array_wl, &bl_decoder_size, &wl_decoder_size);
 
-  /* Dump Decoders for Bit lines and Word lines */
-  /* Two huge decoders
-   * TODO: divide to a number of small decoders ?
-   */
-  /* Bit lines decoder */
-  fprintf(fp, "bl_decoder%dto%d mem_bank_bl_decoder (",
-          bl_decoder_size, num_array_bl);
-  /* Prefix of BL & WL is fixed, in order to simplify grouping nets */
-  fprintf(fp, "%s, %s[%d:0], ",
-          top_netlist_bl_enable_port_name,
-          top_netlist_addr_bl_port_name, bl_decoder_size - 1); 
-  /* Port map depends on the memory technology */
+  /* Get BLB and WLB ports */
+  find_blb_wlb_ports_spice_model(mem_model, &num_blb_ports, &blb_port,
+                                 &num_wlb_ports, &wlb_port);
+
+  /* Comment lines */
+  fprintf(fp, "//------ BEGIN Configuration peripheral for Memory-bank -----\n");
+  fprintf(fp, "%s %s_0_ (\n", 
+              verilog_config_peripheral_prefix,
+              verilog_config_peripheral_prefix);
+  /* Ports for memory decoders */
+  dump_verilog_decoder_memory_bank_ports(cur_sram_orgz_info, fp, VERILOG_PORT_CONKT);
+  fprintf(fp, ",");
+  /* Ports for all the SRAM cells  */
   switch (mem_model->design_tech) {
   case SPICE_MODEL_DESIGN_CMOS:
-    /* Data input port of BL decoder, only required by SRAM array */
-    fprintf(fp, "%s, ",
-            top_netlist_bl_data_in_port_name);
-    break;
+    assert( 0 == num_reserved_bl );
+    assert( 0 == num_reserved_wl );
+    /* Declare normal BL / WL inputs */
+    fprintf(fp, "  %s%s[%d:%d],",
+            mem_model->prefix, top_netlist_normal_bl_port_postfix,
+            0, num_bl - 1); 
+    fprintf(fp, "  %s%s[%d:%d]",
+            mem_model->prefix, top_netlist_normal_wl_port_postfix,
+            0, num_wl - 1);
+    /* Declare inverted wires if needed */
+    if (1 == num_blb_ports) {
+      fprintf(fp, ", ");
+      fprintf(fp, "%s%s[%d:%d]",
+              mem_model->prefix, top_netlist_normal_blb_port_postfix,
+              0, num_bl - 1); 
+    }
+    if (1 == num_wlb_ports) {
+      fprintf(fp, ", ");
+      fprintf(fp, "%s%s[%d:%d]",
+              mem_model->prefix, top_netlist_normal_wlb_port_postfix,
+              0, num_wl - 1);
+    }
+
+    break; 
   case SPICE_MODEL_DESIGN_RRAM: 
+    /* Check: there should be reserved BLs and WLs */
+    assert( 0 < num_reserved_bl );
+    assert( 0 < num_reserved_wl );
+    /* Declare reserved and normal conf_bits ports  */
+    fprintf(fp, "  %s%s[0:%d],",
+            mem_model->prefix, top_netlist_reserved_bl_port_postfix,
+            num_reserved_bl - 1);
+    fprintf(fp, "  %s%s[0:%d],",
+            mem_model->prefix, top_netlist_reserved_wl_port_postfix,
+            num_reserved_wl - 1); 
+    fprintf(fp, "  %s%s[%d:%d],",
+            mem_model->prefix, top_netlist_normal_bl_port_postfix,
+            num_reserved_bl, num_array_bl - 1); 
+    fprintf(fp, "  %s%s[%d:%d]",
+            mem_model->prefix, top_netlist_normal_wl_port_postfix,
+            num_reserved_wl, num_array_wl - 1);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
                __FILE__, __LINE__);
     exit(1);
   }
-  fprintf(fp, "%s[0:%d]", 
-          top_netlist_array_bl_port_name, num_array_bl - 1);
-  fprintf(fp, ");\n");
 
-  /* Word lines decoder is the same for both technology */
-  fprintf(fp, "wl_decoder%dto%d mem_bank_wl_decoder (",
-          wl_decoder_size, num_array_wl);
-  fprintf(fp, "%s, %s[%d:0], ",
-          top_netlist_wl_enable_port_name,
-          top_netlist_addr_wl_port_name, wl_decoder_size - 1); 
-  fprintf(fp, "%s[0:%d]", 
-          top_netlist_array_wl_port_name, num_array_wl - 1);
   fprintf(fp, ");\n");
-
-  /* Comment lines */
-  fprintf(fp, "//----- END call decoders for memory bank controller -----\n\n");
+  fprintf(fp, "//------ END Configuration peripheral for Memory-bank -----\n");
 
   return; 
 }
@@ -2761,7 +2620,7 @@ void dump_verilog_top_netlist(t_sram_orgz_info* cur_sram_orgz_info,
   case SPICE_SRAM_MEMORY_BANK:
     /* Include verilog decoder */
     fprintf(fp, "//----- Include subckt netlists: Decoders (controller for memeory bank) -----\n");
-    temp_include_file_path = my_strcat(formatted_subckt_dir_path, decoders_verilog_file_name);
+    temp_include_file_path = my_strcat(formatted_subckt_dir_path, config_peripheral_verilog_file_name);
     fprintf(fp, "// `include \"%s\"\n", temp_include_file_path);
     my_free(temp_include_file_path);
     break;
