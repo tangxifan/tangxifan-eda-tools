@@ -1,8 +1,8 @@
 // Benchmark "s298.bench" written by ABC on Mon Sep 17 23:08:06 2018
 
-module s298_prevpr ( G0, G1, G2, clk,
+module s298_prevpr ( rst, G0, G1, G2, clk,
     G117, G132, G66, G118, G133, G67  );
-  input  G0, G1, G2, clk;
+  input  rst, G0, G1, G2, clk;
   output G117, G132, G66, G118, G133, G67;
   reg G10, G11, G12, G13, G14, G15, G16, G17, G18, G19, G20, G21, G22, G23;
   wire n53, n54, n55, n56, n57, n59, n60, n61, n63, n64, n65, n66, n67, n68,
@@ -99,23 +99,8 @@ module s298_prevpr ( G0, G1, G2, clk,
   assign G67 = G17;
   assign n66_2 = ~n111;
   assign n71_1 = ~n117;
-  always @ (posedge clk) begin
-    G10 <= n21_1;
-    G11 <= n26_1;
-    G12 <= n31_1;
-    G13 <= n36_1;
-    G14 <= n41_1;
-    G15 <= n46_1;
-    G16 <= n51_1;
-    G17 <= n56_1;
-    G18 <= n61_1;
-    G19 <= n66_2;
-    G20 <= n71_1;
-    G21 <= n76_1;
-    G22 <= n81_1;
-    G23 <= n86_1;
-  end
-  initial begin
+  always @ (posedge clk or posedge rst)
+  if (rst) begin
     G10 <= 1'b0;
     G11 <= 1'b0;
     G12 <= 1'b0;
@@ -130,6 +115,21 @@ module s298_prevpr ( G0, G1, G2, clk,
     G21 <= 1'b0;
     G22 <= 1'b0;
     G23 <= 1'b0;
+  end else begin
+    G10 <= n21_1;
+    G11 <= n26_1;
+    G12 <= n31_1;
+    G13 <= n36_1;
+    G14 <= n41_1;
+    G15 <= n46_1;
+    G16 <= n51_1;
+    G17 <= n56_1;
+    G18 <= n61_1;
+    G19 <= n66_2;
+    G20 <= n71_1;
+    G21 <= n76_1;
+    G22 <= n81_1;
+    G23 <= n86_1;
   end
 endmodule
 

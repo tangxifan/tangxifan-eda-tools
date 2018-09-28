@@ -1514,8 +1514,11 @@ static void ProcessMode(INOUTP ezxml_t Parent, t_mode * mode,
     /* Spice Model Support: Xifan TANG
      * More option: specify if this mode is available during packing 
      */
-    mode->disabled_in_packing = FALSE; /* By default it is TRUE otherwise users specify it */
     mode->disabled_in_packing = GetBooleanProperty(Parent, "disabled_in_packing", FALSE, FALSE);
+    if (NULL != mode->parent_pb_type->parent_mode) {
+      /* If the parent mode is disabled in packing, all the child mode should be disabled as well */
+      mode->disabled_in_packing = mode->parent_pb_type->parent_mode->disabled_in_packing;
+    }
     /* END */
 
 	mode->num_pb_type_children = CountChildren(Parent, "pb_type", 0);

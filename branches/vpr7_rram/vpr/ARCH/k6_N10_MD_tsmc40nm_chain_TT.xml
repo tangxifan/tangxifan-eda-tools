@@ -604,7 +604,7 @@
                 </mux>
               </interconnect>
           </mode>
-          <mode name="n2_lut5">
+          <mode name="n2_lut5" disabled_in_packing="false">
             <!-- multi-mode support -->
             <pb_type name="lut5inter" num_pb="1">
               <input name="in" num_pins="5"/>
