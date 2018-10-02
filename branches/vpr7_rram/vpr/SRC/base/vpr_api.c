@@ -192,7 +192,6 @@ void vpr_print_usage(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_verilog_dir <string>\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_verilog_print_top_testbench\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_verilog_print_input_blif_testbench\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_verilog_compact_netlist\n");
     /* Xifan Tang: Bitstream generator */
 	vpr_printf(TIO_MESSAGE_INFO, "Bitstream Generator (accompany with the Verilog Generator) Options:\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_bitstream_generator <string>\n");
