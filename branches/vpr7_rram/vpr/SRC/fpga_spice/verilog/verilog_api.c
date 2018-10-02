@@ -36,7 +36,6 @@
 #include "verilog_global.h"
 #include "verilog_utils.h"
 #include "verilog_submodules.h"
-#include "verilog_decoder.h"
 #include "verilog_pbtypes.h"
 #include "verilog_routing.h"
 #include "verilog_top_netlist.h"
@@ -202,9 +201,6 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   /* Initialize the user-defined verilog netlists to be included */
   init_list_include_verilog_netlists(Arch.spice);
  
-  /* Dump internal structures of submodules */
-  dump_verilog_submodules(sram_verilog_orgz_info, submodule_dir_path, Arch, &vpr_setup.RoutingArch);
-
   /* Initial global variables about configuration bits */
   alloc_global_routing_conf_bits();
 
@@ -224,30 +220,17 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
    * 1. a compact output
    * 2. a full-size output
    */
-  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.output_compact_netlist) {
-    dump_compact_verilog_logic_blocks(sram_verilog_orgz_info, lb_dir_path, &Arch);
-  } else {
-    assert (FALSE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.output_compact_netlist);
-    dump_verilog_logic_blocks(sram_verilog_orgz_info, lb_dir_path, &Arch);
-  }
+  dump_compact_verilog_logic_blocks(sram_verilog_orgz_info, lb_dir_path, &Arch);
 
-  /* Dump decoder modules only when memory bank is required */
-  dump_verilog_config_peripherals(sram_verilog_orgz_info, submodule_dir_path);
+  /* Dump internal structures of submodules */
+  dump_verilog_submodules(sram_verilog_orgz_info, submodule_dir_path, Arch, &vpr_setup.RoutingArch);
 
   /* Dump top-level verilog */
-  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.output_compact_netlist) {
-    dump_compact_verilog_top_netlist(sram_verilog_orgz_info, chomped_circuit_name, 
+  dump_compact_verilog_top_netlist(sram_verilog_orgz_info, chomped_circuit_name, 
                                      top_netlist_path, lb_dir_path, rr_dir_path, 
                                      num_rr_nodes, rr_node, rr_node_indices, 
                                      num_clocks, *(Arch.spice));
    
-  } else {
-    dump_verilog_top_netlist(sram_verilog_orgz_info, chomped_circuit_name, 
-                             top_netlist_path, lb_dir_path, rr_dir_path, 
-                             num_rr_nodes, rr_node, rr_node_indices, 
-                             num_clocks, *(Arch.spice));
-   }
-
   /* Dump SDC constraints */
   /* dump_verilog_sdc_file(); */
   

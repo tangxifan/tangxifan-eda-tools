@@ -32,6 +32,7 @@
 #include "verilog_global.h"
 #include "verilog_utils.h"
 #include "verilog_pbtypes.h"
+#include "verilog_decoder.h"
 
 /***** Subroutines *****/
 /* Dump a module of inverter or buffer or tapered buffer */
@@ -374,6 +375,9 @@ void dump_verilog_submodule_essentials(char* submodule_dir,
 
   /* Close file handler*/
   fclose(fp);
+
+  /* Add fname to the linked list */
+  submodule_verilog_subckt_file_path_head = add_one_subckt_file_name_to_llist(submodule_verilog_subckt_file_path_head, verilog_name);  
 
   /* Free */
   
@@ -2075,13 +2079,16 @@ void dump_verilog_submodule_muxes(t_sram_orgz_info* cur_sram_orgz_info,
   vpr_printf(TIO_MESSAGE_INFO,"Min. MUX size = %d.\n",
              min_mux_size);
 
+  /* Add fname to the linked list */
+  submodule_verilog_subckt_file_path_head = add_one_subckt_file_name_to_llist(submodule_verilog_subckt_file_path_head, verilog_name);  
+
+  /* Close the file*/
+  fclose(fp);
+
   /* remember to free the linked list*/
   free_muxes_llist(muxes_head);
   /* Free strings */
   free(verilog_name);
-
-  /* Close the file*/
-  fclose(fp);
 
   return;
 }
@@ -2458,6 +2465,9 @@ void dump_verilog_submodule_luts(char* submodule_dir,
   /* Close the file handler */
   fclose(fp);
 
+  /* Add fname to the linked list */
+  submodule_verilog_subckt_file_path_head = add_one_subckt_file_name_to_llist(submodule_verilog_subckt_file_path_head, verilog_name);  
+
   return;
 }
 
@@ -2592,6 +2602,9 @@ void dump_verilog_submodule_wires(char* subckt_dir,
   /* Close the file handler */
   fclose(fp);
 
+  /* Add fname to the linked list */
+  submodule_verilog_subckt_file_path_head = add_one_subckt_file_name_to_llist(submodule_verilog_subckt_file_path_head, verilog_name);  
+
   /*Free*/
   my_free(seg_index_str);
   my_free(seg_wire_subckt_name);
@@ -2681,9 +2694,6 @@ void dump_verilog_submodule_memories(t_sram_orgz_info* cur_sram_orgz_info,
     temp = temp->next;
   }
 
-  /* remember to free the linked list*/
-  free_muxes_llist(muxes_head);
-
   /* Search all the other SPICE models and create memory module */
   for (imodel = 0; imodel < spice->num_spice_model; imodel++) {
     /* Bypass MUX */
@@ -2699,11 +2709,17 @@ void dump_verilog_submodule_memories(t_sram_orgz_info* cur_sram_orgz_info,
     dump_verilog_submodule_one_mem(fp, &(spice->spice_models[imodel]));
   }
 
-  /* Free strings */
-  free(verilog_name);
-
   /* Close the file*/
   fclose(fp);
+
+  /* Add fname to the linked list */
+  submodule_verilog_subckt_file_path_head = add_one_subckt_file_name_to_llist(submodule_verilog_subckt_file_path_head, verilog_name);  
+
+  /* remember to free the linked list*/
+  free_muxes_llist(muxes_head);
+
+  /* Free strings */
+  free(verilog_name);
 
   return;
 }
@@ -2743,6 +2759,15 @@ void dump_verilog_submodules(t_sram_orgz_info* cur_sram_orgz_info,
   vpr_printf(TIO_MESSAGE_INFO, "Generating modules of memories...\n");
   dump_verilog_submodule_memories(cur_sram_orgz_info, submodule_dir, routing_arch->num_switch, 
                                   switch_inf, Arch.spice, routing_arch);
+
+  /* 5. Dump decoder modules only when memory bank is required */
+  dump_verilog_config_peripherals(cur_sram_orgz_info, submodule_dir);
+
+  /* Create a header file to include all the subckts */
+  vpr_printf(TIO_MESSAGE_INFO,"Generating header file for basic submodules...\n");
+  dump_verilog_subckt_header_file(submodule_verilog_subckt_file_path_head,
+                                  submodule_dir,
+                                  submodule_verilog_file_name);
 
   return;
 }

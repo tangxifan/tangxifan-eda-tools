@@ -13,6 +13,7 @@ char* verilog_netlist_file_postfix = ".v";
 char* verilog_top_postfix = "_top.v";
 char* top_testbench_verilog_file_postfix = "_top_tb.v";
 char* blif_testbench_verilog_file_postfix = "_blif_tb.v";
+char* submodule_verilog_file_name = "sub_module.v";
 char* logic_block_verilog_file_name = "logic_blocks.v";
 char* luts_verilog_file_name = "luts.v";
 char* routing_verilog_file_name = "routing.v";
@@ -47,6 +48,7 @@ t_llist* conf_bits_head = NULL;
 /* Linked-list that stores submodule Verilog file mames */
 t_llist* grid_verilog_subckt_file_path_head  = NULL;
 t_llist* routing_verilog_subckt_file_path_head = NULL;
+t_llist* submodule_verilog_subckt_file_path_head = NULL;
 
 int verilog_default_signal_init_value = 0;
 

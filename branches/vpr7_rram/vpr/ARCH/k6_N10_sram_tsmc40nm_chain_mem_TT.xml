@@ -338,7 +338,8 @@
         <output_buffer exist="on" spice_model_name="INVTX1"/>
         <pass_gate_logic spice_model_name="TGATE"/>
         <port type="input" prefix="in" size="1"/>
-        <port type="output" prefix="out" size="2"/>
+        <port type="output" prefix="out" size="1"/>
+        <port type="output" prefix="outb" size="1"/>
         <port type="bl" prefix="bl" size="1" default_val="0" inv_spice_model_name="INVTX1"/>
         <port type="blb" prefix="blb" size="1" default_val="1" inv_spice_model_name="INVTX1"/>
         <port type="wl" prefix="wl" size="1" default_val="0" inv_spice_model_name="INVTX1"/>
@@ -352,7 +353,8 @@
          <port type="input" prefix="D" size="1"/>
          <!--port type="input" prefix="pset" size="1" is_global="true" default_val="0" is_set="true"/ -->
          <port type="input" prefix="preset" size="1" is_global="true" default_val="0" is_reset="true"/>
-         <port type="output" prefix="Q" size="2"/>
+         <port type="output" prefix="Q" size="1"/>
+         <port type="output" prefix="Qb" size="1"/>
          <port type="clock" prefix="prog_clk" size="1" is_global="true" default_val="0" is_prog="true"/>
       </spice_model>
       <spice_model type="iopad" name="iopad" prefix="iopad" spice_netlist="/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/vpr7_rram/vpr/SpiceNetlists/io.sp" verilog_netlist="/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/vpr7_rram/vpr/VerilogNetlists/io.v">
@@ -428,7 +430,7 @@
     <!--sram area="6" organization="standalone" spice_model_name="sram6T"-->
     <!--sram area="6" organization="scan-chain" spice_model_name="sc_dff"-->
     <sram area="6">
-      <verilog organization="memory_bank" spice_model_name="sram6T_blwl"/>
+      <verilog organization="memory-bank" spice_model_name="sram6T_blwl"/>
       <spice organization="standalone" spice_model_name="sram6T" />
     </sram>
     <chan_width_distr>

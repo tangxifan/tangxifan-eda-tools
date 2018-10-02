@@ -1064,7 +1064,6 @@ static void SetupSynVerilogOpts(t_options Options,
   syn_verilog_opts->syn_verilog_dump_dir = NULL;
   syn_verilog_opts->dump_syn_verilog_top_testbench = FALSE;
   syn_verilog_opts->dump_syn_verilog_input_blif_testbench = FALSE;
-  syn_verilog_opts->output_compact_netlist = FALSE;
   syn_verilog_opts->tb_serial_config_mode = FALSE;
 
   /* Turn on Syn_verilog options */
@@ -1084,10 +1083,6 @@ static void SetupSynVerilogOpts(t_options Options,
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_INPUT_BLIF_TESTBENCH]) {
     syn_verilog_opts->dump_syn_verilog_input_blif_testbench = TRUE;
-  }
-
-  if (Options.Count[OT_FPGA_VERILOG_SYN_COMPACT_NETLIST]) {
-    syn_verilog_opts->output_compact_netlist = TRUE;
   }
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_VERIFICATION_NETLIST]) {

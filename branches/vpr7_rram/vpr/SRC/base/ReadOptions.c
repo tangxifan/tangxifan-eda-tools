@@ -512,8 +512,6 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
       return Args;
     case OT_FPGA_VERILOG_SYN_PRINT_INPUT_BLIF_TESTBENCH:
       return Args;
-    case OT_FPGA_VERILOG_SYN_COMPACT_NETLIST:
-      return Args;
     case OT_FPGA_VERILOG_SYN_VERIFICATION_NETLIST:
       return Args;
     case OT_FPGA_VERILOG_SYN_TB_SERIAL_CONFIG_MODE:
