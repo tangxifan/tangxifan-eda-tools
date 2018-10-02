@@ -2,6 +2,11 @@
 
 extern char* verilog_netlist_file_postfix;
 
+extern char* default_verilog_dir_name;
+extern char* default_lb_dir_name;
+extern char* default_rr_dir_name;
+extern char* default_submodule_dir_name;
+
 extern char* verilog_top_postfix;
 extern char* top_testbench_verilog_file_postfix;
 extern char* blif_testbench_verilog_file_postfix;

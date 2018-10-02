@@ -687,15 +687,16 @@ void dump_compact_verilog_defined_grids(t_sram_orgz_info* cur_sram_orgz_info,
 void dump_compact_verilog_top_netlist(t_sram_orgz_info* cur_sram_orgz_info,
                                       char* circuit_name,
                                       char* top_netlist_name,
-                                      char* include_dir_path,
-                                      char* subckt_dir_path,
+                                      char* submodule_dir_path,
+                                      char* lb_dir_path,
+                                      char* rr_dir_path,
                                       int LL_num_rr_nodes,
                                       t_rr_node* LL_rr_node,
                                       t_ivec*** LL_rr_node_indices,
                                       int num_clock,
                                       t_spice verilog) {
   FILE* fp = NULL;
-  char* formatted_subckt_dir_path = format_dir_path(subckt_dir_path);
+  char* formatted_dir_path = NULL;
   char* temp_include_file_path = NULL;
   char* title = my_strcat("FPGA Verilog Netlist for Design: ", circuit_name);
 
@@ -718,48 +719,23 @@ void dump_compact_verilog_top_netlist(t_sram_orgz_info* cur_sram_orgz_info,
   dump_include_user_defined_verilog_netlists(fp, verilog);
   
   /* Special subckts for Top-level SPICE netlist */
-  fprintf(fp, "//----- Include subckt netlists: Multiplexers -----\n");
-  temp_include_file_path = my_strcat(formatted_subckt_dir_path, muxes_verilog_file_name);
-  fprintf(fp, "// `include \"%s\"\n", temp_include_file_path);
-  my_free(temp_include_file_path);
-
-  fprintf(fp, "//----- Include subckt netlists: Wires -----\n");
-  temp_include_file_path = my_strcat(formatted_subckt_dir_path, wires_verilog_file_name);
-  fprintf(fp, "// `include \"%s\"\n", temp_include_file_path);
-  my_free(temp_include_file_path);
-
-  fprintf(fp, "//----- Include subckt netlists: Look-Up Tables (LUTs) -----\n");
-  temp_include_file_path = my_strcat(formatted_subckt_dir_path, luts_verilog_file_name);
+  fprintf(fp, "//------ Include subckt netlists: Basic Primitives -----\n");
+  formatted_dir_path = format_dir_path(submodule_dir_path); 
+  temp_include_file_path = my_strcat(formatted_dir_path, submodule_verilog_file_name);
   fprintf(fp, "// `include \"%s\"\n", temp_include_file_path);
   my_free(temp_include_file_path);
 
   fprintf(fp, "//------ Include subckt netlists: Logic Blocks -----\n");
-  temp_include_file_path = my_strcat(formatted_subckt_dir_path, logic_block_verilog_file_name);
+  formatted_dir_path = format_dir_path(lb_dir_path); 
+  temp_include_file_path = my_strcat(formatted_dir_path, logic_block_verilog_file_name);
   fprintf(fp, "// `include \"%s\"\n", temp_include_file_path);
   my_free(temp_include_file_path);
 
   fprintf(fp, "//----- Include subckt netlists: Routing structures (Switch Boxes, Channels, Connection Boxes) -----\n");
-  temp_include_file_path = my_strcat(formatted_subckt_dir_path, routing_verilog_file_name);
+  formatted_dir_path = format_dir_path(rr_dir_path); 
+  temp_include_file_path = my_strcat(formatted_dir_path, routing_verilog_file_name);
   fprintf(fp, "// `include \"%s\"\n", temp_include_file_path);
   my_free(temp_include_file_path);
- 
-  /* Include decoders if required */ 
-  switch(cur_sram_orgz_info->type) {
-  case SPICE_SRAM_STANDALONE:
-  case SPICE_SRAM_SCAN_CHAIN:
-    break;
-  case SPICE_SRAM_MEMORY_BANK:
-    /* Include verilog decoder */
-    fprintf(fp, "//----- Include subckt netlists: Decoders (controller for memeory bank) -----\n");
-    temp_include_file_path = my_strcat(formatted_subckt_dir_path, config_peripheral_verilog_file_name);
-    fprintf(fp, "// `include \"%s\"\n", temp_include_file_path);
-    my_free(temp_include_file_path);
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
-               __FILE__, __LINE__);
-    exit(1);
-  }
  
   /* Print all global wires*/
   dump_verilog_top_netlist_ports(cur_sram_orgz_info, fp, num_clock, circuit_name, verilog);

@@ -41,11 +41,6 @@
 #include "verilog_top_netlist.h"
 #include "verilog_compact_netlist.h"
 
-/* Global Variants available only in this source file */
-static char* default_verilog_dir_name = "syn_verilogs/";
-static char* default_lb_dir_name = "lb/";
-static char* default_rr_dir_name = "routing/";
-static char* default_submodule_dir_name = "sub_module/";
 
 /***** Subroutines *****/
 /* Alloc array that records Configuration bits for :
@@ -227,9 +222,9 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
 
   /* Dump top-level verilog */
   dump_compact_verilog_top_netlist(sram_verilog_orgz_info, chomped_circuit_name, 
-                                     top_netlist_path, lb_dir_path, rr_dir_path, 
-                                     num_rr_nodes, rr_node, rr_node_indices, 
-                                     num_clocks, *(Arch.spice));
+                                   top_netlist_path, submodule_dir_path, lb_dir_path, rr_dir_path, 
+                                   num_rr_nodes, rr_node, rr_node_indices, 
+                                   num_clocks, *(Arch.spice));
    
   /* Dump SDC constraints */
   /* dump_verilog_sdc_file(); */

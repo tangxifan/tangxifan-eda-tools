@@ -10,6 +10,11 @@
 
 char* verilog_netlist_file_postfix = ".v";
 
+char* default_verilog_dir_name = "syn_verilogs/";
+char* default_lb_dir_name = "lb/";
+char* default_rr_dir_name = "routing/";
+char* default_submodule_dir_name = "sub_module/";
+
 char* verilog_top_postfix = "_top.v";
 char* top_testbench_verilog_file_postfix = "_top_tb.v";
 char* blif_testbench_verilog_file_postfix = "_blif_tb.v";
