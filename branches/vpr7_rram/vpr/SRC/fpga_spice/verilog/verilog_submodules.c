@@ -2163,14 +2163,15 @@ void dump_verilog_wire_module(FILE* fp,
 
 /* Dump one module of a LUT */
 void dump_verilog_submodule_one_lut(FILE* fp, 
-                                    t_spice_model* verilog_model) {
+                                    t_spice_model* verilog_model,
+                                    boolean include_timing) {
   int num_input_port = 0;
   int num_output_port = 0;
   int num_sram_port = 0;
   t_spice_model_port** input_port = NULL;
   t_spice_model_port** output_port = NULL;
   t_spice_model_port** sram_port = NULL;
-  int iport, ipin;
+  int iport, ipin, iedge;
   int mode_port_index = OPEN;
   int mode_lsb = 0;
   int num_dumped_port = 0;
@@ -2355,6 +2356,26 @@ void dump_verilog_submodule_one_lut(FILE* fp,
   /* End of call LUT MUX */
   fprintf(fp, ");\n");
 
+  /* Give timing information */
+  if (TRUE == include_timing) {
+    fprintf(fp, "  specify\n");
+    /* Give pin-to-pin delays */
+    /* Enumerate timing edges of each input ports */
+    for (iport = 0; iport < num_input_port; iport++) {
+      for (ipin = 0; ipin < input_port[iport]->size; ipin++) {
+        for (iedge = 0; iedge < input_port[iport]->num_tedges[ipin]; iedge++) {
+          fprintf(fp, "(%s[%d] => %s[%d]) = (%.2f, %.2f);\n",
+                  input_port[iport]->prefix, ipin,
+                  input_port[iport]->tedge[ipin][iedge]->to_port->prefix,
+                  input_port[iport]->tedge[ipin][iedge]->to_port_pin_number,
+                  input_port[iport]->tedge[ipin][iedge]->trise,
+                  input_port[iport]->tedge[ipin][iedge]->tfall);
+        }
+      }
+    }
+    fprintf(fp, "  endspecify\n");
+  }
+
   /* Print end of module */
   fprintf(fp, "endmodule\n");
   fprintf(fp, "//-----END LUT module, verilog_model_name=%s -----\n", verilog_model->name);  
@@ -2438,7 +2459,8 @@ void dump_verilog_submodule_one_mem(FILE* fp,
 /* Dump verilog top-level module for LUTs */
 void dump_verilog_submodule_luts(char* submodule_dir,
                                  int num_spice_model,
-                                 t_spice_model* spice_models) {
+                                 t_spice_model* spice_models,
+                                 boolean include_timing) {
   FILE* fp = NULL;
   char* verilog_name = my_strcat(submodule_dir, luts_verilog_file_name);
   int imodel; 
@@ -2458,7 +2480,7 @@ void dump_verilog_submodule_luts(char* submodule_dir,
       continue;
     }
     if (SPICE_MODEL_LUT == spice_models[imodel].type) {
-      dump_verilog_submodule_one_lut(fp, &(spice_models[imodel]));
+      dump_verilog_submodule_one_lut(fp, &(spice_models[imodel]), include_timing);
     }
   }
 
@@ -2732,7 +2754,8 @@ void dump_verilog_submodule_memories(t_sram_orgz_info* cur_sram_orgz_info,
 void dump_verilog_submodules(t_sram_orgz_info* cur_sram_orgz_info,
                              char* submodule_dir, 
                              t_arch Arch, 
-                             t_det_routing_arch* routing_arch) {
+                             t_det_routing_arch* routing_arch,
+                             boolean include_timing) {
 
   /* 0. basic units: inverter, buffers and pass-gate logics, */
   vpr_printf(TIO_MESSAGE_INFO, "Generating essential modules...\n");
@@ -2748,7 +2771,8 @@ void dump_verilog_submodules(t_sram_orgz_info* cur_sram_orgz_info,
   /* 2. LUTes */
   vpr_printf(TIO_MESSAGE_INFO, "Generating modules of LUTs...\n");
   dump_verilog_submodule_luts(submodule_dir,
-                              Arch.spice->num_spice_model, Arch.spice->spice_models);
+                              Arch.spice->num_spice_model, Arch.spice->spice_models,
+                              include_timing);
 
   /* 3. Hardwires */
   vpr_printf(TIO_MESSAGE_INFO, "Generating modules of hardwires...\n");

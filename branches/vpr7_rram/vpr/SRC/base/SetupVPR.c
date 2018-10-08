@@ -1064,7 +1064,7 @@ static void SetupSynVerilogOpts(t_options Options,
   syn_verilog_opts->syn_verilog_dump_dir = NULL;
   syn_verilog_opts->dump_syn_verilog_top_testbench = FALSE;
   syn_verilog_opts->dump_syn_verilog_input_blif_testbench = FALSE;
-  syn_verilog_opts->tb_serial_config_mode = FALSE;
+  syn_verilog_opts->include_timing = FALSE;
 
   /* Turn on Syn_verilog options */
   if (Options.Count[OT_FPGA_VERILOG_SYN]) {
@@ -1089,8 +1089,8 @@ static void SetupSynVerilogOpts(t_options Options,
     syn_verilog_opts->output_verification_netlist = TRUE;
   }
 
-  if (Options.Count[OT_FPGA_VERILOG_SYN_TB_SERIAL_CONFIG_MODE]) {
-    syn_verilog_opts->tb_serial_config_mode = TRUE;
+  if (Options.Count[OT_FPGA_VERILOG_SYN_INCLUDE_TIMING]) {
+    syn_verilog_opts->include_timing = TRUE;
   }
 
   /* SynVerilog needs the input from spice modeling */

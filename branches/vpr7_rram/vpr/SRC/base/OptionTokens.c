@@ -78,7 +78,7 @@ struct s_TokenPair OptionBaseTokenList[] = {
         { "fpga_verilog_print_top_testbench", OT_FPGA_VERILOG_SYN_PRINT_TOP_TESTBENCH },
         { "fpga_verilog_print_input_blif_testbench", OT_FPGA_VERILOG_SYN_PRINT_INPUT_BLIF_TESTBENCH },
         { "fpga_verilog_verification_netlist", OT_FPGA_VERILOG_SYN_VERIFICATION_NETLIST },
-        { "fpga_verilog_tb_serial_config_mode", OT_FPGA_VERILOG_SYN_TB_SERIAL_CONFIG_MODE },
+        { "fpga_verilog_include_timing", OT_FPGA_VERILOG_SYN_INCLUDE_TIMING }, /* Include timing constraints in Verilog netlists */
         { "fpga_spice_rename_illegal_port", OT_FPGA_SPICE_RENAME_ILLEGAL_PORT }, /* Xifan TANG: rename illegal port names */
         { "fpga_spice_signal_density_weight", OT_FPGA_SPICE_SIGNAL_DENSITY_WEIGHT }, /* The weight of signal density */
         { "fpga_spice_sim_window_size", OT_FPGA_SPICE_SIM_WINDOW_SIZE }, /* Window size in determining number of clock cycles in simulation */

@@ -1215,7 +1215,7 @@ struct s_syn_verilog_opts {
   boolean dump_syn_verilog_top_testbench;
   boolean dump_syn_verilog_input_blif_testbench;
   boolean output_verification_netlist;
-  boolean tb_serial_config_mode;
+  boolean include_timing;
 };
 
 /* Xifan TANG: bitstream generator */

@@ -172,6 +172,12 @@
         <design_technology type="cmos" topology="inverter" size="1" tapered="off"/>
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="1"/>
+        <delay_matrix type="rise" in_port="in" out_port="out">
+          10e-12
+        </delay_matrix>
+        <delay_matrix type="fall" in_port="in" out_port="out">
+          10e-12
+        </delay_matrix>
       </spice_model>
       <spice_model type="inv_buf" name="buf4" prefix="buf4" is_default="0">
         <design_technology type="cmos" topology="buffer" size="1" tapered="on" tap_buf_level="2" f_per_stage="4"/>
@@ -191,6 +197,12 @@
         <port type="input" prefix="sel" size="1"/>
         <port type="input" prefix="selb" size="1"/>
         <port type="output" prefix="out" size="1"/>
+        <delay_matrix type="rise" in_port="in sel selb" out_port="out">
+          10e-12 10e-12 10e-12
+        </delay_matrix>
+        <delay_matrix type="fall" in_port="in sel selb" out_port="out">
+          10e-12 10e-12 10e-12
+        </delay_matrix>
       </spice_model>
       <spice_model type="chan_wire" name="chan_segment" prefix="track_seg" is_default="1">
         <design_technology type="cmos"/>
@@ -599,7 +611,7 @@
                 </mux>
               </interconnect>
           </mode>
-          <mode name="n2_lut5" disabled_in_packing="true">
+          <mode name="n2_lut5" disabled_in_packing="false">
             <!-- multi-mode support -->
             <pb_type name="lut5inter" num_pb="1">
               <input name="in" num_pins="5"/>
