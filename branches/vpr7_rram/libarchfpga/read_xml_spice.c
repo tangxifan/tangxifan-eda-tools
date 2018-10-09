@@ -655,8 +655,6 @@ static void ProcessSpiceModelPort(ezxml_t Node,
 static 
 void ProcessSpiceModelDelayInfo(ezxml_t Node, 
                                 t_spice_model_delay_info* cur_delay_info) {
-  char* delay_str = NULL;
-
   /* Find the type */
   if (0 == strcmp(FindProperty(Node, "type", TRUE), "rise")) {
     cur_delay_info->type = SPICE_MODEL_DELAY_RISE;

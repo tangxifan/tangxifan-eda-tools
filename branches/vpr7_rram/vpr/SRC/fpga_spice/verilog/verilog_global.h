@@ -2,6 +2,7 @@
 
 extern char* verilog_netlist_file_postfix;
 extern float verilog_sim_timescale;
+extern char* verilog_timing_preproc_flag; // the flag to enable timing definition during compilation
 
 extern char* default_verilog_dir_name;
 extern char* default_lb_dir_name;

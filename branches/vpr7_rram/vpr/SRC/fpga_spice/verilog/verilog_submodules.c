@@ -60,6 +60,7 @@ void dump_verilog_submodule_timing(FILE* fp,
     exit(1);
   }
 
+  fprintf(fp, "`ifdef %s\n", verilog_timing_preproc_flag);
   fprintf(fp, "  //------ BEGIN Pin-to-pin Timing constraints -----\n");
   fprintf(fp, "  specify\n");
   /* Give pin-to-pin delays */
@@ -78,6 +79,7 @@ void dump_verilog_submodule_timing(FILE* fp,
   }
   fprintf(fp, "  endspecify\n");
   fprintf(fp, "  //------ END Pin-to-pin Timing constraints -----\n");
+  fprintf(fp, "`endif\n");
 
   return;
 }
@@ -418,7 +420,9 @@ void dump_verilog_submodule_essentials(char* submodule_dir,
                                  __FILE__, __LINE__, essentials_verilog_file_name); 
     exit(1);
   } 
-  dump_verilog_file_header(fp,"Essential gates");
+  dump_verilog_file_header(fp,"Essential gates"); 
+
+  dump_verilog_preproc(fp, include_timing);
 
   /* Output essential models*/
   for (imodel = 0; imodel < num_spice_model; imodel++) {
@@ -2518,6 +2522,8 @@ void dump_verilog_submodule_luts(char* submodule_dir,
     exit(1);
   } 
   dump_verilog_file_header(fp,"Look-Up Tables");
+
+  dump_verilog_preproc(fp, include_timing);
 
   /* Search for each LUT spice model */
   for (imodel = 0; imodel < num_spice_model; imodel++) {

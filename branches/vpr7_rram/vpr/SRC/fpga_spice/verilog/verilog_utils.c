@@ -155,11 +155,29 @@ void dump_verilog_file_header(FILE* fp,
   fprintf(fp,"//    Description: %s \n",usage);
   fprintf(fp,"//           Author: Xifan TANG              \n");
   fprintf(fp,"//        Organization: EPFL/IC/LSI          \n");
-  fprintf(fp,"//    Date: %s \n",my_gettime());
+  fprintf(fp,"//    Date: %s \n", my_gettime());
   fprintf(fp,"//-------------------------------------------\n");
   fprintf(fp,"//----- Time scale -----\n");
   fprintf(fp,"`timescale 1ns / 1ps\n");
   fprintf(fp,"\n");
+
+  return;
+}
+
+/* Dump preproc */
+void dump_verilog_preproc(FILE* fp, 
+                          boolean include_timing) {
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d]) FileHandle is NULL!\n",__FILE__,__LINE__); 
+    exit(1);
+  } 
+
+  /* To enable timing */
+  if (TRUE == include_timing) {
+    fprintf(fp, "`define %s 1\n", verilog_timing_preproc_flag);
+    fprintf(fp, "\n");
+  } 
 
   return;
 }
