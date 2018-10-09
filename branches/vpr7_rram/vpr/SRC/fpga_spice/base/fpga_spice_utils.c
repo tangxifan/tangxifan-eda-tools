@@ -330,6 +330,83 @@ void config_spice_model_port_inv_spice_model(int num_spice_models,
   return;
 }
 
+/* Find a spice model port by given name */
+t_spice_model_port* find_spice_model_port_by_name(t_spice_model* cur_spice_model,
+                                                  char* port_name) {
+  int iport;
+  t_spice_model_port* port = NULL;
+  int cnt = 0;
+
+  for (iport = 0; iport < cur_spice_model->num_port; iport) {
+    if (0 == strcmp(cur_spice_model->ports[iport].prefix, port_name)) {
+      port = &(cur_spice_model->ports[iport]);
+      cnt++; 
+    }
+  }
+
+  assert ((0 == cnt) || (1 == cnt));
+
+  return port;
+}
+
+/* Build the list of spice_model_ports provided in the cur_spice_model delay_info */
+t_spice_model_port** get_spice_model_delay_info_ports(t_spice_model* cur_spice_model, 
+                                                      char* port_list,
+                                                      int* num_port) {
+  int itok;
+  int num_token = 0;
+  char** tokens = NULL;
+  t_spice_model_port** port = NULL;
+
+  /* Get input ports */
+  tokens = fpga_spice_strtok(port_list, " ", &num_token); 
+  /* allocate in_port */
+  port = (t_spice_model_port**) my_malloc(sizeof(t_spice_model_port*) * num_token);
+  /* Find corresponding spice_model_port */
+  for (itok = 0; itok < num_token; itok++) {
+    port[itok] = find_spice_model_port_by_name(cur_spice_model, tokens[itok]);
+    /* Error out if we cannot find a port */
+    if (NULL == port[itok]) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Fail to find a port listed in delay_info (port_name=%s)!\n",
+                 __FILE__, __LINE__, tokens[itok]);
+      exit(1);
+    }
+    /* TODO: Error out if port type does not match */
+  }
+
+  /* give return value */
+  (*num_port) = num_token; 
+
+  return port; 
+}
+
+/* Build timing graph for a spice_model */
+void annotate_spice_model_timing(t_spice_model* cur_spice_model) {
+  int i;
+  int num_in_port = 0;
+  t_spice_model_port** in_port = NULL;
+  int num_out_port = 0;
+  t_spice_model_port** out_port = NULL;
+  float** delay_matrix = NULL;
+  t_spice_model_tedge** tedge = NULL;
+
+  /* check */
+  assert ( 0 < cur_spice_model->num_delay_info );
+
+  /* Parse each delay_info */ 
+  for (i = 0; i < cur_spice_model->num_delay_info; i++) {
+    /* Get input and output ports */
+    in_port = get_spice_model_delay_info_ports(cur_spice_model, cur_spice_model->delay_info[i].in_port_name, &num_in_port);
+    out_port = get_spice_model_delay_info_ports(cur_spice_model, cur_spice_model->delay_info[i].out_port_name, &num_out_port);
+    /* TODO: create fpga_spice atof_2D !!! */
+    my_atof_2D(delay_matrix, num_in_port, num_out_port, cur_spice_model->delay_info[i].value);
+    /* Allocate timing edges for this spice_model */
+    /* TODO: consider the size of each port!!! */
+    tedge = (t_spice_model_tedge**) my_malloc(sizeof(t_spice_model_tedge*) * num_in_port);
+  }
+
+  return;
+}
 
 
 /* Tasks: 
@@ -757,16 +834,14 @@ int* my_decimal2binary(int decimal,
 
 char** fpga_spice_strtok(char* str, 
                          char* delims, 
-                         int* len)
-{
+                         int* len) {
   char** ret;
   char* result;
   int cnt=0;
   int* lens;
   char* tmp;
 
-  if (NULL == str)
-  {
+  if (NULL == str) {
     printf("Warning: NULL string found in my_strtok!\n");
     return NULL;
   }
@@ -774,8 +849,7 @@ char** fpga_spice_strtok(char* str,
   tmp = my_strdup(str);
   result = strtok(tmp,delims);
   /*First scan to determine the size*/
-  while(result != NULL)
-  {
+  while(result != NULL) {
     cnt++;
     /* strtok split until its buffer is NULL*/
     result = strtok(NULL,delims); 
@@ -788,8 +862,7 @@ char** fpga_spice_strtok(char* str,
   cnt = 0;
   memcpy(tmp,str,strlen(str)+1);
   result = strtok(tmp,delims);  
-  while(result != NULL)
-  {
+  while(result != NULL) {
     lens[cnt] = strlen(result)+1;
     //printf("lens[%d]=%d .",cnt,lens[cnt]);
     cnt++;
@@ -801,8 +874,7 @@ char** fpga_spice_strtok(char* str,
   cnt = 0;
   memcpy(tmp,str,strlen(str)+1);
   result = strtok(tmp,delims);  
-  while(result != NULL)
-  {
+  while(result != NULL) {
     //printf("results[%d] = %s ",cnt,result);
     ret[cnt] = my_strdup(result);
     cnt++;

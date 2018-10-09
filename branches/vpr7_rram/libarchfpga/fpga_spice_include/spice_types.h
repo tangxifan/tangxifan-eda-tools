@@ -4,8 +4,14 @@
 
 /* Xifan TANG: Spice support*/
 enum e_spice_tech_lib_type {
-  SPICE_LIB_INDUSTRY,SPICE_LIB_ACADEMIA
+  SPICE_LIB_INDUSTRY,
+  SPICE_LIB_ACADEMIA
 };
+
+enum spice_model_delay_type {
+  SPICE_MODEL_DELAY_RISE, 
+  SPICE_MODEL_DELAY_FALL
+}
 
 /*Struct for a SPICE model of a module*/
 enum e_spice_model_type {
@@ -40,13 +46,17 @@ enum e_spice_model_buffer_type {
 };
 
 enum e_spice_model_pass_gate_logic_type {
-  SPICE_MODEL_PASS_GATE_TRANSMISSION, SPICE_MODEL_PASS_GATE_TRANSISTOR
+  SPICE_MODEL_PASS_GATE_TRANSMISSION, 
+  SPICE_MODEL_PASS_GATE_TRANSISTOR
 };
 
 
 /* Transistor-level basic informations*/
 enum e_spice_trans_type {
-  SPICE_TRANS_NMOS, SPICE_TRANS_PMOS, SPICE_TRANS_IO_NMOS, SPICE_TRANS_IO_PMOS
+  SPICE_TRANS_NMOS, 
+  SPICE_TRANS_PMOS, 
+  SPICE_TRANS_IO_NMOS, 
+  SPICE_TRANS_IO_PMOS
 };
 
 enum e_wire_model_type {
@@ -88,12 +98,15 @@ enum e_spice_ff_trigger_type {
 };
 
 enum e_spice_mux_tb_type {
-  SPICE_CB_MUX_TB, SPICE_SB_MUX_TB, SPICE_PB_MUX_TB 
+  SPICE_CB_MUX_TB, 
+  SPICE_SB_MUX_TB, 
+  SPICE_PB_MUX_TB 
 };
 
 
 enum e_spice_pin2pin_interc_type {
- INPUT2INPUT_INTERC, OUTPUT2OUTPUT_INTERC
+  INPUT2INPUT_INTERC, 
+  OUTPUT2OUTPUT_INTERC
 };
 
 /* typedef of structs */
@@ -106,6 +119,7 @@ typedef struct s_spice_model_wire_param t_spice_model_wire_param;
 typedef struct s_spice_model_tedge t_spice_model_tedge;
 typedef struct s_spice_model_netlist t_spice_model_netlist;
 typedef struct s_spice_model_design_tech_info t_spice_model_design_tech_info;
+typedef struct s_spice_model_delay_info t_spice_model_delay_info;
 typedef struct s_spice_model t_spice_model;
 typedef struct s_spice_meas_params t_spice_meas_params;
 typedef struct s_spice_stimulate_params t_spice_stimulate_params;
@@ -236,6 +250,13 @@ struct s_spice_model_design_tech_info {
   boolean frac_lut;
 };
 
+struct s_spice_model_delay_info {
+  enum spice_model_delay_type type;
+  char* in_port_name;
+  char* out_port_name;
+  char* value; 
+};
+
 struct s_spice_model {
   enum e_spice_model_type type;
   char* name;
@@ -260,6 +281,10 @@ struct s_spice_model {
   /* Ports*/
   int num_port;
   t_spice_model_port* ports;
+
+  /* Delay matrix */
+  int num_delay_info;
+  t_spice_model_delay_info* delay_info;
 
   /* Wire Model*/
   t_spice_model_wire_param* wire_param;

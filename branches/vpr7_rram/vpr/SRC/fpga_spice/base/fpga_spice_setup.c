@@ -583,6 +583,15 @@ void init_check_arch_spice_models(t_arch* arch,
     }
   }
 
+  /* 7. Create timing graph for spice models */
+  for (i = 0; i < arch->spice->num_spice_model; i++) {
+    /* See if we need a timing graph */
+    if (0 == arch->spice->spice_models[i].num_delay_info) {
+      continue;
+    }
+    annotate_spice_model_timing(&(arch->spice->spice_models[i]));
+  }
+
   return;
 }
 

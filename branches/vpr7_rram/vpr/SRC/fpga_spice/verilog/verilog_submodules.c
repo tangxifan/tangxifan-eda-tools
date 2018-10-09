@@ -34,10 +34,54 @@
 #include "verilog_pbtypes.h"
 #include "verilog_decoder.h"
 
+
+void dump_verilog_submodule_timing(FILE* fp,
+                                   t_spice_model* cur_spice_model) {
+  int iport, ipin, iedge;
+  int num_input_port;
+  t_spice_model_port** input_port= NULL;
+
+  input_port = find_spice_model_ports(invbuf_spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+
+  /* Return if there is no input ports */
+  if (0 == num_input_port) {
+    return;
+  }
+
+  /* Ensure a valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File handler.\n",
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  fprintf(fp, "  //------ BEGIN Pin-to-pin Timing constraints -----\n");
+  fprintf(fp, "  specify\n");
+  /* Give pin-to-pin delays */
+  /* Enumerate timing edges of each input ports */
+  for (iport = 0; iport < num_input_port; iport++) {
+    for (ipin = 0; ipin < input_port[iport]->size; ipin++) {
+      for (iedge = 0; iedge < input_port[iport]->num_tedges[ipin]; iedge++) {
+        fprintf(fp, "(%s[%d] => %s[%d]) = (%.2f, %.2f);\n",
+                input_port[iport]->prefix, ipin,
+                input_port[iport]->tedge[ipin][iedge]->to_port->prefix,
+                input_port[iport]->tedge[ipin][iedge]->to_port_pin_number,
+                input_port[iport]->tedge[ipin][iedge]->trise,
+                input_port[iport]->tedge[ipin][iedge]->tfall);
+      }
+    }
+  }
+  fprintf(fp, "  endspecify\n");
+  fprintf(fp, "  //------ END Pin-to-pin Timing constraints -----\n");
+
+  return;
+}
+
 /***** Subroutines *****/
 /* Dump a module of inverter or buffer or tapered buffer */
 void dump_verilog_invbuf_module(FILE* fp,
-                                t_spice_model* invbuf_spice_model) {
+                                t_spice_model* invbuf_spice_model,
+                                boolean include_timing) {
   int ipin, iport, port_cnt;
   int num_input_port = 0;
   int num_output_port = 0;
@@ -236,6 +280,11 @@ void dump_verilog_invbuf_module(FILE* fp,
     exit(1);
   }
 
+  /* Print timing info */
+  if (TRUE == include_timing) {
+    dump_verilog_submodule_timing(fp, invbuf_spice_model);
+  }
+
   fprintf(fp, "endmodule\n");
 
   fprintf(fp, "\n");
@@ -249,7 +298,8 @@ void dump_verilog_invbuf_module(FILE* fp,
 
 /* Dump a module of pass-gate logic */
 void dump_verilog_passgate_module(FILE* fp,
-                                  t_spice_model* passgate_spice_model) {
+                                  t_spice_model* passgate_spice_model,
+                                  boolean include_timing) {
   int iport;
   int num_input_port = 0;
   int num_output_port = 0;
@@ -327,6 +377,11 @@ void dump_verilog_passgate_module(FILE* fp,
   fprintf(fp, "assign %s = sel? in : 1'bz;\n",
               output_port[0]->prefix);
 
+  /* Print timing info */
+  if (TRUE == include_timing) {
+    dump_verilog_submodule_timing(fp, passgate_spice_model);
+  }
+
   fprintf(fp, "endmodule\n");
 
   fprintf(fp, "\n");
@@ -345,7 +400,8 @@ void dump_verilog_passgate_module(FILE* fp,
  * 3. pass-gate logics */
 void dump_verilog_submodule_essentials(char* submodule_dir,
                                        int num_spice_model,
-                                       t_spice_model* spice_models) {
+                                       t_spice_model* spice_models,
+                                       boolean include_timing) {
   int imodel; 
   char* verilog_name = my_strcat(submodule_dir, essentials_verilog_file_name);
   FILE* fp = NULL;
@@ -366,10 +422,10 @@ void dump_verilog_submodule_essentials(char* submodule_dir,
       continue;
     }
     if (SPICE_MODEL_INVBUF == spice_models[imodel].type) {
-      dump_verilog_invbuf_module(fp, &(spice_models[imodel]));
+      dump_verilog_invbuf_module(fp, &(spice_models[imodel]), include_timing);
     }
     if (SPICE_MODEL_PASSGATE == spice_models[imodel].type) {
-      dump_verilog_passgate_module(fp, &(spice_models[imodel]));
+      dump_verilog_passgate_module(fp, &(spice_models[imodel]), include_timing);
     }
   }
 
@@ -2356,24 +2412,9 @@ void dump_verilog_submodule_one_lut(FILE* fp,
   /* End of call LUT MUX */
   fprintf(fp, ");\n");
 
-  /* Give timing information */
+  /* Print timing info */
   if (TRUE == include_timing) {
-    fprintf(fp, "  specify\n");
-    /* Give pin-to-pin delays */
-    /* Enumerate timing edges of each input ports */
-    for (iport = 0; iport < num_input_port; iport++) {
-      for (ipin = 0; ipin < input_port[iport]->size; ipin++) {
-        for (iedge = 0; iedge < input_port[iport]->num_tedges[ipin]; iedge++) {
-          fprintf(fp, "(%s[%d] => %s[%d]) = (%.2f, %.2f);\n",
-                  input_port[iport]->prefix, ipin,
-                  input_port[iport]->tedge[ipin][iedge]->to_port->prefix,
-                  input_port[iport]->tedge[ipin][iedge]->to_port_pin_number,
-                  input_port[iport]->tedge[ipin][iedge]->trise,
-                  input_port[iport]->tedge[ipin][iedge]->tfall);
-        }
-      }
-    }
-    fprintf(fp, "  endspecify\n");
+    dump_verilog_submodule_timing(fp, passgate_spice_model);
   }
 
   /* Print end of module */
@@ -2761,7 +2802,8 @@ void dump_verilog_submodules(t_sram_orgz_info* cur_sram_orgz_info,
   vpr_printf(TIO_MESSAGE_INFO, "Generating essential modules...\n");
   dump_verilog_submodule_essentials(submodule_dir, 
                                     Arch.spice->num_spice_model, 
-                                    Arch.spice->spice_models);
+                                    Arch.spice->spice_models,
+                                    include_timing);
 
   /* 1. MUXes */
   vpr_printf(TIO_MESSAGE_INFO, "Generating modules of multiplexers...\n");

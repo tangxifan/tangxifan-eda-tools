@@ -31,6 +31,8 @@ t_spice_model* get_default_spice_model(enum e_spice_model_type default_spice_mod
                                        int num_spice_model,
                                        t_spice_model* spice_models);
 
+void annotate_spice_model_timing(t_spice_model* cur_spice_model);
+
 void config_spice_model_input_output_buffers_pass_gate(int num_spice_models, 
                                                        t_spice_model* spice_model);
 

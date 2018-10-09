@@ -54,7 +54,7 @@ char* complete_truth_table_line(int lut_size,
   /* Sometimes, the truth table is ' 0' or ' 1', which corresponds to a constant */
   if (1 == num_token) {
     /* restore the token[0]*/
-    tokens = (char**)realloc(tokens, 2*sizeof(char*));
+    tokens = (char**)realloc(tokens, 2 * sizeof(char*));
     tokens[1] = tokens[0];
     tokens[0] = my_strdup("-");
     num_token = 2;
