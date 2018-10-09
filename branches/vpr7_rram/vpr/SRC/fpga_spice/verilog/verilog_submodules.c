@@ -67,12 +67,12 @@ void dump_verilog_submodule_timing(FILE* fp,
   for (iport = 0; iport < num_input_port; iport++) {
     for (ipin = 0; ipin < input_port[iport]->size; ipin++) {
       for (iedge = 0; iedge < input_port[iport]->num_tedges[ipin]; iedge++) {
-        fprintf(fp, "(%s[%d] => %s[%d]) = (%.2f, %.2f);\n",
+        fprintf(fp, "(%s[%d] => %s[%d]) = (%.2g, %.2g);\n",
                 input_port[iport]->prefix, ipin,
                 input_port[iport]->tedge[ipin][iedge]->to_port->prefix,
                 input_port[iport]->tedge[ipin][iedge]->to_port_pin_number,
-                input_port[iport]->tedge[ipin][iedge]->trise,
-                input_port[iport]->tedge[ipin][iedge]->tfall);
+                input_port[iport]->tedge[ipin][iedge]->trise / verilog_sim_timescale,
+                input_port[iport]->tedge[ipin][iedge]->tfall / verilog_sim_timescale);
       }
     }
   }

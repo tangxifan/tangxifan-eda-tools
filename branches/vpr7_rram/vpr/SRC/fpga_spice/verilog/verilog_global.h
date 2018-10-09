@@ -1,6 +1,7 @@
 /* global parameters for dumping synthesizable verilog */
 
 extern char* verilog_netlist_file_postfix;
+extern float verilog_sim_timescale;
 
 extern char* default_verilog_dir_name;
 extern char* default_lb_dir_name;

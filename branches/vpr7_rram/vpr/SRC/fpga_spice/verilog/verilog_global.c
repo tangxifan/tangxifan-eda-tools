@@ -9,6 +9,7 @@
 #include "verilog_global.h"
 
 char* verilog_netlist_file_postfix = ".v";
+float verilog_sim_timescale = 1e-9; // Verilog Simulation time scale (minimum time unit) : 1ns
 
 char* default_verilog_dir_name = "syn_verilogs/";
 char* default_lb_dir_name = "lb/";

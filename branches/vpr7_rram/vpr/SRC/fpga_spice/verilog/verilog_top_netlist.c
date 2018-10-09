@@ -39,7 +39,6 @@
 #include "verilog_decoder.h"
 #include "verilog_top_netlist.h"
 
-static float verilog_sim_timescale = 1e-9; // Verilog Simulation time scale (minimum time unit) : 1ns
 static char* top_tb_reset_port_name = "greset";
 static char* top_tb_set_port_name = "gset";
 static char* top_tb_prog_reset_port_name = "prog_reset";
