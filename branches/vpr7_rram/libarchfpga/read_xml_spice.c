@@ -677,8 +677,8 @@ void ProcessSpiceModelDelayInfo(ezxml_t Node,
   ezxml_set_attr(Node, "out_port", NULL);
 
   /* Find delay matrix */
-  cur_delay_info->value = my_strdup(Parent->txt);
-  ezxml_set_txt(Parent, "");
+  cur_delay_info->value = my_strdup(Node->txt);
+  ezxml_set_txt(Node, "");
 
   return;
 }

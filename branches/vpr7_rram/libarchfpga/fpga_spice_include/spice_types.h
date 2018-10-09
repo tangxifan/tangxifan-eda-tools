@@ -11,7 +11,7 @@ enum e_spice_tech_lib_type {
 enum spice_model_delay_type {
   SPICE_MODEL_DELAY_RISE, 
   SPICE_MODEL_DELAY_FALL
-}
+};
 
 /*Struct for a SPICE model of a module*/
 enum e_spice_model_type {
@@ -210,7 +210,7 @@ struct s_spice_model_port {
   int lut_frac_level;
   int* lut_output_mask;
   /* Timing edeges linked to other t_model_ports */
-  int* num_tedges; /* 1-D Array, show tedges of each pin */
+  int* num_tedges; /* 1-D Array, show number of tedges of each pin */
   t_spice_model_tedge*** tedge; /* 3-D array, considering the each pin in this port, [pin_number][num_edges[iedge]] is an edge pointor */
 };
 

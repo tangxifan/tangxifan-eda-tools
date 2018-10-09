@@ -41,7 +41,12 @@ void dump_verilog_submodule_timing(FILE* fp,
   int num_input_port;
   t_spice_model_port** input_port= NULL;
 
-  input_port = find_spice_model_ports(invbuf_spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+  input_port = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+
+  /* return if there is no delay info */
+  if ( 0 == cur_spice_model->num_delay_info) {
+    return;
+  }
 
   /* Return if there is no input ports */
   if (0 == num_input_port) {
@@ -132,8 +137,8 @@ void dump_verilog_invbuf_module(FILE* fp,
     fprintf(fp, ",\n");
   }
   /* Dump ports */
-  fprintf(fp, "input %s,\n", input_port[0]->prefix);
-  fprintf(fp, "output %s\n", output_port[0]->prefix);
+  fprintf(fp, "input [0:0] %s,\n", input_port[0]->prefix);
+  fprintf(fp, "output [0:0] %s\n", output_port[0]->prefix);
   fprintf(fp, ");\n");
   /* Finish dumping ports */
 
@@ -343,10 +348,10 @@ void dump_verilog_passgate_module(FILE* fp,
       assert(1 == input_port[iport]->size);
     }
     /* Dump ports */
-    fprintf(fp, "input in,\n");
-    fprintf(fp, "input sel,\n");
-    fprintf(fp, "input selb,\n");
-    fprintf(fp, "output %s\n", output_port[0]->prefix);
+    fprintf(fp, "input [0:0] in,\n");
+    fprintf(fp, "input [0:0] sel,\n");
+    fprintf(fp, "input [0:0] selb,\n");
+    fprintf(fp, "output [0:0] %s\n", output_port[0]->prefix);
     fprintf(fp, ");\n");
     /* Finish dumping ports */
 
@@ -361,9 +366,9 @@ void dump_verilog_passgate_module(FILE* fp,
       assert(1 == input_port[iport]->size);
     }
     /* Dump ports */
-    fprintf(fp, "input in,\n");
-    fprintf(fp, "input sel,\n");
-    fprintf(fp, "output %s\n", output_port[0]->prefix);
+    fprintf(fp, "input [0:0] in,\n");
+    fprintf(fp, "input [0:0] sel,\n");
+    fprintf(fp, "output [0:0] %s\n", output_port[0]->prefix);
     fprintf(fp, ");\n");
     /* Finish dumping ports */
     break;
@@ -2414,7 +2419,7 @@ void dump_verilog_submodule_one_lut(FILE* fp,
 
   /* Print timing info */
   if (TRUE == include_timing) {
-    dump_verilog_submodule_timing(fp, passgate_spice_model);
+    dump_verilog_submodule_timing(fp, verilog_model);
   }
 
   /* Print end of module */
