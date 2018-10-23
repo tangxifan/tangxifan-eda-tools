@@ -476,7 +476,7 @@
         </interconnect>
       </mode>
       <mode name="outpad">
-        <pb_type name="outpad" blif_model=".output" num_pb="1" physical_pb_type_name="iopad" mode_bits="1">
+        <pb_type name="outpad" blif_model=".output" num_pb="1" physical_pb_type_name="iopad" mode_bits="0">
           <input name="outpad" num_pins="1" physical_mode_pin="outpad"/>
         </pb_type>
         <interconnect>

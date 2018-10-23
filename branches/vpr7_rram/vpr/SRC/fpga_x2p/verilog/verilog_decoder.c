@@ -245,13 +245,17 @@ void dump_verilog_decoder(FILE* fp,
 static 
 void dump_verilog_standalone_sram_config_module(FILE* fp,
                                                 t_sram_orgz_info* cur_sram_orgz_info) {
-  int i;
+  int i, num_mem_bits;
+
   /* Check */
   assert(SPICE_SRAM_STANDALONE == cur_sram_orgz_info->type);
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File handler!",__FILE__, __LINE__); 
     exit(1);
   } 
+
+  /* Get the total memory bits */
+  num_mem_bits = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info);
 
   /* Dump each SRAM */
   fprintf(fp, "//------ Configuration Peripheral for Standalone SRAMs -----\n");
@@ -260,15 +264,15 @@ void dump_verilog_standalone_sram_config_module(FILE* fp,
   /* Dump port map*/
   fprintf(fp, "input %s_in[%d:%d],\n",
               sram_verilog_model->prefix, 
-              0, sram_verilog_model->cnt - 1);
+              0, num_mem_bits - 1);
   fprintf(fp, "output %s_out[%d:%d],\n",
               sram_verilog_model->prefix, 
-              0, sram_verilog_model->cnt - 1);
+              0, num_mem_bits - 1);
   fprintf(fp, "output %s_outb[%d:%d]);\n",
               sram_verilog_model->prefix, 
-              0, sram_verilog_model->cnt - 1);
+              0, num_mem_bits - 1);
 
-  for (i = 0; i < sram_verilog_model->cnt; i++) {
+  for (i = 0; i < num_mem_bits; i++) {
     /* Input and 2 outputs */
     fprintf(fp, "assign %s_out[%d] = %s_in[%d];\n",
             sram_verilog_model->prefix, i,
@@ -288,7 +292,8 @@ void dump_verilog_standalone_sram_config_module(FILE* fp,
 static 
 void dump_verilog_scan_chain_config_module(FILE* fp,
                                     t_sram_orgz_info* cur_sram_orgz_info) {
-  int i;
+  int i, num_mem_bits;
+
   /* Check */
   assert(SPICE_SRAM_SCAN_CHAIN == cur_sram_orgz_info->type);
   if (NULL == fp) {
@@ -296,18 +301,35 @@ void dump_verilog_scan_chain_config_module(FILE* fp,
     exit(1);
   } 
 
+  /* Get the total memory bits */
+  num_mem_bits = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info);
+
   /* Dump each Scan-chain FF */
   fprintf(fp, "//------ Configuration Peripheral for Scan-chain FFs -----\n");
   fprintf(fp, "module %s (\n", 
               verilog_config_peripheral_prefix);
   /* Port map definition */
-  dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 0, sram_verilog_model->cnt - 1, 0, VERILOG_PORT_INPUT);
+  /* Scan-chain input*/
+  dump_verilog_generic_port(fp, VERILOG_PORT_INPUT,
+                            top_netlist_scan_chain_head_prefix, 0, 0);
   fprintf(fp, ",\n");
-  dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 0, sram_verilog_model->cnt - 1, 1, VERILOG_PORT_INPUT);
+  /* Scan-chain regular inputs */
+  dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 0, num_mem_bits - 1, 0, VERILOG_PORT_INPUT);
+  fprintf(fp, ",\n");
+  dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 0, num_mem_bits - 1, 1, VERILOG_PORT_INPUT);
   fprintf(fp, ");\n");
 
+  /* Connect scan-chain input to the first scan-chain input */
+  fprintf(fp, "        ");
+  fprintf(fp, "assign ");
+  dump_verilog_generic_port(fp, VERILOG_PORT_CONKT,
+                            top_netlist_scan_chain_head_prefix, 0, 0);
+  fprintf(fp, " = ");
+  dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 0, 0, 0, VERILOG_PORT_CONKT);
+  fprintf(fp, ";\n");
+
   /* Verilog Module body */
-  for (i = 0; i < sram_verilog_model->cnt; i++) {
+  for (i = 0; i < num_mem_bits; i++) {
     /* Connect the head of current scff to the tail of previous scff*/
     if (0 < i) {
       fprintf(fp, "        ");
