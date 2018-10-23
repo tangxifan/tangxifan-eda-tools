@@ -1528,6 +1528,8 @@ void dump_verilog_top_testbench_ports(t_sram_orgz_info* cur_sram_orgz_info,
       assert((VPACK_INPAD == logical_block[iblock].type)||(VPACK_OUTPAD == logical_block[iblock].type));
       fprintf(fp, "//----- Blif Benchmark inout %s is mapped to FPGA IOPAD %s[%d] -----\n", 
               logical_block[iblock].name, gio_inout_prefix, iopad_idx);
+      fprintf(fp, "//-----  name_tag: %s -----\n", 
+              logical_block[iblock].pb->spice_name_tag);
       fprintf(fp, "wire %s_%s_%d_;\n",
               logical_block[iblock].name, gio_inout_prefix, iopad_idx);
       fprintf(fp, "assign %s_%s_%d_ = %s%s[%d];\n",

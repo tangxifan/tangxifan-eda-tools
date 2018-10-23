@@ -198,8 +198,8 @@ void gen_spice_name_tags_all_pbs() {
   char* prefix = NULL;
 
   for (iblk = 0; iblk < num_blocks; iblk++) {
-    prefix = (char*)my_malloc(sizeof(char)*(5 + strlen(my_itoa(block[iblk].x)) + 2 + strlen(my_itoa(block[iblk].y)) + 2));
-    sprintf(prefix, "grid[%d][%d]", block[iblk].x, block[iblk].y);
+    prefix = (char*)my_malloc(sizeof(char)*(5 + strlen(my_itoa(block[iblk].x)) + 2 + strlen(my_itoa(block[iblk].y)) + 2 + strlen(my_itoa(block[iblk].z)) + 2));
+    sprintf(prefix, "grid[%d][%d][%d]", block[iblk].x, block[iblk].y, block[iblk].z);
     gen_spice_name_tag_pb_rec(block[iblk].pb, prefix);
     my_free(prefix);
   }
