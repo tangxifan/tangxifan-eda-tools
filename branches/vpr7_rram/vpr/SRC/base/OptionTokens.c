@@ -57,6 +57,10 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ "power_output_file", OT_POWER_OUT_FILE }, /* Output file for power results */
 		{ "power", OT_POWER }, /* Run power estimation? */
 		{ "tech_properties", OT_CMOS_TECH_BEHAVIOR_FILE }, /* Technology properties */
+        /* General FPGA_X2P: FPGA-SPICE/Verilog/Bitstream Options */
+        { "fpga_x2p_rename_illegal_port", OT_FPGA_X2P_RENAME_ILLEGAL_PORT }, /* Xifan TANG: rename illegal port names */
+        { "fpga_x2p_signal_density_weight", OT_FPGA_X2P_SIGNAL_DENSITY_WEIGHT }, /* The weight of signal density */
+        { "fpga_x2p_sim_window_size", OT_FPGA_X2P_SIM_WINDOW_SIZE }, /* Window size in determining number of clock cycles in simulation */
         /* Xifan TANG: FPGA SPICE Support */
         { "fpga_spice", OT_FPGA_SPICE },/* Xifan TANG: SPICE Model Support, turn on the functionality*/
         { "fpga_spice_dir", OT_FPGA_SPICE_DIR },/* Xifan TANG: SPICE Model Support, directory of spice netlists*/
@@ -72,6 +76,8 @@ struct s_TokenPair OptionBaseTokenList[] = {
         { "fpga_spice_leakage_only", OT_FPGA_SPICE_LEAKAGE_ONLY }, /* Only simulate leakage power in FPGA SPICE */
         { "fpga_spice_parasitic_net_estimation", OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION}, /* Xifan TANG: turn on/off the parasitic net estimation*/
         { "fpga_spice_testbench_load_extraction", OT_FPGA_SPICE_TESTBENCH_LOAD_EXTRACTION}, /* Xifan TANG: turn on/off the parasitic net estimation*/
+        { "fpga_spice_simulator_path", OT_FPGA_SPICE_SIMULATOR_PATH}, /* Specify simulator path for SPICE netlists */
+        { "fpga_spice_sim_mt_num", OT_FPGA_SPICE_SIM_MT_NUM }, /* number of multi-thread used in simulation */
         /* Xifan TANG: Synthsizable Verilog */
         { "fpga_verilog", OT_FPGA_VERILOG_SYN },
         { "fpga_verilog_dir", OT_FPGA_VERILOG_SYN_DIR },
@@ -79,10 +85,7 @@ struct s_TokenPair OptionBaseTokenList[] = {
         { "fpga_verilog_print_input_blif_testbench", OT_FPGA_VERILOG_SYN_PRINT_INPUT_BLIF_TESTBENCH },
         { "fpga_verilog_verification_netlist", OT_FPGA_VERILOG_SYN_VERIFICATION_NETLIST },
         { "fpga_verilog_include_timing", OT_FPGA_VERILOG_SYN_INCLUDE_TIMING }, /* Include timing constraints in Verilog netlists */
-        { "fpga_spice_rename_illegal_port", OT_FPGA_SPICE_RENAME_ILLEGAL_PORT }, /* Xifan TANG: rename illegal port names */
-        { "fpga_spice_signal_density_weight", OT_FPGA_SPICE_SIGNAL_DENSITY_WEIGHT }, /* The weight of signal density */
-        { "fpga_spice_sim_window_size", OT_FPGA_SPICE_SIM_WINDOW_SIZE }, /* Window size in determining number of clock cycles in simulation */
-        { "fpga_spice_sim_mt_num", OT_FPGA_SPICE_SIM_MT_NUM }, /* number of multi-thread used in simulation */
+        { "fpga_verilog_simulator_path", OT_FPGA_VERILOG_SYN_SIMULATOR_PATH }, /* Specify the simulator path for Verilog netlists */
         /* Xifan Tang: Bitstream generator */
         { "fpga_bitstream_generator", OT_FPGA_BITSTREAM_GENERATOR }, /* turn on bitstream generator, and specify the output file */
         { "fpga_bitstream_output_file", OT_FPGA_BITSTREAM_OUTPUT_FILE }, /* turn on bitstream generator, and specify the output file */

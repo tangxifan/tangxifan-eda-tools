@@ -42,6 +42,7 @@ static char* run_hspice_shell_script_name = "run_hspice_sim.sh";
 static char* sim_results_dir_name = "results/";
 
 void fprint_run_hspice_shell_script(t_spice spice,
+                                    char* spice_simulator_path,
                                     char* spice_dir_path,
                                     char* subckt_dir_path) {
   FILE* fp = NULL;
@@ -63,7 +64,9 @@ void fprint_run_hspice_shell_script(t_spice spice,
   /* Check if the path exists*/
   fp = fopen(shell_script_path,"w");
   if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in create Shell Script for running HSPICE %s!",__FILE__, __LINE__, shell_script_path); 
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Failure in create Shell Script for running HSPICE %s!",
+               __FILE__, __LINE__, shell_script_path); 
     exit(1);
   } 
 
@@ -72,7 +75,13 @@ void fprint_run_hspice_shell_script(t_spice spice,
   /* For VerilogA initilization */
   if (1 == rram_design_tech) {
     fprintf(fp, "cd %s\n", subckt_dir_path);
-    fprintf(fp, "source /uusoc/facility/cad_common/Synopsys/hspice_vM-2017.03/hspice/bin/cshrc.meta\n");
+    /* Error out when there is no specified simulator path */
+    if (NULL == spice_simulator_path) {
+      vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])SPICE simulator path must be specified when RRAM tech is used!", 
+                                   __FILE__, __LINE__); 
+      exit(1);
+    }
+    fprintf(fp, "source %s/cshrc.meta\n", spice_simulator_path);
   }
 
   total_num_sim = 0;
@@ -90,24 +99,32 @@ void fprint_run_hspice_shell_script(t_spice spice,
     num_sim_clock_cycle = ((t_spicetb_info*)(temp->dptr))->num_sim_clock_cycles;
     chomped_testbench_file = chomp_file_name_postfix(testbench_file);
     split_path_prog_name(chomped_testbench_file,'/',&chomped_testbench_path ,&chomped_testbench_name);
-    fprintf(fp, "echo Number of clock cycles in simulation: %d\n", num_sim_clock_cycle);
-    fprintf(fp, "echo Simulation progress: %d Finish, %d to go, total %d\n",
-            progress_cnt, total_num_sim-progress_cnt, total_num_sim);
+    fprintf(fp, "echo \"Number of clock cycles in simulation: %d\"\n", num_sim_clock_cycle);
+    fprintf(fp, "echo \"Simulation progress: %d Finish, %d to go, total %d\"\n",
+            progress_cnt, total_num_sim - progress_cnt, total_num_sim);
     progress_cnt++;
    
+    if (NULL != spice_simulator_path) {
+       fprintf(fp, "%s", spice_simulator_path); 
+    }
     fprintf(fp, "hspice64 -mt %d -i %s -o %s%s.lis ", 
             spice_sim_multi_thread_num,
             testbench_file, sim_results_dir_path, chomped_testbench_name);
     temp = temp->next;
     if (1 == rram_design_tech) {
-      fprintf(fp, "-hdlpath /uusoc/facility/cad_common/Synopsys/hspice_vM-2017.03/hspice/include\n");
+      if (NULL == spice_simulator_path) {
+        vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])SPICE simulator path must be specified when RRAM tech is used!", 
+                                     __FILE__, __LINE__); 
+        exit(1);
+      }
+      fprintf(fp, "-hdlpath %s/include\n", spice_simulator_path);
     } else { 
       fprintf(fp, "\n");
     }
   }
 
-  fprintf(fp, "echo Simulation progress: %d Finish, %d to go, total %d\n",
-          progress_cnt, total_num_sim-progress_cnt, total_num_sim);
+  fprintf(fp, "echo \"Simulation progress: %d Finish, %d to go, total %d\"\n",
+          progress_cnt, total_num_sim - progress_cnt, total_num_sim);
 
   if (1 == rram_design_tech) {
     fprintf(fp, "cd %s\n", spice_dir_path);

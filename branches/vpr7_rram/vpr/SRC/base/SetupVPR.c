@@ -1047,6 +1047,12 @@ static void SetupSpiceOpts(t_options Options,
     spice_opts->fpga_spice_sim_multi_thread_num = Options.fpga_spice_sim_mt_num;
   }
 
+  /* Assign path of SPICE simulator */
+  spice_opts->simulator_path = NULL;
+  if (Options.Count[OT_FPGA_SPICE_SIMULATOR_PATH]) {
+    spice_opts->simulator_path = my_strdup(Options.fpga_spice_simulator_path);
+  }
+
   /* If spice option is selected*/
   arch->read_xml_spice = spice_opts->do_spice;
   arch->spice = (t_spice*)my_malloc(sizeof(t_spice));
@@ -1065,6 +1071,7 @@ static void SetupSynVerilogOpts(t_options Options,
   syn_verilog_opts->dump_syn_verilog_top_testbench = FALSE;
   syn_verilog_opts->dump_syn_verilog_input_blif_testbench = FALSE;
   syn_verilog_opts->include_timing = FALSE;
+  syn_verilog_opts->simulator_path = NULL;
 
   /* Turn on Syn_verilog options */
   if (Options.Count[OT_FPGA_VERILOG_SYN]) {
@@ -1091,6 +1098,10 @@ static void SetupSynVerilogOpts(t_options Options,
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_INCLUDE_TIMING]) {
     syn_verilog_opts->include_timing = TRUE;
+  }
+
+  if (Options.Count[OT_FPGA_VERILOG_SYN_SIMULATOR_PATH]) {
+    syn_verilog_opts->simulator_path = my_strdup(Options.fpga_verilog_simulator_path);
   }
 
   /* SynVerilog needs the input from spice modeling */
@@ -1145,19 +1156,19 @@ static void SetupFpgaSpiceOpts(t_options Options,
 
   /* Decide if we need to rename illegal port names */
   fpga_spice_opts->rename_illegal_port = FALSE;
-  if (Options.Count[OT_FPGA_SPICE_RENAME_ILLEGAL_PORT]) {
+  if (Options.Count[OT_FPGA_X2P_RENAME_ILLEGAL_PORT]) {
     fpga_spice_opts->rename_illegal_port = TRUE;
   }
 
   /* Assign the weight of signal density */
   fpga_spice_opts->signal_density_weight = 1.;
-  if (Options.Count[OT_FPGA_SPICE_SIGNAL_DENSITY_WEIGHT]) { 
+  if (Options.Count[OT_FPGA_X2P_SIGNAL_DENSITY_WEIGHT]) { 
     fpga_spice_opts->signal_density_weight = Options.fpga_spice_signal_density_weight;
   }
 
   /* Assign the weight of signal density */
   fpga_spice_opts->sim_window_size = 0.5;
-  if (Options.Count[OT_FPGA_SPICE_SIM_WINDOW_SIZE]) { 
+  if (Options.Count[OT_FPGA_X2P_SIM_WINDOW_SIZE]) { 
     fpga_spice_opts->sim_window_size = Options.fpga_spice_sim_window_size;
   }
 

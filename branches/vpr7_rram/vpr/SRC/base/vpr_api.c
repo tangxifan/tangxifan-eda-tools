@@ -166,10 +166,10 @@ void vpr_print_usage(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "\t--tech_properties <tech_properties.xml>\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\n");
     /* Xifan TANG: FPGA-SPICE Support*/
-	vpr_printf(TIO_MESSAGE_INFO, "FPGA-SPICE tool suite Options:\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_rename_illegal_port\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_signal_density_weight <float>\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_sim_window_size <float>\n");
+	vpr_printf(TIO_MESSAGE_INFO, "FPGA-X2P (from XML to Product/Prototype) tool suite Options:\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_x2p_rename_illegal_port\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_x2p_signal_density_weight <float>\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_x2p_sim_window_size <float>\n");
 	vpr_printf(TIO_MESSAGE_INFO, "SPICE Support Options:\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_dir <directory_path_output_spice_netlists>\n");
@@ -183,9 +183,10 @@ void vpr_print_usage(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_print_sb_testbench\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_print_grid_testbench\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_leakage_only\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_parasitic_net_estimation_off\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_testbench_load_extraction_off\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_sim_mt_num\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_parasitic_net_estimation <on|off>\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_testbench_load_extraction <on|off>\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_sim_mt_num <int>\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_simulator_path <string>\n");
     /* Xifan TANG: Synthesizable Verilog Dump*/
 	vpr_printf(TIO_MESSAGE_INFO, "Synthesizable Verilog Generator Options:\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_verilog\n");
@@ -194,6 +195,7 @@ void vpr_print_usage(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_verilog_print_input_blif_testbench\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_verilog_verification_netlist\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_verilog_include_timing\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_verilog_simulator_path <string>\n");
     /* Xifan Tang: Bitstream generator */
 	vpr_printf(TIO_MESSAGE_INFO, "Bitstream Generator Options:\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_bitstream_generator <string>\n");

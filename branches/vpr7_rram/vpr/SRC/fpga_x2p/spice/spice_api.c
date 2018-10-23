@@ -402,7 +402,8 @@ void vpr_print_spice_netlists(t_vpr_setup vpr_setup,
   }
 
   /* Generate a shell script for running HSPICE simulations */
-  fprint_run_hspice_shell_script(*(Arch.spice), spice_dir_formatted, subckt_dir_path);
+  fprint_run_hspice_shell_script(*(Arch.spice), vpr_setup.FPGA_SPICE_Opts.SpiceOpts.simulator_path,
+                                 spice_dir_formatted, subckt_dir_path);
 
   /* END Clocking*/
   t_end = clock();

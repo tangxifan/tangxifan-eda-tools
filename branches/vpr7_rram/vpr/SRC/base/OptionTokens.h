@@ -74,6 +74,10 @@ enum e_OptionBaseToken {
 	OT_ACTIVITY_FILE,
 	OT_POWER_OUT_FILE,
 	OT_CMOS_TECH_BEHAVIOR_FILE,
+    /* General FPGA_X2P: FPGA-SPICE/Verilog/Bitstream Options */
+    OT_FPGA_X2P_RENAME_ILLEGAL_PORT, 
+    OT_FPGA_X2P_SIGNAL_DENSITY_WEIGHT, /* The weight of signal density in determining number of clock cycles in simulation */
+    OT_FPGA_X2P_SIM_WINDOW_SIZE, /* Window size in determining number of clock cycles in simulation */
     /* Xifan TANG: FPGA SPICE Support */
     OT_FPGA_SPICE, /* Xifan TANG: FPGA SPICE Model Support */
     OT_FPGA_SPICE_DIR, /* Xifan TANG: FPGA SPICE Model Support */
@@ -89,6 +93,8 @@ enum e_OptionBaseToken {
     OT_FPGA_SPICE_LEAKAGE_ONLY, /* Xifan TANG: Print SPICE Testbench for MUXes */
     OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION, /* Xifan TANG: turn on/off the parasitic net estimation*/
     OT_FPGA_SPICE_TESTBENCH_LOAD_EXTRACTION, /* Xifan TANG: turn on/off the testbench load extraction */
+    OT_FPGA_SPICE_SIMULATOR_PATH,
+    OT_FPGA_SPICE_SIM_MT_NUM, /* number of multi-thread used in simulation */
     /* Xifan TANG: Verilog Generation */
     OT_FPGA_VERILOG_SYN, /* Xifan TANG: Synthesizable Verilog Dump */
     OT_FPGA_VERILOG_SYN_DIR, /* Xifan TANG: Synthesizable Verilog Dump */
@@ -96,10 +102,7 @@ enum e_OptionBaseToken {
     OT_FPGA_VERILOG_SYN_PRINT_INPUT_BLIF_TESTBENCH, /* Xifan Tang: Synthesizable Verilog, turn on option: output testbench for the orignial input blif  */
     OT_FPGA_VERILOG_SYN_VERIFICATION_NETLIST, /* Xifan Tang: Synthesizable Verilog, turn on option: output netlists in a compact way */
     OT_FPGA_VERILOG_SYN_INCLUDE_TIMING, /* Xifan TANG: Include timing constraints in Verilog */
-    OT_FPGA_SPICE_RENAME_ILLEGAL_PORT, 
-    OT_FPGA_SPICE_SIGNAL_DENSITY_WEIGHT, /* The weight of signal density in determining number of clock cycles in simulation */
-    OT_FPGA_SPICE_SIM_WINDOW_SIZE, /* Window size in determining number of clock cycles in simulation */
-    OT_FPGA_SPICE_SIM_MT_NUM, /* number of multi-thread used in simulation */
+    OT_FPGA_VERILOG_SYN_SIMULATOR_PATH,
     /* Xifan Tang: Bitstream generator */
     OT_FPGA_BITSTREAM_GENERATOR,
     OT_FPGA_BITSTREAM_OUTPUT_FILE,

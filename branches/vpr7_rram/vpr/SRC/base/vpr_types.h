@@ -1205,6 +1205,7 @@ struct s_spice_opts {
   char* subckt_dir;
 
   int fpga_spice_sim_multi_thread_num;
+  char* simulator_path;
 };
 
 /* Xifan TANG: synthesizable verilog dumping */
@@ -1216,6 +1217,7 @@ struct s_syn_verilog_opts {
   boolean dump_syn_verilog_input_blif_testbench;
   boolean output_verification_netlist;
   boolean include_timing;
+  char* simulator_path;
 };
 
 /* Xifan TANG: bitstream generator */

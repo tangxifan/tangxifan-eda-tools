@@ -474,6 +474,13 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
 	case OT_CMOS_TECH_BEHAVIOR_FILE:
 		return ReadString(Args, &Options->CmosTechFile);
 
+    /* Xifan Tang: FPGA X2P Options*/
+    case OT_FPGA_X2P_RENAME_ILLEGAL_PORT:
+      return Args;
+    case OT_FPGA_X2P_SIGNAL_DENSITY_WEIGHT:
+	  return ReadFloat(Args, &Options->fpga_spice_signal_density_weight);
+    case OT_FPGA_X2P_SIM_WINDOW_SIZE:
+	  return ReadFloat(Args, &Options->fpga_spice_sim_window_size);
     /* Xifan TANG: FPGA SPICE Model Options*/
     case OT_FPGA_SPICE:
       return Args;
@@ -503,6 +510,10 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
       return ReadOnOff(Args, &Options->fpga_spice_parasitic_net_estimation);
     case OT_FPGA_SPICE_TESTBENCH_LOAD_EXTRACTION:
       return ReadOnOff(Args, &Options->fpga_spice_testbench_load_extraction);
+    case OT_FPGA_SPICE_SIM_MT_NUM:
+	  return ReadInt(Args, &Options->fpga_spice_sim_mt_num);
+    case OT_FPGA_SPICE_SIMULATOR_PATH:
+      return ReadString(Args, &Options->fpga_spice_simulator_path);
     /* Xifan TANG: Synthesizable Verilog */
     case OT_FPGA_VERILOG_SYN:
       return Args;
@@ -516,14 +527,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
       return Args;
     case OT_FPGA_VERILOG_SYN_INCLUDE_TIMING:
       return Args;
-    case OT_FPGA_SPICE_RENAME_ILLEGAL_PORT:
-      return Args;
-    case OT_FPGA_SPICE_SIGNAL_DENSITY_WEIGHT:
-	  return ReadFloat(Args, &Options->fpga_spice_signal_density_weight);
-    case OT_FPGA_SPICE_SIM_WINDOW_SIZE:
-	  return ReadFloat(Args, &Options->fpga_spice_sim_window_size);
-    case OT_FPGA_SPICE_SIM_MT_NUM:
-	  return ReadInt(Args, &Options->fpga_spice_sim_mt_num);
+    case OT_FPGA_VERILOG_SYN_SIMULATOR_PATH:
+      return ReadString(Args, &Options->fpga_verilog_simulator_path);
     /* Xifan TANG: Bitstream generator */
     case OT_FPGA_BITSTREAM_GENERATOR:
       return Args;

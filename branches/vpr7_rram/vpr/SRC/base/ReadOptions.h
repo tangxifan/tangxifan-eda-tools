@@ -91,18 +91,21 @@ struct s_options {
 	/* Last read settings file */
 	int read_settings;
 
+    /* Xifan TANG: signal weight in FPGA_SPICE simulation */
+    float fpga_spice_signal_density_weight;
+    float fpga_spice_sim_window_size;
+
     /* Xifan TANG: SPICE Support*/
     char* spice_dir;
     boolean fpga_spice_parasitic_net_estimation;
     boolean fpga_spice_testbench_load_extraction;
+    int fpga_spice_sim_mt_num;
+    char* fpga_spice_simulator_path;
     /* Xifan TANG: Synthesizable Verilog */
     char* fpga_syn_verilog_dir;
+    char* fpga_verilog_simulator_path;
     /* Xifan TANG: Bitstream generator */
     char* fpga_bitstream_file;
-    /* Xifan TANG: signal weight in FPGA_SPICE simulation */
-    float fpga_spice_signal_density_weight;
-    float fpga_spice_sim_window_size;
-    int fpga_spice_sim_mt_num;
 };
 
 enum e_echo_files {

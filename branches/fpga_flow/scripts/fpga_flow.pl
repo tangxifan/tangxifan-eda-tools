@@ -152,11 +152,12 @@ sub print_usage()
   print "      \t-vpr_route_breadthfirst : use the breadth-first routing algorithm of VPR.\n";
   print "      \t-min_route_chan_width <float> : turn on routing with <float>* min_route_chan_width.\n";
   print "      \t-fix_route_chan_width : turn on routing with a fixed route_chan_width, defined in benchmark configuration file.\n";
+  print "      [ VPR - FPGA-X2P Extension ] \n";
+  print "      \t-vpr_fpga_x2p_rename_illegal_port : turn on renaming illegal ports option of VPR FPGA SPICE\n";
+  print "      \t-vpr_fpga_x2p_signal_density_weight <float>: specify the option signal_density_weight of VPR FPGA SPICE\n";
+  print "      \t-vpr_fpga_x2p_sim_window_size <float>: specify the option sim_window_size of VPR FPGA SPICE\n";
   print "      [ VPR - FPGA-SPICE Extension ] \n";
   print "      \t-vpr_fpga_spice <task_file> : turn on SPICE netlists print-out in VPR, specify a task file\n";
-  print "      \t-vpr_fpga_spice_rename_illegal_port : turn on renaming illegal ports option of VPR FPGA SPICE\n";
-  print "      \t-vpr_fpga_spice_signal_density_weight <float>: specify the option signal_density_weight of VPR FPGA SPICE\n";
-  print "      \t-vpr_fpga_spice_sim_window_size <float>: specify the option sim_window_size of VPR FPGA SPICE\n";
   print "      \t-vpr_fpga_spice_sim_mt_num <int>: specify the option sim_mt_num of VPR FPGA SPICE\n";
   print "      \t-vpr_fpga_spice_print_component_tb : print component-level testbenches in VPR FPGA SPICE\n";
   print "      \t-vpr_fpga_spice_print_grid_tb : print Grid-level testbenches in VPR FPGA SPICE\n";
@@ -325,9 +326,9 @@ sub opts_read()
   # FPGA-SPICE options
   # Read Opt into Hash(opt_ptr) : "opt_name","with_val","mandatory"
   &read_opt_into_hash("vpr_fpga_spice","on","off");
-  &read_opt_into_hash("vpr_fpga_spice_rename_illegal_port","off","off");
-  &read_opt_into_hash("vpr_fpga_spice_signal_density_weight","on","off");
-  &read_opt_into_hash("vpr_fpga_spice_sim_window_size","on","off");
+  &read_opt_into_hash("vpr_fpga_x2p_rename_illegal_port","off","off");
+  &read_opt_into_hash("vpr_fpga_x2p_signal_density_weight","on","off");
+  &read_opt_into_hash("vpr_fpga_x2p_sim_window_size","on","off");
   &read_opt_into_hash("vpr_fpga_spice_sim_mt_num","on","off");
   &read_opt_into_hash("vpr_fpga_spice_print_component_tb","off","off");
   &read_opt_into_hash("vpr_fpga_spice_print_grid_tb","off","off");
@@ -1111,11 +1112,11 @@ sub run_std_vpr($ $ $ $ $ $ $ $ $)
   if (("on" eq $opt_ptr->{power})&&("on" eq $opt_ptr->{vpr_fpga_spice})) {
     $vpr_spice_opts = "--fpga_spice";
 
-    if ("on" eq $opt_ptr->{vpr_fpga_spice_signal_density_weight}) {
-      $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_signal_density_weight $opt_ptr->{vpr_fpga_spice_signal_density_weight_val}";
+    if ("on" eq $opt_ptr->{vpr_fpga_x2p_signal_density_weight}) {
+      $vpr_spice_opts = $vpr_spice_opts." --fpga_x2p_signal_density_weight $opt_ptr->{vpr_fpga_x2p_signal_density_weight_val}";
     }
-    if ("on" eq $opt_ptr->{vpr_fpga_spice_sim_window_size}) {
-      $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_sim_window_size $opt_ptr->{vpr_fpga_spice_sim_window_size_val}";
+    if ("on" eq $opt_ptr->{vpr_fpga_x2p_sim_window_size}) {
+      $vpr_spice_opts = $vpr_spice_opts." --fpga_x2p_sim_window_size $opt_ptr->{vpr_fpga_x2p_sim_window_size_val}";
     }
     if ("on" eq $opt_ptr->{vpr_fpga_spice_sim_mt_num}) {
       $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_sim_mt_num $opt_ptr->{vpr_fpga_spice_sim_mt_num_val}";
@@ -1166,10 +1167,10 @@ sub run_std_vpr($ $ $ $ $ $ $ $ $)
      $vpr_spice_opts = $vpr_spice_opts." --fpga_bitstream_generator";
   }
 
-  if (("on" eq $opt_ptr->{vpr_fpga_spice_rename_illegal_port})
+  if (("on" eq $opt_ptr->{vpr_fpga_x2p_rename_illegal_port})
      || ("on" eq $opt_ptr->{vpr_fpga_spice}) 
      || ("on" eq $opt_ptr->{vpr_fpga_verilog})) {
-    $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_rename_illegal_port";
+    $vpr_spice_opts = $vpr_spice_opts." --fpga_x2p_rename_illegal_port";
   }
   
   my ($other_opt) = ("");
@@ -1231,10 +1232,10 @@ sub run_vpr_route($ $ $ $ $ $ $ $ $)
       $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_parasitic_net_estimation_off";
     }
   }
-  if ("on" eq $opt_ptr->{vpr_fpga_spice_verilog_generator}) {
+  if ("on" eq $opt_ptr->{vpr_fpga_verilog}) {
     $vpr_spice_opts = $vpr_spice_opts." --fpga_syn_verilog";
-    if ("on" eq $opt_ptr->{vpr_fpga_spice_rename_illegal_port}) {
-      $vpr_spice_opts = $vpr_spice_opts." --fpga_spice_rename_illegal_port";
+    if ("on" eq $opt_ptr->{vpr_fpga_x2p_rename_illegal_port}) {
+      $vpr_spice_opts = $vpr_spice_opts." --fpga_x2p_rename_illegal_port";
     }
   }
   
