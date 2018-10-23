@@ -172,6 +172,12 @@
         <design_technology type="cmos" topology="inverter" size="1" tapered="off"/>
         <port type="input" prefix="in" size="1"/>
         <port type="output" prefix="out" size="1"/>
+        <delay_matrix type="rise" in_port="in" out_port="out">
+          10e-12
+        </delay_matrix>
+        <delay_matrix type="fall" in_port="in" out_port="out">
+          10e-12
+        </delay_matrix>
       </spice_model>
       <spice_model type="inv_buf" name="buf4" prefix="buf4" is_default="0">
         <design_technology type="cmos" topology="buffer" size="1" tapered="on" tap_buf_level="2" f_per_stage="4"/>
@@ -191,6 +197,12 @@
         <port type="input" prefix="sel" size="1"/>
         <port type="input" prefix="selb" size="1"/>
         <port type="output" prefix="out" size="1"/>
+        <delay_matrix type="rise" in_port="in sel selb" out_port="out">
+          10e-12 10e-12 10e-12
+        </delay_matrix>
+        <delay_matrix type="fall" in_port="in sel selb" out_port="out">
+          10e-12 10e-12 10e-12
+        </delay_matrix>
       </spice_model>
       <spice_model type="chan_wire" name="chan_segment" prefix="track_seg" is_default="1">
         <design_technology type="cmos"/>
@@ -209,7 +221,7 @@
         <wire_param model_type="pie" res_val="0" cap_val="0" level="1"/> <!-- model_type could be T, res_val cap_val should be defined -->
       </spice_model>
       <spice_model type="mux" name="mux_2level" prefix="mux_2level" dump_structural_verilog="true">
-        <design_technology type="cmos" structure="multi-level" num_level="2"/>
+        <design_technology type="cmos" structure="multi-level" num_level="2" add_const_input="true" const_input_val="1"/>
         <input_buffer exist="on" spice_model_name="INVTX1"/>
         <output_buffer exist="on" spice_model_name="INVTX1"/>
         <!--mux2to1 subckt_name="mux2to1"/-->
@@ -219,7 +231,7 @@
         <port type="sram" prefix="sram" size="1"/>
       </spice_model>
       <spice_model type="mux" name="mux_2level_tapbuf" prefix="mux_2level_tapbuf" dump_structural_verilog="true">
-        <design_technology type="cmos" structure="multi-level" num_level="2"/>
+        <design_technology type="cmos" structure="multi-level" num_level="2" add_const_input="true" const_input_val="1"/>
         <input_buffer exist="on" spice_model_name="INVTX1"/>
         <output_buffer exist="on" spice_model_name="tap_buf4"/>
         <!--mux2to1 subckt_name="mux2to1"/-->
@@ -229,7 +241,7 @@
         <port type="sram" prefix="sram" size="1"/>
       </spice_model>
       <spice_model type="mux" name="mux_1level_tapbuf" prefix="mux_1level_tapbuf" is_default="1" dump_structural_verilog="true">
-        <design_technology type="cmos" structure="one-level"/>
+        <design_technology type="cmos" structure="one-level" add_const_input="true" const_input_val="1"/>
         <input_buffer exist="on" spice_model_name="INVTX1"/>
         <output_buffer exist="on" spice_model_name="tap_buf4"/>
         <!--mux2to1 subckt_name="mux2to1"/-->
@@ -623,7 +635,7 @@
                     <output name="out" num_pins="1"/>
                     <clock name="clk" num_pins="1"/> 
                     <!-- Regular LUT mode -->
-                    <pb_type name="lut5" blif_model=".names" num_pb="1" class="lut" mode_bits="10" physical_pb_type_name="frac_lut6" physical_pb_type_index_factor="0.5">
+                    <pb_type name="lut5" blif_model=".names" num_pb="1" class="lut" mode_bits="01" physical_pb_type_name="frac_lut6" physical_pb_type_index_factor="0.5">
                       <input name="in" num_pins="5" port_class="lut_in" physical_mode_pin="in[5:0]"/>
                       <output name="out" num_pins="1" port_class="lut_out" physical_mode_pin="lut5_out" physical_mode_pin_rotate_offset="1"/>
                       <!-- LUT timing using delay matrix -->
@@ -677,7 +689,7 @@
                     <output name="cout" num_pins="1"/>
                     <clock name="clk" num_pins="1"/> 
                     <!-- Special dual-LUT mode that drives adder only -->
-                    <pb_type name="lut4" blif_model=".names" num_pb="2" class="lut" mode_bits="00" physical_pb_type_name="frac_lut6" physical_pb_type_index_factor="0.25">
+                    <pb_type name="lut4" blif_model=".names" num_pb="2" class="lut" mode_bits="11" physical_pb_type_name="frac_lut6" physical_pb_type_index_factor="0.25">
                       <input name="in" num_pins="4" port_class="lut_in" physical_mode_pin="in[4:0]"/>
                       <output name="out" num_pins="1" port_class="lut_out" physical_mode_pin="lut4_out" physical_mode_pin_rotate_offset="1"/>
                       <!-- LUT timing using delay matrix -->
@@ -785,7 +797,7 @@
               <input name="in" num_pins="6"/>
               <output name="out" num_pins="1"/>
               <clock name="clk" num_pins="1"/> 
-              <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut" mode_bits="11" physical_pb_type_name="frac_lut6" spice_model_sram_offset="0">
+              <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut" mode_bits="00" physical_pb_type_name="frac_lut6" spice_model_sram_offset="0">
                 <input name="in" num_pins="6" port_class="lut_in" physical_mode_pin="in[5:0]"/>
                 <output name="out" num_pins="1" port_class="lut_out" physical_mode_pin="lut6_out[0]"/>
                 <!-- LUT timing using delay matrix -->
