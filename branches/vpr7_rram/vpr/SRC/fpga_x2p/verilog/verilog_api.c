@@ -40,6 +40,7 @@
 #include "verilog_routing.h"
 #include "verilog_top_netlist.h"
 #include "verilog_compact_netlist.h"
+#include "verilog_modelsim_autodeck.h"
 
 
 /***** Subroutines *****/
@@ -124,7 +125,7 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
 
   char* chomped_parent_dir = NULL;
   char* chomped_circuit_name = NULL;
-
+ 
   t_sram_orgz_info* sram_verilog_orgz_info = NULL;
 
   /* Check if the routing architecture we support*/
@@ -179,7 +180,7 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   /* initialize the SRAM organization information struct */
   sram_verilog_orgz_info = alloc_one_sram_orgz_info();
   init_sram_orgz_info(sram_verilog_orgz_info, Arch.sram_inf.verilog_sram_inf_orgz->type, sram_verilog_model, nx + 2, ny + 2);
-  sram_verilog_orgz_info->dump_mem_outports = vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.output_verification_netlist;
+  sram_verilog_orgz_info->dump_mem_outports = vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_verification_netlist;
 
   /* Check all the SRAM port is using the correct SRAM SPICE MODEL */
   config_spice_models_sram_port_spice_model(Arch.spice->num_spice_model, 
@@ -274,6 +275,13 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
     my_free(top_testbench_file_path);
   }
 
+  /* Output Modelsim Autodeck scripts */
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_modelsim_autodeck) {
+    dump_verilog_modelsim_autodeck(sram_verilog_orgz_info, *(Arch.spice), num_clocks,
+                                   verilog_dir_formatted, chomped_circuit_name,
+                                   vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.modelsim_ini_path);
+  }
+
   if ((TRUE == vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.gen_bitstream)
     || (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.dump_syn_verilog_top_testbench)) {
     /* Free sram_orgz_info:
@@ -282,7 +290,7 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
     free_sram_orgz_info(sram_verilog_orgz_info,
                         sram_verilog_orgz_info->type);
   }
-  
+
   /* End time count */
   t_end = clock();
  

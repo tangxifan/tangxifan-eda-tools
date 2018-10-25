@@ -1071,7 +1071,9 @@ static void SetupSynVerilogOpts(t_options Options,
   syn_verilog_opts->dump_syn_verilog_top_testbench = FALSE;
   syn_verilog_opts->dump_syn_verilog_input_blif_testbench = FALSE;
   syn_verilog_opts->include_timing = FALSE;
-  syn_verilog_opts->simulator_path = NULL;
+  syn_verilog_opts->print_modelsim_autodeck = FALSE;
+  syn_verilog_opts->print_verification_netlist= FALSE;
+  syn_verilog_opts->modelsim_ini_path = NULL;
 
   /* Turn on Syn_verilog options */
   if (Options.Count[OT_FPGA_VERILOG_SYN]) {
@@ -1093,15 +1095,19 @@ static void SetupSynVerilogOpts(t_options Options,
   }
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_VERIFICATION_NETLIST]) {
-    syn_verilog_opts->output_verification_netlist = TRUE;
+    syn_verilog_opts->print_verification_netlist = TRUE;
   }
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_INCLUDE_TIMING]) {
     syn_verilog_opts->include_timing = TRUE;
   }
 
-  if (Options.Count[OT_FPGA_VERILOG_SYN_SIMULATOR_PATH]) {
-    syn_verilog_opts->simulator_path = my_strdup(Options.fpga_verilog_simulator_path);
+  if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_MODELSIM_AUTODECK]) {
+    syn_verilog_opts->print_modelsim_autodeck = TRUE;
+  }
+
+  if (Options.Count[OT_FPGA_VERILOG_SYN_MODELSIM_INI_PATH]) {
+    syn_verilog_opts->modelsim_ini_path = my_strdup(Options.fpga_verilog_modelsim_ini_path);
   }
 
   /* SynVerilog needs the input from spice modeling */

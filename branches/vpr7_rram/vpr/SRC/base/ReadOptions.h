@@ -103,7 +103,7 @@ struct s_options {
     char* fpga_spice_simulator_path;
     /* Xifan TANG: Synthesizable Verilog */
     char* fpga_syn_verilog_dir;
-    char* fpga_verilog_simulator_path;
+    char* fpga_verilog_modelsim_ini_path;
     /* Xifan TANG: Bitstream generator */
     char* fpga_bitstream_file;
 };

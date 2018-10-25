@@ -9,6 +9,12 @@ extern char* default_lb_dir_name;
 extern char* default_rr_dir_name;
 extern char* default_submodule_dir_name;
 
+extern char* modelsim_project_name_postfix;
+extern char* modelsim_proc_script_name_postfix;
+extern char* modelsim_top_script_name_postfix;
+extern char* modelsim_testbench_module_postfix;
+extern char* modelsim_simulation_time_unit;
+
 extern char* verilog_top_postfix;
 extern char* top_testbench_verilog_file_postfix;
 extern char* blif_testbench_verilog_file_postfix;
@@ -68,7 +74,6 @@ extern char* top_netlist_normal_wl_port_postfix;
 extern char* top_netlist_normal_blb_port_postfix;
 extern char* top_netlist_normal_wlb_port_postfix;
 extern char* top_netlist_scan_chain_head_prefix;
-
 
 enum e_dump_verilog_port_type {
 VERILOG_PORT_INPUT,

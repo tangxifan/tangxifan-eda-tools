@@ -17,8 +17,14 @@ char* default_lb_dir_name = "lb/";
 char* default_rr_dir_name = "routing/";
 char* default_submodule_dir_name = "sub_module/";
 
+char* modelsim_project_name_postfix = "_fpga_msim";
+char* modelsim_proc_script_name_postfix = "_proc.tcl";
+char* modelsim_top_script_name_postfix = "_runsim.tcl";
+char* modelsim_testbench_module_postfix = "_top_tb";
+char* modelsim_simulation_time_unit = "ms";
+
 char* verilog_top_postfix = "_top.v";
-char* top_testbench_verilog_file_postfix = "_top_tb.v";
+char* top_testbench_verilog_file_postfix = "_top_tb.v"; /* !!! must be consist with the modelsim_testbench_module_postfix */ 
 char* blif_testbench_verilog_file_postfix = "_blif_tb.v";
 char* submodule_verilog_file_name = "sub_module.v";
 char* logic_block_verilog_file_name = "logic_blocks.v";
