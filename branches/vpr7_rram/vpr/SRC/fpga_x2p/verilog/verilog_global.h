@@ -8,6 +8,7 @@ extern char* default_verilog_dir_name;
 extern char* default_lb_dir_name;
 extern char* default_rr_dir_name;
 extern char* default_submodule_dir_name;
+extern char* default_modelsim_dir_name;
 
 extern char* modelsim_project_name_postfix;
 extern char* modelsim_proc_script_name_postfix;

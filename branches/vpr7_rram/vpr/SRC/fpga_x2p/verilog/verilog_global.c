@@ -16,6 +16,7 @@ char* default_verilog_dir_name = "syn_verilogs/";
 char* default_lb_dir_name = "lb/";
 char* default_rr_dir_name = "routing/";
 char* default_submodule_dir_name = "sub_module/";
+char* default_modelsim_dir_name = "msim_projects/";
 
 char* modelsim_project_name_postfix = "_fpga_msim";
 char* modelsim_proc_script_name_postfix = "_proc.tcl";

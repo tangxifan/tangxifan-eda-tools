@@ -117,10 +117,9 @@ void dump_verilog_modelsim_proc_script(char* modelsim_proc_filename,
   
   fprintf(fp, "proc create_project {projectname project_path} {\n");
   fprintf(fp, "  #Switch to the modelsim folder to create the project\n");
-  fprintf(fp, "  set location [pwd]\n");
   fprintf(fp, "  set libname $projectname\n"); 
   fprintf(fp, "  set initfile %s\n", modelsim_ini_path);
-  fprintf(fp, "  project new $location/msim_prorjects/$projectname $projectname $libname $initfile 0\n");
+  fprintf(fp, "  project new $project_path/$projectname $projectname $libname $initfile 0\n");
   fprintf(fp, "}\n");
 
   fprintf(fp, "  \n");
@@ -230,36 +229,35 @@ void dump_verilog_modelsim_top_script(char* modelsim_top_script_filename,
   fprintf(fp, "\n");
   
   fprintf(fp, "#Path were both tcl script are located\n");
-  fprintf(fp, "set modelsim_path \"%s\"\n", modelsim_project_path);
-  fprintf(fp, "set script_path $modelsim_path\n");
+  fprintf(fp, "set project_path \"%s%s\"\n", modelsim_project_path, default_modelsim_dir_name);
   fprintf(fp, "\n");
   
   fprintf(fp, "#Path were the verilog files are located\n");
   fprintf(fp, "set verilog_path \"%s\"\n", modelsim_project_path);
   fprintf(fp, "set verilog_files [list \\\n");
   /* TODO: include verilog files */
-  fprintf(fp, "  $verilog_path/${benchmark}%s \\\n", 
+  fprintf(fp, "  ${verilog_path}${benchmark}%s \\\n", 
           verilog_top_postfix);
-  fprintf(fp, "  $verilog_path/${benchmark}%s \\\n",
+  fprintf(fp, "  ${verilog_path}${benchmark}%s \\\n",
           top_testbench_verilog_file_postfix);
   /* User-defined verilog netlists */
   init_include_user_defined_verilog_netlists(spice);
   modelsim_include_user_defined_verilog_netlists(fp, spice);
 
-  fprintf(fp, "   $verilog_path/%s%s \\\n",
+  fprintf(fp, "   ${verilog_path}%s%s \\\n",
           default_lb_dir_name, logic_block_verilog_file_name);
-  fprintf(fp, "   $verilog_path/%s%s \\\n",
+  fprintf(fp, "   ${verilog_path}%s%s \\\n",
           default_rr_dir_name, routing_verilog_file_name);
-  fprintf(fp, "   $verilog_path/%s%s ] \n", 
+  fprintf(fp, "   ${verilog_path}%s%s ] \n", 
           default_submodule_dir_name, submodule_verilog_file_name);
   fprintf(fp, "\n");
   
   fprintf(fp, "#Source the tcl script\n");
-  fprintf(fp, "source ./%s\n", modelsim_proc_script_filename);
+  fprintf(fp, "source ${verilog_path}%s\n", modelsim_proc_script_filename);
   fprintf(fp, "\n");
   
   fprintf(fp, "#Execute the top level procedure\n");
-  fprintf(fp, "top_create_new_project $projectname $verilog_files $modelsim_path $simtime $unit\n");
+  fprintf(fp, "top_create_new_project $projectname $verilog_files $project_path $simtime $unit\n");
   fprintf(fp, "\n");
   
   fprintf(fp, "#Relaunch simulation\n");
