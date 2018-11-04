@@ -327,7 +327,7 @@ int* decode_tree_mux_sram_bits(int fan_in,
 
   temp = active_path_id;
   for (i = mux_level - 1; i > (mux_level - active_mux_level - 1); i--) {
-    path_differ = (int)pow(2.,(double)(i+active_mux_level-mux_level));
+    path_differ = (int)pow(2.,(double)(i + active_mux_level - mux_level));
     if (temp < path_differ) { 
       ret[i] = 1; 
     } else {
@@ -389,7 +389,7 @@ void decode_cmos_mux_sram_bits(t_spice_model* mux_spice_model,
   assert(SPICE_MODEL_DESIGN_CMOS == mux_spice_model->design_tech);
 
   /* Handle DEFAULT PATH ID */
-  if (DEFAULT_PATH_ID == datapath_id) {
+  if (DEFAULT_PATH_ID == path_id) {
     datapath_id = get_mux_default_path_id(mux_spice_model, mux_size, path_id);
   } else { 
     assert((DEFAULT_PATH_ID < datapath_id)&&(datapath_id < mux_size));

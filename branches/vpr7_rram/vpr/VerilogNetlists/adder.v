@@ -1,7 +1,7 @@
 //------ Module: sram6T_blwl -----//
 //------ Verilog file: sram.v -----//
 //------ Author: Xifan TANG -----//
-module adder_1bit(
+module adder(
 input [0:0] a, // Input a
 input [0:0] b, // Input b
 input [0:0] cin, // Input cin
