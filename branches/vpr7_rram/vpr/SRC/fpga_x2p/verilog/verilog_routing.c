@@ -23,13 +23,13 @@
 
 /* Include SPICE support headers*/
 #include "linkedlist.h"
-#include "fpga_spice_types.h"
-#include "fpga_spice_utils.h"
-#include "fpga_spice_backannotate_utils.h"
-#include "fpga_spice_mux_utils.h"
-#include "fpga_spice_pbtypes_utils.h"
-#include "fpga_spice_bitstream_utils.h"
-#include "fpga_spice_globals.h"
+#include "fpga_x2p_types.h"
+#include "fpga_x2p_utils.h"
+#include "fpga_x2p_backannotate_utils.h"
+#include "fpga_x2p_mux_utils.h"
+#include "fpga_x2p_pbtypes_utils.h"
+#include "fpga_x2p_bitstream_utils.h"
+#include "fpga_x2p_globals.h"
 
 /* Include Verilog support headers*/
 #include "verilog_global.h"
@@ -639,7 +639,7 @@ void dump_verilog_switch_box_mux(t_sram_orgz_info* cur_sram_orgz_info,
                                  int mux_size,
                                  t_rr_node** drive_rr_nodes,
                                  int switch_index) {
-  int i, inode, side, index, input_cnt = 0;
+  int inode, side, index, input_cnt = 0;
   int grid_x, grid_y;
   t_spice_model* verilog_model = NULL;
   int mux_level, path_id, cur_num_sram;

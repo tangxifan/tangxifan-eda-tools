@@ -24,12 +24,12 @@
 
 /* Include SPICE support headers*/
 #include "linkedlist.h"
-#include "fpga_spice_types.h"
-#include "fpga_spice_utils.h"
-#include "fpga_spice_rr_graph_utils.h"
-#include "fpga_spice_bitstream_utils.h"
-#include "fpga_spice_pbtypes_utils.h"
-#include "fpga_spice_globals.h"
+#include "fpga_x2p_types.h"
+#include "fpga_x2p_utils.h"
+#include "fpga_x2p_rr_graph_utils.h"
+#include "fpga_x2p_bitstream_utils.h"
+#include "fpga_x2p_pbtypes_utils.h"
+#include "fpga_x2p_globals.h"
 
 /* Count the number of rr_graph nodes that should be allocated
  *   (a) INPUT pins at the top-level pb_graph_node should be a local_rr_node and plus a SOURCE

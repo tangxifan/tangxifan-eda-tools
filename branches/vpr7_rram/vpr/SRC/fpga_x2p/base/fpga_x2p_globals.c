@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include "spice_types.h"
 #include "linkedlist.h"
-#include "fpga_spice_globals.h"
+#include "fpga_x2p_globals.h"
 
 /* Global variables to be shared by different tools of FPGA-SPICE */
 /* SRAM SPICE MODEL should be set as global*/

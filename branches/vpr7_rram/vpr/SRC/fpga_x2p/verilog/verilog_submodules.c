@@ -23,10 +23,10 @@
 
 /* Include FPGA-SPICE utils */
 #include "linkedlist.h"
-#include "fpga_spice_utils.h"
-#include "fpga_spice_globals.h"
-#include "fpga_spice_mux_utils.h"
-#include "fpga_spice_bitstream_utils.h"
+#include "fpga_x2p_utils.h"
+#include "fpga_x2p_globals.h"
+#include "fpga_x2p_mux_utils.h"
+#include "fpga_x2p_bitstream_utils.h"
 
 /* Include verilog utils */
 #include "verilog_global.h"

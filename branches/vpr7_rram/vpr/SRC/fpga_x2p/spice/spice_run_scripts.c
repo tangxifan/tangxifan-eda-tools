@@ -24,9 +24,9 @@
 /* Include spice support headers*/
 #include "read_xml_spice_util.h"
 #include "linkedlist.h"
-#include "fpga_spice_globals.h"
+#include "fpga_x2p_globals.h"
 #include "spice_globals.h"
-#include "fpga_spice_utils.h"
+#include "fpga_x2p_utils.h"
 #include "spice_subckt.h"
 #include "spice_pbtypes.h"
 #include "spice_heads.h"

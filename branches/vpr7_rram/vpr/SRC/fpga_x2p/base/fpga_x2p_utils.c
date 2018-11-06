@@ -26,8 +26,8 @@
 /* Include SPICE support headers*/
 #include "quicksort.h"
 #include "linkedlist.h"
-#include "fpga_spice_globals.h"
-#include "fpga_spice_utils.h"
+#include "fpga_x2p_globals.h"
+#include "fpga_x2p_utils.h"
 
 enum e_dir_err {
  E_DIR_NOT_EXIST,

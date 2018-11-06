@@ -26,9 +26,9 @@
 /* FPGA-SPICE utils */
 #include "read_xml_spice_util.h"
 #include "linkedlist.h"
-#include "fpga_spice_utils.h"
-#include "fpga_spice_mux_utils.h"
-#include "fpga_spice_globals.h"
+#include "fpga_x2p_utils.h"
+#include "fpga_x2p_mux_utils.h"
+#include "fpga_x2p_globals.h"
 
 /* Determine the size of input address of a decoder */
 int determine_decoder_size(int num_addr_out) {

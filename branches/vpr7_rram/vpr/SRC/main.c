@@ -17,9 +17,6 @@
 #include <time.h>
 
 #include "vpr_api.h"
-/* mrFPGA : Xifan TANG */
-#include "mrfpga_api.h"
-/* END */
 
 /**
  * VPR program
@@ -64,7 +61,7 @@ int main(int argc, char **argv) {
 	}
 
     /* Run FPGA-SPICE tool suites*/
-    vpr_fpga_spice_tool_suites(vpr_setup, Arch);
+    vpr_fpga_x2p_tool_suites(vpr_setup, Arch);
 
 	entire_flow_end = clock();
 	

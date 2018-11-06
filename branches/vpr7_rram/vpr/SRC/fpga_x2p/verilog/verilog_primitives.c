@@ -23,11 +23,11 @@
 
 /* Include spice support headers*/
 #include "linkedlist.h"
-#include "fpga_spice_types.h"
-#include "fpga_spice_utils.h"
-#include "fpga_spice_pbtypes_utils.h"
-#include "fpga_spice_bitstream_utils.h"
-#include "fpga_spice_globals.h"
+#include "fpga_x2p_types.h"
+#include "fpga_x2p_utils.h"
+#include "fpga_x2p_pbtypes_utils.h"
+#include "fpga_x2p_bitstream_utils.h"
+#include "fpga_x2p_globals.h"
 
 /* Include verilog support headers*/
 #include "verilog_global.h"

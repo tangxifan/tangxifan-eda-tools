@@ -27,14 +27,14 @@
 /* Include spice support headers*/
 #include "read_xml_spice_util.h"
 #include "linkedlist.h"
-#include "fpga_spice_types.h"
-#include "fpga_spice_globals.h"
-#include "fpga_spice_utils.h"
-#include "fpga_spice_rr_graph_utils.h"
-#include "fpga_spice_lut_utils.h"
-#include "fpga_spice_pbtypes_utils.h"
-#include "fpga_spice_pb_rr_graph.h"
-#include "fpga_spice_router.h"
+#include "fpga_x2p_types.h"
+#include "fpga_x2p_globals.h"
+#include "fpga_x2p_utils.h"
+#include "fpga_x2p_rr_graph_utils.h"
+#include "fpga_x2p_lut_utils.h"
+#include "fpga_x2p_pbtypes_utils.h"
+#include "fpga_x2p_pb_rr_graph.h"
+#include "fpga_x2p_router.h"
 
 /* Get initial value of a Latch/FF output*/
 int get_ff_output_init_val(t_logical_block* ff_logical_block) {

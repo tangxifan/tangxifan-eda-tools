@@ -20,10 +20,10 @@
 
 /* Include SPICE support headers*/
 #include "linkedlist.h"
-#include "fpga_spice_types.h"
-#include "fpga_spice_utils.h"
-#include "fpga_spice_pbtypes_utils.h"
-#include "fpga_spice_rr_graph_utils.h"
+#include "fpga_x2p_types.h"
+#include "fpga_x2p_utils.h"
+#include "fpga_x2p_pbtypes_utils.h"
+#include "fpga_x2p_rr_graph_utils.h"
 
 /* Initial rr_graph */
 void init_rr_graph(INOUTP t_rr_graph* local_rr_graph) {

@@ -24,12 +24,12 @@
 /* Include FPGA-SPICE utils */
 #include "read_xml_spice_util.h"
 #include "linkedlist.h"
-#include "fpga_spice_utils.h"
-#include "fpga_spice_backannotate_utils.h"
-#include "fpga_spice_bitstream_utils.h"
-#include "fpga_spice_globals.h"
-#include "fpga_spice_bitstream_pbtypes.h"
-#include "fpga_spice_bitstream_routing.h"
+#include "fpga_x2p_utils.h"
+#include "fpga_x2p_backannotate_utils.h"
+#include "fpga_x2p_bitstream_utils.h"
+#include "fpga_x2p_globals.h"
+#include "fpga_bitstream_pbtypes.h"
+#include "fpga_bitstream_routing.h"
 
 /* Global variables only in file */
 static int dumped_num_conf_bits = 0;
@@ -285,11 +285,11 @@ void dump_conf_bits_to_bitstream_file(FILE* fp,
 }
 
 /* Top-level function*/
-void vpr_fpga_spice_generate_bitstream(t_vpr_setup vpr_setup,
-                                       t_arch Arch,
-                                       char* circuit_name,
-                                       char* bitstream_file_path,
-                                       t_sram_orgz_info** cur_sram_orgz_info) {
+void vpr_fpga_generate_bitstream(t_vpr_setup vpr_setup,
+                                 t_arch Arch,
+                                 char* circuit_name,
+                                 char* bitstream_file_path,
+                                 t_sram_orgz_info** cur_sram_orgz_info) {
   /* Timer */
   clock_t t_start;
   clock_t t_end;
@@ -378,7 +378,7 @@ void vpr_fpga_spice_generate_bitstream(t_vpr_setup vpr_setup,
 /* This is a shell for bitstream generation
  * Prepare all the variables required by the core generator
  */
-void vpr_fpga_spice_bitstream_generator(t_vpr_setup vpr_setup,
+void vpr_fpga_bitstream_generator(t_vpr_setup vpr_setup,
                                         t_arch Arch,
                                         char* circuit_name,
                                         t_sram_orgz_info** cur_sram_orgz_info) {
@@ -391,7 +391,7 @@ void vpr_fpga_spice_bitstream_generator(t_vpr_setup vpr_setup,
   }
 
   /* Run bitstream generation and dump output file */
-  vpr_fpga_spice_generate_bitstream(vpr_setup, Arch, circuit_name, bitstream_file_path, cur_sram_orgz_info);
+  vpr_fpga_generate_bitstream(vpr_setup, Arch, circuit_name, bitstream_file_path, cur_sram_orgz_info);
 
   /* Free */
   my_free(bitstream_file_path);

@@ -25,12 +25,12 @@
 /* Include FPGA-SPICE utils */
 #include "read_xml_spice_util.h"
 #include "linkedlist.h"
-#include "fpga_spice_types.h"
-#include "fpga_spice_utils.h"
-#include "fpga_spice_pbtypes_utils.h"
-#include "fpga_spice_backannotate_utils.h"
-#include "fpga_spice_globals.h"
-#include "fpga_spice_bitstream.h"
+#include "fpga_x2p_types.h"
+#include "fpga_x2p_utils.h"
+#include "fpga_x2p_pbtypes_utils.h"
+#include "fpga_x2p_backannotate_utils.h"
+#include "fpga_x2p_globals.h"
+#include "fpga_bitstream.h"
 
 /* Include SynVerilog headers */
 #include "verilog_global.h"
@@ -98,9 +98,9 @@ void free_global_routing_conf_bits() {
 }
  
 /* Top-level function*/
-void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
-                          t_arch Arch,
-                          char* circuit_name) {
+void vpr_fpga_verilog(t_vpr_setup vpr_setup,
+                      t_arch Arch,
+                      char* circuit_name) {
   /* Timer */
   clock_t t_start;
   clock_t t_end;
@@ -260,7 +260,7 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
     bitstream_file_name = my_strcat(chomped_circuit_name, fpga_spice_bitstream_output_file_postfix);
     bitstream_file_path = my_strcat(verilog_dir_formatted, bitstream_file_name);
     /* Run bitstream generation */
-    vpr_fpga_spice_generate_bitstream(vpr_setup, Arch, circuit_name, bitstream_file_path, &sram_verilog_orgz_info);
+    vpr_fpga_generate_bitstream(vpr_setup, Arch, circuit_name, bitstream_file_path, &sram_verilog_orgz_info);
     my_free(bitstream_file_name);
     my_free(bitstream_file_path);
   }

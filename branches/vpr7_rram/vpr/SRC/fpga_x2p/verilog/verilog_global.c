@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include "spice_types.h"
 #include "linkedlist.h"
-#include "fpga_spice_globals.h"
+#include "fpga_x2p_globals.h"
 #include "verilog_global.h"
 
 char* verilog_netlist_file_postfix = ".v";

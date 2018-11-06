@@ -9,9 +9,9 @@
 #include "globals.h"
 #include "route_common.h"
 
-#include "fpga_spice_types.h"
-#include "fpga_spice_rr_graph_utils.h"
-#include "fpga_spice_pb_rr_graph.h"
+#include "fpga_x2p_types.h"
+#include "fpga_x2p_rr_graph_utils.h"
+#include "fpga_x2p_pb_rr_graph.h"
 
 void breadth_first_expand_rr_graph_trace_segment(t_rr_graph* local_rr_graph,
                                                  t_trace *start_ptr, 

@@ -27,11 +27,11 @@
 /* Include SPICE support headers*/
 #include "quicksort.h"
 #include "linkedlist.h"
-#include "fpga_spice_types.h"
-#include "fpga_spice_globals.h"
-#include "fpga_spice_utils.h"
-#include "fpga_spice_pbtypes_utils.h"
-#include "fpga_spice_bitstream_utils.h"
+#include "fpga_x2p_types.h"
+#include "fpga_x2p_globals.h"
+#include "fpga_x2p_utils.h"
+#include "fpga_x2p_pbtypes_utils.h"
+#include "fpga_x2p_bitstream_utils.h"
 
 /* Determine the number of SRAM bit for a basis subckt of a multiplexer
  * In general, the number of SRAM bits should be same as the number of inputs per level

@@ -24,14 +24,14 @@
 
 /* Include spice support headers*/
 #include "linkedlist.h"
-#include "fpga_spice_types.h"
-#include "fpga_spice_globals.h"
-#include "fpga_spice_utils.h"
-#include "fpga_spice_timing_utils.h"
-#include "fpga_spice_backannotate_utils.h"
-#include "fpga_spice_pbtypes_utils.h"
+#include "fpga_x2p_types.h"
+#include "fpga_x2p_globals.h"
+#include "fpga_x2p_utils.h"
+#include "fpga_x2p_timing_utils.h"
+#include "fpga_x2p_backannotate_utils.h"
+#include "fpga_x2p_pbtypes_utils.h"
 #include "verilog_api.h"
-#include "fpga_spice_setup.h"
+#include "fpga_x2p_setup.h"
 
 /***** Subroutines Declarations *****/
 static 
@@ -1270,14 +1270,14 @@ void spice_net_info_add_density_weight(float signal_density_weight) {
   }
 }
 
-void fpga_spice_free(t_arch* Arch) {
+void fpga_x2p_free(t_arch* Arch) {
   /* Free index low and high */
   free_spice_model_grid_index_low_high(Arch->spice->num_spice_model, Arch->spice->spice_models);
   free_spice_model_routing_index_low_high(Arch->spice->num_spice_model, Arch->spice->spice_models);
 }
 
 /* Top-level function of FPGA-SPICE setup */
-void fpga_spice_setup(t_vpr_setup vpr_setup,
+void fpga_x2p_setup(t_vpr_setup vpr_setup,
                       t_arch* Arch) {
   int num_rename_violation = 0;
   int num_clocks = 0;

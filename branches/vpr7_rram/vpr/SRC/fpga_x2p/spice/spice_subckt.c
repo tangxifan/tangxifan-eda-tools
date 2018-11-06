@@ -21,9 +21,9 @@
 
 /* Include spice support headers*/
 #include "linkedlist.h"
-#include "fpga_spice_globals.h"
+#include "fpga_x2p_globals.h"
 #include "spice_globals.h"
-#include "fpga_spice_utils.h"
+#include "fpga_x2p_utils.h"
 #include "spice_utils.h"
 #include "spice_mux.h"
 #include "spice_lut.h"

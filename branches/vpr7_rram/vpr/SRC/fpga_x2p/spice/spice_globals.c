@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include "spice_types.h"
 #include "linkedlist.h"
-#include "fpga_spice_globals.h"
+#include "fpga_x2p_globals.h"
 #include "spice_globals.h"
 
 /* Threshold of max transistor width for each transistor */
