@@ -45,7 +45,7 @@ int determine_num_sram_bits_mux_basis_subckt(t_spice_model* mux_spice_model,
   int num_sram_bits; 
 
   /* General cases */
-  switch (mux_spice_model->design_tech_info.structure) {
+  switch (mux_spice_model->design_tech_info.mux_info->structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     num_sram_bits = 1;
     break;
@@ -348,7 +348,7 @@ int get_mux_default_path_id(t_spice_model* mux_spice_model,
 
   assert(SPICE_MODEL_MUX == mux_spice_model->type);
 
-  if (TRUE == mux_spice_model->design_tech_info.add_const_input) {
+  if (TRUE == mux_spice_model->design_tech_info.mux_info->add_const_input) {
     default_path_id = mux_size; /* When there is a constant input, use the last path */
   } else {
     default_path_id = DEFAULT_MUX_PATH_ID; /* When there is no constant input, use the default one */
@@ -368,7 +368,7 @@ int get_mux_full_input_size(t_spice_model* mux_spice_model,
     return full_input_size;
   }
 
-  if (TRUE == mux_spice_model->design_tech_info.add_const_input) {
+  if (TRUE == mux_spice_model->design_tech_info.mux_info->add_const_input) {
     full_input_size = mux_size + 1;
   }
   
@@ -410,7 +410,7 @@ void decode_cmos_mux_sram_bits(t_spice_model* mux_spice_model,
     return;
   }
   /* Other general cases */ 
-  switch (mux_spice_model->design_tech_info.structure) {
+  switch (mux_spice_model->design_tech_info.mux_info->structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     (*mux_level) = determine_tree_mux_level(num_mux_input);
     (*bit_len) = (*mux_level);
@@ -422,7 +422,7 @@ void decode_cmos_mux_sram_bits(t_spice_model* mux_spice_model,
     (*conf_bits) = decode_onelevel_mux_sram_bits(num_mux_input, (*mux_level), datapath_id); 
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-    (*mux_level) = mux_spice_model->design_tech_info.mux_num_level;
+    (*mux_level) = mux_spice_model->design_tech_info.mux_info->mux_num_level;
     (*bit_len) = determine_num_input_basis_multilevel_mux(num_mux_input, (*mux_level)) * (*mux_level);
     (*conf_bits) = decode_multilevel_mux_sram_bits(num_mux_input, (*mux_level), datapath_id); 
     break;
@@ -519,7 +519,7 @@ void decode_rram_mux(t_spice_model* mux_spice_model,
   (*bit_len) = 2 * count_num_sram_bits_one_spice_model(mux_spice_model, num_mux_input);
   
   /* Switch cases: MUX structure */
-  switch (mux_spice_model->design_tech_info.structure) {
+  switch (mux_spice_model->design_tech_info.mux_info->structure) {
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
     /* Number of configuration bits is 2*(input_size+1) */
     num_level = 1;
@@ -531,7 +531,7 @@ void decode_rram_mux(t_spice_model* mux_spice_model,
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
     /* Number of configuration bits is num_level* 2*(basis+1) */
-    num_level = mux_spice_model->design_tech_info.mux_num_level; 
+    num_level = mux_spice_model->design_tech_info.mux_info->mux_num_level; 
     num_input_basis = determine_num_input_basis_multilevel_mux(num_mux_input, num_level);
     break;
   default:
@@ -545,7 +545,7 @@ void decode_rram_mux(t_spice_model* mux_spice_model,
 
   /* Decode configuration bits : BL & WL*/
   /* Switch cases: MUX structure */
-  switch (mux_spice_model->design_tech_info.structure) {
+  switch (mux_spice_model->design_tech_info.mux_info->structure) {
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
     decode_one_level_4t1r_mux(datapath_id, (*bit_len), (*conf_bits)); 
     break;
@@ -579,13 +579,13 @@ void init_spice_mux_arch(t_spice_model* spice_model,
   } 
 
   /* Basic info*/
-  spice_mux_arch->structure = spice_model->design_tech_info.structure;
+  spice_mux_arch->structure = spice_model->design_tech_info.mux_info->structure;
   spice_mux_arch->num_data_input = mux_size;
   /* We create an additional input for MUX, which is connected to a constant VDD|GND */
   spice_mux_arch->num_input = get_mux_full_input_size(spice_model, mux_size);
 
   /* For different structure */
-  switch (spice_model->design_tech_info.structure) {
+  switch (spice_model->design_tech_info.mux_info->structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     spice_mux_arch->num_level = determine_tree_mux_level(spice_mux_arch->num_input);
     spice_mux_arch->num_input_basis = 2;
@@ -603,7 +603,7 @@ void init_spice_mux_arch(t_spice_model* spice_model,
     if (2 == spice_mux_arch->num_input) { 
       spice_mux_arch->num_level = 1;
     } else {
-      spice_mux_arch->num_level = spice_model->design_tech_info.mux_num_level;
+      spice_mux_arch->num_level = spice_model->design_tech_info.mux_info->mux_num_level;
     }
     spice_mux_arch->num_input_basis = determine_num_input_basis_multilevel_mux(spice_mux_arch->num_input, spice_mux_arch->num_level);
     /* Determine the level and index of per MUX inputs*/

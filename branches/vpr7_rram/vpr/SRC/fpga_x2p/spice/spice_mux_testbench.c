@@ -240,7 +240,7 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
   assert((-1 != path_id)&&(path_id < mux_size));
 
   /* 1. Get the mux level*/
-  switch (mux_spice_model->design_tech_info.structure) {
+  switch (mux_spice_model->design_tech_info.mux_info->structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     mux_level = determine_tree_mux_level(mux_size);
     num_mux_sram_bits = mux_level;
@@ -264,7 +264,7 @@ void fprint_spice_mux_testbench_one_mux(FILE* fp,
       num_mux_sram_bits = 1;
       mux_sram_bits = decode_tree_mux_sram_bits(mux_size, 1, path_id); 
     } else {
-      mux_level = mux_spice_model->design_tech_info.mux_num_level;
+      mux_level = mux_spice_model->design_tech_info.mux_info->mux_num_level;
       num_mux_sram_bits = determine_num_input_basis_multilevel_mux(mux_size, mux_level) * mux_level;
       mux_sram_bits = decode_multilevel_mux_sram_bits(mux_size, mux_level, path_id); 
     }

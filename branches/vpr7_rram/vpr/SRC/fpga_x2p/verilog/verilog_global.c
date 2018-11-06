@@ -36,6 +36,7 @@ char* memories_verilog_file_name = "memories.v";
 char* wires_verilog_file_name = "wires.v";
 char* essentials_verilog_file_name = "inv_buf_passgate.v";
 char* config_peripheral_verilog_file_name = "config_peripherals.v";
+char* user_defined_template_verilog_file_name = "user_defined_templates.v";
 
 char* verilog_mux_basis_posfix = "_basis";
 char* verilog_mux_special_basis_posfix = "_special_basis";

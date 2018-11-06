@@ -48,7 +48,7 @@ int determine_rr_node_default_prev_node(t_rr_node* cur_rr_node) {
 
   /* Judge if the prev_node should be */
   if ((NULL != switch_inf[cur_rr_node->driver_switch].spice_model) 
-     && (TRUE == switch_inf[cur_rr_node->driver_switch].spice_model->design_tech_info.add_const_input)) {
+     && (TRUE == switch_inf[cur_rr_node->driver_switch].spice_model->design_tech_info.mux_info->add_const_input)) {
     default_prev_node = OPEN; /* The constant input will be the last input!!! */
   } 
 

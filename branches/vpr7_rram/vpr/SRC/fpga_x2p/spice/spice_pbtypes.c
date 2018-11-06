@@ -558,7 +558,7 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
 
     assert(select_edge < fan_in);
     /* SRAMs */
-    switch (cur_interc->spice_model->design_tech_info.structure) {
+    switch (cur_interc->spice_model->design_tech_info.mux_info->structure) {
     case SPICE_MODEL_STRUCTURE_TREE:
       /* 1. Get the mux level*/
       mux_level = determine_tree_mux_level(fan_in);
@@ -582,7 +582,7 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
       }
       break;
     case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-      mux_level = cur_interc->spice_model->design_tech_info.mux_num_level;
+      mux_level = cur_interc->spice_model->design_tech_info.mux_info->mux_num_level;
       num_sram_bits = determine_num_input_basis_multilevel_mux(fan_in, mux_level) *mux_level;
       sram_bits = decode_multilevel_mux_sram_bits(fan_in, mux_level, select_edge);
       break;

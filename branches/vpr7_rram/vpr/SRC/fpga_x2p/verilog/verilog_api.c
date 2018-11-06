@@ -221,7 +221,8 @@ void vpr_dump_syn_verilog(t_vpr_setup vpr_setup,
   /* Dump internal structures of submodules */
   dump_verilog_submodules(sram_verilog_orgz_info, submodule_dir_path, 
                           Arch, &vpr_setup.RoutingArch, 
-                          vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.include_timing);
+                          vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.include_timing,
+                          vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_user_defined_template);
 
   /* Dump top-level verilog */
   dump_compact_verilog_top_netlist(sram_verilog_orgz_info, chomped_circuit_name, 

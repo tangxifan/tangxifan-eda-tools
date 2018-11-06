@@ -1219,6 +1219,7 @@ struct s_syn_verilog_opts {
   boolean include_timing;
   boolean print_modelsim_autodeck;
   char* modelsim_ini_path;
+  boolean print_user_defined_template;
 };
 
 /* Xifan TANG: bitstream generator */

@@ -1074,6 +1074,7 @@ static void SetupSynVerilogOpts(t_options Options,
   syn_verilog_opts->print_modelsim_autodeck = FALSE;
   syn_verilog_opts->print_verification_netlist= FALSE;
   syn_verilog_opts->modelsim_ini_path = NULL;
+  syn_verilog_opts->print_user_defined_template = FALSE;
 
   /* Turn on Syn_verilog options */
   if (Options.Count[OT_FPGA_VERILOG_SYN]) {
@@ -1108,6 +1109,10 @@ static void SetupSynVerilogOpts(t_options Options,
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_MODELSIM_INI_PATH]) {
     syn_verilog_opts->modelsim_ini_path = my_strdup(Options.fpga_verilog_modelsim_ini_path);
+  }
+
+  if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_USER_DEFINED_TEMPLATE]) {
+    syn_verilog_opts->print_user_defined_template = TRUE;
   }
 
   /* SynVerilog needs the input from spice modeling */

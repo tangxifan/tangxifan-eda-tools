@@ -98,6 +98,7 @@ void compact_verilog_update_one_spice_model_grid_index(t_type_ptr phy_block_type
     case SPICE_MODEL_CHAN_WIRE:
     case SPICE_MODEL_FF:
     case SPICE_MODEL_HARDLOGIC:
+    case SPICE_MODEL_GATE:
       break;
     case SPICE_MODEL_SCFF:
     case SPICE_MODEL_SRAM:

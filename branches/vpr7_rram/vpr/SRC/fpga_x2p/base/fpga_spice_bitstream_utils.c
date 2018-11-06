@@ -110,7 +110,7 @@ int count_num_sram_bits_one_mux_spice_model(t_spice_model* cur_spice_model,
   num_input_size = get_mux_full_input_size (cur_spice_model, mux_size);
 
   /* Number of configuration bits depends on the MUX structure */
-  switch (cur_spice_model->design_tech_info.structure) {
+  switch (cur_spice_model->design_tech_info.mux_info->structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     num_sram_bits = determine_tree_mux_level(num_input_size);
     break;
@@ -118,9 +118,9 @@ int count_num_sram_bits_one_mux_spice_model(t_spice_model* cur_spice_model,
     num_sram_bits = num_input_size;
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-    num_sram_bits = cur_spice_model->design_tech_info.mux_num_level
+    num_sram_bits = cur_spice_model->design_tech_info.mux_info->mux_num_level
                     * determine_num_input_basis_multilevel_mux(num_input_size, 
-                      cur_spice_model->design_tech_info.mux_num_level);
+                      cur_spice_model->design_tech_info.mux_info->mux_num_level);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
@@ -135,12 +135,12 @@ int count_num_sram_bits_one_mux_spice_model(t_spice_model* cur_spice_model,
   switch (cur_spice_model->design_tech) {
   case SPICE_MODEL_DESIGN_RRAM:
     /* 4T1R MUX requires more configuration bits */
-    if (SPICE_MODEL_STRUCTURE_TREE == cur_spice_model->design_tech_info.structure) {
+    if (SPICE_MODEL_STRUCTURE_TREE == cur_spice_model->design_tech_info.mux_info->structure) {
     /* For tree-structure: we need 3 times more config. bits */
       num_sram_bits = 3 * num_sram_bits;
-    } else if (SPICE_MODEL_STRUCTURE_MULTILEVEL == cur_spice_model->design_tech_info.structure) {
+    } else if (SPICE_MODEL_STRUCTURE_MULTILEVEL == cur_spice_model->design_tech_info.mux_info->structure) {
     /* For multi-level structure: we need 1 more config. bits for each level */
-      num_sram_bits += cur_spice_model->design_tech_info.mux_num_level;
+      num_sram_bits += cur_spice_model->design_tech_info.mux_info->mux_num_level;
     } else {
       num_sram_bits = (num_sram_bits + 1);
     }
@@ -388,7 +388,7 @@ int count_num_reserved_conf_bits_one_mux_spice_model(t_spice_model* cur_spice_mo
   num_input_size = get_mux_full_input_size(cur_spice_model, mux_size);
 
   /* Number of configuration bits depends on the MUX structure */
-  switch (cur_spice_model->design_tech_info.structure) {
+  switch (cur_spice_model->design_tech_info.mux_info->structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     num_reserved_conf_bits = 2;
     break;
@@ -396,9 +396,9 @@ int count_num_reserved_conf_bits_one_mux_spice_model(t_spice_model* cur_spice_mo
     num_reserved_conf_bits = num_input_size;
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-    num_reserved_conf_bits = cur_spice_model->design_tech_info.mux_num_level * 
+    num_reserved_conf_bits = cur_spice_model->design_tech_info.mux_info->mux_num_level * 
                              determine_num_input_basis_multilevel_mux(num_input_size, 
-                             cur_spice_model->design_tech_info.mux_num_level);
+                             cur_spice_model->design_tech_info.mux_info->mux_num_level);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
@@ -425,10 +425,10 @@ int count_num_reserved_conf_bits_one_mux_spice_model(t_spice_model* cur_spice_mo
     case SPICE_SRAM_SCAN_CHAIN:
     case SPICE_SRAM_STANDALONE:
       /* 4T1R MUX requires more configuration bits */
-      if (SPICE_MODEL_STRUCTURE_TREE == cur_spice_model->design_tech_info.structure) {
+      if (SPICE_MODEL_STRUCTURE_TREE == cur_spice_model->design_tech_info.mux_info->structure) {
       /* For tree-structure: we need 3 times more config. bits */
         num_reserved_conf_bits = 0;
-      } else if (SPICE_MODEL_STRUCTURE_MULTILEVEL == cur_spice_model->design_tech_info.structure) {
+      } else if (SPICE_MODEL_STRUCTURE_MULTILEVEL == cur_spice_model->design_tech_info.mux_info->structure) {
       /* For multi-level structure: we need 1 more config. bits for each level */
         num_reserved_conf_bits = 0;
       } else {
@@ -626,7 +626,7 @@ int count_num_conf_bits_one_mux_spice_model(t_spice_model* cur_spice_model,
   num_input_size = get_mux_full_input_size(cur_spice_model, mux_size);
 
   /* Number of configuration bits depends on the MUX structure */
-  switch (cur_spice_model->design_tech_info.structure) {
+  switch (cur_spice_model->design_tech_info.mux_info->structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     num_conf_bits = determine_tree_mux_level(num_input_size);
     break;
@@ -634,9 +634,9 @@ int count_num_conf_bits_one_mux_spice_model(t_spice_model* cur_spice_model,
     num_conf_bits = num_input_size;
     break;
   case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-    num_conf_bits = cur_spice_model->design_tech_info.mux_num_level
+    num_conf_bits = cur_spice_model->design_tech_info.mux_info->mux_num_level
                     * determine_num_input_basis_multilevel_mux(num_input_size, 
-                      cur_spice_model->design_tech_info.mux_num_level);
+                      cur_spice_model->design_tech_info.mux_info->mux_num_level);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
@@ -655,7 +655,7 @@ int count_num_conf_bits_one_mux_spice_model(t_spice_model* cur_spice_model,
      /* In memory bank, by intensively share the Bit/Word Lines,
       * we only need 1 additional BL and WL for each MUX level.
       */
-      num_conf_bits = cur_spice_model->design_tech_info.mux_num_level;
+      num_conf_bits = cur_spice_model->design_tech_info.mux_info->mux_num_level;
       /* For 2:1 MUX, whatever structure, there is only one level */
       if (2 == num_input_size) {
         num_conf_bits = 1;

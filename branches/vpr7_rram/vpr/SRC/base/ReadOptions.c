@@ -531,6 +531,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
       return Args;
     case OT_FPGA_VERILOG_SYN_MODELSIM_INI_PATH:
       return ReadString(Args, &Options->fpga_verilog_modelsim_ini_path);
+    case OT_FPGA_VERILOG_SYN_PRINT_USER_DEFINED_TEMPLATE:
+      return Args;
     /* Xifan TANG: Bitstream generator */
     case OT_FPGA_BITSTREAM_GENERATOR:
       return Args;

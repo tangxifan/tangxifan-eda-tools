@@ -25,7 +25,8 @@ enum e_spice_model_type {
   SPICE_MODEL_SCFF,
   SPICE_MODEL_IOPAD, 
   SPICE_MODEL_INVBUF, 
-  SPICE_MODEL_PASSGATE 
+  SPICE_MODEL_PASSGATE, 
+  SPICE_MODEL_GATE 
 };
 
 enum e_spice_model_design_tech {
@@ -50,6 +51,10 @@ enum e_spice_model_pass_gate_logic_type {
   SPICE_MODEL_PASS_GATE_TRANSISTOR
 };
 
+enum e_spice_model_gate_type {
+  SPICE_MODEL_GATE_AND, 
+  SPICE_MODEL_GATE_OR
+};
 
 /* Transistor-level basic informations*/
 enum e_spice_trans_type {
@@ -112,6 +117,10 @@ enum e_spice_pin2pin_interc_type {
 /* typedef of structs */
 typedef struct s_spice_transistor_type t_spice_transistor_type;
 typedef struct s_spice_tech_lib t_spice_tech_lib;
+typedef struct s_spice_model_gate t_spice_model_gate;
+typedef struct s_spice_model_rram t_spice_model_rram;
+typedef struct s_spice_model_mux t_spice_model_mux;
+typedef struct s_spice_model_lut t_spice_model_lut;
 typedef struct s_spice_model_buffer t_spice_model_buffer;
 typedef struct s_spice_model_pass_gate_logic t_spice_model_pass_gate_logic;
 typedef struct s_spice_model_port t_spice_model_port;
@@ -226,11 +235,7 @@ struct s_spice_model_netlist {
   int included;
 };
 
-/* Information about design technology */
-struct s_spice_model_design_tech_info {
-  /* Valid for SRAM technology */
-  t_spice_model_buffer* buffer_info;
-  t_spice_model_pass_gate_logic* pass_gate_info;
+struct s_spice_model_rram {
   /* Vaild for RRAM technology only, and this is a mux*/
   float ron;
   float roff;
@@ -238,16 +243,38 @@ struct s_spice_model_design_tech_info {
   float wprog_set_pmos;
   float wprog_reset_nmos;
   float wprog_reset_pmos;
-  boolean advanced_rram_design;
+};
+
+struct s_spice_model_mux {
   /* Mux information only */
   enum e_spice_model_structure structure;
   int mux_num_level;
   boolean add_const_input;
   int const_input_val;
-  /* Power gate information */
-  boolean power_gated;
+  boolean advanced_rram_design;
+};
+
+struct s_spice_model_lut {
   /* LUT information */
   boolean frac_lut;
+};
+
+struct s_spice_model_gate {
+  /* LUT information */
+  enum e_spice_model_gate_type type;
+};
+
+/* Information about design technology */
+struct s_spice_model_design_tech_info {
+  /* Valid for SRAM technology */
+  t_spice_model_buffer* buffer_info;
+  t_spice_model_pass_gate_logic* pass_gate_info;
+  t_spice_model_rram* rram_info;
+  t_spice_model_mux* mux_info;
+  t_spice_model_lut* lut_info;
+  t_spice_model_gate* gate_info;
+  /* Power gate information */
+  boolean power_gated;
 };
 
 struct s_spice_model_delay_info {

@@ -521,6 +521,107 @@ static void ProcessSpiceModelPassGateLogic(ezxml_t Node,
   return;
 }
 
+static void ProcessSpiceModelRRAM(ezxml_t Node, 
+                                  t_spice_model_rram* rram_info) {
+  rram_info->ron = GetFloatProperty(Node,"ron",TRUE,0);
+  ezxml_set_attr(Node, "ron", NULL);
+
+  rram_info->roff = GetFloatProperty(Node,"roff",TRUE,0);
+  ezxml_set_attr(Node, "roff", NULL);
+
+  rram_info->wprog_set_nmos = GetFloatProperty(Node,"wprog_set_nmos",TRUE,0);
+  ezxml_set_attr(Node, "wprog_set_nmos", NULL);
+
+  rram_info->wprog_set_pmos = GetFloatProperty(Node,"wprog_set_pmos",TRUE,0);
+  ezxml_set_attr(Node, "wprog_set_nmos", NULL);
+
+  rram_info->wprog_reset_nmos = GetFloatProperty(Node,"wprog_reset_nmos",TRUE,0);
+  ezxml_set_attr(Node, "wprog_reset_nmos", NULL);
+
+  rram_info->wprog_reset_pmos = GetFloatProperty(Node,"wprog_reset_pmos",TRUE,0);
+  ezxml_set_attr(Node, "wprog_reset_pmos", NULL);
+
+  return;
+}
+
+static void ProcessSpiceModelMUX(ezxml_t Node, 
+                                 t_spice_model* spice_model,
+                                 t_spice_model_mux* mux_info) {
+  /* Default: tree, no const_inputs */
+  mux_info->structure = SPICE_MODEL_STRUCTURE_TREE;
+  mux_info->add_const_input = FALSE;
+  mux_info->const_input_val = 0;
+
+  if (0 == strcmp(FindProperty(Node,"structure",TRUE),"tree")) {
+    mux_info->structure = SPICE_MODEL_STRUCTURE_TREE;
+  } else if (0 == strcmp(FindProperty(Node,"structure",TRUE),"one-level")) {
+    mux_info->structure = SPICE_MODEL_STRUCTURE_ONELEVEL;
+  } else if (0 == strcmp(FindProperty(Node,"structure",TRUE),"multi-level")) {
+    mux_info->structure = SPICE_MODEL_STRUCTURE_MULTILEVEL;
+  /* New Structure: crossbar 
+  } else if (0 == strcmp(FindProperty(Node,"structure",TRUE),"crossbar")) {
+    spice_model->design_tech_info.structure = SPICE_MODEL_STRUCTURE_CROSSBAR;
+  */
+  } else {
+     /* Set default to RRAM MUX */
+     if (SPICE_MODEL_DESIGN_RRAM == spice_model->design_tech) {
+       mux_info->structure = SPICE_MODEL_STRUCTURE_ONELEVEL;
+     } else {
+     /* Set default to SRAM MUX */
+       mux_info->structure = SPICE_MODEL_STRUCTURE_TREE;
+    }
+  }
+  /* Parse the const inputs */
+  mux_info->add_const_input = GetBooleanProperty(Node, "add_const_input", FALSE, FALSE);
+  mux_info->const_input_val = GetIntProperty(Node, "const_input_val", FALSE, 0);
+
+  ezxml_set_attr(Node, "structure", NULL);
+  ezxml_set_attr(Node, "add_const_input", NULL);
+  ezxml_set_attr(Node, "const_input_val", NULL);
+
+  if (SPICE_MODEL_STRUCTURE_MULTILEVEL == mux_info->structure) {
+    mux_info->mux_num_level = GetIntProperty(Node,"num_level",TRUE,1);
+    /* For num_level == 1, auto convert to one-level structure */
+    if (1 == mux_info->mux_num_level) {
+      mux_info->structure = SPICE_MODEL_STRUCTURE_ONELEVEL;
+      vpr_printf(TIO_MESSAGE_INFO,"[LINE%d] Automatically convert structure of spice model(%s) to one-level.\n",
+                 Node->line, spice_model->name);
+    }
+  } else if (SPICE_MODEL_STRUCTURE_ONELEVEL == mux_info->structure) {
+  /* Set mux_num_level for other structure: one-level and tree */
+    mux_info->mux_num_level = 1;
+  }
+  ezxml_set_attr(Node, "num_level", NULL);
+  /* Specify if should use the advanced 4T1R MUX design */
+  mux_info->advanced_rram_design = GetBooleanProperty(Node,"advanced_rram_design", FALSE, FALSE);
+  ezxml_set_attr(Node, "advanced_rram_design", NULL);
+
+  return;
+}
+
+static void ProcessSpiceModelLUT(ezxml_t Node, 
+                                 t_spice_model_lut* lut_info) {
+  lut_info->frac_lut = GetBooleanProperty(Node,"fracturable_lut", FALSE, FALSE);
+
+  return;
+}
+
+static void ProcessSpiceModelGate(ezxml_t Node, 
+                                 t_spice_model_gate* gate_info) {
+  if (0 == strcmp(FindProperty(Node,"topology",TRUE),"AND")) {
+    gate_info->type = SPICE_MODEL_GATE_AND;
+  } else if (0 == strcmp(FindProperty(Node,"topology",TRUE),"OR")) {
+    gate_info->type = SPICE_MODEL_GATE_OR;
+  } else {
+    vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] Invalid topology of gates. Should be [AND|OR].\n",
+              Node->line);
+    exit(1);
+  } 
+  ezxml_set_attr(Node, "topology", NULL);
+
+  return;
+}
+
 static void ProcessSpiceModelPortLutOutputMask(ezxml_t Node,
                                                t_spice_model_port* port) {
 
@@ -734,8 +835,10 @@ static void ProcessSpiceModel(ezxml_t Parent,
     spice_model->type = SPICE_MODEL_INVBUF;
   } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"pass_gate")) {
     spice_model->type = SPICE_MODEL_PASSGATE;
+  } else if (0 == strcmp(FindProperty(Parent,"type",TRUE),"gate")) {
+    spice_model->type = SPICE_MODEL_GATE;
   } else {
-    vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] Invalid type of spice model(%s). Should be [chan_wire|wire|mux|lut|ff|sram|hard_logic|sff|iopad|inv_buf|pass_gate|].\n",
+    vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] Invalid type of spice model(%s). Should be [chan_wire|wire|mux|lut|ff|sram|hard_logic|sff|iopad|inv_buf|pass_gate|gate].\n",
                Parent->line, FindProperty(Parent, "type", TRUE));
     exit(1);
   }
@@ -793,19 +896,10 @@ static void ProcessSpiceModel(ezxml_t Parent,
       }
     } else if (0 == strcmp(FindProperty(Node,"type",TRUE),"rram")) {
       spice_model->design_tech = SPICE_MODEL_DESIGN_RRAM;
-      /* RRAM tech. We need more properties*/
-      spice_model->design_tech_info.ron = GetFloatProperty(Node,"ron",TRUE,0);
-	  ezxml_set_attr(Node, "ron", NULL);
-      spice_model->design_tech_info.roff = GetFloatProperty(Node,"roff",TRUE,0);
-	  ezxml_set_attr(Node, "roff", NULL);
-      spice_model->design_tech_info.wprog_set_nmos = GetFloatProperty(Node,"wprog_set_nmos",TRUE,0);
-	  ezxml_set_attr(Node, "wprog_set_nmos", NULL);
-      spice_model->design_tech_info.wprog_set_pmos = GetFloatProperty(Node,"wprog_set_pmos",TRUE,0);
-	  ezxml_set_attr(Node, "wprog_set_nmos", NULL);
-      spice_model->design_tech_info.wprog_reset_nmos = GetFloatProperty(Node,"wprog_reset_nmos",TRUE,0);
-	  ezxml_set_attr(Node, "wprog_reset_nmos", NULL);
-      spice_model->design_tech_info.wprog_reset_pmos = GetFloatProperty(Node,"wprog_reset_pmos",TRUE,0);
-	  ezxml_set_attr(Node, "wprog_reset_pmos", NULL);
+      /* Malloc RRAM info */
+      spice_model->design_tech_info.rram_info = (t_spice_model_rram*)my_malloc(sizeof(t_spice_model_rram));
+      /* Fill information */
+      ProcessSpiceModelRRAM(Node, spice_model->design_tech_info.rram_info);
     } else {
       vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] Invalid value for design_technology in spice model(%s). Should be [cmos|rram].\n",
                  Node->line,spice_model->name);
@@ -813,68 +907,46 @@ static void ProcessSpiceModel(ezxml_t Parent,
     }
 	ezxml_set_attr(Node, "type", NULL);
 
+    /* Read in the structure if defined */
+    spice_model->design_tech_info.mux_info = NULL;
+    if (SPICE_MODEL_MUX == spice_model->type) {
+      /* Malloc */
+      spice_model->design_tech_info.mux_info = (t_spice_model_mux*)my_malloc(sizeof(t_spice_model_mux));
+      /* Fill information */
+      ProcessSpiceModelMUX(Node, spice_model, spice_model->design_tech_info.mux_info);
+    }
+
     /* If this is a LUT, more options are available */
+    spice_model->design_tech_info.lut_info = NULL;
     if (SPICE_MODEL_LUT == spice_model->type) {
-      spice_model->design_tech_info.frac_lut = GetBooleanProperty(Node,"fracturable_lut", FALSE, FALSE);
+      /* Malloc */
+      spice_model->design_tech_info.lut_info = (t_spice_model_lut*)my_malloc(sizeof(t_spice_model_lut));
+      /* Fill information */
+      ProcessSpiceModelLUT(Node, spice_model->design_tech_info.lut_info);
+      /* Malloc */
+      spice_model->design_tech_info.mux_info = (t_spice_model_mux*)my_malloc(sizeof(t_spice_model_mux));
+      /* Fill information */
+      /* Default: tree, no const_inputs */
+      spice_model->design_tech_info.mux_info->structure = SPICE_MODEL_STRUCTURE_TREE;
+      spice_model->design_tech_info.mux_info->add_const_input = FALSE;
+      spice_model->design_tech_info.mux_info->const_input_val = 0;
     }
 	ezxml_set_attr(Node, "fracturable_lut", NULL);
 
-    /* Read in the structure if defined */
-    if (SPICE_MODEL_MUX == spice_model->type) {
-      if (0 == strcmp(FindProperty(Node,"structure",TRUE),"tree")) {
-        spice_model->design_tech_info.structure = SPICE_MODEL_STRUCTURE_TREE;
-      } else if (0 == strcmp(FindProperty(Node,"structure",TRUE),"one-level")) {
-        spice_model->design_tech_info.structure = SPICE_MODEL_STRUCTURE_ONELEVEL;
-      } else if (0 == strcmp(FindProperty(Node,"structure",TRUE),"multi-level")) {
-        spice_model->design_tech_info.structure = SPICE_MODEL_STRUCTURE_MULTILEVEL;
-      /* New Structure: crossbar 
-      } else if (0 == strcmp(FindProperty(Node,"structure",TRUE),"crossbar")) {
-        spice_model->design_tech_info.structure = SPICE_MODEL_STRUCTURE_CROSSBAR;
-      */
-      } else {
-         /* Set default to RRAM MUX */
-         if (SPICE_MODEL_DESIGN_RRAM == spice_model->design_tech) {
-           spice_model->design_tech_info.structure = SPICE_MODEL_STRUCTURE_ONELEVEL;
-         } else {
-         /* Set default to SRAM MUX */
-           spice_model->design_tech_info.structure = SPICE_MODEL_STRUCTURE_TREE;
-        }
-      }
-      /* Parse the const inputs */
-      spice_model->design_tech_info.add_const_input = GetBooleanProperty(Node, "add_const_input", FALSE, FALSE);
-      spice_model->design_tech_info.const_input_val = GetIntProperty(Node, "const_input_val", FALSE, 0);
-    } else {
-      /* Default: tree, no const_inputs */
-      spice_model->design_tech_info.structure = SPICE_MODEL_STRUCTURE_TREE;
-      spice_model->design_tech_info.add_const_input = FALSE;
-      spice_model->design_tech_info.const_input_val = 0;
-    }
-	ezxml_set_attr(Node, "structure", NULL);
-	ezxml_set_attr(Node, "add_const_input", NULL);
-	ezxml_set_attr(Node, "const_input_val", NULL);
 
-    if (SPICE_MODEL_STRUCTURE_MULTILEVEL == spice_model->design_tech_info.structure) {
-      spice_model->design_tech_info.mux_num_level = GetIntProperty(Node,"num_level",TRUE,1);
-      /* For num_level == 1, auto convert to one-level structure */
-      if (1 == spice_model->design_tech_info.mux_num_level) {
-        spice_model->design_tech_info.structure = SPICE_MODEL_STRUCTURE_ONELEVEL;
-        vpr_printf(TIO_MESSAGE_INFO,"[LINE%d] Automatically convert structure of spice model(%s) to one-level.\n",
-                   Node->line, spice_model->name);
-      }
-    } else if (SPICE_MODEL_STRUCTURE_ONELEVEL == spice_model->design_tech_info.structure) {
-    /* Set mux_num_level for other structure: one-level and tree */
-      spice_model->design_tech_info.mux_num_level = 1;
-    }
-	ezxml_set_attr(Node, "num_level", NULL);
-    /* Specify if should use the advanced 4T1R MUX design */
-    spice_model->design_tech_info.advanced_rram_design = GetBooleanProperty(Node,"advanced_rram_design", FALSE, FALSE);
-    ezxml_set_attr(Node, "advanced_rram_design", NULL);
-    FreeNode(Node);
+    spice_model->design_tech_info.gate_info = NULL;
+    if (SPICE_MODEL_GATE == spice_model->type) {
+      /* Malloc */
+      spice_model->design_tech_info.gate_info = (t_spice_model_gate*)my_malloc(sizeof(t_spice_model_gate));
+      /* Fill information */
+      ProcessSpiceModelGate(Node, spice_model->design_tech_info.gate_info);
+    } 
   } else {
     vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] design_technology is expected in spice_model(%s).\n",
               Node->line,spice_model->name);
     exit(1);
   }
+  FreeNode(Node);
 
   /* LUT input_buffers */
   Node = ezxml_child(Parent, "lut_input_buffer");
@@ -1154,24 +1226,24 @@ static void check_spice_models(int num_spice_model,
       }
       /* Check the I/O transistors are defined when RRAM MUX is selected */
       if (SPICE_MODEL_DESIGN_RRAM == spice_models[i].design_tech) {
-        if (!(0. < spice_models[i].design_tech_info.wprog_set_nmos)) {
+        if (!(0. < spice_models[i].design_tech_info.rram_info->wprog_set_nmos)) {
           vpr_printf(TIO_MESSAGE_ERROR, "wprog_set_nmos(%g) should be >0 for a RRAM MUX SPICE model (%s)!\n",
-                     spice_models[i].design_tech_info.wprog_set_nmos, spice_models[i].name);
+                     spice_models[i].design_tech_info.rram_info->wprog_set_nmos, spice_models[i].name);
           exit(1);
         }
-        if (!(0. < spice_models[i].design_tech_info.wprog_set_pmos)) {
+        if (!(0. < spice_models[i].design_tech_info.rram_info->wprog_set_pmos)) {
           vpr_printf(TIO_MESSAGE_ERROR, "wprog_set_pmos(%g) should be >0 for a RRAM MUX SPICE model (%s)!\n",
-                     spice_models[i].design_tech_info.wprog_set_pmos, spice_models[i].name);
+                     spice_models[i].design_tech_info.rram_info->wprog_set_pmos, spice_models[i].name);
           exit(1);
         }
-        if (!(0. < spice_models[i].design_tech_info.wprog_reset_nmos)) {
+        if (!(0. < spice_models[i].design_tech_info.rram_info->wprog_reset_nmos)) {
           vpr_printf(TIO_MESSAGE_ERROR, "wprog_reset_nmos(%g) should be >0 for a RRAM MUX SPICE model (%s)!\n",
-                     spice_models[i].design_tech_info.wprog_reset_nmos, spice_models[i].name);
+                     spice_models[i].design_tech_info.rram_info->wprog_reset_nmos, spice_models[i].name);
           exit(1);
         }
-        if (!(0. < spice_models[i].design_tech_info.wprog_reset_pmos)) {
+        if (!(0. < spice_models[i].design_tech_info.rram_info->wprog_reset_pmos)) {
           vpr_printf(TIO_MESSAGE_ERROR, "wprog_reset_pmos(%g) should be >0 for a RRAM MUX SPICE model (%s)!\n",
-                     spice_models[i].design_tech_info.wprog_reset_pmos, spice_models[i].name);
+                     spice_models[i].design_tech_info.rram_info->wprog_reset_pmos, spice_models[i].name);
           exit(1);
         }
       } 

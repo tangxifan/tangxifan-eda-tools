@@ -1892,32 +1892,32 @@ void fprint_spice_circuit_param(FILE* fp,
        /* Print Ron */
        fprint_one_design_param_w_wo_variation(fp,
                                               my_strcat(spice_model[imodel].name, design_param_postfix_rram_ron), 
-                                              spice_model[imodel].design_tech_info.ron,
+                                              spice_model[imodel].design_tech_info.rram_info->ron,
                                               mc_params.rram_variation); 
        /* Print Roff */
        fprint_one_design_param_w_wo_variation(fp,
                                               my_strcat(spice_model[imodel].name, design_param_postfix_rram_roff), 
-                                              spice_model[imodel].design_tech_info.roff,
+                                              spice_model[imodel].design_tech_info.rram_info->roff,
                                               mc_params.rram_variation); 
        /* Print Wprog_set_nmos */
        fprint_one_design_param_w_wo_variation(fp,
                                               my_strcat(spice_model[imodel].name, design_param_postfix_rram_wprog_set_nmos), 
-                                              spice_model[imodel].design_tech_info.wprog_set_nmos,
+                                              spice_model[imodel].design_tech_info.rram_info->wprog_set_nmos,
                                               mc_params.cmos_variation); 
        /* Print Wprog_set_pmos */
        fprint_one_design_param_w_wo_variation(fp,
                                               my_strcat(spice_model[imodel].name, design_param_postfix_rram_wprog_set_pmos), 
-                                              spice_model[imodel].design_tech_info.wprog_set_pmos,
+                                              spice_model[imodel].design_tech_info.rram_info->wprog_set_pmos,
                                               mc_params.cmos_variation); 
        /* Print Wprog_reset_nmos */
        fprint_one_design_param_w_wo_variation(fp,
                                               my_strcat(spice_model[imodel].name, design_param_postfix_rram_wprog_reset_nmos), 
-                                              spice_model[imodel].design_tech_info.wprog_reset_nmos,
+                                              spice_model[imodel].design_tech_info.rram_info->wprog_reset_nmos,
                                               mc_params.cmos_variation); 
        /* Print Wprog_reset_pmos */
        fprint_one_design_param_w_wo_variation(fp,
                                               my_strcat(spice_model[imodel].name, design_param_postfix_rram_wprog_reset_pmos), 
-                                              spice_model[imodel].design_tech_info.wprog_reset_pmos,
+                                              spice_model[imodel].design_tech_info.rram_info->wprog_reset_pmos,
                                               mc_params.cmos_variation); 
      } 
   }
