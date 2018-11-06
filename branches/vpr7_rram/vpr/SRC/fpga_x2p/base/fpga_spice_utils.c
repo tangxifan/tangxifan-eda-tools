@@ -356,6 +356,7 @@ t_spice_model_port* find_spice_model_port_by_name(t_spice_model* cur_spice_model
 void config_spice_model_input_output_buffers_pass_gate(int num_spice_models, 
                                                        t_spice_model* spice_model) {
   int i;
+  t_spice_model* inv_spice_model = NULL;
   t_spice_model* buf_spice_model = NULL;
   t_spice_model* pgl_spice_model = NULL;
 
@@ -410,16 +411,56 @@ void config_spice_model_input_output_buffers_pass_gate(int num_spice_models,
 
       /* We should find a buffer spice_model*/
       if (NULL == buf_spice_model) {
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Fail to find inv/buffer spice_model to the lut_input buffer of spice_model(name=%s)!\n",
+        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Fail to find a buffer spice_model to the lut_input_buffer of spice_model(name=%s)!\n",
                    __FILE__, __LINE__, spice_model[i].name);
         exit(1);
       }
+      /* Check if we have an inverter spice_model */
+      /* Make sure this is an inverter! */
+      if ((SPICE_MODEL_INVBUF != buf_spice_model->type)
+         || (SPICE_MODEL_BUF_BUF != buf_spice_model->design_tech_info.buffer_info->type)) {
+        vpr_printf(TIO_MESSAGE_ERROR,
+                   "(FILE: %s, [LINE%d]) Buffer spice_model (name=%s) for the lut_input_buffer of spice model (name=%s) is not defined as an buffer!\n",
+                   __FILE__, __LINE__, 
+                   buf_spice_model->name, spice_model[i].name);
+        exit(1);
+      } 
+
       /* Copy the information from found spice model to current spice model*/
       memcpy(spice_model[i].lut_input_buffer, buf_spice_model->design_tech_info.buffer_info, sizeof(t_spice_model_buffer));
       /* Recover the spice_model_name and exist */
       spice_model[i].lut_input_buffer->exist = 1;
       spice_model[i].lut_input_buffer->spice_model_name = my_strdup(buf_spice_model->name);
       spice_model[i].lut_input_buffer->spice_model = buf_spice_model;
+
+      /* for inverter spice_model*/
+      assert(1 == spice_model[i].lut_input_inverter->exist);
+
+      inv_spice_model = find_name_matched_spice_model(spice_model[i].lut_input_inverter->spice_model_name,
+                                                      num_spice_models, spice_model);
+
+      /* We should find an inverter spice_model*/
+      if (NULL == inv_spice_model) {
+        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Fail to find inverter spice_model to the lut_input_inverter of spice_model(name=%s)!\n",
+                   __FILE__, __LINE__, spice_model[i].name);
+        exit(1);
+      }
+      /* Check if we have an inverter spice_model */
+      /* Make sure this is an inverter! */
+      if ((SPICE_MODEL_INVBUF != inv_spice_model->type)
+         || (SPICE_MODEL_BUF_INV != inv_spice_model->design_tech_info.buffer_info->type)) {
+        vpr_printf(TIO_MESSAGE_ERROR,
+                   "(FILE: %s, [LINE%d]) Inverter spice_model (name=%s) for the lut_input_buffer of spice model (name=%s) is not defined as an inverter!\n",
+                   __FILE__, __LINE__, 
+                   inv_spice_model->name, spice_model[i].name);
+        exit(1);
+      } 
+      /* Copy the information from found spice model to current spice model*/
+      memcpy(spice_model[i].lut_input_inverter, inv_spice_model->design_tech_info.buffer_info, sizeof(t_spice_model_buffer));
+      /* Recover the spice_model_name and exist */
+      spice_model[i].lut_input_inverter->exist = 1;
+      spice_model[i].lut_input_inverter->spice_model_name = my_strdup(inv_spice_model->name);
+      spice_model[i].lut_input_inverter->spice_model = inv_spice_model;
     }
     
     /* Check pass_gate logic only for LUT and MUX */

@@ -961,6 +961,21 @@ static void ProcessSpiceModel(ezxml_t Parent,
                Parent->line, spice_model->name);
     exit(1);
   } 
+
+  /* LUT input_buffers */
+  Node = ezxml_child(Parent, "lut_input_inverter");
+  spice_model->lut_input_inverter = NULL;
+  if (Node) {
+    /* Malloc the lut_input_buffer */
+    spice_model->lut_input_inverter = (t_spice_model_buffer*)my_malloc(sizeof(t_spice_model_buffer));
+    ProcessSpiceModelBuffer(Node,spice_model->lut_input_inverter);
+    FreeNode(Node);
+  } else if (SPICE_MODEL_LUT == spice_model->type) {
+    vpr_printf(TIO_MESSAGE_ERROR,"[LINE %d] lut_input_inverter is expected in spice_model(%s).\n",
+               Parent->line, spice_model->name);
+    exit(1);
+  } 
+
   /* Input Buffers*/
   Node = ezxml_child(Parent, "input_buffer");
   spice_model->input_buffer = NULL;
@@ -1286,6 +1301,28 @@ static void check_spice_models(int num_spice_model,
         exit(1);
       }
     }
+    /* Check scan-chain dff has input and output, clock ports*/
+    if (SPICE_MODEL_SCFF == spice_models[i].type) {
+      has_sram = 1;
+      has_clock_port = 0;
+      has_in_port = 0;
+      has_out_port = 0;
+      for (j = 0; j < spice_models[i].num_port; j++) {
+        if (SPICE_MODEL_PORT_INPUT == spice_models[i].ports[j].type) {
+          has_in_port = 1;
+        } else if (SPICE_MODEL_PORT_OUTPUT == spice_models[i].ports[j].type) {
+          has_out_port = 1;
+        } else if (SPICE_MODEL_PORT_CLOCK == spice_models[i].ports[j].type) {
+          has_clock_port = 1;
+        }
+      }
+      /* Check if we have two ports*/
+      if ((0 == has_in_port)||(0 == has_out_port)||(0 == has_clock_port)) {
+        vpr_printf(TIO_MESSAGE_ERROR,"FF Spice model(%s) does not have input|output|clock port\n",spice_models[i].name);
+        exit(1);
+      }
+    }
+
     /* Check lut has input and output, clock ports*/
     if (SPICE_MODEL_LUT == spice_models[i].type) {
       has_sram_port = 0;

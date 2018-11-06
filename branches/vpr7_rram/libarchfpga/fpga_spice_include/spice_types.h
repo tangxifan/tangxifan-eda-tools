@@ -301,6 +301,7 @@ struct s_spice_model {
 
   /* buffering information */
   t_spice_model_buffer* lut_input_buffer;
+  t_spice_model_buffer* lut_input_inverter;
   t_spice_model_buffer* input_buffer;
   t_spice_model_buffer* output_buffer;
   t_spice_model_pass_gate_logic* pass_gate_logic;
