@@ -269,6 +269,7 @@
         <design_technology type="cmos"/>
         <input_buffer exist="on" spice_model_name="INVTX1"/>
         <output_buffer exist="on" spice_model_name="INVTX1"/>
+        <lut_input_inverter exist="on" spice_model_name="INVTX1"/>
         <lut_input_buffer exist="on" spice_model_name="buf4"/>
         <pass_gate_logic spice_model_name="TGATE"/>
         <port type="input" prefix="in" size="6"/>
@@ -365,7 +366,7 @@
     <!--sram area="6" organization="standalone" spice_model_name="sram6T"-->
     <!--sram area="6" organization="scan-chain" spice_model_name="sc_dff"-->
     <sram area="6">
-      <verilog organization="memory_bank" spice_model_name="sram6T_blwl"/>
+      <verilog organization="memory-bank" spice_model_name="sram6T_blwl"/>
       <spice organization="standalone" spice_model_name="sram6T" />
     </sram>
     <chan_width_distr>

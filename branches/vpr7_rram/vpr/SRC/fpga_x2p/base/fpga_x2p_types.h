@@ -1,9 +1,26 @@
 /* Define the basic data structures used for FPGA-SPICE */
 
+/* Default ID of switch used in rr_node */
 #define DEFAULT_SWITCH_ID 0
-#define DEFAULT_PATH_ID -1
-#define DEFAULT_MUX_PATH_ID 0
+
+/* Default prev_node ID of a rr_node */
 #define DEFAULT_PREV_NODE -1
+
+/* Default path ID of a unused multiplexer */
+#define DEFAULT_PATH_ID -1
+
+/* Default path ID of a unused multiplexer when there are no constant inputs*/
+#define DEFAULT_MUX_PATH_ID 0
+
+/* Index of logical block indicating a wired LUT */
+#define WIRED_LUT_LOGICAL_BLOCK_ID -2
+
+/* Mode Index of a LUT: 
+ * 0 indicates a wired mode (a buffer) 
+ * 0 indicates a regular mode (a buffer) 
+ */
+#define WIRED_LUT_MODE_INDEX 0
+#define NORMAL_LUT_MODE_INDEX 1
 
 /* Key data structure for router: routing resource graph 
  * This data structure store the key parameters that

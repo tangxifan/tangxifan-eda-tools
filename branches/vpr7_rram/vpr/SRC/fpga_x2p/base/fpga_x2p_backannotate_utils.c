@@ -2792,12 +2792,13 @@ void alloc_and_load_phy_pb_for_mapped_block(int num_mapped_blocks, t_block* mapp
     top_phy_pb->parent_pb = NULL;
     top_phy_pb->mode = 0; /* Top-level should have only one mode!!! */
     /* Allocate rr_graph for the phy_pb */
-    vpr_printf(TIO_MESSAGE_INFO, "Allocating routing resource graph for %d physical pb!\r", iblk);
+    /* vpr_printf(TIO_MESSAGE_INFO, "Allocating routing resource graph for %d physical pb!\r", iblk);
+    */
     alloc_and_load_rr_graph_for_phy_pb(mapped_block[iblk].pb, top_phy_pb, L_num_vpack_nets, L_vpack_net); 
     /* Perform routing for the phy_pb !!! */
     route_success = try_breadth_first_route_pb_rr_graph(top_phy_pb->rr_graph);
     if (TRUE == route_success) { 
-      vpr_printf(TIO_MESSAGE_INFO, "Route successfully for %d physical pbs!\r", iblk);
+      /* vpr_printf(TIO_MESSAGE_INFO, "Route successfully for %d physical pbs!\r", iblk); */
     } else {
       assert(FALSE == route_success);
       vpr_printf(TIO_MESSAGE_ERROR,
@@ -2807,7 +2808,7 @@ void alloc_and_load_phy_pb_for_mapped_block(int num_mapped_blocks, t_block* mapp
     }
     /* Backannotate routing results to physical pb_rr_graph */
     backannotate_rr_graph_routing_results_to_net_name(top_phy_pb->rr_graph);
-    vpr_printf(TIO_MESSAGE_INFO, "Backannotate routing results successfully for %d physical pbs!\n", iblk);
+    vpr_printf(TIO_MESSAGE_INFO, "Backannotate routing results successfully for %d physical pbs!\r", iblk);
     /* Allocate and load child_pb graphs */
     alloc_and_load_phy_pb_children_for_one_mapped_block(mapped_block[iblk].pb, top_phy_pb);
     /* Give top_phy_pb to grid */

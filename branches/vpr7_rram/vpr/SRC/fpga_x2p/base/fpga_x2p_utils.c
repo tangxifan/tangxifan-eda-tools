@@ -182,11 +182,11 @@ int split_path_prog_name(char* prog_path,
   /* Get the path and prog_name*/
   if (-1 == split_pos) {
     /* In this case, the prog_path actually contains only the program name*/
-    path = NULL;
-    prog_name = local_copy;
+    path = my_strdup("./");;
+    prog_name = my_strdup(local_copy);
   } else if (len == split_pos) {
     /* In this case the progrom name is NULL... actually the prog_path is a directory*/
-    path = local_copy;
+    path = my_strdup(local_copy);
     prog_name = NULL;
   } else {
     /* We have to split it!*/

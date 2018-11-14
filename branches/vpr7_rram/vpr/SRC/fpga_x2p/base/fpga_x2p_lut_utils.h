@@ -15,6 +15,8 @@ int* generate_lut_sram_bits(int truth_table_len,
 char** assign_lut_truth_table(t_logical_block* mapped_logical_block,
                               int* truth_table_length);
 
+char** get_wired_lut_truth_table();
+
 char** assign_post_routing_lut_truth_table(t_logical_block* mapped_logical_block,
                                            int num_lut_pins, int* lut_pin_vpack_net_num,
                                            int* truth_table_length);

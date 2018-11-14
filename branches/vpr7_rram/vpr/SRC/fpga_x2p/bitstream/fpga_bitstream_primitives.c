@@ -332,13 +332,19 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(FILE* fp,
      */
     for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
       mapped_logical_block_index = prim_phy_pb->logical_block[i]; 
-      assert (VPACK_COMB == logical_block[mapped_logical_block_index].type);
-      /* Get the mapped vpack_net_num of this physical LUT pb */
-      get_mapped_lut_phy_pb_input_pin_vpack_net_num(prim_phy_pb, &num_lut_pin_nets, &lut_pin_net);
-      /* consider LUT pin remapping when assign lut truth tables */
-      /* Match truth table and post-routing results */
-      truth_table[i] = assign_post_routing_lut_truth_table(&logical_block[mapped_logical_block_index], 
-                                                           num_lut_pin_nets, lut_pin_net, &truth_table_length[i]); 
+      /* For wired LUT we provide a default truth table */
+      if (WIRED_LUT_LOGICAL_BLOCK_ID == mapped_logical_block_index) {
+        truth_table[i] = get_wired_lut_truth_table(); 
+        /* TODO: assign post-routing lut truth table!!!*/
+      } else {
+        assert (VPACK_COMB == logical_block[mapped_logical_block_index].type);
+        /* Get the mapped vpack_net_num of this physical LUT pb */
+        get_mapped_lut_phy_pb_input_pin_vpack_net_num(prim_phy_pb, &num_lut_pin_nets, &lut_pin_net);
+        /* consider LUT pin remapping when assign lut truth tables */
+        /* Match truth table and post-routing results */
+        truth_table[i] = assign_post_routing_lut_truth_table(&logical_block[mapped_logical_block_index], 
+                                                             num_lut_pin_nets, lut_pin_net, &truth_table_length[i]); 
+      }
       /* Adapt truth table for a fracturable LUT
        * TODO: Determine fixed input bits for this truth table:
        * 1. input bits within frac_level (all '-' if not specified) 
@@ -347,8 +353,12 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(FILE* fp,
       adapt_truth_table_for_frac_lut(prim_phy_pb, &logical_block[mapped_logical_block_index], 
                                      truth_table_length[i], truth_table[i]);
       /* Output log for debugging purpose */
-      fprintf(fp, "***** Mapped Logic Block[%d] %s *****\n",
-              i, logical_block[mapped_logical_block_index].name);
+      if (WIRED_LUT_LOGICAL_BLOCK_ID == mapped_logical_block_index) {
+        fprintf(fp, "***** Wired LUT: mapped to a buffer *****\n");
+      } else {
+        fprintf(fp, "***** Mapped Logic Block[%d] %s *****\n",
+                i, logical_block[mapped_logical_block_index].name);
+      }
       fprintf(fp, "***** Net map *****\n");
       for (j = 0; j < num_lut_pin_nets; j++) {
         if (OPEN == lut_pin_net[j]) {

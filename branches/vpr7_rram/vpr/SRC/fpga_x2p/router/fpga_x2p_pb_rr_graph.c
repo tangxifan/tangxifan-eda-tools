@@ -925,6 +925,108 @@ void alloc_pb_rr_graph_rr_indexed_data(t_rr_graph* local_rr_graph) {
   return;
 }
 
+/* Add rr edges connecting from an input of a LUT to its output 
+ * IMPORTANT: this is only applied to LUT which operates in wire mode (a buffer) 
+ */
+void rec_add_rr_graph_wired_lut_rr_edges(INP t_pb* cur_op_pb,
+                                         INOUTP t_rr_graph* local_rr_graph) {
+  int mode_index, ipb, jpb; 
+  t_pb_type* cur_pb_type = NULL;
+  int iport, ipin, lut_input_rr_node_index, lut_output_rr_node_index;
+  int num_used_lut_input_pins = 0;
+  int num_used_lut_output_pins = 0;
+  int temp_rr_node_index;
+
+  cur_pb_type = cur_op_pb->pb_graph_node->pb_type;
+  mode_index = cur_op_pb->mode; 
+
+  /* Go recursively until we reach a primitive node which is a LUT */
+
+  /* Return if we reach the primitive  */
+  if (TRUE == is_primitive_pb_type(cur_pb_type)) {
+    /* We only care the LUTs, that is in wired mode */
+    if ((LUT_CLASS == cur_pb_type->class_type)
+       && (WIRED_LUT_MODE_INDEX == mode_index)) { 
+      /* Reach here means that this LUT is in wired mode (a buffer)  
+       * Add an output edge to the rr_node of the used input
+       * connect it to the rr_node of the used LUT output   
+       */
+      num_used_lut_input_pins = 0;
+      lut_input_rr_node_index = OPEN;
+      /* Find the used input pin of this LUT and rr_node in the graph */
+      for (iport = 0; iport < cur_op_pb->pb_graph_node->num_input_ports; iport++) {
+        for (ipin = 0; ipin < cur_op_pb->pb_graph_node->num_input_pins[iport]; ipin++) {
+          temp_rr_node_index = cur_op_pb->pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
+          if (OPEN != cur_op_pb->rr_graph[temp_rr_node_index].vpack_net_num) {
+            num_used_lut_input_pins++;
+            lut_input_rr_node_index = cur_op_pb->pb_graph_node->input_pins[iport][ipin].physical_pb_graph_pin->rr_node_index_physical_pb;
+            assert(cur_op_pb->rr_graph[temp_rr_node_index].vpack_net_num == local_rr_graph->rr_node[lut_input_rr_node_index].vpack_net_num);
+          }
+        }
+      }
+      /* Make sure we only have 1 used input pin */
+      assert ((1 == num_used_lut_input_pins) 
+              && (OPEN != lut_input_rr_node_index)); 
+     
+      /* Find the used output*/ 
+      num_used_lut_output_pins = 0;
+      lut_output_rr_node_index = OPEN;
+      /* Find the used output pin of this LUT and rr_node in the graph */
+      for (iport = 0; iport < cur_op_pb->pb_graph_node->num_output_ports; iport++) {
+        for (ipin = 0; ipin < cur_op_pb->pb_graph_node->num_output_pins[iport]; ipin++) {
+          temp_rr_node_index = cur_op_pb->pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
+          if (local_rr_graph->rr_node[lut_input_rr_node_index].vpack_net_num == cur_op_pb->rr_graph[temp_rr_node_index].vpack_net_num) {
+            num_used_lut_output_pins++;
+            lut_output_rr_node_index = cur_op_pb->pb_graph_node->output_pins[iport][ipin].physical_pb_graph_pin->rr_node_index_physical_pb;
+          }
+        }
+      }
+      /* Make sure we only have 1 used output pin */
+      assert ((1 == num_used_lut_output_pins) 
+              && (OPEN != lut_output_rr_node_index)); 
+
+      /* Add a special edge between the two rr_nodes */
+      /* Modify the input(source) node */
+      local_rr_graph->rr_node[lut_input_rr_node_index].num_edges++;
+      local_rr_graph->rr_node[lut_input_rr_node_index].edges = (int*) my_realloc(local_rr_graph->rr_node[lut_input_rr_node_index].edges, 
+                                                                                 local_rr_graph->rr_node[lut_input_rr_node_index].num_edges * sizeof(int));
+      local_rr_graph->rr_node[lut_input_rr_node_index].edges[local_rr_graph->rr_node[lut_input_rr_node_index].num_edges -1] = lut_output_rr_node_index;
+      local_rr_graph->rr_node[lut_input_rr_node_index].switches = (short*) my_realloc(local_rr_graph->rr_node[lut_input_rr_node_index].switches,                                                                                   
+                                                                                      local_rr_graph->rr_node[lut_input_rr_node_index].num_edges * sizeof(short));
+      local_rr_graph->rr_node[lut_input_rr_node_index].switches[local_rr_graph->rr_node[lut_input_rr_node_index].num_edges -1] = DEFAULT_SWITCH_ID;
+
+      /* Modify the output(destination) node */
+      local_rr_graph->rr_node[lut_output_rr_node_index].fan_in++;
+      local_rr_graph->rr_node[lut_output_rr_node_index].num_drive_rr_nodes++;
+      local_rr_graph->rr_node[lut_output_rr_node_index].drive_rr_nodes = (t_rr_node**) my_realloc(local_rr_graph->rr_node[lut_output_rr_node_index].drive_rr_nodes,                                                                         
+                                                                                         local_rr_graph->rr_node[lut_output_rr_node_index].num_drive_rr_nodes * sizeof(t_rr_node*));
+      local_rr_graph->rr_node[lut_output_rr_node_index].drive_rr_nodes[local_rr_graph->rr_node[lut_output_rr_node_index].num_drive_rr_nodes -1] = &(local_rr_graph->rr_node[lut_input_rr_node_index]);
+
+      local_rr_graph->rr_node[lut_output_rr_node_index].drive_switches = (int*) my_realloc(local_rr_graph->rr_node[lut_output_rr_node_index].drive_rr_nodes,                                                                         
+                                                                                           local_rr_graph->rr_node[lut_output_rr_node_index].num_drive_rr_nodes * sizeof(int));
+      local_rr_graph->rr_node[lut_output_rr_node_index].drive_switches[local_rr_graph->rr_node[lut_output_rr_node_index].num_drive_rr_nodes -1] = DEFAULT_SWITCH_ID;
+      vpr_printf(TIO_MESSAGE_INFO, "Added 1 rr_node edge for wired LUT\n");
+    }
+    return;
+  }
+  
+  /* recursive for the child_pbs*/
+  assert (FALSE == is_primitive_pb_type(cur_pb_type));
+  for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+    for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+      /* Recursive*/
+      /* Refer to pack/output_clustering.c [LINE 392] */
+      if ((NULL != cur_op_pb->child_pbs[ipb])&&(NULL != cur_op_pb->child_pbs[ipb][jpb].name)) {
+        rec_add_rr_graph_wired_lut_rr_edges(&(cur_op_pb->child_pbs[ipb][jpb]), 
+                                            local_rr_graph);
+      }
+    }
+  }
+
+  return;
+}
+
+
 /* Allocate and load a local rr_graph for a pb
  * 1. Allocate the rr_graph nodes and configure with pb_graph_node connectivity
  * 2. load all the routing statisitics required by the router
@@ -949,6 +1051,10 @@ void alloc_and_load_rr_graph_for_phy_pb(INP t_pb* cur_op_pb,
   /* Find the nets inside the pb and initialize the rr_graph */
   alloc_and_load_phy_pb_rr_graph_nets(cur_op_pb, cur_phy_pb->rr_graph,
                                       L_num_vpack_nets, L_vpack_net); 
+
+  /* Add special rr_edges for LUTs which operate in wiring mode */
+  rec_add_rr_graph_wired_lut_rr_edges(cur_op_pb, cur_phy_pb->rr_graph);
+
   /* Allocate trace in rr_graph */
   alloc_rr_graph_route_static_structs(cur_phy_pb->rr_graph, nx * ny); /* TODO: nx * ny should be reduced for pb-only routing */
 

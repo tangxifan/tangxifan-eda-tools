@@ -169,7 +169,6 @@ sub print_usage()
   print "      \t-vpr_fpga_verilog : turn on Verilog Generator of VPR FPGA SPICE\n";
   print "      \t-vpr_fpga_verilog_print_top_tb : turn on printing top-level testbench for Verilog Generator of VPR FPGA SPICE\n";
   print "      \t-vpr_fpga_verilog_print_input_blif_tb : turn on printing testbench for input blif file in Verilog Generator of VPR FPGA SPICE\n";
-  print "      \t-vpr_fpga_verilog_print_compact_netlist: turn on printing compact Verilog netlists in Verilog Generator of VPR FPGA SPICE\n";
   print "      [ VPR - FPGA-Bitstream Extension ] \n";
   print "      \t-vpr_fpga_bitstream_generator: turn on FPGA-SPICE bitstream generator\n";
   exit(1);
@@ -339,7 +338,6 @@ sub opts_read()
   &read_opt_into_hash("vpr_fpga_verilog","off","off");
   &read_opt_into_hash("vpr_fpga_verilog_print_top_tb","off","off");
   &read_opt_into_hash("vpr_fpga_verilog_print_input_blif_tb","off","off");
-  &read_opt_into_hash("vpr_fpga_verilog_print_compact_netlist","off","off");
   &read_opt_into_hash("vpr_fpga_bitstream_generator","off","off");
 
   &print_opts(); 
@@ -1156,9 +1154,6 @@ sub run_std_vpr($ $ $ $ $ $ $ $ $)
     }
     if ("on" eq $opt_ptr->{vpr_fpga_verilog_print_input_blif_tb}) {
       $vpr_spice_opts = $vpr_spice_opts." --fpga_verilog_print_input_blif_testbench";
-    }
-    if ("on" eq $opt_ptr->{vpr_fpga_verilog_print_compact_netlist}) {
-      $vpr_spice_opts = $vpr_spice_opts." --fpga_verilog_compact_netlist";
     }
   }
 

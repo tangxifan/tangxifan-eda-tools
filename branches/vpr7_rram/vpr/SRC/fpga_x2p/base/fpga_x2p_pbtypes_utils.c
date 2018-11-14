@@ -2762,12 +2762,21 @@ void rec_sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb,
       assert (LUT_CLASS == cur_pb_type->phy_pb_type->class_type);
       assert (VPACK_COMB == logical_block[child_pb->logical_block].type);
       assert ( 1 == cur_pb_graph_node->num_input_ports );
-      phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = child_pb->logical_block;
-      /* Give the number of LUT inputs of operating pb_graph_node */
-      phy_pb_to_sync->lut_size[phy_pb_to_sync->num_logical_blocks - 1] = cur_pb_graph_node->num_input_pins[0];
-      if (OPEN == child_pb->logical_block) {
-        phy_pb_to_sync->num_logical_blocks--;
+      /* Branch on the operating mode of this LUT 
+       * Mode 0 means this LUT is in wired mode while Mode 1 implies this is a regular LUT    
+       */
+      if (WIRED_LUT_MODE_INDEX == mode_index) {
+        phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = WIRED_LUT_LOGICAL_BLOCK_ID;
+      } else {
+        assert (NORMAL_LUT_MODE_INDEX == mode_index);
+        phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = child_pb->logical_block;
+        /* Give the number of LUT inputs of operating pb_graph_node */
+        if (OPEN == child_pb->logical_block) {
+          phy_pb_to_sync->num_logical_blocks--;
+        }
       }
+      /* Update the actual input size of this LUT */
+      phy_pb_to_sync->lut_size[phy_pb_to_sync->num_logical_blocks - 1] = cur_pb_graph_node->num_input_pins[0];
       break;
     case LATCH_CLASS:
       assert (VPACK_LATCH == logical_block[cur_op_pb->logical_block].type);

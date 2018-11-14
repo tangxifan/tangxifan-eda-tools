@@ -307,6 +307,13 @@ char** assign_lut_truth_table(t_logical_block* mapped_logical_block,
   return truth_table;
 }
 
+/* Return the truth table of a wired LUT */
+char** get_wired_lut_truth_table() {
+  char** tt = (char**) my_malloc(sizeof(char*));
+  tt[0] = my_strdup("1 1");
+
+  return tt;
+}
 
 /* Provide the truth table of a mapped logical block 
  * 1. Reorgainze the truth table to be consistent with the mapped nets of a LUT
