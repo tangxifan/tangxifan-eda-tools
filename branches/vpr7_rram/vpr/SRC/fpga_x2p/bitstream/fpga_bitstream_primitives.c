@@ -333,10 +333,13 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(FILE* fp,
     for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
       mapped_logical_block_index = prim_phy_pb->logical_block[i]; 
       /* For wired LUT we provide a default truth table */
-      if (WIRED_LUT_LOGICAL_BLOCK_ID == mapped_logical_block_index) {
-        truth_table[i] = get_wired_lut_truth_table(); 
+      if (TRUE == prim_phy_pb->is_wired_lut[i]) {
         /* TODO: assign post-routing lut truth table!!!*/
+        get_mapped_lut_phy_pb_input_pin_vpack_net_num(prim_phy_pb, &num_lut_pin_nets, &lut_pin_net);
+        truth_table[i] = assign_post_routing_wired_lut_truth_table(&logical_block[mapped_logical_block_index],
+                                                                   num_lut_pin_nets, lut_pin_net, &truth_table_length[i]); 
       } else {
+        assert (FALSE == prim_phy_pb->is_wired_lut[i]);
         assert (VPACK_COMB == logical_block[mapped_logical_block_index].type);
         /* Get the mapped vpack_net_num of this physical LUT pb */
         get_mapped_lut_phy_pb_input_pin_vpack_net_num(prim_phy_pb, &num_lut_pin_nets, &lut_pin_net);
@@ -350,7 +353,7 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(FILE* fp,
        * 1. input bits within frac_level (all '-' if not specified) 
        * 2. input bits outside frac_level, decoded to its output mask (0 -> first part -> all '1') 
        */
-      adapt_truth_table_for_frac_lut(prim_phy_pb, &logical_block[mapped_logical_block_index], 
+      adapt_truth_table_for_frac_lut(prim_phy_pb->lut_output_pb_graph_pin[i], 
                                      truth_table_length[i], truth_table[i]);
       /* Output log for debugging purpose */
       if (WIRED_LUT_LOGICAL_BLOCK_ID == mapped_logical_block_index) {

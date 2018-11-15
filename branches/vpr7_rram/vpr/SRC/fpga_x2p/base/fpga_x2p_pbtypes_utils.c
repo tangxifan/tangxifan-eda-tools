@@ -26,6 +26,7 @@
 #include "linkedlist.h"
 #include "fpga_x2p_types.h"
 #include "fpga_x2p_utils.h"
+#include "fpga_x2p_lut_utils.h"
 #include "fpga_x2p_bitstream_utils.h"
 #include "fpga_x2p_pbtypes_utils.h"
 #include "fpga_x2p_globals.h"
@@ -2718,6 +2719,104 @@ t_phy_pb* rec_get_phy_pb_by_name(t_phy_pb* cur_phy_pb,
   return ret_phy_pb;
 }
 
+int get_pb_graph_node_wired_lut_logical_block_index(t_pb_graph_node* cur_pb_graph_node,
+                                                    t_rr_node* op_pb_rr_graph) {
+  int iport, ipin;
+  int wired_lut_lb_index = OPEN;
+  int num_used_lut_input_pins = 0;
+  int num_used_lut_output_pins = 0;
+  int temp_rr_node_index;
+  int lut_output_vpack_net_num = OPEN;
+
+  num_used_lut_input_pins = 0;
+  /* Find the used input pin of this LUT and rr_node in the graph */
+  for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
+      temp_rr_node_index = cur_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
+      if (OPEN != op_pb_rr_graph[temp_rr_node_index].vpack_net_num) {
+        num_used_lut_input_pins++;
+        lut_output_vpack_net_num = op_pb_rr_graph[temp_rr_node_index].vpack_net_num;
+      }
+    }
+  }
+  /* Make sure we only have 1 used input pin */
+  assert ((1 == num_used_lut_input_pins)
+         && (OPEN != lut_output_vpack_net_num)); 
+  vpr_printf(TIO_MESSAGE_INFO, "Wired LUT output vpack_net_num is %d\n", lut_output_vpack_net_num);
+ 
+  /* Find the used output*/ 
+  num_used_lut_output_pins = 0;
+  /* Find the used output pin of this LUT and rr_node in the graph */
+  for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
+      temp_rr_node_index = cur_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
+      if (lut_output_vpack_net_num == op_pb_rr_graph[temp_rr_node_index].vpack_net_num) { /* TODO: Shit... I do not why the vpack_net_num is not synchronized to the net_num !!! */
+        num_used_lut_output_pins++;
+      }
+    }
+  }
+  /* Make sure we only have 1 used output pin */
+  vpr_printf(TIO_MESSAGE_INFO, "Wired LUT num_used_lut_output_pins is %d\n", num_used_lut_output_pins);
+  assert (1 == num_used_lut_output_pins); 
+
+  /* Search the logical block array until we find the logical block */
+  wired_lut_lb_index = get_lut_logical_block_index_with_output_vpack_net_num(lut_output_vpack_net_num);
+  assert (OPEN != wired_lut_lb_index);
+
+  return wired_lut_lb_index;
+}
+
+void sync_wired_lut_to_one_phy_pb(t_pb_graph_node* cur_pb_graph_node,
+                                  t_phy_pb* cur_phy_pb,
+                                  t_rr_node* op_pb_rr_graph) {
+  t_pb_type* cur_pb_type = cur_pb_graph_node->pb_type;
+  char* phy_pb_name = NULL;
+  t_phy_pb* phy_pb_to_sync = NULL;
+
+  /* Check */
+  assert(NULL != cur_pb_type->phy_pb_type);
+  assert(NULL != cur_pb_graph_node->physical_pb_graph_node);
+  /* Generate the name */
+  phy_pb_name = (char*) my_malloc(sizeof(char) * (strlen(cur_pb_type->phy_pb_type->name)
+                                                  + 1 + strlen(my_itoa(cur_pb_graph_node->physical_pb_graph_node->placement_index_in_top_node)) 
+                                                  + 2));
+  sprintf(phy_pb_name, "%s[%d]", 
+          cur_pb_type->phy_pb_type->name, cur_pb_graph_node->physical_pb_graph_node->placement_index_in_top_node);
+  /* find the child_pb in the current physical pb (cur_phy_pb) */
+  phy_pb_to_sync = rec_get_phy_pb_by_name(cur_phy_pb, phy_pb_name);
+
+  /* Copy the mode bits */
+  if (NULL != phy_pb_to_sync->mode_bits) { /* Free the default mode bits if we have any */
+    my_free(phy_pb_to_sync->mode_bits);
+  }
+  phy_pb_to_sync->mode_bits = my_strdup(cur_pb_type->mode_bits);
+  /* Re-allocate logical_block array mapped to this pb */
+  phy_pb_to_sync->num_logical_blocks++;
+  phy_pb_to_sync->logical_block = (int*) my_realloc(phy_pb_to_sync->logical_block, sizeof(int) * phy_pb_to_sync->num_logical_blocks);
+  phy_pb_to_sync->is_wired_lut = (boolean*) my_realloc(phy_pb_to_sync->is_wired_lut, sizeof(boolean) * phy_pb_to_sync->num_logical_blocks);
+  phy_pb_to_sync->lut_size = (int*) my_realloc(phy_pb_to_sync->lut_size, sizeof(int) * phy_pb_to_sync->num_logical_blocks);
+  phy_pb_to_sync->lut_output_pb_graph_pin = (t_pb_graph_pin**) my_realloc(phy_pb_to_sync->lut_output_pb_graph_pin, sizeof(t_pb_graph_pin*) * phy_pb_to_sync->num_logical_blocks);
+
+  /* Synchronize the logic block information */
+  assert (LUT_CLASS == cur_pb_type->class_type);
+  /* check */
+  assert (LUT_CLASS == cur_pb_type->phy_pb_type->class_type);
+  assert ( 1 == cur_pb_graph_node->num_input_ports );
+  /* TODO: find the wired LUT logical block! */;
+  phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = get_pb_graph_node_wired_lut_logical_block_index(cur_pb_graph_node, op_pb_rr_graph);
+  phy_pb_to_sync->is_wired_lut[phy_pb_to_sync->num_logical_blocks - 1] = TRUE;
+  /* Update the actual input size of this LUT */
+  phy_pb_to_sync->lut_size[phy_pb_to_sync->num_logical_blocks - 1] = cur_pb_graph_node->num_input_pins[0];
+
+  /* Find the physical pb_graph_pin that this output is mapped to.
+   * ease LUT truth table decoding 
+   */
+  assert (1 == cur_pb_graph_node->num_output_ports);
+  assert (1 == cur_pb_graph_node->num_output_pins[0]);
+  phy_pb_to_sync->lut_output_pb_graph_pin[phy_pb_to_sync->num_logical_blocks - 1] = cur_pb_graph_node->output_pins[0][0].physical_pb_graph_pin;
+
+  return;
+}
 
 /* Synchronize the mapped information from operating pb cur_pb to phy_pb */
 void rec_sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb, 
@@ -2752,7 +2851,9 @@ void rec_sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb,
     /* Re-allocate logical_block array mapped to this pb */
     phy_pb_to_sync->num_logical_blocks++;
     phy_pb_to_sync->logical_block = (int*) my_realloc(phy_pb_to_sync->logical_block, sizeof(int) * phy_pb_to_sync->num_logical_blocks);
+    phy_pb_to_sync->is_wired_lut = (boolean*) my_realloc(phy_pb_to_sync->is_wired_lut, sizeof(boolean) * phy_pb_to_sync->num_logical_blocks);
     phy_pb_to_sync->lut_size = (int*) my_realloc(phy_pb_to_sync->lut_size, sizeof(int) * phy_pb_to_sync->num_logical_blocks);
+    phy_pb_to_sync->lut_output_pb_graph_pin = (t_pb_graph_pin**) my_realloc(phy_pb_to_sync->lut_output_pb_graph_pin, sizeof(t_pb_graph_pin*) * phy_pb_to_sync->num_logical_blocks);
     /* Synchronize the logic block information */
     switch (cur_pb_type->class_type) {
     case LUT_CLASS: 
@@ -2762,14 +2863,22 @@ void rec_sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb,
       assert (LUT_CLASS == cur_pb_type->phy_pb_type->class_type);
       assert (VPACK_COMB == logical_block[child_pb->logical_block].type);
       assert ( 1 == cur_pb_graph_node->num_input_ports );
+      /* Find the physical pb_graph_pin that this output is mapped to.
+       * ease LUT truth table decoding 
+       */
+      assert (1 == cur_pb_graph_node->num_output_ports);
+      assert (1 == cur_pb_graph_node->num_output_pins[0]);
+      phy_pb_to_sync->lut_output_pb_graph_pin[phy_pb_to_sync->num_logical_blocks - 1] = cur_pb_graph_node->output_pins[0][0].physical_pb_graph_pin;
       /* Branch on the operating mode of this LUT 
        * Mode 0 means this LUT is in wired mode while Mode 1 implies this is a regular LUT    
        */
       if (WIRED_LUT_MODE_INDEX == mode_index) {
-        phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = WIRED_LUT_LOGICAL_BLOCK_ID;
+        phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = child_pb->logical_block;
+        phy_pb_to_sync->is_wired_lut[phy_pb_to_sync->num_logical_blocks - 1] = TRUE;
       } else {
         assert (NORMAL_LUT_MODE_INDEX == mode_index);
         phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = child_pb->logical_block;
+        phy_pb_to_sync->is_wired_lut[phy_pb_to_sync->num_logical_blocks - 1] = FALSE;
         /* Give the number of LUT inputs of operating pb_graph_node */
         if (OPEN == child_pb->logical_block) {
           phy_pb_to_sync->num_logical_blocks--;
@@ -2820,6 +2929,17 @@ void rec_sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb,
       /* Refer to pack/output_clustering.c [LINE 392] */
       if ((NULL != cur_op_pb->child_pbs[ipb])&&(NULL != cur_op_pb->child_pbs[ipb][jpb].name)) {
         rec_sync_op_pb_mapping_to_phy_pb_children(&(cur_op_pb->child_pbs[ipb][jpb]), cur_phy_pb);
+      } else {
+        /* For wired LUT */
+        if (TRUE == is_pb_wired_lut(&(cur_op_pb->pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]),  
+                                    &(cur_pb_type->modes[mode_index].pb_type_children[ipb]),
+                                    cur_op_pb->rr_graph)) {        
+          /* Reach here means that this LUT is in wired mode (a buffer)  
+           * configure this phy_pb  
+           */
+          sync_wired_lut_to_one_phy_pb(&(cur_op_pb->pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]),  
+                                       cur_phy_pb, cur_op_pb->rr_graph);
+        }
       }
     }
   }
@@ -2948,4 +3068,29 @@ void rec_reset_pb_type_phy_pb_type(t_pb_type* cur_pb_type) {
 
   return;
 }
+
+/* Identify if this child_pb is actually used for wiring!!! */
+boolean is_pb_used_for_wiring(t_pb_graph_node* cur_pb_graph_node,
+                              t_pb_type* cur_pb_type,
+                              t_rr_node* pb_rr_graph) {
+  boolean is_used = FALSE;
+  int node_index;
+  int port_index = 0;
+  int iport, ipin;
+
+  for (iport = 0; iport < cur_pb_type->num_ports && !is_used; iport++) {
+    if (OUT_PORT == cur_pb_type->ports[iport].type) {
+      for (ipin = 0; ipin < cur_pb_type->ports[iport].num_pins; ipin++) {
+        node_index = cur_pb_graph_node->output_pins[port_index][ipin].pin_count_in_cluster;
+        if ((OPEN != pb_rr_graph[node_index].net_num) 
+          || (OPEN != pb_rr_graph[node_index].vpack_net_num)) {
+          return TRUE;
+        }
+      }
+      port_index++;
+    }
+  }
+
+  return is_used; 
+} 
 

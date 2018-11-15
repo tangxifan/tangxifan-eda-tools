@@ -388,3 +388,5 @@ void set_spice_model_counter(int num_spice_models,
 void get_logical_block_output_vpack_net_num(INP t_logical_block* cur_logical_block,
                                             OUTP int* num_lb_output_ports, OUTP int** num_lb_output_pins, 
                                             OUTP int*** lb_output_vpack_net_num);
+
+int get_lut_logical_block_index_with_output_vpack_net_num(int target_vpack_net_num);

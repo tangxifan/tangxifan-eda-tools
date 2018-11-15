@@ -207,7 +207,14 @@ void rec_alloc_phy_pb_children(t_pb_graph_node* cur_pb_graph_node,
 t_phy_pb* rec_get_phy_pb_by_name(t_phy_pb* cur_phy_pb, 
                                  char* phy_pb_name);
 
+int get_pb_graph_node_wired_lut_logical_block_index(t_pb_graph_node* cur_pb_graph_node,
+                                                    t_rr_node* op_pb_rr_graph);
+
 void rec_reset_pb_graph_node_rr_node_index_physical_pb(t_pb_graph_node* cur_pb_graph_node);
+
+void sync_wired_lut_to_one_phy_pb(t_pb_graph_node* cur_pb_graph_node,
+                                  t_phy_pb* cur_phy_pb,
+                                  t_rr_node* op_pb_rr_graph);
 
 void rec_sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb, 
                                                t_phy_pb* cur_phy_pb);
@@ -227,3 +234,7 @@ void get_lut_logical_block_input_pin_vpack_net_num(t_logical_block* lut_logical_
 void rec_reset_pb_type_temp_placement_index(t_pb_type* cur_pb_type);
 
 void rec_reset_pb_type_phy_pb_type(t_pb_type* cur_pb_type);
+
+boolean is_pb_used_for_wiring(t_pb_graph_node* cur_pb_graph_node,
+                              t_pb_type* cur_pb_type,
+                              t_rr_node* pb_rr_graph);

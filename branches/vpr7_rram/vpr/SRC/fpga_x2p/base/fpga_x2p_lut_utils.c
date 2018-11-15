@@ -315,6 +315,55 @@ char** get_wired_lut_truth_table() {
   return tt;
 }
 
+/* Adapt the truth from the actual connection from the input nets of a LUT,
+ */
+char** assign_post_routing_wired_lut_truth_table(t_logical_block* wired_lut_logical_block,
+                                                 int lut_size, int* lut_pin_vpack_net_num,
+                                                 int* truth_table_length) {
+  int inet, iport;
+  char** tt = (char**) my_malloc(sizeof(char*));
+  int num_lut_output_ports;
+  int* num_lut_output_pins;
+  int** lut_output_vpack_net_num;
+
+  /* The output of this mapped block is the wires routed through this LUT */
+  /* Find the vpack_net_num of the output of the lut_logical_block */
+  get_logical_block_output_vpack_net_num(wired_lut_logical_block, 
+                                         &num_lut_output_ports, 
+                                         &num_lut_output_pins, 
+                                         &lut_output_vpack_net_num);
+
+  /* Check */
+  assert ( 1 == num_lut_output_ports);
+  assert ( 1 == num_lut_output_pins[0]);
+  assert ( OPEN != lut_output_vpack_net_num[0][0]);
+
+  /* truth_table_length will be always 1*/
+  (*truth_table_length) = 1;
+
+  /* Malloc */
+  tt[0] = (char*)my_malloc((lut_size + 3) * sizeof(char));
+  /* Fill the truth table !!! */
+  for (inet = 0; inet < lut_size; inet++) {
+    /* Find the vpack_num in the lut_input_pin, we fix it to be 1 */
+    if (lut_output_vpack_net_num[0][0] == lut_pin_vpack_net_num[inet]) {
+      tt[0][inet] = '1'; 
+    } else {
+    /* Otherwise it should be don't care */
+      tt[0][inet] = '-'; 
+    }
+  }
+  memcpy(tt[0] + lut_size, " 1", 3);
+
+  /* Free */
+  my_free(num_lut_output_pins);
+  for (iport = 0; iport < num_lut_output_ports; iport++) {
+    my_free(lut_output_vpack_net_num);
+  }
+ 
+  return tt;
+}
+
 /* Provide the truth table of a mapped logical block 
  * 1. Reorgainze the truth table to be consistent with the mapped nets of a LUT
  * 2. Allocate the truth table in a clean char array and return
@@ -466,11 +515,9 @@ int get_pb_graph_pin_lut_output_mask(t_pb_graph_pin* out_pb_graph_pin) {
  * 1. input bits within frac_level (all '-' if not specified) 
  * 2. input bits outside frac_level, decoded to its output mask (0 -> first part -> all '1') 
  */
-void adapt_truth_table_for_frac_lut(t_phy_pb* prim_phy_pb, 
-                                    t_logical_block* lut_logical_block, 
+void adapt_truth_table_for_frac_lut(t_pb_graph_pin* lut_out_pb_graph_pin, 
                                     int truth_table_length, 
                                     char** truth_table) {
-  t_pb_graph_pin* out_pb_graph_pin = NULL;
   int lut_frac_level;
   int lut_output_mask;
   int i, lut_size, num_mask_bits;
@@ -478,10 +525,10 @@ void adapt_truth_table_for_frac_lut(t_phy_pb* prim_phy_pb,
   char* mask_bits  = NULL;
 
   /* Find the output port of LUT that this logical block is mapped to */
-  out_pb_graph_pin = get_mapped_lut_phy_pb_output_pin(prim_phy_pb, lut_logical_block); 
+  assert(NULL != lut_out_pb_graph_pin);
   /* find the corresponding SPICE model output port and assoicated lut_output_mask */
-  lut_frac_level = get_pb_graph_pin_lut_frac_level(out_pb_graph_pin);
-  lut_output_mask = get_pb_graph_pin_lut_output_mask(out_pb_graph_pin);
+  lut_frac_level = get_pb_graph_pin_lut_frac_level(lut_out_pb_graph_pin);
+  lut_output_mask = get_pb_graph_pin_lut_output_mask(lut_out_pb_graph_pin);
 
   /* Apply modification to the truth table */
   for (i = 0; i < truth_table_length; i++) {
@@ -529,4 +576,136 @@ int determine_lut_path_id(int lut_size,
   return path_id;
 }
 
+/* Identify if this is an unallocated pb that is used as a wired LUT */
+boolean is_pb_wired_lut(t_pb_graph_node* cur_pb_graph_node,
+                        t_pb_type* cur_pb_type,
+                        t_rr_node* pb_rr_graph) {
+  boolean is_used = FALSE;
+  
+  is_used = is_pb_used_for_wiring(cur_pb_graph_node,
+                                  cur_pb_type,
+                                  pb_rr_graph);
+  /* Return TRUE if this block is not used and it is a LUT ! */
+  if ((TRUE == is_used) 
+     && (LUT_CLASS == cur_pb_type->class_type)) {
+    return TRUE;
+  }
 
+  return FALSE;
+} 
+
+/* Find and return the net_name that this LUT is wiring*/
+int get_wired_lut_net_name(t_pb_graph_node* lut_pb_graph_node,
+                           t_pb_type* lut_pb_type,
+                           t_rr_node* pb_rr_graph) {
+  int iport, ipin;
+  int num_used_lut_input_pins = 0;
+  int num_used_lut_output_pins = 0;
+  int temp_rr_node_index;
+  int wired_lut_net_num = OPEN;
+
+  /* Return if this is not a LUT */
+  if ((LUT_CLASS != lut_pb_type->class_type)  
+     || (LUT_CLASS != lut_pb_graph_node->pb_type->class_type)) { 
+    return OPEN;
+  }
+
+  num_used_lut_input_pins = 0;
+  /* Find the used input pin of this LUT and rr_node in the graph */
+  for (iport = 0; iport < lut_pb_graph_node->num_input_ports; iport++) {
+    for (ipin = 0; ipin < lut_pb_graph_node->num_input_pins[iport]; ipin++) {
+      temp_rr_node_index = lut_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
+      if (OPEN != pb_rr_graph[temp_rr_node_index].net_num) {
+        num_used_lut_input_pins++;
+        wired_lut_net_num = pb_rr_graph[temp_rr_node_index].net_num;
+      }
+    }
+  }
+  /* Make sure we only have 1 used input pin */
+  assert (1 == num_used_lut_input_pins); 
+ 
+  /* Find the used output*/ 
+  num_used_lut_output_pins = 0;
+  /* Find the used output pin of this LUT and rr_node in the graph */
+  for (iport = 0; iport < lut_pb_graph_node->num_output_ports; iport++) {
+    for (ipin = 0; ipin < lut_pb_graph_node->num_output_pins[iport]; ipin++) {
+      temp_rr_node_index = lut_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
+      if (wired_lut_net_num == pb_rr_graph[temp_rr_node_index].net_num) { 
+        num_used_lut_output_pins++;
+      }
+    }
+  }
+  /* Make sure we only have 1 used output pin */
+  assert (1 == num_used_lut_output_pins); 
+
+  assert (OPEN != wired_lut_net_num);
+
+  return wired_lut_net_num;
+}
+
+/* This function aims to allocate and load pbs for wired LUTs
+ * 1. if the pbs are not allocated at all, allocate and load the full array
+ *    Otherwise just allocate the specific pb
+ * 2. Get the net_name that this LUT is wiring
+ *    and load it to the pb
+ */
+void allocate_wired_lut_pbs(t_pb*** wired_lut_pbs, 
+                            int num_pb_type_children,
+                            int num_pbs,
+                            int wired_lut_child_id,
+                            int wired_lut_pb_id) {
+  int ipb;
+
+  /* 1. if the pbs are not allocated at all, allocate and load the full array */
+  if (NULL == (*wired_lut_pbs)) {
+    (*wired_lut_pbs) = (t_pb**) my_calloc(num_pb_type_children, sizeof(t_pb*));
+    for (ipb = 0 ; ipb < num_pb_type_children; ipb++) {
+      (*wired_lut_pbs)[ipb] = (t_pb*) my_calloc(num_pbs, sizeof(t_pb));
+    }
+  } else if (NULL == (*wired_lut_pbs)[wired_lut_child_id]) {
+  /* 2. if the pb row is not allocated, just allocate that row  */
+    (*wired_lut_pbs)[wired_lut_child_id] = (t_pb*) my_calloc(num_pbs, sizeof(t_pb));
+  } else if (NULL == (*wired_lut_pbs)[wired_lut_child_id][wired_lut_pb_id].name) {
+  /* 3. if this pb is allocated, we do nothing  */
+  }
+
+  /* Find the net_name this LUT is wiring */
+
+  return;
+}
+
+/* 1. Find the net_name that this wire LUT is mapped to  
+ * 2. Give a name to the pb
+ * 3. Update the mapping information (net_num) in the rr_graph of pb
+ * 4. Create the wired LUTs in logical block array
+ * 5. Create new vpack & clb nets to rewire the logical blocks
+ * 6. Update the vpack_to_clb_net_mapping and clb_to_vpack_net_mapping !!!
+ */
+void load_wired_lut_pbs(t_pb* lut_pb,
+                       t_pb_graph_node* lut_pb_graph_node,
+                       t_pb_type* lut_pb_type,
+                       t_rr_node* pb_rr_graph,
+                       int* L_num_logical_blocks, t_net** L_logical_block,
+                       int* L_num_vpack_nets, t_net** L_vpack_net) {
+  int lut_wire_net_name = OPEN;
+
+  /* 1. Find the net_name that this wire LUT is mapped to */
+  lut_wire_net_name = get_wired_lut_net_name(lut_pb_graph_node, 
+                                             lut_pb_type, 
+                                             pb_rr_graph);
+  assert (OPEN != lut_wire_net_name);
+
+  /* Fill basic information */
+  lut_pb->pb_graph_node = lut_pb_graph_node;
+  lut_pb->rr_graph = pb_rr_graph;
+  
+  /* Check and give a new name to this pb */
+
+  /* Update rr_graph, 
+   * 1. find the downstream logical blocks and their pbs 
+   * 2. Update their rr_nodes with new net_name  
+   * 3. backtrace all the rr_nodes and update net_name 
+   */
+
+  return;
+}

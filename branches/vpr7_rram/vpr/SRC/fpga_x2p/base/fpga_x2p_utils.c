@@ -3380,3 +3380,46 @@ void get_logical_block_output_vpack_net_num(t_logical_block* cur_logical_block,
   return;
 }
 
+int get_lut_logical_block_index_with_output_vpack_net_num(int target_vpack_net_num) {
+  int iblk, iport;
+  int matched_lb_index = OPEN;
+  int matched_count = 0;
+  int num_lut_output_ports;
+  int* num_lut_output_pins;
+  int** lut_output_vpack_net_num;
+
+  for (iblk = 0; iblk < num_logical_blocks; iblk++) {
+    /* Bypass the non-LUT logical block */
+    if (VPACK_COMB != logical_block[iblk].type) {
+      continue;
+    }
+    if (LUT_CLASS != logical_block[iblk].pb->pb_graph_node->pb_type->class_type) {
+      continue;
+    }
+    /* Reach here it should be a LUT */
+    get_logical_block_output_vpack_net_num(&logical_block[iblk],
+                                           &num_lut_output_ports, &num_lut_output_pins, 
+                                           &lut_output_vpack_net_num);
+    /* Check */
+    assert ( 1 == num_lut_output_ports);
+    assert ( 1 == num_lut_output_pins[0]);
+    assert ( OPEN != lut_output_vpack_net_num[0][0]);
+
+    if (target_vpack_net_num == lut_output_vpack_net_num[0][0]) {
+      matched_lb_index = iblk;
+      matched_count++;
+    }
+
+    /* Free */
+    my_free(num_lut_output_pins);
+    for (iport = 0; iport < num_lut_output_ports; iport++) {
+      my_free(lut_output_vpack_net_num);
+    }
+  } 
+  
+  assert ((0 == matched_count)
+         || (1 == matched_count));
+  
+  return matched_lb_index;
+}
+

@@ -895,14 +895,29 @@ void set_one_pb_rr_node_default_prev_node_edge(t_rr_node* pb_rr_graph,
 
 /* Mark the prev_edge and prev_node of all the rr_nodes in complex blocks */
 static
-void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb) {
+void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb,
+                                               t_pb_graph_node* cur_pb_graph_node, 
+                                               t_rr_node* pb_rr_nodes) {
   int ipb, jpb, select_mode_index;
   int iport, ipin, node_index;
-  t_rr_node* pb_rr_nodes = NULL;
   t_pb_graph_node* child_pb_graph_node;
+  int temp_rr_node_index;
  
   /* Return when we meet a null pb */ 
   if (NULL == cur_pb) {
+    /* Skip non-LUT pb*/
+    if (LUT_CLASS != cur_pb_graph_node->pb_type->class_type) {
+      return;
+    }
+    for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
+        node_index = cur_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
+        if (OPEN != pb_rr_nodes[node_index].net_num) {
+          pb_rr_nodes[node_index].vpack_net_num = pb_rr_nodes[node_index].net_num;
+        }
+      }
+    }
+
     return;
   }
   
@@ -921,7 +936,6 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb) {
   for (iport = 0; iport < cur_pb->pb_graph_node->num_output_ports; iport++) {
     for (ipin = 0; ipin < cur_pb->pb_graph_node->num_output_pins[iport]; ipin++) {
       /* Get the selected edge of current pin*/
-      pb_rr_nodes = cur_pb->rr_graph;
       node_index = cur_pb->pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
       /* If we find an OPEN net, try to find the parasitic net_num*/
       if (OPEN == pb_rr_nodes[node_index].net_num) {
@@ -955,7 +969,6 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb) {
       for (iport = 0; iport < child_pb_graph_node->num_input_ports; iport++) {
         for (ipin = 0; ipin < child_pb_graph_node->num_input_pins[iport]; ipin++) {
           /* Get the selected edge of current pin*/
-          pb_rr_nodes = cur_pb->rr_graph;
           node_index = child_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
           /* If we find an OPEN net, try to find the parasitic net_num*/
           if (OPEN == pb_rr_nodes[node_index].net_num) {
@@ -971,7 +984,6 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb) {
       for (iport = 0; iport < child_pb_graph_node->num_clock_ports; iport++) {
         for (ipin = 0; ipin < child_pb_graph_node->num_clock_pins[iport]; ipin++) {
           /* Get the selected edge of current pin*/
-          pb_rr_nodes = cur_pb->rr_graph;
           node_index = child_pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster;
           /* If we find an OPEN net, try to find the parasitic net_num*/
           if (OPEN == pb_rr_nodes[node_index].net_num) {
@@ -990,7 +1002,21 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb) {
   for (ipb = 0; ipb < cur_pb->pb_graph_node->pb_type->modes[select_mode_index].num_pb_type_children; ipb++) {
     for (jpb = 0; jpb < cur_pb->pb_graph_node->pb_type->modes[select_mode_index].pb_type_children[ipb].num_pb; jpb++) {
       if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
-        back_annotate_one_pb_rr_node_map_info_rec(&(cur_pb->child_pbs[ipb][jpb]));
+        back_annotate_one_pb_rr_node_map_info_rec(&(cur_pb->child_pbs[ipb][jpb]),
+                                                  &(cur_pb->pb_graph_node->child_pb_graph_nodes[select_mode_index][ipb][jpb]),
+                                                  cur_pb->rr_graph);
+      } else {
+        /* For wired LUT */
+        if (TRUE == is_pb_wired_lut(&(cur_pb->pb_graph_node->child_pb_graph_nodes[select_mode_index][ipb][jpb]),  
+                                    &(cur_pb->pb_graph_node->pb_type->modes[select_mode_index].pb_type_children[ipb]),
+                                    cur_pb->rr_graph)) {        
+          /* Reach here means that this LUT is in wired mode (a buffer)  
+           * synchronize the net num 
+           */
+          back_annotate_one_pb_rr_node_map_info_rec(NULL,
+                                                    &(cur_pb->pb_graph_node->child_pb_graph_nodes[select_mode_index][ipb][jpb]),
+                                                    cur_pb->rr_graph);
+        }
       }
     }
   }
@@ -1009,7 +1035,9 @@ void back_annotate_pb_rr_node_map_info() {
     if (IO_TYPE == block[iblk].type) {
      continue; 
     }
-    back_annotate_one_pb_rr_node_map_info_rec(block[iblk].pb);
+    back_annotate_one_pb_rr_node_map_info_rec(block[iblk].pb, 
+                                              block[iblk].pb->pb_graph_node, 
+                                              block[iblk].pb->rr_graph);
   }  
 
   return;
@@ -2815,10 +2843,113 @@ void alloc_and_load_phy_pb_for_mapped_block(int num_mapped_blocks, t_block* mapp
     mapped_block[iblk].phy_pb = (void*)top_phy_pb;
   }
   vpr_printf(TIO_MESSAGE_INFO, "\n");
+  vpr_printf(TIO_MESSAGE_INFO, "\n");
 
   return;
 }
 
+/* This function does the following tasks:
+ * 1. Find the wired LUTs in pb recursively(used as buffers)
+ * 2. Allocate the pb (if not allocated)
+ * 3. Update the mapping information (net_num) in the rr_graph of pb
+ * 4. Create the wired LUTs in logical block array
+ * 5. Create new vpack nets to rewire the logical blocks
+ */
+void rec_backannotate_one_pb_wired_luts_and_adapt_graph(t_pb* cur_pb,
+                                                        int* L_num_logical_blocks, t_net** L_logical_block,
+                                                        int* L_num_vpack_nets, t_net** L_vpack_net) {
+  int mode_index, ipb, jpb; 
+  t_pb_type* cur_pb_type = NULL;
+  t_pb* lut_child_pb = NULL;
+
+  cur_pb_type = cur_pb->pb_graph_node->pb_type;
+  mode_index = cur_pb->mode; 
+
+  /* Go recursively until we reach a primitive node which is a LUT */
+
+  /* Return if we reach the primitive  */
+  if (TRUE == is_primitive_pb_type(cur_pb_type)) {
+    /* We only care the LUTs, that is in wired mode */
+    if ((LUT_CLASS != cur_pb_type->class_type)
+       || (WIRED_LUT_MODE_INDEX != mode_index)) { 
+      return;
+    }
+    /* Reach here means that this LUT is in wired mode (a buffer)  
+     * Check if we need to allocate new logical block  
+     */
+    lut_child_pb = get_lut_child_pb(cur_pb, mode_index);
+    assert (NULL != lut_child_pb);
+    if (OPEN != lut_child_pb->logical_block) {
+      return;
+    }
+    /* We need to 
+     * 1. Add a new logical block 
+     * 2. Add a new vpack_net 
+     * 3. Update pb rr_graph 
+     */
+  }
+
+  /* recursive for the child_pbs*/
+  assert (FALSE == is_primitive_pb_type(cur_pb_type));
+  for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+    for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+      /* Recursive*/
+      /* Refer to pack/output_clustering.c [LINE 392] */
+      if ((NULL != cur_pb->child_pbs[ipb])&&(NULL != cur_pb->child_pbs[ipb][jpb].name)) {
+        rec_backannotate_one_pb_wired_luts_and_adapt_graph(&(cur_pb->child_pbs[ipb][jpb]), 
+                                                           L_num_logical_blocks, L_logical_block,
+                                                           L_num_vpack_nets, L_vpack_net);
+      } else {
+        if (TRUE == is_pb_wired_lut(&(cur_pb->pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]),  
+                                    &(cur_pb_type->modes[mode_index].pb_type_children[ipb]),
+                                    cur_pb->rr_graph)) {        
+          /* Reach here means that this LUT is in wired mode (a buffer) */ 
+          /* 1. Allocate a child pb */
+          allocate_wired_lut_pbs(&(cur_pb->child_pbs),
+                                 cur_pb_type->modes[mode_index].num_pb_type_children,
+                                 cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb,
+                                 ipb, jpb);
+          /* Load the LUT information to the pb */
+          /* 2. Add a new logical block */ 
+          /* 3. Add a new vpack_net */ 
+          /*
+          load_wired_lut_pbs(&(cur_pb->child_pbs[ipb][jpb]),
+                             &(cur_pb->pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]),  
+                             &(cur_pb_type->modes[mode_index].pb_type_children[ipb]),
+                             cur_pb->rr_graph,    
+                             L_num_logical_blocks, L_logical_block,
+                             L_num_vpack_nets, L_vpack_net);
+          */
+          /* 4. Update pb rr_graph */ 
+        }
+      }
+    }
+  }
+
+  return;
+}
+
+/* Back-annotate all the wired LUTs (used as buffers) in pbs 
+ * and adapt BLIF graph and pb graph!
+ */
+static 
+void backannotate_pb_wired_luts(int num_mapped_blocks, t_block* mapped_block,
+                                int* L_num_logical_blocks, t_net** L_logical_block,
+                                int* L_num_vpack_nets, t_net** L_vpack_net) {
+
+  int iblk;
+
+  for (iblk = 0; iblk < num_mapped_blocks; iblk++) {
+    /* Find wired LUTs in each pb recusively */
+    rec_backannotate_one_pb_wired_luts_and_adapt_graph(mapped_block[iblk].pb,
+                                                       L_num_logical_blocks, L_logical_block,
+                                                       L_num_vpack_nets, L_vpack_net);
+  }
+
+  vpr_printf(TIO_MESSAGE_INFO, "\n");
+
+  return;
+}
 
 /* Back-Annotate post routing results to the VPR routing-resource graphs */
 void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
@@ -2826,6 +2957,14 @@ void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
                                             boolean parasitic_net_estimation_on) {
 
   vpr_printf(TIO_MESSAGE_INFO, "Start backannotating post route information for SPICE modeling...\n");
+
+  /* Back-annotate the wired LUTs in pbs */
+  /* Paused due to difficulties in identify which part of the LUT fan-out is wired....
+  vpr_printf(TIO_MESSAGE_INFO, "Back-annotate wired LUTs in pbs...\n");
+  backannotate_pb_wired_luts(num_blocks, block, 
+                             &num_logical_blocks, &logical_block,
+                             &num_logical_nets, &vpack_net);
+  */
 
   /* Give spice_name_tag for each pb*/
   vpr_printf(TIO_MESSAGE_INFO, "Generate SPICE name tags for pbs...\n");

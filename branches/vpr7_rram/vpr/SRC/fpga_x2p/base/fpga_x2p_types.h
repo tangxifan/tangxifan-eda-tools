@@ -98,6 +98,8 @@ struct fpga_spice_phy_pb {
   t_pb_graph_node *pb_graph_node; /* pointer to pb_graph_node this pb corresponds to */
   int  num_logical_blocks;
   int* logical_block; /* If this is a terminating pb, gives the logical (netlist) block that it contains */
+  boolean* is_wired_lut; /* Specify if this is a wired LUT (used as buffer) */
+  t_pb_graph_pin** lut_output_pb_graph_pin;
   int* lut_size;
 
   int mode; /* mode that this pb is set to */
