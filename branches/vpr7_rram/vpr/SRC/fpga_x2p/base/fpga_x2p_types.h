@@ -15,6 +15,8 @@
 /* Index of logical block indicating a wired LUT */
 #define WIRED_LUT_LOGICAL_BLOCK_ID -2
 
+#define BLIF_LUT_KEYWORD "names"
+
 /* Mode Index of a LUT: 
  * 0 indicates a wired mode (a buffer) 
  * 0 indicates a regular mode (a buffer) 

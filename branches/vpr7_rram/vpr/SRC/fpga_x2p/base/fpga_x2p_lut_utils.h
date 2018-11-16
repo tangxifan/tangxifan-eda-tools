@@ -17,7 +17,7 @@ char** assign_lut_truth_table(t_logical_block* mapped_logical_block,
 
 char** get_wired_lut_truth_table();
 
-char** assign_post_routing_wired_lut_truth_table(t_logical_block* wired_logical_block,
+char** assign_post_routing_wired_lut_truth_table(int lut_output_vpack_net_num,
                                                  int lut_size, int* lut_pin_vpack_net_num,
                                                  int* truth_table_length);
 

@@ -2528,7 +2528,6 @@ void link_one_pb_graph_node_pin_to_phy_pb_graph_pin(t_pb_graph_pin* cur_pb_graph
   }
   /* Create the link */
   cur_pb_graph_pin->physical_pb_graph_pin = phy_pb_graph_pin;
-  /*
   printf (" match pin (%s[%d]->%s[%d]) to (%s[%d]->%s[%d]) rotate_offset_acc=%d\n",
           cur_pb_graph_pin->parent_node->pb_type->name,
           cur_pb_graph_pin->parent_node->placement_index,
@@ -2538,14 +2537,15 @@ void link_one_pb_graph_node_pin_to_phy_pb_graph_pin(t_pb_graph_pin* cur_pb_graph
           phy_pb_graph_pin->port->name, phy_pb_graph_pin->pin_number,
           cur_pb_graph_pin->port->phy_mode_pin_rotate_offset_acc
          );
-  */
   /* Accumulate the phy_mode_pin offset when we have a matched */
   if (0 != cur_pb_graph_pin->port->physical_mode_pin_rotate_offset) {
     cur_pb_graph_pin->port->phy_mode_pin_rotate_offset_acc += cur_pb_graph_pin->port->physical_mode_pin_rotate_offset;
   }
   /* Reset to lsb when we exceed the msb */
+  /* TODO: this line should be thorougly checked, to avoid any bug */
   if (cur_pb_graph_pin->port->phy_pb_type_port_msb < 
-      phy_pb_graph_pin->pin_number + cur_pb_graph_pin->port->phy_mode_pin_rotate_offset_acc) {
+      cur_pb_graph_pin->pin_number + cur_pb_graph_pin->port->phy_pb_type_port_lsb 
+      + cur_pb_graph_pin->port->phy_mode_pin_rotate_offset_acc) {
     cur_pb_graph_pin->port->phy_mode_pin_rotate_offset_acc = 0;
   }
 
@@ -2759,8 +2759,8 @@ int get_pb_graph_node_wired_lut_logical_block_index(t_pb_graph_node* cur_pb_grap
   vpr_printf(TIO_MESSAGE_INFO, "Wired LUT num_used_lut_output_pins is %d\n", num_used_lut_output_pins);
   assert (1 == num_used_lut_output_pins); 
 
-  /* Search the logical block array until we find the logical block */
-  wired_lut_lb_index = get_lut_logical_block_index_with_output_vpack_net_num(lut_output_vpack_net_num);
+  /* The logical block is the driver for this vpack_net( node_block[0] )*/
+  wired_lut_lb_index = vpack_net[lut_output_vpack_net_num].node_block[0];
   assert (OPEN != wired_lut_lb_index);
 
   return wired_lut_lb_index;
@@ -2905,8 +2905,10 @@ void rec_sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb,
       }
       break;  
     case UNKNOWN_CLASS:
+      /* Could be adder/hetergenous block/IOs
       assert ((VPACK_INPAD == logical_block[cur_op_pb->logical_block].type)
              ||(VPACK_OUTPAD == logical_block[cur_op_pb->logical_block].type));
+      */
       phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = cur_op_pb->logical_block;
       if (OPEN == cur_op_pb->logical_block) {
         phy_pb_to_sync->num_logical_blocks--;

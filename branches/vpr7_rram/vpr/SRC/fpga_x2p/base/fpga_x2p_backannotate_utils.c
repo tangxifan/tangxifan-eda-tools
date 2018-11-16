@@ -154,7 +154,13 @@ int get_logical_block_output_init_val(t_logical_block* cur_logical_block) {
   assert((NULL != cur_logical_block->pb)
         && ( NULL != cur_logical_block->pb->pb_graph_node)
         && ( NULL != cur_logical_block->pb->pb_graph_node->pb_type));
-  cur_spice_model = cur_logical_block->pb->pb_graph_node->pb_type->parent_mode->parent_pb_type->phy_pb_type->spice_model;
+
+  /* We only care LUT here, for other blocks we cannot force now, for others, we just give zero. */
+  if (0 == strcmp(cur_logical_block->model->name, BLIF_LUT_KEYWORD)) {
+    cur_spice_model = cur_logical_block->pb->pb_graph_node->pb_type->parent_mode->parent_pb_type->phy_pb_type->spice_model;
+  } else {
+    return get_ff_output_init_val(cur_logical_block);
+  }
 
   /* Switch to specific cases*/
   switch (cur_spice_model->type) {
@@ -2813,6 +2819,9 @@ void alloc_and_load_phy_pb_for_mapped_block(int num_mapped_blocks, t_block* mapp
   boolean route_success = FALSE;
 
   for (iblk = 0; iblk < num_mapped_blocks; iblk++) {
+    vpr_printf(TIO_MESSAGE_INFO, 
+               "Start backannotate clb (%s) to its physical pb!\n", 
+               mapped_block[iblk].pb->name);
     top_phy_pb = (t_phy_pb*) my_calloc(1, sizeof(t_phy_pb)); 
     /* Create a pristine pb for pb_graph_nodes in the physical modes */
     top_phy_pb->pb_graph_node = mapped_block[iblk].type->pb_graph_head;

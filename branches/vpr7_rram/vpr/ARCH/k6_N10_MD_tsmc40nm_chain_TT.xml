@@ -707,7 +707,7 @@
                         195e-12
                       </delay_matrix>
                     </pb_type>    
-                    <pb_type name="adder" blif_model=".subckt adder" num_pb="1" physical_pb_type_name="adder_phy">
+                    <pb_type name="adder" blif_model=".subckt adder" num_pb="1" physical_pb_type_name="adder_phy" physical_pb_type_index_factor="1">
                       <input name="a" num_pins="1" physical_mode_pin="a"/>
                       <input name="b" num_pins="1" physical_mode_pin="b"/>
                       <input name="cin" num_pins="1" physical_mode_pin="cin"/>                      

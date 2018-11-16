@@ -317,26 +317,11 @@ char** get_wired_lut_truth_table() {
 
 /* Adapt the truth from the actual connection from the input nets of a LUT,
  */
-char** assign_post_routing_wired_lut_truth_table(t_logical_block* wired_lut_logical_block,
+char** assign_post_routing_wired_lut_truth_table(int lut_output_vpack_net_num,
                                                  int lut_size, int* lut_pin_vpack_net_num,
                                                  int* truth_table_length) {
   int inet, iport;
   char** tt = (char**) my_malloc(sizeof(char*));
-  int num_lut_output_ports;
-  int* num_lut_output_pins;
-  int** lut_output_vpack_net_num;
-
-  /* The output of this mapped block is the wires routed through this LUT */
-  /* Find the vpack_net_num of the output of the lut_logical_block */
-  get_logical_block_output_vpack_net_num(wired_lut_logical_block, 
-                                         &num_lut_output_ports, 
-                                         &num_lut_output_pins, 
-                                         &lut_output_vpack_net_num);
-
-  /* Check */
-  assert ( 1 == num_lut_output_ports);
-  assert ( 1 == num_lut_output_pins[0]);
-  assert ( OPEN != lut_output_vpack_net_num[0][0]);
 
   /* truth_table_length will be always 1*/
   (*truth_table_length) = 1;
@@ -346,7 +331,7 @@ char** assign_post_routing_wired_lut_truth_table(t_logical_block* wired_lut_logi
   /* Fill the truth table !!! */
   for (inet = 0; inet < lut_size; inet++) {
     /* Find the vpack_num in the lut_input_pin, we fix it to be 1 */
-    if (lut_output_vpack_net_num[0][0] == lut_pin_vpack_net_num[inet]) {
+    if (lut_output_vpack_net_num == lut_pin_vpack_net_num[inet]) {
       tt[0][inet] = '1'; 
     } else {
     /* Otherwise it should be don't care */
@@ -355,12 +340,6 @@ char** assign_post_routing_wired_lut_truth_table(t_logical_block* wired_lut_logi
   }
   memcpy(tt[0] + lut_size, " 1", 3);
 
-  /* Free */
-  my_free(num_lut_output_pins);
-  for (iport = 0; iport < num_lut_output_ports; iport++) {
-    my_free(lut_output_vpack_net_num);
-  }
- 
   return tt;
 }
 

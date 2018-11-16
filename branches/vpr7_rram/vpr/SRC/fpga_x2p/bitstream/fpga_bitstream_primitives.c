@@ -336,7 +336,7 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(FILE* fp,
       if (TRUE == prim_phy_pb->is_wired_lut[i]) {
         /* TODO: assign post-routing lut truth table!!!*/
         get_mapped_lut_phy_pb_input_pin_vpack_net_num(prim_phy_pb, &num_lut_pin_nets, &lut_pin_net);
-        truth_table[i] = assign_post_routing_wired_lut_truth_table(&logical_block[mapped_logical_block_index],
+        truth_table[i] = assign_post_routing_wired_lut_truth_table(prim_phy_pb->rr_graph->rr_node[prim_phy_pb->lut_output_pb_graph_pin[i]->rr_node_index_physical_pb].vpack_net_num,
                                                                    num_lut_pin_nets, lut_pin_net, &truth_table_length[i]); 
       } else {
         assert (FALSE == prim_phy_pb->is_wired_lut[i]);
