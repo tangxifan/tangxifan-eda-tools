@@ -1999,7 +1999,6 @@ t_pb* get_lut_child_pb(t_pb* cur_lut_pb,
   assert(SPICE_MODEL_LUT == cur_lut_pb->pb_graph_node->pb_type->phy_pb_type->spice_model->type);
 
   assert(1 == cur_lut_pb->pb_graph_node->pb_type->modes[mode_index].num_pb_type_children);
-  assert(1 == cur_lut_pb->pb_graph_node->pb_type->num_pb);
 
   return (&(cur_lut_pb->child_pbs[0][0])); 
 }

@@ -10,8 +10,10 @@ set modelsim_ini_file = /uusoc/facility/cad_tools/Mentor/modelsim10.5c/modeltech
 set arch_xml_file = ARCH/k6_N10_MD_tsmc40nm_chain_TT.xml 
 #set blif_file = Circuits/s298_prevpr.blif 
 #set act_file = Circuits/s298_prevpr.act 
-set blif_file = Circuits/picorv_ace.blif 
-set act_file = Circuits/picorv_ace.act 
+set blif_file = Circuits/add.blif 
+set act_file = Circuits/add.act 
+#set blif_file = Circuits/picorv_ace.blif 
+#set act_file = Circuits/picorv_ace.act 
 set vpr_route_chan_width = 100
 
 # Step A: Make sure a clean start 
