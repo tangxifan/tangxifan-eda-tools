@@ -7,11 +7,12 @@ set verilog_output_dirname = sram_fpga_hetero
 set verilog_output_dirpath = $PWD
 set modelsim_ini_file = /uusoc/facility/cad_tools/Mentor/modelsim10.5c/modeltech/modelsim.ini
 # VPR critical inputs
-set arch_xml_file = ARCH/k6_N10_MD_tsmc40nm_chain_TT.xml 
-#set blif_file = Circuits/s298_prevpr.blif 
-#set act_file = Circuits/s298_prevpr.act 
-set blif_file = Circuits/add.blif 
-set act_file = Circuits/add.act 
+#set arch_xml_file = ARCH/k6_N10_MD_tsmc40nm_chain_TT.xml 
+set arch_xml_file = ARCH/k6_N10_sram_chain_SC_gf130_2x2.xml
+set blif_file = Circuits/s298_prevpr.blif 
+set act_file = Circuits/s298_prevpr.act 
+#set blif_file = Circuits/add_fs.blif 
+#set act_file = Circuits/add_fs.act 
 #set blif_file = Circuits/picorv_ace.blif 
 #set act_file = Circuits/picorv_ace.act 
 set vpr_route_chan_width = 100

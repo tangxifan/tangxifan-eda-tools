@@ -314,7 +314,7 @@ void dump_verilog_scan_chain_config_module(FILE* fp,
                             top_netlist_scan_chain_head_prefix, 0, 0);
   fprintf(fp, ",\n");
   /* Scan-chain regular inputs */
-  dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 0, num_mem_bits - 1, 0, VERILOG_PORT_INPUT);
+  dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 0, num_mem_bits - 1, 0, VERILOG_PORT_OUTPUT);
   fprintf(fp, ",\n");
   dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 0, num_mem_bits - 1, 1, VERILOG_PORT_INPUT);
   fprintf(fp, ");\n");
