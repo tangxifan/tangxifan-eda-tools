@@ -784,11 +784,9 @@ void dump_verilog_sram_one_port(FILE* fp,
     } else if (1 == port_type_index) {
       port_name = "scff_out";
       /* Special case: scan-chain ff output should be an output always */
-      /*
       if (VERILOG_PORT_INPUT == dump_port_type) {
         actual_dump_port_type = VERILOG_PORT_OUTPUT;
       }
-      */
     } else {
       assert(2 == port_type_index);
       port_name = "scff_outb";
