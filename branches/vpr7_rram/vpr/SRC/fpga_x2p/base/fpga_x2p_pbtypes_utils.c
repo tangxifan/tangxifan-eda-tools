@@ -2801,7 +2801,7 @@ void sync_wired_lut_to_one_phy_pb(t_pb_graph_node* cur_pb_graph_node,
   /* check */
   assert (LUT_CLASS == cur_pb_type->phy_pb_type->class_type);
   assert ( 1 == cur_pb_graph_node->num_input_ports );
-  /* TODO: find the wired LUT logical block! */;
+  /* TODO: find the wired LUT logical block! */
   phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = get_pb_graph_node_wired_lut_logical_block_index(cur_pb_graph_node, op_pb_rr_graph);
   phy_pb_to_sync->is_wired_lut[phy_pb_to_sync->num_logical_blocks - 1] = TRUE;
   /* Update the actual input size of this LUT */
