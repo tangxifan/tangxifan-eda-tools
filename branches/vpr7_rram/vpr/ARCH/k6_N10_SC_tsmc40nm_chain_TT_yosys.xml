@@ -215,17 +215,17 @@
           10e-12 10e-12 10e-12
         </delay_matrix>
       </spice_model>
-      <spice_model type="gate" name="AND2" prefix="AND2" is_default="1">
-        <design_technology type="cmos" topology="AND"/>
+      <spice_model type="gate" name="OR2" prefix="OR2" is_default="1">
+        <design_technology type="cmos" topology="OR"/>
         <input_buffer exist="off"/>
         <output_buffer exist="off"/>
         <port type="input" prefix="in" size="2"/>
         <port type="output" prefix="out" size="1"/>
         <delay_matrix type="rise" in_port="in" out_port="out">
-          10e-12 10e-12 
+          10e-12 
         </delay_matrix>
         <delay_matrix type="fall" in_port="in" out_port="out">
-          10e-12 10e-12
+          10e-12 
         </delay_matrix>
       </spice_model>
       <spice_model type="chan_wire" name="chan_segment" prefix="track_seg" is_default="1">
@@ -281,10 +281,10 @@
          <output_buffer exist="on" spice_model_name="INVTX1"/>
          <pass_gate_logic spice_model_name="TGATE"/>
          <port type="input" prefix="D" size="1"/>
-         <port type="input" prefix="Set" size="1" is_global="true" default_val="0" is_set="true"/>
-         <port type="input" prefix="Reset" size="1" is_global="true" default_val="0" is_reset="true"/>
+         <port type="input" prefix="R" size="1" is_global="true" default_val="0" is_reset="true"/>
+         <port type="input" prefix="S" size="1" is_global="true" default_val="0" is_set="true"/>
          <port type="output" prefix="Q" size="1"/>
-         <port type="clock" prefix="clk" size="1" is_global="true" default_val="0" />
+         <port type="clock" prefix="C" size="1" is_global="true" default_val="0" />
       </spice_model>
       <spice_model type="lut" name="frac_lut6" prefix="frac_lut6" dump_structural_verilog="true">
         <design_technology type="cmos" fracturable_lut="true"/>
@@ -293,7 +293,7 @@
         <lut_input_buffer exist="on" spice_model_name="buf4"/>
         <lut_input_inverter exist="on" spice_model_name="INVTX1"/>
         <pass_gate_logic spice_model_name="TGATE"/>
-        <port type="input" prefix="in" size="6" tri_state_map="----11" spice_model_name="AND2"/>
+        <port type="input" prefix="in" size="6" tri_state_map="----11" spice_model_name="OR2"/>
         <port type="output" prefix="lut4_out" size="4" lut_frac_level="4" lut_output_mask="0,1,2,3"/>
         <port type="output" prefix="lut5_out" size="2" lut_frac_level="5" lut_output_mask="0,1"/>
         <port type="output" prefix="lut6_out" size="1" lut_output_mask="0"/>
@@ -550,8 +550,8 @@
       <pb_type name="clb" area="53894">
         <input name="I" num_pins="40" equivalent="true"/>
         <input name="cin" num_pins="1"/>
-        <input name="set" num_pins="1"/>
-        <input name="rst" num_pins="1"/>
+        <!--input name="set" num_pins="1"/-->
+        <!--input name="rst" num_pins="1"/-->
         <output name="O" num_pins="20" equivalent="false"/>
         <output name="cout" num_pins="1"/>
         <clock name="clk" num_pins="1"/>
@@ -578,8 +578,6 @@
               <pb_type name="frac_logic" num_pb="1">
                 <input name="in" num_pins="6"/>
                 <input name="cin" num_pins="1"/>
-                <input name="set" num_pins="1"/>
-                <input name="rst" num_pins="1"/>
                 <output name="out" num_pins="2"/>
                 <output name="cout" num_pins="1"/>
                 <pb_type name="frac_lut6" blif_model=".frac_lut6" mode_bits="11" num_pb="1" spice_model_name="frac_lut6">
@@ -627,8 +625,8 @@
               </pb_type>
               <interconnect> 
                 <complete name="direct_clk" input="fle.clk" output="ff_phy[1:0].C"/>
-                <complete name="direct_set" input="fle.set" output="ff_phy[1:0].S"/>
                 <complete name="direct_rst" input="fle.rst" output="ff_phy[1:0].R"/>
+                <complete name="direct_set" input="fle.set" output="ff_phy[1:0].S"/>
                 <direct name="direct_in" input="fle.in[5:0]" output="frac_logic.in[5:0]"/>
                 <direct name="direct_cin" input="fle.cin" output="frac_logic.cin"/>
                 <direct name="direct_cout" input="frac_logic.cout" output="fle.cout"/>
@@ -746,7 +744,7 @@
                         195e-12
                       </delay_matrix>
                     </pb_type>    
-                    <pb_type name="adder" blif_model=".subckt adder" num_pb="1" physical_pb_type_name="adder_phy">
+                    <pb_type name="adder" blif_model=".subckt adder" num_pb="1" physical_pb_type_name="adder_phy" physical_pb_type_index_factor="1">
                       <input name="a" num_pins="1" physical_mode_pin="a"/>
                       <input name="b" num_pins="1" physical_mode_pin="b"/>
                       <input name="cin" num_pins="1" physical_mode_pin="cin"/>                      
@@ -823,8 +821,8 @@
                   <pack_pattern name="chain" in_port="ble5[0:0].cout" out_port="ble5[1:1].cout"/>
                 </direct>
                 <complete name="complete1" input="lut5inter.clk" output="ble5[1:0].clk"/>                  
-                <complete name="complete_set" input="lut5inter.rst" output="ble5[1:0].set"/>                  
-                <complete name="complete_rst" input="lut5inter.set" output="ble5[1:0].rst"/>                  
+                <complete name="complete_set" input="lut5inter.set" output="ble5[1:0].set"/>                  
+                <complete name="complete_rst" input="lut5inter.rst" output="ble5[1:0].rst"/>                  
               </interconnect>
             </pb_type>
             <interconnect>
@@ -870,7 +868,7 @@
                   261e-12
                 </delay_matrix>
               </pb_type>
-              <pb_type name="ff" blif_model=".subckt DFFSR" num_pb="1" class="flipflop" physical_pb_type_name="ff_phy">
+              <pb_type name="ff" blif_model=".subckt DFFSR" num_pb="1" class="flipflop" physical_pb_type_name="ff_phy" physical_pb_type_index_factor="2" physical_pb_type_index_offset="1">
                 <input name="D" num_pins="1" port_class="D" physical_mode_pin="D"/>
                 <input name="S" num_pins="1" physical_mode_pin="S"/>
                 <input name="R" num_pins="1" physical_mode_pin="R"/>
@@ -919,9 +917,9 @@
           </complete>
           <complete name="clks" input="clb.clk" output="fle[9:0].clk">
           </complete>
-          <complete name="set" input="clb.set" output="fle[9:0].set">
+          <complete name="set" input="clb.I fle[9:0].out" output="fle[9:0].set">
           </complete>
-          <complete name="rst" input="clb.rst" output="fle[9:0].rst">
+          <complete name="rst" input="clb.I fle[9:0].out" output="fle[9:0].rst">
           </complete>
 
           <!-- This way of specifying direct connection to clb outputs is important because this architecture uses automatic spreading of opins.  

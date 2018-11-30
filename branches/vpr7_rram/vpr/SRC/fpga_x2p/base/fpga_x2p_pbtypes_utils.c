@@ -2887,7 +2887,8 @@ void rec_sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb,
       phy_pb_to_sync->lut_size[phy_pb_to_sync->num_logical_blocks - 1] = cur_pb_graph_node->num_input_pins[0];
       break;
     case LATCH_CLASS:
-      assert (VPACK_LATCH == logical_block[cur_op_pb->logical_block].type);
+      /* Comment this as FF maybe a black box*/
+      /* assert (VPACK_LATCH == logical_block[cur_op_pb->logical_block].type); */
       phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = cur_op_pb->logical_block;
       if (OPEN == cur_op_pb->logical_block) {
         phy_pb_to_sync->num_logical_blocks--;
