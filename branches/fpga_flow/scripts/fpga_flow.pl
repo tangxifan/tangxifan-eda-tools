@@ -43,7 +43,8 @@ my @supported_flows = ("standard",
                        "mpack2",
                        "mpack1",
                        "vtr",
-                       "vtr_standard");
+                       "vtr_standard",
+                       "yosys_vpr");
 my %selected_flows;
 
 # Configuration file keywords list
@@ -60,6 +61,7 @@ my @sctgy;
 # refer to the keywords of dir_path
 @{$sctgy[0]} = ("script_base",
                 "benchmark_dir",
+                "yosys_path",
                 "odin2_path",
                 "cirkit_path",
                 "abc_mccl_path",
@@ -558,6 +560,69 @@ sub run_abc_libmap($ $ $)
   }
   # !!! For standard library, we cannot use sweep ???
   system("/bin/csh -cx './$abc_name -c \"read_blif $bm; resyn2; read_library $mpack1_stdlib; $abc_seq_optimize map -v; write_blif $blif_out; quit;\" > $log'");
+  chdir $cwd;
+}
+
+# Run yosys synthesis with ABC LUT mapping 
+sub run_yosys_fpgamap($ $ $ $) {
+  my ($bm, $bm_path, $blif_out, $log) = @_;
+  my ($cmd_log) = ($log);
+  $cmd_log =~ s/log$/ys/;
+
+  # Get Yosys path
+  my ($yosys_dir,$yosys_name) = &split_prog_path($conf_ptr->{dir_path}->{yosys_path}->{val});
+
+  print "Entering $yosys_dir\n";
+  chdir $yosys_dir;
+  my ($lut_num) = $opt_ptr->{K_val};
+
+  # Create yosys synthesize script
+  my ($YOSYS_CMD_FH) = (FileHandle->new);
+  if ($YOSYS_CMD_FH->open("> $cmd_log")) {
+    print "INFO: auto generating cmds for Yosys ($cmd_log) ...\n";
+  } else {
+    die "ERROR: fail to auto generating cmds for Yosys ($cmd_log) ...\n";
+  }
+  # Output the standard format (refer to VTR_flow script)
+  print $YOSYS_CMD_FH "# Yosys synthesis script for $bm\n";
+  print $YOSYS_CMD_FH "# read Verilog \n";
+  print $YOSYS_CMD_FH "read_verilog -nolatches $bm_path\n";
+  print $YOSYS_CMD_FH "\n";
+
+  print $YOSYS_CMD_FH "# Technology mapping\n";
+  print $YOSYS_CMD_FH "hierarchy -top $bm\n";
+  print $YOSYS_CMD_FH "proc\n";
+  print $YOSYS_CMD_FH "techmap -D NO_LUT -map +/adff2dff.v\n";
+  print $YOSYS_CMD_FH "\n";
+
+  print $YOSYS_CMD_FH "# Synthesis\n";
+  print $YOSYS_CMD_FH "synth -top $bm -flatten\n";
+  print $YOSYS_CMD_FH "clean\n";
+  print $YOSYS_CMD_FH "\n";
+
+  print $YOSYS_CMD_FH "# LUT mapping \n";
+  print $YOSYS_CMD_FH "abc -lut $lut_num\n";
+  print $YOSYS_CMD_FH "\n";
+
+  print $YOSYS_CMD_FH "# Check \n";
+  print $YOSYS_CMD_FH "synth -run check\n";
+  print $YOSYS_CMD_FH "\n";
+
+  print $YOSYS_CMD_FH "# C;ean and output blif \n";
+  print $YOSYS_CMD_FH "opt_clean -purge\n";
+  print $YOSYS_CMD_FH "write_blif $blif_out\n";
+
+  close($YOSYS_CMD_FH);
+  #
+  # Create a local copy for the commands 
+
+  system("/bin/tcsh -cx './$yosys_name $cmd_log > $log'");
+
+  if (!(-e $blif_out)) {
+    die "ERROR: Fail Yosys for benchmark $bm.\n";
+  }
+
+  print "Leaving $yosys_dir\n";
   chdir $cwd;
 }
 
@@ -1581,6 +1646,112 @@ sub run_mig_mccl_flow($ $ $ $) {
   return;  
 }
 
+# Run Yosys-VPR flow
+sub run_yosys_vpr_flow($ $ $ $ $) 
+{
+  my ($tag,$benchmark_file,$vpr_arch,$flow_enhance, $parse_results) = @_;
+
+  my ($benchmark, $rpt_dir, $prefix);
+  my ($yosys_bm,$yosys_blif_out,$yosys_log,$yosys_blif_out_bak);
+
+  my @tokens = split('/', $benchmark_file);
+  $benchmark = $tokens[0];
+
+  # Prepare for the output folder 
+  $rpt_dir = "$conf_ptr->{dir_path}->{rpt_dir}->{val}"."/$benchmark/$tag";
+  &generate_path($rpt_dir);
+
+  # Run Yosys flow
+  $yosys_bm = "$conf_ptr->{dir_path}->{benchmark_dir}->{val}"."/$benchmark_file";
+  $prefix = "$rpt_dir/$benchmark\_"."K$opt_ptr->{K_val}\_"."N$opt_ptr->{N_val}\_";
+  $yosys_blif_out = "$prefix"."yosys.blif";
+  $yosys_log = "$prefix"."yosys.log";
+
+  &run_yosys_fpgamap($benchmark, $yosys_bm, $yosys_blif_out, $yosys_log);
+
+  # Files for ace 
+  my ($act_file,$ace_new_blif,$ace_log) = ("$prefix"."ace.act","$prefix"."ace.blif","$prefix"."ace.log");
+  &run_ace_in_flow($prefix, $yosys_blif_out, $act_file, $ace_new_blif, $ace_log);
+
+  # Files for VPR
+  my ($vpr_net,$vpr_place,$vpr_route,$vpr_reroute_log,$vpr_log);
+
+  $vpr_net = "$prefix"."vpr.net";
+  $vpr_place = "$prefix"."vpr.place";
+  $vpr_route = "$prefix"."vpr.route";
+  $vpr_log = "$prefix"."vpr.log";
+  $vpr_reroute_log = "$prefix"."vpr_reroute.log";
+
+  &run_vpr_in_flow($tag, $benchmark, $benchmark_file, $yosys_blif_out, $vpr_arch, $act_file, $vpr_net, $vpr_place, $vpr_route, $vpr_log, $vpr_reroute_log, $parse_results);
+
+  return;
+}
+
+# Parse Yosys-VPR flow
+sub parse_yosys_vpr_flow_results($ $ $ $) 
+{
+  my ($tag,$benchmark_file,$vpr_arch,$flow_enhance) = @_;
+
+  my ($benchmark, $rpt_dir, $prefix);
+  my ($yosys_bm,$yosys_blif_out,$yosys_log,$yosys_blif_out_bak);
+
+  my @tokens = split('/', $benchmark_file);
+  $benchmark = $tokens[0];
+
+  # Prepare for the output folder 
+  $rpt_dir = "$conf_ptr->{dir_path}->{rpt_dir}->{val}"."/$benchmark/$tag";
+  &generate_path($rpt_dir);
+
+  # Run Yosys flow
+  $yosys_bm = "$conf_ptr->{dir_path}->{benchmark_dir}->{val}"."/$benchmark_file";
+  $prefix = "$rpt_dir/$benchmark\_"."K$opt_ptr->{K_val}\_"."N$opt_ptr->{N_val}\_";
+  $yosys_blif_out = "$prefix"."yosys.blif";
+  $yosys_log = "$prefix"."yosys.log";
+
+  # Files for ace 
+  my ($act_file,$ace_new_blif,$ace_log) = ("$prefix"."ace.act","$prefix"."ace.blif","$prefix"."ace.log");
+
+  # Files for VPR
+  my ($vpr_net,$vpr_place,$vpr_route,$vpr_reroute_log,$vpr_log);
+
+  $vpr_net = "$prefix"."vpr.net";
+  $vpr_place = "$prefix"."vpr.place";
+  $vpr_route = "$prefix"."vpr.route";
+  $vpr_log = "$prefix"."vpr.log";
+  $vpr_reroute_log = "$prefix"."vpr_reroute.log";
+
+  if ("on" eq $opt_ptr->{min_route_chan_width}) {
+    &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_log.".min_chan_width",$opt_ptr->{K_val},"on",1);
+    &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val},"off",1);
+    &extract_vpr_stats($tag,$benchmark,$vpr_log.".min_chan_width",$opt_ptr->{K_val});
+    &extract_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val});
+  } elsif ("on" eq $opt_ptr->{fix_route_chan_width}) {
+    &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val},"off",1);
+    &extract_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val});
+    if (-e $vpr_reroute_log) {
+      &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val},"off",1);
+      &extract_vpr_stats($tag,$benchmark,$vpr_reroute_log,$opt_ptr->{K_val});
+    }
+  } else {
+    &extract_min_chan_width_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val},"on",1);
+    &extract_vpr_stats($tag,$benchmark,$vpr_log,$opt_ptr->{K_val});
+  }
+ 
+  # Extract data from VPR Power stats
+  if ("on" eq $opt_ptr->{power}) {
+    &extract_vpr_power_esti($tag,$yosys_blif_out,$benchmark,$opt_ptr->{K_val});
+  }
+
+  # TODO: HOW TO DEAL WITH SPICE NETLISTS???
+  # Output a file contain information of SPICE Netlists
+  if ("on" eq $opt_ptr->{vpr_fpga_spice}) { 
+    &output_fpga_spice_task("$opt_ptr->{vpr_fpga_spice_val}"."_standard.txt", $benchmark, $yosys_blif_out, $rpt_dir);
+  }
+
+
+  return;
+}
+
 
 sub run_standard_flow($ $ $ $ $) 
 {
@@ -1603,8 +1774,6 @@ sub run_standard_flow($ $ $ $ $)
 
 
   my ($act_file,$ace_new_blif,$ace_log) = ("$prefix"."ace.act","$prefix"."ace.blif","$prefix"."ace.log");
-
-  my ($vpr_net,$vpr_place,$vpr_route,$vpr_reroute_log,$vpr_log);
 
   $vpr_net = "$prefix"."vpr.net";
   $vpr_place = "$prefix"."vpr.place";
@@ -2305,6 +2474,8 @@ sub run_benchmark_selected_flow($ $ $)
     &run_mccl_flow("mccl",$benchmark,$conf_ptr->{flow_conf}->{vpr_arch}->{val}, $parse_results);
   } elsif ($flow_type eq "mig_mccl") {
     &run_mig_mccl_flow("mig_mccl",$benchmark,$conf_ptr->{flow_conf}->{vpr_arch}->{val}, $parse_results);
+  } elsif ($flow_type eq "yosys_vpr") {
+    &run_yosys_vpr_flow("yosys_vpr",$benchmark,$conf_ptr->{flow_conf}->{vpr_arch}->{val}, $parse_results);
   } else {
     die "ERROR: unsupported flow type ($flow_type) is chosen!\n";
   } 
@@ -2331,6 +2502,8 @@ sub parse_benchmark_selected_flow($ $) {
     &parse_standard_flow_results("mccl", $benchmark, $conf_ptr->{flow_conf}->{vpr_arch}->{val}, "abc_black_box");
   } elsif ($flow_type eq "mig_mccl") {
     &parse_standard_flow_results("mig_mccl", $benchmark, $conf_ptr->{flow_conf}->{vpr_arch}->{val}, "abc_black_box");
+  } elsif ($flow_type eq "yosys_vpr") {
+    &parse_yosys_vpr_flow_results("yosys_vpr",$benchmark,$conf_ptr->{flow_conf}->{vpr_arch}->{val},"abc_black_box");
   } else {
     die "ERROR: unsupported flow type ($flow_type) is chosen!\n";
   } 
@@ -2611,6 +2784,74 @@ sub gen_csv_rpt_vtr_flow($ $)
   # Check log/stats one by one
   foreach $tmp(@benchmark_names) {
     $tmp =~ s/\.v$//g;     
+    print $CSVFH "$tmp";
+    print $CSVFH ",$rpt_h{$tag}->{$tmp}->{$N_val}->{$K_val}->{LUTs}";
+    if ("on" eq $opt_ptr->{min_route_chan_width}) {
+      print $CSVFH ",$rpt_h{$tag}->{$tmp}->{$N_val}->{$K_val}->{min_route_chan_width}";
+      print $CSVFH ",$rpt_h{$tag}->{$tmp}->{$N_val}->{$K_val}->{fix_route_chan_width}";
+    } elsif ("on" eq $opt_ptr->{fix_route_chan_width}) {
+      print $CSVFH ",$rpt_h{$tag}->{$tmp}->{$N_val}->{$K_val}->{fix_route_chan_width}";
+    } else {
+      print $CSVFH ",$rpt_h{$tag}->{$tmp}->{$N_val}->{$K_val}->{min_route_chan_width}";
+    }
+    #foreach $tmpkw(@keywords) {
+    @keywords = split /\|/,$conf_ptr->{csv_tags}->{vpr_tags}->{val};
+    for($ikw=0; $ikw < ($#keywords+1); $ikw++) {
+      $tmpkw = $keywords[$ikw];
+      $tmpkw =~ s/\s//g;  
+      print $CSVFH ",$rpt_ptr->{$tag}->{$tmp}->{$N_val}->{$K_val}->{$keywords[$ikw]}";
+    }
+    if ("on" eq $opt_ptr->{power}) {
+      @keywords = split /\|/,$conf_ptr->{csv_tags}->{vpr_power_tags}->{val};
+      for($ikw=0; $ikw < ($#keywords+1); $ikw++) {
+        $tmpkw = $keywords[$ikw];
+        $tmpkw =~ s/\s//g;  
+        print $CSVFH ",$rpt_ptr->{$tag}->{$tmp}->{$N_val}->{$K_val}->{power}->{$keywords[$ikw]}";
+      }
+      print $CSVFH ",$rpt_ptr->{$tag}->{$tmp}->{$N_val}->{$K_val}->{power}->{total}";
+      print $CSVFH ",$rpt_ptr->{$tag}->{$tmp}->{$N_val}->{$K_val}->{power}->{dynamic}";
+      print $CSVFH ",$rpt_ptr->{$tag}->{$tmp}->{$N_val}->{$K_val}->{power}->{leakage}";
+    }
+    print $CSVFH "\n";
+  }
+}
+
+sub gen_csv_rpt_yosys_vpr_flow($ $) 
+{
+  my ($tag,$CSVFH) = @_;
+  my ($tmp,$ikw,$tmpkw);
+  my @keywords;
+  my ($K_val,$N_val) = ($opt_ptr->{K_val},$opt_ptr->{N_val});
+
+  # Print out Standard Stats First
+  print $CSVFH "$tag"; 
+  print $CSVFH ",LUTs";
+  if ("on" eq $opt_ptr->{min_route_chan_width}) {
+    print $CSVFH ",min_route_chan_width";
+    print $CSVFH ",fix_route_chan_width";
+  } elsif ("on" eq $opt_ptr->{fix_route_chan_width}) {
+    print $CSVFH ",fix_route_chan_width";
+  } else {
+    print $CSVFH ",min_route_chan_width";
+  }
+  @keywords = split /\|/,$conf_ptr->{csv_tags}->{vpr_tags}->{val};
+  #foreach $tmpkw(@keywords) {
+  for($ikw=0; $ikw < ($#keywords+1); $ikw++) {
+    print $CSVFH ",$keywords[$ikw]";
+  }
+  if ("on" eq $opt_ptr->{power}) {
+    @keywords = split /\|/,$conf_ptr->{csv_tags}->{vpr_power_tags}->{val};
+    #foreach $tmpkw(@keywords) {
+    for($ikw=0; $ikw < ($#keywords+1); $ikw++) {
+      print $CSVFH ",$keywords[$ikw]";
+    }
+    print $CSVFH ",Total Power,Total Dynamic Power,Total Leakage Power";
+  }
+  print $CSVFH "\n";
+  # Check log/stats one by one
+  foreach $tmp(@benchmark_names) {
+    my @tokens = split('/', $tmp);
+    $tmp = $tokens[0];
     print $CSVFH "$tmp";
     print $CSVFH ",$rpt_h{$tag}->{$tmp}->{$N_val}->{$K_val}->{LUTs}";
     if ("on" eq $opt_ptr->{min_route_chan_width}) {
@@ -2944,6 +3185,11 @@ sub gen_csv_rpt($)
         if (1 == &check_flow_all_benchmarks_done("mig_mccl")) {
           print "INFO: writing mig_mccl flow results ...\n";
           &gen_csv_rpt_standard_flow("mig_mccl",$CSVFH);
+        }
+      } elsif ($flow_type eq "yosys_vpr") {
+        if (1 == &check_flow_all_benchmarks_done("yosys_vpr")) {
+          print "INFO: writing yosys_vpr flow results ...\n";
+          &gen_csv_rpt_yosys_vpr_flow("yosys_vpr",$CSVFH);
         }
       } else {
         die "ERROR: flow_type: $flow_type is not supported!\n";
