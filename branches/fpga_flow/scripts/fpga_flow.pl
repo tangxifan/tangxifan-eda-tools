@@ -1745,7 +1745,7 @@ sub parse_yosys_vpr_flow_results($ $ $ $)
   # TODO: HOW TO DEAL WITH SPICE NETLISTS???
   # Output a file contain information of SPICE Netlists
   if ("on" eq $opt_ptr->{vpr_fpga_spice}) { 
-    &output_fpga_spice_task("$opt_ptr->{vpr_fpga_spice_val}"."_standard.txt", $benchmark, $yosys_blif_out, $rpt_dir);
+    &output_fpga_spice_task("$opt_ptr->{vpr_fpga_spice_val}"."_$tag.txt", $benchmark, $yosys_blif_out, $rpt_dir);
   }
 
 
@@ -2475,7 +2475,7 @@ sub run_benchmark_selected_flow($ $ $)
   } elsif ($flow_type eq "mig_mccl") {
     &run_mig_mccl_flow("mig_mccl",$benchmark,$conf_ptr->{flow_conf}->{vpr_arch}->{val}, $parse_results);
   } elsif ($flow_type eq "yosys_vpr") {
-    &run_yosys_vpr_flow("yosys_vpr",$benchmark,$conf_ptr->{flow_conf}->{vpr_arch}->{val}, $parse_results);
+    &run_yosys_vpr_flow("yosys_vpr",$benchmark,$conf_ptr->{flow_conf}->{vpr_arch}->{val}, "classic", $parse_results);
   } else {
     die "ERROR: unsupported flow type ($flow_type) is chosen!\n";
   } 
