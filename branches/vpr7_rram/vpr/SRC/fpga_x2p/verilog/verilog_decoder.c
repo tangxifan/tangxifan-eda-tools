@@ -316,8 +316,8 @@ void dump_verilog_scan_chain_config_module(FILE* fp,
   /* Scan-chain regular inputs */
   dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 0, num_mem_bits - 1, 0, VERILOG_PORT_OUTPUT);
   fprintf(fp, ",\n");
-  fprintf(fp, "input \n");
-  dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 0, num_mem_bits - 1, 1, VERILOG_PORT_CONKT);
+  fprintf(fp, "input ");
+  dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 0, num_mem_bits - 1, 1, VERILOG_PORT_WIRE);
   fprintf(fp, ");\n");
 
   /* Connect scan-chain input to the first scan-chain input */

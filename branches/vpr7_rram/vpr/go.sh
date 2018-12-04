@@ -8,18 +8,19 @@ set verilog_output_dirpath = $PWD
 set modelsim_ini_file = /uusoc/facility/cad_tools/Mentor/modelsim10.5c/modeltech/modelsim.ini
 # VPR critical inputs
 #set arch_xml_file = ARCH/k6_N10_MD_tsmc40nm_chain_TT.xml 
-set arch_xml_file = ARCH/k6_N10_SC_tsmc40nm_chain_TT_yosys.xml 
+set arch_xml_file = ARCH/k6_N10_SC_tsmc40nm_chain_TT.xml 
+#set arch_xml_file = ARCH/k6_N10_SC_tsmc40nm_chain_TT_yosys.xml 
 #set arch_xml_file = ARCH/k6_N10_sram_chain_SC_gf130_2x2.xml
 #set blif_file = Circuits/ssp_top_prevpr_ace.blif 
 #set act_file = Circuits/ssp_top_prevpr_ace.act 
 #set blif_file = Circuits/uart_top_prevpr_ace.blif 
 #set act_file = Circuits/uart_top_prevpr_ace.act 
-#set blif_file = Circuits/s298_prevpr.blif 
-#set act_file = Circuits/s298_prevpr.act 
+set blif_file = Circuits/s298_prevpr.blif 
+set act_file = Circuits/s298_prevpr.act 
 #set blif_file = Circuits/add_fs.blif 
 #set act_file = Circuits/add_fs.act 
-set blif_file = Circuits/picorv_prevpr_ace.blif 
-set act_file = Circuits/picorv_prevpr_ace.act 
+#set blif_file = Circuits/picorv_prevpr_ace.blif 
+#set act_file = Circuits/picorv_prevpr_ace.act 
 set vpr_route_chan_width = 100
 
 # Step A: Make sure a clean start 
