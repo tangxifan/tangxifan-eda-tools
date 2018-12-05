@@ -547,7 +547,6 @@ struct s_sram_orgz_info {
    * which is assigned according to orgz_type */
   t_llist* conf_bit_head; 
 
-
   /* Conf bits information per grid */
   int grid_nx; /* grid size */ 
   int grid_ny;

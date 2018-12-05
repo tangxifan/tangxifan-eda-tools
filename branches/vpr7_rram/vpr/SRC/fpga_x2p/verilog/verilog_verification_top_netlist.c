@@ -40,6 +40,7 @@
 
 static char* formal_verification_top_module_postfix = "_top_formal_verification";
 static char* formal_verification_top_module_port_postfix = "_fm";
+static char* formal_verification_top_module_uut_name = "U0_formal_verificaiton";
 
 static 
 void dump_verilog_formal_verification_top_netlist_ports(t_sram_orgz_info* cur_sram_orgz_info, 
@@ -103,7 +104,9 @@ void dump_verilog_formal_verification_top_netlist_internal_wires(t_sram_orgz_inf
   char* port_name = NULL;
   int num_array_bl, num_array_wl;
   int bl_decoder_size, wl_decoder_size;
-  t_spice_model* mem_model; 
+  t_spice_model* mem_model = NULL;
+  
+  get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model); 
   
   /* Print internal wires */
   /* Connect to defined signals */
@@ -184,7 +187,9 @@ void dump_verilog_formal_verfication_top_netlist_call_top_module(t_sram_orgz_inf
   /* Include defined top-level module */
   fprintf(fp, "//----- FPGA top-level module to be capsulated  ----\n");
   fprintf(fp, "//------Call defined Top-level Verilog Module -----\n");
-  fprintf(fp, "%s_top U0 (\n", circuit_name);
+  fprintf(fp, "%s_top %s (\n", 
+              circuit_name,
+              formal_verification_top_module_uut_name); 
 
   dump_verilog_top_module_ports(cur_sram_orgz_info, fp, VERILOG_PORT_CONKT);
 
@@ -221,7 +226,7 @@ void dump_verilog_formal_verification_top_netlist_connect_global_ports(t_sram_or
           continue;
         }
         /*  See if this is a clock net */
-        if (TRUE == logical_block[iblock].clock_net) {  
+        if (FALSE == vpack_net[logical_block[iblock].output_nets[0][0]].is_global) {  
           continue; 
         }
         /* Reach here we have found a clock! */
@@ -229,7 +234,7 @@ void dump_verilog_formal_verification_top_netlist_connect_global_ports(t_sram_or
           fprintf(fp, "assign ");
           dump_verilog_generic_port(fp, VERILOG_PORT_CONKT, 
                                     cur_global_port->prefix, ibit, ibit);
-          fprintf(fp, " = %s%s\n", 
+          fprintf(fp, " = %s%s;\n", 
                   logical_block[iblock].name, formal_verification_top_module_port_postfix); 
         }
       }
@@ -303,16 +308,40 @@ void dump_verilog_formal_verification_top_netlist_connect_ios(t_sram_orgz_info* 
      */
     /* Wire to a contant */
     fprintf(fp, "assign %s%s[%d] = 1'b%d;\n",
-            gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx,
+            gio_inout_prefix, iopad_verilog_model->prefix, jiopad,
             verilog_default_signal_init_value);
   }
 
   return;
 }
 
+/* Impose the bitstream on the configuration memories */
 static 
 void dump_verilog_formal_verification_top_netlist_config_bitstream(t_sram_orgz_info* cur_sram_orgz_info, 
                                                                    FILE* fp) {
+  t_llist* head = cur_sram_orgz_info->conf_bit_head;
+  t_llist* temp = head;
+  t_conf_bit_info* cur_conf_bit = NULL;
+
+  fprintf(fp, "//----- BEGIN load bitstream to configuration memories -----\n");
+
+  /* traverse the bitstream and assign values to configuration memories output ports */
+  while (NULL != temp) { 
+    /* Get conf bits */
+    cur_conf_bit = (t_conf_bit_info*) (temp->dptr); 
+    /* Assign */
+    fprintf(fp, "assign %s.", formal_verification_top_module_uut_name); 
+    dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
+                                                cur_conf_bit->index, cur_conf_bit->index,
+                                                VERILOG_PORT_CONKT);
+    fprintf(fp, " = 1b'%d",
+            cur_conf_bit->sram_bit->val); 
+    fprintf(fp, ";\n");
+    /* Go to the next */
+    temp = temp->next;
+  }
+
+  fprintf(fp, "//----- END load bitstream to configuration memories -----\n");
 
   return;
 }
@@ -362,6 +391,10 @@ void dump_verilog_formal_verification_top_netlist(t_sram_orgz_info* cur_sram_org
   /* Print the title */
   dump_verilog_file_header(fp, title);
   my_free(title);
+
+  /* DEFINE preproc */
+  fprintf(fp, "`define %s 1\n",
+              verilog_formal_verification_preproc_flag); // the flag to enable formal verification during compilation
 
   /* Start with module declaration */
   dump_verilog_formal_verification_top_netlist_ports(cur_sram_orgz_info, fp, circuit_name);

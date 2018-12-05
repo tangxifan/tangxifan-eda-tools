@@ -166,6 +166,18 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
                             VERILOG_PORT_INPUT);
 
   }
+  /* Dump ports only visible during formal verification*/
+  if (0 < num_conf_bits) {
+    fprintf(fp, ",\n");
+    fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
+    dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
+                                                cur_num_sram,
+                                                cur_num_sram + num_conf_bits - 1,
+                                                VERILOG_PORT_OUTPUT);
+    fprintf(fp, "\n");
+    fprintf(fp, "`endif\n");
+  }
+
   /* Local vdd and gnd*/
   fprintf(fp, ");\n");
 
@@ -205,6 +217,12 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
    || (0 < num_conf_bits)) {
     dump_verilog_mem_config_bus(fp, mem_model, cur_sram_orgz_info,
                                 cur_num_sram, num_reserved_conf_bits, num_conf_bits); 
+    /* Dump ports only visible during formal verification*/
+    fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
+    dump_verilog_formal_verification_sram_ports_wiring(fp, cur_sram_orgz_info, 
+                                                       cur_num_sram,
+                                                       cur_num_sram + num_conf_bits - 1);
+    fprintf(fp, "`endif\n");
   }
 
   /* Call the subckt*/
@@ -448,12 +466,26 @@ void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
     dump_verilog_reserved_sram_ports(fp, cur_sram_orgz_info, 
                                      0, num_reserved_conf_bits - 1,
                                      VERILOG_PORT_INPUT);
-    fprintf(fp, ",\n");
   }
   /* Normal sram ports */
-  dump_verilog_sram_ports(fp, cur_sram_orgz_info, 
-                          cur_num_sram, cur_num_sram + num_conf_bits - 1,
-                          VERILOG_PORT_INPUT);
+  if (0 < num_conf_bits) {
+    fprintf(fp, ",\n");
+    dump_verilog_sram_ports(fp, cur_sram_orgz_info, 
+                            cur_num_sram, cur_num_sram + num_conf_bits - 1,
+                            VERILOG_PORT_INPUT);
+  }
+  /* Dump ports only visible during formal verification*/
+  if (0 < num_conf_bits) {
+    fprintf(fp, ",\n");
+    fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
+    dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
+                                                cur_num_sram,
+                                                cur_num_sram + num_conf_bits - 1,
+                                                VERILOG_PORT_OUTPUT);
+    fprintf(fp, "\n");
+    fprintf(fp, "`endif\n");
+  }
+
   /* Local Vdd and gnd*/ 
   fprintf(fp, ");\n");
   /* Definition ends*/
@@ -487,6 +519,14 @@ void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
   /* Specify SRAM output are wires */
   cur_num_sram = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info);
   dump_verilog_sram_config_bus_internal_wires(fp, cur_sram_orgz_info, cur_num_sram, cur_num_sram + num_sram - 1);
+
+  /* Dump ports only visible during formal verification*/
+  fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
+  dump_verilog_formal_verification_sram_ports_wiring(fp, cur_sram_orgz_info, 
+                                                     cur_num_sram,
+                                                     cur_num_sram + num_sram - 1);
+  fprintf(fp, "`endif\n");
+
   /*
   fprintf(fp, "wire [%d:%d] %s_out;\n",
           cur_num_sram, cur_num_sram + num_sram - 1, mem_model->prefix);

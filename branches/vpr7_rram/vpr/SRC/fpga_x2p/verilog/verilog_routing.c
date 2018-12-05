@@ -736,6 +736,20 @@ void dump_verilog_switch_box_mux(t_sram_orgz_info* cur_sram_orgz_info,
   /* Dump the configuration port bus */
   dump_verilog_mux_config_bus(fp, verilog_model, cur_sram_orgz_info,
                               mux_size, cur_num_sram, num_mux_reserved_conf_bits, num_mux_conf_bits); 
+
+  /* Dump ports visible only during formal verification */
+  fprintf(fp, "\n");
+  fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
+  dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
+                                              cur_num_sram, 
+                                              cur_num_sram + num_mux_conf_bits - 1,
+                                              VERILOG_PORT_WIRE);
+  fprintf(fp, ";\n");
+  dump_verilog_formal_verification_sram_ports_wiring(fp, cur_sram_orgz_info,
+                                                     cur_num_sram, 
+                                                     cur_num_sram + num_mux_conf_bits - 1);
+  
+  fprintf(fp, "`endif\n");
   
   /* Now it is the time print the SPICE netlist of MUX*/
   fprintf(fp, "%s_size%d %s_size%d_%d_ (", 
@@ -1159,6 +1173,19 @@ void dump_verilog_routing_switch_box_subckt(t_sram_orgz_info* cur_sram_orgz_info
                           cur_sb_info->conf_bits_lsb, 
                           cur_sb_info->conf_bits_msb - 1,
                           VERILOG_PORT_INPUT);
+
+  /* Dump ports only visible during formal verification*/
+  fprintf(fp, "\n");
+  fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
+  if (-1 < (cur_sb_info->conf_bits_msb - cur_sb_info->conf_bits_lsb)) {
+    fprintf(fp, ",\n");
+    dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
+                                                cur_sb_info->conf_bits_lsb, 
+                                                cur_sb_info->conf_bits_msb - 1,
+                                                VERILOG_PORT_OUTPUT);
+  }
+  fprintf(fp, "\n");
+  fprintf(fp, "`endif\n");
   fprintf(fp, "); \n");
 
   /* Local wires for memory configurations */
@@ -1452,6 +1479,20 @@ void dump_verilog_connection_box_mux(t_sram_orgz_info* cur_sram_orgz_info,
   /* Dump the configuration port bus */
   dump_verilog_mux_config_bus(fp, verilog_model, cur_sram_orgz_info,
                               mux_size, cur_num_sram, num_mux_reserved_conf_bits, num_mux_conf_bits); 
+
+  /* Dump ports visible only during formal verification */
+  fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
+  dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
+                                              cur_num_sram, 
+                                              cur_num_sram + num_mux_conf_bits - 1,
+                                              VERILOG_PORT_WIRE);
+  fprintf(fp, ";\n");
+  dump_verilog_formal_verification_sram_ports_wiring(fp, cur_sram_orgz_info,
+                                                     cur_num_sram, 
+                                                     cur_num_sram + num_mux_conf_bits - 1);
+  
+  fprintf(fp, "`endif\n");
+
 
   /* Call the MUX SPICE model */
   fprintf(fp, "%s_size%d %s_size%d_%d_ (", 
@@ -1795,6 +1836,20 @@ void dump_verilog_routing_connection_box_subckt(t_sram_orgz_info* cur_sram_orgz_
                           cur_cb_info->conf_bits_lsb,
                           cur_cb_info->conf_bits_msb - 1,
                           VERILOG_PORT_INPUT);
+
+  /* Dump ports only visible during formal verification*/
+  fprintf(fp, "\n");
+  fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
+  if (-1 < (cur_cb_info->conf_bits_msb - cur_cb_info->conf_bits_lsb)) {
+    fprintf(fp, ",\n");
+  }
+  dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
+                                              cur_cb_info->conf_bits_lsb, 
+                                              cur_cb_info->conf_bits_msb - 1,
+                                              VERILOG_PORT_OUTPUT);
+  fprintf(fp, "\n");
+  fprintf(fp, "`endif\n");
+
   /* subckt definition ends with svdd and sgnd*/
   fprintf(fp, ");\n");
 

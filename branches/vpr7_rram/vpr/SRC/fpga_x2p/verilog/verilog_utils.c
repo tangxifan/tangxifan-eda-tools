@@ -747,6 +747,59 @@ void dump_verilog_sram_outports(FILE* fp,
   return;
 }
 
+/* Dump SRAM ports visible for formal verification purpose, 
+ * which is supposed to be the last port in the port list */
+void dump_verilog_formal_verification_sram_ports(FILE* fp, 
+                                                 t_sram_orgz_info* cur_sram_orgz_info,
+                                                 int sram_lsb, int sram_msb,
+                                                 enum e_dump_verilog_port_type dump_port_type) {
+  t_spice_model* mem_model = NULL;
+  char* port_name = NULL;
+  char* port_full_name = NULL;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  /* Get memory_model */
+  get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model);
+ 
+  switch (cur_sram_orgz_info->type) {
+  case SPICE_SRAM_STANDALONE:
+    mem_model = cur_sram_orgz_info->standalone_sram_info->mem_model;
+    port_name = "out_fm";
+    break;
+  case SPICE_SRAM_SCAN_CHAIN:
+    mem_model = cur_sram_orgz_info->scff_info->mem_model;
+    port_name = "out_fm";
+    break;
+  case SPICE_SRAM_MEMORY_BANK:
+    mem_model = cur_sram_orgz_info->mem_bank_info->mem_model;
+    port_name = "out_fm";
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization !\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /*Malloc and generate the full name of port */
+  port_full_name = (char*)my_malloc(sizeof(char)*(strlen(mem_model->prefix) + strlen(port_name) + 1 + 1));
+  sprintf(port_full_name, "%s_%s", mem_model->prefix, port_name);
+
+  dump_verilog_generic_port(fp, dump_port_type, port_full_name, sram_lsb, sram_msb); 
+
+  /* Free */
+  /* Local variables such as port1_name and port2 name are automatically freed  */
+  my_free(port_full_name);
+
+  return;
+}
+
+
 void dump_verilog_sram_one_port(FILE* fp, 
                                 t_sram_orgz_info* cur_sram_orgz_info,
                                 int sram_lsb, int sram_msb,
@@ -824,6 +877,26 @@ void dump_verilog_sram_one_port(FILE* fp,
   /* Free */
   /* Local variables such as port1_name and port2 name are automatically freed  */
   my_free(port_full_name);
+
+  return;
+}
+
+/* Wire SRAM ports in formal verififcation purpose to regular SRAM ports */
+void dump_verilog_formal_verification_sram_ports_wiring(FILE* fp, 
+                                                        t_sram_orgz_info* cur_sram_orgz_info,
+                                                        int sram_lsb, int sram_msb) {
+  fprintf(fp, "assign ");
+
+  dump_verilog_sram_one_outport(fp, cur_sram_orgz_info,
+                                sram_lsb, sram_msb,
+                                0, VERILOG_PORT_CONKT);
+
+  fprintf(fp, " = ");
+
+  dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info,
+                                              sram_lsb, sram_msb,
+                                              VERILOG_PORT_CONKT);
+  fprintf(fp, ";\n");
 
   return;
 }

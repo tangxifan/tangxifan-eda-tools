@@ -392,6 +392,18 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
                             0, temp_conf_bits_msb - 1, 
                             VERILOG_PORT_INPUT); 
   }
+  /* Dump ports only visible during formal verification*/
+  if (0 < temp_conf_bits_msb) { 
+    fprintf(fp, ",\n");
+    fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
+    dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
+                                                0, 
+                                                temp_conf_bits_msb - 1,
+                                                VERILOG_PORT_OUTPUT);
+    fprintf(fp, "\n");
+    fprintf(fp, "`endif\n");
+  }
+
   fprintf(fp, ");\n");
 
   /* Initialize temporary counter */
@@ -440,6 +452,18 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
       dump_verilog_sram_ports(fp, cur_sram_orgz_info,
                               temp_conf_bits_lsb, temp_conf_bits_msb - 1, 
                               VERILOG_PORT_CONKT); 
+    }
+
+    /* Dump ports only visible during formal verification*/
+    if (0 < (temp_conf_bits_msb - temp_conf_bits_lsb)) { 
+      fprintf(fp, ",\n");
+      fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
+      dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
+                                                  temp_conf_bits_lsb, 
+                                                  temp_conf_bits_msb - 1,
+                                                  VERILOG_PORT_CONKT);
+      fprintf(fp, "\n");
+      fprintf(fp, "`endif\n");
     }
     /* Update temp_sram_lsb */
     temp_conf_bits_lsb = temp_conf_bits_msb;
@@ -599,11 +623,24 @@ void dump_compact_verilog_defined_one_grid(t_sram_orgz_info* cur_sram_orgz_info,
   if (0 < (cur_sram_orgz_info->grid_conf_bits_msb[ix][iy]
            - cur_sram_orgz_info->grid_conf_bits_lsb[ix][iy])) {
     fprintf(fp, ",\n");
+    dump_verilog_sram_ports(fp, cur_sram_orgz_info,
+                            cur_sram_orgz_info->grid_conf_bits_lsb[ix][iy],
+                            cur_sram_orgz_info->grid_conf_bits_msb[ix][iy] - 1,
+                            VERILOG_PORT_CONKT);
   }
-  dump_verilog_sram_ports(fp, cur_sram_orgz_info,
-                          cur_sram_orgz_info->grid_conf_bits_lsb[ix][iy],
-                          cur_sram_orgz_info->grid_conf_bits_msb[ix][iy] - 1,
-                          VERILOG_PORT_CONKT);
+
+  /* Dump ports only visible during formal verification*/
+  if (0 < (cur_sram_orgz_info->grid_conf_bits_msb[ix][iy]
+           - cur_sram_orgz_info->grid_conf_bits_lsb[ix][iy])) {
+    fprintf(fp, ",\n");
+    fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
+    dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
+                                                cur_sram_orgz_info->grid_conf_bits_lsb[ix][iy],
+                                                cur_sram_orgz_info->grid_conf_bits_msb[ix][iy] - 1,
+                                                VERILOG_PORT_CONKT);
+    fprintf(fp, "\n");
+    fprintf(fp, "`endif\n");
+  }
   fprintf(fp, ");\n");
   /* Comment lines */
   fprintf(fp, "//----- END call Grid[%d][%d] module -----\n\n", ix, iy);

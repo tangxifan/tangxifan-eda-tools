@@ -127,6 +127,13 @@ void dump_verilog_top_netlist_memory_bank_internal_wires(t_sram_orgz_info* cur_s
       fprintf(fp, " wire [%d:%d] %s%s; //---- Inverted Normal Word lines \n",
               0, num_wl - 1, mem_model->prefix, top_netlist_normal_wlb_port_postfix);
     }
+    /* Dump ports only visible during formal verification*/
+    fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
+    dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
+                                                0, get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info) - 1,
+                                                VERILOG_PORT_WIRE);
+    fprintf(fp, ";\n");
+    fprintf(fp, "`endif\n");
     break; 
   case SPICE_MODEL_DESIGN_RRAM: 
     /* Check: there should be reserved BLs and WLs */
@@ -141,6 +148,7 @@ void dump_verilog_top_netlist_memory_bank_internal_wires(t_sram_orgz_info* cur_s
             num_reserved_bl, num_array_bl - 1, mem_model->prefix, top_netlist_normal_bl_port_postfix);
     fprintf(fp, "  wire [%d:%d] %s%s; //---- Normal Word lines \n",
             num_reserved_wl, num_array_wl - 1, mem_model->prefix, top_netlist_normal_wl_port_postfix);
+    /* TODO: Dump ports only visible during formal verification*/
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
@@ -203,6 +211,16 @@ void dump_verilog_top_netlist_scan_chain_internal_wires(t_sram_orgz_info* cur_sr
 
   fprintf(fp, "  wire [0:%d] %s_scff_out;\n",
           num_scffs - 1, scff_mem_model->prefix);
+
+  /* Dump ports only visible during formal verification*/
+  fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
+  fprintf(fp, "  ");
+  dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
+                                              0, num_scffs - 1,
+                                              VERILOG_PORT_WIRE);
+  fprintf(fp, ";\n");
+  fprintf(fp, "`endif\n");
+
 
   /* Exception for head: connect to primary inputs */ 
   /*
@@ -758,17 +776,29 @@ void dump_verilog_defined_one_connection_box(t_sram_orgz_info* cur_sram_orgz_inf
  
   /* Configuration ports */
   /* Reserved sram ports */
-  dump_verilog_reserved_sram_ports(fp, cur_sram_orgz_info, 
-                                   0, cur_cb_info.num_reserved_conf_bits - 1,
-                                   VERILOG_PORT_CONKT);
-  /* Normal sram ports */
   if (0 < (cur_cb_info.num_reserved_conf_bits)) {
-    fprintf(fp, ",\n");
+    dump_verilog_reserved_sram_ports(fp, cur_sram_orgz_info, 
+                                     0, cur_cb_info.num_reserved_conf_bits - 1,
+                                     VERILOG_PORT_CONKT);
   }
-  dump_verilog_sram_ports(fp, cur_sram_orgz_info, 
-                          cur_cb_info.conf_bits_lsb, cur_cb_info.conf_bits_msb - 1,
-                          VERILOG_PORT_CONKT);
- 
+  /* Normal sram ports */
+  if (0 < (cur_cb_info.conf_bits_msb - cur_cb_info.conf_bits_lsb)) {
+    fprintf(fp, ",\n");
+    dump_verilog_sram_ports(fp, cur_sram_orgz_info, 
+                            cur_cb_info.conf_bits_lsb, cur_cb_info.conf_bits_msb - 1,
+                            VERILOG_PORT_CONKT);
+  }
+  /* Dump ports only visible during formal verification*/
+  if (0 < (cur_cb_info.conf_bits_msb - cur_cb_info.conf_bits_lsb)) {
+    fprintf(fp, ",\n");
+    fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
+    dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
+                                                cur_cb_info.conf_bits_lsb, 
+                                                cur_cb_info.conf_bits_msb - 1,
+                                                VERILOG_PORT_CONKT);
+    fprintf(fp, "\n");
+    fprintf(fp, "`endif\n");
+  } 
   fprintf(fp, ");\n");
 
   /* Comment lines */
@@ -902,18 +932,31 @@ void dump_verilog_defined_one_switch_box(t_sram_orgz_info* cur_sram_orgz_info,
   /* Configuration ports */
   /* output of each configuration bit */
   /* Reserved sram ports */
-  dump_verilog_reserved_sram_ports(fp, cur_sram_orgz_info, 
-                                   0, cur_sb_info.num_reserved_conf_bits - 1,
-                                   VERILOG_PORT_CONKT);
-  /* Normal sram ports */
   if (0 < (cur_sb_info.num_reserved_conf_bits)) {
-    fprintf(fp, ",\n");
+    dump_verilog_reserved_sram_ports(fp, cur_sram_orgz_info, 
+                                     0, cur_sb_info.num_reserved_conf_bits - 1,
+                                     VERILOG_PORT_CONKT);
   }
-  dump_verilog_sram_ports(fp, cur_sram_orgz_info, 
-                          cur_sb_info.conf_bits_lsb, 
-                          cur_sb_info.conf_bits_msb - 1,
-                          VERILOG_PORT_CONKT);
+  /* Normal sram ports */
+  if (0 < (cur_sb_info.conf_bits_msb - cur_sb_info.conf_bits_lsb)) {
+    fprintf(fp, ",\n");
+    dump_verilog_sram_ports(fp, cur_sram_orgz_info, 
+                            cur_sb_info.conf_bits_lsb, 
+                            cur_sb_info.conf_bits_msb - 1,
+                            VERILOG_PORT_CONKT);
+  }
 
+  /* Dump ports only visible during formal verification*/
+  if (0 < (cur_sb_info.conf_bits_msb - cur_sb_info.conf_bits_lsb)) {
+    fprintf(fp, ",\n");
+    fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
+    dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
+                                                cur_sb_info.conf_bits_lsb, 
+                                                cur_sb_info.conf_bits_msb - 1,
+                                                VERILOG_PORT_CONKT);
+    fprintf(fp, "\n");
+    fprintf(fp, "`endif\n");
+  }
   fprintf(fp, ");\n");
 
   /* Comment lines */                 
