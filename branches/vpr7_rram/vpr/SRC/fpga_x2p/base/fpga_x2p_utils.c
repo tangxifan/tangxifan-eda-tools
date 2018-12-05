@@ -2484,8 +2484,6 @@ void init_sram_orgz_info(t_sram_orgz_info* cur_sram_orgz_info,
   cur_sram_orgz_info->type = cur_sram_orgz_type;
   cur_sram_orgz_info->conf_bit_head = NULL; /* Configuration bits will be allocated later */
 
-  cur_sram_orgz_info->dump_mem_outports = FALSE; /* by default use the compact output style */
-  
   /* According to the type, we allocate structs */
   switch (cur_sram_orgz_info->type) {
   case SPICE_SRAM_MEMORY_BANK:

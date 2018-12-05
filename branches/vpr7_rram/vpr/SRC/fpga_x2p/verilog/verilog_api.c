@@ -40,6 +40,8 @@
 #include "verilog_routing.h"
 #include "verilog_top_netlist.h"
 #include "verilog_compact_netlist.h"
+#include "verilog_top_testbench.h"
+#include "verilog_verification_top_netlist.h"
 #include "verilog_modelsim_autodeck.h"
 
 
@@ -122,6 +124,8 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
   char* blif_testbench_file_path = NULL;
   char* bitstream_file_name = NULL;
   char* bitstream_file_path = NULL;
+  char* formal_verification_top_netlist_file_name = NULL;
+  char* formal_verification_top_netlist_file_path = NULL;
 
   char* chomped_parent_dir = NULL;
   char* chomped_circuit_name = NULL;
@@ -180,7 +184,6 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
   /* initialize the SRAM organization information struct */
   sram_verilog_orgz_info = alloc_one_sram_orgz_info();
   init_sram_orgz_info(sram_verilog_orgz_info, Arch.sram_inf.verilog_sram_inf_orgz->type, sram_verilog_model, nx + 2, ny + 2);
-  sram_verilog_orgz_info->dump_mem_outports = vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_verification_netlist;
 
   /* Check all the SRAM port is using the correct SRAM SPICE MODEL */
   config_spice_models_sram_port_spice_model(Arch.spice->num_spice_model, 
@@ -274,6 +277,17 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
     /* Free */
     my_free(top_testbench_file_name);
     my_free(top_testbench_file_path);
+  }
+
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_formal_verification_top_netlist) {
+    formal_verification_top_netlist_file_name = my_strcat(chomped_circuit_name, formal_verification_verilog_top_postfix);
+    formal_verification_top_netlist_file_path = my_strcat(verilog_dir_formatted, formal_verification_top_netlist_file_name);
+    dump_verilog_formal_verification_top_netlist(sram_verilog_orgz_info, chomped_circuit_name, 
+                                                 formal_verification_top_netlist_file_path, num_clocks, 
+                                                 vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts, *(Arch.spice));
+    /* Free */
+    my_free(formal_verification_top_netlist_file_name);
+    my_free(formal_verification_top_netlist_file_path);
   }
 
   /* Output Modelsim Autodeck scripts */

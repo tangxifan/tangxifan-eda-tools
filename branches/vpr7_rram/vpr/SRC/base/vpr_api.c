@@ -193,7 +193,7 @@ void vpr_print_usage(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_verilog_dir <string>\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_verilog_print_top_testbench\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_verilog_print_input_blif_testbench\n");
-	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_verilog_print_verification_netlist\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_verilog_print_formal_verification_top_netlist\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_verilog_include_timing\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_verilog_print_modelsim_autodeck\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_verilog_modelsim_ini_path <string>\n");

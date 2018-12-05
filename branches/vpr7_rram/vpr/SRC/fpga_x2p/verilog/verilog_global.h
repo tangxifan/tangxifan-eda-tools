@@ -17,6 +17,7 @@ extern char* modelsim_testbench_module_postfix;
 extern char* modelsim_simulation_time_unit;
 
 extern char* verilog_top_postfix;
+extern char* formal_verification_verilog_top_postfix;
 extern char* top_testbench_verilog_file_postfix;
 extern char* blif_testbench_verilog_file_postfix;
 extern char* submodule_verilog_file_name;

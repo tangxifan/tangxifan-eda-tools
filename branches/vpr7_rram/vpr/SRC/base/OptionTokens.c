@@ -83,7 +83,7 @@ struct s_TokenPair OptionBaseTokenList[] = {
         { "fpga_verilog_dir", OT_FPGA_VERILOG_SYN_DIR },
         { "fpga_verilog_print_top_testbench", OT_FPGA_VERILOG_SYN_PRINT_TOP_TESTBENCH },
         { "fpga_verilog_print_input_blif_testbench", OT_FPGA_VERILOG_SYN_PRINT_INPUT_BLIF_TESTBENCH },
-        { "fpga_verilog_verification_netlist", OT_FPGA_VERILOG_SYN_VERIFICATION_NETLIST },
+        { "fpga_verilog_print_formal_verification_top_netlist", OT_FPGA_VERILOG_SYN_PRINT_FORMAL_VERIFICATION_TOP_NETLIST },
         { "fpga_verilog_include_timing", OT_FPGA_VERILOG_SYN_INCLUDE_TIMING }, /* Include timing constraints in Verilog netlists */
         { "fpga_verilog_print_modelsim_autodeck", OT_FPGA_VERILOG_SYN_PRINT_MODELSIM_AUTODECK }, /* Generate autodeck scripts for modelsim */
         { "fpga_verilog_modelsim_ini_path", OT_FPGA_VERILOG_SYN_MODELSIM_INI_PATH }, /* Specify the simulator path for Verilog netlists */

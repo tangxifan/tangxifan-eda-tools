@@ -1215,7 +1215,7 @@ struct s_syn_verilog_opts {
   char* syn_verilog_dump_dir;
   boolean dump_syn_verilog_top_testbench;
   boolean dump_syn_verilog_input_blif_testbench;
-  boolean print_verification_netlist;
+  boolean print_formal_verification_top_netlist;
   boolean include_timing;
   boolean print_modelsim_autodeck;
   char* modelsim_ini_path;
