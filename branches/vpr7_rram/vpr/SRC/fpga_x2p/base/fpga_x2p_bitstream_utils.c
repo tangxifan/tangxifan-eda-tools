@@ -926,7 +926,6 @@ add_mux_membank_conf_bits_to_llist(int mux_size,
   int ibit, cur_mem_bit, num_conf_bits, cur_bit, cur_bl, cur_wl;
   int ilevel;
   int num_bl_enabled, num_wl_enabled;
-  t_conf_bit** sram_bit = NULL;
   t_conf_bit** wl_bit = NULL;
   t_conf_bit** bl_bit = NULL;
  
@@ -1064,7 +1063,6 @@ add_mux_membank_conf_bits_to_llist(int mux_size,
   }
 
   /* Free */
-  my_free(sram_bit);
   my_free(bl_bit);
   my_free(wl_bit);
 

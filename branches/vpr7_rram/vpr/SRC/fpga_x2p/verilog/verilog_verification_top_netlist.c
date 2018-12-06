@@ -331,11 +331,29 @@ void dump_verilog_formal_verification_top_netlist_config_bitstream(t_sram_orgz_i
     cur_conf_bit = (t_conf_bit_info*) (temp->dptr); 
     /* Assign */
     fprintf(fp, "assign %s.", formal_verification_top_module_uut_name); 
-    dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
-                                                cur_conf_bit->index, cur_conf_bit->index,
-                                                VERILOG_PORT_CONKT);
-    fprintf(fp, " = 1'b%d",
-            cur_conf_bit->sram_bit->val); 
+    /* According to the type, we allocate structs */
+    switch (cur_sram_orgz_info->type) {
+    case SPICE_SRAM_STANDALONE:
+    case SPICE_SRAM_SCAN_CHAIN:
+      dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
+                                                  cur_conf_bit->index, cur_conf_bit->index,
+                                                  VERILOG_PORT_CONKT);
+      fprintf(fp, " = 1'b%d",
+              cur_conf_bit->sram_bit->val); 
+      break;
+    case SPICE_SRAM_MEMORY_BANK:
+      dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
+                                                  cur_conf_bit->bl->addr, cur_conf_bit->bl->addr,
+                                                  VERILOG_PORT_CONKT);
+      fprintf(fp, " = 1'b%d",
+              cur_conf_bit->bl->val); 
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid type of SRAM organization!",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
+
     fprintf(fp, ";\n");
     /* Go to the next */
     temp = temp->next;

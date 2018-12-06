@@ -169,7 +169,7 @@ void dump_verilog_modelsim_proc_script(char* modelsim_proc_filename,
   fprintf(fp, "  #Compile all the files\n");
   fprintf(fp, "  project compileall\n");
   fprintf(fp, "  #Start the simulation\n");  
-  fprintf(fp, "  vsim $projectname.%s \n", circuit_top_tb_name);
+  fprintf(fp, "  vsim $projectname.%s -voptargs=+acc\n", circuit_top_tb_name);
   fprintf(fp, "  #Add the waves  \n");
   fprintf(fp, "  add_waves\n");
   fprintf(fp, "  #run the simulation\n");
