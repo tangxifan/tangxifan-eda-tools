@@ -206,10 +206,10 @@ void dump_verilog_top_netlist_scan_chain_internal_wires(t_sram_orgz_info* cur_sr
   assert( SPICE_MODEL_SCFF == scff_mem_model->type );
 
   /* Delcare local wires */
-  fprintf(fp, "  wire [0:%d] %s_scff_in;\n",
+  fprintf(fp, "  wire [0:%d] %s_scff_in_local_bus;\n",
           num_scffs - 1, scff_mem_model->prefix);
 
-  fprintf(fp, "  wire [0:%d] %s_scff_out;\n",
+  fprintf(fp, "  wire [0:%d] %s_scff_out_local_bus;\n",
           num_scffs - 1, scff_mem_model->prefix);
 
   /* Dump ports only visible during formal verification*/
@@ -784,9 +784,9 @@ void dump_verilog_defined_one_connection_box(t_sram_orgz_info* cur_sram_orgz_inf
   /* Normal sram ports */
   if (0 < (cur_cb_info.conf_bits_msb - cur_cb_info.conf_bits_lsb)) {
     fprintf(fp, ",\n");
-    dump_verilog_sram_ports(fp, cur_sram_orgz_info, 
-                            cur_cb_info.conf_bits_lsb, cur_cb_info.conf_bits_msb - 1,
-                            VERILOG_PORT_CONKT);
+    dump_verilog_sram_local_ports(fp, cur_sram_orgz_info, 
+                                  cur_cb_info.conf_bits_lsb, cur_cb_info.conf_bits_msb - 1,
+                                  VERILOG_PORT_CONKT);
   }
   /* Dump ports only visible during formal verification*/
   if (0 < (cur_cb_info.conf_bits_msb - cur_cb_info.conf_bits_lsb)) {
@@ -940,10 +940,10 @@ void dump_verilog_defined_one_switch_box(t_sram_orgz_info* cur_sram_orgz_info,
   /* Normal sram ports */
   if (0 < (cur_sb_info.conf_bits_msb - cur_sb_info.conf_bits_lsb)) {
     fprintf(fp, ",\n");
-    dump_verilog_sram_ports(fp, cur_sram_orgz_info, 
-                            cur_sb_info.conf_bits_lsb, 
-                            cur_sb_info.conf_bits_msb - 1,
-                            VERILOG_PORT_CONKT);
+    dump_verilog_sram_local_ports(fp, cur_sram_orgz_info, 
+                                  cur_sb_info.conf_bits_lsb, 
+                                  cur_sb_info.conf_bits_msb - 1,
+                                  VERILOG_PORT_CONKT);
   }
 
   /* Dump ports only visible during formal verification*/
@@ -1179,9 +1179,9 @@ void dump_verilog_configuration_circuits_scan_chains(t_sram_orgz_info* cur_sram_
   dump_verilog_generic_port(fp, VERILOG_PORT_CONKT,
                             top_netlist_scan_chain_head_prefix, 0, 0);
   fprintf(fp, ",\n");
-  dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 0, num_mem_bits - 1, 0, VERILOG_PORT_CONKT);
+  dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info, 0, num_mem_bits - 1, -1, VERILOG_PORT_CONKT);
   fprintf(fp, ",\n");
-  dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 0, num_mem_bits - 1, 1, VERILOG_PORT_CONKT);
+  dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info, 0, num_mem_bits - 1, 0, VERILOG_PORT_CONKT);
   fprintf(fp, ");\n");
   fprintf(fp, "//------ END Configuration peripheral Scan-chain FFs -----\n");
 

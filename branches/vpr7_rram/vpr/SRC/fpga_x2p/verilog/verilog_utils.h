@@ -57,6 +57,19 @@ void dump_verilog_sram_one_outport(FILE* fp,
                                    int port_type_index, 
                                    enum e_dump_verilog_port_type dump_port_type);
 
+void dump_verilog_mux_sram_one_local_outport(FILE* fp, 
+                                             t_sram_orgz_info* cur_sram_orgz_info,
+                                             t_spice_model* cur_mux_spice_model, int mux_size,
+                                             int sram_lsb, int sram_msb,
+                                             int port_type_index, 
+                                             enum e_dump_verilog_port_type dump_port_type);
+
+void dump_verilog_sram_one_local_outport(FILE* fp, 
+                                         t_sram_orgz_info* cur_sram_orgz_info,
+                                         int sram_lsb, int sram_msb,
+                                         int port_type_index, 
+                                         enum e_dump_verilog_port_type dump_port_type);
+
 void dump_verilog_sram_outports(FILE* fp, 
                                 t_sram_orgz_info* cur_sram_orgz_info,
                                 int sram_lsb, int sram_msb,
@@ -73,6 +86,11 @@ void dump_verilog_sram_one_port(FILE* fp,
                                 int port_type_index, 
                                 enum e_dump_verilog_port_type dump_port_type);
 
+void dump_verilog_sram_local_ports(FILE* fp, 
+                                   t_sram_orgz_info* cur_sram_orgz_info,
+                                   int sram_lsb, int sram_msb,
+                                   enum e_dump_verilog_port_type dump_port_type);
+
 void dump_verilog_sram_ports(FILE* fp, t_sram_orgz_info* cur_sram_orgz_info,
                              int sram_lsb, int sram_msb,
                              enum e_dump_verilog_port_type dump_port_type);
@@ -86,6 +104,11 @@ void dump_verilog_reserved_sram_one_port(FILE* fp,
 void dump_verilog_formal_verification_sram_ports_wiring(FILE* fp, 
                                                         t_sram_orgz_info* cur_sram_orgz_info,
                                                         int sram_lsb, int sram_msb);
+
+void dump_verilog_formal_verification_mux_sram_ports_wiring(FILE* fp, 
+                                                            t_sram_orgz_info* cur_sram_orgz_info,
+                                                            t_spice_model* cur_mux_spice_model, int mux_size,
+                                                            int sram_lsb, int sram_msb);
 
 void dump_verilog_reserved_sram_ports(FILE* fp, 
                                       t_sram_orgz_info* cur_sram_orgz_info,

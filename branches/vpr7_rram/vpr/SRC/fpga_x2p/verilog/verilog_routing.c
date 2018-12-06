@@ -740,14 +740,17 @@ void dump_verilog_switch_box_mux(t_sram_orgz_info* cur_sram_orgz_info,
   /* Dump ports visible only during formal verification */
   fprintf(fp, "\n");
   fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
+  /*
   dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
                                               cur_num_sram, 
                                               cur_num_sram + num_mux_conf_bits - 1,
                                               VERILOG_PORT_WIRE);
   fprintf(fp, ";\n");
-  dump_verilog_formal_verification_sram_ports_wiring(fp, cur_sram_orgz_info,
-                                                     cur_num_sram, 
-                                                     cur_num_sram + num_mux_conf_bits - 1);
+  */
+  dump_verilog_formal_verification_mux_sram_ports_wiring(fp, cur_sram_orgz_info,
+                                                         verilog_model, mux_size,
+                                                         cur_num_sram, 
+                                                         cur_num_sram + num_mux_conf_bits - 1);
   
   fprintf(fp, "`endif\n");
   
@@ -1189,10 +1192,8 @@ void dump_verilog_routing_switch_box_subckt(t_sram_orgz_info* cur_sram_orgz_info
   fprintf(fp, "); \n");
 
   /* Local wires for memory configurations */
-  /*
   dump_verilog_sram_config_bus_internal_wires(fp, cur_sram_orgz_info, 
                                               cur_sb_info->conf_bits_lsb, cur_sb_info->conf_bits_msb - 1);
-   */
 
   /* Put down all the multiplexers */
   for (side = 0; side < cur_sb_info->num_sides; side++) {
@@ -1482,14 +1483,17 @@ void dump_verilog_connection_box_mux(t_sram_orgz_info* cur_sram_orgz_info,
 
   /* Dump ports visible only during formal verification */
   fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
+  /*
   dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
                                               cur_num_sram, 
                                               cur_num_sram + num_mux_conf_bits - 1,
                                               VERILOG_PORT_WIRE);
   fprintf(fp, ";\n");
-  dump_verilog_formal_verification_sram_ports_wiring(fp, cur_sram_orgz_info,
-                                                     cur_num_sram, 
-                                                     cur_num_sram + num_mux_conf_bits - 1);
+  */
+  dump_verilog_formal_verification_mux_sram_ports_wiring(fp, cur_sram_orgz_info,
+                                                         verilog_model, mux_size,
+                                                         cur_num_sram, 
+                                                         cur_num_sram + num_mux_conf_bits - 1);
   
   fprintf(fp, "`endif\n");
 
@@ -1854,10 +1858,8 @@ void dump_verilog_routing_connection_box_subckt(t_sram_orgz_info* cur_sram_orgz_
   fprintf(fp, ");\n");
 
   /* Local wires for memory configurations */
-  /*
   dump_verilog_sram_config_bus_internal_wires(fp, cur_sram_orgz_info, 
                                               cur_cb_info->conf_bits_lsb, cur_cb_info->conf_bits_msb - 1);
-   */
 
   /* Record LSB and MSB of reserved_conf_bits and normal conf_bits */
 

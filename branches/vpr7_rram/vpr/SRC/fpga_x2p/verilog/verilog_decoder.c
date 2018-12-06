@@ -314,33 +314,29 @@ void dump_verilog_scan_chain_config_module(FILE* fp,
                             top_netlist_scan_chain_head_prefix, 0, 0);
   fprintf(fp, ",\n");
   /* Scan-chain regular inputs */
-  dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 0, num_mem_bits - 1, 0, VERILOG_PORT_OUTPUT);
+  dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info, 0, num_mem_bits - 1, -1, VERILOG_PORT_OUTPUT);
   fprintf(fp, ",\n");
   fprintf(fp, "input ");
-  dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 0, num_mem_bits - 1, 1, VERILOG_PORT_WIRE);
+  dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info, 0, num_mem_bits - 1, 0, VERILOG_PORT_WIRE);
   fprintf(fp, ");\n");
 
   /* Connect scan-chain input to the first scan-chain input */
   fprintf(fp, "        ");
   fprintf(fp, "assign ");
-  dump_verilog_sram_one_port(fp, cur_sram_orgz_info, 0, 0, 0, VERILOG_PORT_CONKT);
+  dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info, 0, 0, -1, VERILOG_PORT_CONKT);
   fprintf(fp, " = ");
   dump_verilog_generic_port(fp, VERILOG_PORT_CONKT,
                             top_netlist_scan_chain_head_prefix, 0, 0);
   fprintf(fp, ";\n");
 
   /* Verilog Module body */
-  for (i = 0; i < num_mem_bits; i++) {
-    /* Connect the head of current scff to the tail of previous scff*/
-    if (0 < i) {
-      fprintf(fp, "        ");
-      fprintf(fp, "assign ");
-      dump_verilog_sram_one_port(fp, cur_sram_orgz_info, i, i, 0, VERILOG_PORT_CONKT);
-      fprintf(fp, " = ");
-      dump_verilog_sram_one_port(fp, cur_sram_orgz_info, i - 1, i - 1, 1, VERILOG_PORT_CONKT);
-      fprintf(fp, ";\n");
-    }
-  }
+  /* Connect the head of current scff to the tail of previous scff*/
+  fprintf(fp, "        ");
+  fprintf(fp, "assign ");
+  dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info, 1, num_mem_bits - 1, -1, VERILOG_PORT_CONKT);
+  fprintf(fp, " = ");
+  dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info, 0, num_mem_bits - 2, 0, VERILOG_PORT_CONKT);
+  fprintf(fp, ";\n");
   fprintf(fp, "endmodule\n");
   fprintf(fp, "//------ END Scan-chain FFs -----\n");
 

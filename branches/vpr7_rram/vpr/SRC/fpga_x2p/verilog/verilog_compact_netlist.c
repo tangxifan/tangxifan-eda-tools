@@ -623,10 +623,10 @@ void dump_compact_verilog_defined_one_grid(t_sram_orgz_info* cur_sram_orgz_info,
   if (0 < (cur_sram_orgz_info->grid_conf_bits_msb[ix][iy]
            - cur_sram_orgz_info->grid_conf_bits_lsb[ix][iy])) {
     fprintf(fp, ",\n");
-    dump_verilog_sram_ports(fp, cur_sram_orgz_info,
-                            cur_sram_orgz_info->grid_conf_bits_lsb[ix][iy],
-                            cur_sram_orgz_info->grid_conf_bits_msb[ix][iy] - 1,
-                            VERILOG_PORT_CONKT);
+    dump_verilog_sram_local_ports(fp, cur_sram_orgz_info,
+                                  cur_sram_orgz_info->grid_conf_bits_lsb[ix][iy],
+                                  cur_sram_orgz_info->grid_conf_bits_msb[ix][iy] - 1,
+                                  VERILOG_PORT_CONKT);
   }
 
   /* Dump ports only visible during formal verification*/

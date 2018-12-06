@@ -1155,9 +1155,10 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
     /* Dump ports only visible during formal verification*/
     if (0 < num_mux_conf_bits) {
       fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
-      dump_verilog_formal_verification_sram_ports_wiring(fp, cur_sram_orgz_info, 
-                                                  cur_num_sram,
-                                                  cur_num_sram + num_mux_conf_bits - 1);
+      dump_verilog_formal_verification_mux_sram_ports_wiring(fp, cur_sram_orgz_info, 
+                                                             cur_interc->spice_model, fan_in,
+                                                             cur_num_sram,
+                                                             cur_num_sram + num_mux_conf_bits - 1);
       fprintf(fp, "\n");
       fprintf(fp, "`endif\n");
     }
@@ -1681,8 +1682,12 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
 
   /* Finish with local vdd and gnd */
   fprintf(fp, ");\n");
-
   /* Definition ends*/
+
+  /* Local wires for memory configurations */
+  dump_verilog_sram_config_bus_internal_wires(fp, cur_sram_orgz_info, 
+                                              stamped_sram_cnt, 
+                                              stamped_sram_cnt + num_conf_bits - 1); 
 
   /* Quote all child pb_types */
   for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
@@ -1749,17 +1754,17 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
       /* Print configuration ports */
       if (0 < child_pb_num_reserved_conf_bits) {
         fprintf(fp, ",\n");
+        dump_verilog_reserved_sram_ports(fp, cur_sram_orgz_info,
+                                         0, child_pb_num_reserved_conf_bits - 1,
+                                         VERILOG_PORT_CONKT);
       }
-      dump_verilog_reserved_sram_ports(fp, cur_sram_orgz_info,
-                                       0, child_pb_num_reserved_conf_bits - 1,
-                                       VERILOG_PORT_CONKT);
       if (0 < child_pb_num_conf_bits) {
         fprintf(fp, ",\n");
+        dump_verilog_sram_local_ports(fp, cur_sram_orgz_info,
+                                      stamped_sram_cnt,
+                                      stamped_sram_cnt + child_pb_num_conf_bits - 1,
+                                      VERILOG_PORT_CONKT);
       }
-      dump_verilog_sram_ports(fp, cur_sram_orgz_info,
-                              stamped_sram_cnt,
-                              stamped_sram_cnt + child_pb_num_conf_bits - 1,
-                              VERILOG_PORT_CONKT);
       /* Dump ports only visible during formal verification*/
       if (0 < child_pb_num_conf_bits) {
         fprintf(fp, ",\n");
@@ -2350,6 +2355,7 @@ void dump_verilog_physical_grid_blocks(t_sram_orgz_info* cur_sram_orgz_info,
   int temp_iopad_lsb, temp_iopad_msb;
   FILE* fp = NULL;
   char* fname = NULL;
+  t_spice_model* cur_mem_model = NULL;
 
   /* Check */
   assert((!(0 > ix))&&(!(ix > (nx + 1)))); 
@@ -2357,6 +2363,7 @@ void dump_verilog_physical_grid_blocks(t_sram_orgz_info* cur_sram_orgz_info,
 
   /* Make a snapshot for the number of memory bits */
   cur_num_mem_bit = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info); 
+  get_sram_orgz_info_mem_model(cur_sram_orgz_info, &cur_mem_model);
 
   /* Update the grid_index_low for each spice_model */
   update_spice_models_grid_index_low(ix, iy, arch->spice->num_spice_model, arch->spice->spice_models);
@@ -2463,6 +2470,11 @@ void dump_verilog_physical_grid_blocks(t_sram_orgz_info* cur_sram_orgz_info,
   temp_conf_bits_lsb = cur_num_mem_bit;
   temp_iopad_lsb = iopad_verilog_model->grid_index_low[ix][iy];
 
+  /* Local wires for memory configurations */
+  dump_verilog_sram_config_bus_internal_wires(fp, cur_sram_orgz_info, 
+                                              cur_sram_orgz_info->grid_reserved_conf_bits[ix][iy],
+                                              cur_sram_orgz_info->grid_conf_bits_msb[ix][iy]); 
+
   /* Quote all the sub blocks*/
   for (iz = 0; iz < capacity; iz++) {
     /* Local Vdd and Gnd, subckt name*/
@@ -2503,9 +2515,9 @@ void dump_verilog_physical_grid_blocks(t_sram_orgz_info* cur_sram_orgz_info,
     if (0 < (temp_conf_bits_msb - temp_conf_bits_lsb)) { 
       fprintf(fp, ",\n");
       fprintf(fp, "//---- SRAM ----\n");
-      dump_verilog_sram_ports(fp, cur_sram_orgz_info,
-                              temp_conf_bits_lsb, temp_conf_bits_msb - 1, 
-                              VERILOG_PORT_CONKT); 
+      dump_verilog_sram_local_ports(fp, cur_sram_orgz_info,
+                                    temp_conf_bits_lsb, temp_conf_bits_msb - 1, 
+                                    VERILOG_PORT_CONKT); 
     }
     /* Dump ports only visible during formal verification*/
     if (0 < (temp_conf_bits_msb - temp_conf_bits_lsb)) { 
