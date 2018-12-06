@@ -1143,9 +1143,9 @@ void dump_verilog_cmos_mux_multilevel_structure(FILE* fp,
     /* Check */
     assert(nextlevel > -1);
     /* Print basis muxQto1 for each level*/
-    for (j = 0; j < spice_mux_arch.num_input_per_level[nextlevel]; j = j+cur_num_input_basis) {
+    for (j = 0; j < spice_mux_arch.num_input_per_level[nextlevel]; j = j + cur_num_input_basis) {
       /* output index */
-      out_idx = j/spice_mux_arch.num_input_basis; 
+      out_idx = j / spice_mux_arch.num_input_basis; 
       /* Determine the number of input of this basis */
       cur_num_input_basis = spice_mux_arch.num_input_basis;
       if ((j + cur_num_input_basis) > spice_mux_arch.num_input_per_level[nextlevel]) {
@@ -2527,7 +2527,7 @@ void dump_verilog_submodule_one_lut(FILE* fp,
         my_free(modegate_input_port);
         my_free(modegate_output_port);
         /* Instance the AND2 gate */
-        fprintf(fp, "  %s %s_%s_%d_(%s[%d], %s_out[%d], %s%s[%d]);\n",
+        fprintf(fp, "  %s %s_%s_%d_({%s[%d], %s_out[%d]}, %s%s[%d]);\n",
                 input_port[0]->spice_model->name, 
                 input_port[0]->spice_model->prefix, 
                 input_port[0]->prefix, ipin,
@@ -2570,7 +2570,7 @@ void dump_verilog_submodule_one_lut(FILE* fp,
         my_free(modegate_input_port);
         my_free(modegate_output_port);
         /* Instance the OR2 gate */
-        fprintf(fp, "  %s %s_%s_%d_(%s[%d], %s_out[%d], %s%s[%d]);\n",
+        fprintf(fp, "  %s %s_%s_%d_({%s[%d], %s_out[%d]}, %s%s[%d]);\n",
                 input_port[0]->spice_model->name, 
                 input_port[0]->spice_model->prefix, 
                 input_port[0]->prefix, ipin,

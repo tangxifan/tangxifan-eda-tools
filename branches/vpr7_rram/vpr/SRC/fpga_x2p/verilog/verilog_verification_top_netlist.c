@@ -334,7 +334,7 @@ void dump_verilog_formal_verification_top_netlist_config_bitstream(t_sram_orgz_i
     dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
                                                 cur_conf_bit->index, cur_conf_bit->index,
                                                 VERILOG_PORT_CONKT);
-    fprintf(fp, " = 1b'%d",
+    fprintf(fp, " = 1'b%d",
             cur_conf_bit->sram_bit->val); 
     fprintf(fp, ";\n");
     /* Go to the next */
