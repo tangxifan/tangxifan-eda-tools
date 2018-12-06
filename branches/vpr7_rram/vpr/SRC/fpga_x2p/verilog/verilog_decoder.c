@@ -486,7 +486,7 @@ void dump_verilog_membank_config_module(FILE* fp,
       /* get inv_spice_model */
       blb_inv_spice_model = blb_port[0]->inv_spice_model;
       /* Make an inversion of the BL */
-      for (iinv = 0; iinv < num_array_bl - 1; iinv++) {
+      for (iinv = 0; iinv < num_array_bl; iinv++) {
         fprintf(fp, " %s %s_blb_%d (%s[%d], %s[%d]);\n",
                 blb_inv_spice_model->name, blb_inv_spice_model->prefix, 
                 iinv, 
@@ -498,7 +498,7 @@ void dump_verilog_membank_config_module(FILE* fp,
       /* get inv_spice_model */
       wlb_inv_spice_model = wlb_port[0]->inv_spice_model;
       /* Make an inversion of the WL */
-      for (iinv = 0; iinv < num_array_wl - 1; iinv++) {
+      for (iinv = 0; iinv < num_array_wl; iinv++) {
         fprintf(fp, " %s %s_wlb_%d (%s[%d], %s[%d]);\n",
                 wlb_inv_spice_model->name, wlb_inv_spice_model->prefix, 
                 iinv, 

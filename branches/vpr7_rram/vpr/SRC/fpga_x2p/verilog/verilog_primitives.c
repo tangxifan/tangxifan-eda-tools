@@ -168,8 +168,9 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
   }
   /* Dump ports only visible during formal verification*/
   if (0 < num_conf_bits) {
-    fprintf(fp, ",\n");
+    fprintf(fp, "\n");
     fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
+    fprintf(fp, ",\n");
     dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
                                                 cur_num_sram,
                                                 cur_num_sram + num_conf_bits - 1,
@@ -250,13 +251,32 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
   /* Print SRAM ports */
   /* Connect srams: TODO: to find the SRAM model used by this Verilog model */
   if (0 < num_sram) {
-    dump_verilog_sram_one_outport(fp, cur_sram_orgz_info,
-                                  cur_num_sram, cur_num_sram + num_sram - 1,
-                                  0, VERILOG_PORT_CONKT);
-    fprintf(fp, ", ");
-    dump_verilog_sram_one_outport(fp, cur_sram_orgz_info,
-                                  cur_num_sram, cur_num_sram + num_sram - 1,
-                                  1, VERILOG_PORT_CONKT);
+    switch (cur_sram_orgz_info->type) {
+    case SPICE_SRAM_STANDALONE: 
+      break;
+    case SPICE_SRAM_SCAN_CHAIN:
+      dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info,
+                                          cur_num_sram, cur_num_sram + num_sram - 1,
+                                          0, VERILOG_PORT_CONKT);
+      fprintf(fp, ", ");
+      dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info,
+                                          cur_num_sram, cur_num_sram + num_sram - 1,
+                                          1, VERILOG_PORT_CONKT);
+      break;
+    case SPICE_SRAM_MEMORY_BANK:
+      dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
+                                    cur_num_sram, cur_num_sram + num_sram - 1, 
+                                    0, VERILOG_PORT_CONKT);
+      fprintf(fp, ", ");
+      dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
+                                    cur_num_sram, cur_num_sram + num_sram - 1, 
+                                    1, VERILOG_PORT_CONKT);
+      break;
+    default:
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid SRAM organization type!\n",
+                 __FILE__, __LINE__);
+      exit(1);
+    }
   }
   
   /* Local vdd and gnd, verilog_model name, 
@@ -466,18 +486,19 @@ void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
     dump_verilog_reserved_sram_ports(fp, cur_sram_orgz_info, 
                                      0, num_reserved_conf_bits - 1,
                                      VERILOG_PORT_INPUT);
+    fprintf(fp, ",\n");
   }
   /* Normal sram ports */
   if (0 < num_conf_bits) {
-    fprintf(fp, ",\n");
     dump_verilog_sram_ports(fp, cur_sram_orgz_info, 
                             cur_num_sram, cur_num_sram + num_conf_bits - 1,
                             VERILOG_PORT_INPUT);
   }
   /* Dump ports only visible during formal verification*/
   if (0 < num_conf_bits) {
-    fprintf(fp, ",\n");
+    fprintf(fp, "\n");
     fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
+    fprintf(fp, ",\n");
     dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
                                                 cur_num_sram,
                                                 cur_num_sram + num_conf_bits - 1,
@@ -569,22 +590,22 @@ void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
   case SPICE_SRAM_STANDALONE: 
     break;
   case SPICE_SRAM_SCAN_CHAIN:
-    dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
-                                  cur_num_sram, cur_num_sram + num_lut_sram - 1, 
-                                  0, VERILOG_PORT_CONKT);
+    dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info, 
+                                        cur_num_sram, cur_num_sram + num_lut_sram - 1, 
+                                        0, VERILOG_PORT_CONKT);
     fprintf(fp, ", ");
-    dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
-                                  cur_num_sram, cur_num_sram + num_lut_sram - 1, 
-                                  1, VERILOG_PORT_CONKT);
+    dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info, 
+                                        cur_num_sram, cur_num_sram + num_lut_sram - 1, 
+                                        1, VERILOG_PORT_CONKT);
     if (0 < num_mode_sram) {
       fprintf(fp, ", ");
-      dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
-                                    cur_num_sram + num_lut_sram, cur_num_sram + num_lut_sram + num_mode_sram - 1, 
-                                    0, VERILOG_PORT_CONKT);
+      dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info, 
+                                          cur_num_sram + num_lut_sram, cur_num_sram + num_lut_sram + num_mode_sram - 1, 
+                                          0, VERILOG_PORT_CONKT);
       fprintf(fp, ", ");
-      dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
-                                    cur_num_sram + num_lut_sram, cur_num_sram + num_lut_sram + num_mode_sram - 1, 
-                                    1, VERILOG_PORT_CONKT);
+      dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info, 
+                                          cur_num_sram + num_lut_sram, cur_num_sram + num_lut_sram + num_mode_sram - 1, 
+                                          1, VERILOG_PORT_CONKT);
     }
     break;
   case SPICE_SRAM_MEMORY_BANK:

@@ -984,14 +984,8 @@ void dump_verilog_sram_one_port(FILE* fp,
     if (0 == port_type_index) {
       port_name = "scff_head";
     } else if (1 == port_type_index) {
+      assert(1 == port_type_index);
       port_name = "scff_tail";
-      /* Special case: scan-chain ff output should be an output always */
-      if (VERILOG_PORT_INPUT == dump_port_type) {
-        actual_dump_port_type = VERILOG_PORT_OUTPUT;
-      }
-    } else {
-      assert(2 == port_type_index);
-      port_name = "scff_outb";
       /* Special case: scan-chain ff output should be an output always */
       if (VERILOG_PORT_INPUT == dump_port_type) {
         actual_dump_port_type = VERILOG_PORT_OUTPUT;
@@ -1036,9 +1030,9 @@ void dump_verilog_formal_verification_sram_ports_wiring(FILE* fp,
                                                         int sram_lsb, int sram_msb) {
   fprintf(fp, "assign ");
 
-  dump_verilog_sram_one_outport(fp, cur_sram_orgz_info,
-                                sram_lsb, sram_msb,
-                                0, VERILOG_PORT_CONKT);
+  dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info,
+                                      sram_lsb, sram_msb,
+                                      0, VERILOG_PORT_CONKT);
 
   fprintf(fp, " = ");
 
@@ -1698,19 +1692,24 @@ void dump_verilog_mem_config_bus(FILE* fp, t_spice_model* mem_spice_model,
      * Scan-chain FF outputs are directly wired to SRAM inputs of MUXes  
      */ 
     /* Connect first SCFF to the head */
+    /*
     fprintf(fp, "assign ");
     dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, cur_num_sram, cur_num_sram, -1, VERILOG_PORT_CONKT); 
     fprintf(fp, " = ");
     dump_verilog_sram_one_port(fp, cur_sram_orgz_info, cur_num_sram, cur_num_sram, 0, VERILOG_PORT_CONKT); 
     fprintf(fp, ";\n");
+     */ 
     /* Connect last SCFF to the tail */
+    /*
     fprintf(fp, "assign ");
     dump_verilog_sram_one_port(fp, cur_sram_orgz_info, cur_num_sram + num_mem_conf_bits - 1, cur_num_sram + num_mem_conf_bits - 1, 1, VERILOG_PORT_CONKT); 
     fprintf(fp, " = ");
     dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, cur_num_sram + num_mem_conf_bits - 1, cur_num_sram + num_mem_conf_bits - 1, 0, VERILOG_PORT_CONKT); 
     fprintf(fp, ";\n");
+     */ 
     /* Connect SCFFs into chains */
     /* Cascade the SCFF between head and tail */
+    /*
     if (1 < num_mem_conf_bits) {
       fprintf(fp, "assign ");
       dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
@@ -1722,6 +1721,7 @@ void dump_verilog_mem_config_bus(FILE* fp, t_spice_model* mem_spice_model,
                                     0, VERILOG_PORT_CONKT);
       fprintf(fp, ";\n");
     }
+     */ 
     break;
   case SPICE_SRAM_MEMORY_BANK:
     /* Find the BLB and WLB port, if there is any */
@@ -2258,30 +2258,28 @@ void dump_verilog_sram_config_bus_internal_wires(FILE* fp, t_sram_orgz_info* cur
     fprintf(fp, "assign ");
     dump_verilog_sram_one_port(fp, cur_sram_orgz_info, msb, msb, 1, VERILOG_PORT_CONKT); 
     fprintf(fp, " = ");
-    dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, msb, msb, 0, VERILOG_PORT_CONKT); 
+    dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info, msb, msb, 0, VERILOG_PORT_CONKT); 
     fprintf(fp, ";\n");
     /* Connect SCFFs into chains */
     /* Cascade the SCFF between head and tail */
     if (1 < msb - lsb) {
       fprintf(fp, "assign ");
-      dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
-                                    lsb + 1, msb,
-                                    -1, VERILOG_PORT_CONKT);
+      dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info, 
+                                          lsb + 1, msb,
+                                           -1, VERILOG_PORT_CONKT);
       fprintf(fp, " = ");
-      dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
-                                    lsb, msb - 1,
-                                    0, VERILOG_PORT_CONKT);
+      dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info, 
+                                          lsb, msb - 1,
+                                          0, VERILOG_PORT_CONKT);
       fprintf(fp, ";\n");
     }
 
     break;
   case SPICE_SRAM_MEMORY_BANK:
-    /*
     dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, lsb, msb, 0, VERILOG_PORT_WIRE); 
     fprintf(fp, ";\n");
     dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, lsb, msb, 1, VERILOG_PORT_WIRE); 
     fprintf(fp, ";\n");
-    */
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid SRAM organization!\n", 
@@ -2659,26 +2657,38 @@ void dump_verilog_mem_sram_submodule(FILE* fp,
     if (0 < rec_dump_verilog_spice_model_global_ports(fp, cur_sram_verilog_model, FALSE, TRUE)) {
       fprintf(fp, ",\n");
     }
-    /* Input of Scan-chain DFF, should be connected to the output of its precedent */
-    dump_verilog_sram_one_outport(fp, cur_sram_orgz_info,
-                                  lsb, msb,
-                                  -1, VERILOG_PORT_CONKT);
-    fprintf(fp, ", \n");  //
-    /* Output of Scan-chain DFF, should be connected to the output of its successor */
-    dump_verilog_sram_one_outport(fp, cur_sram_orgz_info,
-                                  lsb, msb,
-                                  0, VERILOG_PORT_CONKT);
-    fprintf(fp, ", \n");  //
     if (SPICE_MODEL_MUX == cur_verilog_model->type) {
+      /* Input of Scan-chain DFF, should be connected to the output of its precedent */
+      dump_verilog_mux_sram_one_outport(fp, cur_sram_orgz_info,
+                                        cur_verilog_model, mux_size,
+                                        lsb, msb,
+                                        -1, VERILOG_PORT_CONKT);
+      fprintf(fp, ", \n");  //
+      /* Output of Scan-chain DFF, should be connected to the output of its successor */
+      dump_verilog_mux_sram_one_outport(fp, cur_sram_orgz_info,
+                                        cur_verilog_model, mux_size,
+                                        lsb, msb,
+                                        0, VERILOG_PORT_CONKT);
+      fprintf(fp, ", \n");  //
       dump_verilog_mux_sram_one_outport(fp, cur_sram_orgz_info, 
                                         cur_verilog_model, mux_size,
                                         lsb, msb,
                                         1, VERILOG_PORT_CONKT);
-    } else {
-      dump_verilog_sram_one_port(fp, cur_sram_orgz_info,
-                                 lsb, msb,
-                                 2, VERILOG_PORT_CONKT);
-    }
+      break;
+    } 
+    /* Input of Scan-chain DFF, should be connected to the output of its precedent */
+    dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info,
+                                        lsb, msb,
+                                         -1, VERILOG_PORT_CONKT);
+    fprintf(fp, ", \n");  //
+    /* Output of Scan-chain DFF, should be connected to the output of its successor */
+    dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info,
+                                        lsb, msb,
+                                         0, VERILOG_PORT_CONKT);
+    fprintf(fp, ", \n");  //
+    dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info,
+                                        lsb, msb,
+                                        1, VERILOG_PORT_CONKT);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid SRAM organization type!\n",

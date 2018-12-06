@@ -1178,17 +1178,17 @@ void dump_verilog_routing_switch_box_subckt(t_sram_orgz_info* cur_sram_orgz_info
                           VERILOG_PORT_INPUT);
 
   /* Dump ports only visible during formal verification*/
-  fprintf(fp, "\n");
-  fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
-  if (-1 < (cur_sb_info->conf_bits_msb - cur_sb_info->conf_bits_lsb)) {
+  if (0 < (cur_sb_info->conf_bits_msb - 1 - cur_sb_info->conf_bits_lsb)) {
+    fprintf(fp, "\n");
+    fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
     fprintf(fp, ",\n");
     dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
                                                 cur_sb_info->conf_bits_lsb, 
                                                 cur_sb_info->conf_bits_msb - 1,
                                                 VERILOG_PORT_OUTPUT);
+    fprintf(fp, "\n");
+    fprintf(fp, "`endif\n");
   }
-  fprintf(fp, "\n");
-  fprintf(fp, "`endif\n");
   fprintf(fp, "); \n");
 
   /* Local wires for memory configurations */
@@ -1842,17 +1842,17 @@ void dump_verilog_routing_connection_box_subckt(t_sram_orgz_info* cur_sram_orgz_
                           VERILOG_PORT_INPUT);
 
   /* Dump ports only visible during formal verification*/
-  fprintf(fp, "\n");
-  fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
-  if (-1 < (cur_cb_info->conf_bits_msb - cur_cb_info->conf_bits_lsb)) {
+  if (0 < (cur_cb_info->conf_bits_msb - 1 - cur_cb_info->conf_bits_lsb)) {
+    fprintf(fp, "\n");
+    fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
     fprintf(fp, ",\n");
+    dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
+                                                cur_cb_info->conf_bits_lsb, 
+                                                cur_cb_info->conf_bits_msb - 1,
+                                                VERILOG_PORT_OUTPUT);
+    fprintf(fp, "\n");
+    fprintf(fp, "`endif\n");
   }
-  dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
-                                              cur_cb_info->conf_bits_lsb, 
-                                              cur_cb_info->conf_bits_msb - 1,
-                                              VERILOG_PORT_OUTPUT);
-  fprintf(fp, "\n");
-  fprintf(fp, "`endif\n");
 
   /* subckt definition ends with svdd and sgnd*/
   fprintf(fp, ");\n");

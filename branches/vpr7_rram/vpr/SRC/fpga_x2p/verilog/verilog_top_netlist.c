@@ -789,9 +789,10 @@ void dump_verilog_defined_one_connection_box(t_sram_orgz_info* cur_sram_orgz_inf
                                   VERILOG_PORT_CONKT);
   }
   /* Dump ports only visible during formal verification*/
-  if (0 < (cur_cb_info.conf_bits_msb - cur_cb_info.conf_bits_lsb)) {
-    fprintf(fp, ",\n");
+  if (0 < (cur_cb_info.conf_bits_msb - 1 - cur_cb_info.conf_bits_lsb)) {
+    fprintf(fp, "\n");
     fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
+    fprintf(fp, ",\n");
     dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
                                                 cur_cb_info.conf_bits_lsb, 
                                                 cur_cb_info.conf_bits_msb - 1,
@@ -947,9 +948,10 @@ void dump_verilog_defined_one_switch_box(t_sram_orgz_info* cur_sram_orgz_info,
   }
 
   /* Dump ports only visible during formal verification*/
-  if (0 < (cur_sb_info.conf_bits_msb - cur_sb_info.conf_bits_lsb)) {
-    fprintf(fp, ",\n");
+  if (0 < (cur_sb_info.conf_bits_msb - 1 - cur_sb_info.conf_bits_lsb)) {
+    fprintf(fp, "\n");
     fprintf(fp, "`ifdef %s\n", verilog_formal_verification_preproc_flag);
+    fprintf(fp, ",\n");
     dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
                                                 cur_sb_info.conf_bits_lsb, 
                                                 cur_sb_info.conf_bits_msb - 1,
