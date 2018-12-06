@@ -4,4 +4,5 @@ void dump_verilog_submodules(t_sram_orgz_info* cur_sram_orgz_info,
                              t_arch Arch, 
                              t_det_routing_arch* routing_arch,
                              boolean include_timing,
+                             boolean include_signal_init, 
                              boolean print_user_defined_template);

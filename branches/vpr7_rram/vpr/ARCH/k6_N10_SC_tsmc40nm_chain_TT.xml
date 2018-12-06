@@ -198,10 +198,10 @@
         <port type="input" prefix="selb" size="1"/>
         <port type="output" prefix="out" size="1"/>
         <delay_matrix type="rise" in_port="in sel selb" out_port="out">
-          10e-12 10e-12 10e-12
+          10e-12 0e-12 0e-12
         </delay_matrix>
         <delay_matrix type="fall" in_port="in sel selb" out_port="out">
-          10e-12 10e-12 10e-12
+          10e-12 0e-12 0e-12
         </delay_matrix>
       </spice_model>
       <spice_model type="gate" name="OR2" prefix="OR2" is_default="1">

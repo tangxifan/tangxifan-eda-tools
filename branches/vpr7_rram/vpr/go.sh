@@ -31,7 +31,7 @@ rm -rf $verilog_output_dirpath/$verilog_output_dirname
 # Run VPR  
 #valgrind 
 #./vpr $arch_xml_file $blif_file --full_stats --nodisp --activity_file $act_file --fpga_verilog --fpga_verilog_dir $verilog_output_dirpath/$verilog_output_dirname --fpga_x2p_rename_illegal_port --route_chan_width $vpr_route_chan_width --fpga_bitstream_generator --fpga_verilog_print_top_testbench --fpga_verilog_print_input_blif_testbench --fpga_verilog_include_timing --fpga_verilog_print_modelsim_autodeck --fpga_verilog_modelsim_ini_path $modelsim_ini_file
-./vpr $arch_xml_file $blif_file --full_stats --nodisp --activity_file $act_file --fpga_verilog --fpga_verilog_dir $verilog_output_dirpath/$verilog_output_dirname --fpga_x2p_rename_illegal_port --fpga_bitstream_generator --fpga_verilog_print_top_testbench --fpga_verilog_print_input_blif_testbench --fpga_verilog_include_timing --fpga_verilog_print_modelsim_autodeck --fpga_verilog_modelsim_ini_path $modelsim_ini_file --fpga_verilog_print_formal_verification_top_netlist
+./vpr $arch_xml_file $blif_file --full_stats --nodisp --activity_file $act_file --fpga_verilog --fpga_verilog_dir $verilog_output_dirpath/$verilog_output_dirname --fpga_x2p_rename_illegal_port --fpga_bitstream_generator --fpga_verilog_print_top_testbench --fpga_verilog_print_input_blif_testbench --fpga_verilog_include_timing --fpga_verilog_include_signal_init --fpga_verilog_print_modelsim_autodeck --fpga_verilog_modelsim_ini_path $modelsim_ini_file --fpga_verilog_print_formal_verification_top_netlist
 
 
 

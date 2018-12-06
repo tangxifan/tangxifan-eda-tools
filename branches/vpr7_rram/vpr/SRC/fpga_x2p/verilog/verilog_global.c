@@ -11,6 +11,7 @@
 char* verilog_netlist_file_postfix = ".v";
 float verilog_sim_timescale = 1e-9; // Verilog Simulation time scale (minimum time unit) : 1ns
 char* verilog_timing_preproc_flag = "ENABLE_TIMING"; // the flag to enable timing definition during compilation
+char* verilog_signal_init_preproc_flag = "ENABLE_SIGNAL_INITIALIZATION"; // the flag to enable signal initialization during compilation
 char* verilog_formal_verification_preproc_flag = "ENABLE_FORMAL_VERIFICATION"; // the flag to enable formal verification during compilation
 
 char* default_verilog_dir_name = "syn_verilogs/";

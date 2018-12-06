@@ -32,6 +32,11 @@ input blb // Inverted Bit line control signal
   assign dout = a;
   //---- doutb is always opposite to dout 
   assign doutb = ~dout;
+`ifdef ENABLE_SIGNAL_INITIALIZATION
+   initial begin
+     $signal_force("a", "0", 0, 1, , 1);
+   end
+`endif
 endmodule
 
 module sram6T_rram(

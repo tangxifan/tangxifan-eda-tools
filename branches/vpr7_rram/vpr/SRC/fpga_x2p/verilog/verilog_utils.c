@@ -166,7 +166,8 @@ void dump_verilog_file_header(FILE* fp,
 
 /* Dump preproc */
 void dump_verilog_preproc(FILE* fp, 
-                          boolean include_timing) {
+                          boolean include_timing,
+                          boolean include_signal_init) {
 
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d]) FileHandle is NULL!\n",__FILE__,__LINE__); 
@@ -176,6 +177,12 @@ void dump_verilog_preproc(FILE* fp,
   /* To enable timing */
   if (TRUE == include_timing) {
     fprintf(fp, "`define %s 1\n", verilog_timing_preproc_flag);
+    fprintf(fp, "\n");
+  } 
+
+  /* To enable timing */
+  if (TRUE == include_signal_init) {
+    fprintf(fp, "`define %s 1\n", verilog_signal_init_preproc_flag);
     fprintf(fp, "\n");
   } 
 

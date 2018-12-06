@@ -34,6 +34,7 @@
 #include "verilog_pbtypes.h"
 #include "verilog_decoder.h"
 
+/***** Subroutines *****/
 
 void dump_verilog_submodule_timing(FILE* fp,
                                    t_spice_model* cur_spice_model) {
@@ -84,11 +85,39 @@ void dump_verilog_submodule_timing(FILE* fp,
   return;
 }
 
-/***** Subroutines *****/
+void dump_verilog_submodule_signal_init(FILE* fp,
+                                        t_spice_model* cur_spice_model) {
+  int iport, ipin;
+  int num_input_port;
+  t_spice_model_port** input_port= NULL;
+  input_port = find_spice_model_ports(cur_spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+
+  /* Ensure a valid file handler*/
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid File handler.\n",
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  fprintf(fp, "\n`ifdef %s\n", verilog_signal_init_preproc_flag);
+  fprintf(fp, "  //------ BEGIN driver initialization -----\n");
+  fprintf(fp, "initial begin\n");
+  for (iport = 0; iport < num_input_port; iport++) {
+     fprintf(fp, "  $signal_force(\"%s\", \"%d\", 0, 1, , 1);\n",
+                input_port[iport]->prefix,
+                input_port[iport]->default_val);
+  }
+  fprintf(fp, "end\n");
+  fprintf(fp, "  //------ END driver initialization -----\n");
+  fprintf(fp, "`endif\n");
+
+  return;
+}
+
+
 /* Dump a module of inverter or buffer or tapered buffer */
 void dump_verilog_invbuf_module(FILE* fp,
-                                t_spice_model* invbuf_spice_model,
-                                boolean include_timing) {
+                                t_spice_model* invbuf_spice_model) {
   int ipin, iport, port_cnt;
   int num_input_port = 0;
   int num_output_port = 0;
@@ -288,9 +317,9 @@ void dump_verilog_invbuf_module(FILE* fp,
   }
 
   /* Print timing info */
-  if (TRUE == include_timing) {
-    dump_verilog_submodule_timing(fp, invbuf_spice_model);
-  }
+  dump_verilog_submodule_timing(fp, invbuf_spice_model);
+
+  dump_verilog_submodule_signal_init(fp, invbuf_spice_model);
 
   fprintf(fp, "endmodule\n");
 
@@ -305,8 +334,7 @@ void dump_verilog_invbuf_module(FILE* fp,
 
 /* Dump a module of pass-gate logic */
 void dump_verilog_passgate_module(FILE* fp,
-                                  t_spice_model* passgate_spice_model,
-                                  boolean include_timing) {
+                                  t_spice_model* passgate_spice_model) {
   int iport;
   int num_input_port = 0;
   int num_output_port = 0;
@@ -385,9 +413,10 @@ void dump_verilog_passgate_module(FILE* fp,
               output_port[0]->prefix);
 
   /* Print timing info */
-  if (TRUE == include_timing) {
-    dump_verilog_submodule_timing(fp, passgate_spice_model);
-  }
+  dump_verilog_submodule_timing(fp, passgate_spice_model);
+
+  /* Print signal initialization */
+  dump_verilog_submodule_signal_init(fp, passgate_spice_model);
 
   fprintf(fp, "endmodule\n");
 
@@ -402,8 +431,7 @@ void dump_verilog_passgate_module(FILE* fp,
 
 /* Dump a module of pass-gate logic */
 void dump_verilog_gate_module(FILE* fp,
-                              t_spice_model* gate_spice_model,
-                              boolean include_timing) {
+                              t_spice_model* gate_spice_model) {
   int iport, ipin, jport, jpin;
   int num_input_port = 0;
   int num_output_port = 0;
@@ -457,7 +485,7 @@ void dump_verilog_gate_module(FILE* fp,
         for (jport = 0; jport < num_input_port; jport++) {
           for (jpin = 0; jpin < input_port[jport]->size; jpin++) {
             fprintf(fp, "%s[%d]",
-                      input_port[iport]->prefix, ipin);
+                      input_port[iport]->prefix, jpin);
             if ((jport == num_input_port - 1) && (jpin == input_port[jport]->size - 1)) {
               continue; /* Stop output AND sign for the last element in the loop */
             }
@@ -476,7 +504,7 @@ void dump_verilog_gate_module(FILE* fp,
         for (jport = 0; jport < num_input_port; jport++) {
           for (jpin = 0; jpin < input_port[jport]->size; jpin++) {
             fprintf(fp, "%s[%d]",
-                      input_port[iport]->prefix, ipin);
+                      input_port[iport]->prefix, jpin);
             if ((jport == num_input_port - 1) && (jpin == input_port[jport]->size - 1)) {
               continue; /* Stop output AND sign for the last element in the loop */
             }
@@ -496,9 +524,10 @@ void dump_verilog_gate_module(FILE* fp,
 
 
   /* Print timing info */
-  if (TRUE == include_timing) {
-    dump_verilog_submodule_timing(fp, gate_spice_model);
-  }
+  dump_verilog_submodule_timing(fp, gate_spice_model);
+
+  /* Print signal initialization */
+  dump_verilog_submodule_signal_init(fp, gate_spice_model);
 
   fprintf(fp, "endmodule\n");
 
@@ -518,7 +547,8 @@ void dump_verilog_gate_module(FILE* fp,
 void dump_verilog_submodule_essentials(char* submodule_dir,
                                        int num_spice_model,
                                        t_spice_model* spice_models,
-                                       boolean include_timing) {
+                                       boolean include_timing,
+                                       boolean include_signal_init) {
   int imodel; 
   char* verilog_name = my_strcat(submodule_dir, essentials_verilog_file_name);
   FILE* fp = NULL;
@@ -532,7 +562,9 @@ void dump_verilog_submodule_essentials(char* submodule_dir,
   } 
   dump_verilog_file_header(fp,"Essential gates"); 
 
-  dump_verilog_preproc(fp, include_timing);
+  dump_verilog_preproc(fp, 
+                       include_timing, 
+                       include_signal_init);
 
   /* Output essential models*/
   for (imodel = 0; imodel < num_spice_model; imodel++) {
@@ -541,13 +573,13 @@ void dump_verilog_submodule_essentials(char* submodule_dir,
       continue;
     }
     if (SPICE_MODEL_INVBUF == spice_models[imodel].type) {
-      dump_verilog_invbuf_module(fp, &(spice_models[imodel]), include_timing);
+      dump_verilog_invbuf_module(fp, &(spice_models[imodel]));
     }
     if (SPICE_MODEL_PASSGATE == spice_models[imodel].type) {
-      dump_verilog_passgate_module(fp, &(spice_models[imodel]), include_timing);
+      dump_verilog_passgate_module(fp, &(spice_models[imodel]));
     }
     if (SPICE_MODEL_GATE == spice_models[imodel].type) {
-      dump_verilog_gate_module(fp, &(spice_models[imodel]), include_timing);
+      dump_verilog_gate_module(fp, &(spice_models[imodel]));
     }
   }
 
@@ -2341,8 +2373,7 @@ void dump_verilog_wire_module(FILE* fp,
 
 /* Dump one module of a LUT */
 void dump_verilog_submodule_one_lut(FILE* fp, 
-                                    t_spice_model* verilog_model,
-                                    boolean include_timing) {
+                                    t_spice_model* verilog_model) {
   int num_input_port = 0;
   int num_output_port = 0;
   int num_sram_port = 0;
@@ -2623,9 +2654,10 @@ void dump_verilog_submodule_one_lut(FILE* fp,
   fprintf(fp, ");\n");
 
   /* Print timing info */
-  if (TRUE == include_timing) {
-    dump_verilog_submodule_timing(fp, verilog_model);
-  }
+  dump_verilog_submodule_timing(fp, verilog_model);
+
+  /* Print signal initialization */
+  dump_verilog_submodule_signal_init(fp, verilog_model);
 
   /* Print end of module */
   fprintf(fp, "endmodule\n");
@@ -2711,7 +2743,8 @@ void dump_verilog_submodule_one_mem(FILE* fp,
 void dump_verilog_submodule_luts(char* submodule_dir,
                                  int num_spice_model,
                                  t_spice_model* spice_models,
-                                 boolean include_timing) {
+                                 boolean include_timing,
+                                 boolean include_signal_init) {
   FILE* fp = NULL;
   char* verilog_name = my_strcat(submodule_dir, luts_verilog_file_name);
   int imodel; 
@@ -2724,7 +2757,9 @@ void dump_verilog_submodule_luts(char* submodule_dir,
   } 
   dump_verilog_file_header(fp,"Look-Up Tables");
 
-  dump_verilog_preproc(fp, include_timing);
+  dump_verilog_preproc(fp, 
+                       include_timing,
+                       include_signal_init);
 
   /* Search for each LUT spice model */
   for (imodel = 0; imodel < num_spice_model; imodel++) {
@@ -2733,7 +2768,7 @@ void dump_verilog_submodule_luts(char* submodule_dir,
       continue;
     }
     if (SPICE_MODEL_LUT == spice_models[imodel].type) {
-      dump_verilog_submodule_one_lut(fp, &(spice_models[imodel]), include_timing);
+      dump_verilog_submodule_one_lut(fp, &(spice_models[imodel]));
     }
   }
 
@@ -3000,6 +3035,7 @@ void dump_verilog_submodule_memories(t_sram_orgz_info* cur_sram_orgz_info,
   return;
 }
 
+
 /* Print a non-global port for the template */
 void dump_one_verilog_template_module_one_port(FILE* fp, int* cnt,
                                               t_spice_model* cur_spice_model,
@@ -3130,6 +3166,7 @@ void dump_verilog_submodules(t_sram_orgz_info* cur_sram_orgz_info,
                              t_arch Arch, 
                              t_det_routing_arch* routing_arch,
                              boolean include_timing, 
+                             boolean include_signal_init, 
                              boolean generate_submodule_template) {
 
   /* 0. basic units: inverter, buffers and pass-gate logics, */
@@ -3137,7 +3174,7 @@ void dump_verilog_submodules(t_sram_orgz_info* cur_sram_orgz_info,
   dump_verilog_submodule_essentials(submodule_dir, 
                                     Arch.spice->num_spice_model, 
                                     Arch.spice->spice_models,
-                                    include_timing);
+                                    include_timing, include_signal_init);
 
   /* 1. MUXes */
   vpr_printf(TIO_MESSAGE_INFO, "Generating modules of multiplexers...\n");
@@ -3148,7 +3185,7 @@ void dump_verilog_submodules(t_sram_orgz_info* cur_sram_orgz_info,
   vpr_printf(TIO_MESSAGE_INFO, "Generating modules of LUTs...\n");
   dump_verilog_submodule_luts(submodule_dir,
                               Arch.spice->num_spice_model, Arch.spice->spice_models,
-                              include_timing);
+                              include_timing, include_signal_init);
 
   /* 3. Hardwires */
   vpr_printf(TIO_MESSAGE_INFO, "Generating modules of hardwires...\n");

@@ -527,6 +527,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
       return Args;
     case OT_FPGA_VERILOG_SYN_INCLUDE_TIMING:
       return Args;
+    case OT_FPGA_VERILOG_SYN_INCLUDE_SIGNAL_INIT:
+      return Args;
     case OT_FPGA_VERILOG_SYN_PRINT_MODELSIM_AUTODECK:
       return Args;
     case OT_FPGA_VERILOG_SYN_MODELSIM_INI_PATH:

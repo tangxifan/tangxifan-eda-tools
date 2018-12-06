@@ -1071,6 +1071,7 @@ static void SetupSynVerilogOpts(t_options Options,
   syn_verilog_opts->dump_syn_verilog_top_testbench = FALSE;
   syn_verilog_opts->dump_syn_verilog_input_blif_testbench = FALSE;
   syn_verilog_opts->include_timing = FALSE;
+  syn_verilog_opts->include_signal_init = FALSE;
   syn_verilog_opts->print_modelsim_autodeck = FALSE;
   syn_verilog_opts->print_formal_verification_top_netlist= FALSE;
   syn_verilog_opts->modelsim_ini_path = NULL;
@@ -1101,6 +1102,10 @@ static void SetupSynVerilogOpts(t_options Options,
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_INCLUDE_TIMING]) {
     syn_verilog_opts->include_timing = TRUE;
+  }
+
+  if (Options.Count[OT_FPGA_VERILOG_SYN_INCLUDE_SIGNAL_INIT]) {
+    syn_verilog_opts->include_signal_init = TRUE;
   }
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_MODELSIM_AUTODECK]) {

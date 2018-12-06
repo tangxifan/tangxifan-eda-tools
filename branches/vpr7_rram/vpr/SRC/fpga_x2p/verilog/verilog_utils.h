@@ -11,7 +11,8 @@ void dump_verilog_file_header(FILE* fp,
                               char* usage);
 
 void dump_verilog_preproc(FILE* fp, 
-                          boolean include_timing);
+                          boolean include_timing,
+                          boolean include_signal_init);
 
 FILE* verilog_create_one_subckt_file(char* subckt_dir,
                                      char* subckt_name_prefix,

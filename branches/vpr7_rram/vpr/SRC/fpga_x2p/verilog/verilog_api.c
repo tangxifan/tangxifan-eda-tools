@@ -225,6 +225,7 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
   dump_verilog_submodules(sram_verilog_orgz_info, submodule_dir_path, 
                           Arch, &vpr_setup.RoutingArch, 
                           vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.include_timing,
+                          vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.include_signal_init,
                           vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_user_defined_template);
 
   /* Dump top-level verilog */
