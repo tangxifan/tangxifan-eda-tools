@@ -35,8 +35,7 @@
 #include "verilog_utils.h"
 #include "verilog_primitives.h"
 #include "verilog_pbtypes.h"
-#include "verilog_top_netlist.h"
-#include "verilog_compact_netlist_utils.h"
+#include "verilog_top_netlist_utils.h"
 
 /* ONLY for compact Verilog netlists:
  * Generate uniformly the prefix of the module name for each grid  

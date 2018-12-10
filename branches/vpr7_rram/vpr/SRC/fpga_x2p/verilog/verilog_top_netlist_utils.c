@@ -37,7 +37,7 @@
 #include "verilog_routing.h"
 #include "verilog_pbtypes.h"
 #include "verilog_decoder.h"
-#include "verilog_top_netlist.h"
+#include "verilog_top_netlist_utils.h"
 
 /* Local Subroutines declaration */
 
@@ -245,6 +245,7 @@ void dump_verilog_top_netlist_scan_chain_internal_wires(t_sram_orgz_info* cur_sr
   return;
 }
 
+
 /* Dump ports for the top-level module in Verilog netlist */
 void dump_verilog_top_module_ports(t_sram_orgz_info* cur_sram_orgz_info, 
                                    FILE* fp,
@@ -311,7 +312,7 @@ void dump_verilog_top_module_ports(t_sram_orgz_info* cur_sram_orgz_info,
   return; 
 }
 
-  
+
 /* Dump ports for the top-level Verilog netlist */
 void dump_verilog_top_netlist_ports(t_sram_orgz_info* cur_sram_orgz_info,
                                     FILE* fp,
@@ -340,7 +341,6 @@ void dump_verilog_top_netlist_ports(t_sram_orgz_info* cur_sram_orgz_info,
 
   return;
 }
- 
 
 void dump_verilog_top_netlist_internal_wires(t_sram_orgz_info* cur_sram_orgz_info, 
                                              FILE* fp) {
@@ -364,6 +364,10 @@ void dump_verilog_top_netlist_internal_wires(t_sram_orgz_info* cur_sram_orgz_inf
 
   return; 
 }
+
+
+ 
+
 
 static 
 void dump_verilog_defined_one_grid(t_sram_orgz_info* cur_sram_orgz_info, 
@@ -425,78 +429,6 @@ void dump_verilog_defined_one_grid(t_sram_orgz_info* cur_sram_orgz_info,
   fprintf(fp, ");\n");
   /* Comment lines */
   fprintf(fp, "//----- END call Grid[%d][%d] module -----\n\n", ix, iy);
-
-  return;
-}
-
-
-/***** Print (call) the defined grids *****/
-void dump_verilog_defined_grids(t_sram_orgz_info* cur_sram_orgz_info,
-                                FILE* fp) {
-  int ix, iy;
-
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
-    exit(1);
-  }
-
-  /* Normal Grids */
-  for (ix = 1; ix < (nx + 1); ix++) {
-    for (iy = 1; iy < (ny + 1); iy++) {
-      /* Bypass EMPTY grid */
-      if (EMPTY_TYPE == grid[ix][iy].type) {
-        continue;
-      }
-      assert(IO_TYPE != grid[ix][iy].type);
-      dump_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
-    }
-  } 
-
-  /* IO Grids */
-  /* TOP side */
-  iy = ny + 1;
-  for (ix = 1; ix < (nx + 1); ix++) {
-    /* Bypass EMPTY grid */
-    if (EMPTY_TYPE == grid[ix][iy].type) {
-      continue;
-    }
-    assert(IO_TYPE == grid[ix][iy].type);
-    dump_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
-  } 
-
-  /* RIGHT side */
-  ix = nx + 1;
-  for (iy = 1; iy < (ny + 1); iy++) {
-    /* Bypass EMPTY grid */
-    if (EMPTY_TYPE == grid[ix][iy].type) {
-      continue;
-    }
-    assert(IO_TYPE == grid[ix][iy].type);
-    dump_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
-  }
-
-  /* BOTTOM side */
-  iy = 0;
-  for (ix = 1; ix < (nx + 1); ix++) {
-    /* Bypass EMPTY grid */
-    if (EMPTY_TYPE == grid[ix][iy].type) {
-      continue;
-    }
-    assert(IO_TYPE == grid[ix][iy].type);
-    dump_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
-  } 
-
-  /* LEFT side */
-  ix = 0;
-  for (iy = 1; iy < (ny + 1); iy++) {
-    /* Bypass EMPTY grid */
-    if (EMPTY_TYPE == grid[ix][iy].type) {
-      continue;
-    }
-    assert(IO_TYPE == grid[ix][iy].type);
-    dump_verilog_defined_one_grid(cur_sram_orgz_info, fp, ix, iy);
-  }
-
 
   return;
 }
@@ -1319,113 +1251,319 @@ void dump_verilog_configuration_circuits(t_sram_orgz_info* cur_sram_orgz_info,
   return;
 }
 
-
-/***** Print Top-level SPICE netlist *****/
-void dump_verilog_top_netlist(t_sram_orgz_info* cur_sram_orgz_info,
-                              char* circuit_name,
-                              char* top_netlist_name,
-                              char* include_dir_path,
-                              char* subckt_dir_path,
-                              int LL_num_rr_nodes,
-                              t_rr_node* LL_rr_node,
-                              t_ivec*** LL_rr_node_indices,
-                              int num_clock,
-                              t_spice verilog) {
-  FILE* fp = NULL;
-  char* formatted_subckt_dir_path = format_dir_path(subckt_dir_path);
-  char* temp_include_file_path = NULL;
-  char* title = my_strcat("FPGA Verilog Netlist for Design: ", circuit_name);
-
-  /* Check if the path exists*/
-  fp = fopen(top_netlist_name,"w");
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Failure in create top Verilog netlist %s!",__FILE__, __LINE__, top_netlist_name); 
-    exit(1);
-  } 
-  
-  vpr_printf(TIO_MESSAGE_INFO, "Writing FPGA Top-level Verilog Netlist for %s...\n", circuit_name);
- 
-  /* Print the title */
-  dump_verilog_file_header(fp, title);
-  my_free(title);
-
-  /* Include user-defined sub-circuit netlist */
-  fprintf(fp, "//----- Include User-defined netlists -----\n");
-  init_include_user_defined_verilog_netlists(verilog);
-  dump_include_user_defined_verilog_netlists(fp, verilog);
-  
-  /* Special subckts for Top-level SPICE netlist */
-  fprintf(fp, "//----- Include subckt netlists: Multiplexers -----\n");
-  temp_include_file_path = my_strcat(formatted_subckt_dir_path, muxes_verilog_file_name);
-  fprintf(fp, "// `include \"%s\"\n", temp_include_file_path);
-  my_free(temp_include_file_path);
-
-  fprintf(fp, "//----- Include subckt netlists: Wires -----\n");
-  temp_include_file_path = my_strcat(formatted_subckt_dir_path, wires_verilog_file_name);
-  fprintf(fp, "// `include \"%s\"\n", temp_include_file_path);
-  my_free(temp_include_file_path);
-
-  fprintf(fp, "//----- Include subckt netlists: Look-Up Tables (LUTs) -----\n");
-  temp_include_file_path = my_strcat(formatted_subckt_dir_path, luts_verilog_file_name);
-  fprintf(fp, "// `include \"%s\"\n", temp_include_file_path);
-  my_free(temp_include_file_path);
-
-  fprintf(fp, "//------ Include subckt netlists: Logic Blocks -----\n");
-  temp_include_file_path = my_strcat(formatted_subckt_dir_path, logic_block_verilog_file_name);
-  fprintf(fp, "// `include \"%s\"\n", temp_include_file_path);
-  my_free(temp_include_file_path);
-
-  fprintf(fp, "//----- Include subckt netlists: Routing structures (Switch Boxes, Channels, Connection Boxes) -----\n");
-  temp_include_file_path = my_strcat(formatted_subckt_dir_path, routing_verilog_file_name);
-  fprintf(fp, "// `include \"%s\"\n", temp_include_file_path);
-  my_free(temp_include_file_path);
- 
-  /* Include decoders if required */ 
-  switch(cur_sram_orgz_info->type) {
-  case SPICE_SRAM_STANDALONE:
-  case SPICE_SRAM_SCAN_CHAIN:
+/* Create a fake (x, y) coorindate for a I/O block on the border side */
+void verilog_compact_generate_fake_xy_for_io_border_side(int border_side,  
+                                                         int* ix, int* iy) {
+  switch (border_side) {
+  case 0: /* TOP*/
+    (*ix) = 1;
+    (*iy) = ny + 1;
     break;
-  case SPICE_SRAM_MEMORY_BANK:
-    /* Include verilog decoder */
-    fprintf(fp, "//----- Include subckt netlists: Decoders (controller for memeory bank) -----\n");
-    temp_include_file_path = my_strcat(formatted_subckt_dir_path, config_peripheral_verilog_file_name);
-    fprintf(fp, "// `include \"%s\"\n", temp_include_file_path);
-    my_free(temp_include_file_path);
+  case 1: /*RIGHT */
+    (*ix) = nx + 1;
+    (*iy) = 1;
+    break;
+  case 2: /*BOTTOM */
+    (*ix) = 1;
+    (*iy) = 0;
+    break;
+  case 3: /* LEFT */
+    (*ix) = 0;
+    (*iy) = 1;
     break;
   default:
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of SRAM organization in Verilog Generator!\n",
-               __FILE__, __LINE__);
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d]) Invalid border_side(%d) for I/O grid!\n",
+               __FILE__, __LINE__, border_side);
     exit(1);
   }
- 
-  /* Print all global wires*/
-  dump_verilog_top_netlist_ports(cur_sram_orgz_info, fp, num_clock, circuit_name, verilog);
 
-  dump_verilog_top_netlist_internal_wires(cur_sram_orgz_info, fp);
+  return;
+}
 
-  /* Quote defined Logic blocks subckts (Grids) */
-  dump_verilog_defined_grids(cur_sram_orgz_info, fp);
+/* We print all the pins of a type descriptor in the following sequence 
+ * TOP, RIGHT, BOTTOM, LEFT
+ */
+void dump_compact_verilog_grid_pins(FILE* fp,
+                                    t_type_ptr grid_type_descriptor,
+                                    boolean dump_port_type,
+                                    boolean dump_last_comma) {
+  int iheight, side, ipin, class_id; 
+  int side_pin_index;
+  int num_dumped_port = 0;
+  int first_dump = 1;
 
-  /* Quote Routing structures: Channels */
-  dump_verilog_defined_channels(fp, LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
 
-  /* Quote Routing structures: Connection Boxes */
-  dump_verilog_defined_connection_boxes(cur_sram_orgz_info, fp); 
+  /* Check */
+  assert(NULL != grid_type_descriptor);
+  assert(0 < grid_type_descriptor->capacity);
+
+  for (side = 0; side < 4; side++) {
+    /* Count the number of pins */
+    side_pin_index = 0;
+    //for (iz = 0; iz < grid_type_descriptor->capacity; iz++) {
+      for (iheight = 0; iheight < grid_type_descriptor->height; iheight++) {
+        for (ipin = 0; ipin < grid_type_descriptor->num_pins; ipin++) {
+          if (1 == grid_type_descriptor->pinloc[iheight][side][ipin]) {
+            /* Add comma if needed */
+            if (1 == first_dump) {
+              first_dump = 0;
+            } else { 
+              if (TRUE == dump_port_type) {
+                fprintf(fp, ",\n");
+              } else {
+                fprintf(fp, ",\n");
+             }
+            }
+            if (TRUE == dump_port_type) {
+              /* Determine this pin is an input or output */
+              class_id = grid_type_descriptor->pin_class[ipin];
+              switch (grid_type_descriptor->class_inf[class_id].type) {
+              case RECEIVER:
+                fprintf(fp, "input ");
+                break;
+              case DRIVER:
+                fprintf(fp, "output ");
+                break;
+              default:
+                vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid pin_class_type!\n",
+                           __FILE__, __LINE__);
+                exit(1);
+              }
+            }
+            /* This pin appear at this side! */
+            fprintf(fp, " %s_height_%d__pin_%d_", 
+                      convert_side_index_to_string(side), iheight, ipin);
+            /* Update counter */
+            num_dumped_port++;
+            side_pin_index++;
+          }
+        }
+      }  
+    //}
+  }
+
+  if ((0 < num_dumped_port)&&(TRUE == dump_last_comma)) {
+    if (TRUE == dump_port_type) {
+      fprintf(fp, ",\n");
+    } else {
+      fprintf(fp, ",\n");
+    }
+  }
+
+  return;
+} 
+
+/* Special for I/O grid, we need only part of the ports
+ * i.e., grid[0][0..ny] only need the right side ports.
+ */
+/* We print all the pins of a type descriptor in the following sequence 
+ * TOP, RIGHT, BOTTOM, LEFT
+ */
+void dump_compact_verilog_io_grid_pins(FILE* fp,
+                                       t_type_ptr grid_type_descriptor,
+                                       int border_side,
+                                       boolean dump_port_type,
+                                       boolean dump_last_comma) {
+  int iheight, ipin; 
+  int side_pin_index;
+  int class_id = -1;
+  int num_dumped_port = 0;
+  int first_dump = 1;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  /* Check */
+  assert( (-1 < border_side) && (border_side < 4));
+  /* Make sure this is IO */
+  assert(NULL != grid_type_descriptor);
+  assert(IO_TYPE == grid_type_descriptor);
+
+  /* Count the number of pins */
+  side_pin_index = 0;
+  //for (iz = 0; iz < capacity; iz++) {
+    for (iheight = 0; iheight < grid_type_descriptor->height; iheight++) {
+      for (ipin = 0; ipin < grid_type_descriptor->num_pins; ipin++) {
+        if (1 == grid_type_descriptor->pinloc[iheight][border_side][ipin]) {
+          /* Add comma if needed */
+          if (1 == first_dump) {
+            first_dump = 0;
+          } else { 
+            if (TRUE == dump_port_type) {
+              fprintf(fp, ",\n");
+            } else {
+              fprintf(fp, ",\n");
+            }
+          }
+          /* Determine this pin is an input or output */
+          if (TRUE == dump_port_type) {
+            class_id = grid_type_descriptor->pin_class[ipin];
+            switch (grid_type_descriptor->class_inf[class_id].type) {
+            case RECEIVER:
+              fprintf(fp, "input ");
+              break;
+            case DRIVER:
+              fprintf(fp, "output ");
+              break;
+            default:
+              vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid pin_class_type!\n",
+                         __FILE__, __LINE__);
+              exit(1);
+            }
+          }
+          /* This pin appear at this side! */
+          fprintf(fp, " %s_height_%d__pin_%d_", 
+                  convert_side_index_to_string(border_side), iheight, ipin);
+          /* Update counter */
+          num_dumped_port++;
+          side_pin_index++;
+        }
+      }  
+    }
+  //}
   
-  /* Quote Routing structures: Switch Boxes */
-  dump_verilog_defined_switch_boxes(cur_sram_orgz_info, fp); 
+  if ((0 < num_dumped_port)&&(TRUE == dump_last_comma)) {
+    if (TRUE == dump_port_type) {
+      fprintf(fp, ",\n");
+    } else {
+      fprintf(fp, ",\n");
+    }
+  }
 
-  /* Apply CLB to CLB direct connections */
-  dump_verilog_clb2clb_directs(fp, num_clb2clb_directs, clb2clb_direct);
+  return;
+} 
 
-  /* Dump configuration circuits */
-  dump_verilog_configuration_circuits(cur_sram_orgz_info, fp);
+/* Physical mode subckt name */
+char* compact_verilog_get_grid_phy_block_subckt_name(t_type_ptr grid_type_descriptor,
+                                                     int z,
+                                                     char* subckt_prefix) {
+  char* ret = NULL;
+  char* formatted_subckt_prefix = format_verilog_node_prefix(subckt_prefix);
+  int phy_mode_index = 0;
 
-  /* verilog ends*/
-  fprintf(fp, "endmodule\n");
+  /* Check */
+  assert(NULL != grid_type_descriptor);
 
-  /* Close the file*/
-  fclose(fp);
+  /* This a NULL logic block... Find the idle mode*/
+  phy_mode_index = find_pb_type_physical_mode_index(*(grid_type_descriptor->pb_type)); 
+  assert(-1 < phy_mode_index);
+
+  ret = (char*)my_malloc(sizeof(char)* 
+             (strlen(formatted_subckt_prefix) + strlen(grid_type_descriptor->name)  
+              + 6 + strlen(grid_type_descriptor->pb_type->modes[phy_mode_index].name) + 1 + 1)); 
+  sprintf(ret, "%s%s_mode_%s_", formatted_subckt_prefix,
+          grid_type_descriptor->name, grid_type_descriptor->pb_type->modes[phy_mode_index].name);
+
+  return ret;
+}                        
+
+/* Print the pins of grid subblocks */
+void dump_compact_verilog_io_grid_block_subckt_pins(FILE* fp,
+                                                    t_type_ptr grid_type_descriptor,
+                                                    int border_side,
+                                                    int z) {
+  int iport, ipin, dump_pin_cnt;
+  int grid_pin_index, pin_height, side_pin_index;
+  t_pb_graph_node* top_pb_graph_node = NULL;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+  /* Check */
+  assert(NULL != grid_type_descriptor);
+  top_pb_graph_node = grid_type_descriptor->pb_graph_head;
+  assert(NULL != top_pb_graph_node); 
+
+  /* Make sure this is IO */
+  assert(IO_TYPE == grid_type_descriptor);
+
+  /* identify the location of IO grid and 
+   * decide which side of ports we need
+   */
+
+  dump_pin_cnt = 0;
+
+  for (iport = 0; iport < top_pb_graph_node->num_input_ports; iport++) {
+    for (ipin = 0; ipin < top_pb_graph_node->num_input_pins[iport]; ipin++) {
+      grid_pin_index = top_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster 
+                     + z * grid_type_descriptor->num_pins / grid_type_descriptor->capacity;
+      /* num_pins/capacity = the number of pins that each type_descriptor has.
+       * Capacity defines the number of type_descriptors in each grid
+       * so the pin index at grid level = pin_index_in_type_descriptor 
+       *                                + type_descriptor_index_in_capacity * num_pins_per_type_descriptor
+       */
+      pin_height = grid_type_descriptor->pin_height[grid_pin_index];
+      if (1 == grid_type_descriptor->pinloc[pin_height][border_side][grid_pin_index]) {
+        /* This pin appear at this side! */
+        if (0 < dump_pin_cnt) {
+          fprintf(fp, ",\n");
+        }
+        fprintf(fp, "%s_height_%d__pin_%d_", 
+                convert_side_index_to_string(border_side), pin_height, grid_pin_index);
+        side_pin_index++;
+        dump_pin_cnt++;
+      }
+    }
+  }
+
+  for (iport = 0; iport < top_pb_graph_node->num_output_ports; iport++) {
+    for (ipin = 0; ipin < top_pb_graph_node->num_output_pins[iport]; ipin++) {
+      grid_pin_index = top_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster 
+                     + z * grid_type_descriptor->num_pins / grid_type_descriptor->capacity;
+      /* num_pins/capacity = the number of pins that each type_descriptor has.
+       * Capacity defines the number of type_descriptors in each grid
+       * so the pin index at grid level = pin_index_in_type_descriptor 
+       *                                + type_descriptor_index_in_capacity * num_pins_per_type_descriptor
+       */
+      pin_height = grid_type_descriptor->pin_height[grid_pin_index];
+      if (1 == grid_type_descriptor->pinloc[pin_height][border_side][grid_pin_index]) {
+        /* This pin appear at this side! */
+        if (0 < dump_pin_cnt) {
+          fprintf(fp, ",\n");
+        }
+        fprintf(fp, "%s_height_%d__pin_%d_", 
+                convert_side_index_to_string(border_side), pin_height, grid_pin_index);
+        side_pin_index++;
+        dump_pin_cnt++;
+      }
+    }
+  }
+
+  for (iport = 0; iport < top_pb_graph_node->num_clock_ports; iport++) {
+    for (ipin = 0; ipin < top_pb_graph_node->num_clock_pins[iport]; ipin++) {
+      grid_pin_index = top_pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster 
+                     + z * grid_type_descriptor->num_pins / grid_type_descriptor->capacity;
+      /* num_pins/capacity = the number of pins that each type_descriptor has.
+       * Capacity defines the number of type_descriptors in each grid
+       * so the pin index at grid level = pin_index_in_type_descriptor 
+       *                                + type_descriptor_index_in_capacity * num_pins_per_type_descriptor
+       */
+      pin_height = grid_type_descriptor->pin_height[grid_pin_index];
+      if (1 == grid_type_descriptor->pinloc[pin_height][border_side][grid_pin_index]) {
+        /* This pin appear at this side! */
+        if (0 < dump_pin_cnt) {
+          fprintf(fp, ",\n");
+        }
+        fprintf(fp, "%s_height_%d__pin_%d_", 
+                convert_side_index_to_string(border_side), pin_height, grid_pin_index);
+        side_pin_index++;
+        dump_pin_cnt++;
+      }
+    }
+  }
 
   return;
 }

@@ -37,7 +37,7 @@
 #include "verilog_routing.h"
 #include "verilog_pbtypes.h"
 #include "verilog_decoder.h"
-#include "verilog_top_netlist.h"
+#include "verilog_top_netlist_utils.h"
 
 static char* top_tb_reset_port_name = "greset";
 static char* top_tb_set_port_name = "gset";
@@ -1346,7 +1346,7 @@ void dump_verilog_top_testbench(t_sram_orgz_info* cur_sram_orgz_info,
                                 char* circuit_name,
                                 char* top_netlist_name,
                                 int num_clock,
-                                t_syn_verilog_opts syn_verilog_opts,
+                                t_syn_verilog_opts fpga_verilog_opts,
                                 t_spice verilog) {
   FILE* fp = NULL;
   char* title = my_strcat("FPGA Verilog Testbench for Top-level netlist of Design: ", circuit_name);
@@ -1364,6 +1364,11 @@ void dump_verilog_top_testbench(t_sram_orgz_info* cur_sram_orgz_info,
   dump_verilog_file_header(fp, title);
   my_free(title);
 
+  /* Print preprocessing flags */
+  dump_verilog_preproc(fp, 
+                       fpga_verilog_opts.include_timing, 
+                       fpga_verilog_opts.include_signal_init);
+
   /* Start of testbench */
   dump_verilog_top_testbench_ports(cur_sram_orgz_info, fp, circuit_name);
 
@@ -1371,7 +1376,7 @@ void dump_verilog_top_testbench(t_sram_orgz_info* cur_sram_orgz_info,
   dump_verilog_top_testbench_call_top_module(cur_sram_orgz_info, fp, circuit_name);
 
   /* Add stimuli for reset, set, clock and iopad signals */
-  dump_verilog_top_testbench_stimuli(cur_sram_orgz_info, fp, num_clock, syn_verilog_opts, verilog);
+  dump_verilog_top_testbench_stimuli(cur_sram_orgz_info, fp, num_clock, fpga_verilog_opts, verilog);
 
   /* Testbench ends*/
   fprintf(fp, "endmodule\n");

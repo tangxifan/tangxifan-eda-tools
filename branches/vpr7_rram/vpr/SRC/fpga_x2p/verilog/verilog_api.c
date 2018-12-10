@@ -38,12 +38,10 @@
 #include "verilog_submodules.h"
 #include "verilog_pbtypes.h"
 #include "verilog_routing.h"
-#include "verilog_top_netlist.h"
 #include "verilog_compact_netlist.h"
 #include "verilog_top_testbench.h"
 #include "verilog_verification_top_netlist.h"
 #include "verilog_modelsim_autodeck.h"
-
 
 /***** Subroutines *****/
 /* Alloc array that records Configuration bits for :
@@ -224,9 +222,7 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
   /* Dump internal structures of submodules */
   dump_verilog_submodules(sram_verilog_orgz_info, submodule_dir_path, 
                           Arch, &vpr_setup.RoutingArch, 
-                          vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.include_timing,
-                          vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.include_signal_init,
-                          vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_user_defined_template);
+                          vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts);
 
   /* Dump top-level verilog */
   dump_compact_verilog_top_netlist(sram_verilog_orgz_info, chomped_circuit_name, 

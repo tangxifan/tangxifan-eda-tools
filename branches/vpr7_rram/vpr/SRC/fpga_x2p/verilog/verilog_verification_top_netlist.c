@@ -35,7 +35,7 @@
 #include "verilog_utils.h"
 #include "verilog_primitives.h"
 #include "verilog_pbtypes.h"
-#include "verilog_top_netlist.h"
+#include "verilog_top_netlist_utils.h"
 #include "verilog_top_testbench.h"
 
 static char* formal_verification_top_module_postfix = "_top_formal_verification";
@@ -226,7 +226,7 @@ void dump_verilog_formal_verification_top_netlist_connect_global_ports(t_sram_or
           continue;
         }
         /*  See if this is a clock net */
-        if (FALSE == vpack_net[logical_block[iblock].output_nets[0][0]].is_global) {  
+        if (FALSE == logical_block[iblock].is_clock) {  
           continue; 
         }
         /* Reach here we have found a clock! */

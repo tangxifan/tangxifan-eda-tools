@@ -562,10 +562,6 @@ void dump_verilog_submodule_essentials(char* submodule_dir,
   } 
   dump_verilog_file_header(fp,"Essential gates"); 
 
-  dump_verilog_preproc(fp, 
-                       include_timing, 
-                       include_signal_init);
-
   /* Output essential models*/
   for (imodel = 0; imodel < num_spice_model; imodel++) {
     /* By pass user-defined modules */
@@ -3165,16 +3161,15 @@ void dump_verilog_submodules(t_sram_orgz_info* cur_sram_orgz_info,
                              char* submodule_dir, 
                              t_arch Arch, 
                              t_det_routing_arch* routing_arch,
-                             boolean include_timing, 
-                             boolean include_signal_init, 
-                             boolean generate_submodule_template) {
+                             t_syn_verilog_opts fpga_verilog_opts) {
 
   /* 0. basic units: inverter, buffers and pass-gate logics, */
   vpr_printf(TIO_MESSAGE_INFO, "Generating essential modules...\n");
   dump_verilog_submodule_essentials(submodule_dir, 
                                     Arch.spice->num_spice_model, 
                                     Arch.spice->spice_models,
-                                    include_timing, include_signal_init);
+                                    fpga_verilog_opts.include_timing, 
+                                    fpga_verilog_opts.include_signal_init);
 
   /* 1. MUXes */
   vpr_printf(TIO_MESSAGE_INFO, "Generating modules of multiplexers...\n");
@@ -3185,7 +3180,8 @@ void dump_verilog_submodules(t_sram_orgz_info* cur_sram_orgz_info,
   vpr_printf(TIO_MESSAGE_INFO, "Generating modules of LUTs...\n");
   dump_verilog_submodule_luts(submodule_dir,
                               Arch.spice->num_spice_model, Arch.spice->spice_models,
-                              include_timing, include_signal_init);
+                              fpga_verilog_opts.include_timing, 
+                              fpga_verilog_opts.include_signal_init);
 
   /* 3. Hardwires */
   vpr_printf(TIO_MESSAGE_INFO, "Generating modules of hardwires...\n");
@@ -3201,7 +3197,7 @@ void dump_verilog_submodules(t_sram_orgz_info* cur_sram_orgz_info,
   dump_verilog_config_peripherals(cur_sram_orgz_info, submodule_dir);
 
   /* 6. Dump template for all the modules */
-  if (TRUE == generate_submodule_template) { 
+  if (TRUE == fpga_verilog_opts.print_user_defined_template) { 
     dump_verilog_submodule_templates(cur_sram_orgz_info, 
                                      submodule_dir,
                                      Arch.spice->num_spice_model, 
