@@ -289,7 +289,8 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
 
   /* Output Modelsim Autodeck scripts */
   if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_modelsim_autodeck) {
-    dump_verilog_modelsim_autodeck(sram_verilog_orgz_info, *(Arch.spice), num_clocks,
+    dump_verilog_modelsim_autodeck(sram_verilog_orgz_info, *(Arch.spice),
+                                   Arch.spice->spice_params.meas_params.sim_num_clock_cycle,
                                    verilog_dir_formatted, chomped_circuit_name,
                                    vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.modelsim_ini_path);
   }

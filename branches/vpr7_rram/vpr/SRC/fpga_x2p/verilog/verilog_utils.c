@@ -166,8 +166,8 @@ void dump_verilog_file_header(FILE* fp,
 
 /* Dump preproc */
 void dump_verilog_preproc(FILE* fp, 
-                          boolean include_timing,
-                          boolean include_signal_init) {
+                          t_syn_verilog_opts fpga_verilog_opts,
+                          enum e_verilog_tb_type verilog_tb_type) {
 
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d]) FileHandle is NULL!\n",__FILE__,__LINE__); 
@@ -175,14 +175,22 @@ void dump_verilog_preproc(FILE* fp,
   } 
 
   /* To enable timing */
-  if (TRUE == include_timing) {
+  if (TRUE == fpga_verilog_opts.include_timing) {
     fprintf(fp, "`define %s 1\n", verilog_timing_preproc_flag);
     fprintf(fp, "\n");
   } 
 
   /* To enable timing */
-  if (TRUE == include_signal_init) {
+  if (TRUE == fpga_verilog_opts.include_signal_init) {
     fprintf(fp, "`define %s 1\n", verilog_signal_init_preproc_flag);
+    fprintf(fp, "\n");
+  } 
+
+  /* To enable formal verfication flag */
+  if ((VERILOG_TB_FORMAL_VERIFICATION == verilog_tb_type)
+      && (TRUE == fpga_verilog_opts.print_formal_verification_top_netlist)) {
+    fprintf(fp, "`define %s 1\n",
+                 verilog_formal_verification_preproc_flag); // the flag to enable formal verification during compilation
     fprintf(fp, "\n");
   } 
 

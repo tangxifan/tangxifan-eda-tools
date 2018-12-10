@@ -392,7 +392,7 @@ void dump_verilog_formal_verification_top_netlist(t_sram_orgz_info* cur_sram_org
                                                   char* circuit_name,
                                                   char* top_netlist_name,
                                                   int num_clock,
-                                                  t_syn_verilog_opts syn_verilog_opts,
+                                                  t_syn_verilog_opts fpga_verilog_opts,
                                                   t_spice verilog) {
   FILE* fp = NULL;
   char* title = my_strcat("FPGA Verilog Top-level netlist in formal verification purpose of Design: ", circuit_name);
@@ -410,9 +410,11 @@ void dump_verilog_formal_verification_top_netlist(t_sram_orgz_info* cur_sram_org
   dump_verilog_file_header(fp, title);
   my_free(title);
 
-  /* DEFINE preproc */
-  fprintf(fp, "`define %s 1\n",
-              verilog_formal_verification_preproc_flag); // the flag to enable formal verification during compilation
+
+  /* Print preprocessing flags */
+  dump_verilog_preproc(fp, 
+                       fpga_verilog_opts, 
+                       VERILOG_TB_FORMAL_VERIFICATION);
 
   /* Start with module declaration */
   dump_verilog_formal_verification_top_netlist_ports(cur_sram_orgz_info, fp, circuit_name);
@@ -424,7 +426,7 @@ void dump_verilog_formal_verification_top_netlist(t_sram_orgz_info* cur_sram_org
   dump_verilog_formal_verfication_top_netlist_call_top_module(cur_sram_orgz_info, fp, circuit_name);
 
   /* Add stimuli for reset, set, clock and iopad signals */
-  dump_verilog_formal_verification_top_netlist_initialization(cur_sram_orgz_info, fp, syn_verilog_opts, verilog);
+  dump_verilog_formal_verification_top_netlist_initialization(cur_sram_orgz_info, fp, fpga_verilog_opts, verilog);
 
   /* Testbench ends*/
   fprintf(fp, "endmodule\n");

@@ -2753,10 +2753,6 @@ void dump_verilog_submodule_luts(char* submodule_dir,
   } 
   dump_verilog_file_header(fp,"Look-Up Tables");
 
-  dump_verilog_preproc(fp, 
-                       include_timing,
-                       include_signal_init);
-
   /* Search for each LUT spice model */
   for (imodel = 0; imodel < num_spice_model; imodel++) {
     /* Bypass user-defined spice models */

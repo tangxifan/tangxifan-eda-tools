@@ -1366,8 +1366,8 @@ void dump_verilog_top_testbench(t_sram_orgz_info* cur_sram_orgz_info,
 
   /* Print preprocessing flags */
   dump_verilog_preproc(fp, 
-                       fpga_verilog_opts.include_timing, 
-                       fpga_verilog_opts.include_signal_init);
+                       fpga_verilog_opts, 
+                       VERILOG_TB_TOP);
 
   /* Start of testbench */
   dump_verilog_top_testbench_ports(cur_sram_orgz_info, fp, circuit_name);
