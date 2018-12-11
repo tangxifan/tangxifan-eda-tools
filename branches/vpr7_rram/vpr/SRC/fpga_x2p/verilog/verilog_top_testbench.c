@@ -39,16 +39,6 @@
 #include "verilog_decoder.h"
 #include "verilog_top_netlist_utils.h"
 
-static char* top_tb_reset_port_name = "greset";
-static char* top_tb_set_port_name = "gset";
-static char* top_tb_prog_reset_port_name = "prog_reset";
-static char* top_tb_prog_set_port_name = "prog_set";
-static char* top_tb_config_done_port_name = "config_done";
-static char* top_tb_op_clock_port_name = "op_clock";
-static char* top_tb_prog_clock_port_name = "prog_clock";
-static char* top_tb_inout_reg_postfix = "_reg";
-static char* top_tb_clock_reg_postfix = "_reg";
-
 /* Dump all the global ports that are stored in the linked list */
 void dump_verilog_top_testbench_global_ports(FILE* fp, t_llist* head,
                                              enum e_dump_verilog_port_type dump_port_type) {
@@ -104,11 +94,7 @@ void dump_verilog_top_testbench_wire_one_global_port_stimuli(FILE* fp, t_spice_m
   return;
 }
 
-
-
-
 /* Print stimuli for global ports in top-level testbench */
-static 
 void dump_verilog_top_testbench_global_ports_stimuli(FILE* fp, t_llist* head) {
   t_llist* temp = head;
   t_spice_model_port* cur_global_port = NULL;
@@ -322,9 +308,6 @@ void dump_verilog_top_testbench_ports(t_sram_orgz_info* cur_sram_orgz_info,
   return;
 }
 
-
-
-static 
 void dump_verilog_top_testbench_call_top_module(t_sram_orgz_info* cur_sram_orgz_info,
                                                 FILE* fp,
                                                 char* circuit_name) {

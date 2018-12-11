@@ -521,6 +521,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
       return ReadString(Args, &Options->fpga_syn_verilog_dir);
     case OT_FPGA_VERILOG_SYN_PRINT_TOP_TESTBENCH:
       return Args;
+    case OT_FPGA_VERILOG_SYN_PRINT_AUTOCHECK_TOP_TESTBENCH:
+      return ReadString(Args, &Options->fpga_verilog_reference_benchmark_file);
     case OT_FPGA_VERILOG_SYN_PRINT_INPUT_BLIF_TESTBENCH:
       return Args;
     case OT_FPGA_VERILOG_SYN_PRINT_FORMAL_VERIFICATION_TOP_NETLIST:

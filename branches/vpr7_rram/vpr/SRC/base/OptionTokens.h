@@ -99,6 +99,7 @@ enum e_OptionBaseToken {
     OT_FPGA_VERILOG_SYN, /* Xifan TANG: Synthesizable Verilog Dump */
     OT_FPGA_VERILOG_SYN_DIR, /* Xifan TANG: Synthesizable Verilog Dump */
     OT_FPGA_VERILOG_SYN_PRINT_TOP_TESTBENCH, /* Xifan Tang: Synthesizable Verilog, turn on option: output testbench for top-level netlist */
+    OT_FPGA_VERILOG_SYN_PRINT_AUTOCHECK_TOP_TESTBENCH, /* Xifan Tang: Synthesizable Verilog, turn on option: output testbench for top-level netlist */
     OT_FPGA_VERILOG_SYN_PRINT_INPUT_BLIF_TESTBENCH, /* Xifan Tang: Synthesizable Verilog, turn on option: output testbench for the orignial input blif  */
     OT_FPGA_VERILOG_SYN_PRINT_FORMAL_VERIFICATION_TOP_NETLIST, /* Xifan Tang: Synthesizable Verilog, turn on option: output netlists in a compact way */
     OT_FPGA_VERILOG_SYN_INCLUDE_TIMING, /* Xifan TANG: Include timing constraints in Verilog */

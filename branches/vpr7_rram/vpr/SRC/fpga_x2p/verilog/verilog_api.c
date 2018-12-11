@@ -40,6 +40,7 @@
 #include "verilog_routing.h"
 #include "verilog_compact_netlist.h"
 #include "verilog_top_testbench.h"
+#include "verilog_autocheck_top_testbench.h"
 #include "verilog_verification_top_netlist.h"
 #include "verilog_modelsim_autodeck.h"
 
@@ -124,6 +125,8 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
   char* bitstream_file_path = NULL;
   char* formal_verification_top_netlist_file_name = NULL;
   char* formal_verification_top_netlist_file_path = NULL;
+  char* autocheck_top_testbench_file_name = NULL;
+  char* autocheck_top_testbench_file_path = NULL;
 
   char* chomped_parent_dir = NULL;
   char* chomped_circuit_name = NULL;
@@ -234,7 +237,7 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
   /* dump_verilog_sdc_file(); */
   
   /* dump verilog testbench only for input blif */
-  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.dump_syn_verilog_input_blif_testbench) {
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_input_blif_testbench) {
     blif_testbench_file_name = my_strcat(chomped_circuit_name, blif_testbench_verilog_file_postfix);
     blif_testbench_file_path = my_strcat(verilog_dir_formatted, blif_testbench_file_name);
     dump_verilog_input_blif_testbench(chomped_circuit_name, blif_testbench_file_path, num_clocks, 
@@ -251,7 +254,7 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
                       sram_verilog_orgz_info->type);
 
   /* Force enable bitstream generator when we need to output Verilog top testbench*/  
-  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.dump_syn_verilog_top_testbench) {
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_top_testbench) {
     vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.gen_bitstream = TRUE;
   }
 
@@ -266,7 +269,7 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
   }
 
   /* dump verilog testbench only for top-level: ONLY valid when bitstream is generated! */
-  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.dump_syn_verilog_top_testbench) {
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_top_testbench) {
     top_testbench_file_name = my_strcat(chomped_circuit_name, top_testbench_verilog_file_postfix);
     top_testbench_file_path = my_strcat(verilog_dir_formatted, top_testbench_file_name);
     dump_verilog_top_testbench(sram_verilog_orgz_info, chomped_circuit_name, top_testbench_file_path, num_clocks, 
@@ -277,7 +280,7 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
   }
 
   if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_formal_verification_top_netlist) {
-    formal_verification_top_netlist_file_name = my_strcat(chomped_circuit_name, formal_verification_verilog_top_postfix);
+    formal_verification_top_netlist_file_name = my_strcat(chomped_circuit_name, formal_verification_verilog_file_postfix);
     formal_verification_top_netlist_file_path = my_strcat(verilog_dir_formatted, formal_verification_top_netlist_file_name);
     dump_verilog_formal_verification_top_netlist(sram_verilog_orgz_info, chomped_circuit_name, 
                                                  formal_verification_top_netlist_file_path, num_clocks, 
@@ -287,16 +290,30 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
     my_free(formal_verification_top_netlist_file_path);
   }
 
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_autocheck_top_testbench) {
+    autocheck_top_testbench_file_name = my_strcat(chomped_circuit_name, autocheck_top_testbench_verilog_file_postfix);
+    autocheck_top_testbench_file_path = my_strcat(verilog_dir_formatted, autocheck_top_testbench_file_name);
+    dump_verilog_autocheck_top_testbench(sram_verilog_orgz_info, chomped_circuit_name, 
+                                         autocheck_top_testbench_file_path, num_clocks, 
+                                         vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts, *(Arch.spice));
+    /* Free */
+    my_free(autocheck_top_testbench_file_name);
+    my_free(autocheck_top_testbench_file_path);
+  }
+
   /* Output Modelsim Autodeck scripts */
   if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_modelsim_autodeck) {
-    dump_verilog_modelsim_autodeck(sram_verilog_orgz_info, *(Arch.spice),
+    dump_verilog_modelsim_autodeck(sram_verilog_orgz_info, 
+                                   vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts,
+                                   *(Arch.spice),
                                    Arch.spice->spice_params.meas_params.sim_num_clock_cycle,
-                                   verilog_dir_formatted, chomped_circuit_name,
-                                   vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.modelsim_ini_path);
+                                   verilog_dir_formatted, chomped_circuit_name);
   }
 
   if ((TRUE == vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.gen_bitstream)
-    || (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.dump_syn_verilog_top_testbench)) {
+    || (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_top_testbench)
+    || (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_autocheck_top_testbench)
+    || (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_formal_verification_top_netlist)) {
     /* Free sram_orgz_info:
      * Free the allocated sram_orgz_info before, we start bitstream generation !
      */

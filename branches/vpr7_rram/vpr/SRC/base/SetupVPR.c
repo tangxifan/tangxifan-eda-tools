@@ -1068,8 +1068,10 @@ static void SetupSynVerilogOpts(t_options Options,
   /* Initialize */  
   syn_verilog_opts->dump_syn_verilog = FALSE;
   syn_verilog_opts->syn_verilog_dump_dir = NULL;
-  syn_verilog_opts->dump_syn_verilog_top_testbench = FALSE;
-  syn_verilog_opts->dump_syn_verilog_input_blif_testbench = FALSE;
+  syn_verilog_opts->print_top_testbench = FALSE;
+  syn_verilog_opts->print_autocheck_top_testbench = FALSE;
+  syn_verilog_opts->reference_verilog_benchmark_file = NULL;
+  syn_verilog_opts->print_input_blif_testbench = FALSE;
   syn_verilog_opts->include_timing = FALSE;
   syn_verilog_opts->include_signal_init = FALSE;
   syn_verilog_opts->print_modelsim_autodeck = FALSE;
@@ -1089,11 +1091,16 @@ static void SetupSynVerilogOpts(t_options Options,
   }
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_TOP_TESTBENCH]) {
-    syn_verilog_opts->dump_syn_verilog_top_testbench = TRUE;
+    syn_verilog_opts->print_top_testbench = TRUE;
+  }
+
+  if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_AUTOCHECK_TOP_TESTBENCH]) {
+    syn_verilog_opts->print_autocheck_top_testbench = TRUE;
+    syn_verilog_opts->reference_verilog_benchmark_file = my_strdup(Options.fpga_verilog_reference_benchmark_file);
   }
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_INPUT_BLIF_TESTBENCH]) {
-    syn_verilog_opts->dump_syn_verilog_input_blif_testbench = TRUE;
+    syn_verilog_opts->print_input_blif_testbench = TRUE;
   }
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_FORMAL_VERIFICATION_TOP_NETLIST]) {

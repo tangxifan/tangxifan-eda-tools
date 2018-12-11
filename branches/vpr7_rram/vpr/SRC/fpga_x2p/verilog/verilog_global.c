@@ -19,6 +19,7 @@ char* default_lb_dir_name = "lb/";
 char* default_rr_dir_name = "routing/";
 char* default_submodule_dir_name = "sub_module/";
 char* default_modelsim_dir_name = "msim_projects/";
+char* autocheck_testbench_postfix = "_autocheck";
 
 char* modelsim_project_name_postfix = "_fpga_msim";
 char* modelsim_proc_script_name_postfix = "_proc.tcl";
@@ -27,8 +28,9 @@ char* modelsim_testbench_module_postfix = "_top_tb";
 char* modelsim_simulation_time_unit = "ms";
 
 char* verilog_top_postfix = "_top.v";
-char* formal_verification_verilog_top_postfix = "_top_formal_verification.v"; 
+char* formal_verification_verilog_file_postfix = "_top_formal_verification.v"; 
 char* top_testbench_verilog_file_postfix = "_top_tb.v"; /* !!! must be consist with the modelsim_testbench_module_postfix */ 
+char* autocheck_top_testbench_verilog_file_postfix = "_autocheck_top_tb.v"; 
 char* blif_testbench_verilog_file_postfix = "_blif_tb.v";
 char* submodule_verilog_file_name = "sub_module.v";
 char* logic_block_verilog_file_name = "logic_blocks.v";
@@ -87,3 +89,12 @@ char* top_netlist_normal_blb_port_postfix = "_blb";
 char* top_netlist_normal_wlb_port_postfix = "_wlb";
 char* top_netlist_scan_chain_head_prefix = "sc_in";
 
+char* top_tb_reset_port_name = "greset";
+char* top_tb_set_port_name = "gset";
+char* top_tb_prog_reset_port_name = "prog_reset";
+char* top_tb_prog_set_port_name = "prog_set";
+char* top_tb_config_done_port_name = "config_done";
+char* top_tb_op_clock_port_name = "op_clock";
+char* top_tb_prog_clock_port_name = "prog_clock";
+char* top_tb_inout_reg_postfix = "_reg";
+char* top_tb_clock_reg_postfix = "_reg";

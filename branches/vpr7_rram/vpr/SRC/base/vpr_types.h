@@ -1214,14 +1214,16 @@ typedef struct s_syn_verilog_opts t_syn_verilog_opts;
 struct s_syn_verilog_opts {
   boolean dump_syn_verilog;
   char* syn_verilog_dump_dir;
-  boolean dump_syn_verilog_top_testbench;
-  boolean dump_syn_verilog_input_blif_testbench;
+  boolean print_top_testbench;
+  boolean print_input_blif_testbench;
   boolean print_formal_verification_top_netlist;
   boolean include_timing;
   boolean include_signal_init;
   boolean print_modelsim_autodeck;
   char* modelsim_ini_path;
   boolean print_user_defined_template;
+  boolean print_autocheck_top_testbench;
+  char* reference_verilog_benchmark_file;
 };
 
 /* Xifan TANG: bitstream generator */
