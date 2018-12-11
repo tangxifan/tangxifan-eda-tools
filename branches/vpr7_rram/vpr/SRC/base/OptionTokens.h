@@ -105,7 +105,6 @@ enum e_OptionBaseToken {
     OT_FPGA_VERILOG_SYN_INCLUDE_TIMING, /* Xifan TANG: Include timing constraints in Verilog */
     OT_FPGA_VERILOG_SYN_INCLUDE_SIGNAL_INIT, /* Xifan TANG: Include timing constraints in Verilog */
     OT_FPGA_VERILOG_SYN_PRINT_MODELSIM_AUTODECK,
-    OT_FPGA_VERILOG_SYN_MODELSIM_INI_PATH,
     OT_FPGA_VERILOG_SYN_PRINT_USER_DEFINED_TEMPLATE,
     /* Xifan Tang: Bitstream generator */
     OT_FPGA_BITSTREAM_GENERATOR,

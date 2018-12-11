@@ -88,7 +88,6 @@ struct s_TokenPair OptionBaseTokenList[] = {
         { "fpga_verilog_include_timing", OT_FPGA_VERILOG_SYN_INCLUDE_TIMING }, /* Include timing constraints in Verilog netlists */
         { "fpga_verilog_include_signal_init", OT_FPGA_VERILOG_SYN_INCLUDE_SIGNAL_INIT }, /* Include signal initialization in Verilog netlists */
         { "fpga_verilog_print_modelsim_autodeck", OT_FPGA_VERILOG_SYN_PRINT_MODELSIM_AUTODECK }, /* Generate autodeck scripts for modelsim */
-        { "fpga_verilog_modelsim_ini_path", OT_FPGA_VERILOG_SYN_MODELSIM_INI_PATH }, /* Specify the simulator path for Verilog netlists */
         { "fpga_verilog_print_user_defined_template", OT_FPGA_VERILOG_SYN_PRINT_USER_DEFINED_TEMPLATE }, /* Specify the simulator path for Verilog netlists */
         /* Xifan Tang: Bitstream generator */
         { "fpga_bitstream_generator", OT_FPGA_BITSTREAM_GENERATOR }, /* turn on bitstream generator, and specify the output file */

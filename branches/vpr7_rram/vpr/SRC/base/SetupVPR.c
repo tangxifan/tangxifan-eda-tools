@@ -1117,9 +1117,6 @@ static void SetupSynVerilogOpts(t_options Options,
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_MODELSIM_AUTODECK]) {
     syn_verilog_opts->print_modelsim_autodeck = TRUE;
-  }
-
-  if (Options.Count[OT_FPGA_VERILOG_SYN_MODELSIM_INI_PATH]) {
     syn_verilog_opts->modelsim_ini_path = my_strdup(Options.fpga_verilog_modelsim_ini_path);
   }
 

@@ -40,6 +40,10 @@
 #include "verilog_top_netlist_utils.h"
 #include "verilog_top_testbench.h"
 
+/* Local variables */
+static char* autocheck_testbench_reference_output_postfix = "_benchmark";
+static char* autocheck_testbench_verification_output_postfix = "_verification";
+
 /* Local Subroutines declaration */
 
 /******** Subroutines ***********/
@@ -189,8 +193,12 @@ void dump_verilog_top_auto_testbench_ports(FILE* fp,
               gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx);
       // AA: Generate wire and reg to autocheck with benchmark
       if(VPACK_OUTPAD == logical_block[iblock].type) {    
-        fprintf(fp, "wire %s_benchmark;\n", logical_block[iblock].name);
-        fprintf(fp, "reg %s_verification;\n", logical_block[iblock].name);
+        fprintf(fp, "wire %s%s;\n", 
+                logical_block[iblock].name,
+                autocheck_testbench_reference_output_postfix);
+        fprintf(fp, "reg %s%s;\n", 
+                logical_block[iblock].name,
+                autocheck_testbench_verification_output_postfix);
       }  
     }
   }
@@ -203,8 +211,8 @@ void dump_verilog_top_auto_testbench_call_benchmark(FILE* fp,
                                                     char* reference_verilog_top_name){
   int iblock, iopad_idx;
 
-  fprintf(fp, "// Benchmark instanciation\n");
-  fprintf(fp, "  %s Benchmark(\n", reference_verilog_top_name);
+  fprintf(fp, "// Reference Benchmark instanciation\n");
+  fprintf(fp, "  %s ref_U0(\n", reference_verilog_top_name);
 
   for (iblock = 0; iblock < num_logical_blocks; iblock++) {
     /* General INOUT*/
@@ -224,7 +232,9 @@ void dump_verilog_top_auto_testbench_call_benchmark(FILE* fp,
           fprintf(fp, "        %s_%s_%d_", logical_block[iblock].name, gio_inout_prefix, iopad_idx);
         }
       } else if(VPACK_OUTPAD == logical_block[iblock].type){
-        fprintf(fp, "        %s_benchmark", logical_block[iblock].name);
+        fprintf(fp, "        %s%s", 
+                logical_block[iblock].name,
+                autocheck_testbench_reference_output_postfix);
       }
     }
   }
@@ -246,9 +256,11 @@ void dump_verilog_top_auto_testbench_check(FILE* fp){
       assert((VPACK_INPAD == logical_block[iblock].type)
            ||(VPACK_OUTPAD == logical_block[iblock].type));
       if(VPACK_OUTPAD == logical_block[iblock].type){
-        fprintf(fp, "    %s_verification <= %s_benchmark ^ %s_%s_%d_ ;\n", 
+        fprintf(fp, "    %s%s <= %s%s ^ %s_%s_%d_ ;\n", 
                 logical_block[iblock].name, 
-                logical_block[iblock].name, 
+                autocheck_testbench_verification_output_postfix,
+                logical_block[iblock].name,  
+                autocheck_testbench_reference_output_postfix,
                 logical_block[iblock].name, 
                 gio_inout_prefix, iopad_idx);
       }
@@ -262,9 +274,15 @@ void dump_verilog_top_auto_testbench_check(FILE* fp){
       assert((VPACK_INPAD == logical_block[iblock].type)
            ||(VPACK_OUTPAD == logical_block[iblock].type));
       if(VPACK_OUTPAD == logical_block[iblock].type){
-        fprintf(fp, "  always@(posedge %s_verification) begin\n", logical_block[iblock].name);
-        fprintf(fp, "      if(%s_verification) begin\n", logical_block[iblock].name);
-        fprintf(fp, "        $display(\"Mismatch on %s_verification\");\n", logical_block[iblock].name);
+        fprintf(fp, "  always@(posedge %s%s) begin\n", 
+                    logical_block[iblock].name,
+                    autocheck_testbench_verification_output_postfix);
+        fprintf(fp, "      if(%s%s) begin\n",
+                    logical_block[iblock].name,
+                    autocheck_testbench_verification_output_postfix);
+        fprintf(fp, "        $display(\"Mismatch on %s%s\");\n",
+                    logical_block[iblock].name,
+                    autocheck_testbench_verification_output_postfix);
         fprintf(fp, "        $finish;\n");
         fprintf(fp, "      end\n");
         fprintf(fp, "  end\n\n");
@@ -312,7 +330,7 @@ void dump_verilog_autocheck_top_testbench(t_sram_orgz_info* cur_sram_orgz_info,
   dump_verilog_top_testbench_call_top_module(cur_sram_orgz_info, fp, circuit_name);
 
   /* Call defined benchmark */
-  dump_verilog_top_auto_testbench_call_benchmark(fp, blif_circuit_name);
+  dump_verilog_top_auto_testbench_call_benchmark(fp, circuit_name);
 
   /* Add stimuli for reset, set, clock and iopad signals */
   dump_verilog_top_testbench_stimuli(cur_sram_orgz_info, fp, num_clock, fpga_verilog_opts, verilog);
