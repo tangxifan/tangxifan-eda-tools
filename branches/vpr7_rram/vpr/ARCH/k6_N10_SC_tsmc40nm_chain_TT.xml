@@ -211,10 +211,10 @@
         <port type="input" prefix="in" size="2"/>
         <port type="output" prefix="out" size="1"/>
         <delay_matrix type="rise" in_port="in" out_port="out">
-          10e-12 
+          10e-12
         </delay_matrix>
         <delay_matrix type="fall" in_port="in" out_port="out">
-          10e-12
+          10e-12 
         </delay_matrix>
       </spice_model>
       <spice_model type="chan_wire" name="chan_segment" prefix="track_seg" is_default="1">

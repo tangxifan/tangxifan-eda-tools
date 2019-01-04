@@ -456,7 +456,7 @@ void dump_verilog_gate_module(FILE* fp,
   assert(1 == num_output_port);
   assert(1 == output_port[0]->size);
 
-  assert(1 == num_input_port);
+  assert(0 < num_input_port);
 
   fprintf(fp, "//----- Verilog module for %s -----\n",
           gate_spice_model->name);
@@ -485,7 +485,7 @@ void dump_verilog_gate_module(FILE* fp,
         for (jport = 0; jport < num_input_port; jport++) {
           for (jpin = 0; jpin < input_port[jport]->size; jpin++) {
             fprintf(fp, "%s[%d]",
-                      input_port[iport]->prefix, jpin);
+                      input_port[jport]->prefix, jpin);
             if ((jport == num_input_port - 1) && (jpin == input_port[jport]->size - 1)) {
               continue; /* Stop output AND sign for the last element in the loop */
             }
@@ -504,7 +504,7 @@ void dump_verilog_gate_module(FILE* fp,
         for (jport = 0; jport < num_input_port; jport++) {
           for (jpin = 0; jpin < input_port[jport]->size; jpin++) {
             fprintf(fp, "%s[%d]",
-                      input_port[iport]->prefix, jpin);
+                      input_port[jport]->prefix, jpin);
             if ((jport == num_input_port - 1) && (jpin == input_port[jport]->size - 1)) {
               continue; /* Stop output AND sign for the last element in the loop */
             }
@@ -2382,7 +2382,9 @@ void dump_verilog_submodule_one_lut(FILE* fp,
   int num_dumped_port = 0;
   char* mode_inport_postfix = "_mode";
 
+  int jport, jpin, pin_cnt;
   int modegate_num_input_port = 0;
+  int modegate_num_input_pins = 0;
   int modegate_num_output_port = 0;
   t_spice_model_port** modegate_input_port = NULL;
   t_spice_model_port** modegate_output_port = NULL;
@@ -2538,30 +2540,62 @@ void dump_verilog_submodule_one_lut(FILE* fp,
                      input_port[0]->prefix, verilog_model->name);
           exit(1);
         }
+        /* Check input ports */
         modegate_input_port = find_spice_model_ports(input_port[0]->spice_model, SPICE_MODEL_PORT_INPUT, &modegate_num_input_port, TRUE);
-        modegate_output_port = find_spice_model_ports(input_port[0]->spice_model, SPICE_MODEL_PORT_OUTPUT, &modegate_num_output_port, TRUE);
-        if ((1 != modegate_num_input_port)
-           || (2 != modegate_input_port[0]->size) 
-           || (1 != modegate_num_output_port)
-           || (1 != modegate_output_port[0]->size)) {
+        modegate_num_input_pins = 0;
+        for (jport = 0; jport < modegate_num_input_port; jport++) {
+          modegate_num_input_pins += modegate_input_port[jport]->size; 
+        }
+        if (2 != modegate_num_input_pins) { 
           vpr_printf(TIO_MESSAGE_ERROR,
-                     "(FILE: %s, [LINE%d]) AND gate for the input port (name=%s) of  spice model (name=%s) should have only 1 input of size=2 and 1 output!\n",
+                     "(FILE: %s, [LINE%d]) AND gate for the input port (name=%s) of spice model (name=%s) should have only 2 input pins!\n",
                      __FILE__, __LINE__, 
                      input_port[0]->prefix, verilog_model->name);
           exit(1);
         }
+        /* Check output ports */
+        modegate_output_port = find_spice_model_ports(input_port[0]->spice_model, SPICE_MODEL_PORT_OUTPUT, &modegate_num_output_port, TRUE);
+        if (  (1 != modegate_num_output_port)
+           || (1 != modegate_output_port[0]->size)) {
+          vpr_printf(TIO_MESSAGE_ERROR,
+                     "(FILE: %s, [LINE%d]) AND gate for the input port (name=%s) of spice model (name=%s) should have only 1 output!\n",
+                     __FILE__, __LINE__, 
+                     input_port[0]->prefix, verilog_model->name);
+          exit(1);
+        }
+        /* Instance the AND2 gate */
+        fprintf(fp, "  %s %s_%s_%d_(",
+                input_port[0]->spice_model->name, 
+                input_port[0]->spice_model->prefix, 
+                input_port[0]->prefix, ipin);
+        pin_cnt = 0;
+        for (jport = 0; jport < modegate_num_input_port; jport++) {
+          if (0 < jport) {
+            fprintf(fp, ",");
+          }
+          fprintf(fp, "{");
+          for (jpin = 0; jpin < modegate_input_port[jport]->size; jpin++) {
+            if (0 < jpin) {
+              fprintf(fp, ",");
+            }
+            if (0 == pin_cnt) {
+              fprintf(fp, "%s[%d]",
+                      input_port[0]->prefix, ipin);
+            } else if (1 == pin_cnt) { 
+              fprintf(fp, " %s_out[%d]",
+                      sram_port[mode_port_index]->prefix, mode_lsb);
+            }
+            pin_cnt++;
+          }
+          fprintf(fp, "}");
+        }
+        assert(2 == pin_cnt);
+        fprintf(fp, ", %s%s[%d]);\n",
+                input_port[0]->prefix, mode_inport_postfix, ipin); 
+        mode_lsb++;
         /* Free ports */
         my_free(modegate_input_port);
         my_free(modegate_output_port);
-        /* Instance the AND2 gate */
-        fprintf(fp, "  %s %s_%s_%d_({%s[%d], %s_out[%d]}, %s%s[%d]);\n",
-                input_port[0]->spice_model->name, 
-                input_port[0]->spice_model->prefix, 
-                input_port[0]->prefix, ipin,
-                input_port[0]->prefix, ipin,
-                sram_port[mode_port_index]->prefix, mode_lsb,
-                input_port[0]->prefix, mode_inport_postfix, ipin); 
-        mode_lsb++;
         break;
       case '1':
         /* Check: we must have an OR2 gate */
@@ -2580,31 +2614,63 @@ void dump_verilog_submodule_one_lut(FILE* fp,
                      input_port[0]->prefix, verilog_model->name);
           exit(1);
         }
+        /* Check input ports */
         modegate_input_port = find_spice_model_ports(input_port[0]->spice_model, SPICE_MODEL_PORT_INPUT, &modegate_num_input_port, TRUE);
+        modegate_num_input_pins = 0;
+        for (jport = 0; jport < modegate_num_input_port; jport++) {
+          modegate_num_input_pins += modegate_input_port[jport]->size; 
+        }
+        if (2 != modegate_num_input_pins) { 
+          vpr_printf(TIO_MESSAGE_ERROR,
+                     "(FILE: %s, [LINE%d]) OR gate for the input port (name=%s) of spice model (name=%s) should have only 2 input pins!\n",
+                     __FILE__, __LINE__, 
+                     input_port[0]->prefix, verilog_model->name);
+          exit(1);
+        }
+        /* Check output ports */
         modegate_output_port = find_spice_model_ports(input_port[0]->spice_model, SPICE_MODEL_PORT_OUTPUT, &modegate_num_output_port, TRUE);
-        if ((1 != modegate_num_input_port)
-           || (2 != modegate_input_port[0]->size) 
-           || (1 != modegate_num_output_port)
+        if (  (1 != modegate_num_output_port)
            || (1 != modegate_output_port[0]->size)) {
           vpr_printf(TIO_MESSAGE_ERROR,
-                     "(FILE: %s, [LINE%d])OR gate for the input port (name=%s) of  spice model (name=%s) should have only 1 input of size=2 and 1 output!\n",
+                     "(FILE: %s, [LINE%d]) OR gate for the input port (name=%s) of spice model (name=%s) should have only 1 output!\n",
                      __FILE__, __LINE__, 
                      input_port[0]->prefix, verilog_model->name);
           exit(1);
         }
 
+        /* Instance the OR2 gate */
+        fprintf(fp, "  %s %s_%s_%d_(",
+                input_port[0]->spice_model->name, 
+                input_port[0]->spice_model->prefix, 
+                input_port[0]->prefix, ipin);
+        pin_cnt = 0;
+        for (jport = 0; jport < modegate_num_input_port; jport++) {
+          if (0 < jport) {
+            fprintf(fp, ",");
+          }
+          fprintf(fp, "{");
+          for (jpin = 0; jpin < modegate_input_port[jport]->size; jpin++) {
+            if (0 < jpin) {
+              fprintf(fp, ",");
+            }
+            if (0 == pin_cnt) {
+              fprintf(fp, "%s[%d]",
+                      input_port[0]->prefix, ipin);
+            } else if (1 == pin_cnt) { 
+              fprintf(fp, " %s_out[%d]",
+                      sram_port[mode_port_index]->prefix, mode_lsb);
+            }
+            pin_cnt++;
+          }
+          fprintf(fp, "}");
+        }
+        assert(2 == pin_cnt);
+        fprintf(fp, ", %s%s[%d]);\n",
+                input_port[0]->prefix, mode_inport_postfix, ipin); 
+        mode_lsb++;
         /* Free ports */
         my_free(modegate_input_port);
         my_free(modegate_output_port);
-        /* Instance the OR2 gate */
-        fprintf(fp, "  %s %s_%s_%d_({%s[%d], %s_out[%d]}, %s%s[%d]);\n",
-                input_port[0]->spice_model->name, 
-                input_port[0]->spice_model->prefix, 
-                input_port[0]->prefix, ipin,
-                input_port[0]->prefix, ipin,
-                sram_port[mode_port_index]->prefix, mode_lsb,
-                input_port[0]->prefix, mode_inport_postfix, ipin); 
-        mode_lsb++;
 
         break;
       default:
