@@ -213,14 +213,16 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
 
   /* Dump routing resources: switch blocks, connection blocks and channel tracks */
   dump_verilog_routing_resources(sram_verilog_orgz_info, rr_dir_path, Arch, &vpr_setup.RoutingArch,
-                                 num_rr_nodes, rr_node, rr_node_indices);
+                                 num_rr_nodes, rr_node, rr_node_indices,
+                                 vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts);
 
   /* Dump logic blocks 
    * Branches to go: 
    * 1. a compact output
    * 2. a full-size output
    */
-  dump_compact_verilog_logic_blocks(sram_verilog_orgz_info, lb_dir_path, &Arch);
+  dump_compact_verilog_logic_blocks(sram_verilog_orgz_info, lb_dir_path, &Arch,
+                                    vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts);
 
   /* Dump internal structures of submodules */
   dump_verilog_submodules(sram_verilog_orgz_info, submodule_dir_path, 
@@ -231,7 +233,9 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
   dump_compact_verilog_top_netlist(sram_verilog_orgz_info, chomped_circuit_name, 
                                    top_netlist_path, submodule_dir_path, lb_dir_path, rr_dir_path, 
                                    num_rr_nodes, rr_node, rr_node_indices, 
-                                   num_clocks, *(Arch.spice));
+                                   num_clocks,
+                                   vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts, 
+								   *(Arch.spice));
    
   /* Dump SDC constraints */
   /* dump_verilog_sdc_file(); */

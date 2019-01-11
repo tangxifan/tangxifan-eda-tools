@@ -547,8 +547,7 @@ void dump_verilog_gate_module(FILE* fp,
 void dump_verilog_submodule_essentials(char* submodule_dir,
                                        int num_spice_model,
                                        t_spice_model* spice_models,
-                                       boolean include_timing,
-                                       boolean include_signal_init) {
+                                       t_syn_verilog_opts fpga_verilog_opts) {
   int imodel; 
   char* verilog_name = my_strcat(submodule_dir, essentials_verilog_file_name);
   FILE* fp = NULL;
@@ -3230,8 +3229,7 @@ void dump_verilog_submodules(t_sram_orgz_info* cur_sram_orgz_info,
   dump_verilog_submodule_essentials(submodule_dir, 
                                     Arch.spice->num_spice_model, 
                                     Arch.spice->spice_models,
-                                    fpga_verilog_opts.include_timing, 
-                                    fpga_verilog_opts.include_signal_init);
+                                    fpga_verilog_opts);
 
   /* 1. MUXes */
   vpr_printf(TIO_MESSAGE_INFO, "Generating modules of multiplexers...\n");

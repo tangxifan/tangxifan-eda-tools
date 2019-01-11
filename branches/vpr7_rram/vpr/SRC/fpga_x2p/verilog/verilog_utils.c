@@ -187,8 +187,7 @@ void dump_verilog_preproc(FILE* fp,
   } 
 
   /* To enable formal verfication flag */
-  if ((VERILOG_TB_FORMAL_VERIFICATION == verilog_tb_type)
-      && (TRUE == fpga_verilog_opts.print_formal_verification_top_netlist)) {
+  if (TRUE == fpga_verilog_opts.print_formal_verification_top_netlist) {
     fprintf(fp, "`define %s 1\n",
                  verilog_formal_verification_preproc_flag); // the flag to enable formal verification during compilation
     fprintf(fp, "\n");
