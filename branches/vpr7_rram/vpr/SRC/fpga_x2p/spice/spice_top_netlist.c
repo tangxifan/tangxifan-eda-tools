@@ -18,10 +18,12 @@
 #include "globals.h"
 #include "rr_graph.h"
 #include "vpr_utils.h"
+#include "route_common.h"
 
 /* Include spice support headers*/
 #include "linkedlist.h"
 #include "fpga_x2p_globals.h"
+#include "fpga_x2p_types.h"
 #include "spice_globals.h"
 #include "fpga_x2p_utils.h"
 #include "spice_mux.h"

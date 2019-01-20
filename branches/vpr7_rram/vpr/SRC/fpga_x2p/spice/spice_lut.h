@@ -11,7 +11,7 @@ void generate_spice_luts(char* subckt_dir,
 
 void fprint_pb_primitive_lut(FILE* fp,
                              char* subckt_prefix,
-                             t_logical_block* mapped_logical_block,
-                             t_pb_graph_node* cur_pb_graph_node,
+                             t_phy_pb* prim_phy_pb,
+                             t_pb_type* prim_pb_type,
                              int index,
                              t_spice_model* spice_model);

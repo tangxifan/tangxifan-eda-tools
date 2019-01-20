@@ -27,6 +27,7 @@
 #include "fpga_x2p_globals.h"
 #include "spice_globals.h"
 #include "fpga_x2p_utils.h"
+#include "fpga_x2p_pbtypes_utils.h"
 #include "fpga_x2p_lut_utils.h"
 #include "fpga_x2p_bitstream_utils.h"
 #include "spice_utils.h"
@@ -410,15 +411,19 @@ void generate_spice_luts(char* subckt_dir,
 
 void fprint_pb_primitive_lut(FILE* fp,
                              char* subckt_prefix,
-                             t_logical_block* mapped_logical_block,
-                             t_pb_graph_node* cur_pb_graph_node,
+                             t_phy_pb* prim_phy_pb,
+                             t_pb_type* prim_pb_type,
                              int index,
                              t_spice_model* spice_model) {
-  int i;
-  int num_sram = 0;
+  int i, j, offset;
+  int* lut_sram_bits = NULL; /* decoded SRAM bits */ 
+  int* mode_sram_bits = NULL; /* decoded SRAM bits */ 
   int* sram_bits = NULL; /* decoded SRAM bits */ 
-  int truth_table_length = 0;
-  char** truth_table = NULL;
+  int* truth_table_length = 0;
+  char*** truth_table = NULL;
+  int lut_truth_table_length = 0;
+  char** lut_truth_table = NULL;
+
   int lut_size = 0;
   int num_input_port = 0;
   t_spice_model_port** input_ports = NULL;
@@ -426,11 +431,21 @@ void fprint_pb_primitive_lut(FILE* fp,
   t_spice_model_port** output_ports = NULL;
   int num_sram_port = 0;
   t_spice_model_port** sram_ports = NULL;
+  t_spice_model_port* lut_sram_port = NULL;
+  t_spice_model_port* mode_bit_port = NULL;
+  int num_lut_pin_nets;
+  int* lut_pin_net = NULL;
+  int mapped_logical_block_index;
 
   char* formatted_subckt_prefix = format_spice_node_prefix(subckt_prefix); /* Complete a "_" at the end if needed*/
-  t_pb_type* cur_pb_type = NULL;
+  t_pb_type* cur_pb_type = prim_pb_type;
   char* port_prefix = NULL;
+
   int cur_num_sram = 0;
+  int num_sram = 0;
+  int num_lut_sram = 0;
+  int num_mode_sram = 0;
+  int expected_num_sram = 0;
   char* sram_vdd_port_name = NULL;
 
   /* Ensure a valid file handler*/ 
@@ -440,49 +455,146 @@ void fprint_pb_primitive_lut(FILE* fp,
     exit(1);
   }
 
-  /* Ensure a valid pb_graph_node */ 
-  if (NULL == cur_pb_graph_node) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid cur_pb_graph_node!\n",
-               __FILE__, __LINE__);
-    exit(1);
-  }
   /* Asserts */
   assert(SPICE_MODEL_LUT == spice_model->type);
 
-  /* Check if this is an idle logical block mapped*/
-  if (NULL != mapped_logical_block) {
-    truth_table = assign_lut_truth_table(mapped_logical_block, &truth_table_length); 
-    /* Back-annotate to logical block */
-    mapped_logical_block->mapped_spice_model = spice_model;
-    mapped_logical_block->mapped_spice_model_index = spice_model->cnt;
-  }
   /* Determine size of LUT*/
   input_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
   output_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
   sram_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
   assert(1 == num_input_port);
-  assert(1 == num_output_port);
-  assert(1 == num_sram_port);
   lut_size = input_ports[0]->size;
   num_sram = (int)pow(2.,(double)(lut_size));
-  assert(num_sram == sram_ports[0]->size);
-  assert(1 == output_ports[0]->size);
+  /* Find SRAM ports for truth tables and mode bits */
+  sram_ports = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
+  assert((1 == num_sram_port) || (2 == num_sram_port));
+  for (i = 0; i < num_sram_port; i++) {
+    if (FALSE == sram_ports[i]->mode_select) {
+      lut_sram_port = sram_ports[i];
+      num_lut_sram =  sram_ports[i]->size;
+      assert (num_lut_sram == (int)pow(2.,(double)(lut_size)));
+    } else {
+      assert (TRUE == sram_ports[i]->mode_select);
+      mode_bit_port = sram_ports[i];
+      num_mode_sram = sram_ports[i]->size;
+    }
+  }
+  /* Must have a lut_sram_port, while mode_bit_port is optional */
+  assert (NULL != lut_sram_port);
+
+  /* Count the number of configuration bits */
+  num_sram = count_num_sram_bits_one_spice_model(spice_model, -1);
 
   /* Get current counter of mem_bits, bl and wl */
   cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_spice_orgz_info); 
 
-  /* Generate sram bits, use the default value of SRAM port */
-  /* TODO: Match truth table and post-routing results */
-  sram_bits = generate_lut_sram_bits(truth_table_length, truth_table, 
-                                     lut_size, sram_ports[0]->default_val);
- 
-  /* Print the subckts*/ 
-  cur_pb_type = cur_pb_graph_node->pb_type;
+  /* If this is an idle LUT, we give an empty truth table */
+  if ((NULL == prim_phy_pb) 
+    || ((NULL != prim_phy_pb && (0 == prim_phy_pb->num_logical_blocks)))) {
+    lut_sram_bits = (int*) my_calloc ( num_lut_sram, sizeof(int)); 
+    for (i = 0; i < num_lut_sram; i++) { 
+      lut_sram_bits[i] = lut_sram_port->default_val;
+    }
+  } else { 
+    assert (NULL != prim_phy_pb);
+    /* Allocate truth tables  */
+    truth_table_length = (int*) my_malloc (sizeof(int) * prim_phy_pb->num_logical_blocks);
+    truth_table = (char***) my_malloc (sizeof(char**) * prim_phy_pb->num_logical_blocks);
 
-  if (NULL != mapped_logical_block) {
-    fprintf(fp, "***** Logical block mapped to this LUT: %s *****\n", 
-                mapped_logical_block->name);
+    /* Output log for debugging purpose */
+    fprintf(fp, "***** Logic Block %s *****\n", 
+            prim_phy_pb->spice_name_tag);
+    
+    /* Find truth tables and decode them one by one 
+     * Fracturable LUT may have multiple truth tables,
+     * which should be grouped in a unique one 
+     */
+    for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
+      mapped_logical_block_index = prim_phy_pb->logical_block[i]; 
+      /* For wired LUT we provide a default truth table */
+      if (TRUE == prim_phy_pb->is_wired_lut[i]) {
+        /* TODO: assign post-routing lut truth table!!!*/
+        get_mapped_lut_phy_pb_input_pin_vpack_net_num(prim_phy_pb, &num_lut_pin_nets, &lut_pin_net);
+        truth_table[i] = assign_post_routing_wired_lut_truth_table(prim_phy_pb->rr_graph->rr_node[prim_phy_pb->lut_output_pb_graph_pin[i]->rr_node_index_physical_pb].vpack_net_num,
+                                                                   num_lut_pin_nets, lut_pin_net, &truth_table_length[i]); 
+      } else {
+        assert (FALSE == prim_phy_pb->is_wired_lut[i]);
+        assert (VPACK_COMB == logical_block[mapped_logical_block_index].type);
+        /* Get the mapped vpack_net_num of this physical LUT pb */
+        get_mapped_lut_phy_pb_input_pin_vpack_net_num(prim_phy_pb, &num_lut_pin_nets, &lut_pin_net);
+        /* consider LUT pin remapping when assign lut truth tables */
+        /* Match truth table and post-routing results */
+        truth_table[i] = assign_post_routing_lut_truth_table(&logical_block[mapped_logical_block_index], 
+                                                             num_lut_pin_nets, lut_pin_net, &truth_table_length[i]); 
+      }
+      /* Adapt truth table for a fracturable LUT
+       * TODO: Determine fixed input bits for this truth table:
+       * 1. input bits within frac_level (all '-' if not specified) 
+       * 2. input bits outside frac_level, decoded to its output mask (0 -> first part -> all '1') 
+       */
+      adapt_truth_table_for_frac_lut(prim_phy_pb->lut_output_pb_graph_pin[i], 
+                                     truth_table_length[i], truth_table[i]);
+      /* Output log for debugging purpose */
+      if (WIRED_LUT_LOGICAL_BLOCK_ID == mapped_logical_block_index) {
+        fprintf(fp, "***** Wired LUT: mapped to a buffer *****\n");
+      } else {
+        fprintf(fp, "***** Mapped Logic Block[%d] %s *****\n",
+                i, logical_block[mapped_logical_block_index].name);
+      }
+      fprintf(fp, "***** Net map *****\n*");
+      for (j = 0; j < num_lut_pin_nets; j++) {
+        if (OPEN == lut_pin_net[j]) {
+          fprintf(fp, " OPEN, ");
+        } else {
+          assert (OPEN != lut_pin_net[j]);
+          fprintf(fp, " %s, ", vpack_net[lut_pin_net[j]].name);
+        }
+      }  
+      fprintf(fp, "\n");
+      fprintf(fp, "***** Truth Table *****\n*");
+      for (j = 0; j < truth_table_length[i]; j++) {
+        fprintf(fp, "%s\n", truth_table[i][j]);
+      }
+    }
+    /* Conject all the truth tables we have */
+    lut_truth_table_length = 0;
+    for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
+      lut_truth_table_length += truth_table_length[i];
+    }
+    /* Allocate */
+    lut_truth_table = (char**) my_malloc (sizeof(char*) * lut_truth_table_length);
+    /* FIll the truth table */
+    offset = 0;
+    for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
+      for (j = 0; j < truth_table_length[i]; j++) {
+        lut_truth_table[offset + j] = truth_table[i][j];
+      }
+      offset += truth_table_length[i];
+    }
+    /* Generate sram bits*/
+    lut_sram_bits = generate_lut_sram_bits(lut_truth_table_length, lut_truth_table, 
+                                           lut_size, lut_sram_port->default_val);
   }
+  
+  /* Add mode bits */
+  if (NULL != mode_bit_port) {
+    if (NULL != prim_phy_pb) {
+      mode_sram_bits = decode_mode_bits(prim_phy_pb->mode_bits, &expected_num_sram);
+    } else { /* get default mode_bits */
+      mode_sram_bits = decode_mode_bits(prim_pb_type->mode_bits, &expected_num_sram);
+    }
+    assert(expected_num_sram == num_mode_sram);
+  }
+
+  /* Merge the SRAM bits from LUT SRAMs and Mode selection */
+  assert ( num_sram == num_lut_sram + num_mode_sram ); 
+  sram_bits = (int*)my_calloc(num_sram, sizeof(int));
+  /* LUT SRAMs go first and then mode bits */
+  memcpy(sram_bits, lut_sram_bits, num_lut_sram * sizeof(int));
+  if (NULL != mode_bit_port) {
+    memcpy(sram_bits + num_lut_sram, mode_sram_bits, num_mode_sram * sizeof(int));
+  }
+
 
   /* Subckt definition*/
   fprintf(fp, ".subckt %s%s[%d] ", formatted_subckt_prefix, cur_pb_type->name, index);
@@ -509,21 +621,6 @@ void fprint_pb_primitive_lut(FILE* fp,
   /* Local Vdd and gnd*/ 
   fprintf(fp, "svdd sgnd\n");
   /* Definition ends*/
-
-  /* Print the encoding in SPICE netlist for debugging */
-  fprintf(fp, "***** Truth Table for LUT[%d], size=%d. *****\n", 
-          spice_model->cnt, lut_size);
-  for (i = 0; i < truth_table_length; i++) {
-    fprintf(fp,"* %s *\n", truth_table[i]);
-  } 
-
-  fprintf(fp, "***** SRAM bits for LUT[%d], size=%d, num_sram=%d. *****\n", 
-          spice_model->cnt, lut_size, num_sram);
-  fprintf(fp, "*****");
-  for (i = 0; i < num_sram; i++) {
-     fprintf(fp, "%d", sram_bits[i]);
-  }
-  fprintf(fp, "*****\n");
 
   /* Call SRAM subckts*/
   /* Give the VDD port name for SRAMs */
@@ -564,10 +661,6 @@ void fprint_pb_primitive_lut(FILE* fp,
   spice_model->cnt++;
 
   /*Free*/
-  for (i = 0; i < truth_table_length; i++) {
-    free(truth_table[i]);
-  }
-  free(truth_table);
   my_free(formatted_subckt_prefix);
   my_free(input_ports);
   my_free(output_ports);

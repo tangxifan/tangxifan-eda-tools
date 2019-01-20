@@ -102,7 +102,9 @@ void fprint_spice_lut_testbench_one_lut(FILE* fp,
   for (ipin = 0; ipin < num_inputs; ipin++) {
     fprintf(fp, "lut[%d]->in[%d] ", tb_num_luts, ipin);
   }
-  fprintf(fp, "lut[%d]->out gvdd 0 %s\n", tb_num_luts, subckt_name);
+  for (ipin = 0; ipin < num_outputs; ipin++) {
+    fprintf(fp, "lut[%d]->out[%d] gvdd 0 %s\n", tb_num_luts, ipin, subckt_name);
+  }
   /* Stimulates */ 
   for (ipin = 0; ipin < num_inputs; ipin++) {
     fprintf(fp, "Vlut[%d]->in[%d] lut[%d]->in[%d] 0 \n",
@@ -201,27 +203,34 @@ void fprint_spice_lut_testbench_one_pb_graph_node_lut(FILE* fp,
                                      input_init_value, input_density, input_probability);
   /* Add loads: two inverters */
   /* Recursive add all the loads */
-  outport_name = (char*)my_malloc(sizeof(char)*( 4 + strlen(my_itoa(tb_num_luts)) 
-                                  + 6 + 1 ));
-  sprintf(outport_name, "lut[%d]->out",
-                         tb_num_luts);
-  if (TRUE == run_testbench_load_extraction) { /* Additional switch, default on! */
-    if (OPEN != logical_block_index) {
-      fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
-                                                        x, y, 
-                                                        &(cur_pb_graph_node->output_pins[0][0]), 
-                                                        logical_block[logical_block_index].pb, 
-                                                        outport_name, 
-                                                        FALSE, 
-                                                        LL_rr_node_indices); 
-    } else {
-      fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
-                                                        x, y, 
-                                                        &(cur_pb_graph_node->output_pins[0][0]), 
-                                                        NULL, 
-                                                        outport_name, 
-                                                        FALSE, 
-                                                        LL_rr_node_indices); 
+  cur_pin = 0;
+  for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
+    for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
+      outport_name = (char*)my_malloc(sizeof(char)*( 4 + strlen(my_itoa(tb_num_luts)) 
+                                      + 6 + strlen(my_itoa(cur_pin)) + 1 + 1 ));
+      sprintf(outport_name, "lut[%d]->out[%d]",
+                             tb_num_luts, cur_pin);
+      if (TRUE == run_testbench_load_extraction) { /* Additional switch, default on! */
+        if (OPEN != logical_block_index) {
+          fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
+                                                            x, y, 
+                                                            &(cur_pb_graph_node->output_pins[iport][ipin]), 
+                                                            logical_block[logical_block_index].pb, 
+                                                            outport_name, 
+                                                            FALSE, 
+                                                            LL_rr_node_indices); 
+        } else {
+          fprint_spice_testbench_pb_graph_pin_inv_loads_rec(fp, &testbench_load_cnt,
+                                                            x, y, 
+                                                            &(cur_pb_graph_node->output_pins[iport][ipin]), 
+                                                            NULL, 
+                                                            outport_name, 
+                                                            FALSE, 
+                                                            LL_rr_node_indices); 
+        }
+      }
+      cur_pin++;
+      my_free(outport_name);
     }
   }
 

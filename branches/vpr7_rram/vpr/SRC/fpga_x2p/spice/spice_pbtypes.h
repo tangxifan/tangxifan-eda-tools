@@ -33,6 +33,7 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
 void fprint_spice_pb_graph_interc(FILE* fp, 
                                   char* pin_prefix,
                                   t_pb_graph_node* cur_pb_graph_node,
+                                  t_phy_pb* cur_pb,
                                   int select_mode_index,
                                   int is_idle);
 
@@ -44,7 +45,7 @@ void fprint_spice_pb_graph_primitive_node(FILE* fp,
 
 void fprint_pb_primitive_spice_model(FILE* fp,
                                      char* subckt_prefix,
-                                     t_pb* prim_pb,
+                                     t_phy_pb* prim_pb,
                                      t_pb_graph_node* prim_pb_graph_node,
                                      int pb_index,
                                      t_spice_model* spice_model,

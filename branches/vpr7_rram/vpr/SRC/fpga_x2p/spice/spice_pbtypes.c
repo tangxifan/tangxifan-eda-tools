@@ -647,7 +647,7 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
 void fprintf_spice_pb_graph_port_interc(FILE* fp,
                                         char* formatted_pin_prefix,
                                         t_pb_graph_node* cur_pb_graph_node,
-                                        t_pb* cur_pb,
+                                        t_phy_pb* cur_pb,
                                         enum e_spice_pb_port_type pb_port_type,
                                         t_mode* cur_mode,
                                         int is_idle) {
@@ -672,21 +672,21 @@ void fprintf_spice_pb_graph_port_interc(FILE* fp,
         /* If this is a idle block, we set 0 to the selected edge*/
         if (is_idle) {
           assert(NULL == cur_pb);
-          path_id = 0;
+          path_id = DEFAULT_PATH_ID;
         } else {
           /* Get the selected edge of current pin*/
           assert(NULL != cur_pb);
-          pb_rr_nodes = cur_pb->rr_graph;
+          pb_rr_nodes = cur_pb->rr_graph->rr_node;
           node_index = cur_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
           prev_node = pb_rr_nodes[node_index].prev_node;
           /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
           /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
           if (OPEN == prev_node) {
-            path_id = 0; //
+            path_id = DEFAULT_PATH_ID; //
           } else {
             /* Find the path_id */
             path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-            assert(-1 != path_id);
+            assert(DEFAULT_PATH_ID != path_id);
           }
         }
         fprintf_spice_pb_graph_pin_interc(fp,
@@ -704,21 +704,21 @@ void fprintf_spice_pb_graph_port_interc(FILE* fp,
         /* If this is a idle block, we set 0 to the selected edge*/
         if (is_idle) {
           assert(NULL == cur_pb);
-          path_id = 0;
+          path_id = DEFAULT_PATH_ID;
         } else {
           /* Get the selected edge of current pin*/
           assert(NULL != cur_pb);
-          pb_rr_nodes = cur_pb->rr_graph;
+          pb_rr_nodes = cur_pb->rr_graph->rr_node;
           node_index = cur_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
           prev_node = pb_rr_nodes[node_index].prev_node;
           /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
           /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
           if (OPEN == prev_node) {
-            path_id = 0; //
+            path_id = DEFAULT_PATH_ID; //
           } else {
             /* Find the path_id */
             path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-            assert(-1 != path_id);
+            assert(DEFAULT_PATH_ID != path_id);
           }
         }
         fprintf_spice_pb_graph_pin_interc(fp,
@@ -736,21 +736,21 @@ void fprintf_spice_pb_graph_port_interc(FILE* fp,
         /* If this is a idle block, we set 0 to the selected edge*/
         if (is_idle) {
           assert(NULL == cur_pb);
-          path_id = 0;
+          path_id = DEFAULT_PATH_ID;
         } else {
           /* Get the selected edge of current pin*/
           assert(NULL != cur_pb);
-          pb_rr_nodes = cur_pb->rr_graph;
+          pb_rr_nodes = cur_pb->rr_graph->rr_node;
           node_index = cur_pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster;
           prev_node = pb_rr_nodes[node_index].prev_node;
           /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
           /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
           if (OPEN == prev_node) {
-            path_id = 0; //
+            path_id = DEFAULT_PATH_ID; //
           } else {
             /* Find the path_id */
             path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-            assert(-1 != path_id);
+            assert(DEFAULT_PATH_ID != path_id);
           }
         }
         fprintf_spice_pb_graph_pin_interc(fp,
@@ -775,14 +775,14 @@ void fprintf_spice_pb_graph_port_interc(FILE* fp,
 void fprint_spice_pb_graph_interc(FILE* fp, 
                                   char* pin_prefix,
                                   t_pb_graph_node* cur_pb_graph_node,
-                                  t_pb* cur_pb,
+                                  t_phy_pb* cur_pb,
                                   int select_mode_index,
                                   int is_idle) {
   int ipb, jpb;
   t_mode* cur_mode = NULL;
   t_pb_type* cur_pb_type = cur_pb_graph_node->pb_type;
   t_pb_graph_node* child_pb_graph_node = NULL;
-  t_pb* child_pb = NULL;
+  t_phy_pb* child_pb = NULL;
   int is_child_pb_idle = 0;
   
   char* formatted_pin_prefix = format_spice_node_prefix(pin_prefix); /* Complete a "_" at the end if needed*/
@@ -946,13 +946,12 @@ void fprint_spice_pb_graph_primitive_node(FILE* fp,
 /* Print the subckt of a primitive pb */
 void fprint_pb_primitive_spice_model(FILE* fp,
                                      char* subckt_prefix,
-                                     t_pb* prim_pb,
+                                     t_phy_pb* prim_phy_pb,
                                      t_pb_graph_node* prim_pb_graph_node,
                                      int pb_index,
                                      t_spice_model* spice_model,
                                      int is_idle) {
   t_pb_type* prim_pb_type = NULL;
-  t_logical_block* mapped_logical_block = NULL;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -966,51 +965,24 @@ void fprint_pb_primitive_spice_model(FILE* fp,
                __FILE__, __LINE__); 
     exit(1);
   }
- 
-  /* Initialize */ 
-  prim_pb_type = prim_pb_graph_node->pb_type;
-  if (is_idle) {
-    mapped_logical_block = NULL;
-  } else {
-    mapped_logical_block = &logical_block[prim_pb->logical_block];
-  }
 
   /* Asserts*/
   assert(pb_index == prim_pb_graph_node->placement_index);
   assert(0 == strcmp(spice_model->name, prim_pb_type->spice_model->name));
 
-  if (is_idle) {
-    assert(NULL == prim_pb); 
-  } else {
-    if (NULL == prim_pb) {
-      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid prim_pb.\n", 
-                 __FILE__, __LINE__); 
-      exit(1);
-    }
-  }
-
   /* According to different type, we print netlist*/
   switch (spice_model->type) {
   case SPICE_MODEL_LUT:
     /* If this is a idle block we should set sram_bits to zero*/
-    fprint_pb_primitive_lut(fp, subckt_prefix, mapped_logical_block, prim_pb_graph_node,
+    fprint_pb_primitive_lut(fp, subckt_prefix, prim_phy_pb, prim_pb_type,
                             pb_index, spice_model);
     break;
   case SPICE_MODEL_FF:
-    assert(NULL != spice_model->model_netlist);
-    /* TODO : We should learn trigger type and initial value!!! and how to apply them!!! */
-    fprint_pb_primitive_ff(fp, subckt_prefix, mapped_logical_block, prim_pb_graph_node,
-                           pb_index, spice_model);
-    break;
   case SPICE_MODEL_IOPAD:
-    assert(NULL != spice_model->model_netlist);
-    fprint_pb_primitive_io(fp, subckt_prefix, mapped_logical_block, prim_pb_graph_node,
-                           pb_index, spice_model);
-    break;
   case SPICE_MODEL_HARDLOGIC:
     assert(NULL != spice_model->model_netlist);
-    fprint_pb_primitive_hardlogic(fp, subckt_prefix, mapped_logical_block, prim_pb_graph_node,
-                                  pb_index, spice_model);
+    fprint_pb_primitive_generic(fp, subckt_prefix, prim_phy_pb, prim_pb_type,
+                                pb_index, spice_model);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid type of spice_model(%s), should be [LUT|FF|HARD_LOGIC|IO]!\n",
@@ -1253,29 +1225,37 @@ void fprint_spice_pb_graph_node_rec(FILE* fp,
        * Mapped logical block information is stored in child_pbs
        */
       child_pb = get_lut_child_pb(cur_pb, mode_index); 
+      /*
       fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
                                       child_pb, cur_pb_graph_node, 
                                       pb_type_index, cur_pb_type->spice_model, 0);
+      */
       break;
     case LATCH_CLASS:
       assert(0 == cur_pb_type->num_modes);
       /* Consider the num_pb, create all the subckts*/
+      /*
       fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
                                       cur_pb, cur_pb_graph_node, 
                                       pb_type_index, cur_pb_type->spice_model, 0);
+      */
       break;
     case MEMORY_CLASS:
       child_pb = get_hardlogic_child_pb(cur_pb, mode_index); 
       /* Consider the num_pb, create all the subckts*/
+      /*
       fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
                                       child_pb, cur_pb_graph_node, 
                                       pb_type_index, cur_pb_type->spice_model, 0);
+      */
       break; 
     case UNKNOWN_CLASS:
       /* Consider the num_pb, create all the subckts*/
+      /*
       fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
                                       cur_pb, cur_pb_graph_node, 
                                       pb_type_index, cur_pb_type->spice_model, 0);
+      */
       break; 
     default:
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Unknown class type of pb_type(%s)!\n",
@@ -1360,7 +1340,9 @@ void fprint_spice_pb_graph_node_rec(FILE* fp,
     }
   }
   /* Print interconnections, set is_idle as TRUE*/
+  /*
   fprint_spice_pb_graph_interc(fp, subckt_name, cur_pb_graph_node, cur_pb, mode_index, 0);
+  */
   /* Check each pins of pb_graph_node */ 
   /* End the subckt */
   fprintf(fp, ".eom\n");
@@ -1374,7 +1356,7 @@ void fprint_spice_pb_graph_node_rec(FILE* fp,
  * at physical-level implementation */
 void fprint_spice_phy_pb_graph_node_rec(FILE* fp, 
                                         char* subckt_prefix, 
-                                        t_pb* cur_pb, 
+                                        t_phy_pb* cur_pb, 
                                         t_pb_graph_node* cur_pb_graph_node,
                                         int pb_type_index) {
   int mode_index, ipb, jpb, child_mode_index, is_idle;
@@ -1385,7 +1367,7 @@ void fprint_spice_phy_pb_graph_node_rec(FILE* fp,
   char* child_pb_type_prefix = NULL;
 
   char* subckt_port_prefix = NULL;
-  t_pb* child_pb = NULL;
+  t_phy_pb* child_pb = NULL;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -1401,9 +1383,10 @@ void fprint_spice_phy_pb_graph_node_rec(FILE* fp,
   }
   cur_pb_type = cur_pb_graph_node->pb_type;
 
-  is_idle = 1;
-  if (NULL != cur_pb) {
-    is_idle = 0;
+  /* Identify if this is an idle block */
+  is_idle = 0;
+  if (NULL == cur_pb) {
+    is_idle = 1;
   }
 
   /* Recursively finish all the child pb_types*/
@@ -1424,7 +1407,12 @@ void fprint_spice_phy_pb_graph_node_rec(FILE* fp,
         /* Recursive*/
         /* Refer to pack/output_clustering.c [LINE 392] */
         /* Find the child pb that is mapped, and the mapping info is not stored in the physical mode ! */
-        child_pb = get_child_pb_for_phy_pb_graph_node(cur_pb, ipb, jpb);
+        if (NULL == cur_pb) {
+          child_pb = NULL;
+        } else {
+          assert (NULL != cur_pb);
+          child_pb = get_phy_child_pb_for_phy_pb_graph_node(cur_pb, ipb, jpb);
+        }
         fprint_spice_phy_pb_graph_node_rec(fp, pass_on_prefix, child_pb, 
                                            &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]), jpb);
         /* Free */
@@ -1442,7 +1430,7 @@ void fprint_spice_phy_pb_graph_node_rec(FILE* fp,
                                         NULL, cur_pb_graph_node, 
                                         pb_type_index, cur_pb_type->spice_model, is_idle);
       } else {
-        child_pb = get_lut_child_pb(cur_pb, mode_index); 
+        child_pb = get_lut_child_phy_pb(cur_pb, mode_index); 
         /* Special care for LUT !!!
          * Mapped logical block information is stored in child_pbs
          */
@@ -1628,7 +1616,7 @@ void fprint_spice_physical_block(FILE* fp,
                                  int y,
                                  int z,
                                  t_type_ptr type_descriptor) {
-  t_pb* top_pb = NULL; 
+  t_phy_pb* top_pb = NULL; 
   t_pb_graph_node* top_pb_graph_node = NULL;
   t_block* mapped_block = NULL;
 
@@ -1649,7 +1637,7 @@ void fprint_spice_physical_block(FILE* fp,
   mapped_block = search_mapped_block(x, y, z); 
   /* Go for the pb_types*/
   if (NULL != mapped_block) {
-    top_pb = mapped_block->pb; 
+    top_pb = (t_phy_pb*)mapped_block->phy_pb; 
     assert(NULL != top_pb);
   }
 
@@ -2355,7 +2343,9 @@ void generate_spice_logic_blocks(char* subckt_dir,
       assert(IO_TYPE != grid[ix][iy].type);
       /* Ensure a valid usage */
       assert((0 == grid[ix][iy].usage)||(0 < grid[ix][iy].usage));
-      fprint_grid_blocks(subckt_dir, ix, iy, arch); 
+      /* I comment the previous version here in case we want to compare */
+      /* fprint_grid_blocks(subckt_dir, ix, iy, arch); */
+      fprint_grid_physical_blocks(subckt_dir, ix, iy, arch); 
     }
   }
 
