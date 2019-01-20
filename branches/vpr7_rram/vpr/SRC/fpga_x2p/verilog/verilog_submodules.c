@@ -2376,6 +2376,7 @@ void dump_verilog_submodule_one_lut(FILE* fp,
   t_spice_model_port** output_port = NULL;
   t_spice_model_port** sram_port = NULL;
   int iport, ipin, iedge;
+  int sram_port_index = OPEN;
   int mode_port_index = OPEN;
   int mode_lsb = 0;
   int num_dumped_port = 0;
@@ -2387,6 +2388,8 @@ void dump_verilog_submodule_one_lut(FILE* fp,
   int modegate_num_output_port = 0;
   t_spice_model_port** modegate_input_port = NULL;
   t_spice_model_port** modegate_output_port = NULL;
+  char* required_gate_type = NULL;
+  enum e_spice_model_gate_type required_gate_model_type;
   
   /* Check */
   if (NULL == fp) {
@@ -2452,6 +2455,7 @@ void dump_verilog_submodule_one_lut(FILE* fp,
     /* Inverted configuration port is not connected to any internal signal of a LUT */
     fprintf(fp, "input wire [0:%d] %s_outb\n", 
             sram_port[iport]->size - 1, sram_port[iport]->prefix);
+    sram_port_index = iport;
     num_dumped_port++;
   }
   assert(1 == num_dumped_port);
@@ -2472,6 +2476,7 @@ void dump_verilog_submodule_one_lut(FILE* fp,
     mode_port_index = iport;
     num_dumped_port++;
   }
+  /* Check if all required SRAMs ports*/
   if (TRUE == verilog_model->design_tech_info.lut_info->frac_lut) {
     if (1 != num_dumped_port) {
       vpr_printf(TIO_MESSAGE_ERROR, 
@@ -2516,6 +2521,15 @@ void dump_verilog_submodule_one_lut(FILE* fp,
     /* Create inverters between input port and its inversion */
     mode_lsb = 0;
     for (ipin = 0; ipin < input_port[0]->size; ipin++) {
+      /* Set up checking flags */
+      if ('0' == input_port[0]->tri_state_map[ipin]) {  
+        required_gate_type = "AND"; 
+        required_gate_model_type = SPICE_MODEL_GATE_AND; 
+      }
+      if ('1' == input_port[0]->tri_state_map[ipin]) {  
+        required_gate_type = "OR"; 
+        required_gate_model_type = SPICE_MODEL_GATE_OR; 
+      }
       switch (input_port[0]->tri_state_map[ipin]) {  
       case '-':
         fprintf(fp, "  assign %s%s[%d] = %s[%d];\n", 
@@ -2523,93 +2537,20 @@ void dump_verilog_submodule_one_lut(FILE* fp,
                 input_port[0]->prefix, ipin);
         break;
       case '0':
-        /* Check: we must have an AND2 gate */
-        if (NULL == input_port[0]->spice_model) {
-          vpr_printf(TIO_MESSAGE_ERROR,
-                     "(FILE: %s, [LINE%d]) AND gate for the input port (name=%s) of  spice model (name=%s) is not defined!\n",
-                     __FILE__, __LINE__, 
-                     input_port[0]->prefix, verilog_model->name);
-          exit(1);
-        }
-        if ((SPICE_MODEL_GATE != input_port[0]->spice_model->type)
-          || (SPICE_MODEL_GATE_AND != input_port[0]->spice_model->design_tech_info.gate_info->type)) {
-          vpr_printf(TIO_MESSAGE_ERROR,
-                     "(FILE: %s, [LINE%d]) AND gate for the input port (name=%s) of  spice model (name=%s) is not defined as a AND logic gate!\n",
-                     __FILE__, __LINE__, 
-                     input_port[0]->prefix, verilog_model->name);
-          exit(1);
-        }
-        /* Check input ports */
-        modegate_input_port = find_spice_model_ports(input_port[0]->spice_model, SPICE_MODEL_PORT_INPUT, &modegate_num_input_port, TRUE);
-        modegate_num_input_pins = 0;
-        for (jport = 0; jport < modegate_num_input_port; jport++) {
-          modegate_num_input_pins += modegate_input_port[jport]->size; 
-        }
-        if (2 != modegate_num_input_pins) { 
-          vpr_printf(TIO_MESSAGE_ERROR,
-                     "(FILE: %s, [LINE%d]) AND gate for the input port (name=%s) of spice model (name=%s) should have only 2 input pins!\n",
-                     __FILE__, __LINE__, 
-                     input_port[0]->prefix, verilog_model->name);
-          exit(1);
-        }
-        /* Check output ports */
-        modegate_output_port = find_spice_model_ports(input_port[0]->spice_model, SPICE_MODEL_PORT_OUTPUT, &modegate_num_output_port, TRUE);
-        if (  (1 != modegate_num_output_port)
-           || (1 != modegate_output_port[0]->size)) {
-          vpr_printf(TIO_MESSAGE_ERROR,
-                     "(FILE: %s, [LINE%d]) AND gate for the input port (name=%s) of spice model (name=%s) should have only 1 output!\n",
-                     __FILE__, __LINE__, 
-                     input_port[0]->prefix, verilog_model->name);
-          exit(1);
-        }
-        /* Instance the AND2 gate */
-        fprintf(fp, "  %s %s_%s_%d_(",
-                input_port[0]->spice_model->name, 
-                input_port[0]->spice_model->prefix, 
-                input_port[0]->prefix, ipin);
-        pin_cnt = 0;
-        for (jport = 0; jport < modegate_num_input_port; jport++) {
-          if (0 < jport) {
-            fprintf(fp, ",");
-          }
-          fprintf(fp, "{");
-          for (jpin = 0; jpin < modegate_input_port[jport]->size; jpin++) {
-            if (0 < jpin) {
-              fprintf(fp, ",");
-            }
-            if (0 == pin_cnt) {
-              fprintf(fp, "%s[%d]",
-                      input_port[0]->prefix, ipin);
-            } else if (1 == pin_cnt) { 
-              fprintf(fp, " %s_out[%d]",
-                      sram_port[mode_port_index]->prefix, mode_lsb);
-            }
-            pin_cnt++;
-          }
-          fprintf(fp, "}");
-        }
-        assert(2 == pin_cnt);
-        fprintf(fp, ", %s%s[%d]);\n",
-                input_port[0]->prefix, mode_inport_postfix, ipin); 
-        mode_lsb++;
-        /* Free ports */
-        my_free(modegate_input_port);
-        my_free(modegate_output_port);
-        break;
       case '1':
-        /* Check: we must have an OR2 gate */
+        /* Check: we must have an AND2/OR2 gate */
         if (NULL == input_port[0]->spice_model) {
           vpr_printf(TIO_MESSAGE_ERROR,
-                     "(FILE: %s, [LINE%d]) OR gate for the input port (name=%s) of spice model (name=%s) is not defined!\n",
-                     __FILE__, __LINE__, 
+                     "(FILE: %s, [LINE%d]) %s gate for the input port (name=%s) of  spice model (name=%s) is not defined!\n",
+                     __FILE__, __LINE__, required_gate_type,
                      input_port[0]->prefix, verilog_model->name);
           exit(1);
         }
         if ((SPICE_MODEL_GATE != input_port[0]->spice_model->type)
-          || (SPICE_MODEL_GATE_OR != input_port[0]->spice_model->design_tech_info.gate_info->type)) {
+          || (required_gate_model_type != input_port[0]->spice_model->design_tech_info.gate_info->type)) {
           vpr_printf(TIO_MESSAGE_ERROR,
-                     "(FILE: %s, [LINE%d]) OR gate for the input port (name=%s) of spice model (name=%s) is not defined as a OR logic gate!\n",
-                     __FILE__, __LINE__, 
+                     "(FILE: %s, [LINE%d]) %s gate for the input port (name=%s) of  spice model (name=%s) is not defined as a AND logic gate!\n",
+                     __FILE__, __LINE__, required_gate_type,
                      input_port[0]->prefix, verilog_model->name);
           exit(1);
         }
@@ -2621,8 +2562,8 @@ void dump_verilog_submodule_one_lut(FILE* fp,
         }
         if (2 != modegate_num_input_pins) { 
           vpr_printf(TIO_MESSAGE_ERROR,
-                     "(FILE: %s, [LINE%d]) OR gate for the input port (name=%s) of spice model (name=%s) should have only 2 input pins!\n",
-                     __FILE__, __LINE__, 
+                     "(FILE: %s, [LINE%d]) %s gate for the input port (name=%s) of spice model (name=%s) should have only 2 input pins!\n",
+                     __FILE__, __LINE__, required_gate_type,
                      input_port[0]->prefix, verilog_model->name);
           exit(1);
         }
@@ -2631,13 +2572,12 @@ void dump_verilog_submodule_one_lut(FILE* fp,
         if (  (1 != modegate_num_output_port)
            || (1 != modegate_output_port[0]->size)) {
           vpr_printf(TIO_MESSAGE_ERROR,
-                     "(FILE: %s, [LINE%d]) OR gate for the input port (name=%s) of spice model (name=%s) should have only 1 output!\n",
-                     __FILE__, __LINE__, 
+                     "(FILE: %s, [LINE%d]) %s gate for the input port (name=%s) of spice model (name=%s) should have only 1 output!\n",
+                     __FILE__, __LINE__, required_gate_type,
                      input_port[0]->prefix, verilog_model->name);
           exit(1);
         }
-
-        /* Instance the OR2 gate */
+        /* Instance the AND2/OR2 gate */
         fprintf(fp, "  %s %s_%s_%d_(",
                 input_port[0]->spice_model->name, 
                 input_port[0]->spice_model->prefix, 
@@ -2647,7 +2587,6 @@ void dump_verilog_submodule_one_lut(FILE* fp,
           if (0 < jport) {
             fprintf(fp, ",");
           }
-          fprintf(fp, "{");
           for (jpin = 0; jpin < modegate_input_port[jport]->size; jpin++) {
             if (0 < jpin) {
               fprintf(fp, ",");
@@ -2661,7 +2600,6 @@ void dump_verilog_submodule_one_lut(FILE* fp,
             }
             pin_cnt++;
           }
-          fprintf(fp, "}");
         }
         assert(2 == pin_cnt);
         fprintf(fp, ", %s%s[%d]);\n",
@@ -2670,7 +2608,6 @@ void dump_verilog_submodule_one_lut(FILE* fp,
         /* Free ports */
         my_free(modegate_input_port);
         my_free(modegate_output_port);
-
         break;
       default:
         vpr_printf(TIO_MESSAGE_ERROR, 
@@ -2692,8 +2629,9 @@ void dump_verilog_submodule_one_lut(FILE* fp,
   fprintf(fp, "  %s_mux %s_mux_0_ (", 
           verilog_model->name, verilog_model->name);
   /* Connect MUX inputs to LUT configuration port */
+  assert(FALSE == sram_port[sram_port_index]->mode_select); 
   fprintf(fp, " %s_out,", 
-          sram_port[0]->prefix);
+          sram_port[sram_port_index]->prefix);
   /* Connect MUX output to LUT output */
   for (iport = 0; iport < num_output_port; iport++) {
     fprintf(fp, " %s,", 
@@ -2724,6 +2662,11 @@ void dump_verilog_submodule_one_lut(FILE* fp,
   fprintf(fp, "endmodule\n");
   fprintf(fp, "//-----END LUT module, verilog_model_name=%s -----\n", verilog_model->name);  
   fprintf(fp, "\n");
+
+  /* Free */
+  my_free(input_port);
+  my_free(output_port);
+  my_free(sram_port);
 
   return;
 }

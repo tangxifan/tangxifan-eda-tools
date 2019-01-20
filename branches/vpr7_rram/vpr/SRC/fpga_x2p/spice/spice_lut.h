@@ -2,7 +2,7 @@
 
 
 void fprint_spice_lut_subckt(FILE* fp,
-                             t_spice_model spice_model);
+                             t_spice_model* spice_model);
 
 void generate_spice_luts(char* subckt_dir, 
                          int num_spice_model, 

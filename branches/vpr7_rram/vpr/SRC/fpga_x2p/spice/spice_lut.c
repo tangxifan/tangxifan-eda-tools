@@ -38,14 +38,30 @@
 /***** Subroutines *****/
 
 void fprint_spice_lut_subckt(FILE* fp,
-                             t_spice_model spice_model) {
-  int i;
+                             t_spice_model* spice_model) {
   int num_input_port = 0;
-  t_spice_model_port** input_ports = NULL;
+  t_spice_model_port** input_port = NULL;
   int num_output_port = 0;
-  t_spice_model_port** output_ports = NULL;
+  t_spice_model_port** output_port = NULL;
   int num_sram_port = 0;
-  t_spice_model_port** sram_ports = NULL;
+  t_spice_model_port** sram_port = NULL;
+
+  int iport, ipin;
+  int sram_port_index = OPEN;
+  int mode_port_index = OPEN;
+  int mode_lsb = 0;
+  int num_dumped_port = 0;
+  char* mode_inport_postfix = "_mode";
+
+  int jport, jpin, pin_cnt;
+  int modegate_num_input_port = 0;
+  int modegate_num_input_pins = 0;
+  int modegate_num_output_port = 0;
+  t_spice_model_port** modegate_input_port = NULL;
+  t_spice_model_port** modegate_output_port = NULL;
+  char* required_gate_type = NULL;
+  enum e_spice_model_gate_type required_gate_model_type;
+
   float total_width;
   int width_cnt;
 
@@ -56,92 +72,309 @@ void fprint_spice_lut_subckt(FILE* fp,
   }
   
   /* Find input ports, output ports and sram ports*/
-  input_ports = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
-  output_ports = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
-  sram_ports = find_spice_model_ports(&spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
+  input_port = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+  output_port = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
+  sram_port = find_spice_model_ports(spice_model, SPICE_MODEL_PORT_SRAM, &num_sram_port, TRUE);
 
   /* Check */
-  assert(1 == num_input_port);
-  assert(1 == num_output_port);
-  assert(1 == num_sram_port);
+  if (FALSE == spice_model->design_tech_info.lut_info->frac_lut) {
+    /* when fracturable LUT is considered
+     * More than 1 output is allowed  
+     * Only two SRAM ports are allowed
+     */
+    assert(1 == num_input_port);
+    assert(1 == num_output_port);
+    assert(1 == num_sram_port); 
+  } else {
+    assert (TRUE == spice_model->design_tech_info.lut_info->frac_lut);
+    /* when fracturable LUT is considered
+     * More than 1 output is allowed  
+     * Only two SRAM ports are allowed
+     */
+    assert(1 == num_input_port);
+    for (iport = 0; iport < num_output_port; iport++) {
+      assert(0 < output_port[iport]->size);
+    }
+    assert(2 == num_sram_port); 
+  }
 
   fprintf(fp, "***** Auto-generated LUT info: spice_model_name = %s, size = %d *****\n",
-          spice_model.name, input_ports[0]->size);
+          spice_model->name, input_port[0]->size);
   /* Define the subckt*/
-  fprintf(fp, ".subckt %s ", spice_model.name); /* Subckt name*/
-  /* Input ports*/
-  for (i = 0; i < input_ports[0]->size; i++) {
-    fprintf(fp, "%s%d ", input_ports[0]->prefix, i); 
+  fprintf(fp, ".subckt %s ", spice_model->name); /* Subckt name*/
+  /* Input ports*/ 
+  for (iport = 0; iport < num_input_port; iport++) {
+    for (ipin = 0; ipin < input_port[iport]->size; ipin++) {
+      fprintf(fp, "%s%d ", input_port[iport]->prefix, ipin); 
+    }
   }
   /* output ports*/
-  assert(1 == output_ports[0]->size); 
-  fprintf(fp, "%s ", output_ports[0]->prefix);
-  /* sram ports */
-  for (i = 0; i < sram_ports[0]->size; i++) {
-    fprintf(fp, "%s%d ", sram_ports[0]->prefix, i); 
+  for (iport = 0; iport < num_output_port; iport++) {
+    for (ipin = 0; ipin < output_port[iport]->size; ipin++) {
+      fprintf(fp, "%s%d ", output_port[iport]->prefix, ipin);
+    }
   }
+  /* sram ports */
+  /* Print configuration ports*/
+  num_dumped_port = 0;
+  for (iport = 0; iport < num_sram_port; iport++) {
+    /* By pass mode select ports */
+    if (TRUE == sram_port[iport]->mode_select) {
+      continue;
+    } 
+    assert(FALSE == sram_port[iport]->mode_select); 
+    for (ipin = 0; ipin < sram_port[iport]->size; ipin++) {
+      fprintf(fp, "%s%d ", sram_port[iport]->prefix, ipin); 
+    }
+    sram_port_index = iport;
+    num_dumped_port++;
+  }
+  /* Print mode configuration ports*/
+  num_dumped_port = 0;
+  for (iport = 0; iport < num_sram_port; iport++) {
+    /* By pass mode select ports */
+    if (FALSE == sram_port[iport]->mode_select) {
+      continue;
+    } 
+    assert(TRUE == sram_port[iport]->mode_select); 
+    for (ipin = 0; ipin < sram_port[iport]->size; ipin++) {
+      fprintf(fp, "%s%d ", sram_port[iport]->prefix, ipin); 
+    }
+    mode_port_index = iport;
+    num_dumped_port++;
+  }
+  /* Check if all required SRAMs ports*/
+  if (TRUE == spice_model->design_tech_info.lut_info->frac_lut) {
+    if (1 != num_dumped_port) {
+      vpr_printf(TIO_MESSAGE_ERROR, 
+                "(FILE:%s,LINE[%d]) Fracturable LUT (spice_model_name=%s) must have 1 mode port!\n",
+                __FILE__, __LINE__, spice_model->name); 
+      exit(1);
+    }
+  }
+
   /* local vdd and gnd*/
   fprintf(fp, "svdd sgnd\n");
 
   /* Input buffers */
-  for (i = 0; i < input_ports[0]->size; i++) {
-    /* For negative input of LUT MUX*/
-    /* Output inverter with maximum size allowed 
-     * until the rest of width is smaller than threshold */
-    total_width = spice_model.lut_input_buffer->size * spice_model.lut_input_buffer->f_per_stage;
-    width_cnt = 0;
-    while (total_width > max_width_per_trans) { 
-      fprintf(fp, "Xinv0_in%d_no%d %s%d lut_mux_in%d_inv svdd sgnd inv size=\'%g\'",
-              i, width_cnt, 
-              input_ports[0]->prefix, i, 
-              i, max_width_per_trans);
-      fprintf(fp, "\n");
-      /* Update */
-      total_width = total_width - max_width_per_trans;
-      width_cnt++;
+  assert (1 == num_input_port);
+  assert (NULL == input_port);
+
+  /* Add AND/OR gates if this is a fracturable LUT */
+  for (iport = 0; iport < num_input_port; iport++) {
+    /* Initialize lsb */
+    mode_lsb = 0;
+    for (ipin = 0; ipin < input_port[iport]->size; ipin++) {
+      if ('0' == input_port[iport]->tri_state_map[ipin]) {  
+        required_gate_type = "AND"; 
+        required_gate_model_type = SPICE_MODEL_GATE_AND; 
+      }
+      if ('1' == input_port[iport]->tri_state_map[ipin]) {  
+        required_gate_type = "OR"; 
+        required_gate_model_type = SPICE_MODEL_GATE_OR; 
+      }
+      /* First check if we have the required gates*/
+      switch (input_port[iport]->tri_state_map[ipin]) {  
+      case '-':
+        break;
+      case '0':
+      case '1':
+       /* Check: we must have an AND2/OR2 gate */
+        if (NULL == input_port[iport]->spice_model) {
+          vpr_printf(TIO_MESSAGE_ERROR,
+                     "(FILE: %s, [LINE%d]) %s gate for the input port (name=%s) of spice model (name=%s) is not defined!\n",
+                     __FILE__, __LINE__, required_gate_type,
+                     input_port[iport]->prefix, spice_model->name);
+          exit(1);
+        }
+        if ((SPICE_MODEL_GATE != input_port[iport]->spice_model->type)
+          || (required_gate_model_type != input_port[iport]->spice_model->design_tech_info.gate_info->type)) {
+          vpr_printf(TIO_MESSAGE_ERROR,
+                     "(FILE: %s, [LINE%d]) %s gate for the input port (name=%s) of spice model (name=%s) is not defined as a AND logic gate!\n",
+                     __FILE__, __LINE__, required_gate_type,
+                     input_port[iport]->prefix, spice_model->name);
+          exit(1);
+        }
+        /* Check input ports */
+        modegate_input_port = find_spice_model_ports(input_port[iport]->spice_model, SPICE_MODEL_PORT_INPUT, &modegate_num_input_port, TRUE);
+        modegate_num_input_pins = 0;
+        for (jport = 0; jport < modegate_num_input_port; jport++) {
+          modegate_num_input_pins += modegate_input_port[jport]->size; 
+        }
+        if (2 != modegate_num_input_pins) { 
+          vpr_printf(TIO_MESSAGE_ERROR,
+                     "(FILE: %s, [LINE%d]) %s gate for the input port (name=%s) of spice model (name=%s) should have only 2 input pins!\n",
+                     __FILE__, __LINE__, required_gate_type,
+                     input_port[iport]->prefix, spice_model->name);
+          exit(1);
+        }
+        /* Check output ports */
+        modegate_output_port = find_spice_model_ports(input_port[iport]->spice_model, SPICE_MODEL_PORT_OUTPUT, &modegate_num_output_port, TRUE);
+        if (  (1 != modegate_num_output_port)
+           || (1 != modegate_output_port[0]->size)) {
+          vpr_printf(TIO_MESSAGE_ERROR,
+                     "(FILE: %s, [LINE%d]) %s gate for the input port (name=%s) of spice model (name=%s) should have only 1 output!\n",
+                     __FILE__, __LINE__, required_gate_type,
+                     input_port[iport]->prefix, spice_model->name);
+          exit(1);
+        }
+        /* Instance the AND2/OR2 gate */
+        fprintf(fp, "X%s_%s[%d] ",
+                input_port[iport]->spice_model->prefix, 
+                input_port[iport]->prefix, ipin);
+        pin_cnt = 0;
+        for (jport = 0; jport < modegate_num_input_port; jport++) {
+          for (jpin = 0; jpin < modegate_input_port[jport]->size; jpin++) {
+            if (0 == pin_cnt) {
+              fprintf(fp, "%s[%d]",
+                      input_port[iport]->prefix, ipin);
+            } else if (1 == pin_cnt) { 
+              fprintf(fp, " %s_out[%d]",
+                      sram_port[mode_port_index]->prefix, mode_lsb);
+            }
+            pin_cnt++;
+          }
+        }
+        assert(2 == pin_cnt);
+        fprintf(fp, " %s%s[%d]",
+                input_port[0]->prefix, mode_inport_postfix, ipin); 
+        mode_lsb++;
+        /* local vdd and gnd*/
+        fprintf(fp, " svdd sgnd");
+        /* Call subckt name */
+        fprintf(fp, "%s\n", input_port[iport]->spice_model->name); 
+        /* Free ports */
+        my_free(modegate_input_port);
+        my_free(modegate_output_port);
+        break;
+      default:
+        vpr_printf(TIO_MESSAGE_ERROR, 
+                  "(file:%s,line[%d]) invalid LUT tri_state_map = %s ",
+                  __FILE__, __LINE__, input_port[iport]->tri_state_map); 
+        exit(1);
+      }
     }
-    /* Print if we still have to */
-    if (total_width > 0) {
-      fprintf(fp, "Xinv0_in%d_no%d %s%d lut_mux_in%d_inv svdd sgnd inv size=\'%g\'",
-              i, width_cnt, 
-              input_ports[0]->prefix, i, 
-              i, total_width);
-      fprintf(fp, "\n");
+    /* Check if we have dumped all the SRAM ports for mode selection */
+    if (mode_lsb != sram_port[mode_port_index]->size) {
+      vpr_printf(TIO_MESSAGE_ERROR, 
+                "(FILE:%s,LINE[%d]) SPICE model LUT (name=%s) has a unmatched tri-state map (%s) implied by mode_port size(%d)!\n",
+                __FILE__, __LINE__, 
+                spice_model->name, input_port[iport]->tri_state_map[ipin], input_port[iport]->size); 
+      exit(1);
     }
-    /* For postive input of LUT MUX, we use the tapered_buffer subckt directly */
-    assert(1 == spice_model.lut_input_buffer->tapered_buf);
-    fprintf(fp, "X%s_in%d %s%d lut_mux_in%d svdd sgnd tapbuf_level%d_f%d\n",
-            spice_model.lut_input_buffer->spice_model->prefix, i,
-            input_ports[0]->prefix, i, i,
-            spice_model.lut_input_buffer->tap_buf_level, 
-            spice_model.lut_input_buffer->f_per_stage); 
-    fprintf(fp, "\n");
+    /* Create inverters between input port and its inversion */
+    for (ipin = 0; ipin < input_port[iport]->size; ipin++) {
+      switch (input_port[iport]->tri_state_map[ipin]) {  
+      case '-':
+        /* For negative input of LUT MUX*/
+        /* Output inverter with maximum size allowed 
+         * until the rest of width is smaller than threshold */
+        total_width = spice_model->lut_input_buffer->size * spice_model->lut_input_buffer->f_per_stage;
+        width_cnt = 0;
+        while (total_width > max_width_per_trans) { 
+          fprintf(fp, "Xinv0_in%d_no%d %s%d lut_mux_in%d_inv svdd sgnd inv size=\'%g\'",
+                  ipin, width_cnt, 
+                  input_port[iport]->prefix, ipin, 
+                  ipin, max_width_per_trans);
+          fprintf(fp, "\n");
+          /* Update */
+          total_width = total_width - max_width_per_trans;
+          width_cnt++;
+        }
+        /* Print if we still have to */
+        if (total_width > 0) {
+          fprintf(fp, "Xinv0_in%d_no%d %s%d lut_mux_in%d_inv svdd sgnd inv size=\'%g\'",
+                  ipin, width_cnt, 
+                  input_port[iport]->prefix, ipin, 
+                  ipin, total_width);
+          fprintf(fp, "\n");
+        }
+        /* For postive input of LUT MUX, we use the tapered_buffer subckt directly */
+        assert(1 == spice_model->lut_input_buffer->tapered_buf);
+        fprintf(fp, "X%s_in%d %s%d lut_mux_in%d svdd sgnd tapbuf_level%d_f%d\n",
+                spice_model->lut_input_buffer->spice_model->prefix, ipin,
+                input_port[iport]->prefix, ipin, ipin,
+                spice_model->lut_input_buffer->tap_buf_level, 
+                spice_model->lut_input_buffer->f_per_stage); 
+        fprintf(fp, "\n");
+        break;
+      case '0':
+      case '1':
+        /* For negative input of LUT MUX*/
+        /* Output inverter with maximum size allowed 
+         * until the rest of width is smaller than threshold */
+        total_width = spice_model->lut_input_buffer->size * spice_model->lut_input_buffer->f_per_stage;
+        width_cnt = 0;
+        while (total_width > max_width_per_trans) { 
+          fprintf(fp, "Xinv0_in%d_no%d %s%s%d lut_mux_in%d_inv svdd sgnd inv size=\'%g\'",
+                  ipin, width_cnt, 
+                  input_port[iport]->prefix, mode_inport_postfix, ipin, 
+                  ipin, max_width_per_trans);
+          fprintf(fp, "\n");
+          /* Update */
+          total_width = total_width - max_width_per_trans;
+          width_cnt++;
+        }
+        /* Print if we still have to */
+        if (total_width > 0) {
+          fprintf(fp, "Xinv0_in%d_no%d %s%s%d lut_mux_in%d_inv svdd sgnd inv size=\'%g\'",
+                  ipin, width_cnt, 
+                  input_port[iport]->prefix, mode_inport_postfix, ipin, 
+                  ipin, total_width);
+          fprintf(fp, "\n");
+        }
+        /* For postive input of LUT MUX, we use the tapered_buffer subckt directly */
+        assert(1 == spice_model->lut_input_buffer->tapered_buf);
+        fprintf(fp, "X%s_in%d %s%s%d lut_mux_in%d svdd sgnd tapbuf_level%d_f%d\n",
+                spice_model->lut_input_buffer->spice_model->prefix, ipin,
+                input_port[iport]->prefix, mode_inport_postfix, ipin, ipin,
+                spice_model->lut_input_buffer->tap_buf_level, 
+                spice_model->lut_input_buffer->f_per_stage); 
+        fprintf(fp, "\n");
+        break;
+      default:
+        vpr_printf(TIO_MESSAGE_ERROR, 
+                  "(file:%s,line[%d]) invalid LUT tri_state_map = %s ",
+                  __FILE__, __LINE__, input_port[iport]->tri_state_map); 
+        exit(1);
+      }
+    }
   }
 
   /* Output buffers already included in LUT MUX */
   /* LUT MUX*/
-  assert(sram_ports[0]->size == (int)pow(2.,(double)(input_ports[0]->size)));
+  assert(sram_port[sram_port_index]->size == (int)pow(2.,(double)(input_port[0]->size)));
   fprintf(fp, "Xlut_mux ");
   /* SRAM ports of LUT, they are inputs of lut_muxes*/
-  for (i = 0; i < sram_ports[0]->size; i++) {
-    fprintf(fp, "%s%d ", sram_ports[0]->prefix, i);
+  for (ipin = 0; ipin < sram_port[sram_port_index]->size; ipin++) {
+    assert(FALSE == sram_port[sram_port_index]->mode_select); 
+    fprintf(fp, "%s%d ", sram_port[sram_port_index]->prefix, ipin);
   } 
   /* Output port, LUT output is LUT MUX output*/
-  fprintf(fp, "%s ", output_ports[0]->prefix);
-  /* input port, LUT input is LUT MUX sram*/
-  for (i = 0; i < input_ports[0]->size; i++) {
-    fprintf(fp, "lut_mux_in%d lut_mux_in%d_inv ", i, i); 
+  for (iport = 0; iport < num_output_port; iport++) {
+    for (ipin = 0; ipin < output_port[iport]->size; ipin++) {
+      fprintf(fp, "%s%d ", output_port[iport]->prefix, ipin);
+    }
   }
+  /* Connect MUX configuration port to LUT inputs */
+  /* input port, LUT input is LUT MUX sram*/
+  for (iport = 0; iport < num_input_port; iport++) {
+    for (ipin = 0; ipin < input_port[iport]->size; ipin++) {
+      fprintf(fp, "lut_mux_in%d lut_mux_in%d_inv ", ipin, ipin); 
+    }
+  }
+
   /* Local vdd and gnd*/
-  fprintf(fp, "svdd sgnd %s_mux_size%d\n", spice_model.name, sram_ports[0]->size);
+  fprintf(fp, "svdd sgnd %s_mux_size%d\n", 
+          spice_model->name, sram_port[sram_port_index]->size);
 
   /* End of LUT subckt*/
   fprintf(fp, ".eom\n");
 
   /* Free */
-  free(input_ports);
-  free(output_ports);
-  free(sram_ports);
+  my_free(input_port);
+  my_free(output_port);
+  my_free(sram_port);
 
   return;
 } 
@@ -165,7 +398,7 @@ void generate_spice_luts(char* subckt_dir,
   for (imodel = 0; imodel < num_spice_model; imodel++) {
     if ((SPICE_MODEL_LUT == spice_models[imodel].type)
        &&(NULL == spice_models[imodel].model_netlist)) {
-      fprint_spice_lut_subckt(fp, spice_models[imodel]);
+      fprint_spice_lut_subckt(fp, &(spice_models[imodel]));
     }
   }
 
