@@ -1344,7 +1344,8 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
 
   if (SPICE_MODEL_LUT == spice_model.type) {
     /* Special for LUT MUX */
-    fprintf(fp, "//------ CMOS MUX info: spice_model_name= %s_MUX, size=%d -----\n", spice_model.name, mux_size);
+    fprintf(fp, "//------ CMOS MUX info: spice_model_name= %s_MUX, size=%d -----\n", 
+            spice_model.name, mux_size);
     fprintf(fp, "module %s_mux(\n", spice_model.name);
     /* Dump global ports */
     if  (0 < rec_dump_verilog_spice_model_global_ports(fp, &spice_model, TRUE, FALSE)) {

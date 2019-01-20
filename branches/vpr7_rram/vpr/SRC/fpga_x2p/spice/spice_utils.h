@@ -249,3 +249,5 @@ void fprint_spice_testbench_one_grid_pin_loads(FILE* fp, int x, int y,
 t_llist* add_one_spice_tb_info_to_llist(t_llist* cur_head, 
                                         char* tb_file_path, 
                                         int num_sim_clock_cycles);
+
+char* convert_const_input_value_to_str(int const_input_val);

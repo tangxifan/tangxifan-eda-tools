@@ -3554,4 +3554,16 @@ t_llist* add_one_spice_tb_info_to_llist(t_llist* cur_head,
   return new_head;
 }
 
+char* convert_const_input_value_to_str(int const_input_val) {
+  switch (const_input_val) {
+  case 0:
+    return "sgnd";
+  case 1:
+    return "svdd";
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid value for constant input (=%d).\n",
+               __FILE__, __LINE__, const_input_val);
+    exit(1);   
+  }
+}
 
