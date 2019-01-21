@@ -628,6 +628,19 @@ void fprint_spice_primitive_testbench_call_one_grid_defined_primitives(FILE* fp,
             block[grid[ix][iy].blocks[iblk]].y);
     /* Only for mapped block */
     assert(NULL != block[grid[ix][iy].blocks[iblk]].phy_pb);
+    /* It is weird that some used block has an invalid ID */
+    if (OPEN == grid[ix][iy].blocks[iblk]) { 
+      /* Mark the temporary net_num for the type pins*/
+      mark_grid_type_pb_graph_node_pins_temp_net_num(ix, iy);
+      /* Go into the hierachy and dump hardlogics */
+      fprint_spice_primitive_testbench_rec_pb_primitives(fp, 
+                                                         NULL, 
+                                                         grid[ix][iy].type->pb_graph_head, 
+                                                         prefix, ix, iy, 
+                                                         primitive_tb_type, 
+                                                         LL_rr_node_indices); 
+      continue;
+    }
     /* Mark the temporary net_num for the type pins*/
     mark_one_pb_parasitic_nets((t_phy_pb*)block[grid[ix][iy].blocks[iblk]].phy_pb);
     /* Go into the hierachy and dump hardlogics */
