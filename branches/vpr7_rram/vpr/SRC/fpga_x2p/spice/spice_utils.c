@@ -2961,14 +2961,14 @@ float find_spice_testbench_rr_mux_load_inv_size(t_rr_node* load_rr_node,
 void fprint_spice_testbench_pb_graph_pin_inv_loads_rec(FILE* fp, int* testbench_load_cnt, 
                                                        int grid_x, int grid_y,
                                                        t_pb_graph_pin* src_pb_graph_pin, 
-                                                       t_pb* src_pb, 
+                                                       t_phy_pb* src_pb, 
                                                        char* outport_name,
                                                        boolean consider_parent_node,
                                                        t_ivec*** LL_rr_node_indices) {
   int iedge, mode_index, ipb, jpb;
   t_interconnect* cur_interc = NULL;
   char* rec_outport_name = NULL;
-  t_pb* des_pb = NULL;
+  t_phy_pb* des_pb = NULL;
   int src_rr_node_index = -1;
   float load_inv_size = 0.;
   float total_width;
@@ -3006,7 +3006,7 @@ void fprint_spice_testbench_pb_graph_pin_inv_loads_rec(FILE* fp, int* testbench_
 
   /* Get the mode_index */
   if (NULL == src_pb) {
-    mode_index = find_pb_type_idle_mode_index(*(src_pb_graph_pin->parent_node->pb_type)); 
+    mode_index = find_pb_type_physical_mode_index(*(src_pb_graph_pin->parent_node->pb_type)); 
   } else {
     mode_index = src_pb->mode;
   }
@@ -3359,7 +3359,7 @@ void fprint_spice_testbench_one_cb_mux_loads(FILE* fp, int* testbench_load_cnt,
                                              t_ivec*** LL_rr_node_indices) {
   t_type_ptr cb_out_grid_type = NULL;
   t_pb_graph_pin* cb_out_pb_graph_pin = NULL;              
-  t_pb* cb_out_pb = NULL;
+  t_phy_pb* cb_out_pb = NULL;
 
   assert(IPIN == src_rr_node->type);
   /* The assert only works for homogeneous blocks 
@@ -3374,7 +3374,7 @@ void fprint_spice_testbench_one_cb_mux_loads(FILE* fp, int* testbench_load_cnt,
   assert(NULL != cb_out_pb_graph_pin);
    
   /* Get the pb ! Get the mode_index */
-  cb_out_pb = src_rr_node->pb;
+  cb_out_pb = (t_phy_pb*)(src_rr_node->pb->phy_pb);
 
   if (IO_TYPE == cb_out_grid_type) {
     fprintf(fp, "******* IO_TYPE loads *******\n");

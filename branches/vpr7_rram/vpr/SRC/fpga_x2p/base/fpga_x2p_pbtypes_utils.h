@@ -51,22 +51,22 @@ void mark_pb_graph_node_output_pins_temp_net_num(t_pb_graph_node* cur_pb_graph_n
 
 void rec_mark_pb_graph_node_temp_net_num(t_pb_graph_node* cur_pb_graph_node);
 
-void load_one_pb_graph_pin_temp_net_num_from_pb(t_pb* cur_pb,
+void load_one_pb_graph_pin_temp_net_num_from_pb(t_phy_pb* cur_pb,
                                                 t_pb_graph_pin* cur_pb_graph_pin);
 
-void load_pb_graph_node_temp_net_num_from_pb(t_pb* cur_pb);
+void load_pb_graph_node_temp_net_num_from_pb(t_phy_pb* cur_pb);
 
-void rec_mark_one_pb_unused_pb_graph_node_temp_net_num(t_pb* cur_pb);
+void rec_mark_one_pb_unused_pb_graph_node_temp_net_num(t_phy_pb* cur_pb);
 
-void update_pb_vpack_net_num_from_temp_net_num(t_pb* cur_pb, 
+void update_pb_vpack_net_num_from_temp_net_num(t_phy_pb* cur_pb, 
                                                t_pb_graph_pin* cur_pb_graph_pin);
 
 void update_pb_graph_node_temp_net_num_to_pb(t_pb_graph_node* cur_pb_graph_node,
-                                             t_pb* cur_pb);
+                                             t_phy_pb* cur_pb);
 
-void rec_load_unused_pb_graph_node_temp_net_num_to_pb(t_pb* cur_pb);
+void rec_load_unused_pb_graph_node_temp_net_num_to_pb(t_phy_pb* cur_pb);
 
-void mark_one_pb_parasitic_nets(t_pb* cur_pb);
+void mark_one_pb_parasitic_nets(t_phy_pb* cur_pb);
 
 int count_num_conf_bit_one_interc(t_interconnect* cur_interc,
                                   enum e_sram_orgz cur_sram_orgz_type);

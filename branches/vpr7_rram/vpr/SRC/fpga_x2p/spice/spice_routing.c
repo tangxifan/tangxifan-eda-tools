@@ -465,52 +465,27 @@ void fprint_switch_box_mux(FILE* fp,
   fprint_switch_box_chan_port(fp, cur_sb_info, chan_side, cur_rr_node, OUT_PORT);
 
   /* Configuration bits for this MUX*/
-  path_id = -1;
+  path_id = DEFAULT_PATH_ID;
   for (inode = 0; inode < mux_size; inode++) {
     if (drive_rr_nodes[inode] == &(rr_node[cur_rr_node->prev_node])) {
       path_id = inode;
       break;
     }
   }
-
-  if (!((-1 != path_id)&&(path_id < mux_size))) {
-  assert((-1 != path_id)&&(path_id < mux_size));
-  }
-
-  switch (spice_model->design_tech_info.mux_info->structure) {
-  case SPICE_MODEL_STRUCTURE_TREE:
-    mux_level = determine_tree_mux_level(mux_size);
-    num_mux_sram_bits = mux_level;
-    mux_sram_bits = decode_tree_mux_sram_bits(mux_size, mux_level, path_id); 
+  /* Depend on both technology and structure of this MUX*/
+  switch (spice_model->design_tech) {
+  case SPICE_MODEL_DESIGN_CMOS:
+    decode_cmos_mux_sram_bits(spice_model, mux_size, path_id, &num_mux_sram_bits, &mux_sram_bits, &mux_level);
     break;
-  case SPICE_MODEL_STRUCTURE_ONELEVEL:
-    mux_level = 1;
-    /* Special for 2-input MUX */
-    if (2 == mux_size) {
-      num_mux_sram_bits = 1;
-      mux_sram_bits = decode_tree_mux_sram_bits(mux_size, mux_level, path_id); 
-    } else {
-      num_mux_sram_bits = mux_size;
-      mux_sram_bits = decode_onelevel_mux_sram_bits(mux_size, mux_level, path_id); 
-    }
-    break;
-  case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-    /* Take care of corner case: MUX size = 2 */
-    if (2 == mux_size) {
-      mux_level = 1;
-      num_mux_sram_bits = 1;
-      mux_sram_bits = decode_tree_mux_sram_bits(mux_size, 1, path_id); 
-    } else {
-      mux_level = spice_model->design_tech_info.mux_info->mux_num_level;
-      num_mux_sram_bits = determine_num_input_basis_multilevel_mux(mux_size, mux_level) * mux_level;
-      mux_sram_bits = decode_multilevel_mux_sram_bits(mux_size, mux_level, path_id); 
-    }
+  case SPICE_MODEL_DESIGN_RRAM:
+    decode_rram_mux(spice_model, mux_size, path_id, &num_mux_sram_bits, &mux_sram_bits, &mux_level);
     break;
   default:
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for spice model (%s)!\n",
                __FILE__, __LINE__, spice_model->name);
     exit(1);
-  } 
+  }
+
   /* Print SRAMs that configure this MUX */
   /* Get current counter of mem_bits, bl and wl */
   cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_spice_orgz_info); 
@@ -601,12 +576,12 @@ void fprint_switch_box_interc(FILE* fp,
   } else if (1 == num_drive_rr_nodes) {
     /* Print a direct connection*/
     fprint_switch_box_short_interc(fp, cur_sb_info, chan_side, cur_rr_node, 
-                                   num_drive_rr_nodes, drive_rr_nodes[0]);
+                                   num_drive_rr_nodes, drive_rr_nodes[DEFAULT_SWITCH_ID]);
   } else if (1 < num_drive_rr_nodes) {
     /* Print the multiplexer, fan_in >= 2 */
     fprint_switch_box_mux(fp, cur_sb_info, chan_side, cur_rr_node, 
                           num_drive_rr_nodes, drive_rr_nodes, 
-                          cur_rr_node->drive_switches[0]);
+                          cur_rr_node->drive_switches[DEFAULT_SWITCH_ID]);
   } /*Nothing should be done else*/ 
 
   /* Free */
@@ -861,16 +836,15 @@ void fprint_connection_box_mux(FILE* fp,
   drive_rr_nodes = src_rr_node->drive_rr_nodes; 
 
   /* Configuration bits for MUX*/
-  path_id = -1;
+  path_id = DEFAULT_PATH_ID;
   for (inode = 0; inode < mux_size; inode++) {
     if (drive_rr_nodes[inode] == &(rr_node[src_rr_node->prev_node])) {
       path_id = inode;
       break;
     }
   }
-  assert((-1 != path_id)&&(path_id < mux_size));
 
-  switch_index = src_rr_node->drive_switches[path_id];
+  switch_index = src_rr_node->drive_switches[DEFAULT_SWITCH_ID];
 
   mux_spice_model = switch_inf[switch_index].spice_model;
 
@@ -912,40 +886,18 @@ void fprint_connection_box_mux(FILE* fp,
                                         cur_cb_info.ipin_rr_node_grid_side[side][index], 
                                         xlow, ylow);
 
-  switch (mux_spice_model->design_tech_info.mux_info->structure) {
-  case SPICE_MODEL_STRUCTURE_TREE:
-    mux_level = determine_tree_mux_level(mux_size);
-    num_mux_sram_bits = mux_level;
-    mux_sram_bits = decode_tree_mux_sram_bits(mux_size, mux_level, path_id); 
+  switch (mux_spice_model->design_tech) {
+  case SPICE_MODEL_DESIGN_CMOS:
+    decode_cmos_mux_sram_bits(mux_spice_model, mux_size, path_id, &num_mux_sram_bits, &mux_sram_bits, &mux_level);
     break;
-  case SPICE_MODEL_STRUCTURE_ONELEVEL:
-    mux_level = 1;
-    /* Special for 2-input MUX */
-    if (2 == mux_size) {
-      num_mux_sram_bits = 1;
-      mux_sram_bits = decode_tree_mux_sram_bits(mux_size, mux_level, path_id); 
-    } else {
-      num_mux_sram_bits = mux_size;
-      mux_sram_bits = decode_onelevel_mux_sram_bits(mux_size, mux_level, path_id); 
-    }
-    break;
-  case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-    /* Take care of corner case: MUX size = 2 */
-    if (2 == mux_size) {
-      num_mux_sram_bits = 1;
-      mux_sram_bits = decode_tree_mux_sram_bits(mux_size, 1, path_id); 
-    } else {
-      mux_level = mux_spice_model->design_tech_info.mux_info->mux_num_level;
-      num_mux_sram_bits = determine_num_input_basis_multilevel_mux(mux_size, mux_level) * mux_level;
-      mux_sram_bits = decode_multilevel_mux_sram_bits(mux_size, mux_level, path_id); 
-    }
+  case SPICE_MODEL_DESIGN_RRAM:
+    decode_rram_mux(mux_spice_model, mux_size, path_id, &num_mux_sram_bits, &mux_sram_bits, &mux_level);
     break;
   default:
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for spice model (%s)!\n",
                __FILE__, __LINE__, mux_spice_model->name);
-    exit(1);
-  } 
- 
+  }
+
   /* Print SRAMs that configure this MUX */
   /* Get current counter of mem_bits, bl and wl */
   cur_num_sram = get_sram_orgz_info_num_mem_bit(sram_spice_orgz_info); 

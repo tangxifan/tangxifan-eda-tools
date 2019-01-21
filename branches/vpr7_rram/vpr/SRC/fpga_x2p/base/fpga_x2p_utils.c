@@ -1129,7 +1129,7 @@ int pb_pin_net_num(t_rr_node* pb_rr_graph,
     /* Try the temp_net_num in pb_graph_pin */
     net_num = pin->temp_net_num;
   } else {
-    net_num = pb_rr_graph[pin->pin_count_in_cluster].net_num;
+    net_num = pb_rr_graph[pin->rr_node_index_physical_pb].net_num;
   }
 
   return net_num;
@@ -1148,7 +1148,7 @@ float pb_pin_density(t_rr_node* pb_rr_graph,
     }
     return density;
   }
-  net_num = pb_rr_graph[pin->pin_count_in_cluster].net_num;
+  net_num = pb_rr_graph[pin->rr_node_index_physical_pb].net_num;
 
   if (OPEN != net_num) {
     density = vpack_net[net_num].spice_net_info->density;
@@ -1170,7 +1170,7 @@ float pb_pin_probability(t_rr_node* pb_rr_graph,
     }
     return probability;
   }
-  net_num = pb_rr_graph[pin->pin_count_in_cluster].net_num;
+  net_num = pb_rr_graph[pin->rr_node_index_physical_pb].net_num;
 
   if (OPEN != net_num) {
     probability = vpack_net[net_num].spice_net_info->probability;
@@ -1195,7 +1195,7 @@ int pb_pin_init_value(t_rr_node* pb_rr_graph,
     }
     return init_val;
   }
-  net_num = pb_rr_graph[pin->pin_count_in_cluster].net_num;
+  net_num = pb_rr_graph[pin->rr_node_index_physical_pb].net_num;
 
   if (OPEN != net_num) {
     init_val = vpack_net[net_num].spice_net_info->init_val;

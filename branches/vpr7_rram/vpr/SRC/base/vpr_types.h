@@ -201,6 +201,7 @@ typedef struct s_pb {
 
     /* Xifan TANG: SPICE model support*/
     char* spice_name_tag;
+    void* phy_pb;
 
     /* Xifan TANG: FPGA-SPICE and SynVerilog */
     int num_reserved_conf_bits;
@@ -1196,6 +1197,7 @@ struct s_spice_opts {
   boolean fpga_spice_print_sb_mux_testbench; 
   boolean fpga_spice_print_lut_testbench; 
   boolean fpga_spice_print_hardlogic_testbench; 
+  boolean fpga_spice_print_io_testbench; 
   boolean fpga_spice_leakage_only;
   boolean fpga_spice_parasitic_net_estimation;
   boolean fpga_spice_testbench_load_extraction;

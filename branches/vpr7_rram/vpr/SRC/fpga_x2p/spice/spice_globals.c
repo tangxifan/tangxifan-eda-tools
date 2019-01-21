@@ -85,7 +85,6 @@ int num_used_sb_tb = 0;
 int num_used_cb_mux_tb = 0;
 int num_used_sb_mux_tb = 0;
 int num_used_lut_tb = 0;
-int num_used_dff_tb = 0;
 int num_used_hardlogic_tb = 0;
 int num_used_io_tb = 0;
 

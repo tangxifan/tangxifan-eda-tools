@@ -6,7 +6,7 @@ void spice_print_mux_testbench(char* formatted_spice_dir,
                                 t_ivec*** LL_rr_node_indices,
                                 int num_clock,
                                 t_arch arch,
-                                enum e_spice_mux_tb_type mux_tb_type,
+                                enum e_spice_tb_type mux_tb_type,
                                 boolean leakage_only);
 
 /* useful subroutines */

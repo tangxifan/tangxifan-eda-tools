@@ -84,7 +84,6 @@ extern int num_used_grid_tb;
 extern int num_used_cb_tb;
 extern int num_used_sb_tb;
 extern int num_used_lut_tb;
-extern int num_used_dff_tb;
 extern int num_used_hardlogic_tb;
 extern int num_used_io_tb;
 

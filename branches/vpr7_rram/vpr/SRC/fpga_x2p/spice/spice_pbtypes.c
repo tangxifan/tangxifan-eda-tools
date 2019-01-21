@@ -558,39 +558,20 @@ void fprintf_spice_pb_graph_pin_interc(FILE* fp,
 
     assert(select_edge < fan_in);
     /* SRAMs */
-    switch (cur_interc->spice_model->design_tech_info.mux_info->structure) {
-    case SPICE_MODEL_STRUCTURE_TREE:
-      /* 1. Get the mux level*/
-      mux_level = determine_tree_mux_level(fan_in);
-      /* Get the SRAM configurations*/
-      /* Decode the selected_edge_index */
-      num_sram_bits = mux_level;
-      sram_bits = decode_tree_mux_sram_bits(fan_in, mux_level, select_edge);
-      /* Print SRAM configurations, 
-       * we should have a global SRAM vdd, AND it should be connected to a real sram subckt !!!
-       */
+    switch (cur_interc->spice_model->design_tech) {
+    case SPICE_MODEL_DESIGN_CMOS:
+      decode_cmos_mux_sram_bits(cur_interc->spice_model, fan_in, select_edge, 
+                                &num_sram_bits, &sram_bits, &mux_level);
       break;
-    case SPICE_MODEL_STRUCTURE_ONELEVEL:
-      mux_level = 1;
-      /* Special for 2-input MUX */
-      if (2 == fan_in) {
-        num_sram_bits = 1;
-        sram_bits = decode_tree_mux_sram_bits(fan_in, mux_level, select_edge); 
-      } else {
-        num_sram_bits = fan_in;
-        sram_bits = decode_onelevel_mux_sram_bits(fan_in, mux_level, select_edge);
-      }
-      break;
-    case SPICE_MODEL_STRUCTURE_MULTILEVEL:
-      mux_level = cur_interc->spice_model->design_tech_info.mux_info->mux_num_level;
-      num_sram_bits = determine_num_input_basis_multilevel_mux(fan_in, mux_level) *mux_level;
-      sram_bits = decode_multilevel_mux_sram_bits(fan_in, mux_level, select_edge);
+    case SPICE_MODEL_DESIGN_RRAM:
+      decode_rram_mux(cur_interc->spice_model, fan_in, select_edge, 
+                      &num_sram_bits, &sram_bits, &mux_level);
       break;
     default:
-      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
+      vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid design technology for verilog model (%s)!\n",
                  __FILE__, __LINE__, cur_interc->spice_model->name);
-      exit(1);
-    } 
+    }
+    
     cur_sram = get_sram_orgz_info_num_mem_bit(sram_spice_orgz_info); 
     /* Create wires to sram outputs*/
     for (ilevel = 0; ilevel < num_sram_bits; ilevel++) {
@@ -677,7 +658,7 @@ void fprintf_spice_pb_graph_port_interc(FILE* fp,
           /* Get the selected edge of current pin*/
           assert(NULL != cur_pb);
           pb_rr_nodes = cur_pb->rr_graph->rr_node;
-          node_index = cur_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
+          node_index = cur_pb_graph_node->input_pins[iport][ipin].rr_node_index_physical_pb;
           prev_node = pb_rr_nodes[node_index].prev_node;
           /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
           /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
@@ -709,7 +690,7 @@ void fprintf_spice_pb_graph_port_interc(FILE* fp,
           /* Get the selected edge of current pin*/
           assert(NULL != cur_pb);
           pb_rr_nodes = cur_pb->rr_graph->rr_node;
-          node_index = cur_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
+          node_index = cur_pb_graph_node->output_pins[iport][ipin].rr_node_index_physical_pb;
           prev_node = pb_rr_nodes[node_index].prev_node;
           /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
           /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
@@ -741,7 +722,7 @@ void fprintf_spice_pb_graph_port_interc(FILE* fp,
           /* Get the selected edge of current pin*/
           assert(NULL != cur_pb);
           pb_rr_nodes = cur_pb->rr_graph->rr_node;
-          node_index = cur_pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster;
+          node_index = cur_pb_graph_node->clock_pins[iport][ipin].rr_node_index_physical_pb;
           prev_node = pb_rr_nodes[node_index].prev_node;
           /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
           /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/

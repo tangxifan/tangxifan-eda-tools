@@ -42,9 +42,8 @@
 #include "spice_top_netlist.h"
 #include "spice_mux_testbench.h"
 #include "spice_grid_testbench.h"
-#include "spice_lut_testbench.h"
 #include "spice_routing_testbench.h"
-#include "spice_hardlogic_testbench.h"
+#include "spice_primitive_testbench.h"
 #include "spice_run_scripts.h"
 
 /* For mrFPGA */
@@ -63,6 +62,7 @@ static char* spice_cb_tb_dir_name = "cb_tb/";
 static char* spice_sb_tb_dir_name = "sb_tb/";
 static char* spice_lut_tb_dir_name = "lut_tb/";
 static char* spice_hardlogic_tb_dir_name = "hardlogic_tb/";
+static char* spice_io_tb_dir_name = "io_tb/";
   
 /***** Subroutines Declarations *****/
 static 
@@ -189,6 +189,7 @@ void vpr_fpga_spice(t_vpr_setup vpr_setup,
   char* grid_testbench_dir_path = NULL;
   char* lut_testbench_dir_path = NULL;
   char* hardlogic_testbench_dir_path = NULL;
+  char* io_testbench_dir_path = NULL;
   char* top_testbench_file = NULL;
   char* bitstream_file_name = NULL;
   char* bitstream_file_path = NULL;
@@ -342,8 +343,11 @@ void vpr_fpga_spice(t_vpr_setup vpr_setup,
   if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_print_lut_testbench) {
     lut_testbench_dir_path = my_strcat(spice_dir_formatted, spice_lut_tb_dir_name); 
     create_dir_path(lut_testbench_dir_path);
-    spice_print_lut_testbench(lut_testbench_dir_path, chomped_circuit_name, include_dir_path, subckt_dir_path,
-                              rr_node_indices, num_clocks, Arch, vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_leakage_only);
+    spice_print_primitive_testbench(lut_testbench_dir_path, 
+                                    chomped_circuit_name, include_dir_path, subckt_dir_path,
+                                    rr_node_indices, num_clocks, Arch, 
+                                    SPICE_LUT_TB,
+                                    vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_leakage_only);
     /* Free */
     my_free(lut_testbench_dir_path);
   }
@@ -352,11 +356,28 @@ void vpr_fpga_spice(t_vpr_setup vpr_setup,
   if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_print_hardlogic_testbench) {
     hardlogic_testbench_dir_path = my_strcat(spice_dir_formatted, spice_hardlogic_tb_dir_name); 
     create_dir_path(hardlogic_testbench_dir_path);
-    spice_print_hardlogic_testbench(hardlogic_testbench_dir_path, chomped_circuit_name, include_dir_path, subckt_dir_path,
-                                     rr_node_indices, num_clocks, Arch, vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_leakage_only);
+    spice_print_primitive_testbench(hardlogic_testbench_dir_path, 
+                                    chomped_circuit_name, include_dir_path, subckt_dir_path,
+                                    rr_node_indices, num_clocks, Arch, 
+                                    SPICE_HARDLOGIC_TB,
+                                    vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_leakage_only);
     /* Free */
     my_free(hardlogic_testbench_dir_path);
   }
+
+  /* Print IO testbench file if needed */
+  if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_print_io_testbench) {
+    io_testbench_dir_path = my_strcat(spice_dir_formatted, spice_io_tb_dir_name); 
+    create_dir_path(io_testbench_dir_path);
+    spice_print_primitive_testbench(io_testbench_dir_path, 
+                                    chomped_circuit_name, include_dir_path, subckt_dir_path,
+                                    rr_node_indices, num_clocks, Arch, 
+                                    SPICE_IO_TB,
+                                    vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_leakage_only);
+    /* Free */
+    my_free(io_testbench_dir_path);
+  }
+
 
   /* Print Grid testbench if needed */
   if (vpr_setup.FPGA_SPICE_Opts.SpiceOpts.fpga_spice_print_grid_testbench) {

@@ -102,12 +102,17 @@ enum e_spice_ff_trigger_type {
   FF_RE, FF_FE
 };
 
-enum e_spice_mux_tb_type {
+enum e_spice_tb_type {
   SPICE_CB_MUX_TB, 
   SPICE_SB_MUX_TB, 
-  SPICE_PB_MUX_TB 
+  SPICE_PB_MUX_TB, 
+  SPICE_GRID_TB,
+  SPICE_SB_TB,
+  SPICE_CB_TB,
+  SPICE_LUT_TB,
+  SPICE_IO_TB,
+  SPICE_HARDLOGIC_TB
 };
-
 
 enum e_spice_pin2pin_interc_type {
   INPUT2INPUT_INTERC, 

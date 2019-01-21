@@ -634,7 +634,7 @@ void rec_mark_pb_graph_node_temp_net_num(t_pb_graph_node* cur_pb_graph_node) {
   return;
 }
 
-void load_one_pb_graph_pin_temp_net_num_from_pb(t_pb* cur_pb,
+void load_one_pb_graph_pin_temp_net_num_from_pb(t_phy_pb* cur_pb,
                                                 t_pb_graph_pin* cur_pb_graph_pin) {
   int node_index;
   t_rr_node* pb_rr_nodes = NULL;
@@ -643,8 +643,8 @@ void load_one_pb_graph_pin_temp_net_num_from_pb(t_pb* cur_pb,
   assert(NULL != cur_pb->pb_graph_node);
 
   /* Get the selected edge of current pin*/
-  pb_rr_nodes = cur_pb->rr_graph;
-  node_index = cur_pb_graph_pin->pin_count_in_cluster;
+  pb_rr_nodes = cur_pb->rr_graph->rr_node;
+  node_index = cur_pb_graph_pin->rr_node_index_physical_pb;
   cur_pb_graph_pin->temp_net_num = pb_rr_nodes[node_index].vpack_net_num;
 
   return;
@@ -653,7 +653,7 @@ void load_one_pb_graph_pin_temp_net_num_from_pb(t_pb* cur_pb,
 /* According to the vpack_net_num in cur_pb
  * assign it to the corresponding pb_graph_pins 
  */
-void load_pb_graph_node_temp_net_num_from_pb(t_pb* cur_pb) {
+void load_pb_graph_node_temp_net_num_from_pb(t_phy_pb* cur_pb) {
   int iport, ipin;
 
   assert(NULL != cur_pb);
@@ -689,7 +689,7 @@ void load_pb_graph_node_temp_net_num_from_pb(t_pb* cur_pb) {
 /* Recursively traverse the hierachy of a pb, 
  * store parasitic nets in the temp_net_num of the assoicated pb_graph_node 
  */
-void rec_mark_one_pb_unused_pb_graph_node_temp_net_num(t_pb* cur_pb) {
+void rec_mark_one_pb_unused_pb_graph_node_temp_net_num(t_phy_pb* cur_pb) {
   int ipb, jpb;
   int mode_index;
 
@@ -719,7 +719,7 @@ void rec_mark_one_pb_unused_pb_graph_node_temp_net_num(t_pb* cur_pb) {
   return;
 }
 
-void update_pb_vpack_net_num_from_temp_net_num(t_pb* cur_pb, 
+void update_pb_vpack_net_num_from_temp_net_num(t_phy_pb* cur_pb, 
                                                t_pb_graph_pin* cur_pb_graph_pin) {
   int node_index;
   t_rr_node* pb_rr_nodes = NULL;
@@ -728,8 +728,8 @@ void update_pb_vpack_net_num_from_temp_net_num(t_pb* cur_pb,
   assert(NULL != cur_pb->pb_graph_node);
 
   /* Get the selected edge of current pin*/
-  pb_rr_nodes = cur_pb->rr_graph;
-  node_index = cur_pb_graph_pin->pin_count_in_cluster;
+  pb_rr_nodes = cur_pb->rr_graph->rr_node;
+  node_index = cur_pb_graph_pin->rr_node_index_physical_pb;
   
   /* Avoid mistakenly modification */
   if (OPEN != pb_rr_nodes[node_index].vpack_net_num) {
@@ -742,14 +742,11 @@ void update_pb_vpack_net_num_from_temp_net_num(t_pb* cur_pb,
 } 
 
 void update_pb_graph_node_temp_net_num_to_pb(t_pb_graph_node* cur_pb_graph_node,
-                                             t_pb* cur_pb) {
+                                             t_phy_pb* cur_pb) {
   int iport, ipin;
-  t_rr_node* pb_rr_nodes = NULL;
 
   assert(NULL != cur_pb->pb_graph_node);
   assert(NULL != cur_pb);
-
-  pb_rr_nodes = cur_pb->rr_graph;
 
   /* Input ports */
   for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
@@ -778,7 +775,7 @@ void update_pb_graph_node_temp_net_num_to_pb(t_pb_graph_node* cur_pb_graph_node,
   return;
 }
 
-void rec_load_unused_pb_graph_node_temp_net_num_to_pb(t_pb* cur_pb) {
+void rec_load_unused_pb_graph_node_temp_net_num_to_pb(t_phy_pb* cur_pb) {
   int ipb, jpb;
   int mode_index;
 
@@ -808,7 +805,7 @@ void rec_load_unused_pb_graph_node_temp_net_num_to_pb(t_pb* cur_pb) {
   return;
 }
 
-void mark_one_pb_parasitic_nets(t_pb* cur_pb) {
+void mark_one_pb_parasitic_nets(t_phy_pb* cur_pb) {
 
   /* By go recursively, parasitic net num are stored in the temp_net_num in pb_graph_node */
   rec_mark_one_pb_unused_pb_graph_node_temp_net_num(cur_pb);

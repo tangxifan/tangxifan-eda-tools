@@ -846,7 +846,6 @@ void set_one_pb_rr_node_default_prev_node_edge(t_rr_node* pb_rr_graph,
                                                t_pb_graph_pin* des_pb_graph_pin,
                                                int mode_index) {
   int iedge, node_index, prev_node, prev_edge;
-  t_interconnect* cur_interc = NULL; 
 
   assert(NULL != des_pb_graph_pin);
   assert(NULL != pb_rr_graph);
@@ -907,7 +906,6 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb,
   int ipb, jpb, select_mode_index;
   int iport, ipin, node_index;
   t_pb_graph_node* child_pb_graph_node;
-  int temp_rr_node_index;
  
   /* Return when we meet a null pb */ 
   if (NULL == cur_pb) {
@@ -1059,7 +1057,7 @@ void set_one_pb_rr_node_net_num(t_rr_node* pb_rr_graph,
   assert(NULL != des_pb_graph_pin);
   assert(NULL != pb_rr_graph);
 
-  node_index = des_pb_graph_pin->pin_count_in_cluster;
+  node_index = des_pb_graph_pin->rr_node_index_physical_pb;
   assert(OPEN == pb_rr_graph[node_index].net_num);
    
   /* if this pin has 0 driver, return OPEN */
@@ -1084,7 +1082,7 @@ void set_one_pb_rr_node_net_num(t_rr_node* pb_rr_graph,
 
   /* Set default prev_node */
   check_pb_graph_edge(*(pb_rr_graph[prev_node].pb_graph_pin->output_edges[prev_edge]));
-  assert(node_index == pb_rr_graph[prev_node].pb_graph_pin->output_edges[prev_edge]->output_pins[0]->pin_count_in_cluster);
+  assert(node_index == pb_rr_graph[prev_node].pb_graph_pin->output_edges[prev_edge]->output_pins[0]->rr_node_index_physical_pb);
   pb_rr_graph[node_index].net_num = pb_rr_graph[prev_node].net_num;
   pb_rr_graph[node_index].vpack_net_num = pb_rr_graph[prev_node].net_num;
 
@@ -1093,7 +1091,7 @@ void set_one_pb_rr_node_net_num(t_rr_node* pb_rr_graph,
 
 /* Mark the net_num of all the rr_nodes in complex blocks */
 static
-void backannotate_one_pb_rr_nodes_net_info_rec(t_pb* cur_pb) {
+void backannotate_one_pb_rr_nodes_net_info_rec(t_phy_pb* cur_pb) {
   int ipb, jpb, select_mode_index;
   int iport, ipin, node_index;
   t_rr_node* pb_rr_nodes = NULL;
@@ -1128,13 +1126,11 @@ void backannotate_one_pb_rr_nodes_net_info_rec(t_pb* cur_pb) {
       for (iport = 0; iport < child_pb_graph_node->num_input_ports; iport++) {
         for (ipin = 0; ipin < child_pb_graph_node->num_input_pins[iport]; ipin++) {
           /* Get the selected edge of current pin*/
-          pb_rr_nodes = cur_pb->rr_graph;
-          node_index = child_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
+          pb_rr_nodes = cur_pb->rr_graph->rr_node;
+          node_index = child_pb_graph_node->input_pins[iport][ipin].rr_node_index_physical_pb;
           /* If we find an OPEN net, try to find the parasitic net_num*/
           if (OPEN == pb_rr_nodes[node_index].net_num) {
             set_one_pb_rr_node_net_num(pb_rr_nodes, &(child_pb_graph_node->input_pins[iport][ipin])); 
-          } else {
-            assert(pb_rr_nodes[node_index].net_num == pb_rr_nodes[node_index].vpack_net_num);
           }
         }
       }
@@ -1142,13 +1138,11 @@ void backannotate_one_pb_rr_nodes_net_info_rec(t_pb* cur_pb) {
       for (iport = 0; iport < child_pb_graph_node->num_clock_ports; iport++) {
         for (ipin = 0; ipin < child_pb_graph_node->num_clock_pins[iport]; ipin++) {
           /* Get the selected edge of current pin*/
-          pb_rr_nodes = cur_pb->rr_graph;
-          node_index = child_pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster;
+          pb_rr_nodes = cur_pb->rr_graph->rr_node;
+          node_index = child_pb_graph_node->clock_pins[iport][ipin].rr_node_index_physical_pb;
           /* If we find an OPEN net, try to find the parasitic net_num*/
           if (OPEN == pb_rr_nodes[node_index].net_num) {
               set_one_pb_rr_node_net_num(pb_rr_nodes, &(child_pb_graph_node->clock_pins[iport][ipin])); 
-          } else {
-            assert(pb_rr_nodes[node_index].net_num == pb_rr_nodes[node_index].vpack_net_num);
           }
         }
       }
@@ -1176,13 +1170,11 @@ void backannotate_one_pb_rr_nodes_net_info_rec(t_pb* cur_pb) {
   for (iport = 0; iport < cur_pb->pb_graph_node->num_output_ports; iport++) {
     for (ipin = 0; ipin < cur_pb->pb_graph_node->num_output_pins[iport]; ipin++) {
       /* Get the selected edge of current pin*/
-      pb_rr_nodes = cur_pb->rr_graph;
-      node_index = cur_pb->pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
+      pb_rr_nodes = cur_pb->rr_graph->rr_node;
+      node_index = cur_pb->pb_graph_node->output_pins[iport][ipin].rr_node_index_physical_pb;
       /* If we find an OPEN net, try to find the parasitic net_num*/
       if (OPEN == pb_rr_nodes[node_index].net_num) {
         set_one_pb_rr_node_net_num(pb_rr_nodes, &(cur_pb->pb_graph_node->output_pins[iport][ipin])); 
-      } else {
-        assert(pb_rr_nodes[node_index].net_num == pb_rr_nodes[node_index].vpack_net_num);
       }
     }
   }
@@ -1200,7 +1192,7 @@ void backannotate_pb_rr_nodes_net_info() {
     if (IO_TYPE == block[iblk].type) {
       continue;
     }
-    backannotate_one_pb_rr_nodes_net_info_rec(block[iblk].pb);
+    backannotate_one_pb_rr_nodes_net_info_rec((t_phy_pb*)block[iblk].phy_pb);
   }  
 
   return;
@@ -1603,9 +1595,9 @@ void update_one_unused_grid_output_pins_parasitic_nets(int ix, int iy) {
  * are absorbed into CLBs during packing, therefore they are invisible in 
  * clb_nets. But indeed, they exist in global routing as parasitic nets.
  */
-void update_one_used_grid_pb_pins_parasitic_nets(t_pb* cur_pb,
+void update_one_used_grid_pb_pins_parasitic_nets(t_phy_pb* cur_pb,
                                                  int ix, int iy) {
-  int ipin; 
+  int ipin, cur_pin; 
   int pin_global_rr_node_id,class_id;
   t_type_ptr type = NULL;
   t_rr_node* local_rr_graph = NULL;
@@ -1621,22 +1613,21 @@ void update_one_used_grid_pb_pins_parasitic_nets(t_pb* cur_pb,
   }   
 
   assert(NULL != cur_pb);
-  local_rr_graph = cur_pb->rr_graph; 
+  local_rr_graph = cur_pb->rr_graph->rr_node; 
   for (ipin = 0; ipin < type->num_pins; ipin++) {
     class_id = type->pin_class[ipin];
     if (DRIVER == type->class_inf[class_id].type) {
       /* Find the pb net_num and update OPIN net_num */
       pin_global_rr_node_id = get_rr_node_index(ix, iy, OPIN, ipin, rr_node_indices);
-      assert(local_rr_graph[ipin].vpack_net_num == local_rr_graph[ipin].net_num);
       if (OPEN == local_rr_graph[ipin].net_num) {
         assert(OPEN == local_rr_graph[ipin].vpack_net_num);
         rr_node[pin_global_rr_node_id].net_num = OPEN; 
         rr_node[pin_global_rr_node_id].vpack_net_num = OPEN; 
         continue; /* bypass non-mapped OPIN */
       } 
-      assert(ipin == local_rr_graph[ipin].pb_graph_pin->pin_count_in_cluster);
+      cur_pin = local_rr_graph[ipin].pb_graph_pin->rr_node_index_physical_pb;
       //rr_node[pin_global_rr_node_id].net_num = vpack_to_clb_net_mapping[local_rr_graph[ipin].net_num]; 
-      rr_node[pin_global_rr_node_id].vpack_net_num = local_rr_graph[ipin].vpack_net_num;
+      rr_node[pin_global_rr_node_id].vpack_net_num = local_rr_graph[cur_pin].vpack_net_num;
     } else if (RECEIVER == type->class_inf[class_id].type) {
       /* Find the global rr_node net_num and update pb net_num */
       pin_global_rr_node_id = get_rr_node_index(ix, iy, IPIN, ipin, rr_node_indices);
@@ -1646,9 +1637,9 @@ void update_one_used_grid_pb_pins_parasitic_nets(t_pb* cur_pb,
         local_rr_graph[ipin].vpack_net_num = OPEN;
         continue; /* bypass non-mapped IPIN */
       }
-      assert(ipin == local_rr_graph[ipin].pb_graph_pin->pin_count_in_cluster);
-      local_rr_graph[ipin].net_num = rr_node[pin_global_rr_node_id].vpack_net_num;
-      local_rr_graph[ipin].vpack_net_num = rr_node[pin_global_rr_node_id].vpack_net_num;
+      cur_pin = local_rr_graph[ipin].pb_graph_pin->rr_node_index_physical_pb;
+      local_rr_graph[cur_pin].net_num = rr_node[pin_global_rr_node_id].vpack_net_num;
+      local_rr_graph[cur_pin].vpack_net_num = rr_node[pin_global_rr_node_id].vpack_net_num;
     } else {
       continue; /* OPEN PIN */
     }
@@ -1670,12 +1661,12 @@ void update_one_grid_pb_pins_parasitic_nets(int ix, int iy) {
     /* Only for mapped block */
     assert(NULL != block[grid[ix][iy].blocks[iblk]].pb);
     /* Mark the temporary net_num for the type pins*/
-    mark_one_pb_parasitic_nets(block[grid[ix][iy].blocks[iblk]].pb);
+    mark_one_pb_parasitic_nets((t_phy_pb*)block[grid[ix][iy].blocks[iblk]].phy_pb);
     /* Update parasitic nets */
-    update_one_used_grid_pb_pins_parasitic_nets(block[grid[ix][iy].blocks[iblk]].pb,
+    update_one_used_grid_pb_pins_parasitic_nets((t_phy_pb*)block[grid[ix][iy].blocks[iblk]].phy_pb,
                                                 ix, iy);
     /* update parasitic nets in each pb */
-    backannotate_one_pb_rr_nodes_net_info_rec(block[grid[ix][iy].blocks[iblk]].pb);
+    backannotate_one_pb_rr_nodes_net_info_rec((t_phy_pb*)block[grid[ix][iy].blocks[iblk]].phy_pb);
   }  
   /* By pass Unused blocks */
   for (iblk = grid[ix][iy].usage; iblk < grid[ix][iy].type->capacity; iblk++) {
@@ -2850,6 +2841,8 @@ void alloc_and_load_phy_pb_for_mapped_block(int num_mapped_blocks, t_block* mapp
     alloc_and_load_phy_pb_children_for_one_mapped_block(mapped_block[iblk].pb, top_phy_pb);
     /* Give top_phy_pb to grid */
     mapped_block[iblk].phy_pb = (void*)top_phy_pb;
+    /* Create a link from pb to phy_pb */
+    mapped_block[iblk].pb->phy_pb = (void*)top_phy_pb;
   }
   vpr_printf(TIO_MESSAGE_INFO, "\n");
   vpr_printf(TIO_MESSAGE_INFO, "\n");

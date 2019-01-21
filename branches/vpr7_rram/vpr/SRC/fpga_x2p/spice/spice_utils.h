@@ -218,7 +218,7 @@ float find_spice_testbench_rr_mux_load_inv_size(t_rr_node* load_rr_node,
 void fprint_spice_testbench_pb_graph_pin_inv_loads_rec(FILE* fp, int* testbench_load_cnt, 
                                                        int grid_x, int grid_y,
                                                        t_pb_graph_pin* src_pb_graph_pin, 
-                                                       t_pb* src_pb, 
+                                                       t_phy_pb* src_pb, 
                                                        char* outport_name,
                                                        boolean consider_parent_node,
                                                        t_ivec*** LL_rr_node_indices);
