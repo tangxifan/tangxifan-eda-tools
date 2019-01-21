@@ -25,7 +25,7 @@ rm -rf $spice_output_dirpath/$spice_output_dirname
 
 # Run VPR  
 #valgrind 
-echo "./vpr $arch_xml_file $blif_file --full_stats --nodisp --activity_file $act_file --fpga_spice --fpga_spice_dir $spice_output_dirpath/$spice_output_dirname --fpga_x2p_rename_illegal_port --fpga_spice_print_top_testbench --fpga_spice_print_lut_testbench --fpga_spice_print_hardlogic_testbench --fpga_spice_print_io_testbench --fpga_spice_print_pb_mux_testbench --fpga_spice_print_cb_mux_testbench --fpga_spice_print_sb_mux_testbench --fpga_spice_print_cb_testbench --fpga_spice_print_sb_testbench --fpga_spice_print_grid_testbench"
+./vpr $arch_xml_file $blif_file --full_stats --nodisp --activity_file $act_file --fpga_spice --fpga_spice_dir $spice_output_dirpath/$spice_output_dirname --fpga_x2p_rename_illegal_port --fpga_spice_print_top_testbench --fpga_spice_print_lut_testbench --fpga_spice_print_hardlogic_testbench --fpga_spice_print_io_testbench --fpga_spice_print_pb_mux_testbench --fpga_spice_print_cb_mux_testbench --fpga_spice_print_sb_mux_testbench --fpga_spice_print_cb_testbench --fpga_spice_print_sb_testbench --fpga_spice_print_grid_testbench
 
 
 

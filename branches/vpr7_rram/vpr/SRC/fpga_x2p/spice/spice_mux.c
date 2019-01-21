@@ -488,7 +488,6 @@ void fprint_spice_cmos_mux_onelevel_structure(FILE* fp, char* mux_basis_subckt_n
                                               int num_sram_port, t_spice_model_port** sram_port) {
   int k, mux_basis_cnt;
   int level, nextlevel, out_idx;
-  int num_sram_bits = 0;
 
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {
@@ -511,9 +510,7 @@ void fprint_spice_cmos_mux_onelevel_structure(FILE* fp, char* mux_basis_subckt_n
   }
   fprintf(fp, "mux2_l%d_in%d ", nextlevel, out_idx); /* output */
   /* Print number of sram bits for this basis */
-  num_sram_bits = count_num_sram_bits_one_spice_model(&spice_model, 
-                                                      spice_mux_arch.num_input);
-  for (k = 0; k < num_sram_bits; k++) {
+  for (k = 0; k < spice_mux_arch.num_input; k++) {
     fprintf(fp, "%s%d %s_inv%d ", sram_port[0]->prefix, k, sram_port[0]->prefix, k); /* sram sram_inv */
   }
   fprintf(fp, "svdd sgnd %s\n", mux_basis_subckt_name); /* subckt_name */
@@ -705,7 +702,6 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
   t_spice_model_port** input_port = NULL;
   t_spice_model_port** output_port = NULL;
   t_spice_model_port** sram_port = NULL;
-  int num_sram_bits = 0;
   int num_mode_bits = 0;
   int num_conf_bits = 0;
 
@@ -826,7 +822,7 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
     /* Print output ports*/
     fprintf(fp, "%s ", output_port[0]->prefix);
     /* Print sram ports*/
-    for (ipin = 0; ipin < num_sram_bits; ipin++) {
+    for (ipin = 0; ipin < num_conf_bits; ipin++) {
       fprintf(fp, "%s%d ", sram_port[0]->prefix, ipin);
       fprintf(fp, "%s_inv%d ", sram_port[0]->prefix, ipin);
     } 
@@ -835,15 +831,8 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
   fprintf(fp, "svdd sgnd");
   fprintf(fp, "\n");
 
-  /* Handle the corner case: input size = 2  */
-  if (2 == mux_size) {
-    cur_mux_structure = SPICE_MODEL_STRUCTURE_ONELEVEL;
-  } else {
-    cur_mux_structure = spice_model.design_tech_info.mux_info->structure;
-  }
-  
   /* Print internal architecture*/ 
-  switch (cur_mux_structure) {
+  switch (spice_model.design_tech_info.mux_info->structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     fprint_spice_cmos_mux_tree_structure(fp, mux_basis_subckt_name, 
                                          spice_model, spice_mux_arch, num_sram_port, sram_port);
@@ -1277,11 +1266,13 @@ void fprint_spice_mux_model_subckt(FILE* fp,
   switch (spice_mux_model->spice_model->design_tech) {
   case SPICE_MODEL_DESIGN_CMOS:
     fprint_spice_mux_model_cmos_subckt(fp, spice_mux_model->size,
-                                        *(spice_mux_model->spice_model), *(spice_mux_model->spice_mux_arch));
+                                        *(spice_mux_model->spice_model), 
+                                        *(spice_mux_model->spice_mux_arch));
     break;
   case SPICE_MODEL_DESIGN_RRAM:
     fprint_spice_mux_model_rram_subckt(fp, spice_mux_model->size,
-                                        *(spice_mux_model->spice_model), *(spice_mux_model->spice_mux_arch));
+                                        *(spice_mux_model->spice_model), 
+                                        *(spice_mux_model->spice_mux_arch));
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid design_technology of MUX(name: %s)\n",

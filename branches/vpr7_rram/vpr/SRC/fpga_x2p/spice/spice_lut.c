@@ -259,7 +259,7 @@ void fprint_spice_lut_subckt(FILE* fp,
         /* local vdd and gnd*/
         fprintf(fp, " svdd sgnd");
         /* Call subckt name */
-        fprintf(fp, "%s\n", input_port[iport]->spice_model->name); 
+        fprintf(fp, " %s\n", input_port[iport]->spice_model->name); 
         /* Free ports */
         my_free(modegate_input_port);
         my_free(modegate_output_port);
@@ -570,9 +570,9 @@ void fprint_pb_primitive_lut(FILE* fp,
         }
       }  
       fprintf(fp, "\n");
-      fprintf(fp, "***** Truth Table *****\n*");
+      fprintf(fp, "***** Truth Table *****\n");
       for (j = 0; j < truth_table_length[i]; j++) {
-        fprintf(fp, "%s\n", truth_table[i][j]);
+        fprintf(fp, "*%s\n", truth_table[i][j]);
       }
     }
     /* Conject all the truth tables we have */

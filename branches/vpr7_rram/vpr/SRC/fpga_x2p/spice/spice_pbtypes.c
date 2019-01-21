@@ -1485,7 +1485,7 @@ void fprint_spice_phy_pb_graph_node_rec(FILE* fp,
        * else we can use the mode to name it 
        */
       if (NULL == cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model) { /* Not a leaf node*/
-        child_mode_index = find_pb_type_idle_mode_index(cur_pb_type->modes[mode_index].pb_type_children[ipb]);
+        child_mode_index = find_pb_type_physical_mode_index(cur_pb_type->modes[mode_index].pb_type_children[ipb]);
         fprintf(fp, "%s_%s[%d]_mode[%s]\n",
                 subckt_name, cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb, 
                 cur_pb_type->modes[mode_index].pb_type_children[ipb].modes[child_mode_index].name);

@@ -83,10 +83,15 @@ void fprint_spice_primitive_testbench_global_ports(FILE* fp, int grid_x, int gri
     fprint_grid_global_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_LUT, spice);
     break;
   case SPICE_HARDLOGIC_TB:
+    fprint_grid_global_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_FF, spice);
     fprint_grid_global_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_HARDLOGIC, spice);
     break;
   case SPICE_IO_TB:
     fprint_grid_global_vdds_spice_model(fp, grid_x, grid_y, SPICE_MODEL_IOPAD, spice);
+    /* Global VDDs for SRAMs of IOPADs */
+    fprintf(fp, ".global %s\n\n",
+                 spice_tb_global_vdd_io_sram_port_name);
+
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, 
@@ -94,10 +99,6 @@ void fprint_spice_primitive_testbench_global_ports(FILE* fp, int grid_x, int gri
                __FILE__, __LINE__);
     exit(1);
   }
-
-  /* Global VDDs for SRAMs of IOPADs */
-  fprintf(fp, ".global %s\n",
-               spice_tb_global_vdd_io_sram_port_name);
 
   return;
 }
@@ -129,24 +130,19 @@ void fprint_spice_primitive_testbench_call_one_primitive(FILE* fp,
 
   /* identify the type of spice model */
   /* Call defined subckt */
-  fprintf(fp, "X%s_%s[%d] \n", 
+  fprintf(fp, "X%s_%s[%d] \n+ ", 
           primitive_type,
           primitive_spice_model->prefix,
           primitive_spice_model->tb_cnt);
 
   /* Sequence in dumping ports: 
-   * 1. Global ports
+   * 1. Global ports - INCLUDED IN THE MODULE, SO WE SKIP THIS
    * 2. Input ports
    * 3. Output ports
    * 4. Inout ports
    * 5. Configuration ports    
    * 6. VDD and GND ports 
    */
-
-  /* 1. Global ports */
-  if (0 < rec_fprint_spice_model_global_ports(fp, primitive_spice_model, FALSE)) { 
-    fprintf(fp, "+ ");
-  }
 
   /* 2. Input ports (TODO: check the number of inputs matches the spice model definition) */
   /* Find pb_type input ports */
@@ -459,12 +455,25 @@ void fprint_spice_primitive_testbench_one_pb_primitive(FILE* fp,
   switch (primitive_tb_type) {
   case SPICE_LUT_TB:
     primitive_type = "lut";
+    /* If the spice model is not the type we want, return here */
+    if (SPICE_MODEL_LUT != pb_spice_model->type) {
+      return;
+    }
     break;
   case SPICE_HARDLOGIC_TB:
     primitive_type = "hardlogic";
+    /* If the spice model is not the type we want, return here */
+    if ((SPICE_MODEL_FF != pb_spice_model->type) 
+      && (SPICE_MODEL_HARDLOGIC != pb_spice_model->type)) {
+      return;
+    }
     break;
   case SPICE_IO_TB:
     primitive_type = "io";
+    /* If the spice model is not the type we want, return here */
+    if (SPICE_MODEL_IOPAD != pb_spice_model->type) {
+      return;
+    }
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, 
@@ -877,6 +886,11 @@ int fprint_spice_one_primitive_testbench(char* formatted_spice_dir,
   /* Include user-defined sub-circuit netlist */
   init_include_user_defined_netlists(*(arch.spice));
   fprint_include_user_defined_netlists(fp, *(arch.spice));
+
+  fprintf(fp, "****** Include subckt netlists: LUTs *****\n");
+  temp_include_file_path = my_strcat(formatted_subckt_dir_path, luts_spice_file_name);
+  fprintf(fp, ".include \'%s\'\n", temp_include_file_path);
+  my_free(temp_include_file_path);
 
   /* Generate filename */
   fprintf(fp, "****** Include subckt netlists: Grid[%d][%d] *****\n",
