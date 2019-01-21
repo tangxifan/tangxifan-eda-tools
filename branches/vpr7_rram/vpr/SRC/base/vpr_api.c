@@ -176,6 +176,7 @@ void vpr_print_usage(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_print_top_testbench\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_print_lut_testbench\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_print_hardlogic_testbench\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_print_io_testbench\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_print_pb_mux_testbench\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_print_cb_mux_testbench\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_spice_print_sb_mux_testbench\n");

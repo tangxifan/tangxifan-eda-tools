@@ -159,7 +159,23 @@ void fprint_spice_lut_subckt(FILE* fp,
 
   /* Input buffers */
   assert (1 == num_input_port);
-  assert (NULL == input_port);
+  assert (NULL != input_port);
+
+  /* If this is a regular LUT, we give a default tri_state_map */
+  if (FALSE == spice_model->design_tech_info.lut_info->frac_lut) {
+    for (iport = 0; iport < num_input_port; iport++) {
+      if (NULL == input_port[iport]->tri_state_map) {
+        input_port[iport]->tri_state_map = (char*)my_calloc(input_port[iport]->size, sizeof(char)); 
+      } else { 
+        vpr_printf(TIO_MESSAGE_WARNING, 
+                   "(File:%s, [LINE%d])Overwrite the tri-state map for the LUT inputs (name=%s)!\n",
+                   __FILE__, __LINE__, spice_model->name);
+      }
+      for (ipin = 0; ipin < input_port[iport]->size; ipin++) {
+        input_port[iport]->tri_state_map[ipin] = '-';
+      }
+    }
+  }
 
   /* Add AND/OR gates if this is a fracturable LUT */
   for (iport = 0; iport < num_input_port; iport++) {
@@ -256,13 +272,15 @@ void fprint_spice_lut_subckt(FILE* fp,
       }
     }
     /* Check if we have dumped all the SRAM ports for mode selection */
-    if (mode_lsb != sram_port[mode_port_index]->size) {
+    if ((OPEN != mode_port_index)
+       &&(mode_lsb != sram_port[mode_port_index]->size)) {
       vpr_printf(TIO_MESSAGE_ERROR, 
                 "(FILE:%s,LINE[%d]) SPICE model LUT (name=%s) has a unmatched tri-state map (%s) implied by mode_port size(%d)!\n",
                 __FILE__, __LINE__, 
                 spice_model->name, input_port[iport]->tri_state_map[ipin], input_port[iport]->size); 
       exit(1);
     }
+
     /* Create inverters between input port and its inversion */
     for (ipin = 0; ipin < input_port[iport]->size; ipin++) {
       switch (input_port[iport]->tri_state_map[ipin]) {  
@@ -341,6 +359,7 @@ void fprint_spice_lut_subckt(FILE* fp,
       }
     }
   }
+
 
   /* Output buffers already included in LUT MUX */
   /* LUT MUX*/

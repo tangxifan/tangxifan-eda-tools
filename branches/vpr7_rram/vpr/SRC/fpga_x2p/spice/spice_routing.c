@@ -36,7 +36,6 @@
 #include "spice_utils.h"
 #include "spice_mux.h"
 #include "spice_lut.h"
-#include "spice_primitives.h"
 #include "fpga_x2p_backannotate_utils.h"
 #include "spice_routing.h"
 

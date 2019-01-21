@@ -90,6 +90,7 @@ enum e_OptionBaseToken {
     OT_FPGA_SPICE_PRINT_GRID_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for Grids */
     OT_FPGA_SPICE_PRINT_LUT_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for LUTs */
     OT_FPGA_SPICE_PRINT_HARDLOGIC_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for hard logic s */
+    OT_FPGA_SPICE_PRINT_IO_TESTBENCH, /* Xifan TANG: Print SPICE Testbench for hard logic s */
     OT_FPGA_SPICE_LEAKAGE_ONLY, /* Xifan TANG: Print SPICE Testbench for MUXes */
     OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION, /* Xifan TANG: turn on/off the parasitic net estimation*/
     OT_FPGA_SPICE_TESTBENCH_LOAD_EXTRACTION, /* Xifan TANG: turn on/off the testbench load extraction */

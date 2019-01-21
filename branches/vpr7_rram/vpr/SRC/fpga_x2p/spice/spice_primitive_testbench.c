@@ -544,7 +544,7 @@ void fprint_spice_primitive_testbench_rec_pb_primitives(FILE* fp,
     /* Print a lut tb: call spice_model, stimulates */
     fprint_spice_primitive_testbench_one_pb_primitive(fp, 
                                                       cur_pb, 
-                                                      cur_pb->pb_graph_node, 
+                                                      cur_pb_graph_node, 
                                                       rec_prefix, x, y, 
                                                       primitive_tb_type, 
                                                       LL_rr_node_indices);
@@ -993,8 +993,22 @@ void spice_print_primitive_testbench(char* formatted_spice_dir,
   int cnt = 0;
   int used = 0;
 
-  for (ix = 1; ix < (nx+1); ix++) {
-    for (iy = 1; iy < (ny+1); iy++) {
+
+  /* Other testbenches consider the core logic only */
+  for (ix = 0; ix < (nx + 2); ix++) {
+    for (iy = 0; iy < (ny + 2); iy++) {
+      /* Bypass EMPTY GRIDs */
+      if (EMPTY_TYPE == grid[ix][iy].type) {
+        continue;
+      }
+      /* If this is a block on perimeter,
+       * bypass the grid unless IO_testbench is required  
+       */
+      if ( ( (nx + 1 == ix) || (0 == ix)
+         || (ny + 1 == iy) || (0 == iy) )
+         && (SPICE_IO_TB != primitive_tb_type)) {
+        continue;
+      }
       /* Name the testbench */
       switch (primitive_tb_type) {
       case SPICE_LUT_TB:

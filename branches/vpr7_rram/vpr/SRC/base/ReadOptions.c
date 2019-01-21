@@ -504,6 +504,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
       return Args;
     case OT_FPGA_SPICE_PRINT_HARDLOGIC_TESTBENCH:
       return Args;
+    case OT_FPGA_SPICE_PRINT_IO_TESTBENCH:
+      return Args;
     case OT_FPGA_SPICE_LEAKAGE_ONLY:
       return Args;
     case OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION:

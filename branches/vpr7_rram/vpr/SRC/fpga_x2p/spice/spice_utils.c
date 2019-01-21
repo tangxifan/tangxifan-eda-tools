@@ -699,6 +699,7 @@ void fprint_global_pad_ports_spice_model(FILE* fp,
     case SPICE_MODEL_SCFF:
     case SPICE_MODEL_INVBUF:
     case SPICE_MODEL_PASSGATE: 
+    case SPICE_MODEL_GATE: 
       break;
     default:
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Unknown type for spice model!\n",
@@ -3374,7 +3375,9 @@ void fprint_spice_testbench_one_cb_mux_loads(FILE* fp, int* testbench_load_cnt,
   assert(NULL != cb_out_pb_graph_pin);
    
   /* Get the pb ! Get the mode_index */
-  cb_out_pb = (t_phy_pb*)(src_rr_node->pb->phy_pb);
+  if (NULL != src_rr_node->pb) {
+    cb_out_pb = (t_phy_pb*)(src_rr_node->pb->phy_pb);
+  }
 
   if (IO_TYPE == cb_out_grid_type) {
     fprintf(fp, "******* IO_TYPE loads *******\n");

@@ -73,6 +73,7 @@ struct s_TokenPair OptionBaseTokenList[] = {
         { "fpga_spice_print_grid_testbench", OT_FPGA_SPICE_PRINT_GRID_TESTBENCH }, /* Print the SPICE Testbench for Grids  */
         { "fpga_spice_print_lut_testbench", OT_FPGA_SPICE_PRINT_LUT_TESTBENCH }, /* Print the SPICE Testbench for Grids  */
         { "fpga_spice_print_hardlogic_testbench", OT_FPGA_SPICE_PRINT_HARDLOGIC_TESTBENCH }, /* Print the SPICE Testbench for Grids  */
+        { "fpga_spice_print_io_testbench", OT_FPGA_SPICE_PRINT_IO_TESTBENCH }, /* Print the SPICE Testbench for Grids  */
         { "fpga_spice_leakage_only", OT_FPGA_SPICE_LEAKAGE_ONLY }, /* Only simulate leakage power in FPGA SPICE */
         { "fpga_spice_parasitic_net_estimation", OT_FPGA_SPICE_PARASITIC_NET_ESTIMATION}, /* Xifan TANG: turn on/off the parasitic net estimation*/
         { "fpga_spice_testbench_load_extraction", OT_FPGA_SPICE_TESTBENCH_LOAD_EXTRACTION}, /* Xifan TANG: turn on/off the parasitic net estimation*/

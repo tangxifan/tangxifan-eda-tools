@@ -33,7 +33,7 @@
 #include "spice_utils.h"
 #include "spice_mux.h"
 #include "spice_lut.h"
-#include "spice_primitives.h"
+#include "spice_primitive.h"
 #include "spice_pbtypes.h"
 
 /***** Subroutines *****/
@@ -946,6 +946,8 @@ void fprint_pb_primitive_spice_model(FILE* fp,
                __FILE__, __LINE__); 
     exit(1);
   }
+ 
+  prim_pb_type = prim_pb_graph_node->pb_type;
 
   /* Asserts*/
   assert(pb_index == prim_pb_graph_node->placement_index);
@@ -1403,22 +1405,12 @@ void fprint_spice_phy_pb_graph_node_rec(FILE* fp,
   }
 
   /* Check if this has defined a spice_model*/
-  if (NULL != cur_pb_type->spice_model) {
+  if (TRUE == is_primitive_pb_type(cur_pb_type)) {
     switch (cur_pb_type->class_type) {
     case LUT_CLASS: 
-      if (1 == is_idle) {
-        fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
-                                        NULL, cur_pb_graph_node, 
-                                        pb_type_index, cur_pb_type->spice_model, is_idle);
-      } else {
-        child_pb = get_lut_child_phy_pb(cur_pb, mode_index); 
-        /* Special care for LUT !!!
-         * Mapped logical block information is stored in child_pbs
-         */
-        fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
-                                        child_pb, cur_pb_graph_node, 
-                                        pb_type_index, cur_pb_type->spice_model, is_idle);
-      }
+      fprint_pb_primitive_spice_model(fp, formatted_subckt_prefix, 
+                                      cur_pb, cur_pb_graph_node, 
+                                      pb_type_index, cur_pb_type->spice_model, is_idle);
       break;
     case LATCH_CLASS:
       assert(0 == cur_pb_type->num_modes);

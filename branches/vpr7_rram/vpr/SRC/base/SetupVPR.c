@@ -974,6 +974,7 @@ static void SetupSpiceOpts(t_options Options,
   spice_opts->fpga_spice_print_sb_testbench = FALSE;
   spice_opts->fpga_spice_print_lut_testbench = FALSE;
   spice_opts->fpga_spice_print_hardlogic_testbench = FALSE;
+  spice_opts->fpga_spice_print_io_testbench = FALSE;
   spice_opts->fpga_spice_print_grid_testbench = FALSE;
   spice_opts->fpga_spice_leakage_only = FALSE;
   spice_opts->fpga_spice_parasitic_net_estimation = TRUE;
@@ -1012,6 +1013,9 @@ static void SetupSpiceOpts(t_options Options,
     }
     if (Options.Count[OT_FPGA_SPICE_PRINT_HARDLOGIC_TESTBENCH]) {
       spice_opts->fpga_spice_print_hardlogic_testbench = TRUE;
+    }
+    if (Options.Count[OT_FPGA_SPICE_PRINT_IO_TESTBENCH]) {
+      spice_opts->fpga_spice_print_io_testbench = TRUE;
     }
     if (Options.Count[OT_FPGA_SPICE_LEAKAGE_ONLY]) {
       spice_opts->fpga_spice_leakage_only = TRUE;
