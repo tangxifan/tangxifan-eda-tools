@@ -631,12 +631,12 @@ void fprint_spice_primitive_testbench_call_one_grid_defined_primitives(FILE* fp,
 
   for (iblk = 0; iblk < grid[ix][iy].usage; iblk++) {
     prefix = (char*)my_malloc(sizeof(char)* (5 
-                    + strlen(my_itoa(block[grid[ix][iy].blocks[iblk]].x)) 
-                    + 2 + strlen(my_itoa(block[grid[ix][iy].blocks[iblk]].y)) 
+                    + strlen(my_itoa(ix)) 
+                    + 2 + strlen(my_itoa(iy)) 
                     + 3 ));
     sprintf(prefix, "grid[%d][%d]_", 
-            block[grid[ix][iy].blocks[iblk]].x,
-            block[grid[ix][iy].blocks[iblk]].y);
+            ix,
+            iy);
     /* Only for mapped block */
     assert(NULL != block[grid[ix][iy].blocks[iblk]].phy_pb);
     /* It is weird that some used block has an invalid ID */

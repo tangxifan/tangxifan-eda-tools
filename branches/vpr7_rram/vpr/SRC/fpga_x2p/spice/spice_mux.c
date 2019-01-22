@@ -831,8 +831,14 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
   fprintf(fp, "svdd sgnd");
   fprintf(fp, "\n");
 
+  /* Handle the corner case: input size = 2 */
+  cur_mux_structure = spice_model.design_tech_info.mux_info->structure;
+  if (2 == spice_mux_arch.num_input) {
+    cur_mux_structure = SPICE_MODEL_STRUCTURE_ONELEVEL;
+  }
+  
   /* Print internal architecture*/ 
-  switch (spice_model.design_tech_info.mux_info->structure) {
+  switch (cur_mux_structure) {
   case SPICE_MODEL_STRUCTURE_TREE:
     fprint_spice_cmos_mux_tree_structure(fp, mux_basis_subckt_name, 
                                          spice_model, spice_mux_arch, num_sram_port, sram_port);

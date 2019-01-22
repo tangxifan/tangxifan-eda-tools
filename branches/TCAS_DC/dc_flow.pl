@@ -1,10 +1,10 @@
 #!usr/bin/perl -w
 use strict;
-use Shell;
+#use Shell;
 #Use the time
 use Time::gmtime;
 # Use switch module
-use Switch;
+#use Switch;
 use File::Path;
 use Cwd;
 use FileHandle;
