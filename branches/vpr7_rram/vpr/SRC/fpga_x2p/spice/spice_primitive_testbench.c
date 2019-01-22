@@ -178,9 +178,10 @@ void fprint_spice_primitive_testbench_call_one_primitive(FILE* fp,
     fprintf(fp, "+ ");
   }
 
-  /* 4. Inout ports */
+  /* 4. Inout ports: INOUTs are currently global ports, so we do not put it here. */
   /* INOUT ports */
   /* Find pb_type inout ports */
+  /*
   inout_ports = find_spice_model_ports(primitive_spice_model, SPICE_MODEL_PORT_INOUT, &num_inout_port, TRUE);
   for (iport = 0; iport < num_inout_port; iport++) {
     for (ipin = 0; ipin < inout_ports[iport]->size; ipin++) {
@@ -195,6 +196,7 @@ void fprint_spice_primitive_testbench_call_one_primitive(FILE* fp,
     fprintf(fp, "\n");
     fprintf(fp, "+ ");
   }
+  */
 
   /* Clocks */
   /* Identify if the clock port is a global signal */
