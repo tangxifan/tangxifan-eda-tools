@@ -7,6 +7,7 @@ set spice_output_dirname = sram_fpga_hetero
 set spice_output_dirpath = $PWD
 # VPR critical inputs
 #set arch_xml_file = ARCH/k6_N10_MD_tsmc40nm_chain_TT.xml 
+#set arch_xml_file = ARCH/ed_dev.xml 
 set arch_xml_file = ARCH/k6_N10_SC_tsmc40nm_chain_TT.xml 
 #set arch_xml_file = ARCH/k6_N10_SC_tsmc40nm_chain_TT_yosys.xml 
 #set arch_xml_file = ARCH/k6_N10_sram_chain_SC_gf130_2x2.xml

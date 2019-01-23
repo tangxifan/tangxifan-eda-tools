@@ -800,13 +800,13 @@ void dump_verilog_dangling_des_pb_graph_pin_interc(FILE* fp,
   return;
 }
 
-void generate_verilog_src_des_pb_graph_pin_prefix(t_pb_graph_node* src_pb_graph_node,
-                                                t_pb_graph_node* des_pb_graph_node,
-                                                enum e_spice_pin2pin_interc_type pin2pin_interc_type,
-                                                t_interconnect* pin2pin_interc,
-                                                char* parent_pin_prefix,
-                                                char** src_pin_prefix,
-                                                char** des_pin_prefix) {
+void generate_verilog_src_des_pb_graph_pin_prefix(t_pb_graph_pin* src_pb_graph_pin,
+                                                  t_pb_graph_pin* des_pb_graph_pin,
+                                                  enum e_spice_pin2pin_interc_type pin2pin_interc_type,
+                                                  t_interconnect* pin2pin_interc,
+                                                  char* parent_pin_prefix,
+                                                  char** src_pin_prefix,
+                                                  char** des_pin_prefix) {
   t_pb_type* src_pb_type = NULL;
   int src_pb_type_index = -1;
 
@@ -814,13 +814,13 @@ void generate_verilog_src_des_pb_graph_pin_prefix(t_pb_graph_node* src_pb_graph_
   int des_pb_type_index = -1;
   
   /* Check the pb_graph_nodes*/ 
-  if (NULL == src_pb_graph_node) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid pointer: src_pb_graph_node.\n", 
+  if (NULL == src_pb_graph_pin) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid pointer: src_pb_graph_pin.\n", 
                __FILE__, __LINE__); 
     exit(1);
   }
-  if (NULL == des_pb_graph_node) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid pointer: des_pb_graph_node.\n", 
+  if (NULL == des_pb_graph_pin) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid pointer: des_pb_graph_pin.\n", 
                __FILE__, __LINE__); 
     exit(1);
   }
@@ -831,10 +831,10 @@ void generate_verilog_src_des_pb_graph_pin_prefix(t_pb_graph_node* src_pb_graph_
   }
 
   /* Initialize */
-  src_pb_type = src_pb_graph_node->pb_type; 
-  src_pb_type_index = src_pb_graph_node->placement_index;
-  des_pb_type = des_pb_graph_node->pb_type; 
-  des_pb_type_index = des_pb_graph_node->placement_index;
+  src_pb_type = src_pb_graph_pin->parent_node->pb_type; 
+  src_pb_type_index = src_pb_graph_pin->parent_node->placement_index;
+  des_pb_type = des_pb_graph_pin->parent_node->pb_type; 
+  des_pb_type_index = des_pb_graph_pin->parent_node->placement_index;
   
   assert(NULL == (*src_pin_prefix));
   assert(NULL == (*des_pin_prefix));
@@ -850,7 +850,8 @@ void generate_verilog_src_des_pb_graph_pin_prefix(t_pb_graph_node* src_pb_graph_
      * src_pin_prefix = <formatted_parent_pin_prefix>_<src_pb_type>[<src_pb_type_index>]
      * des_pin_prefix = <formatted_parent_pin_prefix>mode[<mode_name>]_<des_pb_type>[<des_pb_type_index>]_
      */
-    if (src_pb_type == des_pb_type->parent_mode->parent_pb_type) { /* Interconnection from parent pb_type*/
+    if ((src_pb_type == des_pb_type->parent_mode->parent_pb_type)  /* Interconnection from parent pb_type*/
+      || (des_pb_type == src_pb_type)) { /* This is an output pin from parent pb_type*/
       /*
       (*src_pin_prefix) = my_strdup(chomped_parent_pin_prefix);
       */
@@ -880,10 +881,20 @@ void generate_verilog_src_des_pb_graph_pin_prefix(t_pb_graph_node* src_pb_graph_
             formatted_parent_pin_prefix, pin2pin_interc_parent_mode->name, des_pb_type->name, des_pb_type_index);
     */
     /*Simplify the prefix, make the SPICE netlist readable*/
-    (*des_pin_prefix) = (char*)my_malloc(sizeof(char)*
-                        (strlen(des_pb_type->name) + 1 + strlen(my_itoa(des_pb_type_index)) + 1 + 1));
-    sprintf((*des_pin_prefix), "%s_%d_",
-             des_pb_type->name, des_pb_type_index);
+    if (des_pb_type == src_pb_type) { /* src pin is an output of  parent pb_type*/
+      /*
+      (*des_pin_prefix) = my_strdup(chomped_parent_pin_prefix);
+      */
+      /*Simplify the prefix, make the SPICE netlist readable*/
+      (*des_pin_prefix) = (char*)my_malloc(sizeof(char)*
+                           (5 + strlen(des_pb_type->parent_mode->name) + 2));
+      sprintf((*des_pin_prefix), "mode_%s_", des_pb_type->parent_mode->name);
+    } else {
+      (*des_pin_prefix) = (char*)my_malloc(sizeof(char)*
+                          (strlen(des_pb_type->name) + 1 + strlen(my_itoa(des_pb_type_index)) + 1 + 1));
+      sprintf((*des_pin_prefix), "%s_%d_",
+               des_pb_type->name, des_pb_type_index);
+    }
     break;
   case OUTPUT2OUTPUT_INTERC:
     /* src_pb_graph_node.output_pins -----------------> des_pb_graph_node.output_pins 
@@ -900,11 +911,22 @@ void generate_verilog_src_des_pb_graph_pin_prefix(t_pb_graph_node* src_pb_graph_
             formatted_parent_pin_prefix, pin2pin_interc_parent_mode->name, src_pb_type->name, src_pb_type_index);
     */
     /*Simplify the prefix, make the SPICE netlist readable*/
-    (*src_pin_prefix) = (char*)my_malloc(sizeof(char)*
-                        (strlen(src_pb_type->name) + 1 + strlen(my_itoa(src_pb_type_index)) + 1 + 1));
-    sprintf((*src_pin_prefix), "%s_%d_",
-            src_pb_type->name, src_pb_type_index);
-    if (des_pb_type == src_pb_type->parent_mode->parent_pb_type) { /* Interconnection from parent pb_type*/
+    if (des_pb_type == src_pb_type) { /* src pin is an input of  parent pb_type*/
+      /*
+      (*des_pin_prefix) = my_strdup(chomped_parent_pin_prefix);
+      */
+      /*Simplify the prefix, make the SPICE netlist readable*/
+      (*src_pin_prefix) = (char*)my_malloc(sizeof(char)*
+                           (5 + strlen(src_pb_type->parent_mode->name) + 2));
+      sprintf((*src_pin_prefix), "mode_%s_", src_pb_type->parent_mode->name);
+    } else {
+      (*src_pin_prefix) = (char*)my_malloc(sizeof(char)*
+                          (strlen(src_pb_type->name) + 1 + strlen(my_itoa(src_pb_type_index)) + 1 + 1));
+      sprintf((*src_pin_prefix), "%s_%d_",
+              src_pb_type->name, src_pb_type_index);
+    }
+    if ((des_pb_type == src_pb_type->parent_mode->parent_pb_type) /* Interconnection from parent pb_type*/
+      || (des_pb_type == src_pb_type)) { /* Interconnection from parent pb_type*/
       /*
       (*des_pin_prefix) = my_strdup(chomped_parent_pin_prefix);
       */
@@ -1057,8 +1079,8 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
     /* Des pin, node, pb_type */
     des_pb_graph_node  = des_pb_graph_pin->parent_node;
     /* Generate the pin_prefix for src_pb_graph_node and des_pb_graph_node*/
-    generate_verilog_src_des_pb_graph_pin_prefix(src_pb_graph_node, des_pb_graph_node, pin2pin_interc_type, 
-                                               cur_interc, formatted_parent_pin_prefix, &src_pin_prefix, &des_pin_prefix);
+    generate_verilog_src_des_pb_graph_pin_prefix(src_pb_graph_pin, des_pb_graph_pin, pin2pin_interc_type, 
+                                                 cur_interc, formatted_parent_pin_prefix, &src_pin_prefix, &des_pin_prefix);
     /* Call the subckt that has already been defined before */
     fprintf(fp, "%s ", cur_interc->spice_model->name);
     fprintf(fp, "%s_%d_ (", cur_interc->spice_model->prefix, cur_interc->spice_model->cnt); 
@@ -1116,8 +1138,8 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
       /* Des pin, node, pb_type */
       des_pb_graph_node  = des_pb_graph_pin->parent_node;
       /* Generate the pin_prefix for src_pb_graph_node and des_pb_graph_node*/
-      generate_verilog_src_des_pb_graph_pin_prefix(src_pb_graph_node, des_pb_graph_node, pin2pin_interc_type, 
-                                                 cur_interc, formatted_parent_pin_prefix, &src_pin_prefix, &des_pin_prefix);
+      generate_verilog_src_des_pb_graph_pin_prefix(src_pb_graph_pin, des_pb_graph_pin, pin2pin_interc_type, 
+                                                   cur_interc, formatted_parent_pin_prefix, &src_pin_prefix, &des_pin_prefix);
       /* We need to find out if the des_pb_graph_pin is in the mode we want !*/
       /* Print */
       fprintf(fp, "assign in_bus_%s_size%d_%d_[%d] = ",
@@ -1174,7 +1196,7 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
     fprintf(fp, "in_bus_%s_size%d_%d_, ",
             cur_interc->spice_model->name, fan_in, cur_interc->spice_model->cnt);
     /* Generate the pin_prefix for src_pb_graph_node and des_pb_graph_node*/
-    generate_verilog_src_des_pb_graph_pin_prefix(src_pb_graph_node, des_pb_graph_node, pin2pin_interc_type, 
+    generate_verilog_src_des_pb_graph_pin_prefix(src_pb_graph_pin, des_pb_graph_pin, pin2pin_interc_type, 
                                                cur_interc, formatted_parent_pin_prefix, &src_pin_prefix, &des_pin_prefix);
     /* Outputs */
     fprintf(fp, "%s__%s_%d_, ", 

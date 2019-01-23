@@ -62,7 +62,7 @@ void dump_verilog_top_auto_testbench_ports(FILE* fp,
 
   fprintf(fp, "`include \"%s\"\n", fpga_verilog_opts.reference_verilog_benchmark_file);
 
-  fprintf(fp, "module %s_top_autocheck_tb;\n", circuit_name);
+  fprintf(fp, "module %s%s;\n", circuit_name, modelsim_autocheck_testbench_module_postfix);
   /* Local wires */
   /* 1. reset, set, clock signals */
   /* 2. iopad signals */
