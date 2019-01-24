@@ -919,8 +919,8 @@ void generate_verilog_src_des_pb_graph_pin_prefix(t_pb_graph_pin* src_pb_graph_p
     */
     /*Simplify the prefix, make the SPICE netlist readable*/
     (*des_pin_prefix) = (char*)my_malloc(sizeof(char)*
-                         (5 + strlen(src_pb_type->parent_mode->name) + 2));
-    sprintf((*des_pin_prefix), "mode_%s_", src_pb_type->parent_mode->name);
+                         (5 + strlen(pin2pin_interc->parent_mode->name) + 2));
+    sprintf((*des_pin_prefix), "mode_%s_", pin2pin_interc->parent_mode->name);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s [LINE%d])Invalid pin to pin interconnection type!\n",
