@@ -850,8 +850,7 @@ void generate_verilog_src_des_pb_graph_pin_prefix(t_pb_graph_pin* src_pb_graph_p
      * src_pin_prefix = <formatted_parent_pin_prefix>_<src_pb_type>[<src_pb_type_index>]
      * des_pin_prefix = <formatted_parent_pin_prefix>mode[<mode_name>]_<des_pb_type>[<des_pb_type_index>]_
      */
-    if ((src_pb_type == des_pb_type->parent_mode->parent_pb_type)  /* Interconnection from parent pb_type*/
-      || (des_pb_type == src_pb_type)) { /* This is an output pin from parent pb_type*/
+    if (src_pb_type == des_pb_type->parent_mode->parent_pb_type) {  /* Interconnection from parent pb_type*/
       /*
       (*src_pin_prefix) = my_strdup(chomped_parent_pin_prefix);
       */
@@ -887,8 +886,8 @@ void generate_verilog_src_des_pb_graph_pin_prefix(t_pb_graph_pin* src_pb_graph_p
       */
       /*Simplify the prefix, make the SPICE netlist readable*/
       (*des_pin_prefix) = (char*)my_malloc(sizeof(char)*
-                           (5 + strlen(des_pb_type->parent_mode->name) + 2));
-      sprintf((*des_pin_prefix), "mode_%s_", des_pb_type->parent_mode->name);
+                           (5 + strlen(pin2pin_interc->parent_mode->name) + 2));
+      sprintf((*des_pin_prefix), "mode_%s_", pin2pin_interc->parent_mode->name);
     } else {
       (*des_pin_prefix) = (char*)my_malloc(sizeof(char)*
                           (strlen(des_pb_type->name) + 1 + strlen(my_itoa(des_pb_type_index)) + 1 + 1));
@@ -917,16 +916,15 @@ void generate_verilog_src_des_pb_graph_pin_prefix(t_pb_graph_pin* src_pb_graph_p
       */
       /*Simplify the prefix, make the SPICE netlist readable*/
       (*src_pin_prefix) = (char*)my_malloc(sizeof(char)*
-                           (5 + strlen(src_pb_type->parent_mode->name) + 2));
-      sprintf((*src_pin_prefix), "mode_%s_", src_pb_type->parent_mode->name);
+                           (5 + strlen(pin2pin_interc->parent_mode->name) + 2));
+      sprintf((*src_pin_prefix), "mode_%s_", pin2pin_interc->parent_mode->name);
     } else {
       (*src_pin_prefix) = (char*)my_malloc(sizeof(char)*
                           (strlen(src_pb_type->name) + 1 + strlen(my_itoa(src_pb_type_index)) + 1 + 1));
       sprintf((*src_pin_prefix), "%s_%d_",
               src_pb_type->name, src_pb_type_index);
     }
-    if ((des_pb_type == src_pb_type->parent_mode->parent_pb_type) /* Interconnection from parent pb_type*/
-      || (des_pb_type == src_pb_type)) { /* Interconnection from parent pb_type*/
+    if (des_pb_type == src_pb_type->parent_mode->parent_pb_type) { /* Interconnection from parent pb_type*/
       /*
       (*des_pin_prefix) = my_strdup(chomped_parent_pin_prefix);
       */
