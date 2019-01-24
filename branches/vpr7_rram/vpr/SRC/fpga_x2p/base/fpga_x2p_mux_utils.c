@@ -222,7 +222,7 @@ int* decode_multilevel_mux_sram_bits(int fan_in,
   assert((0 == path_id)||(0 < path_id));
   assert(path_id < fan_in);
    
-  /* TODO: determine the number of input of basis */
+  /* determine the number of input of basis */
   switch (mux_level) {
   case 1:
     /* Special: 1-level should be have special care !!! */
@@ -249,14 +249,19 @@ int* decode_multilevel_mux_sram_bits(int fan_in,
   active_mux_level = mux_level; 
   active_path_id = path_id; 
   if (num_last_level_input < fan_in) {
-    if (path_id > num_last_level_input) {
+    if (path_id > num_last_level_input - 1) {
       active_mux_level = mux_level - 1; 
       active_path_id = (int)pow((double)num_input_basis,(double)(active_mux_level)) - (fan_in - path_id); 
     }
   } else {
     assert(num_last_level_input == fan_in);
   }
-
+  /*
+  if ((41 == fan_in) && (40 == path_id)) {
+    printf("num_last_level_input=%d, active_mux_lvl=%d, active_path_id=%d\n",
+           num_last_level_input, active_mux_level, active_path_id);
+  }
+  */
   temp = active_path_id;
   for (i = mux_level - 1; i > (mux_level - active_mux_level - 1); i--) {
     for (j = 0; j < num_input_basis; j++) {
