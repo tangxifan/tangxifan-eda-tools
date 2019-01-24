@@ -168,14 +168,14 @@ int multilevel_mux_last_level_input_num(int num_level, int num_input_per_unit,
     /* should be smaller than the num_input_per_unit */
     assert((!(0 > num_potential_special_inputs))&&(num_potential_special_inputs < num_input_per_unit));
     /* We need a speical basis */
-    num_special_basis = pow((double)(num_input_per_unit), (double)(num_level-1)) - num_basis_last_level;
+    num_special_basis = pow((double)(num_input_per_unit), (double)(num_level - 1)) - num_basis_last_level;
     if (ret == num_special_basis) {
       num_input_special_basis = 0;
     } else if (1 == num_special_basis) {
       num_input_special_basis = ret;
     } else {
       assert ( 1 < num_special_basis );
-      num_input_special_basis = ret;
+      num_input_special_basis = ret - 1;
     }
     ret = num_input_special_basis + num_basis_last_level * num_input_per_unit;
   } else {
@@ -633,10 +633,15 @@ void init_spice_mux_arch(t_spice_model* spice_model,
   }
   /* For the last second level*/
   if (spice_mux_arch->num_input > spice_mux_arch->num_input_last_level) {
-    cur = spice_mux_arch->num_input_last_level / spice_mux_arch->num_input_basis;
+    cur = ceil((double)spice_mux_arch->num_input_last_level / (double)spice_mux_arch->num_input_basis);
     /* Start from the input ports that are not occupied by the last level
      * last level has (cur) outputs
      */
+    /*
+    printf("size:%d, cur:%d, num_input_last_level=%d, num_input_basis=%d\n",
+          spice_mux_arch->num_input, cur,
+          spice_mux_arch->num_input_last_level, spice_mux_arch->num_input_basis);
+    */
     for (i = spice_mux_arch->num_input_last_level; i < spice_mux_arch->num_input; i++) {
       spice_mux_arch->input_level[i] = spice_mux_arch->num_level - 1;
       spice_mux_arch->input_offset[i] = cur; 
