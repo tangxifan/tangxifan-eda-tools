@@ -880,20 +880,10 @@ void generate_verilog_src_des_pb_graph_pin_prefix(t_pb_graph_pin* src_pb_graph_p
             formatted_parent_pin_prefix, pin2pin_interc_parent_mode->name, des_pb_type->name, des_pb_type_index);
     */
     /*Simplify the prefix, make the SPICE netlist readable*/
-    if (des_pb_type == src_pb_type) { /* src pin is an output of  parent pb_type*/
-      /*
-      (*des_pin_prefix) = my_strdup(chomped_parent_pin_prefix);
-      */
-      /*Simplify the prefix, make the SPICE netlist readable*/
-      (*des_pin_prefix) = (char*)my_malloc(sizeof(char)*
-                           (5 + strlen(pin2pin_interc->parent_mode->name) + 2));
-      sprintf((*des_pin_prefix), "mode_%s_", pin2pin_interc->parent_mode->name);
-    } else {
-      (*des_pin_prefix) = (char*)my_malloc(sizeof(char)*
-                          (strlen(des_pb_type->name) + 1 + strlen(my_itoa(des_pb_type_index)) + 1 + 1));
-      sprintf((*des_pin_prefix), "%s_%d_",
-               des_pb_type->name, des_pb_type_index);
-    }
+    (*des_pin_prefix) = (char*)my_malloc(sizeof(char)*
+                        (strlen(des_pb_type->name) + 1 + strlen(my_itoa(des_pb_type_index)) + 1 + 1));
+    sprintf((*des_pin_prefix), "%s_%d_",
+             des_pb_type->name, des_pb_type_index);
     break;
   case OUTPUT2OUTPUT_INTERC:
     /* src_pb_graph_node.output_pins -----------------> des_pb_graph_node.output_pins 
