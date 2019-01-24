@@ -1109,10 +1109,14 @@ void dump_verilog_top_testbench_stimuli_serial_version(t_sram_orgz_info* cur_sra
         fprintf(fp, "end\n");
         fprintf(fp, "always wait (~%s)\n", top_tb_reset_port_name);
         fprintf(fp, "  begin \n");
-        fprintf(fp, "    #%.2f %s%s%s[%d] = ~%s%s%s[%d];\n", 
-                (op_clock_period * cur_spice_net_info->density * 2. / cur_spice_net_info->probability) / verilog_sim_timescale, 
+        fprintf(fp, "    %s%s%s[%d] = ~%s%s%s[%d];\n #%.2f;\n", 
                 gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx,
-                gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx);
+                gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx,
+                (((float)(int)((100 * op_clock_period) / verilog_sim_timescale) / 100) * ((int)(cur_spice_net_info->probability / cur_spice_net_info->density)+ iblock)));
+        fprintf(fp, "    %s%s%s[%d] = ~%s%s%s[%d];\n #%.2f;\n", 
+                gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx,
+                gio_inout_prefix, iopad_verilog_model->prefix, top_tb_inout_reg_postfix, iopad_idx,
+                (((float)(int)((100 * op_clock_period) / verilog_sim_timescale) / 100) * ((int)(cur_spice_net_info->density / cur_spice_net_info->probability) * 2.5 + iblock)));
         fprintf(fp, "  end \n");
         fprintf(fp, "\n");
         found_mapped_inpad++;
