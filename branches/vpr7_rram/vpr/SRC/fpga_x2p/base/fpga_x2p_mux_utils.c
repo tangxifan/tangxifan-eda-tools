@@ -175,7 +175,7 @@ int multilevel_mux_last_level_input_num(int num_level, int num_input_per_unit,
       num_input_special_basis = ret;
     } else {
       assert ( 1 < num_special_basis );
-      num_input_special_basis = ret - 1;
+      num_input_special_basis = ret;
     }
     ret = num_input_special_basis + num_basis_last_level * num_input_per_unit;
   } else {
@@ -592,7 +592,8 @@ void init_spice_mux_arch(t_spice_model* spice_model,
     spice_mux_arch->num_level = determine_tree_mux_level(spice_mux_arch->num_input);
     spice_mux_arch->num_input_basis = 2;
     /* Determine the level and index of per MUX inputs*/
-    spice_mux_arch->num_input_last_level = tree_mux_last_level_input_num(spice_mux_arch->num_level, spice_mux_arch->num_input);
+    spice_mux_arch->num_input_last_level = tree_mux_last_level_input_num(spice_mux_arch->num_level, 
+                                                                         spice_mux_arch->num_input);
     break;
   case SPICE_MODEL_STRUCTURE_ONELEVEL:
     spice_mux_arch->num_level = 1;
@@ -607,9 +608,12 @@ void init_spice_mux_arch(t_spice_model* spice_model,
     } else {
       spice_mux_arch->num_level = spice_model->design_tech_info.mux_info->mux_num_level;
     }
-    spice_mux_arch->num_input_basis = determine_num_input_basis_multilevel_mux(spice_mux_arch->num_input, spice_mux_arch->num_level);
+    spice_mux_arch->num_input_basis = determine_num_input_basis_multilevel_mux(spice_mux_arch->num_input, 
+                                                                               spice_mux_arch->num_level);
     /* Determine the level and index of per MUX inputs*/
-    spice_mux_arch->num_input_last_level = multilevel_mux_last_level_input_num(spice_mux_arch->num_level, spice_mux_arch->num_input_basis, spice_mux_arch->num_input);
+    spice_mux_arch->num_input_last_level = multilevel_mux_last_level_input_num(spice_mux_arch->num_level, 
+                                                                               spice_mux_arch->num_input_basis, 
+                                                                               spice_mux_arch->num_input);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid structure for spice model (%s)!\n",
@@ -629,7 +633,7 @@ void init_spice_mux_arch(t_spice_model* spice_model,
   }
   /* For the last second level*/
   if (spice_mux_arch->num_input > spice_mux_arch->num_input_last_level) {
-    cur = spice_mux_arch->num_input_last_level/spice_mux_arch->num_input_basis;
+    cur = spice_mux_arch->num_input_last_level / spice_mux_arch->num_input_basis;
     /* Start from the input ports that are not occupied by the last level
      * last level has (cur) outputs
      */
@@ -643,7 +647,7 @@ void init_spice_mux_arch(t_spice_model* spice_model,
   }
   /* Fill the num_input_per_level*/
   for (i = 0; i < spice_mux_arch->num_level; i++) {
-    cur = i+1;
+    cur = i + 1;
     spice_mux_arch->num_input_per_level[i] = (int)pow((double)spice_mux_arch->num_input_basis, (double)cur);
     if ((cur == spice_mux_arch->num_level)
        &&(spice_mux_arch->num_input_last_level < spice_mux_arch->num_input_per_level[i])) {

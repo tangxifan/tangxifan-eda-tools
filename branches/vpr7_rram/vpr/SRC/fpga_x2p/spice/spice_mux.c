@@ -907,9 +907,9 @@ void fprint_spice_mux_model_cmos_subckt(FILE* fp,
     assert ( (0 == spice_model.design_tech_info.mux_info->const_input_val) 
             || (1 == spice_model.design_tech_info.mux_info->const_input_val) );
     fprintf(fp, "Rin%d mux2_l%d_in%d %s 0\n", 
-            mux_size,
-            spice_mux_arch.input_level[mux_size], 
-            spice_mux_arch.input_offset[mux_size], 
+            spice_mux_arch.num_input - 1,
+            spice_mux_arch.input_level[spice_mux_arch.num_input - 1], 
+            spice_mux_arch.input_offset[spice_mux_arch.num_input - 1], 
             convert_const_input_value_to_str(spice_model.design_tech_info.mux_info->const_input_val));
   }
 

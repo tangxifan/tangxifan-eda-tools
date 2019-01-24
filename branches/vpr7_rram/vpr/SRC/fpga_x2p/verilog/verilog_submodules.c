@@ -1021,7 +1021,9 @@ void dump_verilog_mux_basis_module(FILE* fp,
 
   /* Generate the spice_mux_arch */
   spice_mux_model->spice_mux_arch = (t_spice_mux_arch*)my_malloc(sizeof(t_spice_mux_arch));
-  init_spice_mux_arch(spice_mux_model->spice_model, spice_mux_model->spice_mux_arch, spice_mux_model->size);
+  init_spice_mux_arch(spice_mux_model->spice_model, 
+                      spice_mux_model->spice_mux_arch, 
+                      spice_mux_model->size);
 
   /* Corner case: Error out  MUX_SIZE = 2, automatcially give a one-level structure */
   /*
@@ -1460,8 +1462,9 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
     assert ( (0 == spice_model.design_tech_info.mux_info->const_input_val) 
             || (1 == spice_model.design_tech_info.mux_info->const_input_val) );
     fprintf(fp, "assign mux2_l%d_in[%d] = 1'b%d;\n", 
-            spice_mux_arch.input_level[mux_size], 
-            spice_mux_arch.input_offset[mux_size], spice_model.design_tech_info.mux_info->const_input_val);
+            spice_mux_arch.input_level[spice_mux_arch.num_input - 1], 
+            spice_mux_arch.input_offset[spice_mux_arch.num_input - 1], 
+            spice_model.design_tech_info.mux_info->const_input_val);
   }
 
   /* Output buffer*/
@@ -1914,6 +1917,18 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
               input_port[0]->prefix, i, spice_mux_arch.input_level[i], 
               spice_mux_arch.input_offset[i]);
     }
+  }
+
+  /* Special: for the last inputs, we connect to VDD|GND 
+   * TODO: create an option to select the connection VDD or GND  
+   */
+  if ((SPICE_MODEL_MUX == spice_model.type)
+     && (TRUE == spice_model.design_tech_info.mux_info->add_const_input)) { 
+    assert ( (0 == spice_model.design_tech_info.mux_info->const_input_val) 
+            || (1 == spice_model.design_tech_info.mux_info->const_input_val) );
+    fprintf(fp, "assign mux2_l%d_in[%d] = 1'b%d;\n", 
+            spice_mux_arch.input_level[spice_mux_arch.num_input], 
+            spice_mux_arch.input_offset[spice_mux_arch.num_input], spice_model.design_tech_info.mux_info->const_input_val);
   }
 
   /* Output buffer*/
