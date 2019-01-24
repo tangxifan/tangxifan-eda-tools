@@ -359,28 +359,13 @@ void generate_spice_src_des_pb_graph_pin_prefix(t_pb_graph_pin* src_pb_graph_pin
       sprintf((*src_pin_prefix), "%s[%d]",
               src_pb_type->name, src_pb_type_index);
     }
-    if (des_pb_type == src_pb_type->parent_mode->parent_pb_type) { /* Interconnection from parent pb_type*/
-      /*
-      (*des_pin_prefix) = my_strdup(chomped_parent_pin_prefix);
-      */
-      /*Simplify the prefix, make the SPICE netlist readable*/
-      (*des_pin_prefix) = (char*)my_malloc(sizeof(char)*
-                           (5 + strlen(src_pb_type->parent_mode->name) + 2));
-      sprintf((*des_pin_prefix), "mode[%s]", src_pb_type->parent_mode->name);
-    } else {
-      /*
-      (*des_pin_prefix) = (char*)my_malloc(sizeof(char)*
-                           (strlen(formatted_parent_pin_prefix) + 5 + strlen(pin2pin_interc_parent_mode->name)
-                           + 2 + strlen(des_pb_type->name) + 1 + strlen(my_itoa(des_pb_type_index)) + 1 + 1));
-      sprintf((*des_pin_prefix), "%smode[%s]_%s[%d]",
-              formatted_parent_pin_prefix, pin2pin_interc_parent_mode->name, des_pb_type->name, des_pb_type_index);
-      */
-      /*Simplify the prefix, make the SPICE netlist readable*/
-      (*des_pin_prefix) = (char*)my_malloc(sizeof(char)*
-                           (strlen(des_pb_type->name) + 1 + strlen(my_itoa(des_pb_type_index)) + 1 + 1));
-      sprintf((*des_pin_prefix), "%s[%d]",
-              des_pb_type->name, des_pb_type_index);
-    }
+    /*
+    (*des_pin_prefix) = my_strdup(chomped_parent_pin_prefix);
+    */
+    /*Simplify the prefix, make the SPICE netlist readable*/
+    (*des_pin_prefix) = (char*)my_malloc(sizeof(char)*
+                         (5 + strlen(src_pb_type->parent_mode->name) + 2));
+    sprintf((*des_pin_prefix), "mode[%s]", src_pb_type->parent_mode->name);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s [LINE%d])Invalid pin to pin interconnection type!\n",
