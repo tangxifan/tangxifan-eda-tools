@@ -754,10 +754,10 @@ void dump_verilog_cmos_mux_one_basis_module_structural(FILE* fp,
     /* Dump explicit port map if required */
     if (TRUE == tgate_spice_model->dump_explicit_port_map) {
       fprintf(fp, " (.%s(in[0]), .%s(mem[0]), .%s(mem_inv[0]), .%s(out));\n",
-              input_port[0]->prefix, 
-              input_port[1]->prefix, 
-              input_port[2]->prefix,
-              output_port[0]->prefix);
+              input_port[0]->lib_name, 
+              input_port[1]->lib_name, 
+              input_port[2]->lib_name,
+              output_port[0]->lib_name);
     } else {
       fprintf(fp, " (in[0], mem[0], mem_inv[0], out);\n");
     }
@@ -766,10 +766,10 @@ void dump_verilog_cmos_mux_one_basis_module_structural(FILE* fp,
     /* Dump explicit port map if required */
     if (TRUE == tgate_spice_model->dump_explicit_port_map) {
       fprintf(fp, " (.%s(in[1]), .%s(mem_inv[0]), .%s(mem[0]), .%s(out));\n",
-              input_port[0]->prefix, 
-              input_port[1]->prefix,
-              input_port[2]->prefix, 
-              output_port[0]->prefix);
+              input_port[0]->lib_name, 
+              input_port[1]->lib_name,
+              input_port[2]->lib_name, 
+              output_port[0]->lib_name);
     } else {
       fprintf(fp, " (in[1], mem_inv[0], mem[0], out);\n");
     }
@@ -785,10 +785,10 @@ void dump_verilog_cmos_mux_one_basis_module_structural(FILE* fp,
       /* Dump explicit port map if required */
       if (TRUE == tgate_spice_model->dump_explicit_port_map) {
         fprintf(fp, " (.%s(in[%d]), .%s(mem[%d]), .%s(mem_inv[%d]), .%s(out));\n",
-                input_port[0]->prefix, i,
-                input_port[1]->prefix, i,
-                input_port[2]->prefix, i,
-                output_port[0]->prefix);
+                input_port[0]->lib_name, i,
+                input_port[1]->lib_name, i,
+                input_port[2]->lib_name, i,
+                output_port[0]->lib_name);
       } else {
         fprintf(fp, " (in[%d], mem[%d], mem_inv[%d], out);\n",
                 i, i, i);
@@ -1492,7 +1492,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
       /* Dump explicit port map if required */
       if ( TRUE == spice_model.input_buffer->spice_model->dump_explicit_port_map) {
         fprintf(fp, ".%s(", 
-                buf_input_port[0]->prefix); 
+                buf_input_port[0]->lib_name); 
       }
       fprintf(fp, "%s[%d]", input_port[0]->prefix, i); /* input port */ 
       if ( TRUE == spice_model.input_buffer->spice_model->dump_explicit_port_map) {
@@ -1502,7 +1502,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
       /* Dump explicit port map if required */
       if ( TRUE == spice_model.input_buffer->spice_model->dump_explicit_port_map) {
         fprintf(fp, ".%s(", 
-                buf_output_port[0]->prefix); 
+                buf_output_port[0]->lib_name); 
       }
       fprintf(fp, "mux2_l%d_in[%d] ", spice_mux_arch.input_level[i], spice_mux_arch.input_offset[i]); /* output port*/
       if ( TRUE == spice_model.input_buffer->spice_model->dump_explicit_port_map) {
@@ -1560,7 +1560,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
         /* Dump explicit port map if required */
         if ( TRUE == spice_model.output_buffer->spice_model->dump_explicit_port_map) {
           fprintf(fp, ".%s(", 
-                  buf_input_port[0]->prefix); 
+                  buf_input_port[0]->lib_name); 
         }
         fprintf(fp, "mux2_l%d_in[%d]",
                   spice_mux_arch.num_level - output_port[iport]->lut_frac_level, 
@@ -1572,7 +1572,7 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
         /* Dump explicit port map if required */
         if ( TRUE == spice_model.output_buffer->spice_model->dump_explicit_port_map) {
           fprintf(fp, ".%s(", 
-                  buf_output_port[0]->prefix); 
+                  buf_output_port[0]->lib_name); 
         }
         fprintf(fp, "%s[%d]", output_port[iport]->prefix, ipin); /* Output port*/
         if ( TRUE == spice_model.output_buffer->spice_model->dump_explicit_port_map) {
@@ -1949,7 +1949,7 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
       /* Dump explicit port map if required */
       if ( TRUE == spice_model.input_buffer->spice_model->dump_explicit_port_map) {
         fprintf(fp, ".%s(", 
-                buf_input_port[0]->prefix); 
+                buf_input_port[0]->lib_name); 
       }
       fprintf(fp, "%s[%d], ", input_port[0]->prefix, i); /* input port */ 
       if ( TRUE == spice_model.input_buffer->spice_model->dump_explicit_port_map) {
@@ -1960,7 +1960,7 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
       /* Dump explicit port map if required */
       if ( TRUE == spice_model.input_buffer->spice_model->dump_explicit_port_map) {
         fprintf(fp, ".%s(", 
-                buf_output_port[0]->prefix); 
+                buf_output_port[0]->lib_name); 
       }
       fprintf(fp, "mux2_l%d_in[%d]);", spice_mux_arch.input_level[i], spice_mux_arch.input_offset[i]); /* output port*/
       if ( TRUE == spice_model.input_buffer->spice_model->dump_explicit_port_map) {
@@ -2012,7 +2012,7 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
     /* Dump explicit port map if required */
     if ( TRUE == spice_model.output_buffer->spice_model->dump_explicit_port_map) {
       fprintf(fp, ".%s(", 
-              buf_input_port[0]->prefix); 
+              buf_input_port[0]->lib_name); 
     }
     fprintf(fp, "mux2_l%d_in[%d]", 0 , 0); /* input port */ 
     if ( TRUE == spice_model.output_buffer->spice_model->dump_explicit_port_map) {
@@ -2023,7 +2023,7 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
     /* Dump explicit port map if required */
     if ( TRUE == spice_model.output_buffer->spice_model->dump_explicit_port_map) {
       fprintf(fp, ".%s(", 
-              buf_output_port[0]->prefix); 
+              buf_output_port[0]->lib_name); 
     }
     fprintf(fp, "%s", output_port[0]->prefix); /* Output port*/
     if ( TRUE == spice_model.output_buffer->spice_model->dump_explicit_port_map) {
@@ -2593,7 +2593,7 @@ void dump_verilog_submodule_one_lut(FILE* fp,
       /* Dump explicit port map if required */
       if (TRUE == verilog_model->lut_input_inverter->spice_model->dump_explicit_port_map) {
         fprintf(fp, ".%s(", 
-                buf_input_port[0]->prefix); 
+                buf_input_port[0]->lib_name); 
       }
       fprintf(fp, "%s[%d]", 
             input_port[0]->prefix, ipin);
@@ -2604,7 +2604,7 @@ void dump_verilog_submodule_one_lut(FILE* fp,
       /* Dump explicit port map if required */
       if (TRUE == verilog_model->lut_input_inverter->spice_model->dump_explicit_port_map) {
         fprintf(fp, ".%s(", 
-                buf_output_port[0]->prefix); 
+                buf_output_port[0]->lib_name); 
       }
       fprintf(fp, "%s_b[%d]", 
             input_port[0]->prefix, ipin);
@@ -2634,7 +2634,7 @@ void dump_verilog_submodule_one_lut(FILE* fp,
       /* Dump explicit port map if required */
       if (TRUE == verilog_model->lut_input_inverter->spice_model->dump_explicit_port_map) {
         fprintf(fp, ".%s(", 
-                buf_input_port[0]->prefix); 
+                buf_input_port[0]->lib_name); 
       }
       fprintf(fp, "%s%s[%d]", 
               input_port[0]->prefix, mode_inport_postfix, ipin);
@@ -2645,7 +2645,7 @@ void dump_verilog_submodule_one_lut(FILE* fp,
       /* Dump explicit port map if required */
       if (TRUE == verilog_model->lut_input_inverter->spice_model->dump_explicit_port_map) {
         fprintf(fp, ".%s(", 
-                buf_output_port[0]->prefix); 
+                buf_output_port[0]->lib_name); 
       }
       fprintf(fp, "%s_b[%d]", 
             input_port[0]->prefix, ipin);
@@ -2731,7 +2731,7 @@ void dump_verilog_submodule_one_lut(FILE* fp,
               /* Dump explicit port map if required */
               if (TRUE == input_port[0]->spice_model->dump_explicit_port_map) {
                 fprintf(fp, ".%s(", 
-                        modegate_input_port[jport]->prefix);
+                        modegate_input_port[jport]->lib_name);
               }
               fprintf(fp, "%s[%d]",
                       input_port[0]->prefix, ipin);
@@ -2742,7 +2742,7 @@ void dump_verilog_submodule_one_lut(FILE* fp,
               /* Dump explicit port map if required */
               if (TRUE == input_port[0]->spice_model->dump_explicit_port_map) {
                 fprintf(fp, ".%s(", 
-                        modegate_input_port[jport]->prefix);
+                        modegate_input_port[jport]->lib_name);
               }
               fprintf(fp, " %s_out[%d]",
                       sram_port[mode_port_index]->prefix, mode_lsb);
@@ -2758,7 +2758,7 @@ void dump_verilog_submodule_one_lut(FILE* fp,
         /* Dump explicit port map if required */
         if (TRUE == input_port[0]->spice_model->dump_explicit_port_map) {
           fprintf(fp, ".%s(", 
-                  modegate_output_port[0]->prefix);
+                  modegate_output_port[0]->lib_name);
         }
         fprintf(fp, " %s%s[%d]",
                 input_port[0]->prefix, mode_inport_postfix, ipin); 
@@ -3214,7 +3214,7 @@ void dump_one_verilog_template_module_one_port(FILE* fp, int* cnt,
     }
     dump_verilog_generic_port(fp, 
                               convert_spice_model_port_type_to_verilog_port_type(port_to_dump[iport]->type),
-                              port_to_dump[iport]->prefix, 
+                              port_to_dump[iport]->lib_name, 
                               port_to_dump[iport]->size - 1, 0); 
    (*cnt)++;
   }
@@ -3256,7 +3256,7 @@ void dump_one_verilog_template_module(FILE* fp,
     }
     dump_verilog_generic_port(fp, 
                               convert_spice_model_port_type_to_verilog_port_type(cur_spice_model->ports[iport].type),
-                              cur_spice_model->ports[iport].prefix, 
+                              cur_spice_model->ports[iport].lib_name, 
                               cur_spice_model->ports[iport].size - 1, 0); 
     cnt++;
   }

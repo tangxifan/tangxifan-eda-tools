@@ -520,7 +520,7 @@ int rec_dump_verilog_spice_model_global_ports(FILE* fp,
       if ((TRUE == require_explicit_port_map) 
          && (TRUE == cur_spice_model->dump_explicit_port_map)) {
         fprintf(fp, ".%s(",
-                cur_spice_model_port->prefix);
+                cur_spice_model_port->lib_name);
       }
       fprintf(fp, "%s[0:%d]", 
             cur_spice_model_port->prefix,
@@ -2480,7 +2480,7 @@ int dump_verilog_mem_module_one_port_map(FILE* fp,
       /* Dump explicit port mapping if needed */
       if ( (TRUE == require_explicit_port_map) 
          && (TRUE == mem_model->dump_explicit_port_map)) {
-        fprintf(fp, " .%s(", mem_model->ports[iport].prefix);
+        fprintf(fp, " .%s(", mem_model->ports[iport].lib_name);
       }
     }
     /* The LSB depends on the port size */

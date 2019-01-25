@@ -577,7 +577,7 @@ void dump_verilog_pb_type_ports(FILE* fp,
               && (TRUE == require_explicit_port_map)
               && (TRUE == cur_pb_type->spice_model->dump_explicit_port_map)) {
         fprintf(fp, ".%s(", 
-                pb_type_inout_ports[iport]->spice_model_port->prefix);
+                pb_type_inout_ports[iport]->spice_model_port->lib_name);
       }
       fprintf(fp, "%s__%s_%d_ ", formatted_port_prefix, pb_type_inout_ports[iport]->name, ipin);
       if ((FALSE == dump_port_type) 
@@ -619,7 +619,7 @@ void dump_verilog_pb_type_ports(FILE* fp,
               && (TRUE == require_explicit_port_map)
               && (TRUE == cur_pb_type->spice_model->dump_explicit_port_map)) {
         fprintf(fp, ".%s(", 
-                pb_type_input_ports[iport]->spice_model_port->prefix);
+                pb_type_input_ports[iport]->spice_model_port->lib_name);
       }
       fprintf(fp, " %s__%s_%d_", formatted_port_prefix, pb_type_input_ports[iport]->name, ipin);
       if ((FALSE == dump_port_type) 
@@ -660,7 +660,7 @@ void dump_verilog_pb_type_ports(FILE* fp,
               && (TRUE == require_explicit_port_map)
               && (TRUE == cur_pb_type->spice_model->dump_explicit_port_map)) {
         fprintf(fp, ".%s(", 
-                pb_type_output_ports[iport]->spice_model_port->prefix);
+                pb_type_output_ports[iport]->spice_model_port->lib_name);
       }
       fprintf(fp, " %s__%s_%d_", formatted_port_prefix, pb_type_output_ports[iport]->name, ipin);
       if ((FALSE == dump_port_type) 
@@ -704,7 +704,7 @@ void dump_verilog_pb_type_ports(FILE* fp,
               && (TRUE == require_explicit_port_map)
               && (TRUE == cur_pb_type->spice_model->dump_explicit_port_map)) {
         fprintf(fp, ".%s(", 
-                pb_type_clk_ports[iport]->spice_model_port->prefix);
+                pb_type_clk_ports[iport]->spice_model_port->lib_name);
       }
       fprintf(fp, " %s__%s_%d_", formatted_port_prefix, pb_type_clk_ports[iport]->name, ipin);
       if ((FALSE == dump_port_type) 
