@@ -30,7 +30,8 @@ void dump_verilog_pb_type_ports(FILE* fp,
                           int use_global_clock,
                           t_pb_type* cur_pb_type,
                           boolean dump_port_type,
-                          boolean dump_last_comma);
+                          boolean dump_last_comma,
+                          boolean require_explicit_port_map);
 
 void dump_verilog_dangling_des_pb_graph_pin_interc(FILE* fp,
                                                    t_pb_graph_pin* des_pb_graph_pin,

@@ -521,7 +521,8 @@ void dump_verilog_pb_type_ports(FILE* fp,
                           int use_global_clock,
                           t_pb_type* cur_pb_type,
                           boolean dump_port_type,
-                          boolean dump_last_comma) {
+                          boolean dump_last_comma,
+                          boolean require_explicit_port_map) {
   int iport, ipin;
   int num_pb_type_input_port = 0;
   t_port** pb_type_input_ports = NULL;
@@ -573,6 +574,7 @@ void dump_verilog_pb_type_ports(FILE* fp,
       if (TRUE == dump_port_type) {
         fprintf(fp, "inout wire");
       } else if ((NULL != cur_pb_type->spice_model) 
+              && (TRUE == require_explicit_port_map)
               && (TRUE == cur_pb_type->spice_model->dump_explicit_port_map)) {
         fprintf(fp, ".%s(", 
                 pb_type_inout_ports[iport]->spice_model_port->prefix);
@@ -580,6 +582,7 @@ void dump_verilog_pb_type_ports(FILE* fp,
       fprintf(fp, "%s__%s_%d_ ", formatted_port_prefix, pb_type_inout_ports[iport]->name, ipin);
       if ((FALSE == dump_port_type) 
        && (NULL != cur_pb_type->spice_model) 
+       && (TRUE == require_explicit_port_map)
        && (TRUE == cur_pb_type->spice_model->dump_explicit_port_map)) {
         fprintf(fp, ") ");
       }
@@ -613,6 +616,7 @@ void dump_verilog_pb_type_ports(FILE* fp,
       if (TRUE == dump_port_type) {
         fprintf(fp, "input wire");
       } else if ((NULL != cur_pb_type->spice_model) 
+              && (TRUE == require_explicit_port_map)
               && (TRUE == cur_pb_type->spice_model->dump_explicit_port_map)) {
         fprintf(fp, ".%s(", 
                 pb_type_input_ports[iport]->spice_model_port->prefix);
@@ -620,6 +624,7 @@ void dump_verilog_pb_type_ports(FILE* fp,
       fprintf(fp, " %s__%s_%d_", formatted_port_prefix, pb_type_input_ports[iport]->name, ipin);
       if ((FALSE == dump_port_type) 
        && (NULL != cur_pb_type->spice_model) 
+       && (TRUE == require_explicit_port_map)
        && (TRUE == cur_pb_type->spice_model->dump_explicit_port_map)) {
         fprintf(fp, ") ");
       }
@@ -652,6 +657,7 @@ void dump_verilog_pb_type_ports(FILE* fp,
       if (TRUE == dump_port_type) {
         fprintf(fp, "output wire");
       } else if ((NULL != cur_pb_type->spice_model) 
+              && (TRUE == require_explicit_port_map)
               && (TRUE == cur_pb_type->spice_model->dump_explicit_port_map)) {
         fprintf(fp, ".%s(", 
                 pb_type_output_ports[iport]->spice_model_port->prefix);
@@ -659,6 +665,7 @@ void dump_verilog_pb_type_ports(FILE* fp,
       fprintf(fp, " %s__%s_%d_", formatted_port_prefix, pb_type_output_ports[iport]->name, ipin);
       if ((FALSE == dump_port_type) 
        && (NULL != cur_pb_type->spice_model) 
+       && (TRUE == require_explicit_port_map)
        && (TRUE == cur_pb_type->spice_model->dump_explicit_port_map)) {
         fprintf(fp, ") ");
       }
@@ -694,6 +701,7 @@ void dump_verilog_pb_type_ports(FILE* fp,
       if (TRUE == dump_port_type) {
         fprintf(fp, "input wire");
       } else if ((NULL != cur_pb_type->spice_model) 
+              && (TRUE == require_explicit_port_map)
               && (TRUE == cur_pb_type->spice_model->dump_explicit_port_map)) {
         fprintf(fp, ".%s(", 
                 pb_type_clk_ports[iport]->spice_model_port->prefix);
@@ -701,6 +709,7 @@ void dump_verilog_pb_type_ports(FILE* fp,
       fprintf(fp, " %s__%s_%d_", formatted_port_prefix, pb_type_clk_ports[iport]->name, ipin);
       if ((FALSE == dump_port_type) 
        && (NULL != cur_pb_type->spice_model) 
+       && (TRUE == require_explicit_port_map)
        && (TRUE == cur_pb_type->spice_model->dump_explicit_port_map)) {
         fprintf(fp, ") ");
       }
@@ -1095,7 +1104,7 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
     fprintf(fp, "%s_%d_ (", cur_interc->spice_model->prefix, cur_interc->spice_model->cnt); 
     cur_interc->spice_model->cnt++; /* Stats the number of spice_model used*/
     /* Dump global ports */
-    if  (0 < rec_dump_verilog_spice_model_global_ports(fp, cur_interc->spice_model, FALSE, FALSE)) {
+    if  (0 < rec_dump_verilog_spice_model_global_ports(fp, cur_interc->spice_model, FALSE, FALSE, FALSE)) {
       fprintf(fp, ",\n");
     }
     /* Print the pin names! Input and output
@@ -1198,7 +1207,7 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
     fprintf(fp, "%s_size%d ", cur_interc->spice_model->name, fan_in);
     fprintf(fp, "%s_size%d_%d_ (", cur_interc->spice_model->prefix, fan_in, cur_interc->spice_model->cnt);
     /* Dump global ports */
-    if  (0 < rec_dump_verilog_spice_model_global_ports(fp, cur_interc->spice_model, FALSE, FALSE)) {
+    if  (0 < rec_dump_verilog_spice_model_global_ports(fp, cur_interc->spice_model, FALSE, FALSE, FALSE)) {
       fprintf(fp, ",\n");
     }
     /* Inputs */
@@ -1452,7 +1461,7 @@ void dump_verilog_pb_graph_primitive_node(FILE* fp,
   fprintf(fp, "module %s (", subckt_name);
   /* subckt_port_name = format_verilog_node_prefix(subckt_name); */
   /* Inputs, outputs, inouts, clocks */
-  dump_verilog_pb_type_ports(fp, subckt_name, 0, cur_pb_type, TRUE, FALSE);
+  dump_verilog_pb_type_ports(fp, subckt_name, 0, cur_pb_type, TRUE, FALSE, FALSE);
   /* SRAM ports */
   fprintf(fp, ");\n");
   /* Include the spice_model*/
@@ -1460,7 +1469,7 @@ void dump_verilog_pb_graph_primitive_node(FILE* fp,
   verilog_model->cnt++; /* Stats the number of verilog_model used*/
   /* Make input, output, inout, clocks connected*/
   /* IMPORTANT: (sequence of these ports should be changed!) */
-  dump_verilog_pb_type_ports(fp, subckt_name, 0, cur_pb_type, FALSE, FALSE);
+  dump_verilog_pb_type_ports(fp, subckt_name, 0, cur_pb_type, FALSE, FALSE, TRUE);
   fprintf(fp, ");");
   /* Print end of subckt*/
   fprintf(fp, "endmodule\n");
@@ -1672,7 +1681,7 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
     fprintf(fp, ",\n");
   }
   /* Simplify the port prefix, make SPICE netlist readable */
-  dump_verilog_pb_type_ports(fp, subckt_port_prefix, 0, cur_pb_type, TRUE, FALSE);
+  dump_verilog_pb_type_ports(fp, subckt_port_prefix, 0, cur_pb_type, TRUE, FALSE, FALSE);
   /* Print Input Pad and Output Pad */
   dump_verilog_grid_common_port(fp, iopad_verilog_model,
                                 gio_inout_prefix, 
@@ -1757,7 +1766,7 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
       } else {
         if (0 < rec_dump_verilog_spice_model_global_ports(fp, 
                                                           cur_pb_type->modes[mode_index].pb_type_children[ipb].spice_model,
-                                                          FALSE, TRUE)) {
+                                                          FALSE, TRUE, FALSE)) {
           fprintf(fp, ",\n");
         }
       }
@@ -1774,7 +1783,7 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
       /* Print inputs, outputs, inouts, clocks
        * NO SRAMs !!! They have already been fixed in the bottom level
        */
-      dump_verilog_pb_type_ports(fp, child_pb_type_prefix, 0, &(cur_pb_type->modes[mode_index].pb_type_children[ipb]),FALSE, FALSE);
+      dump_verilog_pb_type_ports(fp, child_pb_type_prefix, 0, &(cur_pb_type->modes[mode_index].pb_type_children[ipb]), FALSE, FALSE, FALSE);
       /* Print I/O pads */
       dump_verilog_grid_common_port(fp, iopad_verilog_model,
                                     gio_inout_prefix, 

@@ -693,6 +693,9 @@ static void ProcessSpiceModelPort(ezxml_t Node,
   /* Assign prefix and size*/
   port->prefix = my_strdup(FindProperty(Node, "prefix", TRUE));
   ezxml_set_attr(Node, "prefix", NULL);
+  /* Create an inverter prefix to ease the mapping to standard cells */
+  port->inv_prefix = my_strdup(FindProperty(Node, "inv_prefix", FALSE));
+  ezxml_set_attr(Node, "inv_prefix", NULL);
   port->size = GetIntProperty(Node, "size", TRUE, 1);
   ezxml_set_attr(Node, "size", NULL);
   

@@ -40,7 +40,8 @@ char* verilog_convert_port_type_to_string(enum e_spice_model_port_type port_type
 int rec_dump_verilog_spice_model_global_ports(FILE* fp, 
                                               t_spice_model* cur_spice_model,
                                               boolean dump_port_type,
-                                              boolean recursive);
+                                              boolean recursive,
+                                              boolean require_explicit_port_map);
 
 int dump_verilog_global_ports(FILE* fp, t_llist* head,
                               boolean dump_port_type);
@@ -188,12 +189,14 @@ int dump_verilog_mem_module_one_port_map(FILE* fp,
                                          t_spice_model* mem_model,
                                          enum e_spice_model_port_type port_type_to_dump,
                                          boolean dump_port_type,
-                                         int index, int num_mem);
+                                         int index, int num_mem, boolean dump_first_comma,
+                                         boolean require_explicit_port_map);
 
 void dump_verilog_mem_module_port_map(FILE* fp, 
                                       t_spice_model* mem_model,
                                       boolean dump_port_type,
-                                      int lsb, int num_mem);
+                                      int lsb, int num_mem,
+                                      boolean require_explicit_port_map);
 
 void dump_verilog_mem_sram_submodule(FILE* fp,
                                      t_sram_orgz_info* cur_sram_orgz_info,

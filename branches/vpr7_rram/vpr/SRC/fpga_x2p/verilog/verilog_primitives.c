@@ -124,7 +124,7 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
   fprintf(fp, "\n");
   /* Only dump the global ports belonging to a spice_model 
    */
-  if (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model, TRUE, TRUE)) {
+  if (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model, TRUE, TRUE, FALSE)) {
     fprintf(fp, ",\n");
   }
 
@@ -135,7 +135,7 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
   get_sram_orgz_info_num_blwl(cur_sram_orgz_info, &cur_bl, &cur_wl);
 
   /* print ports --> input ports */
-  dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, TRUE, FALSE); 
+  dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, TRUE, FALSE, FALSE); 
 
   /* IOPADs requires a specical port to output */
   if (SPICE_MODEL_IOPAD == verilog_model->type) {
@@ -232,14 +232,14 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
   /* Only dump the global ports belonging to a spice_model 
    * Disable recursive here !
    */
-  if (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model, FALSE, FALSE)) {
+  if (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model, FALSE, FALSE, TRUE)) {
     fprintf(fp, ",\n");
   }
   
   /* assert */
   num_sram = count_num_sram_bits_one_spice_model(verilog_model, -1);
   /* print ports --> input ports */
-  dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, FALSE, FALSE); 
+  dump_verilog_pb_type_ports(fp, port_prefix, 0, prim_pb_type, FALSE, FALSE, TRUE); 
 
   /* IOPADs requires a specical port to output */
   if (SPICE_MODEL_IOPAD == verilog_model->type) {
@@ -281,15 +281,19 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
         && (TRUE == verilog_model->dump_explicit_port_map)) {
         fprintf(fp, ")");
       }
-      fprintf(fp, ", ");
 
+      /* Check if we have an inverterd prefix */
+      if (NULL == sram_ports[0]->inv_prefix) {
+        break;
+      }
+      fprintf(fp, ", ");
       /* Add explicit port mapping if required */
       if ( (0 < num_sram) 
         && (TRUE == verilog_model->dump_explicit_port_map)) {
         assert( 1 == num_sram_port);
         assert( NULL != sram_ports[0]);
         fprintf(fp, ".%s(",
-                sram_ports[0]->prefix);
+                sram_ports[0]->inv_prefix);
       }
       dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info,
                                           cur_num_sram, cur_num_sram + num_sram - 1,
@@ -315,7 +319,10 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
         && (TRUE == verilog_model->dump_explicit_port_map)) {
         fprintf(fp, ")");
       }
-
+      /* Check if we have an inverterd prefix */
+      if (NULL == sram_ports[0]->inv_prefix) {
+        break;
+      }
       fprintf(fp, ", ");
       /* Add explicit port mapping if required */
       if ( (0 < num_sram) 
@@ -323,7 +330,7 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
         assert( 1 == num_sram_port);
         assert( NULL != sram_ports[0]);
         fprintf(fp, ".%s(",
-                sram_ports[0]->prefix);
+                sram_ports[0]->inv_prefix);
       }
       dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
                                     cur_num_sram, cur_num_sram + num_sram - 1, 
@@ -530,11 +537,11 @@ void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
           formatted_subckt_prefix, cur_pb_type->name);
   fprintf(fp, "\n");
   /* Only dump the global ports belonging to a spice_model */
-  if (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model, TRUE, TRUE)) {
+  if (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model, TRUE, TRUE, FALSE)) {
     fprintf(fp, ",\n");
   }
   /* Print inputs, outputs, inouts, clocks, NO SRAMs*/
-  dump_verilog_pb_type_ports(fp, port_prefix, 0, cur_pb_type, TRUE, TRUE); 
+  dump_verilog_pb_type_ports(fp, port_prefix, 0, cur_pb_type, TRUE, TRUE, FALSE); 
   /* Print SRAM ports */
   cur_num_sram = get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info); 
   get_sram_orgz_info_num_blwl(cur_sram_orgz_info, &cur_bl, &cur_wl);
@@ -633,7 +640,7 @@ void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
    * Only dump the global ports belonging to a spice_model 
    * DISABLE recursive here !
    */
-  if (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model, FALSE, FALSE)) {
+  if (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model, FALSE, FALSE, FALSE)) {
     fprintf(fp, ",\n");
   }
   /* Connect inputs*/ 
