@@ -403,7 +403,7 @@ void dump_verilog_passgate_module(FILE* fp,
     /* Dump ports */
     fprintf(fp, "input [0:0] %s,\n", input_port[0]->lib_name);
     fprintf(fp, "input [0:0] %s,\n", input_port[1]->lib_name);
-    fprintf(fp, "output [0:0] %s\n", output_port[0]->prefix);
+    fprintf(fp, "output [0:0] %s\n", output_port[0]->lib_name);
     fprintf(fp, ");\n");
     /* Finish dumping ports */
     break;
@@ -415,9 +415,9 @@ void dump_verilog_passgate_module(FILE* fp,
 
   /* Dump logics */
   fprintf(fp, "assign %s = %s? %s : 1'bz;\n",
+              output_port[0]->lib_name,
               input_port[1]->lib_name,
-              input_port[0]->lib_name,
-              output_port[0]->prefix);
+              input_port[0]->lib_name);
 
   /* Print timing info */
   dump_verilog_submodule_timing(fp, passgate_spice_model);
