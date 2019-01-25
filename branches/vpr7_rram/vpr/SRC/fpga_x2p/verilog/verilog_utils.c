@@ -468,6 +468,99 @@ char* verilog_convert_port_type_to_string(enum e_spice_model_port_type port_type
 /* Dump all the global ports that are stored in the linked list 
  * Return the number of ports that have been dumped 
  */
+int rec_dump_verilog_spice_model_lib_global_ports(FILE* fp, 
+                                                  t_spice_model* cur_spice_model,
+                                                  boolean dump_port_type, 
+                                                  boolean recursive,
+                                                  boolean require_explicit_port_map) {
+  int dumped_port_cnt;
+  boolean dump_comma = FALSE;
+  t_spice_model_port* cur_spice_model_port = NULL;
+  t_llist* spice_model_head = NULL;
+  t_llist* head = NULL;
+
+  dumped_port_cnt = 0;
+
+  /* Check */
+  assert(NULL != cur_spice_model);
+  if (0 < cur_spice_model->num_port) {
+    assert(NULL != cur_spice_model->ports);
+  }
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+  }
+
+  rec_stats_spice_model_global_ports(cur_spice_model,
+                                     recursive,
+                                     &spice_model_head);
+
+  /* Traverse the linked list and dump the ports */
+  head = spice_model_head;
+  while (head) {
+    /* Get the port to be dumped */
+    cur_spice_model_port = (t_spice_model_port*)(head->dptr);
+    /* We have some port to dump ! 
+     * Print a comment line 
+     */
+    /* Check if we need to dump a comma */
+    if (TRUE == dump_comma) {
+      fprintf(fp, ", //----- Global port of SPICE_MODEL(%s) -----\n",
+                  cur_spice_model->name);
+    }
+    if (TRUE == dump_port_type) {
+      fprintf(fp, "%s [0:%d] %s", 
+              verilog_convert_port_type_to_string(cur_spice_model_port->type),
+              cur_spice_model_port->size - 1, 
+              cur_spice_model_port->lib_name);
+    } else {
+      /* Add explicit port mapping if required */
+      if ((TRUE == require_explicit_port_map) 
+         && (TRUE == cur_spice_model->dump_explicit_port_map)) {
+        fprintf(fp, ".%s(",
+                cur_spice_model_port->lib_name);
+      }
+      fprintf(fp, "%s[0:%d]", 
+            cur_spice_model_port->lib_name,
+            cur_spice_model_port->size - 1); 
+      if ((TRUE == require_explicit_port_map) 
+         && (TRUE == cur_spice_model->dump_explicit_port_map)) {
+        fprintf(fp, ")");
+      }
+    }
+    /* Decide if we need a comma */
+    dump_comma = TRUE; 
+    /* Update counter */
+    dumped_port_cnt++;
+
+    /* Go to the next node */
+    head = head->next;
+  }
+
+  /* We have dumped some port! 
+   * Print another comment line  
+   */
+  if (0 < dumped_port_cnt) {
+    fprintf(fp, "\n");
+  }
+
+  /* Free linked list */
+  head = spice_model_head;
+  while (head) {
+    head->dptr = NULL;
+    head = head->next;
+  }
+  free_llist(spice_model_head);
+
+  return dumped_port_cnt;
+}
+
+
+/* Dump all the global ports that are stored in the linked list 
+ * Return the number of ports that have been dumped 
+ */
 int rec_dump_verilog_spice_model_global_ports(FILE* fp, 
                                               t_spice_model* cur_spice_model,
                                               boolean dump_port_type, 
