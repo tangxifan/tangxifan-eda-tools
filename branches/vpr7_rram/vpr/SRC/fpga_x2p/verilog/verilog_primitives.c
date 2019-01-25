@@ -249,7 +249,7 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
     /* Add explicit port mapping if required */
     if (TRUE == verilog_model->dump_explicit_port_map) {
       fprintf(fp, ".%s(",
-              pad_ports[0]->prefix);
+              pad_ports[0]->lib_name);
     }
     /* Print inout port */
     fprintf(fp, "%s%s[%d]", gio_inout_prefix, 
@@ -272,7 +272,7 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
         assert( 1 == num_sram_port);
         assert( NULL != sram_ports[0]);
         fprintf(fp, ".%s(",
-                sram_ports[0]->prefix);
+                sram_ports[0]->lib_name);
       }
       dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info,
                                           cur_num_sram, cur_num_sram + num_sram - 1,
@@ -310,7 +310,7 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
         assert( 1 == num_sram_port);
         assert( NULL != sram_ports[0]);
         fprintf(fp, ".%s(",
-                sram_ports[0]->prefix);
+                sram_ports[0]->lib_name);
       }
       dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
                                     cur_num_sram, cur_num_sram + num_sram - 1, 
