@@ -1367,7 +1367,7 @@ void fprint_spice_phy_pb_graph_node_rec(FILE* fp,
   }
 
   /* Recursively finish all the child pb_types*/
-  if (NULL == cur_pb_type->spice_model) { 
+  if (FALSE == is_primitive_pb_type(cur_pb_type)) { 
     /* Find the mode that define_idle_mode*/
     mode_index = find_pb_type_physical_mode_index((*cur_pb_type));
     /* recursive for the child_pbs*/

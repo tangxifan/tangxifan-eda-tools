@@ -1584,7 +1584,7 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
   cur_pb_type = cur_pb_graph_node->pb_type;
 
   /* Recursively finish all the child pb_types*/
-  if (NULL == cur_pb_type->spice_model) { 
+  if (FALSE == is_primitive_pb_type(cur_pb_type)) { 
     /* Find the mode that define_idle_mode*/
     mode_index = find_pb_type_physical_mode_index((*cur_pb_type));
     for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
@@ -1616,7 +1616,7 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
   }
 
   /* Check if this has defined a spice_model*/
-  if (NULL != cur_pb_type->spice_model) {
+  if (TRUE == is_primitive_pb_type(cur_pb_type)) { 
     switch (cur_pb_type->class_type) {
     case LUT_CLASS: 
       dump_verilog_pb_primitive_verilog_model(cur_sram_orgz_info, fp, formatted_subckt_prefix, 
