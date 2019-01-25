@@ -867,6 +867,10 @@ static void ProcessSpiceModel(ezxml_t Parent,
   /* Find a verilog_netlist path if we can*/
   spice_model->dump_structural_verilog = GetBooleanProperty(Parent,"dump_structural_verilog", FALSE, FALSE);
   ezxml_set_attr(Parent, "dump_structural_verilog", NULL);
+
+  /* Find a verilog_netlist path if we can*/
+  spice_model->dump_explicit_port_map = GetBooleanProperty(Parent,"dump_explicit_port_map", FALSE, FALSE);
+  ezxml_set_attr(Parent, "dump_explicit_port_map", NULL);
  
   /* Check the design technology settings*/
   Node = ezxml_child(Parent, "design_technology");

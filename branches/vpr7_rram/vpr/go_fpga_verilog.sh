@@ -13,7 +13,7 @@ set arch_xml_file = ARCH/ed_dev.xml
 #set arch_xml_file = ARCH/k6_N10_SC_tsmc40nm_chain_TT.xml 
 #set arch_xml_file = ARCH/k6_N10_SC_tsmc40nm_chain_TT_yosys.xml 
 #set arch_xml_file = ARCH/k6_N10_sram_chain_SC_gf130_2x2.xml
-set verilog_reference = Circuits/s298.v
+set verilog_reference = ${PWD}/Circuits/s298_prevpr.v
 set blif_file = Circuits/s298_prevpr.blif 
 set act_file = Circuits/s298_prevpr.act 
 #set blif_file = Circuits/simple_gates_prevpr.blif 
@@ -30,7 +30,7 @@ rm -rf $verilog_output_dirpath/$verilog_output_dirname
 # Run VPR  
 #valgrind 
 #./vpr $arch_xml_file $blif_file --full_stats --nodisp --activity_file $act_file --fpga_verilog --fpga_verilog_dir $verilog_output_dirpath/$verilog_output_dirname --fpga_x2p_rename_illegal_port --route_chan_width $vpr_route_chan_width --fpga_bitstream_generator --fpga_verilog_print_top_testbench --fpga_verilog_print_input_blif_testbench --fpga_verilog_include_timing --fpga_verilog_print_modelsim_autodeck --fpga_verilog_modelsim_ini_path $modelsim_ini_file
-./vpr $arch_xml_file $blif_file --full_stats --nodisp --activity_file $act_file --fpga_verilog --fpga_verilog_dir $verilog_output_dirpath/$verilog_output_dirname --fpga_x2p_rename_illegal_port --fpga_bitstream_generator --fpga_verilog_print_top_testbench --fpga_verilog_print_input_blif_testbench --fpga_verilog_include_timing --fpga_verilog_include_signal_init --fpga_verilog_print_modelsim_autodeck $modelsim_ini_file --fpga_verilog_print_formal_verification_top_netlist --fpga_verilog_print_autocheck_top_testbench $verilog_reference --fpga_verilog_print_user_defined_template 
+echo "./vpr $arch_xml_file $blif_file --full_stats --nodisp --activity_file $act_file --fpga_verilog --fpga_verilog_dir $verilog_output_dirpath/$verilog_output_dirname --fpga_x2p_rename_illegal_port --fpga_bitstream_generator --fpga_verilog_print_top_testbench --fpga_verilog_print_input_blif_testbench --fpga_verilog_include_timing --fpga_verilog_include_signal_init --fpga_verilog_print_modelsim_autodeck $modelsim_ini_file --fpga_verilog_print_formal_verification_top_netlist --fpga_verilog_print_autocheck_top_testbench $verilog_reference --fpga_verilog_print_user_defined_template"
 
 
 

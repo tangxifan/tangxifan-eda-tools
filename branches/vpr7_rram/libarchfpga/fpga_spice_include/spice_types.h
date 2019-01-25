@@ -298,6 +298,7 @@ struct s_spice_model {
   t_spice_model_netlist* include_netlist;
   int is_default;
   boolean dump_structural_verilog;
+  boolean dump_explicit_port_map;
 
   /* type */
   enum e_spice_model_design_tech design_tech;

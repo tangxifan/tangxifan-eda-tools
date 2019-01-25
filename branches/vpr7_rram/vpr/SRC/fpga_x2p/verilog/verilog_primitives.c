@@ -244,9 +244,20 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
   /* IOPADs requires a specical port to output */
   if (SPICE_MODEL_IOPAD == verilog_model->type) {
     fprintf(fp, ",\n");
+    assert(1 == num_pad_port);
+    assert(NULL != pad_ports[0]);
+    /* Add explicit port mapping if required */
+    if (TRUE == verilog_model->dump_explicit_port_map) {
+      fprintf(fp, ".%s(",
+              pad_ports[0]->prefix);
+    }
     /* Print inout port */
-    fprintf(fp, "%s%s[%d], ", gio_inout_prefix, 
+    fprintf(fp, "%s%s[%d]", gio_inout_prefix, 
                 verilog_model->prefix, verilog_model->cnt);
+    if (TRUE == verilog_model->dump_explicit_port_map) {
+      fprintf(fp, ")");
+    }
+    fprintf(fp, ", ");
   }
   /* Print SRAM ports */
   /* Connect srams: TODO: to find the SRAM model used by this Verilog model */
@@ -255,22 +266,72 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
     case SPICE_SRAM_STANDALONE: 
       break;
     case SPICE_SRAM_SCAN_CHAIN:
+      /* Add explicit port mapping if required */
+      if ( (0 < num_sram) 
+        && (TRUE == verilog_model->dump_explicit_port_map)) {
+        assert( 1 == num_sram_port);
+        assert( NULL != sram_ports[0]);
+        fprintf(fp, ".%s(",
+                sram_ports[0]->prefix);
+      }
       dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info,
                                           cur_num_sram, cur_num_sram + num_sram - 1,
                                           0, VERILOG_PORT_CONKT);
+      if ( (0 < num_sram) 
+        && (TRUE == verilog_model->dump_explicit_port_map)) {
+        fprintf(fp, ")");
+      }
       fprintf(fp, ", ");
+
+      /* Add explicit port mapping if required */
+      if ( (0 < num_sram) 
+        && (TRUE == verilog_model->dump_explicit_port_map)) {
+        assert( 1 == num_sram_port);
+        assert( NULL != sram_ports[0]);
+        fprintf(fp, ".%s(",
+                sram_ports[0]->prefix);
+      }
       dump_verilog_sram_one_local_outport(fp, cur_sram_orgz_info,
                                           cur_num_sram, cur_num_sram + num_sram - 1,
                                           1, VERILOG_PORT_CONKT);
+      if ( (0 < num_sram) 
+        && (TRUE == verilog_model->dump_explicit_port_map)) {
+        fprintf(fp, ")");
+      }
       break;
     case SPICE_SRAM_MEMORY_BANK:
+      /* Add explicit port mapping if required */
+      if ( (0 < num_sram) 
+        && (TRUE == verilog_model->dump_explicit_port_map)) {
+        assert( 1 == num_sram_port);
+        assert( NULL != sram_ports[0]);
+        fprintf(fp, ".%s(",
+                sram_ports[0]->prefix);
+      }
       dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
                                     cur_num_sram, cur_num_sram + num_sram - 1, 
                                     0, VERILOG_PORT_CONKT);
+      if ( (0 < num_sram) 
+        && (TRUE == verilog_model->dump_explicit_port_map)) {
+        fprintf(fp, ")");
+      }
+
       fprintf(fp, ", ");
+      /* Add explicit port mapping if required */
+      if ( (0 < num_sram) 
+        && (TRUE == verilog_model->dump_explicit_port_map)) {
+        assert( 1 == num_sram_port);
+        assert( NULL != sram_ports[0]);
+        fprintf(fp, ".%s(",
+                sram_ports[0]->prefix);
+      }
       dump_verilog_sram_one_outport(fp, cur_sram_orgz_info, 
                                     cur_num_sram, cur_num_sram + num_sram - 1, 
                                     1, VERILOG_PORT_CONKT);
+      if ( (0 < num_sram) 
+        && (TRUE == verilog_model->dump_explicit_port_map)) {
+        fprintf(fp, ")");
+      }
       break;
     default:
       vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid SRAM organization type!\n",

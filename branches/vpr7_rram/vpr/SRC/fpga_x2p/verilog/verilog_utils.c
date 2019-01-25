@@ -514,9 +514,17 @@ int rec_dump_verilog_spice_model_global_ports(FILE* fp,
               cur_spice_model_port->size - 1, 
               cur_spice_model_port->prefix);
     } else {
+      /* Add explicit port mapping if required */
+      if (TRUE == cur_spice_model->dump_explicit_port_map) {
+        fprintf(fp, ".%s(",
+                cur_spice_model_port->prefix);
+      }
       fprintf(fp, "%s[0:%d]", 
             cur_spice_model_port->prefix,
             cur_spice_model_port->size - 1); 
+      if (TRUE == cur_spice_model->dump_explicit_port_map) {
+        fprintf(fp, ")");
+      }
     }
     /* Decide if we need a comma */
     dump_comma = TRUE; 
@@ -2464,12 +2472,20 @@ int dump_verilog_mem_module_one_port_map(FILE* fp,
     } else {
       assert (FALSE == dump_port_type);
       verilog_port_type = VERILOG_PORT_CONKT;
+      /* Dump explicit port mapping if needed */
+      if (TRUE == mem_model->dump_explicit_port_map) {
+        fprintf(fp, " .%s(", mem_model->ports[iport].prefix);
+      }
     }
     /* The LSB depends on the port size */
     assert (-1 < index);
     lsb = index * mem_model->ports[iport].size;
     dump_verilog_generic_port(fp, verilog_port_type,
                               mem_model->ports[iport].prefix, lsb, lsb + num_mem * mem_model->ports[iport].size - 1);
+    if (  (FALSE == dump_port_type) 
+        &&(TRUE == mem_model->dump_explicit_port_map)) {
+      fprintf(fp, ")");
+    }
     cnt++;
   }
 

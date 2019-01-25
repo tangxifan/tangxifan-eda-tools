@@ -693,6 +693,11 @@ void dump_verilog_cmos_mux_one_basis_module_structural(FILE* fp,
   int num_mem = num_input_basis_subckt;
   /* Get the tgate module name */
   char* tgate_module_name = cur_spice_model->pass_gate_logic->spice_model_name;
+  t_spice_model* tgate_spice_model = cur_spice_model->pass_gate_logic->spice_model;
+  int num_input_port = 0;
+  int num_output_port = 0;
+  t_spice_model_port** input_port = NULL;
+  t_spice_model_port** output_port = NULL;
 
   assert(TRUE == cur_spice_model->dump_structural_verilog);
 
@@ -701,6 +706,20 @@ void dump_verilog_cmos_mux_one_basis_module_structural(FILE* fp,
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
     exit(1);
   } 
+
+  /* Find the input port, output port, and sram port*/
+  assert ( NULL != tgate_spice_model);
+  input_port = find_spice_model_ports(tgate_spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+  output_port = find_spice_model_ports(tgate_spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_port, TRUE);
+
+  /* Check */
+  assert ((3 == num_input_port));
+  for (i = 0; i < num_input_port; i++) {
+    assert ( 1 == input_port[i]->size );
+  }
+  assert ((1 == num_output_port) 
+       && (1 == output_port[0]->size));
+
   /* Determine the number of memory bit
    * The function considers a special case :
    * 2-input basis in tree-like MUX only requires 1 memory bit */
@@ -730,19 +749,50 @@ void dump_verilog_cmos_mux_one_basis_module_structural(FILE* fp,
    */
   if (1 == num_mem) {
     /* Transmission gates are connected to each input and also the output*/
-    fprintf(fp, "  %s %s_0 (in[0], mem[0], mem_inv[0], out);\n",
+    fprintf(fp, "  %s %s_0 ",
                 tgate_module_name, tgate_module_name);
-    fprintf(fp, "  %s %s_1 (in[1], mem_inv[0], mem[0], out);\n",
+    /* Dump explicit port map if required */
+    if (TRUE == tgate_spice_model->dump_explicit_port_map) {
+      fprintf(fp, " (.%s(in[0]), .%s(mem[0]), .%s(mem_inv[0]), .%s(out));\n",
+              input_port[0]->prefix, 
+              input_port[1]->prefix, 
+              input_port[2]->prefix,
+              output_port[0]->prefix);
+    } else {
+      fprintf(fp, " (in[0], mem[0], mem_inv[0], out);\n");
+    }
+    fprintf(fp, "  %s %s_1 ",
                 tgate_module_name, tgate_module_name);
+    /* Dump explicit port map if required */
+    if (TRUE == tgate_spice_model->dump_explicit_port_map) {
+      fprintf(fp, " (.%s(in[1]), .%s(mem_inv[0]), .%s(mem[0]), .%s(out));\n",
+              input_port[0]->prefix, 
+              input_port[1]->prefix,
+              input_port[2]->prefix, 
+              output_port[0]->prefix);
+    } else {
+      fprintf(fp, " (in[1], mem_inv[0], mem[0], out);\n");
+    }
+ 
   } else {
   /* Other cases, we need to follow the rules:
    * When mem[k] is enabled, switch on input[k]
    * Only one memory bit is enabled!
    */
     for (i = 0; i < num_mem; i++) {
-      fprintf(fp, "  %s %s_%d (in[%d], mem[%d], mem_inv[%d], out);\n",
-                  tgate_module_name, tgate_module_name, i,
-                  i, i, i);
+      fprintf(fp, "  %s %s_%d ",
+                  tgate_module_name, tgate_module_name, i);
+      /* Dump explicit port map if required */
+      if (TRUE == tgate_spice_model->dump_explicit_port_map) {
+        fprintf(fp, " (.%s(in[%d]), .%s(mem[%d]), .%s(mem_inv[%d]), .%s(out));\n",
+                input_port[0]->prefix, i,
+                input_port[1]->prefix, i,
+                input_port[2]->prefix, i,
+                output_port[0]->prefix);
+      } else {
+        fprintf(fp, " (in[%d], mem[%d], mem_inv[%d], out);\n",
+                i, i, i);
+      }
     }
   }
 
@@ -2616,18 +2666,42 @@ void dump_verilog_submodule_one_lut(FILE* fp,
               fprintf(fp, ",");
             }
             if (0 == pin_cnt) {
+              /* Dump explicit port map if required */
+              if (TRUE == input_port[0]->spice_model->dump_explicit_port_map) {
+                fprintf(fp, ".%s(", 
+                        modegate_input_port[jport]->prefix);
+              }
               fprintf(fp, "%s[%d]",
                       input_port[0]->prefix, ipin);
+              if (TRUE == input_port[0]->spice_model->dump_explicit_port_map) {
+                fprintf(fp, ")");
+              }
             } else if (1 == pin_cnt) { 
+              /* Dump explicit port map if required */
+              if (TRUE == input_port[0]->spice_model->dump_explicit_port_map) {
+                fprintf(fp, ".%s(", 
+                        modegate_input_port[jport]->prefix);
+              }
               fprintf(fp, " %s_out[%d]",
                       sram_port[mode_port_index]->prefix, mode_lsb);
+              if (TRUE == input_port[0]->spice_model->dump_explicit_port_map) {
+                fprintf(fp, ")");
+              }
             }
             pin_cnt++;
           }
         }
         assert(2 == pin_cnt);
+        /* Dump explicit port map if required */
+        if (TRUE == input_port[0]->spice_model->dump_explicit_port_map) {
+          fprintf(fp, ".%s(", 
+                  modegate_output_port[0]->prefix);
+        }
         fprintf(fp, ", %s%s[%d]);\n",
                 input_port[0]->prefix, mode_inport_postfix, ipin); 
+        if (TRUE == input_port[0]->spice_model->dump_explicit_port_map) {
+          fprintf(fp, ")");
+        }
         mode_lsb++;
         /* Free ports */
         my_free(modegate_input_port);
