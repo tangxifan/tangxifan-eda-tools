@@ -592,6 +592,10 @@ int rec_dump_verilog_spice_model_global_ports(FILE* fp,
 
   /* Traverse the linked list and dump the ports */
   head = spice_model_head;
+  if (NULL != head) {
+    fprintf(fp, "//----- Global port of SPICE_MODEL(%s) -----\n",
+                cur_spice_model->name);
+  }
   while (head) {
     /* Get the port to be dumped */
     cur_spice_model_port = (t_spice_model_port*)(head->dptr);
@@ -600,8 +604,7 @@ int rec_dump_verilog_spice_model_global_ports(FILE* fp,
      */
     /* Check if we need to dump a comma */
     if (TRUE == dump_comma) {
-      fprintf(fp, ", //----- Global port of SPICE_MODEL(%s) -----\n",
-                  cur_spice_model->name);
+      fprintf(fp, ",\n");
     }
     if (TRUE == dump_port_type) {
       fprintf(fp, "%s [0:%d] %s", 
@@ -678,9 +681,8 @@ int dump_verilog_global_ports(FILE* fp, t_llist* head,
     }
     /* if this is the tail, we do not dump a comma */
     if (NULL != temp->next) {
-     fprintf(fp, ",");
+     fprintf(fp, ", //---- global port \n");
     }
-    fprintf(fp, " //---- global port \n");
     /* Update counter */
     dumped_port_cnt++;
     /* Go to the next */
