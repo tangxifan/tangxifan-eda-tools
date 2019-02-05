@@ -14,6 +14,12 @@ void dump_verilog_preproc(FILE* fp,
                           t_syn_verilog_opts fpga_verilog_opts,
                           enum e_verilog_tb_type verilog_tb_type);
 
+void dump_verilog_defines_preproc(char* subckt_dir,
+                                 t_syn_verilog_opts fpga_verilog_opts);
+
+void verilog_include_defines_preproc_file(FILE* fp, 
+                                          char* formatted_verilog_dir);
+
 FILE* verilog_create_one_subckt_file(char* subckt_dir,
                                      char* subckt_name_prefix,
                                      char* verilog_subckt_file_name_prefix,

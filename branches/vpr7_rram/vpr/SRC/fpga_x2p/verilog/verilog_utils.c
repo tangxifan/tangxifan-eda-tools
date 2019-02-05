@@ -196,6 +196,61 @@ void dump_verilog_preproc(FILE* fp,
   return;
 }
 
+void dump_verilog_defines_preproc(char* subckt_dir,
+                                 t_syn_verilog_opts fpga_verilog_opts) {
+  /* Create a file handler */
+  FILE* fp = NULL;
+  char* file_description = NULL;
+  char* fname = NULL;
+
+  fname = my_strcat(subckt_dir, 
+                    defines_verilog_file_name);
+
+  /* Create a file*/
+  fp = fopen(fname, "w");
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Failure in create Verilog netlist %s",
+               __FILE__, __LINE__, fname); 
+    exit(1);
+  } 
+
+  /* Generate the descriptions*/
+  file_description = "Preproc Flags";
+  dump_verilog_file_header(fp, file_description);
+
+  /* Dump the defines preproc flags*/
+  dump_verilog_preproc(fp, fpga_verilog_opts, VERILOG_TB_TOP); 
+
+  fclose(fp);
+
+  /* Free */
+  my_free(fname);
+
+  return;
+}
+
+void verilog_include_defines_preproc_file(FILE* fp, 
+                                          char* verilog_dir) {
+  char* temp_include_file_path = NULL;
+  char* formatted_verilog_dir = NULL;
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  fprintf(fp, "//------ Include defines: preproc flags -----\n");
+  formatted_verilog_dir = format_dir_path(verilog_dir);
+  temp_include_file_path = my_strcat(formatted_verilog_dir, defines_verilog_file_name);
+  fprintf(fp, "`include \"%s\"\n", temp_include_file_path);
+  my_free(temp_include_file_path);
+
+  return;
+}
+
 /* Create a file handler for a subckt Verilog netlist */
 FILE* verilog_create_one_subckt_file(char* subckt_dir,
                                      char* subckt_name_prefix,

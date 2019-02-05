@@ -276,6 +276,7 @@ void compact_verilog_update_grid_spice_model_and_sram_orgz_info(t_sram_orgz_info
  */
 static 
 void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_info, 
+                                             char* verilog_dir_path,
                                              char* subckt_dir_path,
                                              t_type_ptr phy_block_type,
                                              int border_side,
@@ -330,9 +331,7 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
   my_free(title);
 
   /* Print preprocessing flags */
-  dump_verilog_preproc(fp, 
-                       fpga_verilog_opts, 
-                       VERILOG_TB_TOP);
+  verilog_include_defines_preproc_file(fp, verilog_dir_path);
 
   /* Dump all the submodules */
   for (iz = 0; iz < phy_block_type->capacity; iz++) {
@@ -510,6 +509,7 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
  * 3. Only one module for each heterogeneous block
  */
 void dump_compact_verilog_logic_blocks(t_sram_orgz_info* cur_sram_orgz_info,
+                                       char* verilog_dir,
                                        char* subckt_dir,
                                        t_arch* arch,
                                        t_syn_verilog_opts fpga_verilog_opts) {
@@ -532,20 +532,23 @@ void dump_compact_verilog_logic_blocks(t_sram_orgz_info* cur_sram_orgz_info,
       num_sides = 4;
     /* Special for I/O block, generate one module for each border side */
       for (iside = 0; iside < num_sides; iside++) {
-        dump_compact_verilog_one_physical_block(cur_sram_orgz_info, subckt_dir, 
+        dump_compact_verilog_one_physical_block(cur_sram_orgz_info, 
+                                                verilog_dir, subckt_dir, 
                                                 &type_descriptors[itype], iside, 
                                                 arch, fpga_verilog_opts);
       } 
       continue;
     } else if (FILL_TYPE == &type_descriptors[itype]) {
     /* For CLB */
-      dump_compact_verilog_one_physical_block(cur_sram_orgz_info, subckt_dir, 
+      dump_compact_verilog_one_physical_block(cur_sram_orgz_info,  
+                                              verilog_dir, subckt_dir, 
                                               &type_descriptors[itype], -1,
                                               arch, fpga_verilog_opts);
       continue;
     } else {
     /* For heterogenenous blocks */
-      dump_compact_verilog_one_physical_block(cur_sram_orgz_info, subckt_dir, 
+      dump_compact_verilog_one_physical_block(cur_sram_orgz_info,  
+                                              verilog_dir, subckt_dir, 
                                               &type_descriptors[itype], -1,
                                               arch, fpga_verilog_opts);
 
@@ -742,6 +745,7 @@ void dump_compact_verilog_defined_grids(t_sram_orgz_info* cur_sram_orgz_info,
 void dump_compact_verilog_top_netlist(t_sram_orgz_info* cur_sram_orgz_info,
                                       char* circuit_name,
                                       char* top_netlist_name,
+                                      char* verilog_dir_path,
                                       char* submodule_dir_path,
                                       char* lb_dir_path,
                                       char* rr_dir_path,
@@ -770,9 +774,7 @@ void dump_compact_verilog_top_netlist(t_sram_orgz_info* cur_sram_orgz_info,
   my_free(title);
 
   /* Print preprocessing flags */
-  dump_verilog_preproc(fp, 
-                       fpga_verilog_opts, 
-                       VERILOG_TB_TOP);
+  verilog_include_defines_preproc_file(fp, verilog_dir_path);
 
   /* Include user-defined sub-circuit netlist */
   fprintf(fp, "//----- Include User-defined netlists -----\n");

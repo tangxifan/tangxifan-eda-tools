@@ -557,7 +557,7 @@ void dump_verilog_gate_module(FILE* fp,
  * 1. inverters
  * 2. buffers
  * 3. pass-gate logics */
-void dump_verilog_submodule_essentials(char* submodule_dir,
+void dump_verilog_submodule_essentials(char* verilog_dir, char* submodule_dir,
                                        int num_spice_model,
                                        t_spice_model* spice_models,
                                        t_syn_verilog_opts fpga_verilog_opts) {
@@ -573,6 +573,8 @@ void dump_verilog_submodule_essentials(char* submodule_dir,
     exit(1);
   } 
   dump_verilog_file_header(fp,"Essential gates"); 
+
+  verilog_include_defines_preproc_file(fp, verilog_dir);
 
   /* Output essential models*/
   for (imodel = 0; imodel < num_spice_model; imodel++) {
@@ -2265,6 +2267,7 @@ void dump_verilog_mux_module(FILE* fp,
 /* We should count how many multiplexers with different sizes are needed */
 
 void dump_verilog_submodule_muxes(t_sram_orgz_info* cur_sram_orgz_info,
+                                  char* verilog_dir,
                                   char* submodule_dir,
                                   int num_switch,
                                   t_switch_inf* switches,
@@ -2303,6 +2306,8 @@ void dump_verilog_submodule_muxes(t_sram_orgz_info* cur_sram_orgz_info,
   } 
   /* Generate the descriptions*/
   dump_verilog_file_header(fp,"MUXes used in FPGA");
+
+  verilog_include_defines_preproc_file(fp, verilog_dir);
 
   /* Print mux netlist one by one*/
   temp = muxes_head;
@@ -2920,7 +2925,8 @@ void dump_verilog_submodule_one_mem(FILE* fp,
 }
 
 /* Dump verilog top-level module for LUTs */
-void dump_verilog_submodule_luts(char* submodule_dir,
+void dump_verilog_submodule_luts(char* verilog_dir,
+                                 char* submodule_dir,
                                  int num_spice_model,
                                  t_spice_model* spice_models,
                                  boolean include_timing,
@@ -2936,6 +2942,8 @@ void dump_verilog_submodule_luts(char* submodule_dir,
     exit(1);
   } 
   dump_verilog_file_header(fp,"Look-Up Tables");
+
+  verilog_include_defines_preproc_file(fp, verilog_dir);
 
   /* Search for each LUT spice model */
   for (imodel = 0; imodel < num_spice_model; imodel++) {
@@ -3021,7 +3029,8 @@ void dump_verilog_hard_wired_gnd(FILE* fp,
   return;
 }
 
-void dump_verilog_submodule_wires(char* subckt_dir,
+void dump_verilog_submodule_wires(char* verilog_dir,
+                                  char* subckt_dir, 
                                   int num_segments,
                                   t_segment_inf* segments,
                                   int num_spice_model,
@@ -3038,6 +3047,9 @@ void dump_verilog_submodule_wires(char* subckt_dir,
     exit(1);
   } 
   dump_verilog_file_header(fp,"Wires");
+
+  verilog_include_defines_preproc_file(fp, verilog_dir);
+
   /* Output wire models*/
   for (imodel = 0; imodel < num_spice_model; imodel++) {
     /* Bypass user-defined spice models */
@@ -3099,6 +3111,7 @@ void dump_verilog_submodule_wires(char* subckt_dir,
 }
 
 void dump_verilog_submodule_memories(t_sram_orgz_info* cur_sram_orgz_info,
+                                     char* verilog_dir,
                                      char* submodule_dir,
                                      int num_switch,
                                      t_switch_inf* switches,
@@ -3135,6 +3148,8 @@ void dump_verilog_submodule_memories(t_sram_orgz_info* cur_sram_orgz_info,
   } 
   /* Generate the descriptions*/
   dump_verilog_file_header(fp,"Memories used in FPGA");
+
+  verilog_include_defines_preproc_file(fp, verilog_dir);
 
   /* Print mux netlist one by one*/
   temp = muxes_head;
@@ -3296,6 +3311,7 @@ void dump_one_verilog_template_module(FILE* fp,
 
 /* Give a template of all the submodules that are user-defined */
 void dump_verilog_submodule_templates(t_sram_orgz_info* cur_sram_orgz_info, 
+                                      char* verilog_dir,
                                       char* submodule_dir,
                                       int num_spice_model,
                                       t_spice_model* spice_models) {
@@ -3335,6 +3351,7 @@ void dump_verilog_submodule_templates(t_sram_orgz_info* cur_sram_orgz_info,
  * 1. MUXes
  */
 void dump_verilog_submodules(t_sram_orgz_info* cur_sram_orgz_info,
+                             char* verilog_dir, 
                              char* submodule_dir, 
                              t_arch Arch, 
                              t_det_routing_arch* routing_arch,
@@ -3342,39 +3359,40 @@ void dump_verilog_submodules(t_sram_orgz_info* cur_sram_orgz_info,
 
   /* 0. basic units: inverter, buffers and pass-gate logics, */
   vpr_printf(TIO_MESSAGE_INFO, "Generating essential modules...\n");
-  dump_verilog_submodule_essentials(submodule_dir, 
+  dump_verilog_submodule_essentials(verilog_dir, submodule_dir,
                                     Arch.spice->num_spice_model, 
                                     Arch.spice->spice_models,
                                     fpga_verilog_opts);
 
   /* 1. MUXes */
   vpr_printf(TIO_MESSAGE_INFO, "Generating modules of multiplexers...\n");
-  dump_verilog_submodule_muxes(cur_sram_orgz_info, submodule_dir, routing_arch->num_switch, 
+  dump_verilog_submodule_muxes(cur_sram_orgz_info, verilog_dir, submodule_dir, routing_arch->num_switch, 
                                switch_inf, Arch.spice, routing_arch);
  
   /* 2. LUTes */
   vpr_printf(TIO_MESSAGE_INFO, "Generating modules of LUTs...\n");
-  dump_verilog_submodule_luts(submodule_dir,
+  dump_verilog_submodule_luts(verilog_dir, submodule_dir,
                               Arch.spice->num_spice_model, Arch.spice->spice_models,
                               fpga_verilog_opts.include_timing, 
                               fpga_verilog_opts.include_signal_init);
 
   /* 3. Hardwires */
   vpr_printf(TIO_MESSAGE_INFO, "Generating modules of hardwires...\n");
-  dump_verilog_submodule_wires(submodule_dir, Arch.num_segments, Arch.Segments,
+  dump_verilog_submodule_wires(verilog_dir, submodule_dir, Arch.num_segments, Arch.Segments,
                                Arch.spice->num_spice_model, Arch.spice->spice_models);
 
   /* 4. Memories */
   vpr_printf(TIO_MESSAGE_INFO, "Generating modules of memories...\n");
-  dump_verilog_submodule_memories(cur_sram_orgz_info, submodule_dir, routing_arch->num_switch, 
+  dump_verilog_submodule_memories(cur_sram_orgz_info, verilog_dir, submodule_dir, routing_arch->num_switch, 
                                   switch_inf, Arch.spice, routing_arch);
 
   /* 5. Dump decoder modules only when memory bank is required */
-  dump_verilog_config_peripherals(cur_sram_orgz_info, submodule_dir);
+  dump_verilog_config_peripherals(cur_sram_orgz_info, verilog_dir, submodule_dir);
 
   /* 6. Dump template for all the modules */
   if (TRUE == fpga_verilog_opts.print_user_defined_template) { 
     dump_verilog_submodule_templates(cur_sram_orgz_info, 
+                                     verilog_dir,
                                      submodule_dir,
                                      Arch.spice->num_spice_model, 
                                      Arch.spice->spice_models);

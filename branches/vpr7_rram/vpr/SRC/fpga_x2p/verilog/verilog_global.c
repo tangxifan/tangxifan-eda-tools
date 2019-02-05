@@ -33,6 +33,7 @@ char* formal_verification_verilog_file_postfix = "_top_formal_verification.v";
 char* top_testbench_verilog_file_postfix = "_top_tb.v"; /* !!! must be consist with the modelsim_testbench_module_postfix */ 
 char* autocheck_top_testbench_verilog_file_postfix = "_autocheck_top_tb.v"; /* !!! must be consist with the modelsim_autocheck_testbench_module_postfix */ 
 char* blif_testbench_verilog_file_postfix = "_blif_tb.v";
+char* defines_verilog_file_name = "fpga_defines.v";
 char* submodule_verilog_file_name = "sub_module.v";
 char* logic_block_verilog_file_name = "logic_blocks.v";
 char* luts_verilog_file_name = "luts.v";

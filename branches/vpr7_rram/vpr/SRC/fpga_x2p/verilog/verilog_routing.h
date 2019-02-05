@@ -1,7 +1,9 @@
 
 void dump_verilog_routing_chan_subckt(t_sram_orgz_info* cur_sram_orgz_info,
-                                      FILE* fp,
-                                      int x, int y, t_rr_type chan_type, 
+                                      char* verilog_dir,
+                                      char* subckt_dir,
+                                      int x,  int y,
+                                      t_rr_type chan_type, 
                                       int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                       t_ivec*** LL_rr_node_indices,
                                       int num_segment, t_segment_inf* segments,
@@ -60,10 +62,12 @@ int count_verilog_switch_box_conf_bits(t_sram_orgz_info* cur_sram_orgz_info,
                                       t_sb cur_sb_info);
 
 void dump_verilog_routing_switch_box_subckt(t_sram_orgz_info* cur_sram_orgz_info,
-                                            FILE* fp, t_sb* cur_sb_info, 
+                                            char* verilog_dir, char* subckt_dir, 
+                                            t_sb* cur_sb_info, 
                                             int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                             t_ivec*** LL_rr_node_indices,
                                             t_syn_verilog_opts fpga_verilog_opts);
+
 
 void dump_verilog_connection_box_short_interc(t_sram_orgz_info* cur_sram_orgz_info,
                                               FILE* fp,
@@ -102,12 +106,15 @@ int count_verilog_connection_box_reserved_conf_bits(t_sram_orgz_info* cur_sram_o
                                                     t_cb* cur_cb_info);
 
 void dump_verilog_routing_connection_box_subckt(t_sram_orgz_info* cur_sram_orgz_info,
-                                                FILE* fp, t_cb* cur_cb_info,
+                                                char* verilog_dir, char* subckt_dir, 
+                                                t_cb* cur_cb_info,
                                                 int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                                 t_ivec*** LL_rr_node_indices,
                                                 t_syn_verilog_opts fpga_verilog_opts);
 
+
 void dump_verilog_routing_resources(t_sram_orgz_info* cur_sram_orgz_info,
+                                    char* verilog_dir,
                                     char* subckt_dir,
                                     t_arch arch,
                                     t_det_routing_arch* routing_arch,

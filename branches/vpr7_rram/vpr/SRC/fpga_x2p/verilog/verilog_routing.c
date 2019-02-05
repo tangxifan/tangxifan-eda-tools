@@ -38,6 +38,7 @@
 
 
 void dump_verilog_routing_chan_subckt(t_sram_orgz_info* cur_sram_orgz_info,
+                                      char* verilog_dir,
                                       char* subckt_dir,
                                       int x,  int y,
                                       t_rr_type chan_type, 
@@ -64,9 +65,7 @@ void dump_verilog_routing_chan_subckt(t_sram_orgz_info* cur_sram_orgz_info,
     fp = verilog_create_one_subckt_file(subckt_dir, "Routing Channel - X direction ", chanx_verilog_file_name_prefix, x, y, &fname);
     chan_prefix = "chanx";
     /* Print preprocessing flags */
-    dump_verilog_preproc(fp, 
-                         fpga_verilog_opts, 
-                         VERILOG_TB_TOP);
+    verilog_include_defines_preproc_file(fp, verilog_dir);
     /* Comment lines */
     fprintf(fp, "//----- Verilog Module of Channel X [%d][%d] -----\n", x, y);
     break;
@@ -75,9 +74,7 @@ void dump_verilog_routing_chan_subckt(t_sram_orgz_info* cur_sram_orgz_info,
     fp = verilog_create_one_subckt_file(subckt_dir, "Routing Channel - Y direction ", chany_verilog_file_name_prefix, x, y, &fname);
     chan_prefix = "chany";
     /* Print preprocessing flags */
-    dump_verilog_preproc(fp, 
-                         fpga_verilog_opts, 
-                         VERILOG_TB_TOP);
+    verilog_include_defines_preproc_file(fp, verilog_dir);
     /* Comment lines */
     fprintf(fp, "//----- Verilog Module Channel Y [%d][%d] -----\n", x, y);
     break;
@@ -1099,7 +1096,8 @@ int count_verilog_switch_box_conf_bits(t_sram_orgz_info* cur_sram_orgz_info,
  *    --------------          --------------
  */
 void dump_verilog_routing_switch_box_subckt(t_sram_orgz_info* cur_sram_orgz_info,
-                                            char* subckt_dir, t_sb* cur_sb_info, 
+                                            char* verilog_dir, char* subckt_dir, 
+                                            t_sb* cur_sb_info, 
                                             int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                             t_ivec*** LL_rr_node_indices,
                                             t_syn_verilog_opts fpga_verilog_opts) {
@@ -1131,9 +1129,7 @@ void dump_verilog_routing_switch_box_subckt(t_sram_orgz_info* cur_sram_orgz_info
   fp = verilog_create_one_subckt_file(subckt_dir, "Switch Block ", sb_verilog_file_name_prefix, cur_sb_info->x, cur_sb_info->y, &fname);
 
   /* Print preprocessing flags */
-  dump_verilog_preproc(fp, 
-                       fpga_verilog_opts, 
-                       VERILOG_TB_TOP);
+  verilog_include_defines_preproc_file(fp, verilog_dir);
 
   /* Comment lines */
   fprintf(fp, "//----- Verilog Module of Switch Box[%d][%d] -----\n", cur_sb_info->x, cur_sb_info->y);
@@ -1737,7 +1733,8 @@ int count_verilog_connection_box_reserved_conf_bits(t_sram_orgz_info* cur_sram_o
  *    --------------Box_Y[x][y-1]--------------
  */
 void dump_verilog_routing_connection_box_subckt(t_sram_orgz_info* cur_sram_orgz_info,
-                                                char* subckt_dir, t_cb* cur_cb_info,
+                                                char* verilog_dir, char* subckt_dir, 
+                                                t_cb* cur_cb_info,
                                                 int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                                 t_ivec*** LL_rr_node_indices,
                                                 t_syn_verilog_opts fpga_verilog_opts) {
@@ -1762,9 +1759,7 @@ void dump_verilog_routing_connection_box_subckt(t_sram_orgz_info* cur_sram_orgz_
     fp = verilog_create_one_subckt_file(subckt_dir, "Connection Block - X direction ", cbx_verilog_file_name_prefix, cur_cb_info->x, cur_cb_info->y, &fname);
 
     /* Print preprocessing flags */
-    dump_verilog_preproc(fp, 
-                         fpga_verilog_opts, 
-                         VERILOG_TB_TOP);
+    verilog_include_defines_preproc_file(fp, verilog_dir);
 
     /* Comment lines */
     fprintf(fp, "//----- Verilog Module of Connection Box -X direction [%d][%d] -----\n", x, y);
@@ -1776,9 +1771,7 @@ void dump_verilog_routing_connection_box_subckt(t_sram_orgz_info* cur_sram_orgz_
     fp = verilog_create_one_subckt_file(subckt_dir, "Connection Block - Y direction ", cby_verilog_file_name_prefix, cur_cb_info->x, cur_cb_info->y, &fname);
 
     /* Print preprocessing flags */
-    dump_verilog_preproc(fp, 
-                         fpga_verilog_opts, 
-                         VERILOG_TB_TOP);
+    verilog_include_defines_preproc_file(fp, verilog_dir);
     /* Comment lines */
     fprintf(fp, "//----- Verilog Module of Connection Box -Y direction [%d][%d] -----\n", x, y);
     fprintf(fp, "module ");
@@ -1940,6 +1933,7 @@ void dump_verilog_routing_connection_box_subckt(t_sram_orgz_info* cur_sram_orgz_
 /* Top Function*/
 /* Build the routing resource SPICE sub-circuits*/
 void dump_verilog_routing_resources(t_sram_orgz_info* cur_sram_orgz_info,
+                                    char* verilog_dir,
                                     char* subckt_dir,
                                     t_arch arch,
                                     t_det_routing_arch* routing_arch,
@@ -1972,7 +1966,7 @@ void dump_verilog_routing_resources(t_sram_orgz_info* cur_sram_orgz_info,
   vpr_printf(TIO_MESSAGE_INFO, "Writing X-direction Channels...\n");
   for (iy = 0; iy < (ny + 1); iy++) {
     for (ix = 1; ix < (nx + 1); ix++) {
-      dump_verilog_routing_chan_subckt(cur_sram_orgz_info, subckt_dir, ix, iy, CHANX, 
+      dump_verilog_routing_chan_subckt(cur_sram_orgz_info, verilog_dir, subckt_dir, ix, iy, CHANX, 
                                        LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices, 
                                        arch.num_segments, arch.Segments, fpga_verilog_opts);
     }
@@ -1981,7 +1975,7 @@ void dump_verilog_routing_resources(t_sram_orgz_info* cur_sram_orgz_info,
   vpr_printf(TIO_MESSAGE_INFO, "Writing Y-direction Channels...\n");
   for (ix = 0; ix < (nx + 1); ix++) {
     for (iy = 1; iy < (ny + 1); iy++) {
-      dump_verilog_routing_chan_subckt(cur_sram_orgz_info, subckt_dir, ix, iy, CHANY,
+      dump_verilog_routing_chan_subckt(cur_sram_orgz_info, verilog_dir, subckt_dir, ix, iy, CHANY,
                                        LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices, 
                                        arch.num_segments, arch.Segments, fpga_verilog_opts);
     }
@@ -1992,7 +1986,7 @@ void dump_verilog_routing_resources(t_sram_orgz_info* cur_sram_orgz_info,
     for (iy = 0; iy < (ny + 1); iy++) {
       /* vpr_printf(TIO_MESSAGE_INFO, "Writing Switch Boxes[%d][%d]...\n", ix, iy); */
       update_spice_models_routing_index_low(ix, iy, SOURCE, arch.spice->num_spice_model, arch.spice->spice_models);
-      dump_verilog_routing_switch_box_subckt(cur_sram_orgz_info, subckt_dir, &(sb_info[ix][iy]),
+      dump_verilog_routing_switch_box_subckt(cur_sram_orgz_info, verilog_dir, subckt_dir, &(sb_info[ix][iy]),
                                              LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices,
                                              fpga_verilog_opts);
       update_spice_models_routing_index_high(ix, iy, SOURCE, arch.spice->num_spice_model, arch.spice->spice_models);
@@ -2007,7 +2001,7 @@ void dump_verilog_routing_resources(t_sram_orgz_info* cur_sram_orgz_info,
       update_spice_models_routing_index_low(ix, iy, CHANX, arch.spice->num_spice_model, arch.spice->spice_models);
       if ((TRUE == is_cb_exist(CHANX, ix, iy))
          &&(0 < count_cb_info_num_ipin_rr_nodes(cbx_info[ix][iy]))) {
-        dump_verilog_routing_connection_box_subckt(cur_sram_orgz_info, subckt_dir, &(cbx_info[ix][iy]),
+        dump_verilog_routing_connection_box_subckt(cur_sram_orgz_info, verilog_dir, subckt_dir, &(cbx_info[ix][iy]),
                                                    LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices,
                                                    fpga_verilog_opts); 
       }
@@ -2021,7 +2015,7 @@ void dump_verilog_routing_resources(t_sram_orgz_info* cur_sram_orgz_info,
       update_spice_models_routing_index_low(ix, iy, CHANY, arch.spice->num_spice_model, arch.spice->spice_models);
       if ((TRUE == is_cb_exist(CHANY, ix, iy)) 
          &&(0 < count_cb_info_num_ipin_rr_nodes(cby_info[ix][iy]))) {
-        dump_verilog_routing_connection_box_subckt(cur_sram_orgz_info, subckt_dir, &(cby_info[ix][iy]),
+        dump_verilog_routing_connection_box_subckt(cur_sram_orgz_info, verilog_dir, subckt_dir, &(cby_info[ix][iy]),
                                                    LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices,
                                                    fpga_verilog_opts); 
       }

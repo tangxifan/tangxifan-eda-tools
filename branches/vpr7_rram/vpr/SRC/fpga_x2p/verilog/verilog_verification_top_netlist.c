@@ -391,6 +391,7 @@ void dump_verilog_formal_verification_top_netlist_initialization(t_sram_orgz_inf
 void dump_verilog_formal_verification_top_netlist(t_sram_orgz_info* cur_sram_orgz_info,
                                                   char* circuit_name,
                                                   char* top_netlist_name,
+                                                  char* verilog_dir_path,
                                                   int num_clock,
                                                   t_syn_verilog_opts fpga_verilog_opts,
                                                   t_spice verilog) {
@@ -410,11 +411,8 @@ void dump_verilog_formal_verification_top_netlist(t_sram_orgz_info* cur_sram_org
   dump_verilog_file_header(fp, title);
   my_free(title);
 
-
   /* Print preprocessing flags */
-  dump_verilog_preproc(fp, 
-                       fpga_verilog_opts, 
-                       VERILOG_TB_FORMAL_VERIFICATION);
+  verilog_include_defines_preproc_file(fp, verilog_dir_path);
 
   /* Start with module declaration */
   dump_verilog_formal_verification_top_netlist_ports(cur_sram_orgz_info, fp, circuit_name);

@@ -640,6 +640,7 @@ void dump_verilog_membank_config_module(FILE* fp,
 
 /* Top-level function */
 void dump_verilog_config_peripherals(t_sram_orgz_info* cur_sram_orgz_info,
+                                     char* verilog_dir_path,
                                      char* submodule_dir_path) {
   FILE* fp = NULL;
 
@@ -657,6 +658,8 @@ void dump_verilog_config_peripherals(t_sram_orgz_info* cur_sram_orgz_info,
  
   /* Generate the descriptions*/
   dump_verilog_file_header(fp, " Verilog Configuration Peripheral");
+
+  verilog_include_defines_preproc_file(fp, verilog_dir_path);
 
   switch(cur_sram_orgz_info->type) {
   case SPICE_SRAM_STANDALONE:

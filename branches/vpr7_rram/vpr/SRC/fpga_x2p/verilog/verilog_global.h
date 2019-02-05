@@ -25,6 +25,7 @@ extern char* formal_verification_verilog_file_postfix;
 extern char* top_testbench_verilog_file_postfix;
 extern char* autocheck_top_testbench_verilog_file_postfix; 
 extern char* blif_testbench_verilog_file_postfix;
+extern char* defines_verilog_file_name;
 extern char* submodule_verilog_file_name;
 extern char* logic_block_verilog_file_name;
 extern char* luts_verilog_file_name;
