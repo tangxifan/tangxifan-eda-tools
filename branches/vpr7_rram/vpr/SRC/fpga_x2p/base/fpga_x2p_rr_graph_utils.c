@@ -789,7 +789,7 @@ void mark_rr_graph_sinks(t_rr_graph* local_rr_graph,
 
   for (ipin = 0; ipin < local_rr_graph->net_num_sinks[inet]; ipin++) {
     inode = local_rr_graph->net_rr_sinks[inet][ipin];
-    if (inode == OPEN) {
+    if (OPEN == inode) {
       continue;
     }
     /* Bypass routed sinks */
@@ -797,8 +797,11 @@ void mark_rr_graph_sinks(t_rr_graph* local_rr_graph,
       continue;
     }
     local_rr_graph->rr_node_route_inf[inode].target_flag++;
+    if ( ! ((local_rr_graph->rr_node_route_inf[inode].target_flag > 0) 
+        && (local_rr_graph->rr_node_route_inf[inode].target_flag <= local_rr_graph->rr_node[inode].capacity))) {
     assert((local_rr_graph->rr_node_route_inf[inode].target_flag > 0) 
         && (local_rr_graph->rr_node_route_inf[inode].target_flag <= local_rr_graph->rr_node[inode].capacity));
+    }
   }
 
   return;

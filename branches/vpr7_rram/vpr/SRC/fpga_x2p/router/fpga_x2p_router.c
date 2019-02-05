@@ -267,6 +267,7 @@ boolean breadth_first_route_one_multi_source_net_pb_rr_graph(t_rr_graph* local_r
   struct s_trace *tptr;
   boolean first_time;
   boolean* net_sink_routed = (boolean*) my_malloc(local_rr_graph->net_num_sinks[inet] * sizeof(boolean));
+  boolean route_success = FALSE;
 
   /* Initialize */
   for (isink = 0; isink < local_rr_graph->net_num_sinks[inet]; isink++) { 
@@ -285,13 +286,16 @@ boolean breadth_first_route_one_multi_source_net_pb_rr_graph(t_rr_graph* local_r
   
     for (isink = 0; isink < local_rr_graph->net_num_sinks[inet]; isink++) { /* Need n-1 wires to connect n pins */
       /* Do not connect open terminals */
-      if (local_rr_graph->net_rr_sinks[inet][isink] == OPEN) {
+      if (OPEN == local_rr_graph->net_rr_sinks[inet][isink]) {
         continue;
       }
       /* Bypass routed sinks */
       if (TRUE == net_sink_routed[isink]) {
         continue;
       }
+
+      /* Reset flag */
+      route_success = FALSE;
 
       /* Expand and begin routing */
       breadth_first_expand_rr_graph_trace_segment(local_rr_graph, tptr, remaining_connections_to_sink);
@@ -300,10 +304,10 @@ boolean breadth_first_route_one_multi_source_net_pb_rr_graph(t_rr_graph* local_r
       /* Exit only when this is the last source node 
        * Infeasible routing.  No possible path for net. 
        */
-      if ((current == NULL)
-       &&(isrc == local_rr_graph->net_num_sources[inet] - 1)) { 
+      if (NULL == current) {
         reset_rr_graph_path_costs(local_rr_graph); /* Clean up before leaving. */
-        return (FALSE);
+        route_success = FALSE;
+        break;
       }
 
       inode = current->index;
@@ -332,19 +336,18 @@ boolean breadth_first_route_one_multi_source_net_pb_rr_graph(t_rr_graph* local_r
         /* Exit only when this is the last source node 
          * Impossible routing. No path for net. 
          */
-        if ((current == NULL)  
-         &&(isrc == local_rr_graph->net_num_sources[inet] - 1)) { 
+        if (NULL == current) { 
           reset_rr_graph_path_costs(local_rr_graph);
-          return (FALSE);
-        }
-        /* If this is not routable, finish here */
-        if (NULL == current) {
+          route_success = FALSE;
           break;
         }
+
         inode = current->index;
+        /* Reach here it means routing is going well */
+        route_success = TRUE;
       }
       
-      if (NULL == current) {
+      if (FALSE == route_success) {
         reset_rr_graph_path_costs(local_rr_graph);
         continue;
       }
@@ -359,9 +362,31 @@ boolean breadth_first_route_one_multi_source_net_pb_rr_graph(t_rr_graph* local_r
 
     empty_rr_graph_heap(local_rr_graph);
     reset_rr_graph_path_costs(local_rr_graph);
+    /* If this sink is not routable for this source
+     * reset the target_flag 
+     */
+    for (isink = 0; isink < local_rr_graph->net_num_sinks[inet]; isink++) {
+      inode = local_rr_graph->net_rr_sinks[inet][isink];
+      if ( (OPEN != inode) 
+        && (FALSE == net_sink_routed[isink])) {
+        local_rr_graph->rr_node_route_inf[inode].target_flag = 0;
+      }
+    }
   }
 
-  return (TRUE);
+  /* Make sure every sink if routed */
+  route_success = TRUE;
+  for (isink = 0; isink < local_rr_graph->net_num_sinks[inet]; isink++) { 
+    if ( (OPEN != local_rr_graph->net_rr_sinks[inet][isink])
+        && (FALSE == net_sink_routed[isink])) {
+      route_success = FALSE;
+    }
+  }
+  
+  /* Free */
+  free(net_sink_routed);
+
+  return route_success;
 }
 
 
