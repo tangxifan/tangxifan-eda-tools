@@ -39,7 +39,11 @@ void init_rr_graph(INOUTP t_rr_graph* local_rr_graph) {
   local_rr_graph->num_nets = 0;
   local_rr_graph->net = NULL;
   local_rr_graph->net_to_vpack_net_mapping = NULL;
+  local_rr_graph->net_num_sources = NULL;
+  local_rr_graph->net_num_sinks = NULL;
 
+  local_rr_graph->net_rr_sources = NULL;
+  local_rr_graph->net_rr_sinks = NULL;
   local_rr_graph->net_rr_terminals = NULL;
   local_rr_graph->rr_mem_ch = {NULL, 0, NULL}; 
 
@@ -71,6 +75,49 @@ void init_rr_graph(INOUTP t_rr_graph* local_rr_graph) {
   local_rr_graph->num_heap_allocated = 0;
   local_rr_graph->num_linked_f_pointer_allocated = 0;
   #endif
+
+  return;
+}
+
+void alloc_rr_graph_net_rr_sources_and_sinks(t_rr_graph* local_rr_graph) {
+  int inet, isrc, isink, inode;
+  int num_sources_in_rr_graph, num_sinks_in_rr_graph;
+
+  local_rr_graph->net_num_sources = (int *) my_calloc(local_rr_graph->num_nets, sizeof(int));
+  local_rr_graph->net_num_sinks = (int *) my_calloc(local_rr_graph->num_nets, sizeof(int));
+
+  local_rr_graph->net_rr_sources = (int **) my_calloc(local_rr_graph->num_nets, sizeof(int*));
+  local_rr_graph->net_rr_sinks = (int **) my_calloc(local_rr_graph->num_nets, sizeof(int*));
+
+  for (inet = 0; inet < local_rr_graph->num_nets; inet++) {
+    /* Count how many SINKs we have in the rr_graph that is mapped to this net */
+    num_sources_in_rr_graph = 0;
+    num_sinks_in_rr_graph = 0;
+    for (inode = 0; inode < local_rr_graph->num_rr_nodes; inode++) {
+      /* Only care the rr_node mapped to this net */
+      if (inet != local_rr_graph->rr_node[inode].net_num) {
+        continue; 
+      }
+      if (SOURCE == local_rr_graph->rr_node[inode].type) {
+        num_sources_in_rr_graph++;
+      }
+      if (SINK == local_rr_graph->rr_node[inode].type) {
+        num_sinks_in_rr_graph++;
+      }
+    }
+    local_rr_graph->net_num_sources[inet] = num_sources_in_rr_graph; 
+    local_rr_graph->net_num_sinks[inet] = num_sinks_in_rr_graph; 
+    /* Consider the SOURCE (index=0), a special SINK */
+    local_rr_graph->net_rr_sources[inet] = (int *) my_malloc(num_sources_in_rr_graph * sizeof(int));
+    local_rr_graph->net_rr_sinks[inet] = (int *) my_malloc(num_sinks_in_rr_graph * sizeof(int));
+    /* Initialize all terminal to be OPEN */
+    for (isrc = 0; isrc < local_rr_graph->net_num_sources[inet]; isrc++) {
+      local_rr_graph->net_rr_sources[inet][isrc] = OPEN;
+    }
+    for (isink = 0; isink < local_rr_graph->net_num_sinks[inet]; isink++) {
+      local_rr_graph->net_rr_sinks[inet][isink] = OPEN;
+    }
+  }
 
   return;
 }
@@ -725,6 +772,34 @@ void add_node_to_rr_graph_heap(t_rr_graph* local_rr_graph,
   hptr->backward_path_cost = backward_path_cost;
   hptr->R_upstream = R_upstream;
   add_heap_node_to_rr_graph_heap(local_rr_graph, hptr);
+
+  return;
+}
+
+void mark_rr_graph_sinks(t_rr_graph* local_rr_graph, 
+                         int inet, boolean* net_sink_routed) {
+
+  /* Mark all the SINKs of this net as targets by setting their target flags  *
+   * to the number of times the net must connect to each SINK.  Note that     *
+   * this number can occassionally be greater than 1 -- think of connecting   *
+   * the same net to two inputs of an and-gate (and-gate inputs are logically *
+   * equivalent, so both will connect to the same SINK).                      */
+
+  int ipin, inode;
+
+  for (ipin = 0; ipin < local_rr_graph->net_num_sinks[inet]; ipin++) {
+    inode = local_rr_graph->net_rr_sinks[inet][ipin];
+    if (inode == OPEN) {
+      continue;
+    }
+    /* Bypass routed sinks */
+    if (TRUE == net_sink_routed[ipin]) {
+      continue;
+    }
+    local_rr_graph->rr_node_route_inf[inode].target_flag++;
+    assert((local_rr_graph->rr_node_route_inf[inode].target_flag > 0) 
+        && (local_rr_graph->rr_node_route_inf[inode].target_flag <= local_rr_graph->rr_node[inode].capacity));
+  }
 
   return;
 }

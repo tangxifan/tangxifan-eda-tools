@@ -1,6 +1,8 @@
 
 void init_rr_graph(INOUTP t_rr_graph* local_rr_graph);
 
+void alloc_rr_graph_net_rr_sources_and_sinks(t_rr_graph* local_rr_graph);
+
 void alloc_rr_graph_net_rr_terminals(t_rr_graph* local_rr_graph);
 
 void alloc_rr_graph_route_static_structs(t_rr_graph* local_rr_graph,
@@ -57,6 +59,9 @@ void add_heap_node_to_rr_graph_heap(t_rr_graph* local_rr_graph,
 void add_node_to_rr_graph_heap(t_rr_graph* local_rr_graph,
                                int inode, float cost, int prev_node, int prev_edge,
                                float backward_path_cost, float R_upstream);
+
+void mark_rr_graph_sinks(t_rr_graph* local_rr_graph, 
+                         int inet, boolean* net_sink_routed);
 
 void mark_rr_graph_ends(t_rr_graph* local_rr_graph, 
                         int inet);

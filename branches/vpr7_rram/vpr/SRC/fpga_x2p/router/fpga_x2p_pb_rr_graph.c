@@ -852,12 +852,16 @@ void rec_sync_pb_vpack_net_num_to_phy_pb_rr_graph(t_pb* cur_op_pb,
 void alloc_and_load_phy_pb_rr_graph_net_rr_terminals(INP t_pb* cur_op_pb,
                                                      t_rr_graph* local_rr_graph) {
   int inet, inode, rr_node_net_name;
+  int* net_cur_terminal = (int*) my_calloc(local_rr_graph->num_nets, sizeof(int));
+  int* net_cur_source = (int*) my_calloc(local_rr_graph->num_nets, sizeof(int));
   int* net_cur_sink = (int*) my_calloc(local_rr_graph->num_nets, sizeof(int));
 
   /* Initialize */
   for (inet = 0; inet < local_rr_graph->num_nets; inet++) {
     /* SINK index starts from 1!!!*/
-    net_cur_sink[inet] = 1;
+    net_cur_terminal[inet] = 1;
+    net_cur_source[inet] = 0;
+    net_cur_sink[inet] = 0;
   }
   
   /* Check each net in the local_rr_graph,
@@ -873,6 +877,12 @@ void alloc_and_load_phy_pb_rr_graph_net_rr_terminals(INP t_pb* cur_op_pb,
 
   /* Allocate net_rr_terminals */
   alloc_rr_graph_net_rr_terminals(local_rr_graph);
+  /* Some nets may have two sources nodes to route
+   * We store the sources node in the net_rr_sources list 
+   * We keep a list for the sink nodes
+   * in the net_rr_sinks list 
+   */
+  alloc_rr_graph_net_rr_sources_and_sinks(local_rr_graph);
 
   for (inode = 0; inode < local_rr_graph->num_rr_nodes; inode++) {
     /* We only care the SOURCE and SINK nodes */
@@ -884,6 +894,10 @@ void alloc_and_load_phy_pb_rr_graph_net_rr_terminals(INP t_pb* cur_op_pb,
         break;
       }
       local_rr_graph->net_rr_terminals[rr_node_net_name][0] = inode; 
+      /* Store in the source and sink lists */
+      local_rr_graph->net_rr_sources[rr_node_net_name][net_cur_source[rr_node_net_name]] = inode; 
+      /* Update the counter */
+      net_cur_source[rr_node_net_name]++;
       break;
     case SINK:
       /* SINK: we need to record the sink we considered */
@@ -892,8 +906,12 @@ void alloc_and_load_phy_pb_rr_graph_net_rr_terminals(INP t_pb* cur_op_pb,
         break;
       }
       /* Make sure we do not overwrite on the source */
-      assert ( 0 < net_cur_sink[rr_node_net_name] );
-      local_rr_graph->net_rr_terminals[rr_node_net_name][net_cur_sink[rr_node_net_name]] = inode; 
+      assert ( 0 < net_cur_terminal[rr_node_net_name] );
+      local_rr_graph->net_rr_terminals[rr_node_net_name][net_cur_terminal[rr_node_net_name]] = inode; 
+      net_cur_terminal[rr_node_net_name]++;
+      /* Store in the source and sink lists */
+      local_rr_graph->net_rr_sinks[rr_node_net_name][net_cur_sink[rr_node_net_name]] = inode; 
+      /* Update the counter */
       net_cur_sink[rr_node_net_name]++;
       break;
     case INTRA_CLUSTER_EDGE:
@@ -909,10 +927,14 @@ void alloc_and_load_phy_pb_rr_graph_net_rr_terminals(INP t_pb* cur_op_pb,
   /* Check */
   for (inet = 0; inet < local_rr_graph->num_nets; inet++) {
     /* Count in the first node is SOURCE not the SINK */
-    assert ( net_cur_sink[inet] == local_rr_graph->net_num_sinks[inet] + 1);
+    assert ( net_cur_terminal[inet] == local_rr_graph->net_num_sinks[inet] + 1);
+    assert ( net_cur_source[inet] == local_rr_graph->net_num_sources[inet]);
+    assert ( net_cur_sink[inet] == local_rr_graph->net_num_sinks[inet]);
   }
 
   /* Free */
+  my_free(net_cur_terminal);
+  my_free(net_cur_source);
   my_free(net_cur_sink);
 
   return;

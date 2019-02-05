@@ -141,7 +141,24 @@ void breadth_first_add_source_to_rr_graph_heap(t_rr_graph* local_rr_graph,
   add_node_to_rr_graph_heap(local_rr_graph, inode, cost, NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
 }
 
+/* A copy of breath_first_add_source_to_heap_cluster
+ * I remove all the use of global variables
+ */
+void breadth_first_add_one_source_to_rr_graph_heap(t_rr_graph* local_rr_graph,
+                                                   int src_net_index,
+                                                   int src_idx) {
 
+  /* Adds the SOURCE of this net to the heap.  Used to start a net's routing. */
+  int inode;
+  float cost;
+
+  inode = local_rr_graph->net_rr_sources[src_net_index][src_idx]; /* SOURCE */
+  cost = get_rr_graph_rr_cong_cost(local_rr_graph, inode);
+
+  add_node_to_rr_graph_heap(local_rr_graph, inode, cost, NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
+
+  return;
+}
 
 /* A copy of breath_first_route_net_cluster
  * I remove all the use of global variables
@@ -228,6 +245,125 @@ boolean breadth_first_route_one_net_pb_rr_graph(t_rr_graph* local_rr_graph,
   reset_rr_graph_path_costs(local_rr_graph);
   return (TRUE);
 }
+
+/* Adapt for the multi-source rr_graph routing
+ */
+boolean breadth_first_route_one_multi_source_net_pb_rr_graph(t_rr_graph* local_rr_graph, 
+                                                             int inet) {
+
+  /* Uses a maze routing (Dijkstra's) algorithm to route a net.  The net       *
+   * begins at the net output, and expands outward until it hits a target      *
+   * pin.  The algorithm is then restarted with the entire first wire segment  *
+   * included as part of the source this time.  For an n-pin net, the maze     *
+   * router is invoked n-1 times to complete all the connections.  Inet is     *
+   * the index of the net to be routed.                                *
+   * If this routine finds that a net *cannot* be connected (due to a complete *
+   * lack of potential paths, rather than congestion), it returns FALSE, as    *
+   * routing is impossible on this architecture.  Otherwise it returns TRUE.   */
+
+  int isrc, isink, inode, prev_node, remaining_connections_to_sink;
+  float pcost, new_pcost;
+  struct s_heap *current;
+  struct s_trace *tptr;
+  boolean first_time;
+  boolean* net_sink_routed = (boolean*) my_malloc(local_rr_graph->net_num_sinks[inet] * sizeof(boolean));
+
+  /* Initialize */
+  for (isink = 0; isink < local_rr_graph->net_num_sinks[inet]; isink++) { 
+    net_sink_routed[isink] = FALSE;
+  }
+
+  /* try each sources */
+  for (isrc = 0; isrc < local_rr_graph->net_num_sources[inet]; isrc++) {
+
+    free_rr_graph_traceback(local_rr_graph, inet);
+    breadth_first_add_one_source_to_rr_graph_heap(local_rr_graph, inet, isrc);
+    mark_rr_graph_sinks(local_rr_graph, inet, net_sink_routed);
+  
+    tptr = NULL;
+    remaining_connections_to_sink = 0;
+  
+    for (isink = 0; isink < local_rr_graph->net_num_sinks[inet]; isink++) { /* Need n-1 wires to connect n pins */
+      /* Do not connect open terminals */
+      if (local_rr_graph->net_rr_sinks[inet][isink] == OPEN) {
+        continue;
+      }
+      /* Bypass routed sinks */
+      if (TRUE == net_sink_routed[isink]) {
+        continue;
+      }
+
+      /* Expand and begin routing */
+      breadth_first_expand_rr_graph_trace_segment(local_rr_graph, tptr, remaining_connections_to_sink);
+      current = get_rr_graph_heap_head(local_rr_graph);
+
+      /* Exit only when this is the last source node 
+       * Infeasible routing.  No possible path for net. 
+       */
+      if ((current == NULL)
+       &&(isrc == local_rr_graph->net_num_sources[inet] - 1)) { 
+        reset_rr_graph_path_costs(local_rr_graph); /* Clean up before leaving. */
+        return (FALSE);
+      }
+
+      inode = current->index;
+
+      while (local_rr_graph->rr_node_route_inf[inode].target_flag == 0) {
+        pcost = local_rr_graph->rr_node_route_inf[inode].path_cost;
+        new_pcost = current->cost;
+        if (pcost > new_pcost) { /* New path is lowest cost. */
+          local_rr_graph->rr_node_route_inf[inode].path_cost = new_pcost;
+          prev_node = current->u.prev_node;
+          local_rr_graph->rr_node_route_inf[inode].prev_node = prev_node;
+          local_rr_graph->rr_node_route_inf[inode].prev_edge = current->prev_edge;
+          first_time = FALSE;
+
+          if (pcost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */{
+            add_to_rr_graph_mod_list(local_rr_graph, &local_rr_graph->rr_node_route_inf[inode].path_cost);
+            first_time = TRUE;
+          }
+
+          breadth_first_expand_rr_graph_neighbours(local_rr_graph, inode, new_pcost, inet, first_time);
+        }
+
+        free_rr_graph_heap_data(local_rr_graph, current);
+        current = get_rr_graph_heap_head(local_rr_graph);
+
+        /* Exit only when this is the last source node 
+         * Impossible routing. No path for net. 
+         */
+        if ((current == NULL)  
+         &&(isrc == local_rr_graph->net_num_sources[inet] - 1)) { 
+          reset_rr_graph_path_costs(local_rr_graph);
+          return (FALSE);
+        }
+        /* If this is not routable, finish here */
+        if (NULL == current) {
+          break;
+        }
+        inode = current->index;
+      }
+      
+      if (NULL == current) {
+        reset_rr_graph_path_costs(local_rr_graph);
+        continue;
+      }
+      local_rr_graph->rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
+      remaining_connections_to_sink = local_rr_graph->rr_node_route_inf[inode].target_flag;
+      tptr = update_rr_graph_traceback(local_rr_graph, current, inet);
+      free_rr_graph_heap_data(local_rr_graph, current);
+
+      /* mark this sink as routed */
+      net_sink_routed[isink] = TRUE;
+    } 
+
+    empty_rr_graph_heap(local_rr_graph);
+    reset_rr_graph_path_costs(local_rr_graph);
+  }
+
+  return (TRUE);
+}
+
 
 boolean feasible_routing_rr_graph(t_rr_graph* local_rr_graph) {
 
@@ -376,7 +512,10 @@ boolean try_breadth_first_route_pb_rr_graph(t_rr_graph* local_rr_graph) {
 
       pathfinder_update_rr_graph_one_cost(local_rr_graph, local_rr_graph->trace_head[net_index], -1, pres_fac);
 
+      /* 
       is_routable = breadth_first_route_one_net_pb_rr_graph(local_rr_graph, net_index);
+      */
+      is_routable = breadth_first_route_one_multi_source_net_pb_rr_graph(local_rr_graph, net_index);
 
       /* Impossible to route? (disconnected rr_graph) */
 
