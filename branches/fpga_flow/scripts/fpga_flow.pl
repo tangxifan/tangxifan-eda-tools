@@ -169,8 +169,13 @@ sub print_usage()
   print "      \t-vpr_fpga_spice_testbench_load_extraction_off : turn off testbench_load_extraction in VPR FPGA SPICE\n";
   print "      [ VPR - FPGA-Verilog Extension ] \n";
   print "      \t-vpr_fpga_verilog : turn on Verilog Generator of VPR FPGA SPICE\n";
+  print "      \t-vpr_fpga_verilog_dir <verilog_path>: provide the path where generated verilog files will be written\n";
+  print "      \t-vpr_fpga_verilog_include_timing : turn on printing delay specification in Verilog files\n";
+  print "      \t-vpr_fpga_verilog_include_signal_init : turn on printing signal initialization in Verilog files\n";
+  print "      \t-vpr_fpga_verilog_print_autocheck_top_testbench: turn on printing autochecked top-level testbench for Verilog Generator of VPR FPGA SPICE\n";
   print "      \t-vpr_fpga_verilog_print_top_tb : turn on printing top-level testbench for Verilog Generator of VPR FPGA SPICE\n";
   print "      \t-vpr_fpga_verilog_print_input_blif_tb : turn on printing testbench for input blif file in Verilog Generator of VPR FPGA SPICE\n";
+  print "      \t-vpr_fpga_verilog_print_modelsim_autodeck <modelsim.ini_path>: turn on printing modelsim simulation script\n";
   print "      [ VPR - FPGA-Bitstream Extension ] \n";
   print "      \t-vpr_fpga_bitstream_generator: turn on FPGA-SPICE bitstream generator\n";
   exit(1);
@@ -341,6 +346,12 @@ sub opts_read()
   &read_opt_into_hash("vpr_fpga_verilog_print_top_tb","off","off");
   &read_opt_into_hash("vpr_fpga_verilog_print_input_blif_tb","off","off");
   &read_opt_into_hash("vpr_fpga_bitstream_generator","off","off");
+# AA add for update
+  &read_opt_into_hash("vpr_fpga_verilog_print_autocheck_top_testbench","off","off");
+  &read_opt_into_hash("vpr_fpga_verilog_dir","on","off");
+  &read_opt_into_hash("vpr_fpga_verilog_print_modelsim_autodeck","on","off");
+  &read_opt_into_hash("vpr_fpga_verilog_include_timing","off","off");
+  &read_opt_into_hash("vpr_fpga_verilog_include_signal_init","off","off");
 
   &print_opts(); 
 
@@ -1153,7 +1164,7 @@ sub run_std_vpr($ $ $ $ $ $ $ $ $)
   my ($blif,$bm,$arch,$net,$place,$route,$fix_chan_width,$log,$act_file) = @_;
   my ($vpr_dir,$vpr_name) = &split_prog_path($conf_ptr->{dir_path}->{vpr_path}->{val});
   chdir $vpr_dir;
-
+  
   my ($power_opts);
   if ("on" eq $opt_ptr->{power}) {
     $power_opts = "--power --activity_file $act_file --tech_properties $conf_ptr->{flow_conf}->{power_tech_xml}->{val}";
@@ -1214,11 +1225,26 @@ sub run_std_vpr($ $ $ $ $ $ $ $ $)
   if (("on" eq $opt_ptr->{power})&&("on" eq $opt_ptr->{vpr_fpga_verilog})) {
     $vpr_spice_opts = $vpr_spice_opts." --fpga_verilog";
 
+    if ("on" eq $opt_ptr->{vpr_fpga_verilog_dir}) {
+      $vpr_spice_opts = $vpr_spice_opts." --fpga_verilog_dir $opt_ptr->{vpr_fpga_verilog_dir_val}";
+    }
     if ("on" eq $opt_ptr->{vpr_fpga_verilog_print_top_tb}) {
       $vpr_spice_opts = $vpr_spice_opts." --fpga_verilog_print_top_testbench";
     }
     if ("on" eq $opt_ptr->{vpr_fpga_verilog_print_input_blif_tb}) {
       $vpr_spice_opts = $vpr_spice_opts." --fpga_verilog_print_input_blif_testbench";
+    }
+    if ("on" eq $opt_ptr->{vpr_fpga_verilog_print_autocheck_top_testbench}) {
+      $vpr_spice_opts = $vpr_spice_opts." --fpga_verilog_print_autocheck_top_testbench $conf_ptr->{dir_path}->{benchmark_dir}->{val}"."/$bm/$bm.v";
+    }
+    if ("on" eq $opt_ptr->{vpr_fpga_verilog_include_timing}) {
+      $vpr_spice_opts = $vpr_spice_opts." --fpga_verilog_include_timing";
+    }
+    if ("on" eq $opt_ptr->{vpr_fpga_verilog_include_signal_init}) {
+      $vpr_spice_opts = $vpr_spice_opts." --fpga_verilog_include_signal_init";
+    }
+    if ("on" eq $opt_ptr->{vpr_fpga_verilog_print_modelsim_autodeck}) {
+      $vpr_spice_opts = $vpr_spice_opts." --fpga_verilog_print_modelsim_autodeck $opt_ptr->{vpr_fpga_verilog_print_modelsim_autodeck_val}";
     }
   }
 
