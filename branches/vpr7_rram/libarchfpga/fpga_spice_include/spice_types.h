@@ -173,13 +173,15 @@ struct s_spice_tech_lib {
 
 struct s_spice_model_buffer {
   int exist;
+  char* spice_model_name;
+  char* location_map;
+
+  t_spice_model* spice_model;
   enum e_spice_model_buffer_type type;
   float size;
   int tapered_buf; /*Valid only when this is a buffer*/
   int tap_buf_level;
   int f_per_stage;
-  char* spice_model_name;
-  t_spice_model* spice_model;
 };
 
 struct s_spice_model_pass_gate_logic {
@@ -310,6 +312,7 @@ struct s_spice_model {
   /* buffering information */
   t_spice_model_buffer* lut_input_buffer;
   t_spice_model_buffer* lut_input_inverter;
+  t_spice_model_buffer* lut_intermediate_buffer;
   t_spice_model_buffer* input_buffer;
   t_spice_model_buffer* output_buffer;
   t_spice_model_pass_gate_logic* pass_gate_logic;

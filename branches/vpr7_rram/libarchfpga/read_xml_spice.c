@@ -493,6 +493,10 @@ static void ProcessSpiceModelBuffer(ezxml_t Node,
   buffer->size = GetFloatProperty(Node, "size", read_buf_info, 0.);
   ezxml_set_attr(Node, "size", NULL);
 
+  /* Read location map */
+  buffer->location_map = my_strdup(FindProperty(Node, "location_map", FALSE));
+  ezxml_set_attr(Node, "location_map", NULL);
+
   return;
 }
 
@@ -951,7 +955,7 @@ static void ProcessSpiceModel(ezxml_t Parent,
     spice_model->design_tech_info.gate_info = NULL;
     if (SPICE_MODEL_GATE == spice_model->type) {
       /* Malloc */
-      spice_model->design_tech_info.gate_info = (t_spice_model_gate*)my_malloc(sizeof(t_spice_model_gate));
+      spice_model->design_tech_info.gate_info = (t_spice_model_gate*)my_calloc(1, sizeof(t_spice_model_gate));
       /* Fill information */
       ProcessSpiceModelGate(Node, spice_model->design_tech_info.gate_info);
     } 
@@ -967,7 +971,7 @@ static void ProcessSpiceModel(ezxml_t Parent,
   spice_model->lut_input_buffer = NULL;
   if (Node) {
     /* Malloc the lut_input_buffer */
-    spice_model->lut_input_buffer = (t_spice_model_buffer*)my_malloc(sizeof(t_spice_model_buffer));
+    spice_model->lut_input_buffer = (t_spice_model_buffer*)my_calloc(1, sizeof(t_spice_model_buffer));
     ProcessSpiceModelBuffer(Node,spice_model->lut_input_buffer);
     FreeNode(Node);
   } else if (SPICE_MODEL_LUT == spice_model->type) {
@@ -981,7 +985,7 @@ static void ProcessSpiceModel(ezxml_t Parent,
   spice_model->lut_input_inverter = NULL;
   if (Node) {
     /* Malloc the lut_input_buffer */
-    spice_model->lut_input_inverter = (t_spice_model_buffer*)my_malloc(sizeof(t_spice_model_buffer));
+    spice_model->lut_input_inverter = (t_spice_model_buffer*)my_calloc(1, sizeof(t_spice_model_buffer));
     ProcessSpiceModelBuffer(Node,spice_model->lut_input_inverter);
     FreeNode(Node);
   } else if (SPICE_MODEL_LUT == spice_model->type) {
@@ -989,6 +993,22 @@ static void ProcessSpiceModel(ezxml_t Parent,
                Parent->line, spice_model->name);
     exit(1);
   } 
+
+  /* LUT intermediate buffers */
+  Node = ezxml_child(Parent, "lut_intermediate_buffer");
+  spice_model->lut_intermediate_buffer = (t_spice_model_buffer*)my_calloc(1, sizeof(t_spice_model_buffer));
+  if (Node) {
+    /* Malloc the lut_input_buffer */
+    ProcessSpiceModelBuffer(Node,spice_model->lut_intermediate_buffer);
+    FreeNode(Node);
+  } else if ((SPICE_MODEL_LUT == spice_model->type) 
+           || (SPICE_MODEL_MUX == spice_model->type)) { 
+    /* Assign default values */
+    spice_model->lut_intermediate_buffer->exist = 0; 
+    spice_model->lut_intermediate_buffer->spice_model = NULL; 
+    spice_model->lut_intermediate_buffer->location_map = NULL; 
+  } 
+
 
   /* Input Buffers*/
   Node = ezxml_child(Parent, "input_buffer");

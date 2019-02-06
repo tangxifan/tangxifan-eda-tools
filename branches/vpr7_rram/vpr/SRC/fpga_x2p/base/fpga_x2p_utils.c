@@ -349,6 +349,37 @@ t_spice_model_port* find_spice_model_port_by_name(t_spice_model* cur_spice_model
   return port;
 }
 
+void config_one_spice_model_buffer(int num_spice_models, 
+                                   t_spice_model* spice_model,
+                                   t_spice_model* cur_spice_model,
+                                   t_spice_model_buffer* cur_spice_model_buffer) {
+  t_spice_model* buf_spice_model = NULL;
+  char* location_map = NULL;
+
+  /* Check if this spice model has input buffers */
+  if (1 == cur_spice_model_buffer->exist) {
+    buf_spice_model = find_name_matched_spice_model(cur_spice_model_buffer->spice_model_name,
+                                                    num_spice_models, spice_model);
+    /* We should find a buffer spice_model*/
+    if (NULL == buf_spice_model) {
+      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Fail to find inv/buffer spice_model to the input buffer of spice_model(name=%s)!\n",
+                 __FILE__, __LINE__, cur_spice_model->name);
+      exit(1);
+    }
+    /* Backup location map */
+    location_map = cur_spice_model_buffer->location_map; 
+    /* Copy the information from found spice model to current spice model*/
+    memcpy(cur_spice_model_buffer, buf_spice_model->design_tech_info.buffer_info, sizeof(t_spice_model_buffer));
+    /* Recover the spice_model_name and exist */
+    cur_spice_model_buffer->exist = 1;
+    cur_spice_model_buffer->spice_model_name = my_strdup(buf_spice_model->name);
+    cur_spice_model_buffer->spice_model = buf_spice_model;
+    cur_spice_model_buffer->location_map = location_map;
+  }
+
+  return;
+}
+
 /* Tasks: 
  * 1. Search the spice_model_name of input and output buffer and link to the spice_model
  * 2. Copy the information from input/output buffer spice model to higher level spice_models 
@@ -367,101 +398,28 @@ void config_spice_model_input_output_buffers_pass_gate(int num_spice_models,
     }
 
     /* Check if this spice model has input buffers */
-    if (1 == spice_model[i].input_buffer->exist) {
-      buf_spice_model = find_name_matched_spice_model(spice_model[i].input_buffer->spice_model_name,
-                                                      num_spice_models, spice_model);
-      /* We should find a buffer spice_model*/
-      if (NULL == buf_spice_model) {
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Fail to find inv/buffer spice_model to the input buffer of spice_model(name=%s)!\n",
-                   __FILE__, __LINE__, spice_model[i].name);
-        exit(1);
-      }
-      /* Copy the information from found spice model to current spice model*/
-      memcpy(spice_model[i].input_buffer, buf_spice_model->design_tech_info.buffer_info, sizeof(t_spice_model_buffer));
-      /* Recover the spice_model_name and exist */
-      spice_model[i].input_buffer->exist = 1;
-      spice_model[i].input_buffer->spice_model_name = my_strdup(buf_spice_model->name);
-      spice_model[i].input_buffer->spice_model = buf_spice_model;
-    }
-
-    /* Check if this spice model has output buffers */
-    if (1 == spice_model[i].output_buffer->exist) {
-      buf_spice_model = find_name_matched_spice_model(spice_model[i].output_buffer->spice_model_name,
-                                                      num_spice_models, spice_model);
-      /* We should find a buffer spice_model*/
-      if (NULL == buf_spice_model) {
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Fail to find inv/buffer spice_model to the output buffer of spice_model(name=%s)!\n",
-                   __FILE__, __LINE__, spice_model[i].name);
-        exit(1);
-      }
-      /* Copy the information from found spice model to current spice model*/
-      memcpy(spice_model[i].output_buffer, buf_spice_model->design_tech_info.buffer_info, sizeof(t_spice_model_buffer));
-      /* Recover the spice_model_name and exist */
-      spice_model[i].output_buffer->exist = 1;
-      spice_model[i].output_buffer->spice_model_name = my_strdup(buf_spice_model->name);
-      spice_model[i].output_buffer->spice_model = buf_spice_model;
-    }
+    config_one_spice_model_buffer(num_spice_models, spice_model,
+                                  &(spice_model[i]), spice_model[i].input_buffer);
  
+    /* Check if this spice model has output buffers */
+    config_one_spice_model_buffer(num_spice_models, spice_model,
+                                  &(spice_model[i]), spice_model[i].output_buffer);
+
     /* If this spice_model is a LUT, check the lut_input_buffer */
     if (SPICE_MODEL_LUT == spice_model[i].type) {
       assert(1 == spice_model[i].lut_input_buffer->exist);
-
-      buf_spice_model = find_name_matched_spice_model(spice_model[i].lut_input_buffer->spice_model_name,
-                                                      num_spice_models, spice_model);
-
-      /* We should find a buffer spice_model*/
-      if (NULL == buf_spice_model) {
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Fail to find a buffer spice_model to the lut_input_buffer of spice_model(name=%s)!\n",
-                   __FILE__, __LINE__, spice_model[i].name);
-        exit(1);
-      }
-      /* Check if we have an inverter spice_model */
-      /* Make sure this is an inverter! */
-      if ((SPICE_MODEL_INVBUF != buf_spice_model->type)
-         || (SPICE_MODEL_BUF_BUF != buf_spice_model->design_tech_info.buffer_info->type)) {
-        vpr_printf(TIO_MESSAGE_ERROR,
-                   "(FILE: %s, [LINE%d]) Buffer spice_model (name=%s) for the lut_input_buffer of spice model (name=%s) is not defined as an buffer!\n",
-                   __FILE__, __LINE__, 
-                   buf_spice_model->name, spice_model[i].name);
-        exit(1);
-      } 
-
-      /* Copy the information from found spice model to current spice model*/
-      memcpy(spice_model[i].lut_input_buffer, buf_spice_model->design_tech_info.buffer_info, sizeof(t_spice_model_buffer));
-      /* Recover the spice_model_name and exist */
-      spice_model[i].lut_input_buffer->exist = 1;
-      spice_model[i].lut_input_buffer->spice_model_name = my_strdup(buf_spice_model->name);
-      spice_model[i].lut_input_buffer->spice_model = buf_spice_model;
-
-      /* for inverter spice_model*/
       assert(1 == spice_model[i].lut_input_inverter->exist);
 
-      inv_spice_model = find_name_matched_spice_model(spice_model[i].lut_input_inverter->spice_model_name,
-                                                      num_spice_models, spice_model);
+      config_one_spice_model_buffer(num_spice_models, spice_model,
+                                    &(spice_model[i]), spice_model[i].lut_input_buffer);
 
-      /* We should find an inverter spice_model*/
-      if (NULL == inv_spice_model) {
-        vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Fail to find inverter spice_model to the lut_input_inverter of spice_model(name=%s)!\n",
-                   __FILE__, __LINE__, spice_model[i].name);
-        exit(1);
-      }
-      /* Check if we have an inverter spice_model */
-      /* Make sure this is an inverter! */
-      if ((SPICE_MODEL_INVBUF != inv_spice_model->type)
-         || (SPICE_MODEL_BUF_INV != inv_spice_model->design_tech_info.buffer_info->type)) {
-        vpr_printf(TIO_MESSAGE_ERROR,
-                   "(FILE: %s, [LINE%d]) Inverter spice_model (name=%s) for the lut_input_buffer of spice model (name=%s) is not defined as an inverter!\n",
-                   __FILE__, __LINE__, 
-                   inv_spice_model->name, spice_model[i].name);
-        exit(1);
-      } 
-      /* Copy the information from found spice model to current spice model*/
-      memcpy(spice_model[i].lut_input_inverter, inv_spice_model->design_tech_info.buffer_info, sizeof(t_spice_model_buffer));
-      /* Recover the spice_model_name and exist */
-      spice_model[i].lut_input_inverter->exist = 1;
-      spice_model[i].lut_input_inverter->spice_model_name = my_strdup(inv_spice_model->name);
-      spice_model[i].lut_input_inverter->spice_model = inv_spice_model;
+      config_one_spice_model_buffer(num_spice_models, spice_model,
+                                    &(spice_model[i]), spice_model[i].lut_input_inverter);
+
+      config_one_spice_model_buffer(num_spice_models, spice_model,
+                                    &(spice_model[i]), spice_model[i].lut_intermediate_buffer);
     }
+
     
     /* Check pass_gate logic only for LUT and MUX */
     if ((SPICE_MODEL_LUT == spice_model[i].type)

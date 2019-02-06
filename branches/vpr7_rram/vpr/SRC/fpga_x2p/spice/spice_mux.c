@@ -367,11 +367,29 @@ void fprint_spice_cmos_mux_tree_structure(FILE* fp, char* mux_basis_subckt_name,
   int nextj, out_idx;
   int mux_basis_cnt = 0;
 
+  boolean* inter_buf_loc = NULL;
+
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
     exit(1);
   } 
+
+  /* Intermediate buffer location map */
+  inter_buf_loc = (boolean*)my_calloc(spice_mux_arch.num_level, sizeof(boolean));
+  for (i = 0; i < spice_mux_arch.num_level; i++) {
+    inter_buf_loc[i] = FALSE;
+  }
+  printf("location_map: %s", spice_model.lut_intermediate_buffer->location_map);
+  if (NULL != spice_model.lut_intermediate_buffer->location_map) {
+    assert (spice_mux_arch.num_level - 1 == strlen(spice_model.lut_intermediate_buffer->location_map));
+    /* For intermediate buffers */ 
+    for (i = 1; i < spice_mux_arch.num_level; i++) {
+      if ('1' == spice_model.lut_intermediate_buffer->location_map[i]) {
+        inter_buf_loc[i] = TRUE;
+      }
+    }
+  }
 
   mux_basis_cnt = 0;
   for (i = 0; i < spice_mux_arch.num_level; i++) {
@@ -385,11 +403,25 @@ void fprint_spice_cmos_mux_tree_structure(FILE* fp, char* mux_basis_subckt_name,
       out_idx = j/2; 
       /* Each basis mux2to1: <given_name> <input0> <input1> <output> <sram> <sram_inv> svdd sgnd <subckt_name> */
       fprintf(fp, "Xmux_basis_no%d ", mux_basis_cnt); /* given_name */
-      fprintf(fp, "mux2_l%d_in%d mux2_l%d_in%d ", level, j, level, nextj); /* input0 input1 */
+      /* For intermediate buffers */ 
+      if ((0 < i) && (TRUE == inter_buf_loc[i -1])) {
+        fprintf(fp, "mux2_l%d_in%d_buf mux2_l%d_in%d_buf ", level, j, level, nextj); /* input0 input1 */
+      } else {
+        fprintf(fp, "mux2_l%d_in%d mux2_l%d_in%d ", level, j, level, nextj); /* input0 input1 */
+      }
       fprintf(fp, "mux2_l%d_in%d ", nextlevel, out_idx); /* output */
       /* fprintf(fp, "%s%d %s_inv%d ", sram_port[0]->prefix, nextlevel, sram_port[0]->prefix, nextlevel);*/ /* sram sram_inv */
       fprintf(fp, "%s%d %s_inv%d ", sram_port[0]->prefix, i, sram_port[0]->prefix, i); /* sram sram_inv */
       fprintf(fp, "svdd sgnd %s\n", mux_basis_subckt_name); /* subckt_name */
+      /* For intermediate buffers */ 
+      if (TRUE == inter_buf_loc[i]) {
+        fprintf(fp, "X%s_%d_%d ",
+                spice_model.lut_intermediate_buffer->spice_model->name, 
+                nextlevel, out_idx); /* Given name*/
+        fprintf(fp, "mux2_l%d_in%d ", nextlevel, out_idx); /* output */
+        fprintf(fp, "mux2_l%d_in%d_buf ", nextlevel, out_idx); /* input0 input1 */
+        fprintf(fp, "svdd sgnd %s\n", spice_model.lut_intermediate_buffer->spice_model->name); /* subckt_name */
+      }
       /* Update the counter */
       j = nextj;
       mux_basis_cnt++;
@@ -399,6 +431,9 @@ void fprint_spice_cmos_mux_tree_structure(FILE* fp, char* mux_basis_subckt_name,
   assert(0 == nextlevel);
   assert(0 == out_idx);
   assert(mux_basis_cnt == spice_mux_arch.num_input - 1);
+
+  /* Free */
+  my_free(inter_buf_loc);
 
   return;
 }

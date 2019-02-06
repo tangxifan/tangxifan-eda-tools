@@ -1147,11 +1147,35 @@ void dump_verilog_cmos_mux_tree_structure(FILE* fp,
   int nextj, out_idx;
   int mux_basis_cnt = 0;
 
+  int num_buf_input_port = 0;
+  int num_buf_output_port = 0;
+
+  t_spice_model_port** buf_input_port = NULL;
+  t_spice_model_port** buf_output_port = NULL;
+  
+  boolean* inter_buf_loc = NULL;
+
   /* Make sure we have a valid file handler*/
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s,LINE[%d])Invalid file handler!\n",__FILE__, __LINE__); 
     exit(1);
   } 
+
+  /* Intermediate buffer location map */
+  inter_buf_loc = (boolean*)my_calloc(spice_mux_arch.num_level, sizeof(boolean));
+  for (i = 0; i < spice_mux_arch.num_level; i++) {
+    inter_buf_loc[i] = FALSE;
+  }
+  printf("location_map: %s", spice_model.lut_intermediate_buffer->location_map);
+  if (NULL != spice_model.lut_intermediate_buffer->location_map) {
+    assert (spice_mux_arch.num_level - 1 == strlen(spice_model.lut_intermediate_buffer->location_map));
+    /* For intermediate buffers */ 
+    for (i = 1; i < spice_mux_arch.num_level; i++) {
+      if ('1' == spice_model.lut_intermediate_buffer->location_map[i]) {
+        inter_buf_loc[i] = TRUE;
+      }
+    }
+  }
 
   mux_basis_cnt = 0;
   for (i = 0; i < spice_mux_arch.num_level; i++) {
@@ -1162,6 +1186,12 @@ void dump_verilog_cmos_mux_tree_structure(FILE* fp,
     fprintf(fp, "wire [%d:%d] mux2_l%d_in; \n", 
             0, spice_mux_arch.num_input_per_level[nextlevel] -1, /* input0 input1 */
             level);
+    /* For intermediate buffers */ 
+    if (TRUE == inter_buf_loc[i]) {
+      fprintf(fp, "wire [%d:%d] mux2_l%d_in_buf; \n", 
+              0, spice_mux_arch.num_input_per_level[nextlevel] -1, /* input0 input1 */
+              level);
+    }
   }
   fprintf(fp, "wire [%d:%d] mux2_l%d_in; \n",
           0, 0, 0);
@@ -1181,9 +1211,59 @@ void dump_verilog_cmos_mux_tree_structure(FILE* fp,
       if  (0 < rec_dump_verilog_spice_model_global_ports(fp, &spice_model, FALSE, FALSE, FALSE)) {
         fprintf(fp, ",\n");
       }
-      fprintf(fp, "mux2_l%d_in[%d:%d], ", level, j, nextj); /* input0 input1 */
+      /* For intermediate buffers */ 
+      if ((0 < i) && (TRUE == inter_buf_loc[i -1])) {
+        fprintf(fp, "mux2_l%d_in_buf[%d:%d], ", level, j, nextj); /* input0 input1 */
+      } else {
+        fprintf(fp, "mux2_l%d_in[%d:%d], ", level, j, nextj); /* input0 input1 */
+      }
       fprintf(fp, "mux2_l%d_in[%d], ", nextlevel, out_idx); /* output */
       fprintf(fp, "%s[%d], %s_inv[%d]);\n", sram_port[0]->prefix, i, sram_port[0]->prefix, i); /* sram sram_inv */
+      /* For intermediate buffers */ 
+      if (TRUE == inter_buf_loc[i]) {
+        /* Find the input port, output port, and sram port*/
+        buf_input_port = find_spice_model_ports(spice_model.lut_intermediate_buffer->spice_model, SPICE_MODEL_PORT_INPUT, &num_buf_input_port, TRUE);
+        buf_output_port = find_spice_model_ports(spice_model.lut_intermediate_buffer->spice_model, SPICE_MODEL_PORT_OUTPUT, &num_buf_output_port, TRUE);
+        /* Check */
+        assert ( (1 == num_buf_input_port)
+                 &&(1 == buf_input_port[0]->size));
+        assert ( (1 == num_buf_output_port)
+                 &&(1 == buf_output_port[0]->size));
+  
+        /* TODO: what about tapered buffer, can we support? */
+        /* Each buf: <given_name> <input0> <output> svdd sgnd <subckt_name> size=param*/
+        fprintf(fp, "%s %s_%d_%d (", 
+                spice_model.lut_intermediate_buffer->spice_model_name,
+                spice_model.lut_intermediate_buffer->spice_model_name, 
+                nextlevel, out_idx); /* Given name*/
+        /* Dump global ports */
+        if  (0 < rec_dump_verilog_spice_model_global_ports(fp, spice_model.lut_intermediate_buffer->spice_model, FALSE, FALSE, TRUE)) {
+          fprintf(fp, ",\n");
+        }
+        /* Dump explicit port map if required */
+        if ( TRUE == spice_model.lut_intermediate_buffer->spice_model->dump_explicit_port_map) {
+          fprintf(fp, ".%s(", 
+                  buf_input_port[0]->lib_name); 
+        }
+        fprintf(fp, "mux2_l%d_in[%d] ", nextlevel, out_idx); /* output */
+        if ( TRUE == spice_model.lut_intermediate_buffer->spice_model->dump_explicit_port_map) {
+          fprintf(fp, ")");
+        }
+        fprintf(fp, ", ");
+        /* Dump explicit port map if required */
+        if ( TRUE == spice_model.lut_intermediate_buffer->spice_model->dump_explicit_port_map) {
+          fprintf(fp, ".%s(", 
+                  buf_output_port[0]->lib_name); 
+        }
+        fprintf(fp, "mux2_l%d_in_buf[%d] ", nextlevel, out_idx); /* output */
+        if ( TRUE == spice_model.lut_intermediate_buffer->spice_model->dump_explicit_port_map) {
+          fprintf(fp, ")");
+        }
+        fprintf(fp, ");\n");
+        /* Free */
+        my_free(buf_input_port);
+        my_free(buf_output_port);
+      }
       /* Update the counter */
       j = nextj;
       mux_basis_cnt++;
@@ -1193,6 +1273,9 @@ void dump_verilog_cmos_mux_tree_structure(FILE* fp,
   assert(0 == nextlevel);
   assert(0 == out_idx);
   assert(mux_basis_cnt == spice_mux_arch.num_input - 1);
+
+  /* Free */
+  my_free(inter_buf_loc);
 
   return;
 }
