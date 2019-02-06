@@ -289,9 +289,9 @@ void dump_verilog_formal_verification_top_netlist_connect_ios(t_sram_orgz_info* 
               logical_block[iblock].name, gio_inout_prefix, iopad_idx);
       fprintf(fp, "//-----  name_tag: %s -----\n", 
               logical_block[iblock].pb->spice_name_tag);
-      fprintf(fp, "assign %s%s = %s%s[%d];\n",
-              logical_block[iblock].name, formal_verification_top_module_port_postfix, 
-              gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx);
+      fprintf(fp, "assign %s%s[%d] = %s%s;\n",
+              gio_inout_prefix, iopad_verilog_model->prefix, iopad_idx,
+              logical_block[iblock].name, formal_verification_top_module_port_postfix);
       /* Mark this iopad has been used! */
       used_iopad[iopad_idx] = TRUE;
     }
