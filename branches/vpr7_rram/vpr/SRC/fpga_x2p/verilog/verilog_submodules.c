@@ -2587,91 +2587,25 @@ void dump_verilog_submodule_one_lut(FILE* fp,
   /* End of port list */
   fprintf(fp, ");\n");
 
-  /* Find the ports for input_inverter */
-  buf_input_port = find_spice_model_ports(verilog_model->lut_input_inverter->spice_model, SPICE_MODEL_PORT_INPUT, &num_buf_input_port, TRUE);
-  buf_output_port = find_spice_model_ports(verilog_model->lut_input_inverter->spice_model, SPICE_MODEL_PORT_OUTPUT, &num_buf_output_port, TRUE);
-  /* Check */
-  assert(1 == num_buf_input_port);
-  assert(1 == num_buf_output_port);
+  /* Add mode selector */
+  fprintf(fp, "  wire [0:%d] %s%s;\n", 
+          input_port[0]->size - 1, input_port[0]->prefix, mode_inport_postfix);
+  fprintf(fp, "  wire [0:%d] %s_b;\n", 
+          input_port[0]->size - 1, input_port[0]->prefix);
+  fprintf(fp, "  wire [0:%d] %s_buf;\n", 
+          input_port[0]->size - 1, input_port[0]->prefix);
 
   /* Regular ports */
   if (FALSE == verilog_model->design_tech_info.lut_info->frac_lut) {
-    fprintf(fp, "  wire [0:%d] %s_b;\n", 
-            input_port[0]->size - 1, input_port[0]->prefix);
-    /* Create inverted input port */
+    /* Wire the mode ports to regular inputs */
     for (ipin = 0; ipin < input_port[0]->size; ipin++) {
-      fprintf(fp, "%s %s_%s_%d_ ( ", 
-            verilog_model->lut_input_inverter->spice_model->name,
-            verilog_model->lut_input_inverter->spice_model->name,
-            input_port[0]->prefix, ipin);
-      /* Dump global ports */
-      if  (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model->lut_input_inverter->spice_model, FALSE, FALSE, TRUE)) {
-        fprintf(fp, ",\n");
-      }
-      /* Dump explicit port map if required */
-      if (TRUE == verilog_model->lut_input_inverter->spice_model->dump_explicit_port_map) {
-        fprintf(fp, ".%s(", 
-                buf_input_port[0]->lib_name); 
-      }
-      fprintf(fp, "%s[%d]", 
-            input_port[0]->prefix, ipin);
-      if (TRUE == verilog_model->lut_input_inverter->spice_model->dump_explicit_port_map) {
-        fprintf(fp, ")"); 
-      }
-      fprintf(fp, ", "); 
-      /* Dump explicit port map if required */
-      if (TRUE == verilog_model->lut_input_inverter->spice_model->dump_explicit_port_map) {
-        fprintf(fp, ".%s(", 
-                buf_output_port[0]->lib_name); 
-      }
-      fprintf(fp, "%s_b[%d]", 
-            input_port[0]->prefix, ipin);
-      if (TRUE == verilog_model->lut_input_inverter->spice_model->dump_explicit_port_map) {
-        fprintf(fp, ")"); 
-      }
-      fprintf(fp, ");\n"); 
+      fprintf(fp, "  assign %s%s[%d] = %s[%d];\n", 
+              input_port[0]->prefix, mode_inport_postfix, ipin, 
+              input_port[0]->prefix, ipin);
     }
   } else {
     assert (TRUE == verilog_model->design_tech_info.lut_info->frac_lut);
     assert( NULL != input_port[0]->tri_state_map );
-    /* Add mode selector */
-    fprintf(fp, "  wire [0:%d] %s%s;\n", 
-            input_port[0]->size - 1, input_port[0]->prefix, mode_inport_postfix);
-    fprintf(fp, "  wire [0:%d] %s_b;\n", 
-            input_port[0]->size - 1, input_port[0]->prefix);
-    /* Create inverted input port */
-    for (ipin = 0; ipin < input_port[0]->size; ipin++) {
-      fprintf(fp, "%s %s_%s_%d_ ( ", 
-            verilog_model->lut_input_inverter->spice_model->name,
-            verilog_model->lut_input_inverter->spice_model->name,
-            input_port[0]->prefix, ipin);
-      /* Dump global ports */
-      if  (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model->lut_input_inverter->spice_model, FALSE, FALSE, TRUE)) {
-        fprintf(fp, ",\n");
-      }
-      /* Dump explicit port map if required */
-      if (TRUE == verilog_model->lut_input_inverter->spice_model->dump_explicit_port_map) {
-        fprintf(fp, ".%s(", 
-                buf_input_port[0]->lib_name); 
-      }
-      fprintf(fp, "%s%s[%d]", 
-              input_port[0]->prefix, mode_inport_postfix, ipin);
-      if (TRUE == verilog_model->lut_input_inverter->spice_model->dump_explicit_port_map) {
-        fprintf(fp, ")"); 
-      }
-      fprintf(fp, ", "); 
-      /* Dump explicit port map if required */
-      if (TRUE == verilog_model->lut_input_inverter->spice_model->dump_explicit_port_map) {
-        fprintf(fp, ".%s(", 
-                buf_output_port[0]->lib_name); 
-      }
-      fprintf(fp, "%s_b[%d]", 
-            input_port[0]->prefix, ipin);
-      if (TRUE == verilog_model->lut_input_inverter->spice_model->dump_explicit_port_map) {
-        fprintf(fp, ")"); 
-      }
-      fprintf(fp, ");\n"); 
-    }
     /* Create inverters between input port and its inversion */
     mode_lsb = 0;
     for (ipin = 0; ipin < input_port[0]->size; ipin++) {
@@ -2803,6 +2737,96 @@ void dump_verilog_submodule_one_lut(FILE* fp,
       exit(1);
     }
   }
+
+
+  /* Find the ports for input_inverter */
+  buf_input_port = find_spice_model_ports(verilog_model->lut_input_buffer->spice_model, SPICE_MODEL_PORT_INPUT, &num_buf_input_port, TRUE);
+  buf_output_port = find_spice_model_ports(verilog_model->lut_input_buffer->spice_model, SPICE_MODEL_PORT_OUTPUT, &num_buf_output_port, TRUE);
+  /* Check */
+  assert(1 == num_buf_input_port);
+  assert(1 == num_buf_output_port);
+
+  /* Create buffer input port */
+  for (ipin = 0; ipin < input_port[0]->size; ipin++) {
+    fprintf(fp, "%s %s_%s_%d_ ( ", 
+          verilog_model->lut_input_buffer->spice_model->name,
+          verilog_model->lut_input_buffer->spice_model->name,
+          input_port[0]->prefix, ipin);
+    /* Dump global ports */
+    if  (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model->lut_input_buffer->spice_model, FALSE, FALSE, TRUE)) {
+      fprintf(fp, ",\n");
+    }
+    /* Dump explicit port map if required */
+    if (TRUE == verilog_model->lut_input_buffer->spice_model->dump_explicit_port_map) {
+      fprintf(fp, ".%s(", 
+              buf_input_port[0]->lib_name); 
+    }
+    fprintf(fp, "%s%s[%d]", 
+            input_port[0]->prefix, mode_inport_postfix, ipin);
+    if (TRUE == verilog_model->lut_input_buffer->spice_model->dump_explicit_port_map) {
+      fprintf(fp, ")"); 
+    }
+    fprintf(fp, ", "); 
+    /* Dump explicit port map if required */
+    if (TRUE == verilog_model->lut_input_buffer->spice_model->dump_explicit_port_map) {
+      fprintf(fp, ".%s(", 
+              buf_output_port[0]->lib_name); 
+    }
+    fprintf(fp, "%s_buf[%d]", 
+          input_port[0]->prefix, ipin);
+    if (TRUE == verilog_model->lut_input_buffer->spice_model->dump_explicit_port_map) {
+      fprintf(fp, ")"); 
+    }
+    fprintf(fp, ");\n"); 
+  }
+  /* Free */
+  my_free(buf_input_port);
+  my_free(buf_output_port);
+
+  /* Find the ports for input_inverter */
+  buf_input_port = find_spice_model_ports(verilog_model->lut_input_inverter->spice_model, SPICE_MODEL_PORT_INPUT, &num_buf_input_port, TRUE);
+  buf_output_port = find_spice_model_ports(verilog_model->lut_input_inverter->spice_model, SPICE_MODEL_PORT_OUTPUT, &num_buf_output_port, TRUE);
+  /* Check */
+  assert(1 == num_buf_input_port);
+  assert(1 == num_buf_output_port);
+
+  /* Create inverted input port */
+  for (ipin = 0; ipin < input_port[0]->size; ipin++) {
+    fprintf(fp, "%s %s_%s_%d_ ( ", 
+          verilog_model->lut_input_inverter->spice_model->name,
+          verilog_model->lut_input_inverter->spice_model->name,
+          input_port[0]->prefix, ipin);
+    /* Dump global ports */
+    if  (0 < rec_dump_verilog_spice_model_global_ports(fp, verilog_model->lut_input_inverter->spice_model, FALSE, FALSE, TRUE)) {
+      fprintf(fp, ",\n");
+    }
+    /* Dump explicit port map if required */
+    if (TRUE == verilog_model->lut_input_inverter->spice_model->dump_explicit_port_map) {
+      fprintf(fp, ".%s(", 
+              buf_input_port[0]->lib_name); 
+    }
+    fprintf(fp, "%s%s[%d]", 
+            input_port[0]->prefix, mode_inport_postfix, ipin);
+    if (TRUE == verilog_model->lut_input_inverter->spice_model->dump_explicit_port_map) {
+      fprintf(fp, ")"); 
+    }
+    fprintf(fp, ", "); 
+    /* Dump explicit port map if required */
+    if (TRUE == verilog_model->lut_input_inverter->spice_model->dump_explicit_port_map) {
+      fprintf(fp, ".%s(", 
+              buf_output_port[0]->lib_name); 
+    }
+    fprintf(fp, "%s_b[%d]", 
+          input_port[0]->prefix, ipin);
+    if (TRUE == verilog_model->lut_input_inverter->spice_model->dump_explicit_port_map) {
+      fprintf(fp, ")"); 
+    }
+    fprintf(fp, ");\n"); 
+  }
+  /* Free */
+  my_free(buf_input_port);
+  my_free(buf_output_port);
+
  
   /* Internal structure of a LUT */ 
   /* Call the LUT MUX */
@@ -2818,14 +2842,8 @@ void dump_verilog_submodule_one_lut(FILE* fp,
             output_port[iport]->prefix);
   }
   /* Connect MUX configuration port to LUT inputs */
-  if (FALSE == verilog_model->design_tech_info.lut_info->frac_lut) {
-    fprintf(fp, " %s,", 
-            input_port[0]->prefix);
-  } else {
-    assert (TRUE == verilog_model->design_tech_info.lut_info->frac_lut);
-    fprintf(fp, " %s%s,", 
-            input_port[0]->prefix, mode_inport_postfix);
-  }
+  fprintf(fp, " %s_buf,", 
+          input_port[0]->prefix);
   /* Connect MUX inverted configuration port to inverted LUT inputs */
   fprintf(fp, " %s_b", 
           input_port[0]->prefix);

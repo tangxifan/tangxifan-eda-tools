@@ -139,7 +139,7 @@ void fprint_spice_lut_subckt(FILE* fp,
     } 
     assert(TRUE == sram_port[iport]->mode_select); 
     for (ipin = 0; ipin < sram_port[iport]->size; ipin++) {
-      fprintf(fp, "%s%d ", sram_port[iport]->prefix, ipin); 
+      fprintf(fp, "%s_out%d ", sram_port[iport]->prefix, ipin); 
     }
     mode_port_index = iport;
     num_dumped_port++;
@@ -236,24 +236,24 @@ void fprint_spice_lut_subckt(FILE* fp,
           exit(1);
         }
         /* Instance the AND2/OR2 gate */
-        fprintf(fp, "X%s_%s[%d] ",
+        fprintf(fp, "X%s_%s%d ",
                 input_port[iport]->spice_model->prefix, 
                 input_port[iport]->prefix, ipin);
         pin_cnt = 0;
         for (jport = 0; jport < modegate_num_input_port; jport++) {
           for (jpin = 0; jpin < modegate_input_port[jport]->size; jpin++) {
             if (0 == pin_cnt) {
-              fprintf(fp, "%s[%d]",
+              fprintf(fp, "%s%d",
                       input_port[iport]->prefix, ipin);
             } else if (1 == pin_cnt) { 
-              fprintf(fp, " %s_out[%d]",
+              fprintf(fp, " %s_out%d",
                       sram_port[mode_port_index]->prefix, mode_lsb);
             }
             pin_cnt++;
           }
         }
         assert(2 == pin_cnt);
-        fprintf(fp, " %s%s[%d]",
+        fprintf(fp, " %s%s%d",
                 input_port[0]->prefix, mode_inport_postfix, ipin); 
         mode_lsb++;
         /* local vdd and gnd*/
