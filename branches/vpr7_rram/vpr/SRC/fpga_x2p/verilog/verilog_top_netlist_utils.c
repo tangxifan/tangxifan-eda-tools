@@ -397,9 +397,9 @@ void dump_verilog_defined_one_grid(t_sram_orgz_info* cur_sram_orgz_info,
   }
 
   if (IO_TYPE == grid[ix][iy].type) {
-    dump_verilog_io_grid_pins(fp, ix, iy, 1, FALSE, FALSE);
+    dump_verilog_io_grid_pins(fp, ix, iy, TRUE, FALSE, FALSE);
   } else {
-    dump_verilog_grid_pins(fp, ix, iy, 1, FALSE, FALSE);
+    dump_verilog_grid_pins(fp, ix, iy, TRUE, FALSE, FALSE);
   }
  
   /* IO PAD */
@@ -830,22 +830,9 @@ void dump_verilog_defined_one_switch_box(t_sram_orgz_info* cur_sram_orgz_info,
 
     fprintf(fp, "//----- %s side channel ports-----\n", convert_side_index_to_string(side));
     for (itrack = 0; itrack < cur_sb_info.chan_width[side]; itrack++) {
-      switch (cur_sb_info.chan_rr_node_direction[side][itrack]) {
-      case OUT_PORT:
-        fprintf(fp, "%s_%d__%d__out_%d_, ", 
-                convert_chan_type_to_string(cur_sb_info.chan_rr_node[side][itrack]->type), 
-                ix, iy, itrack); 
-        break;
-      case IN_PORT:
-        fprintf(fp, "%s_%d__%d__in_%d_, ",
-                convert_chan_type_to_string(cur_sb_info.chan_rr_node[side][itrack]->type), 
-                ix, iy, itrack); 
-        break;
-      default:
-        vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of sb[%d][%d] side[%d] track[%d]!\n",
-                   __FILE__, __LINE__, x, y, side, itrack);
-        exit(1);
-      }
+      dump_verilog_routing_channel_one_pin(fp, cur_sb_info.chan_rr_node[side][itrack],
+                                           ix, iy, itrack, 
+                                           cur_sb_info.chan_rr_node_direction[side][itrack]);
     }
     fprintf(fp, "\n");
     fprintf(fp, "//----- %s side inputs: CLB output pins -----\n", convert_side_index_to_string(side));

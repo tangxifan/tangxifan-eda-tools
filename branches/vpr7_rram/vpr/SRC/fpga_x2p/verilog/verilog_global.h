@@ -37,6 +37,8 @@ extern char* essentials_verilog_file_name;
 extern char* config_peripheral_verilog_file_name;
 extern char* user_defined_template_verilog_file_name;
 
+extern char* routing_sdc_file_name;
+
 extern char* verilog_mux_basis_posfix;
 extern char* verilog_mux_special_basis_posfix;
 extern char* verilog_mem_posfix;

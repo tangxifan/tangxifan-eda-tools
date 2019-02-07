@@ -1899,7 +1899,7 @@ void dump_verilog_physical_block(t_sram_orgz_info* cur_sram_orgz_info,
 void dump_verilog_grid_pins(FILE* fp,
                       int x,
                       int y,
-                      int top_level,
+                      boolean top_level,
                       boolean dump_port_type,
                       boolean dump_last_comma) {
   int iheight, side, ipin, class_id; 
@@ -1956,13 +1956,7 @@ void dump_verilog_grid_pins(FILE* fp,
               }
             }
             /* This pin appear at this side! */
-            if (1 == top_level) {
-              fprintf(fp, " grid_%d__%d__pin_%d__%d__%d_", x, y,
-                      iheight, side, ipin);
-            } else {
-              fprintf(fp, " %s_height_%d__pin_%d_", 
-                      convert_side_index_to_string(side), iheight, ipin);
-            }
+            dump_verilog_grid_one_pin(fp, x, y, iheight, side, ipin, top_level); 
             /* Update counter */
             num_dumped_port++;
             side_pin_index++;
@@ -1991,7 +1985,7 @@ void dump_verilog_grid_pins(FILE* fp,
  */
 void dump_verilog_io_grid_pins(FILE* fp,
                                int x, int y,
-                               int top_level,
+                               boolean top_level,
                                boolean dump_port_type,
                                boolean dump_last_comma) {
   int iheight, side, ipin; 
@@ -2055,13 +2049,7 @@ void dump_verilog_io_grid_pins(FILE* fp,
             }
           }
           /* This pin appear at this side! */
-          if (1 == top_level) {
-            fprintf(fp, " grid_%d__%d__pin_%d__%d__%d_", x, y,
-                    iheight, side, ipin);
-          } else {
-            fprintf(fp, " %s_height_%d__pin_%d_", 
-                    convert_side_index_to_string(side), iheight, ipin);
-          }
+          dump_verilog_grid_one_pin(fp, x, y, iheight, side, ipin, top_level); 
           /* Update counter */
           num_dumped_port++;
           side_pin_index++;
@@ -2460,9 +2448,9 @@ void dump_verilog_physical_grid_blocks(t_sram_orgz_info* cur_sram_orgz_info,
   /* Pins */
   /* Special Care for I/O grid */
   if (IO_TYPE == grid[ix][iy].type) {
-    dump_verilog_io_grid_pins(fp, ix, iy, 0, TRUE, FALSE);
+    dump_verilog_io_grid_pins(fp, ix, iy, FALSE, TRUE, FALSE);
   } else {
-    dump_verilog_grid_pins(fp, ix, iy, 0, TRUE, FALSE);
+    dump_verilog_grid_pins(fp, ix, iy, FALSE, TRUE, FALSE);
   }
 
   /* IO PAD */

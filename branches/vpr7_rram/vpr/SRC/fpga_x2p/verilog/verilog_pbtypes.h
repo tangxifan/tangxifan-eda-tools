@@ -104,13 +104,13 @@ void dump_verilog_physical_block(t_sram_orgz_info* cur_sram_orgz_info,
 
 void dump_verilog_grid_pins(FILE* fp,
                             int x, int y,
-                            int top_level,
+                            boolean top_level,
                             boolean dump_port_type,
                             boolean dump_last_comma);
 
 void dump_verilog_io_grid_pins(FILE* fp,
                                int x, int y,
-                               int top_level,
+                               boolean top_level,
                                boolean dump_port_type,
                                boolean dump_last_comma);
 

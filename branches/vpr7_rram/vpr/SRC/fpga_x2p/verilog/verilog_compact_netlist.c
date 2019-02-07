@@ -618,9 +618,9 @@ void dump_compact_verilog_defined_one_grid(t_sram_orgz_info* cur_sram_orgz_info,
   }
 
   if (IO_TYPE == grid[ix][iy].type) {
-    dump_verilog_io_grid_pins(fp, ix, iy, 1, FALSE, FALSE);
+    dump_verilog_io_grid_pins(fp, ix, iy, TRUE, FALSE, FALSE);
   } else {
-    dump_verilog_grid_pins(fp, ix, iy, 1, FALSE, FALSE);
+    dump_verilog_grid_pins(fp, ix, iy, TRUE, FALSE, FALSE);
   }
  
   /* IO PAD */

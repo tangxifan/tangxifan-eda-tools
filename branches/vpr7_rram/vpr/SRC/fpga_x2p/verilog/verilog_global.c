@@ -45,6 +45,8 @@ char* essentials_verilog_file_name = "inv_buf_passgate.v";
 char* config_peripheral_verilog_file_name = "config_peripherals.v";
 char* user_defined_template_verilog_file_name = "user_defined_templates.v";
 
+char* routing_sdc_file_name = "routing.sdc";
+
 char* verilog_mux_basis_posfix = "_basis";
 char* verilog_mux_special_basis_posfix = "_special_basis";
 char* verilog_mem_posfix = "_mem";

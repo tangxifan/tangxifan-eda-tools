@@ -43,6 +43,7 @@
 #include "verilog_autocheck_top_testbench.h"
 #include "verilog_verification_top_netlist.h"
 #include "verilog_modelsim_autodeck.h"
+#include "verilog_sdc.h"
 
 /***** Subroutines *****/
 /* Alloc array that records Configuration bits for :
@@ -218,6 +219,14 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
   dump_verilog_routing_resources(sram_verilog_orgz_info, verilog_dir_formatted, rr_dir_path, Arch, &vpr_setup.RoutingArch,
                                  num_rr_nodes, rr_node, rr_node_indices,
                                  vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts);
+
+  /* Output routing report_timing script :
+   * TODO: enabled/disabled through an option 
+  verilog_generate_routing_report_timing(sram_verilog_orgz_info, verilog_dir_formatted,
+                                         Arch, &vpr_setup.RoutingArch,
+                                         num_rr_nodes, rr_node, rr_node_indices,
+                                         vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts);
+   */
 
   /* Dump logic blocks 
    * Branches to go: 

@@ -2892,4 +2892,60 @@ void dump_verilog_mem_sram_submodule(FILE* fp,
 
   return;
 }
+ 
+void dump_verilog_grid_one_pin(FILE* fp, 
+                               int x, int y,
+                               int height, int side, int pin_index,
+                               boolean for_top_netlist) {
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
 
+  /* This pin appear at this side! */
+  if (TRUE == for_top_netlist) {
+    fprintf(fp, " grid_%d__%d__pin_%d__%d__%d_", 
+            x, y,
+            height, side, pin_index);
+  } else {
+    assert(FALSE == for_top_netlist);
+    fprintf(fp, " %s_height_%d__pin_%d_", 
+            convert_side_index_to_string(side), height, pin_index);
+  }
+
+  return;
+}
+
+void dump_verilog_routing_channel_one_pin(FILE* fp,
+                                          t_rr_node* chan_rr_node,
+                                          int x, int y, int track_idx,
+                                          enum PORTS pin_direction) {
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+   switch (pin_direction) {
+   case OUT_PORT:
+     fprintf(fp, "%s_%d__%d__out_%d_, ", 
+             convert_chan_type_to_string(chan_rr_node->type), 
+             x, y, track_idx); 
+     break;
+   case IN_PORT:
+     fprintf(fp, "%s_%d__%d__in_%d_, ",
+             convert_chan_type_to_string(chan_rr_node->type), 
+             x, y, track_idx); 
+     break;
+   default:
+     vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of chan_rr_node!\n",
+                __FILE__, __LINE__);
+     exit(1);
+   }
+
+
+  return;
+}
