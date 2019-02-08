@@ -411,9 +411,11 @@ void alloc_and_load_rr_graph_for_pb_graph_node(
 
 	for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
         /* Xifan Tang: we DO NOT build the rr_graph for those modes are disabled in packing */
+        /*
         if (TRUE == pb_graph_node->pb_type->modes[i].disabled_in_packing) {
           continue;
         }
+        */
 		for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children;
 				j++) {
 			for (k = 0;
@@ -898,6 +900,14 @@ static void breadth_first_expand_neighbours_cluster(int inode, float pcost,
 	num_edges = rr_node[inode].num_edges;
 	for (iconn = 0; iconn < num_edges; iconn++) {
 		to_node = rr_node[inode].edges[iconn];
+        /* Xifan Tang: SHOULD BE FIXED THOROUGHLY!!!
+         * Here, I just bypass all the edges that belongs a mode that is disabled in packing     
+         */
+        if ( (NULL != rr_node[to_node].pb_graph_pin) 
+          && (NULL != rr_node[to_node].pb_graph_pin->parent_node->pb_type->parent_mode) 
+          && (TRUE == rr_node[to_node].pb_graph_pin->parent_node->pb_type->parent_mode->disabled_in_packing)) {
+          continue;
+        }
 		/*if (first_time) { */
 		tot_cost = pcost
 				+ get_rr_cong_cost(to_node) * rr_node_intrinsic_cost(to_node);

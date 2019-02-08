@@ -268,6 +268,7 @@ boolean breadth_first_route_one_multi_source_net_pb_rr_graph(t_rr_graph* local_r
   boolean first_time;
   boolean* net_sink_routed = (boolean*) my_malloc(local_rr_graph->net_num_sinks[inet] * sizeof(boolean));
   boolean route_success = FALSE;
+  int target_sink;
 
   /* Initialize */
   for (isink = 0; isink < local_rr_graph->net_num_sinks[inet]; isink++) { 
@@ -307,10 +308,26 @@ boolean breadth_first_route_one_multi_source_net_pb_rr_graph(t_rr_graph* local_r
       if (NULL == current) {
         reset_rr_graph_path_costs(local_rr_graph); /* Clean up before leaving. */
         route_success = FALSE;
-        break;
+        continue;
       }
 
       inode = current->index;
+
+        printf("\nStart routing, net=%s, isink=%d, src_node=%d, pin=%d, port=%s, pb_type=%s, placement_id=%d\n", 
+                 local_rr_graph->net[inet]->name, isink, inode,
+                 local_rr_graph->rr_node[inode].pb_graph_pin->pin_number,
+                 local_rr_graph->rr_node[inode].pb_graph_pin->port->name,
+                 local_rr_graph->rr_node[inode].pb_graph_pin->parent_node->pb_type->name,
+                 local_rr_graph->rr_node[inode].pb_graph_pin->parent_node->placement_index);
+
+        target_sink = local_rr_graph->net_rr_sinks[inet][isink];
+        printf("Target sink: sink_node=%d, pin=%d, port=%s, pb_type=%s, placement_id=%d\n", 
+                 target_sink,
+                 local_rr_graph->rr_node[target_sink].pb_graph_pin->pin_number,
+                 local_rr_graph->rr_node[target_sink].pb_graph_pin->port->name,
+                 local_rr_graph->rr_node[target_sink].pb_graph_pin->parent_node->pb_type->name,
+                 local_rr_graph->rr_node[target_sink].pb_graph_pin->parent_node->placement_index);
+
 
       while (local_rr_graph->rr_node_route_inf[inode].target_flag == 0) {
         pcost = local_rr_graph->rr_node_route_inf[inode].path_cost;
@@ -351,10 +368,19 @@ boolean breadth_first_route_one_multi_source_net_pb_rr_graph(t_rr_graph* local_r
         reset_rr_graph_path_costs(local_rr_graph);
         continue;
       }
+
       local_rr_graph->rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
       remaining_connections_to_sink = local_rr_graph->rr_node_route_inf[inode].target_flag;
       tptr = update_rr_graph_traceback(local_rr_graph, current, inet);
       free_rr_graph_heap_data(local_rr_graph, current);
+
+        printf("Route_Success=%d, net=%s, isink=%d, inode=%d, pin=%d, port=%s, pb_type=%s, placement_id=%d\n", 
+                 route_success, local_rr_graph->net[inet]->name, isink, inode, 
+                 local_rr_graph->rr_node[inode].pb_graph_pin->pin_number,
+                 local_rr_graph->rr_node[inode].pb_graph_pin->port->name,
+                 local_rr_graph->rr_node[inode].pb_graph_pin->parent_node->pb_type->name,
+                 local_rr_graph->rr_node[inode].pb_graph_pin->parent_node->placement_index);
+
 
       /* mark this sink as routed */
       net_sink_routed[isink] = TRUE;
