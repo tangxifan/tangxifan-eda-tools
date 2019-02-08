@@ -28,6 +28,11 @@ char* modelsim_testbench_module_postfix = "_top_tb";
 char* modelsim_autocheck_testbench_module_postfix = "_autocheck_top_tb";
 char* modelsim_simulation_time_unit = "ms";
 
+// Formality script generation variables
+char* formality_script_name_postfix = "_formality_script.tcl";
+char* formal_verification_top_postfix = "_top_formal_verification";
+// End of Formality script generation variables
+
 char* verilog_top_postfix = "_top.v";
 char* formal_verification_verilog_file_postfix = "_top_formal_verification.v"; 
 char* top_testbench_verilog_file_postfix = "_top_tb.v"; /* !!! must be consist with the modelsim_testbench_module_postfix */ 
