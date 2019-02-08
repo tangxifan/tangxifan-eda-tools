@@ -10,6 +10,7 @@
 #include "route_common.h"
 
 #include "fpga_x2p_types.h"
+#include "fpga_x2p_pbtypes_utils.h"
 #include "fpga_x2p_rr_graph_utils.h"
 #include "fpga_x2p_pb_rr_graph.h"
 
@@ -248,6 +249,159 @@ boolean breadth_first_route_one_net_pb_rr_graph(t_rr_graph* local_rr_graph,
 
 /* Adapt for the multi-source rr_graph routing
  */
+boolean breadth_first_route_one_single_source_net_pb_rr_graph(t_rr_graph* local_rr_graph, 
+                                                              int inet, int isrc, 
+                                                              int start_isink,
+                                                              boolean* net_sink_routed) {
+
+  /* Uses a maze routing (Dijkstra's) algorithm to route a net.  The net       *
+   * begins at the net output, and expands outward until it hits a target      *
+   * pin.  The algorithm is then restarted with the entire first wire segment  *
+   * included as part of the source this time.  For an n-pin net, the maze     *
+   * router is invoked n-1 times to complete all the connections.  Inet is     *
+   * the index of the net to be routed.                                *
+   * If this routine finds that a net *cannot* be connected (due to a complete *
+   * lack of potential paths, rather than congestion), it returns FALSE, as    *
+   * routing is impossible on this architecture.  Otherwise it returns TRUE.   */
+
+  int isink, inode, jsink, prev_node, remaining_connections_to_sink;
+  float pcost, new_pcost;
+  struct s_heap *current;
+  struct s_trace *tptr;
+  boolean first_time;
+
+  free_rr_graph_traceback(local_rr_graph, inet);
+  breadth_first_add_one_source_to_rr_graph_heap(local_rr_graph, inet, isrc);
+  mark_rr_graph_sinks(local_rr_graph, inet, start_isink, net_sink_routed);
+  
+  tptr = NULL;
+  remaining_connections_to_sink = 0;
+
+  printf("Sink nodes for net=%s to try: ",
+         local_rr_graph->net[inet]->name);
+  for (isink = start_isink; isink < local_rr_graph->net_num_sinks[inet]; isink++) { /* Need n-1 wires to connect n pins */
+    /* Do not connect open terminals */
+    if (OPEN == local_rr_graph->net_rr_sinks[inet][isink]) {
+      continue;
+    }
+    /* Bypass routed sinks */
+    if (TRUE == net_sink_routed[isink]) {
+      continue;
+    }
+    printf("%d,",
+           isink);
+  }
+  printf("\n");
+
+  
+  for (isink = start_isink; isink < local_rr_graph->net_num_sinks[inet]; isink++) { /* Need n-1 wires to connect n pins */
+    /* Do not connect open terminals */
+    if (OPEN == local_rr_graph->net_rr_sinks[inet][isink]) {
+      continue;
+    }
+
+    /* Expand and begin routing */
+    breadth_first_expand_rr_graph_trace_segment(local_rr_graph, tptr, remaining_connections_to_sink);
+    current = get_rr_graph_heap_head(local_rr_graph);
+
+    /* Exit only when this is the last source node 
+     * Infeasible routing.  No possible path for net. 
+     */
+    if (NULL == current) {
+      /*
+      printf("1. Fail Routing: net=%s, sink=%d\n",
+             local_rr_graph->net[inet]->name,
+             isink);
+      */
+      reset_rr_graph_path_costs(local_rr_graph);
+      return FALSE;
+    }
+
+    inode = current->index;
+
+    while (local_rr_graph->rr_node_route_inf[inode].target_flag == 0) {
+      pcost = local_rr_graph->rr_node_route_inf[inode].path_cost;
+      new_pcost = current->cost;
+      if (pcost > new_pcost) { /* New path is lowest cost. */
+        local_rr_graph->rr_node_route_inf[inode].path_cost = new_pcost;
+        prev_node = current->u.prev_node;
+        local_rr_graph->rr_node_route_inf[inode].prev_node = prev_node;
+        local_rr_graph->rr_node_route_inf[inode].prev_edge = current->prev_edge;
+        first_time = FALSE;
+
+        if (pcost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */{
+          add_to_rr_graph_mod_list(local_rr_graph, &local_rr_graph->rr_node_route_inf[inode].path_cost);
+          first_time = TRUE;
+        }
+
+        breadth_first_expand_rr_graph_neighbours(local_rr_graph, inode, new_pcost, inet, first_time);
+      }
+
+      free_rr_graph_heap_data(local_rr_graph, current);
+      current = get_rr_graph_heap_head(local_rr_graph);
+
+      /* Impossible routing. No path for net. 
+       */
+      if (NULL == current) { 
+        break;
+      }
+
+      inode = current->index;
+      /*
+      vpr_printf(TIO_MESSAGE_INFO,
+                 "Expanding to node: port=%s[%d], pb_type=%s\n",
+                 local_rr_graph->rr_node[inode].pb_graph_pin->port->name,
+                 local_rr_graph->rr_node[inode].pb_graph_pin->pin_number,
+                 get_pb_graph_full_name_in_hierarchy(local_rr_graph->rr_node[inode].pb_graph_pin->parent_node));
+      */
+    }
+
+    /* Impossible routing, try another iteration */
+    if (NULL == current) {
+      /*
+      printf("2. Fail Routing: net=%s, sink=%d\n",
+             local_rr_graph->net[inet]->name,
+             isink);
+      */
+      reset_rr_graph_path_costs(local_rr_graph);
+      continue;
+    }
+ 
+    local_rr_graph->rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
+    remaining_connections_to_sink = local_rr_graph->rr_node_route_inf[inode].target_flag;
+    tptr = update_rr_graph_traceback(local_rr_graph, current, inet);
+    free_rr_graph_heap_data(local_rr_graph, current);
+
+    /* Update the flag
+     * BE CAREFUL: the inode is one of the sink
+     * it is not always the isink node!!!
+     * In each iteration, the routing algorithm will route a sink with lowest cost,
+     * This is out of the order of sinks 
+     */
+    for (jsink = start_isink; jsink < local_rr_graph->net_num_sinks[inet]; jsink++) { /* Need n-1 wires to connect n pins */
+      if (inode != local_rr_graph->net_rr_sinks[inet][jsink]) {
+        continue;
+      }
+      net_sink_routed[jsink] = TRUE;
+      /*
+      printf("Round %d, Success Routing: net=%s, sink=%d, port=%s[%d], pb_type=%s[%d]\n",
+             isink, local_rr_graph->net[inet]->name,
+             jsink, 
+             local_rr_graph->rr_node[inode].pb_graph_pin->port->name,
+             local_rr_graph->rr_node[inode].pb_graph_pin->pin_number,
+             local_rr_graph->rr_node[inode].pb_graph_pin->parent_node->pb_type->name,
+             local_rr_graph->rr_node[inode].pb_graph_pin->parent_node->placement_index);
+      */
+      break;
+    }
+  } 
+
+  return TRUE;
+}
+
+
+/* Adapt for the multi-source rr_graph routing
+ */
 boolean breadth_first_route_one_multi_source_net_pb_rr_graph(t_rr_graph* local_rr_graph, 
                                                              int inet) {
 
@@ -261,151 +415,99 @@ boolean breadth_first_route_one_multi_source_net_pb_rr_graph(t_rr_graph* local_r
    * lack of potential paths, rather than congestion), it returns FALSE, as    *
    * routing is impossible on this architecture.  Otherwise it returns TRUE.   */
 
-  int isrc, isink, inode, prev_node, remaining_connections_to_sink;
-  float pcost, new_pcost;
-  struct s_heap *current;
-  struct s_trace *tptr;
-  boolean first_time;
+  int isrc, isink, inode, start_isink;
   boolean* net_sink_routed = (boolean*) my_malloc(local_rr_graph->net_num_sinks[inet] * sizeof(boolean));
   boolean route_success = FALSE;
-  int target_sink;
 
   /* Initialize */
   for (isink = 0; isink < local_rr_graph->net_num_sinks[inet]; isink++) { 
     net_sink_routed[isink] = FALSE;
-  }
-
-  /* try each sources */
-  for (isrc = 0; isrc < local_rr_graph->net_num_sources[inet]; isrc++) {
-
-    free_rr_graph_traceback(local_rr_graph, inet);
-    breadth_first_add_one_source_to_rr_graph_heap(local_rr_graph, inet, isrc);
-    mark_rr_graph_sinks(local_rr_graph, inet, net_sink_routed);
-  
-    tptr = NULL;
-    remaining_connections_to_sink = 0;
-  
-    for (isink = 0; isink < local_rr_graph->net_num_sinks[inet]; isink++) { /* Need n-1 wires to connect n pins */
-      /* Do not connect open terminals */
-      if (OPEN == local_rr_graph->net_rr_sinks[inet][isink]) {
-        continue;
-      }
-      /* Bypass routed sinks */
-      if (TRUE == net_sink_routed[isink]) {
-        continue;
-      }
-
-      /* Reset flag */
-      route_success = FALSE;
-
-      /* Expand and begin routing */
-      breadth_first_expand_rr_graph_trace_segment(local_rr_graph, tptr, remaining_connections_to_sink);
-      current = get_rr_graph_heap_head(local_rr_graph);
-
-      /* Exit only when this is the last source node 
-       * Infeasible routing.  No possible path for net. 
-       */
-      if (NULL == current) {
-        reset_rr_graph_path_costs(local_rr_graph); /* Clean up before leaving. */
-        route_success = FALSE;
-        continue;
-      }
-
-      inode = current->index;
-
-        printf("\nStart routing, net=%s, isink=%d, src_node=%d, pin=%d, port=%s, pb_type=%s, placement_id=%d\n", 
-                 local_rr_graph->net[inet]->name, isink, inode,
-                 local_rr_graph->rr_node[inode].pb_graph_pin->pin_number,
-                 local_rr_graph->rr_node[inode].pb_graph_pin->port->name,
-                 local_rr_graph->rr_node[inode].pb_graph_pin->parent_node->pb_type->name,
-                 local_rr_graph->rr_node[inode].pb_graph_pin->parent_node->placement_index);
-
-        target_sink = local_rr_graph->net_rr_sinks[inet][isink];
-        printf("Target sink: sink_node=%d, pin=%d, port=%s, pb_type=%s, placement_id=%d\n", 
-                 target_sink,
-                 local_rr_graph->rr_node[target_sink].pb_graph_pin->pin_number,
-                 local_rr_graph->rr_node[target_sink].pb_graph_pin->port->name,
-                 local_rr_graph->rr_node[target_sink].pb_graph_pin->parent_node->pb_type->name,
-                 local_rr_graph->rr_node[target_sink].pb_graph_pin->parent_node->placement_index);
-
-
-      while (local_rr_graph->rr_node_route_inf[inode].target_flag == 0) {
-        pcost = local_rr_graph->rr_node_route_inf[inode].path_cost;
-        new_pcost = current->cost;
-        if (pcost > new_pcost) { /* New path is lowest cost. */
-          local_rr_graph->rr_node_route_inf[inode].path_cost = new_pcost;
-          prev_node = current->u.prev_node;
-          local_rr_graph->rr_node_route_inf[inode].prev_node = prev_node;
-          local_rr_graph->rr_node_route_inf[inode].prev_edge = current->prev_edge;
-          first_time = FALSE;
-
-          if (pcost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */{
-            add_to_rr_graph_mod_list(local_rr_graph, &local_rr_graph->rr_node_route_inf[inode].path_cost);
-            first_time = TRUE;
-          }
-
-          breadth_first_expand_rr_graph_neighbours(local_rr_graph, inode, new_pcost, inet, first_time);
-        }
-
-        free_rr_graph_heap_data(local_rr_graph, current);
-        current = get_rr_graph_heap_head(local_rr_graph);
-
-        /* Exit only when this is the last source node 
-         * Impossible routing. No path for net. 
-         */
-        if (NULL == current) { 
-          reset_rr_graph_path_costs(local_rr_graph);
-          route_success = FALSE;
-          break;
-        }
-
-        inode = current->index;
-        /* Reach here it means routing is going well */
-        route_success = TRUE;
-      }
-      
-      if (FALSE == route_success) {
-        reset_rr_graph_path_costs(local_rr_graph);
-        continue;
-      }
-
-      local_rr_graph->rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
-      remaining_connections_to_sink = local_rr_graph->rr_node_route_inf[inode].target_flag;
-      tptr = update_rr_graph_traceback(local_rr_graph, current, inet);
-      free_rr_graph_heap_data(local_rr_graph, current);
-
-        printf("Route_Success=%d, net=%s, isink=%d, inode=%d, pin=%d, port=%s, pb_type=%s, placement_id=%d\n", 
-                 route_success, local_rr_graph->net[inet]->name, isink, inode, 
-                 local_rr_graph->rr_node[inode].pb_graph_pin->pin_number,
-                 local_rr_graph->rr_node[inode].pb_graph_pin->port->name,
-                 local_rr_graph->rr_node[inode].pb_graph_pin->parent_node->pb_type->name,
-                 local_rr_graph->rr_node[inode].pb_graph_pin->parent_node->placement_index);
-
-
-      /* mark this sink as routed */
+    /* Exception for OPEN nets */
+    if (OPEN == local_rr_graph->net_rr_sinks[inet][isink]) {
       net_sink_routed[isink] = TRUE;
-    } 
-
-    empty_rr_graph_heap(local_rr_graph);
-    reset_rr_graph_path_costs(local_rr_graph);
-    /* If this sink is not routable for this source
-     * reset the target_flag 
-     */
-    for (isink = 0; isink < local_rr_graph->net_num_sinks[inet]; isink++) {
-      inode = local_rr_graph->net_rr_sinks[inet][isink];
-      if ( (OPEN != inode) 
-        && (FALSE == net_sink_routed[isink])) {
-        local_rr_graph->rr_node_route_inf[inode].target_flag = 0;
-      }
     }
   }
 
-  /* Make sure every sink if routed */
-  route_success = TRUE;
-  for (isink = 0; isink < local_rr_graph->net_num_sinks[inet]; isink++) { 
-    if ( (OPEN != local_rr_graph->net_rr_sinks[inet][isink])
-        && (FALSE == net_sink_routed[isink])) {
-      route_success = FALSE;
+  start_isink = 0;
+
+  /* try each sources */
+  for (isrc = 0; isrc < local_rr_graph->net_num_sources[inet]; isrc++) {
+    /* Get the start sink index, 
+     * when a sink is failed in routing,  
+     * we update flags the net_sink_routed 
+     * Next time, we will start from first sink is 
+     */
+    /*
+    printf("\nnum_src=%d, isrc=%d\n", local_rr_graph->net_num_sources[inet], isrc);
+    */
+    for (isink = 0; isink < local_rr_graph->net_num_sinks[inet]; isink++) {
+      if (TRUE == net_sink_routed[isink]) {
+        continue;
+      }
+      start_isink = isink;
+      break; 
+    }
+
+    /*
+    printf("\nstart_sink=%d\n", start_isink);
+    */
+    /* Reset the target_flag for sinks to be routed */
+    for (isink = start_isink; isink < local_rr_graph->net_num_sinks[inet]; isink++) {
+      inode = local_rr_graph->net_rr_sinks[inet][isink];
+      if (OPEN != inode) {
+        local_rr_graph->rr_node_route_inf[inode].target_flag = 0; 
+      }
+    } 
+    breadth_first_route_one_single_source_net_pb_rr_graph(local_rr_graph, inet, isrc, 
+                                                          start_isink,
+                                                          net_sink_routed); 
+    /* Clean up routing data */
+    empty_rr_graph_heap(local_rr_graph);
+    reset_rr_graph_path_costs(local_rr_graph);
+    /* See if we can early exit */
+    /* Make sure every sink if routed */
+    route_success = TRUE;
+    for (isink = 0; isink < local_rr_graph->net_num_sinks[inet]; isink++) { 
+      if ( (OPEN != local_rr_graph->net_rr_sinks[inet][isink])
+          && (FALSE == net_sink_routed[isink])) {
+        route_success = FALSE;
+      }
+    }
+    if (TRUE == route_success) {
+      break;
+    }
+  }
+
+  /* Provide more information for users when route fails */
+  if (FALSE == route_success) {
+    for (isink = 0; isink < local_rr_graph->net_num_sinks[inet]; isink++) { 
+      if ( (OPEN != local_rr_graph->net_rr_sinks[inet][isink])
+          && (FALSE == net_sink_routed[isink])) {
+        /* Give informatioin about the starting pin */
+        vpr_printf(TIO_MESSAGE_ERROR, "Fail Routing:\n");
+
+        for (isrc = 0; isrc < local_rr_graph->net_num_sources[inet]; isrc++) {
+          inode = local_rr_graph->net_rr_sources[inet][isrc];
+          vpr_printf(TIO_MESSAGE_INFO,
+                     "Starting points %d: net=%s, source_rr_node=%d, port=%s[%d], pb_type=%s\n",
+                     isrc, 
+                     local_rr_graph->net[inet]->name, inode,
+                     local_rr_graph->rr_node[inode].pb_graph_pin->port->name,
+                     local_rr_graph->rr_node[inode].pb_graph_pin->pin_number,
+                     get_pb_graph_full_name_in_hierarchy(local_rr_graph->rr_node[inode].pb_graph_pin->parent_node));
+        }
+        /* Give informatioin about the starting pin */
+        inode = local_rr_graph->net_rr_sinks[inet][isink];
+        vpr_printf(TIO_MESSAGE_INFO,
+                   "Ending points: net=%s, sink=%d, port=%s[%d], pb_type=%s\n",
+                   local_rr_graph->net[inet]->name,
+                   isink, 
+                   local_rr_graph->rr_node[inode].pb_graph_pin->port->name,
+                   local_rr_graph->rr_node[inode].pb_graph_pin->pin_number,
+                   get_pb_graph_full_name_in_hierarchy(local_rr_graph->rr_node[inode].pb_graph_pin->parent_node));
+        vpr_printf(TIO_MESSAGE_INFO,
+                   "Please double check your XML about if pins in operating modes are correctedly linked to physical mode!\n");
+      }
     }
   }
   

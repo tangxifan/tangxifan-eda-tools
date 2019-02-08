@@ -3093,3 +3093,32 @@ boolean is_pb_used_for_wiring(t_pb_graph_node* cur_pb_graph_node,
   return is_used; 
 } 
 
+char* get_pb_graph_full_name_in_hierarchy(t_pb_graph_node* cur_pb_graph_node) {
+  char* full_name = NULL;
+  char* cur_name = NULL;
+  t_pb_graph_node* temp = cur_pb_graph_node;
+
+  while (NULL != temp) {
+    cur_name = (char*)my_malloc(1 + strlen(temp->pb_type->name) + 1
+                                + strlen(my_itoa(temp->placement_index)) + 2);
+    /* For top node, we do not put a slash at the beginning */
+    if (NULL == temp->parent_pb_graph_node) {
+      sprintf(cur_name, "%s[%d]",
+              temp->pb_type->name,
+              temp->placement_index);
+    } else {
+      sprintf(cur_name, "/%s[%d]",
+              temp->pb_type->name,
+              temp->placement_index);
+    }
+    if (NULL != full_name) {
+      full_name = my_strcat(cur_name, full_name);
+    } else {
+      full_name = my_strdup(cur_name);
+    }
+    temp = temp->parent_pb_graph_node;
+    my_free(cur_name);
+  }
+ 
+  return full_name;
+}

@@ -61,7 +61,7 @@ void add_node_to_rr_graph_heap(t_rr_graph* local_rr_graph,
                                float backward_path_cost, float R_upstream);
 
 void mark_rr_graph_sinks(t_rr_graph* local_rr_graph, 
-                         int inet, boolean* net_sink_routed);
+                         int inet, int start_isink, boolean* net_sink_routed);
 
 void mark_rr_graph_ends(t_rr_graph* local_rr_graph, 
                         int inet);

@@ -238,3 +238,5 @@ void rec_reset_pb_type_phy_pb_type(t_pb_type* cur_pb_type);
 boolean is_pb_used_for_wiring(t_pb_graph_node* cur_pb_graph_node,
                               t_pb_type* cur_pb_type,
                               t_rr_node* pb_rr_graph);
+
+char* get_pb_graph_full_name_in_hierarchy(t_pb_graph_node* cur_pb_graph_node);

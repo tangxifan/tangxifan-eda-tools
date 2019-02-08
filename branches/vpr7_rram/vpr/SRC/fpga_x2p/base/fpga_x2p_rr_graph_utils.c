@@ -777,7 +777,7 @@ void add_node_to_rr_graph_heap(t_rr_graph* local_rr_graph,
 }
 
 void mark_rr_graph_sinks(t_rr_graph* local_rr_graph, 
-                         int inet, boolean* net_sink_routed) {
+                         int inet, int start_isink, boolean* net_sink_routed) {
 
   /* Mark all the SINKs of this net as targets by setting their target flags  *
    * to the number of times the net must connect to each SINK.  Note that     *
@@ -785,15 +785,15 @@ void mark_rr_graph_sinks(t_rr_graph* local_rr_graph,
    * the same net to two inputs of an and-gate (and-gate inputs are logically *
    * equivalent, so both will connect to the same SINK).                      */
 
-  int ipin, inode;
+  int isink, inode;
 
-  for (ipin = 0; ipin < local_rr_graph->net_num_sinks[inet]; ipin++) {
-    inode = local_rr_graph->net_rr_sinks[inet][ipin];
-    if (OPEN == inode) {
+  for (isink = start_isink; isink < local_rr_graph->net_num_sinks[inet]; isink++) {
+    /* Bypass routed sinks */
+    if (TRUE == net_sink_routed[isink]) {
       continue;
     }
-    /* Bypass routed sinks */
-    if (TRUE == net_sink_routed[ipin]) {
+    inode = local_rr_graph->net_rr_sinks[inet][isink];
+    if (OPEN == inode) {
       continue;
     }
     local_rr_graph->rr_node_route_inf[inode].target_flag++;
