@@ -1082,6 +1082,7 @@ static void SetupSynVerilogOpts(t_options Options,
   syn_verilog_opts->print_formal_verification_top_netlist= FALSE;
   syn_verilog_opts->modelsim_ini_path = NULL;
   syn_verilog_opts->print_user_defined_template = FALSE;
+  syn_verilog_opts->print_report_timing_tcl = FALSE;
 
   /* Turn on Syn_verilog options */
   if (Options.Count[OT_FPGA_VERILOG_SYN]) {
@@ -1126,6 +1127,10 @@ static void SetupSynVerilogOpts(t_options Options,
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_USER_DEFINED_TEMPLATE]) {
     syn_verilog_opts->print_user_defined_template = TRUE;
+  }
+
+  if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_REPORT_TIMING_TCL]) {
+    syn_verilog_opts->print_report_timing_tcl = TRUE;
   }
 
   /* SynVerilog needs the input from spice modeling */

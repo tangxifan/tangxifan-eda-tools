@@ -1226,6 +1226,7 @@ struct s_syn_verilog_opts {
   boolean print_user_defined_template;
   boolean print_autocheck_top_testbench;
   char* reference_verilog_benchmark_file;
+  boolean print_report_timing_tcl;
 };
 
 /* Xifan TANG: bitstream generator */

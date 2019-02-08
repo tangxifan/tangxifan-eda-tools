@@ -221,12 +221,13 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
                                  vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts);
 
   /* Output routing report_timing script :
-   * TODO: enabled/disabled through an option 
-  verilog_generate_routing_report_timing(sram_verilog_orgz_info, verilog_dir_formatted,
-                                         Arch, &vpr_setup.RoutingArch,
-                                         num_rr_nodes, rr_node, rr_node_indices,
-                                         vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts);
    */
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_report_timing_tcl) {
+    verilog_generate_routing_report_timing(sram_verilog_orgz_info, verilog_dir_formatted,
+                                           Arch, &vpr_setup.RoutingArch,
+                                           num_rr_nodes, rr_node, rr_node_indices,
+                                           vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts);
+  }
 
   /* Dump logic blocks 
    * Branches to go: 

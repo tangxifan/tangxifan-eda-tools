@@ -55,6 +55,51 @@ void dump_verilog_sdc_file_header(FILE* fp,
   return;
 }
 
+/* Output the pin name of a routing wire in a SB */
+void dump_verilog_one_sb_routing_pin(FILE* fp,
+                                     t_sb* cur_sb_info,
+                                     t_rr_node* cur_rr_node) {
+  int track_idx, side;
+
+  /* Check the file handler */
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  /* Find the coordinate of the cur_rr_node */  
+  get_rr_node_side_and_index_in_sb_info(cur_rr_node, 
+                                        *cur_sb_info, 
+                                        IN_PORT, &side, &track_idx);
+  /* Get the top-level pin name and print it out */
+  /* Depends on the type of node */
+  switch (cur_rr_node->type) {
+  case OPIN:
+    dump_verilog_grid_side_pin_with_given_index(fp, OPIN,
+                                                cur_rr_node->ptc_num,
+                                                side,
+                                                cur_sb_info->x,
+                                                cur_sb_info->y, 
+                                                FALSE); /* Do not specify direction of port */
+    break; 
+  case CHANX:
+  case CHANY:
+    dump_verilog_routing_channel_one_pin(fp, cur_rr_node,
+                                         cur_sb_info->x, cur_sb_info->y, track_idx, 
+                                         IN_PORT);
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid type of ending point rr_node!\n",
+               __FILE__, __LINE__);
+ 
+    exit(1);
+  }
+
+  return;
+}
+
 /* Report timing for a routing wire,
  * Support uni-directional routing architecture
  * Each routing wire start from an OPIN 
@@ -66,29 +111,55 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
                                                      t_rr_node* wire_rr_node,
                                                      int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                                      t_ivec*** LL_rr_node_indices) {
-  int iedge, itrack, inode, pin_side;
+  int iedge, jedge, inode;
+  int track_idx, side;
+  int path_cnt = 0;
   int next_sb_x, next_sb_y;
+  int next_cb_x, next_cb_y;
 
+  /* Check the file handler */
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  fprintf(fp, "L%d wire: \n", 
+          abs(wire_rr_node->xlow - wire_rr_node->xhigh + wire_rr_node->ylow - wire_rr_node->yhigh));
   /* Find the starting points */
   for (iedge = 0; iedge < wire_rr_node->num_drive_rr_nodes; iedge++) {
-    /* Driver could be OPIN or CHANX or CHANY,
-     * and it must be in the cur_sb_info
-     */
-    /* Get the top-level pin name and print it out */
-
     /* Find the ending points*/
-    for (iedge = 0; iedge < wire_rr_node->num_edges; iedge++) {
+    for (jedge = 0; jedge < wire_rr_node->num_edges; jedge++) {
+     /* Driver could be OPIN or CHANX or CHANY,
+       * and it must be in the cur_sb_info
+       */
+      fprintf(fp, "Path %d: \n", path_cnt); 
+      fprintf(fp, "Starting pin name: "); 
+      fprintf(fp, "sb[%d][%d]/", 
+                  cur_sb_info->x, cur_sb_info->y); 
+      dump_verilog_one_sb_routing_pin(fp, cur_sb_info, 
+                                      wire_rr_node->drive_rr_nodes[iedge]);
+      fprintf(fp, "\n"); 
+ 
+      fprintf(fp, "Ending pin name: "); 
+      /* Find where the destination pin belongs to */
+      /* fprintf(fp, "sb[%d][%d]/", next_cb_x, next_cb_y); */ 
       /* Reciever could be IPIN or CHANX or CHANY */
-      inode = wire_rr_node->edges[iedge];
+      inode = wire_rr_node->edges[jedge];
       /* Find the SB/CB block that it belongs to */
       switch (LL_rr_node[inode].type) {
       case IPIN:
         /* IPIN indicates an CLB input */
+        get_rr_node_side_and_index_in_cb_info(&(LL_rr_node[inode]), 
+                                              cbx_info[next_cb_x][next_cb_y],
+                                              OUT_PORT,
+                                              &side, &track_idx);
         /* Get the top-level pin name and print it out */
         /* Print each INPUT Pins of a grid */
         dump_verilog_grid_side_pin_with_given_index(fp, OPIN,
                                                     LL_rr_node[inode].ptc_num,
-                                                    pin_side,
+                                                    side,
                                                     LL_rr_node[inode].xlow,
                                                     LL_rr_node[inode].ylow, 
                                                     FALSE); /* Do not specify direction of port */
@@ -97,10 +168,13 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
       case CHANX:
       case CHANY:
         /* xlow and ylow should be the coordinate of the ending SB */
+        get_rr_node_side_and_index_in_sb_info(&(LL_rr_node[inode]), 
+                                              sb_info[next_sb_x][next_sb_y], 
+                                              IN_PORT, &side, &track_idx);
         /* the ending rr_node should be an output of the ending SB*/
         /* find the wire_rr_node in the ending SB*/
         dump_verilog_routing_channel_one_pin(fp, &(LL_rr_node[inode]),
-                                             next_sb_x, next_sb_y, itrack, 
+                                             next_sb_x, next_sb_y, track_idx, 
                                              IN_PORT);
  
         break;
@@ -127,7 +201,7 @@ void verilog_generate_routing_wires_report_timing(FILE* fp,
   int side, itrack;
   t_sb* cur_sb_info = NULL;
 
-  /* Create a file*/
+  /* Check the file handler */
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,
                "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
