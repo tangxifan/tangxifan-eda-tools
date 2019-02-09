@@ -909,10 +909,7 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb,
  
   /* Return when we meet a null pb */ 
   if (NULL == cur_pb) {
-    /* Skip non-LUT pb*/
-    if (LUT_CLASS != cur_pb_graph_node->pb_type->class_type) {
-      return;
-    }
+     /* Some */
     for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
         node_index = cur_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
@@ -981,6 +978,16 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb,
                                                       select_mode_index); 
           } else {
              pb_rr_nodes[node_index].vpack_net_num = pb_rr_nodes[node_index].net_num;
+             /* DEBUG */
+             if (0 == strcmp("n133", vpack_net[pb_rr_nodes[node_index].vpack_net_num].name)) {
+             vpr_printf(TIO_MESSAGE_INFO, 
+                        "Detect net=%s, inode=%d, mapped to port=%s[%d], pb_type=%s\n",
+                        vpack_net[pb_rr_nodes[node_index].vpack_net_num].name,
+                        node_index,
+                        pb_rr_nodes[node_index].pb_graph_pin->port->name,
+                        pb_rr_nodes[node_index].pb_graph_pin->pin_number,
+                        get_pb_graph_full_name_in_hierarchy(pb_rr_nodes[node_index].pb_graph_pin->parent_node)); 
+             }
           }
         }
       }

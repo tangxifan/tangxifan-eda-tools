@@ -2524,7 +2524,7 @@ void link_one_pb_graph_node_pin_to_phy_pb_graph_pin(t_pb_graph_pin* cur_pb_graph
   }
   /* Create the link */
   cur_pb_graph_pin->physical_pb_graph_pin = phy_pb_graph_pin;
-  printf (" match pin (%s[%d]->%s[%d]) to (%s[%d]->%s[%d]) rotate_offset_acc=%d\n",
+  vpr_printf (TIO_MESSAGE_INFO, " match pin (%s[%d]->%s[%d]) to (%s[%d]->%s[%d]) rotate_offset_acc=%d\n",
           cur_pb_graph_pin->parent_node->pb_type->name,
           cur_pb_graph_pin->parent_node->placement_index,
           cur_pb_graph_pin->port->name, cur_pb_graph_pin->pin_number,
@@ -2826,7 +2826,7 @@ void rec_sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb,
   t_phy_pb* phy_pb_to_sync = NULL;
 
   /* Return if we reach the primitive node */
-  if ((NULL != cur_pb_type->physical_pb_type_name) || (NULL != cur_pb_type->spice_model_name)) {
+  if (TRUE == is_primitive_pb_type(cur_pb_type)) {
     /* Check */
     assert(NULL != cur_pb_type->phy_pb_type);
     assert(NULL != cur_pb_graph_node->physical_pb_graph_node);

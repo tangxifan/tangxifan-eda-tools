@@ -308,11 +308,9 @@ boolean breadth_first_route_one_single_source_net_pb_rr_graph(t_rr_graph* local_
      * Infeasible routing.  No possible path for net. 
      */
     if (NULL == current) {
-      /*
       printf("1. Fail Routing: net=%s, sink=%d\n",
              local_rr_graph->net[inet]->name,
              isink);
-      */
       reset_rr_graph_path_costs(local_rr_graph);
       return FALSE;
     }
@@ -358,11 +356,9 @@ boolean breadth_first_route_one_single_source_net_pb_rr_graph(t_rr_graph* local_
 
     /* Impossible routing, try another iteration */
     if (NULL == current) {
-      /*
       printf("2. Fail Routing: net=%s, sink=%d\n",
              local_rr_graph->net[inet]->name,
              isink);
-      */
       reset_rr_graph_path_costs(local_rr_graph);
       continue;
     }
@@ -383,15 +379,12 @@ boolean breadth_first_route_one_single_source_net_pb_rr_graph(t_rr_graph* local_
         continue;
       }
       net_sink_routed[jsink] = TRUE;
-      /*
-      printf("Round %d, Success Routing: net=%s, sink=%d, port=%s[%d], pb_type=%s[%d]\n",
+      printf("Round %d, Success Routing: net=%s, sink=%d, port=%s[%d], pb_type=%s\n",
              isink, local_rr_graph->net[inet]->name,
              jsink, 
              local_rr_graph->rr_node[inode].pb_graph_pin->port->name,
              local_rr_graph->rr_node[inode].pb_graph_pin->pin_number,
-             local_rr_graph->rr_node[inode].pb_graph_pin->parent_node->pb_type->name,
-             local_rr_graph->rr_node[inode].pb_graph_pin->parent_node->placement_index);
-      */
+             get_pb_graph_full_name_in_hierarchy(local_rr_graph->rr_node[inode].pb_graph_pin->parent_node));
       break;
     }
   } 
@@ -437,9 +430,7 @@ boolean breadth_first_route_one_multi_source_net_pb_rr_graph(t_rr_graph* local_r
      * we update flags the net_sink_routed 
      * Next time, we will start from first sink is 
      */
-    /*
     printf("\nnum_src=%d, isrc=%d\n", local_rr_graph->net_num_sources[inet], isrc);
-    */
     for (isink = 0; isink < local_rr_graph->net_num_sinks[inet]; isink++) {
       if (TRUE == net_sink_routed[isink]) {
         continue;
@@ -448,9 +439,7 @@ boolean breadth_first_route_one_multi_source_net_pb_rr_graph(t_rr_graph* local_r
       break; 
     }
 
-    /*
     printf("\nstart_sink=%d\n", start_isink);
-    */
     /* Reset the target_flag for sinks to be routed */
     for (isink = start_isink; isink < local_rr_graph->net_num_sinks[inet]; isink++) {
       inode = local_rr_graph->net_rr_sinks[inet][isink];
@@ -528,10 +517,11 @@ boolean feasible_routing_rr_graph(t_rr_graph* local_rr_graph) {
 
   for (inode = 0; inode < local_rr_graph->num_rr_nodes; inode++) {
     if (local_rr_graph->rr_node[inode].occ > local_rr_graph->rr_node[inode].capacity) {
-      /*
-      vpr_printf(TIO_MESSAGE_ERROR, "(File:%s,[LINE%d]rr_node[%d] occupancy(%d) exceeds its capacity(%d)!\n",
-                 __FILE__, __LINE__, inode, rr_node[inode].occ, rr_node[inode].capacity);
-      */
+      vpr_printf(TIO_MESSAGE_ERROR, 
+                 "(File:%s,[LINE%d]rr_node[%d] occupancy(%d) exceeds its capacity(%d)!\n",
+                 __FILE__, __LINE__, 
+                 inode, local_rr_graph->rr_node[inode].occ, 
+                 local_rr_graph->rr_node[inode].capacity);
       return (FALSE);
     }
   }
