@@ -2762,54 +2762,82 @@ int get_pb_graph_node_wired_lut_logical_block_index(t_pb_graph_node* cur_pb_grap
   return wired_lut_lb_index;
 }
 
-void sync_wired_lut_to_one_phy_pb(t_pb_graph_node* cur_pb_graph_node,
-                                  t_phy_pb* cur_phy_pb,
-                                  t_rr_node* op_pb_rr_graph) {
+void rec_sync_wired_lut_to_one_phy_pb(t_pb_graph_node* cur_pb_graph_node,
+                                      t_phy_pb* cur_phy_pb,
+                                      t_rr_node* op_pb_rr_graph) {
+  int imode, ipb, jpb;
   t_pb_type* cur_pb_type = cur_pb_graph_node->pb_type;
   char* phy_pb_name = NULL;
   t_phy_pb* phy_pb_to_sync = NULL;
 
-  /* Check */
-  assert(NULL != cur_pb_type->phy_pb_type);
-  assert(NULL != cur_pb_graph_node->physical_pb_graph_node);
-  /* Generate the name */
-  phy_pb_name = (char*) my_malloc(sizeof(char) * (strlen(cur_pb_type->phy_pb_type->name)
-                                                  + 1 + strlen(my_itoa(cur_pb_graph_node->physical_pb_graph_node->placement_index_in_top_node)) 
-                                                  + 2));
-  sprintf(phy_pb_name, "%s[%d]", 
-          cur_pb_type->phy_pb_type->name, cur_pb_graph_node->physical_pb_graph_node->placement_index_in_top_node);
-  /* find the child_pb in the current physical pb (cur_phy_pb) */
-  phy_pb_to_sync = rec_get_phy_pb_by_name(cur_phy_pb, phy_pb_name);
 
-  /* Copy the mode bits */
-  if (NULL != phy_pb_to_sync->mode_bits) { /* Free the default mode bits if we have any */
-    my_free(phy_pb_to_sync->mode_bits);
+  /* Copy LUT information if this is a leaf node */
+  if ((TRUE == is_primitive_pb_type(cur_pb_type)) 
+    && (LUT_CLASS == cur_pb_type->class_type)) {
+    /* Check */
+    assert(NULL != cur_pb_type->phy_pb_type);
+    assert(NULL != cur_pb_graph_node->physical_pb_graph_node);
+    /* Generate the name */
+    phy_pb_name = (char*) my_malloc(sizeof(char) * (strlen(cur_pb_type->phy_pb_type->name)
+                                                    + 1 + strlen(my_itoa(cur_pb_graph_node->physical_pb_graph_node->placement_index_in_top_node)) 
+                                                    + 2));
+    sprintf(phy_pb_name, "%s[%d]", 
+            cur_pb_type->phy_pb_type->name, cur_pb_graph_node->physical_pb_graph_node->placement_index_in_top_node);
+    /* find the child_pb in the current physical pb (cur_phy_pb) */
+    phy_pb_to_sync = rec_get_phy_pb_by_name(cur_phy_pb, phy_pb_name);
+
+    /* Copy the mode bits */
+    if (NULL != phy_pb_to_sync->mode_bits) { /* Free the default mode bits if we have any */
+      my_free(phy_pb_to_sync->mode_bits);
+    }
+    phy_pb_to_sync->mode_bits = my_strdup(cur_pb_type->mode_bits);
+    /* Re-allocate logical_block array mapped to this pb */
+    phy_pb_to_sync->num_logical_blocks++;
+    phy_pb_to_sync->logical_block = (int*) my_realloc(phy_pb_to_sync->logical_block, sizeof(int) * phy_pb_to_sync->num_logical_blocks);
+    phy_pb_to_sync->is_wired_lut = (boolean*) my_realloc(phy_pb_to_sync->is_wired_lut, sizeof(boolean) * phy_pb_to_sync->num_logical_blocks);
+    phy_pb_to_sync->lut_size = (int*) my_realloc(phy_pb_to_sync->lut_size, sizeof(int) * phy_pb_to_sync->num_logical_blocks);
+    phy_pb_to_sync->lut_output_pb_graph_pin = (t_pb_graph_pin**) my_realloc(phy_pb_to_sync->lut_output_pb_graph_pin, sizeof(t_pb_graph_pin*) * phy_pb_to_sync->num_logical_blocks);
+  
+    /* Synchronize the logic block information */
+    assert (LUT_CLASS == cur_pb_type->class_type);
+    /* check */
+    assert (LUT_CLASS == cur_pb_type->phy_pb_type->class_type);
+    assert ( 1 == cur_pb_graph_node->num_input_ports );
+    /* TODO: find the wired LUT logical block! */
+    phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = get_pb_graph_node_wired_lut_logical_block_index(cur_pb_graph_node, op_pb_rr_graph);
+    phy_pb_to_sync->is_wired_lut[phy_pb_to_sync->num_logical_blocks - 1] = TRUE;
+    /* Update the actual input size of this LUT */
+    phy_pb_to_sync->lut_size[phy_pb_to_sync->num_logical_blocks - 1] = cur_pb_graph_node->num_input_pins[0];
+  
+    /* Find the physical pb_graph_pin that this output is mapped to.
+     * ease LUT truth table decoding 
+     */
+    assert (1 == cur_pb_graph_node->num_output_ports);
+    assert (1 == cur_pb_graph_node->num_output_pins[0]);
+    phy_pb_to_sync->lut_output_pb_graph_pin[phy_pb_to_sync->num_logical_blocks - 1] = cur_pb_graph_node->output_pins[0][0].physical_pb_graph_pin;
+
+    /* Finish here */
+    return;
   }
-  phy_pb_to_sync->mode_bits = my_strdup(cur_pb_type->mode_bits);
-  /* Re-allocate logical_block array mapped to this pb */
-  phy_pb_to_sync->num_logical_blocks++;
-  phy_pb_to_sync->logical_block = (int*) my_realloc(phy_pb_to_sync->logical_block, sizeof(int) * phy_pb_to_sync->num_logical_blocks);
-  phy_pb_to_sync->is_wired_lut = (boolean*) my_realloc(phy_pb_to_sync->is_wired_lut, sizeof(boolean) * phy_pb_to_sync->num_logical_blocks);
-  phy_pb_to_sync->lut_size = (int*) my_realloc(phy_pb_to_sync->lut_size, sizeof(int) * phy_pb_to_sync->num_logical_blocks);
-  phy_pb_to_sync->lut_output_pb_graph_pin = (t_pb_graph_pin**) my_realloc(phy_pb_to_sync->lut_output_pb_graph_pin, sizeof(t_pb_graph_pin*) * phy_pb_to_sync->num_logical_blocks);
 
-  /* Synchronize the logic block information */
-  assert (LUT_CLASS == cur_pb_type->class_type);
-  /* check */
-  assert (LUT_CLASS == cur_pb_type->phy_pb_type->class_type);
-  assert ( 1 == cur_pb_graph_node->num_input_ports );
-  /* TODO: find the wired LUT logical block! */
-  phy_pb_to_sync->logical_block[phy_pb_to_sync->num_logical_blocks - 1] = get_pb_graph_node_wired_lut_logical_block_index(cur_pb_graph_node, op_pb_rr_graph);
-  phy_pb_to_sync->is_wired_lut[phy_pb_to_sync->num_logical_blocks - 1] = TRUE;
-  /* Update the actual input size of this LUT */
-  phy_pb_to_sync->lut_size[phy_pb_to_sync->num_logical_blocks - 1] = cur_pb_graph_node->num_input_pins[0];
+  /* Go recursively */
+  assert (FALSE == is_primitive_pb_type(cur_pb_type));
+  for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
+    for (ipb = 0; ipb < cur_pb_type->modes[imode].num_pb_type_children; ipb++) {
+      for (jpb = 0; jpb < cur_pb_type->modes[imode].pb_type_children[ipb].num_pb; jpb++) {
+        /* We care only those have been used for wiring */
+        if (FALSE == is_pb_used_for_wiring(&(cur_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb]),
+                                           &(cur_pb_type->modes[imode].pb_type_children[ipb]), 
+                                           op_pb_rr_graph)) {
+          continue;
+        }
+        rec_sync_wired_lut_to_one_phy_pb(&(cur_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb]),
+                                         cur_phy_pb,
+                                         op_pb_rr_graph);
+      }
+    }
+  }
 
-  /* Find the physical pb_graph_pin that this output is mapped to.
-   * ease LUT truth table decoding 
-   */
-  assert (1 == cur_pb_graph_node->num_output_ports);
-  assert (1 == cur_pb_graph_node->num_output_pins[0]);
-  phy_pb_to_sync->lut_output_pb_graph_pin[phy_pb_to_sync->num_logical_blocks - 1] = cur_pb_graph_node->output_pins[0][0].physical_pb_graph_pin;
 
   return;
 }
@@ -2928,17 +2956,16 @@ void rec_sync_op_pb_mapping_to_phy_pb_children(t_pb* cur_op_pb,
       /* Refer to pack/output_clustering.c [LINE 392] */
       if ((NULL != cur_op_pb->child_pbs[ipb])&&(NULL != cur_op_pb->child_pbs[ipb][jpb].name)) {
         rec_sync_op_pb_mapping_to_phy_pb_children(&(cur_op_pb->child_pbs[ipb][jpb]), cur_phy_pb);
-      } else {
-        /* For wired LUT */
-        if (TRUE == is_pb_wired_lut(&(cur_op_pb->pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]),  
-                                    &(cur_pb_type->modes[mode_index].pb_type_children[ipb]),
-                                    cur_op_pb->rr_graph)) {        
-          /* Reach here means that this LUT is in wired mode (a buffer)  
-           * configure this phy_pb  
-           */
-          sync_wired_lut_to_one_phy_pb(&(cur_op_pb->pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]),  
-                                       cur_phy_pb, cur_op_pb->rr_graph);
-        }
+      } else if (TRUE == is_pb_used_for_wiring(&(cur_op_pb->pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]),
+                                               &(cur_pb_type->modes[mode_index].pb_type_children[ipb]), 
+                                               cur_op_pb->rr_graph)) {
+        /* We need to extend this part:
+         * Some open op_pb contains wired LUTs
+         * We need go further into the hierarchy and find out the wired LUTs 
+         */
+          rec_sync_wired_lut_to_one_phy_pb(&(cur_op_pb->pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]),  
+                                           cur_phy_pb, 
+                                           cur_op_pb->rr_graph);
       }
     }
   }

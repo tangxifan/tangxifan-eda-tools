@@ -1146,6 +1146,12 @@ void rec_add_unused_rr_graph_wired_lut_rr_edges(INP t_pb_graph_node* cur_op_pb_g
   for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
     for (ipb = 0; ipb < cur_pb_type->modes[imode].num_pb_type_children; ipb++) {
       for (jpb = 0; jpb < cur_pb_type->modes[imode].pb_type_children[ipb].num_pb; jpb++) {
+        /* We only care those used for wiring */
+        if (FALSE == is_pb_used_for_wiring(&(cur_op_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb]),
+                                          &(cur_pb_type->modes[imode].pb_type_children[ipb]), 
+                                          cur_op_pb_rr_graph)) {
+          continue;
+        }
         rec_add_unused_rr_graph_wired_lut_rr_edges(&(cur_op_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb]),
                                                    cur_op_pb_rr_graph,
                                                    local_rr_graph);
@@ -1196,8 +1202,8 @@ void rec_add_rr_graph_wired_lut_rr_edges(INP t_pb* cur_op_pb,
       if ((NULL != cur_op_pb->child_pbs[ipb])&&(NULL != cur_op_pb->child_pbs[ipb][jpb].name)) {
         rec_add_rr_graph_wired_lut_rr_edges(&(cur_op_pb->child_pbs[ipb][jpb]), 
                                             local_rr_graph);
-      } else if (TRUE == is_pb_used_for_wiring(cur_op_pb->pb_graph_node,
-                                               cur_pb_type, 
+      } else if (TRUE == is_pb_used_for_wiring(&(cur_op_pb->pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]),
+                                               &(cur_pb_type->modes[mode_index].pb_type_children[ipb]), 
                                                cur_op_pb->rr_graph)) {
         /* We need to extend this part:
          * Some open op_pb contains wired LUTs
