@@ -516,27 +516,103 @@ boolean breadth_first_route_one_multi_source_net_pb_rr_graph(t_rr_graph* local_r
 }
 
 
-boolean feasible_routing_rr_graph(t_rr_graph* local_rr_graph) {
+boolean feasible_routing_rr_graph(t_rr_graph* local_rr_graph,  
+                                  boolean verbose) {
 
   /* This routine checks to see if this is a resource-feasible routing.      *
    * That is, are all rr_node capacity limitations respected?  It assumes    *
    * that the occupancy arrays are up to date when it is called.             */
 
-  int inode;
-
+  int inode, inet;
+  t_trace* tptr;
+  int* rr_node_net_checker = (int*) my_calloc (local_rr_graph->num_rr_nodes, sizeof(int)); 
+  int* rr_node_occ_checker = (int*) my_calloc (local_rr_graph->num_rr_nodes, sizeof(int)); 
+  boolean feasible = TRUE;
+  
+  /* Initialize the checker */
   for (inode = 0; inode < local_rr_graph->num_rr_nodes; inode++) {
-    if (local_rr_graph->rr_node[inode].occ > local_rr_graph->rr_node[inode].capacity) {
-      vpr_printf(TIO_MESSAGE_ERROR, 
-                 "(File:%s,[LINE%d]) rr_node[%d] occupancy(%d) exceeds its capacity(%d)!\n",
-                 __FILE__, __LINE__, 
-                 inode, local_rr_graph->rr_node[inode].occ, 
-                 local_rr_graph->rr_node[inode].capacity);
-      return (TRUE);
-      return (FALSE);
+    rr_node_net_checker[inode] = OPEN;
+  }
+  
+  /* Check the trace:
+   * We may have the same nets sharing the part of the traces
+   * We will adapt the occupancy of rr_node to avoid errors in feasibility checking 
+   */
+  for (inet = 0; inet < local_rr_graph->num_nets; inet++) {
+    tptr = local_rr_graph->trace_head[inet];
+    while (tptr != NULL) {
+      inode = tptr->index;
+      /* Update the checker for net num */
+      if (OPEN == rr_node_net_checker[inode]) {    
+        /* First visit, we assign a value */
+        rr_node_net_checker[inode] = inet;
+        /* Initialize occ */
+        rr_node_occ_checker[inode] = 1;
+      } else if (inet != rr_node_net_checker[inode]) {
+        /* This means two traces share the same node
+         * This is not a feasible routing, error out
+         */
+        if (TRUE == verbose) {
+          vpr_printf(TIO_MESSAGE_ERROR, 
+                     "(File:%s,[LINE%d]) Shared Trace Found for rr_node[%d] (pb pin:%s/%s[%d]) between net(%s) and net (%s)!\n",
+                     __FILE__, __LINE__, 
+                     inode,
+                     get_pb_graph_full_name_in_hierarchy(local_rr_graph->rr_node[inode].pb_graph_pin->parent_node),  
+                     local_rr_graph->rr_node[inode].pb_graph_pin->port->name, 
+                     local_rr_graph->rr_node[inode].pb_graph_pin->pin_number, 
+                     local_rr_graph->net[inet]->name, 
+                     local_rr_graph->net[rr_node_net_checker[inode]]->name);
+        }
+        /* Increase occ */
+        rr_node_occ_checker[inode]++;
+      } else {
+        assert (inet == rr_node_net_checker[inode]);  
+        /* Try to increase the capacity of rr_node */
+        if (TRUE == verbose) {
+#ifdef VERBOSE
+          vpr_printf(TIO_MESSAGE_INFO, 
+                     "(File:%s,[LINE%d]) Detect rr_node[%d] (pb pin:%s/%s[%d]) for shared net(%s)!\n",
+                     __FILE__, __LINE__, 
+                     inode,
+                     get_pb_graph_full_name_in_hierarchy(local_rr_graph->rr_node[inode].pb_graph_pin->parent_node),  
+                     local_rr_graph->rr_node[inode].pb_graph_pin->port->name, 
+                     local_rr_graph->rr_node[inode].pb_graph_pin->pin_number, 
+                     local_rr_graph->net[inet]->name);
+#endif
+        }
+      } 
+      tptr = tptr->next;
     }
   }
 
-  return (TRUE);
+  /* Update occ of rr_graph */
+  for (inode = 0; inode < local_rr_graph->num_rr_nodes; inode++) {
+    local_rr_graph->rr_node[inode].occ = rr_node_occ_checker[inode];
+  }
+  /* Free */
+  free(rr_node_occ_checker);
+  free(rr_node_net_checker);
+
+  for (inode = 0; inode < local_rr_graph->num_rr_nodes; inode++) {
+    if (local_rr_graph->rr_node[inode].occ > local_rr_graph->rr_node[inode].capacity) {
+      if (TRUE == verbose) {
+      /*
+        vpr_printf(TIO_MESSAGE_ERROR, 
+                   "(File:%s,[LINE%d]) rr_node[%d] (pin:%s/%s[%d]) occupancy(%d) exceeds its capacity(%d)!\n",
+                   __FILE__, __LINE__, 
+                   inode, 
+                   get_pb_graph_full_name_in_hierarchy(local_rr_graph->rr_node[inode].pb_graph_pin->parent_node),  
+                   local_rr_graph->rr_node[inode].pb_graph_pin->port->name, 
+                   local_rr_graph->rr_node[inode].pb_graph_pin->pin_number, 
+                   local_rr_graph->rr_node[inode].occ, 
+                   local_rr_graph->rr_node[inode].capacity);
+      */
+      }
+      feasible = FALSE;
+    }
+  }
+
+  return feasible;
 }
 
 void pathfinder_update_rr_graph_one_cost(t_rr_graph* local_rr_graph, 
@@ -687,7 +763,7 @@ boolean try_breadth_first_route_pb_rr_graph(t_rr_graph* local_rr_graph) {
 
     }
 
-    success = feasible_routing_rr_graph(local_rr_graph);
+    success = feasible_routing_rr_graph(local_rr_graph, FALSE);
     if (success) {
       /* End of packing routing */
       end = clock();
@@ -719,7 +795,10 @@ boolean try_breadth_first_route_pb_rr_graph(t_rr_graph* local_rr_graph) {
 #else
   pack_route_time += (float)(end - begin)/ CLK_PER_SEC; 
 #endif
-  /* vpr_printf(TIO_MESSAGE_INFO, "Updated: Packing routing took %g seconds\n", pack_route_time); */
+  vpr_printf(TIO_MESSAGE_INFO, "Packing/Routing Physical Progammable Blocks took %g seconds\n", pack_route_time);
+
+  /* Give error message when routing is failed */
+  feasible_routing_rr_graph(local_rr_graph, TRUE);
 
   return (FALSE);
 }

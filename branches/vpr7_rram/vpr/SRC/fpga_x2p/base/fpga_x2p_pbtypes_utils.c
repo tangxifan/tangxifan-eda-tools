@@ -2838,7 +2838,6 @@ void rec_sync_wired_lut_to_one_phy_pb(t_pb_graph_node* cur_pb_graph_node,
     }
   }
 
-
   return;
 }
 

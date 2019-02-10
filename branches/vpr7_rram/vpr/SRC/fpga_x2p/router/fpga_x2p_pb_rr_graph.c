@@ -750,19 +750,6 @@ void sync_pb_graph_pin_vpack_net_num_to_phy_pb(t_rr_node* cur_op_pb_rr_graph,
     assert (( -1 < rr_node_net_num ) && (rr_node_net_num < local_rr_graph->num_nets));
     local_rr_graph->rr_node[jnode].net_num = rr_node_net_num;
     local_rr_graph->rr_node[jnode].vpack_net_num = cur_op_pb_rr_graph[inode].vpack_net_num;
-    /* Debug */
-    if (0 == strcmp("n133", local_rr_graph->net[rr_node_net_num]->name)) {
-    vpr_printf(TIO_MESSAGE_INFO, 
-               "Sync op_pb net=%s inode=%d, from [port=%s[%d],pb_type=%s] to phy_pb [port=%s[%d],pb_type=%s]\n",
-               local_rr_graph->net[rr_node_net_num]->name,
-               inode,
-               cur_op_pb_rr_graph[inode].pb_graph_pin->port->name,
-               cur_op_pb_rr_graph[inode].pb_graph_pin->pin_number,
-               get_pb_graph_full_name_in_hierarchy(cur_op_pb_rr_graph[inode].pb_graph_pin->parent_node),
-               local_rr_graph->rr_node[jnode].pb_graph_pin->port->name,
-               local_rr_graph->rr_node[jnode].pb_graph_pin->pin_number,
-               get_pb_graph_full_name_in_hierarchy(local_rr_graph->rr_node[jnode].pb_graph_pin->parent_node));
-    }
     break;
   case INTRA_CLUSTER_EDGE:
     /* We need to find a SOURCE or a SINK nodes! */
@@ -776,19 +763,6 @@ void sync_pb_graph_pin_vpack_net_num_to_phy_pb(t_rr_node* cur_op_pb_rr_graph,
       assert (( -1 < rr_node_net_num ) && (rr_node_net_num < local_rr_graph->num_nets));
       local_rr_graph->rr_node[jnode].drive_rr_nodes[iedge]->net_num = rr_node_net_num;
       local_rr_graph->rr_node[jnode].drive_rr_nodes[iedge]->vpack_net_num = cur_op_pb_rr_graph[inode].vpack_net_num;
-      /* Debug */
-      if (0 == strcmp("n133", local_rr_graph->net[rr_node_net_num]->name)) {
-      vpr_printf(TIO_MESSAGE_INFO, 
-                 "Sync op_pb net=%s, inode=%d, from [port=%s[%d],pb_type=%s] to phy_pb [port=%s[%d],pb_type=%s]\n",
-                 local_rr_graph->net[rr_node_net_num]->name,
-                 inode,
-                 cur_op_pb_rr_graph[inode].pb_graph_pin->port->name,
-                 cur_op_pb_rr_graph[inode].pb_graph_pin->pin_number,
-                 get_pb_graph_full_name_in_hierarchy(cur_op_pb_rr_graph[inode].pb_graph_pin->parent_node),
-                 local_rr_graph->rr_node[jnode].pb_graph_pin->port->name,
-                 local_rr_graph->rr_node[jnode].pb_graph_pin->pin_number,
-                 get_pb_graph_full_name_in_hierarchy(local_rr_graph->rr_node[jnode].pb_graph_pin->parent_node));
-      }
     }
     /* Check the output rr_nodes */
     for (iedge = 0; iedge < local_rr_graph->rr_node[jnode].num_edges; iedge++) {
@@ -801,19 +775,6 @@ void sync_pb_graph_pin_vpack_net_num_to_phy_pb(t_rr_node* cur_op_pb_rr_graph,
       assert (( -1 < rr_node_net_num ) && (rr_node_net_num < local_rr_graph->num_nets));
       local_rr_graph->rr_node[next_node].net_num = rr_node_net_num;
       local_rr_graph->rr_node[next_node].vpack_net_num = cur_op_pb_rr_graph[inode].vpack_net_num;
-      /* Debug */
-      if (0 == strcmp("n133", local_rr_graph->net[rr_node_net_num]->name)) {
-      vpr_printf(TIO_MESSAGE_INFO, 
-                 "Sync op_pb net=%s, inode=%d, from [port=%s[%d],pb_type=%s] to phy_pb [port=%s[%d],pb_type=%s]\n",
-                 local_rr_graph->net[rr_node_net_num]->name,
-                 inode,
-                 cur_op_pb_rr_graph[inode].pb_graph_pin->port->name,
-                 cur_op_pb_rr_graph[inode].pb_graph_pin->pin_number,
-                 get_pb_graph_full_name_in_hierarchy(cur_op_pb_rr_graph[inode].pb_graph_pin->parent_node),
-                 local_rr_graph->rr_node[jnode].pb_graph_pin->port->name,
-                 local_rr_graph->rr_node[jnode].pb_graph_pin->pin_number,
-                 get_pb_graph_full_name_in_hierarchy(local_rr_graph->rr_node[jnode].pb_graph_pin->parent_node));
-      }
     }
     break;
   default:
@@ -825,6 +786,66 @@ void sync_pb_graph_pin_vpack_net_num_to_phy_pb(t_rr_node* cur_op_pb_rr_graph,
 
   return;
 } 
+
+void rec_sync_wired_pb_vpack_net_num_to_phy_pb_rr_graph(t_pb_graph_node* cur_pb_graph_node,
+                                                        t_rr_node* op_pb_rr_graph,
+                                                        t_rr_graph* local_rr_graph) {
+  int imode, ipb, jpb;
+  int ipin, iport;
+  t_pb_type* cur_pb_type = cur_pb_graph_node->pb_type;
+
+  /* Copy LUT information if this is a leaf node */
+  if ((TRUE == is_primitive_pb_type(cur_pb_type)) 
+    && (LUT_CLASS == cur_pb_type->class_type)) {
+    /* Mark all the nets at this level */
+    for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
+        sync_pb_graph_pin_vpack_net_num_to_phy_pb(op_pb_rr_graph, 
+                                                  &(cur_pb_graph_node->input_pins[iport][ipin]),
+                                                  local_rr_graph);
+      }
+    }
+   
+    for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
+        sync_pb_graph_pin_vpack_net_num_to_phy_pb(op_pb_rr_graph, 
+                                                  &(cur_pb_graph_node->output_pins[iport][ipin]),
+                                                  local_rr_graph);
+      }
+    }
+   
+    for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
+        sync_pb_graph_pin_vpack_net_num_to_phy_pb(op_pb_rr_graph, 
+                                                  &(cur_pb_graph_node->clock_pins[iport][ipin]),
+                                                  local_rr_graph);
+      }
+    }
+  
+    /* Finish here */
+    return;
+  }
+
+  /* Go recursively */
+  assert (FALSE == is_primitive_pb_type(cur_pb_type));
+  for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
+    for (ipb = 0; ipb < cur_pb_type->modes[imode].num_pb_type_children; ipb++) {
+      for (jpb = 0; jpb < cur_pb_type->modes[imode].pb_type_children[ipb].num_pb; jpb++) {
+        /* We care only those have been used for wiring */
+        if (FALSE == is_pb_used_for_wiring(&(cur_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb]),
+                                           &(cur_pb_type->modes[imode].pb_type_children[ipb]), 
+                                           op_pb_rr_graph)) {
+          continue;
+        }
+        rec_sync_wired_pb_vpack_net_num_to_phy_pb_rr_graph(&(cur_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb]),
+                                                           op_pb_rr_graph,
+                                                           local_rr_graph);
+      }
+    }
+  }
+
+  return;
+}
 
 /* Recursively visit all the child pbs and 
  * synchronize the vpack_net_num of the top-level/primitive pb_graph_pin
@@ -877,6 +898,13 @@ void rec_sync_pb_vpack_net_num_to_phy_pb_rr_graph(t_pb* cur_op_pb,
       if ((NULL != cur_op_pb->child_pbs[ipb])&&(NULL != cur_op_pb->child_pbs[ipb][jpb].name)) {
         rec_sync_pb_vpack_net_num_to_phy_pb_rr_graph(&(cur_op_pb->child_pbs[ipb][jpb]), 
                                                      local_rr_graph);
+      } else if (TRUE == is_pb_used_for_wiring(&(cur_op_pb->pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]),
+                                               &(cur_pb_type->modes[mode_index].pb_type_children[ipb]), 
+                                               cur_op_pb->rr_graph)) {
+        /* Identify pbs and LUTs that are used for wiring purpose */
+        rec_sync_wired_pb_vpack_net_num_to_phy_pb_rr_graph(&(cur_op_pb->pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]),
+                                                           cur_op_pb->rr_graph,
+                                                           local_rr_graph);
       }
     }
   }
@@ -1248,7 +1276,9 @@ void alloc_and_load_rr_graph_for_phy_pb(INP t_pb* cur_op_pb,
                                       L_num_vpack_nets, L_vpack_net); 
   
   /* Add edges to connected rr_nodes for a wired LUT */
+  /* 
   rec_add_rr_graph_wired_lut_rr_edges(cur_op_pb, cur_phy_pb->rr_graph);
+  */
 
   /* Allocate trace in rr_graph */
   alloc_rr_graph_route_static_structs(cur_phy_pb->rr_graph, nx * ny); /* TODO: nx * ny should be reduced for pb-only routing */

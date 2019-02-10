@@ -903,18 +903,53 @@ static
 void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb,
                                                t_pb_graph_node* cur_pb_graph_node, 
                                                t_rr_node* pb_rr_nodes) {
-  int ipb, jpb, select_mode_index;
+  int imode, ipb, jpb, select_mode_index;
   int iport, ipin, node_index;
   t_pb_graph_node* child_pb_graph_node;
+  t_pb_type* cur_pb_type = cur_pb_graph_node->pb_type;
  
   /* Return when we meet a null pb */ 
   if (NULL == cur_pb) {
-     /* Some */
+    /* Wired LUT does not has a pb but has a net_num */
+    for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
+        node_index = cur_pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
+        if (OPEN != pb_rr_nodes[node_index].net_num) {
+          pb_rr_nodes[node_index].vpack_net_num = pb_rr_nodes[node_index].net_num;
+        }
+      }
+    }
+
+    /* Wired LUT does not has a pb but has a net_num */
     for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
       for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
         node_index = cur_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
         if (OPEN != pb_rr_nodes[node_index].net_num) {
           pb_rr_nodes[node_index].vpack_net_num = pb_rr_nodes[node_index].net_num;
+        }
+      }
+    }
+    /* Return if this is a leaf node */
+    if (TRUE == is_primitive_pb_type(cur_pb_type)) { 
+      return;
+    }
+
+    /* Go recusrively */
+    for (imode = 0; imode < cur_pb_type->num_modes; imode++) {
+      for (ipb = 0; ipb < cur_pb_type->modes[imode].num_pb_type_children; ipb++) {
+        for (jpb = 0; jpb < cur_pb_type->modes[imode].pb_type_children[ipb].num_pb; jpb++) {
+          /* For wired LUT */  
+          if (FALSE == is_pb_used_for_wiring(&(cur_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb]),  
+                                            &(cur_pb_graph_node->pb_type->modes[imode].pb_type_children[ipb]),
+                                            pb_rr_nodes)) {        
+            continue;
+          }
+          /* Reach here means that this LUT is in wired mode (a buffer)  
+           * synchronize the net num 
+           */
+          back_annotate_one_pb_rr_node_map_info_rec(NULL,
+                                                    &(cur_pb_graph_node->child_pb_graph_nodes[select_mode_index][ipb][jpb]),
+                                                    pb_rr_nodes);
         }
       }
     }
@@ -978,16 +1013,6 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb,
                                                       select_mode_index); 
           } else {
              pb_rr_nodes[node_index].vpack_net_num = pb_rr_nodes[node_index].net_num;
-             /* DEBUG */
-             if (0 == strcmp("n133", vpack_net[pb_rr_nodes[node_index].vpack_net_num].name)) {
-             vpr_printf(TIO_MESSAGE_INFO, 
-                        "Detect net=%s, inode=%d, mapped to port=%s[%d], pb_type=%s\n",
-                        vpack_net[pb_rr_nodes[node_index].vpack_net_num].name,
-                        node_index,
-                        pb_rr_nodes[node_index].pb_graph_pin->port->name,
-                        pb_rr_nodes[node_index].pb_graph_pin->pin_number,
-                        get_pb_graph_full_name_in_hierarchy(pb_rr_nodes[node_index].pb_graph_pin->parent_node)); 
-             }
           }
         }
       }
@@ -1016,18 +1041,16 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb,
         back_annotate_one_pb_rr_node_map_info_rec(&(cur_pb->child_pbs[ipb][jpb]),
                                                   &(cur_pb->pb_graph_node->child_pb_graph_nodes[select_mode_index][ipb][jpb]),
                                                   cur_pb->rr_graph);
-      } else {
+      } else if (TRUE == is_pb_used_for_wiring(&(cur_pb->pb_graph_node->child_pb_graph_nodes[select_mode_index][ipb][jpb]),  
+                                               &(cur_pb->pb_graph_node->pb_type->modes[select_mode_index].pb_type_children[ipb]),
+                                               cur_pb->rr_graph)) {        
         /* For wired LUT */
-        if (TRUE == is_pb_wired_lut(&(cur_pb->pb_graph_node->child_pb_graph_nodes[select_mode_index][ipb][jpb]),  
-                                    &(cur_pb->pb_graph_node->pb_type->modes[select_mode_index].pb_type_children[ipb]),
-                                    cur_pb->rr_graph)) {        
           /* Reach here means that this LUT is in wired mode (a buffer)  
            * synchronize the net num 
            */
           back_annotate_one_pb_rr_node_map_info_rec(NULL,
                                                     &(cur_pb->pb_graph_node->child_pb_graph_nodes[select_mode_index][ipb][jpb]),
                                                     cur_pb->rr_graph);
-        }
       }
     }
   }
