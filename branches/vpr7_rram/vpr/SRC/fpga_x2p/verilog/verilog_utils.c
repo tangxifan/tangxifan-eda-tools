@@ -2893,29 +2893,34 @@ void dump_verilog_mem_sram_submodule(FILE* fp,
   return;
 }
  
-void dump_verilog_grid_one_pin(FILE* fp, 
-                               int x, int y,
-                               int height, int side, int pin_index,
-                               boolean for_top_netlist) {
-  /* Check the file handler*/ 
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
-               __FILE__, __LINE__); 
-    exit(1);
-  }
+char* gen_verilog_grid_one_pin_name(int x, int y,
+                                    int height, int side, int pin_index,
+                                    boolean for_top_netlist) {
+  char* ret = NULL;
 
   /* This pin appear at this side! */
   if (TRUE == for_top_netlist) {
-    fprintf(fp, " grid_%d__%d__pin_%d__%d__%d_", 
+    ret = (char*) my_malloc(sizeof(char) * 
+                            (5 + strlen(my_itoa(x)) + 2 + strlen(my_itoa(y))
+                             + 6 + strlen(my_itoa(height)) 
+                             + 2 + strlen(my_itoa(side))
+                             + 2 + strlen(my_itoa(pin_index))
+                             + 2 ));    
+    sprintf(ret, "grid_%d__%d__pin_%d__%d__%d_", 
             x, y,
             height, side, pin_index);
   } else {
     assert(FALSE == for_top_netlist);
-    fprintf(fp, " %s_height_%d__pin_%d_", 
+    ret = (char*) my_malloc(sizeof(char) * 
+                            (strlen(convert_side_index_to_string(side)) 
+                             + 8 + strlen(my_itoa(height)) 
+                             + 6 + strlen(my_itoa(pin_index))
+                             + 2 ));    
+    sprintf(ret, "%s_height_%d__pin_%d_", 
             convert_side_index_to_string(side), height, pin_index);
   }
 
-  return;
+  return ret;
 }
 
 char* gen_verilog_routing_channel_one_pin_name(t_rr_node* chan_rr_node,
@@ -2937,7 +2942,7 @@ char* gen_verilog_routing_channel_one_pin_name(t_rr_node* chan_rr_node,
              x, y, track_idx); 
      break;
    case IN_PORT:
-     sprintf(ret, "%s_%d__%d__in_%d_, ",
+     sprintf(ret, "%s_%d__%d__in_%d_",
              convert_chan_type_to_string(chan_rr_node->type), 
              x, y, track_idx); 
      break;

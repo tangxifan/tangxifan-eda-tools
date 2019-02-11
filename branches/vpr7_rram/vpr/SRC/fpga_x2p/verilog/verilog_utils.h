@@ -216,10 +216,9 @@ void dump_verilog_mem_sram_submodule(FILE* fp,
                                      t_spice_model* cur_sram_verilog_model,
                                      int lsb, int msb);
 
-void dump_verilog_grid_one_pin(FILE* fp, 
-                               int x, int y,
-                               int height, int side, int pin_index,
-                               boolean for_top_netlist);
+char* gen_verilog_grid_one_pin_name(int x, int y,
+                                   int height, int side, int pin_index,
+                                   boolean for_top_netlist);
 
 char* gen_verilog_routing_channel_one_pin_name(t_rr_node* chan_rr_node,
                                                int x, int y, int track_idx,

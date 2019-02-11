@@ -802,8 +802,8 @@ void dump_verilog_defined_one_switch_box(t_sram_orgz_info* cur_sram_orgz_info,
   fprintf(fp, "//----- BEGIN call module Switch blocks [%d][%d] -----\n", 
           cur_sb_info.x, cur_sb_info.y);
   /* Print module*/
-  fprintf(fp, "sb_%d__%d_ ", cur_sb_info.x, cur_sb_info.y);
-  fprintf(fp, "sb_%d__%d__0_ ", cur_sb_info.x, cur_sb_info.y);
+  fprintf(fp, "%s ", gen_verilog_one_sb_module_name(&cur_sb_info));
+  fprintf(fp, "%s ", gen_verilog_one_sb_instance_name(&cur_sb_info));
   fprintf(fp, "(");
 
   fprintf(fp, "\n");

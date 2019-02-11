@@ -1956,7 +1956,7 @@ void dump_verilog_grid_pins(FILE* fp,
               }
             }
             /* This pin appear at this side! */
-            dump_verilog_grid_one_pin(fp, x, y, iheight, side, ipin, top_level); 
+            fprintf(fp, " %s", gen_verilog_grid_one_pin_name(x, y, iheight, side, ipin, top_level)); 
             /* Update counter */
             num_dumped_port++;
             side_pin_index++;
@@ -2049,7 +2049,7 @@ void dump_verilog_io_grid_pins(FILE* fp,
             }
           }
           /* This pin appear at this side! */
-          dump_verilog_grid_one_pin(fp, x, y, iheight, side, ipin, top_level); 
+          fprintf(fp, " %s", gen_verilog_grid_one_pin_name(x, y, iheight, side, ipin, top_level)); 
           /* Update counter */
           num_dumped_port++;
           side_pin_index++;
