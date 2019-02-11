@@ -630,28 +630,16 @@ void dump_verilog_defined_one_connection_box(t_sram_orgz_info* cur_sram_orgz_inf
 
   x = cur_cb_info.x;
   y = cur_cb_info.y;
-  
-  /* Print the definition of subckt*/
-  /* Identify the type of connection box */
-  switch(cur_cb_info.type) {
-  case CHANX:
-    /* Comment lines */
-    fprintf(fp, "//----- BEGIN Call Connection Box-X direction [%d][%d] module -----\n", x, y);
-    /* Print module */
-    fprintf(fp, "cbx_%d__%d_ ", x, y);
-    fprintf(fp, "cbx_%d__%d__0_ ", x, y);
-    break;
-  case CHANY:
-    /* Comment lines */
-    fprintf(fp, "//----- BEGIN Call Connection Box-Y direction [%d][%d] module -----\n", x, y);
-    /* Print module */
-    fprintf(fp, "cby_%d__%d_ ", x, y);
-    fprintf(fp, "cby_%d__%d__0_ ", x, y);
-    break;
-  default: 
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
-    exit(1);
-  }
+
+  /* Comment lines */
+  fprintf(fp, 
+          "//----- BEGIN Call Connection Box for %s direction [%d][%d] module -----\n", 
+          convert_chan_type_to_string(cur_cb_info.type),
+          x, y);
+
+  /* Print module */
+  fprintf(fp, "%s ", gen_verilog_one_cb_module_name(&cur_cb_info));
+  fprintf(fp, "%s ", gen_verilog_one_cb_instance_name(&cur_cb_info));
  
   fprintf(fp, "(");
   fprintf(fp, "\n");
@@ -672,9 +660,8 @@ void dump_verilog_defined_one_connection_box(t_sram_orgz_info* cur_sram_orgz_inf
     side_cnt++;
     fprintf(fp, "//----- %s side inputs: channel track middle outputs -----\n", convert_side_index_to_string(side));
     for (itrack = 0; itrack < cur_cb_info.chan_width[side]; itrack++) {
-      fprintf(fp, "%s_%d__%d__midout_%d_, ",
-              convert_chan_type_to_string(cur_cb_info.type),
-              cur_cb_info.x, cur_cb_info.y, itrack);
+      fprintf(fp, "%s, ",
+              gen_verilog_routing_channel_one_midout_name(&cur_cb_info, itrack));
       fprintf(fp, "\n");
     }
   }
@@ -830,9 +817,10 @@ void dump_verilog_defined_one_switch_box(t_sram_orgz_info* cur_sram_orgz_info,
 
     fprintf(fp, "//----- %s side channel ports-----\n", convert_side_index_to_string(side));
     for (itrack = 0; itrack < cur_sb_info.chan_width[side]; itrack++) {
-      dump_verilog_routing_channel_one_pin(fp, cur_sb_info.chan_rr_node[side][itrack],
-                                           ix, iy, itrack, 
-                                           cur_sb_info.chan_rr_node_direction[side][itrack]);
+      fprintf(fp, "%s,",
+              gen_verilog_routing_channel_one_pin_name(cur_sb_info.chan_rr_node[side][itrack],
+                                                       ix, iy, itrack, 
+                                                       cur_sb_info.chan_rr_node_direction[side][itrack]));
     }
     fprintf(fp, "\n");
     fprintf(fp, "//----- %s side inputs: CLB output pins -----\n", convert_side_index_to_string(side));

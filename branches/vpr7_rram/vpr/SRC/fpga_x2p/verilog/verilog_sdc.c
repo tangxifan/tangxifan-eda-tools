@@ -29,6 +29,7 @@
 #include "fpga_x2p_mux_utils.h"
 #include "fpga_x2p_pbtypes_utils.h"
 #include "fpga_x2p_bitstream_utils.h"
+#include "fpga_x2p_rr_graph_utils.h"
 #include "fpga_x2p_globals.h"
 
 /* Include Verilog support headers*/
@@ -80,15 +81,16 @@ void dump_verilog_one_sb_routing_pin(FILE* fp,
     dump_verilog_grid_side_pin_with_given_index(fp, OPIN,
                                                 cur_rr_node->ptc_num,
                                                 side,
-                                                cur_sb_info->x,
-                                                cur_sb_info->y, 
+                                                cur_rr_node->xlow,
+                                                cur_rr_node->ylow, 
                                                 FALSE); /* Do not specify direction of port */
     break; 
   case CHANX:
   case CHANY:
-    dump_verilog_routing_channel_one_pin(fp, cur_rr_node,
-                                         cur_sb_info->x, cur_sb_info->y, track_idx, 
-                                         IN_PORT);
+    fprintf(fp, "%s ",
+            gen_verilog_routing_channel_one_pin_name(cur_rr_node,
+                                                     cur_sb_info->x, cur_sb_info->y, track_idx, 
+                                                     IN_PORT));
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid type of ending point rr_node!\n",
@@ -98,6 +100,165 @@ void dump_verilog_one_sb_routing_pin(FILE* fp,
   }
 
   return;
+}
+
+/** Given a starting rr_node (CHANX or CHANY) 
+ *  and a ending rr_node (IPIN) 
+ *  return the cb contains both (the ending CB of the routing wire)
+ */
+t_cb* get_chan_rr_node_ending_cb(t_rr_node* src_rr_node, 
+                                t_rr_node* end_rr_node) {
+  int num_ipin_sides = 2;
+  int* ipin_side = (int*)my_calloc(num_ipin_sides, sizeof(int));
+  int num_chan_sides = 2;
+  int* chan_side = (int*)my_calloc(num_chan_sides, sizeof(int));
+  int iside, next_cb_x, next_cb_y;
+  int node_exist;
+  t_cb* next_cb = NULL;
+ 
+  /* Type of connection block depends on the src_rr_node */
+  switch (src_rr_node->type) {
+  case CHANX:
+    /* the x of CB is same as end_rr_node,
+     * the y of CB should be same as src_rr_node
+     */
+    assert (end_rr_node->xlow == end_rr_node->xhigh);
+    next_cb_x = end_rr_node->xlow;
+    assert (src_rr_node->ylow == src_rr_node->yhigh);
+    next_cb_y = src_rr_node->ylow;
+    /* Side will be either on TOP or BOTTOM */
+    ipin_side[0] = TOP;
+    ipin_side[1] = BOTTOM;
+    chan_side[0] = RIGHT;
+    chan_side[1] = LEFT;
+    next_cb = &(cbx_info[next_cb_x][next_cb_y]); 
+    break;
+  case CHANY:
+    /* the x of CB is same as src_rr_node,
+     * the y of CB should be same as end_rr_node
+     */
+    assert (src_rr_node->xlow == src_rr_node->xhigh);
+    next_cb_x = src_rr_node->xlow;
+    assert (end_rr_node->ylow == end_rr_node->yhigh);
+    next_cb_y = end_rr_node->ylow;
+    /* Side will be either on RIGHT or LEFT */
+    ipin_side[0] = LEFT;
+    ipin_side[1] = RIGHT;
+    chan_side[0] = BOTTOM;
+    chan_side[1] = TOP;
+    next_cb = &(cby_info[next_cb_x][next_cb_y]); 
+    break;
+  default:
+   vpr_printf(TIO_MESSAGE_ERROR, 
+              "(File: %s [LINE%d]) Invalid type of src_rr_node!\n",
+               __FILE__, __LINE__);
+ 
+    exit(1);
+  }
+
+  /* Double check if src_rr_node is in the IN_PORT list */
+  node_exist = 0;
+  for (iside = 0; iside < num_chan_sides; iside++) {
+    if (OPEN != get_rr_node_index_in_cb_info( src_rr_node,
+                                              *next_cb, 
+                                              chan_side[iside], IN_PORT)) {   
+      node_exist++;
+    }
+  }
+  assert (0 < node_exist);
+
+  /* Double check if end_rr_node is in the OUT_PORT list */
+  node_exist = 0;
+  for (iside = 0; iside < num_ipin_sides; iside++) {
+    if (OPEN != get_rr_node_index_in_cb_info( end_rr_node,
+                                              *next_cb, 
+                                              ipin_side[iside], OUT_PORT)) {
+      node_exist++;
+    }
+  }
+  assert (0 < node_exist);
+
+  return next_cb;
+}
+
+/** Given a starting rr_node (CHANX or CHANY) 
+ *  and a ending rr_node (IPIN) 
+ *  return the sb contains both (the ending CB of the routing wire)
+ */
+t_sb* get_chan_rr_node_ending_sb(t_rr_node* src_rr_node, 
+                                 t_rr_node* end_rr_node) {
+  int side;
+  int x_start, y_start;
+  int x_end, y_end;
+  int next_sb_x, next_sb_y;
+  int node_exist;
+  t_sb* next_sb = NULL;
+
+  get_chan_rr_node_start_coordinate(src_rr_node, &x_start, &y_start);
+  get_chan_rr_node_start_coordinate(end_rr_node, &x_end, &y_end);
+
+  /* Try the xlow, ylow of ending rr_node */
+  switch (src_rr_node->type) {
+  case CHANX:
+    next_sb_x = x_end;
+    next_sb_y = y_start;
+    break;
+  case CHANY:
+    next_sb_x = x_start;
+    next_sb_y = y_end;
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid type of rr_node!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  switch (src_rr_node->direction) {
+  case INC_DIRECTION:
+    get_chan_rr_node_end_coordinate(src_rr_node, &x_end, &y_end);
+    if (next_sb_x > x_end) {
+      next_sb_x = x_end;
+    }
+    if (next_sb_y > y_end) {
+      next_sb_y = y_end;
+    }
+    break;
+  case DEC_DIRECTION:
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid type of rr_node!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /* Double check if src_rr_node is in the list */
+  node_exist = 0;
+  for (side = 0; side < 4; side++) {
+    if( OPEN != get_rr_node_index_in_sb_info(src_rr_node, 
+                                             sb_info[next_sb_x][next_sb_y],
+                                             side, IN_PORT)) {
+      node_exist++;
+    }
+  }
+  assert (1 == node_exist);                                        
+
+  /* Double check if end_rr_node is in the list */
+  node_exist = 0;
+  for (side = 0; side < 4; side++) {
+    if (OPEN != get_rr_node_index_in_sb_info(end_rr_node, 
+                                             sb_info[next_sb_x][next_sb_y],
+                                             side, OUT_PORT)) {
+      node_exist++;
+    }
+  }
+  if (1 != node_exist) {
+    assert (1 == node_exist);                                        
+  }
+
+  /* Passing the check, assign ending sb */
+  next_sb = &(sb_info[next_sb_x][next_sb_y]);
+
+  return next_sb;
 }
 
 /* Report timing for a routing wire,
@@ -112,10 +273,10 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
                                                      int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                                      t_ivec*** LL_rr_node_indices) {
   int iedge, jedge, inode;
-  int track_idx, side;
+  int track_idx;
   int path_cnt = 0;
-  int next_sb_x, next_sb_y;
-  int next_cb_x, next_cb_y;
+  t_sb* next_sb = NULL; 
+  t_cb* next_cb = NULL; 
 
   /* Check the file handler */
   if (NULL == fp) {
@@ -125,8 +286,12 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
     exit(1);
   } 
 
+  assert(  ( CHANX == wire_rr_node->type )
+        || ( CHANY == wire_rr_node->type ));
+  track_idx = wire_rr_node->ptc_num;
+
   fprintf(fp, "L%d wire: \n", 
-          abs(wire_rr_node->xlow - wire_rr_node->xhigh + wire_rr_node->ylow - wire_rr_node->yhigh));
+          abs(wire_rr_node->xlow - wire_rr_node->xhigh + wire_rr_node->ylow - wire_rr_node->yhigh) + 1);
   /* Find the starting points */
   for (iedge = 0; iedge < wire_rr_node->num_drive_rr_nodes; iedge++) {
     /* Find the ending points*/
@@ -136,47 +301,43 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
        */
       fprintf(fp, "Path %d: \n", path_cnt); 
       fprintf(fp, "Starting pin name: "); 
-      fprintf(fp, "sb[%d][%d]/", 
-                  cur_sb_info->x, cur_sb_info->y); 
+      /* output instance name */
+      fprintf(fp, "%s/", 
+                  gen_verilog_one_sb_instance_name(cur_sb_info)); 
+      /* output pin name */
       dump_verilog_one_sb_routing_pin(fp, cur_sb_info, 
                                       wire_rr_node->drive_rr_nodes[iedge]);
       fprintf(fp, "\n"); 
  
       fprintf(fp, "Ending pin name: "); 
       /* Find where the destination pin belongs to */
-      /* fprintf(fp, "sb[%d][%d]/", next_cb_x, next_cb_y); */ 
       /* Reciever could be IPIN or CHANX or CHANY */
       inode = wire_rr_node->edges[jedge];
       /* Find the SB/CB block that it belongs to */
       switch (LL_rr_node[inode].type) {
       case IPIN:
-        /* IPIN indicates an CLB input */
-        get_rr_node_side_and_index_in_cb_info(&(LL_rr_node[inode]), 
-                                              cbx_info[next_cb_x][next_cb_y],
-                                              OUT_PORT,
-                                              &side, &track_idx);
-        /* Get the top-level pin name and print it out */
-        /* Print each INPUT Pins of a grid */
-        dump_verilog_grid_side_pin_with_given_index(fp, OPIN,
-                                                    LL_rr_node[inode].ptc_num,
-                                                    side,
-                                                    LL_rr_node[inode].xlow,
-                                                    LL_rr_node[inode].ylow, 
-                                                    FALSE); /* Do not specify direction of port */
-  
+        /* Get the coordinate of ending CB */
+        next_cb = get_chan_rr_node_ending_cb(wire_rr_node, &(LL_rr_node[inode]));
+        /* output instance name */
+        fprintf(fp, "%s/",
+                gen_verilog_one_cb_instance_name(next_cb));
+        /* output pin name */
+        fprintf(fp, "%s\n",
+                gen_verilog_routing_channel_one_midout_name( next_cb,
+                                                             track_idx));
         break;
       case CHANX:
       case CHANY:
-        /* xlow and ylow should be the coordinate of the ending SB */
-        get_rr_node_side_and_index_in_sb_info(&(LL_rr_node[inode]), 
-                                              sb_info[next_sb_x][next_sb_y], 
-                                              IN_PORT, &side, &track_idx);
-        /* the ending rr_node should be an output of the ending SB*/
-        /* find the wire_rr_node in the ending SB*/
-        dump_verilog_routing_channel_one_pin(fp, &(LL_rr_node[inode]),
-                                             next_sb_x, next_sb_y, track_idx, 
-                                             IN_PORT);
- 
+        /* Get the coordinate of ending SB */
+        next_sb = get_chan_rr_node_ending_sb(wire_rr_node, &(LL_rr_node[inode]));
+        /* output instance name */
+        fprintf(fp, "%s/",
+                gen_verilog_one_sb_instance_name(next_sb));
+        /* output pin name */
+        fprintf(fp, "%s\n",
+                gen_verilog_routing_channel_one_pin_name( &(LL_rr_node[inode]),
+                                                           next_sb->x, next_sb->y, track_idx, 
+                                                           IN_PORT));
         break;
       default:
        vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid type of ending point rr_node!\n",
@@ -187,6 +348,7 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
       /* Get the user-constrained delay of this routing wire */
       /* Find the pins/ports of SBs that this wire may across */
       /* Output the Report Timing commands */
+      path_cnt++;
     }
   }
 
@@ -272,6 +434,9 @@ void verilog_generate_routing_report_timing(t_sram_orgz_info* cur_sram_orgz_info
   /* Part 3. Output routing constraints for Connection Blocks */
 
   /* Part 4. Report timing for routing wires */
+  vpr_printf(TIO_MESSAGE_INFO,
+             "Generating TCL script for report timing: %s\n",
+             sdc_fname);
   verilog_generate_routing_wires_report_timing(fp, LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
 
   /* close file*/

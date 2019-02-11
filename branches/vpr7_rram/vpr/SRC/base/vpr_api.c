@@ -200,6 +200,7 @@ void vpr_print_usage(void) {
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_verilog_include_signal_init\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_verilog_print_modelsim_autodeck <modelsim_ini_path>\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_verilog_print_user_defined_template\n");
+	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_verilog_print_report_timing_tcl\n");
     /* Xifan Tang: Bitstream generator */
 	vpr_printf(TIO_MESSAGE_INFO, "Bitstream Generator Options:\n");
 	vpr_printf(TIO_MESSAGE_INFO, "\t--fpga_bitstream_generator <string>\n");

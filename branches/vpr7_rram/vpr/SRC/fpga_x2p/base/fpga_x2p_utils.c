@@ -864,6 +864,21 @@ char* convert_side_index_to_string(int side) {
   }
 }
 
+char* convert_cb_type_to_string(t_rr_type chan_type) {
+  switch(chan_type) {
+  case CHANX:
+    return "cbx";
+    break;
+  case CHANY:
+    return "cby";
+    break;
+  default: 
+    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid type of channel!\n", __FILE__, __LINE__);
+    exit(1);
+  }
+}
+
+
 char* convert_chan_type_to_string(t_rr_type chan_type) {
   switch(chan_type) {
   case CHANX:

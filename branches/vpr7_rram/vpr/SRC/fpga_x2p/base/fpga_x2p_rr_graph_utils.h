@@ -98,3 +98,9 @@ int get_rr_graph_net_vpack_net_index(t_rr_graph* local_rr_graph,
 
 int get_rr_graph_net_index_with_vpack_net(t_rr_graph* local_rr_graph,
                                           int vpack_net_index);
+
+void get_chan_rr_node_start_coordinate(t_rr_node* chan_rr_node,
+                                       int* x_start, int* y_start);
+
+void get_chan_rr_node_end_coordinate(t_rr_node* chan_rr_node,
+                                     int* x_end, int* y_end);

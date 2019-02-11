@@ -1096,3 +1096,52 @@ int get_rr_graph_net_index_with_vpack_net(t_rr_graph* local_rr_graph,
   return ret;
 }
 
+void get_chan_rr_node_start_coordinate(t_rr_node* chan_rr_node,
+                                       int* x_start, int* y_start) {
+  assert ( (CHANX == chan_rr_node->type)
+         ||(CHANY == chan_rr_node->type));
+
+  switch (chan_rr_node->direction) {
+  case INC_DIRECTION:
+    (*x_start) = chan_rr_node->xlow;
+    (*y_start) = chan_rr_node->ylow;
+    break;
+  case DEC_DIRECTION:
+    (*x_start) = chan_rr_node->xhigh;
+    (*y_start) = chan_rr_node->yhigh;
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, 
+               "(File: %s [LINE%d]) Invalid direction of chan_rr_node!\n",
+               __FILE__, __LINE__);
+ 
+    exit(1);
+  }
+
+  return;
+}
+
+void get_chan_rr_node_end_coordinate(t_rr_node* chan_rr_node,
+                                     int* x_end, int* y_end) {
+  assert ( (CHANX == chan_rr_node->type)
+         ||(CHANY == chan_rr_node->type));
+
+  switch (chan_rr_node->direction) {
+  case INC_DIRECTION:
+    (*x_end) = chan_rr_node->xhigh;
+    (*y_end) = chan_rr_node->yhigh;
+    break;
+  case DEC_DIRECTION:
+    (*x_end) = chan_rr_node->xlow;
+    (*y_end) = chan_rr_node->ylow;
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, 
+               "(File: %s [LINE%d]) Invalid direction of chan_rr_node!\n",
+               __FILE__, __LINE__);
+ 
+    exit(1);
+  }
+
+  return;
+}

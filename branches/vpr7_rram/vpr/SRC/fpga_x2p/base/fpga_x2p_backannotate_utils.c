@@ -378,7 +378,7 @@ int get_rr_node_index_in_sb_info(t_rr_node* cur_rr_node,
   int inode, cnt, ret; 
 
   cnt = 0;
-  ret = -1;
+  ret = OPEN;
 
   /* Depending on the type of rr_node, we search different arrays */
   switch (cur_rr_node->type) {

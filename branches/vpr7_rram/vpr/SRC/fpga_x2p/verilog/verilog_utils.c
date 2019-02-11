@@ -2918,25 +2918,26 @@ void dump_verilog_grid_one_pin(FILE* fp,
   return;
 }
 
-void dump_verilog_routing_channel_one_pin(FILE* fp,
-                                          t_rr_node* chan_rr_node,
-                                          int x, int y, int track_idx,
-                                          enum PORTS pin_direction) {
-  /* Check the file handler*/ 
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
-               __FILE__, __LINE__); 
-    exit(1);
-  }
+char* gen_verilog_routing_channel_one_pin_name(t_rr_node* chan_rr_node,
+                                              int x, int y, int track_idx,
+                                              enum PORTS pin_direction) {
+
+  char* ret = NULL;
+  
+  ret = (char*)my_malloc(strlen(convert_chan_type_to_string(chan_rr_node->type))
+                         + 1 + strlen(my_itoa(x))
+                         + 2 + strlen(my_itoa(y))
+                         + 6 + strlen(my_itoa(track_idx))
+                         + 2 + 1);
 
    switch (pin_direction) {
    case OUT_PORT:
-     fprintf(fp, "%s_%d__%d__out_%d_, ", 
+     sprintf(ret, "%s_%d__%d__out_%d_", 
              convert_chan_type_to_string(chan_rr_node->type), 
              x, y, track_idx); 
      break;
    case IN_PORT:
-     fprintf(fp, "%s_%d__%d__in_%d_, ",
+     sprintf(ret, "%s_%d__%d__in_%d_, ",
              convert_chan_type_to_string(chan_rr_node->type), 
              x, y, track_idx); 
      break;
@@ -2944,8 +2945,82 @@ void dump_verilog_routing_channel_one_pin(FILE* fp,
      vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of chan_rr_node!\n",
                 __FILE__, __LINE__);
      exit(1);
-   }
+  }
 
-
-  return;
+  return ret;
 }
+
+char* gen_verilog_routing_channel_one_midout_name(t_cb* cur_cb_info,
+                                                 int track_idx) {
+  char* ret = NULL;
+  
+  ret = (char*)my_malloc(strlen(convert_chan_type_to_string(cur_cb_info->type))
+                         + 1 + strlen(my_itoa(cur_cb_info->x))
+                         + 2 + strlen(my_itoa(cur_cb_info->y))
+                         + 9 + strlen(my_itoa(track_idx))
+                         + 1 + 1);
+
+  sprintf(ret, "%s_%d__%d__midout_%d_",
+          convert_chan_type_to_string(cur_cb_info->type),
+          cur_cb_info->x, cur_cb_info->y, track_idx);
+
+  return ret;
+}
+
+char* gen_verilog_one_cb_module_name(t_cb* cur_cb_info) {
+  char* ret = NULL;
+  
+  ret = (char*)my_malloc(strlen(convert_cb_type_to_string(cur_cb_info->type))
+                         + 1 + strlen(my_itoa(cur_cb_info->x))
+                         + 2 + strlen(my_itoa(cur_cb_info->y))
+                         + 1 + 1); 
+
+  sprintf(ret, "%s_%d__%d_", 
+          convert_cb_type_to_string(cur_cb_info->type),
+          cur_cb_info->x, cur_cb_info->y);
+
+  return ret;
+}
+
+char* gen_verilog_one_cb_instance_name(t_cb* cur_cb_info) {
+  char* ret = NULL;
+  
+  ret = (char*)my_malloc(strlen(convert_cb_type_to_string(cur_cb_info->type))
+                         + 1 + strlen(my_itoa(cur_cb_info->x))
+                         + 2 + strlen(my_itoa(cur_cb_info->y))
+                         + 4 + 1); 
+
+  sprintf(ret, "%s_%d__%d__0_", 
+          convert_cb_type_to_string(cur_cb_info->type),
+          cur_cb_info->x, cur_cb_info->y);
+
+  return ret;
+}
+
+char* gen_verilog_one_sb_module_name(t_sb* cur_sb_info) {
+  char* ret = NULL;
+  
+  ret = (char*)my_malloc(2 + 1 + strlen(my_itoa(cur_sb_info->x))
+                         + 2 + strlen(my_itoa(cur_sb_info->y))
+                         + 1 + 1); 
+
+  sprintf(ret, "sb_%d__%d_", 
+          cur_sb_info->x, cur_sb_info->y);
+
+  return ret;
+}
+
+char* gen_verilog_one_sb_instance_name(t_sb* cur_sb_info) {
+  char* ret = NULL;
+  
+  ret = (char*)my_malloc(2 + 1 + strlen(my_itoa(cur_sb_info->x))
+                         + 2 + strlen(my_itoa(cur_sb_info->y))
+                         + 4 + 1); 
+
+  sprintf(ret, "sb_%d__%d__0_", 
+          cur_sb_info->x, cur_sb_info->y);
+
+  return ret;
+}
+
+

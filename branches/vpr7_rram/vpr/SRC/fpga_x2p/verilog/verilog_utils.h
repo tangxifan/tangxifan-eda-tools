@@ -221,8 +221,17 @@ void dump_verilog_grid_one_pin(FILE* fp,
                                int height, int side, int pin_index,
                                boolean for_top_netlist);
 
-void dump_verilog_routing_channel_one_pin(FILE* fp,
-                                          t_rr_node* chan_rr_node,
-                                          int x, int y, int track_idx,
-                                          enum PORTS pin_direction);
+char* gen_verilog_routing_channel_one_pin_name(t_rr_node* chan_rr_node,
+                                               int x, int y, int track_idx,
+                                               enum PORTS pin_direction);
 
+char* gen_verilog_routing_channel_one_midout_name(t_cb* cur_cb_info,
+                                                 int track_idx);
+
+char* gen_verilog_one_cb_module_name(t_cb* cur_cb_info);
+
+char* gen_verilog_one_cb_instance_name(t_cb* cur_cb_info);
+
+char* gen_verilog_one_sb_module_name(t_sb* cur_sb_info);
+
+char* gen_verilog_one_sb_instance_name(t_sb* cur_sb_info);
