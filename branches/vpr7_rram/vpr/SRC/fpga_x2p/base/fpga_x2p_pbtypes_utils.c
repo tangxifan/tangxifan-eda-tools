@@ -2077,19 +2077,19 @@ int get_grid_pin_side(int grid_x, int grid_y, int pin_index) {
   for (side = 0; side < 4; side++) {
     /* Bypass corner cases */
     /* Pin can only locate on BOTTOM side, when grid is on TOP border */
-    if ((ny == grid_y)&&(2 != side)) {
+    if ((ny + 1 == grid_y)&&(BOTTOM != side)) {
       continue;
     }
     /* Pin can only locate on LEFT side, when grid is on RIGHT border */
-    if ((nx == grid_x)&&(3 != side)) {
+    if ((nx + 1 == grid_x)&&(LEFT != side)) {
       continue;
     }
     /* Pin can only locate on the TOP side, when grid is on BOTTOM border */
-    if ((0 == grid_y)&&(0 != side)) {
+    if ((0 == grid_y)&&(TOP != side)) {
       continue;
     }
     /* Pin can only locate on the RIGHT side, when grid is on LEFT border */
-    if ((0 == grid_x)&&(1 != side)) {
+    if ((0 == grid_x)&&(RIGHT != side)) {
       continue;
     }
     if (1 == grid_type->pinloc[pin_height][side][pin_index]) {
@@ -2105,7 +2105,7 @@ int get_grid_pin_side(int grid_x, int grid_y, int pin_index) {
       pin_side = side;
     }
   }
-  
+
   return pin_side;
 }
 

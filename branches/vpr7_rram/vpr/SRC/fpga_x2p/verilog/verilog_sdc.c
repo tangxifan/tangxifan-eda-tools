@@ -37,6 +37,16 @@
 #include "verilog_utils.h"
 #include "verilog_routing.h"
 
+/* options for report timing */
+typedef struct s_sdc_trpt_opts t_sdc_trpt_opts;
+struct s_sdc_trpt_opts {
+  char* sdc_dir;
+  boolean longest_path_only;
+  boolean report_cb_timing;
+  boolean report_sb_timing;
+};
+
+/***** Subroutine Functions *****/
 void dump_verilog_sdc_file_header(FILE* fp,
                                   char* usage) {
   if (NULL == fp) {
@@ -70,14 +80,13 @@ void dump_verilog_one_sb_routing_pin(FILE* fp,
     exit(1);
   } 
 
-  /* Find the coordinate of the cur_rr_node */  
-  get_rr_node_side_and_index_in_sb_info(cur_rr_node, 
-                                        *cur_sb_info, 
-                                        IN_PORT, &side, &track_idx);
   /* Get the top-level pin name and print it out */
   /* Depends on the type of node */
   switch (cur_rr_node->type) {
   case OPIN:
+    /* Identify the side of OPIN on a grid */
+    side = get_grid_pin_side(cur_rr_node->xlow, cur_rr_node->ylow, cur_rr_node->ptc_num);
+    assert (OPEN != side);
     dump_verilog_grid_side_pin_with_given_index(fp, OPIN,
                                                 cur_rr_node->ptc_num,
                                                 side,
@@ -87,6 +96,10 @@ void dump_verilog_one_sb_routing_pin(FILE* fp,
     break; 
   case CHANX:
   case CHANY:
+    /* Find the coordinate of the cur_rr_node */  
+    get_rr_node_side_and_index_in_sb_info(cur_rr_node, 
+                                          *cur_sb_info, 
+                                          IN_PORT, &side, &track_idx);
     fprintf(fp, "%s ",
             gen_verilog_routing_channel_one_pin_name(cur_rr_node,
                                                      cur_sb_info->x, cur_sb_info->y, track_idx, 
@@ -268,6 +281,8 @@ t_sb* get_chan_rr_node_ending_sb(t_rr_node* src_rr_node,
  * An ending point is supposed to be an OPIN or CHANX or CHANY
  */
 void verilog_generate_one_routing_wire_report_timing(FILE* fp, 
+                                                     t_sdc_trpt_opts sdc_opts,
+                                                     int L_wire,
                                                      t_sb* cur_sb_info,
                                                      t_rr_node* wire_rr_node,
                                                      int LL_num_rr_nodes, t_rr_node* LL_rr_node,
@@ -277,6 +292,7 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
   int path_cnt = 0;
   t_sb* next_sb = NULL; 
   t_cb* next_cb = NULL; 
+  int x_end, y_end;
 
   /* Check the file handler */
   if (NULL == fp) {
@@ -290,27 +306,20 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
         || ( CHANY == wire_rr_node->type ));
   track_idx = wire_rr_node->ptc_num;
 
+  /* We only care a specific length of wires */
+  if (L_wire != (abs(wire_rr_node->xlow - wire_rr_node->xhigh + wire_rr_node->ylow - wire_rr_node->yhigh) + 1)) {
+    return; 
+  }
+
+  /* Start printing report timing info  */
   fprintf(fp, "L%d wire: \n", 
           abs(wire_rr_node->xlow - wire_rr_node->xhigh + wire_rr_node->ylow - wire_rr_node->yhigh) + 1);
   /* Find the starting points */
   for (iedge = 0; iedge < wire_rr_node->num_drive_rr_nodes; iedge++) {
     /* Find the ending points*/
     for (jedge = 0; jedge < wire_rr_node->num_edges; jedge++) {
-     /* Driver could be OPIN or CHANX or CHANY,
-       * and it must be in the cur_sb_info
-       */
-      fprintf(fp, "Path %d: \n", path_cnt); 
-      fprintf(fp, "Starting pin name: "); 
-      /* output instance name */
-      fprintf(fp, "%s/", 
-                  gen_verilog_one_sb_instance_name(cur_sb_info)); 
-      /* output pin name */
-      dump_verilog_one_sb_routing_pin(fp, cur_sb_info, 
-                                      wire_rr_node->drive_rr_nodes[iedge]);
-      fprintf(fp, "\n"); 
- 
-      fprintf(fp, "Ending pin name: "); 
       /* Find where the destination pin belongs to */
+      get_chan_rr_node_start_coordinate(wire_rr_node, &x_end, &y_end);
       /* Reciever could be IPIN or CHANX or CHANY */
       inode = wire_rr_node->edges[jedge];
       /* Find the SB/CB block that it belongs to */
@@ -318,6 +327,25 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
       case IPIN:
         /* Get the coordinate of ending CB */
         next_cb = get_chan_rr_node_ending_cb(wire_rr_node, &(LL_rr_node[inode]));
+        /* This will not be the longest path unless the cb is close to the ending SB */
+        if ((TRUE == sdc_opts.longest_path_only)
+           && ((next_cb->x != x_end) || (next_cb->y != y_end))) {
+          continue;
+        }
+        /* Driver could be OPIN or CHANX or CHANY,
+          * and it must be in the cur_sb_info
+          */
+        fprintf(fp, "Path %d: \n", path_cnt); 
+        fprintf(fp, "Starting pin name: "); 
+        /* output instance name */
+        fprintf(fp, "%s/", 
+                    gen_verilog_one_sb_instance_name(cur_sb_info)); 
+        /* output pin name */
+        dump_verilog_one_sb_routing_pin(fp, cur_sb_info, 
+                                        wire_rr_node->drive_rr_nodes[iedge]);
+        fprintf(fp, "\n"); 
+   
+        fprintf(fp, "Ending pin name: "); 
         /* output instance name */
         fprintf(fp, "%s/",
                 gen_verilog_one_cb_instance_name(next_cb));
@@ -325,11 +353,31 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
         fprintf(fp, "%s\n",
                 gen_verilog_routing_channel_one_midout_name( next_cb,
                                                              track_idx));
+        path_cnt++;
         break;
       case CHANX:
       case CHANY:
         /* Get the coordinate of ending SB */
         next_sb = get_chan_rr_node_ending_sb(wire_rr_node, &(LL_rr_node[inode]));
+        /* This will not be the longest path unless the cb is close to the ending SB */
+        if ((TRUE == sdc_opts.longest_path_only)
+           && ((next_sb->x != x_end) || (next_sb->y != y_end))) {
+          continue;
+        }
+        /* Driver could be OPIN or CHANX or CHANY,
+          * and it must be in the cur_sb_info
+          */
+        fprintf(fp, "Path %d: \n", path_cnt); 
+        fprintf(fp, "Starting pin name: "); 
+        /* output instance name */
+        fprintf(fp, "%s/", 
+                    gen_verilog_one_sb_instance_name(cur_sb_info)); 
+        /* output pin name */
+        dump_verilog_one_sb_routing_pin(fp, cur_sb_info, 
+                                        wire_rr_node->drive_rr_nodes[iedge]);
+        fprintf(fp, "\n"); 
+
+        fprintf(fp, "Ending pin name: "); 
         /* output instance name */
         fprintf(fp, "%s/",
                 gen_verilog_one_sb_instance_name(next_sb));
@@ -338,6 +386,7 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
                 gen_verilog_routing_channel_one_pin_name( &(LL_rr_node[inode]),
                                                            next_sb->x, next_sb->y, track_idx, 
                                                            IN_PORT));
+        path_cnt++;
         break;
       default:
        vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid type of ending point rr_node!\n",
@@ -348,7 +397,6 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
       /* Get the user-constrained delay of this routing wire */
       /* Find the pins/ports of SBs that this wire may across */
       /* Output the Report Timing commands */
-      path_cnt++;
     }
   }
 
@@ -357,6 +405,8 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
 
 /* Generate report timing for each routing wires/segments */
 void verilog_generate_routing_wires_report_timing(FILE* fp, 
+                                                  t_sdc_trpt_opts sdc_opts,
+                                                  int L_wire, 
                                                   int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                                   t_ivec*** LL_rr_node_indices) {
   int ix, iy;
@@ -389,7 +439,7 @@ void verilog_generate_routing_wires_report_timing(FILE* fp,
             continue; 
           }
           /* Reach here, it means a valid starting point of a routing wire */
-          verilog_generate_one_routing_wire_report_timing(fp, &(sb_info[ix][iy]),
+          verilog_generate_one_routing_wire_report_timing(fp, sdc_opts, L_wire, &(sb_info[ix][iy]),
                                                           cur_sb_info->chan_rr_node[side][itrack],
                                                           LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
         }
@@ -400,19 +450,20 @@ void verilog_generate_routing_wires_report_timing(FILE* fp,
   return;
 }
 
-/* Output a log file to guide routing report_timing */
-void verilog_generate_routing_report_timing(t_sram_orgz_info* cur_sram_orgz_info,
-                                            char* sdc_dir,
-                                            t_arch arch,
-                                            t_det_routing_arch* routing_arch,
-                                            int LL_num_rr_nodes, t_rr_node* LL_rr_node,
-                                            t_ivec*** LL_rr_node_indices,
-                                            t_syn_verilog_opts fpga_verilog_opts) {
+void verilog_generate_sb_report_timing(t_sram_orgz_info* cur_sram_orgz_info,
+                                       t_sdc_trpt_opts sdc_opts,
+                                       t_arch arch,
+                                       t_det_routing_arch* routing_arch,
+                                       int LL_num_rr_nodes, t_rr_node* LL_rr_node,
+                                       t_ivec*** LL_rr_node_indices,
+                                       t_syn_verilog_opts fpga_verilog_opts) {
   char* sdc_fname = NULL;
   FILE* fp = NULL;
- 
+  int iseg;
+  int L_max = OPEN;
+
   /* Create the file handler */
-  sdc_fname = my_strcat(format_dir_path(sdc_dir), routing_sdc_file_name);
+  sdc_fname = my_strcat(format_dir_path(sdc_opts.sdc_dir), routing_sdc_file_name);
 
   /* Create a file*/
   fp = fopen(sdc_fname, "w");
@@ -425,7 +476,69 @@ void verilog_generate_routing_report_timing(t_sram_orgz_info* cur_sram_orgz_info
   } 
 
   /* Generate SDC header */
-  dump_verilog_sdc_file_header(fp, "Report Timing for Global Routing");
+  dump_verilog_sdc_file_header(fp, "Report Timing for Switch blocks");
+
+  vpr_printf(TIO_MESSAGE_INFO,
+             "Generating TCL script to report timing for Switch Blocks: %s\n",
+             sdc_fname);
+  /* Find the longest wires: we only care defined length of wires? */
+  for (iseg = 0; iseg < arch.num_segments; iseg++) {
+    /* Bypass zero frequency sgements */
+    if (0 == arch.Segments[iseg].frequency) {
+      continue;
+    }
+    if ((OPEN == L_max) || (L_max < arch.Segments[iseg].length)) {
+      L_max = arch.Segments[iseg].length;
+    }
+  }
+  /* In some case, FPGA array size is smaller than any segments.
+   * Therefore, to be strict non-segment timing will be reported
+   * We added the FPGA array size for report timing 
+   */
+  if ((L_max > nx) && (L_max > ny)) { 
+    if (nx != ny) {
+      verilog_generate_routing_wires_report_timing(fp, sdc_opts,
+                                                   nx, LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
+      verilog_generate_routing_wires_report_timing(fp, sdc_opts,
+                                                   ny, LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
+    } else {
+      verilog_generate_routing_wires_report_timing(fp, sdc_opts,
+                                                   nx, LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
+    }
+  } else {
+    /* We only care defined length of wires? */
+    for (iseg = 0; iseg < arch.num_segments; iseg++) {
+      /* Bypass zero frequency sgements */
+      if (0 == arch.Segments[iseg].frequency) {
+        continue;
+      }
+      verilog_generate_routing_wires_report_timing(fp, sdc_opts, arch.Segments[iseg].length, 
+                                                   LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
+    }
+  }
+
+  /* close file*/
+  fclose(fp);
+
+  return;
+}
+
+/* Output a log file to guide routing report_timing */
+void verilog_generate_routing_report_timing(t_sram_orgz_info* cur_sram_orgz_info,
+                                            char* sdc_dir,
+                                            t_arch arch,
+                                            t_det_routing_arch* routing_arch,
+                                            int LL_num_rr_nodes, t_rr_node* LL_rr_node,
+                                            t_ivec*** LL_rr_node_indices,
+                                            t_syn_verilog_opts fpga_verilog_opts) {
+  t_sdc_trpt_opts sdc_trpt_opts;
+
+  /* Initialize */
+  sdc_trpt_opts.report_sb_timing = TRUE;
+  sdc_trpt_opts.report_cb_timing = TRUE;
+  sdc_trpt_opts.longest_path_only = TRUE;
+  sdc_trpt_opts.sdc_dir = my_strdup(sdc_dir);
+ 
 
   /* Part 1. Output routing constraints for routing tracks */
 
@@ -434,13 +547,12 @@ void verilog_generate_routing_report_timing(t_sram_orgz_info* cur_sram_orgz_info
   /* Part 3. Output routing constraints for Connection Blocks */
 
   /* Part 4. Report timing for routing wires */
-  vpr_printf(TIO_MESSAGE_INFO,
-             "Generating TCL script for report timing: %s\n",
-             sdc_fname);
-  verilog_generate_routing_wires_report_timing(fp, LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
-
-  /* close file*/
-  fclose(fp);
+  if (TRUE == sdc_trpt_opts.report_sb_timing) {
+    verilog_generate_sb_report_timing(cur_sram_orgz_info, sdc_trpt_opts,
+                                      arch, routing_arch,
+                                      LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices,
+                                      fpga_verilog_opts);
+  }
 
   return;
 }
