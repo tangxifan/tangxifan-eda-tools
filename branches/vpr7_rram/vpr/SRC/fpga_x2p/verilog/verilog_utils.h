@@ -234,3 +234,11 @@ char* gen_verilog_one_cb_instance_name(t_cb* cur_cb_info);
 char* gen_verilog_one_sb_module_name(t_sb* cur_sb_info);
 
 char* gen_verilog_one_sb_instance_name(t_sb* cur_sb_info);
+
+
+char* gen_verilog_one_routing_channel_module_name(t_rr_type chan_type,
+                                                  int x, int y);
+
+char* gen_verilog_one_routing_channel_instance_name(t_rr_type chan_type,
+                                                    int x, int y);
+

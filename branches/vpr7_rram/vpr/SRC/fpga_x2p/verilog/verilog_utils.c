@@ -3028,3 +3028,35 @@ char* gen_verilog_one_sb_instance_name(t_sb* cur_sb_info) {
   return ret;
 }
 
+char* gen_verilog_one_routing_channel_module_name(t_rr_type chan_type,
+                                                  int x, int y) {
+  char* ret = NULL;
+  
+  ret = (char*)my_malloc(strlen(convert_chan_type_to_string(chan_type))
+                         + 1 + strlen(my_itoa(x))
+                         + 2 + strlen(my_itoa(y))
+                         + 1 + 1); 
+
+  sprintf(ret, "%s_%d__%d_", 
+          convert_chan_type_to_string(chan_type), 
+          x, y);
+
+  return ret;
+}
+
+char* gen_verilog_one_routing_channel_instance_name(t_rr_type chan_type,
+                                                    int x, int y) {
+  char* ret = NULL;
+  
+  ret = (char*)my_malloc(strlen(convert_chan_type_to_string(chan_type))
+                         + 1 + strlen(my_itoa(x))
+                         + 2 + strlen(my_itoa(y))
+                         + 1 + 1); 
+
+  sprintf(ret, "%s_%d__%d__0_", 
+          convert_chan_type_to_string(chan_type), 
+          x, y);
+
+  return ret;
+}
+

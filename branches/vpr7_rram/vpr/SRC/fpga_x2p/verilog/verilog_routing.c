@@ -63,7 +63,6 @@ void dump_verilog_routing_chan_subckt(t_sram_orgz_info* cur_sram_orgz_info,
   case CHANX:
     /* Create file handler */
     fp = verilog_create_one_subckt_file(subckt_dir, "Routing Channel - X direction ", chanx_verilog_file_name_prefix, x, y, &fname);
-    chan_prefix = "chanx";
     /* Print preprocessing flags */
     verilog_include_defines_preproc_file(fp, verilog_dir);
     /* Comment lines */
@@ -72,7 +71,6 @@ void dump_verilog_routing_chan_subckt(t_sram_orgz_info* cur_sram_orgz_info,
   case CHANY:
     /* Create file handler */
     fp = verilog_create_one_subckt_file(subckt_dir, "Routing Channel - Y direction ", chany_verilog_file_name_prefix, x, y, &fname);
-    chan_prefix = "chany";
     /* Print preprocessing flags */
     verilog_include_defines_preproc_file(fp, verilog_dir);
     /* Comment lines */
@@ -84,13 +82,13 @@ void dump_verilog_routing_chan_subckt(t_sram_orgz_info* cur_sram_orgz_info,
     exit(1);
   }
 
-
   /* Collect rr_nodes for Tracks for chanx[ix][iy] */
   chan_rr_nodes = get_chan_rr_nodes(&chan_width, chan_type, x, y,
                                     LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
 
   /* Chan subckt definition */
-  fprintf(fp, "module %s_%d__%d_ ( \n", chan_prefix, x, y);
+  fprintf(fp, "module %s ( \n", 
+          gen_verilog_one_routing_channel_module_name(chan_type, x, y));
   fprintf(fp, "\n");
   /* dump global ports */
   if (0 < dump_verilog_global_ports(fp, global_ports_head, TRUE)) {
@@ -1147,14 +1145,16 @@ void dump_verilog_routing_switch_box_subckt(t_sram_orgz_info* cur_sram_orgz_info
     for (itrack = 0; itrack < cur_sb_info->chan_width[side]; itrack++) {
       switch (cur_sb_info->chan_rr_node_direction[side][itrack]) {
       case OUT_PORT:
-        fprintf(fp, "  output %s_%d__%d__out_%d_,\n",
-                convert_chan_type_to_string(cur_sb_info->chan_rr_node[side][itrack]->type), 
-                ix, iy, itrack); 
+        fprintf(fp, "  output %s,\n",
+                gen_verilog_routing_channel_one_pin_name(cur_sb_info->chan_rr_node[side][itrack], 
+                                                         ix, iy, itrack,
+                                                         cur_sb_info->chan_rr_node_direction[side][itrack])); 
         break;
       case IN_PORT:
-        fprintf(fp, "  input %s_%d__%d__in_%d_,\n",
-                convert_chan_type_to_string(cur_sb_info->chan_rr_node[side][itrack]->type), 
-                ix, iy, itrack); 
+        fprintf(fp, "  input %s,\n",
+                gen_verilog_routing_channel_one_pin_name(cur_sb_info->chan_rr_node[side][itrack], 
+                                                         ix, iy, itrack,
+                                                         cur_sb_info->chan_rr_node_direction[side][itrack])); 
         break;
       default:
         vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid direction of chany[%d][%d]_track[%d]!\n",

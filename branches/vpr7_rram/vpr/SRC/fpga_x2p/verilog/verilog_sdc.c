@@ -386,8 +386,8 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
         get_chan_rr_node_start_coordinate(&(LL_rr_node[inode]), &x_start, &y_start);
         /* output pin name */
         fprintf(fp, "%s",
-                gen_verilog_routing_channel_one_pin_name( &(LL_rr_node[inode]),
-                                                           x_start, y_start, track_idx, 
+                gen_verilog_routing_channel_one_pin_name(  wire_rr_node,
+                                                           x_end, y_end, track_idx, 
                                                            IN_PORT));
         fprintf(fp, " -unconstrained -point_to_point\n"); 
         path_cnt++;

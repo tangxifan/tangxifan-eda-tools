@@ -475,12 +475,10 @@ void dump_verilog_defined_one_channel(FILE* fp,
   }
 
   /* Call the define sub-circuit */
-  fprintf(fp, "%s_%d__%d_ ", 
-          convert_chan_type_to_string(chan_type),
-          x, y);
-  fprintf(fp, "%s_%d__%d__0_ ", 
-          convert_chan_type_to_string(chan_type),
-          x, y);
+  fprintf(fp, "%s ", 
+          gen_verilog_one_routing_channel_module_name(chan_type, x, y));
+  fprintf(fp, "%s ", 
+          gen_verilog_one_routing_channel_instance_name(chan_type, x, y));
   fprintf(fp, "(");
   fprintf(fp, "\n");
   /* dump global ports */
@@ -497,15 +495,15 @@ void dump_verilog_defined_one_channel(FILE* fp,
   for (itrack = 0; itrack < chan_width; itrack++) {
     switch (chan_rr_nodes[itrack]->direction) {
     case INC_DIRECTION:
-      fprintf(fp, "%s_%d__%d__out_%d_, ", 
-              convert_chan_type_to_string(chan_type),
-              x, y, itrack);
+      fprintf(fp, "%s, ",
+              gen_verilog_routing_channel_one_pin_name(chan_rr_nodes[itrack],
+                                                       x, y, itrack, OUT_PORT));
       fprintf(fp, "\n");
       break;
     case DEC_DIRECTION:
-      fprintf(fp, "%s_%d__%d__in_%d_, ", 
-              convert_chan_type_to_string(chan_type),
-              x, y, itrack);
+      fprintf(fp, "%s, ",
+              gen_verilog_routing_channel_one_pin_name(chan_rr_nodes[itrack],
+                                                       x, y, itrack, IN_PORT));
       fprintf(fp, "\n");
       break;
     default:
@@ -525,15 +523,15 @@ void dump_verilog_defined_one_channel(FILE* fp,
   for (itrack = 0; itrack < chan_width; itrack++) {
     switch (chan_rr_nodes[itrack]->direction) {
     case INC_DIRECTION:
-      fprintf(fp, "%s_%d__%d__in_%d_, ", 
-              convert_chan_type_to_string(chan_type),
-              x, y, itrack);
+      fprintf(fp, "%s, ",
+              gen_verilog_routing_channel_one_pin_name(chan_rr_nodes[itrack],
+                                                       x, y, itrack, IN_PORT));
       fprintf(fp, "\n");
       break;
     case DEC_DIRECTION:
-      fprintf(fp, "%s_%d__%d__out_%d_, ", 
-              convert_chan_type_to_string(chan_type),
-              x, y, itrack);
+      fprintf(fp, "%s, ",
+              gen_verilog_routing_channel_one_pin_name(chan_rr_nodes[itrack],
+                                                       x, y, itrack, OUT_PORT));
       fprintf(fp, "\n");
       break;
     default:
