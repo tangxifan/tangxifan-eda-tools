@@ -1249,6 +1249,59 @@ void rec_add_rr_graph_wired_lut_rr_edges(INP t_pb* cur_op_pb,
   return;
 }
 
+/* To avoid a messy multi-source routing that may never converge,
+ * For each multiple-source net, I add a new source as the unique source in routing purpose 
+ * As so, edges have to be added to the decendents of sources
+ */
+int add_virtual_sources_to_rr_graph_multi_sources(t_rr_graph* local_rr_graph) {
+  int inet, isrc, iedge, to_node;
+  int unique_src_node;
+  int cnt = 0;
+
+  for (inet = 0; inet < local_rr_graph->num_nets; inet++) {
+    /* Bypass single-source nets */
+    if (1 == local_rr_graph->net_num_sources[inet]) {
+      continue;
+    }
+    /* Add a new source */
+    local_rr_graph->num_rr_nodes++;
+    local_rr_graph->rr_node = (t_rr_node*)my_realloc(local_rr_graph->rr_node,  
+                                                     local_rr_graph->num_rr_nodes * sizeof(t_rr_node));
+    /* Configure the unique source node */
+    unique_src_node = local_rr_graph->num_rr_nodes - 1;
+    local_rr_graph->rr_node[unique_src_node].type = SOURCE;
+    local_rr_graph->rr_node[unique_src_node].capacity = 1;
+    local_rr_graph->rr_node[unique_src_node].fan_in = 0;
+    local_rr_graph->rr_node[unique_src_node].num_drive_rr_nodes = 0;
+    local_rr_graph->rr_node[unique_src_node].drive_rr_nodes = NULL;
+    local_rr_graph->rr_node[unique_src_node].num_edges = local_rr_graph->net_num_sources[inet];
+    local_rr_graph->rr_node[unique_src_node].edges = (int*) my_calloc(local_rr_graph->rr_node[unique_src_node].num_edges, sizeof(int));
+    local_rr_graph->rr_node[unique_src_node].switches = (short*) my_calloc(local_rr_graph->rr_node[unique_src_node].num_edges, sizeof(short));
+    /* Configure edges */   
+    for (isrc = 0; isrc < local_rr_graph->net_num_sources[inet]; isrc++) { 
+      /* Connect edges to sources */
+      local_rr_graph->rr_node[unique_src_node].edges[isrc] = local_rr_graph->net_rr_sources[inet][isrc]; 
+      local_rr_graph->rr_node[unique_src_node].switches[isrc] = DEFAULT_SWITCH_ID; 
+      /* Configure the original sources */
+      to_node = local_rr_graph->net_rr_sources[inet][isrc];
+    }
+    /* Replace the sources with the new source node */
+    local_rr_graph->net_num_sources[inet] = 1;
+    local_rr_graph->net_rr_sources[inet] = (int*)my_realloc(local_rr_graph->net_rr_sources[inet],
+                                                            local_rr_graph->net_num_sources[inet] * sizeof(int));  
+    local_rr_graph->net_rr_sources[inet][0] = unique_src_node;
+    /* Replace the sources in the net_rr_terminals */
+    local_rr_graph->net_rr_terminals[inet][0] = unique_src_node;
+    /* Update counter */
+    cnt++;
+  }
+
+  vpr_printf(TIO_MESSAGE_INFO, 
+             "Added %d virtual source nodes for routing.\n",
+             cnt);
+
+  return cnt;
+}
 
 /* Allocate and load a local rr_graph for a pb
  * 1. Allocate the rr_graph nodes and configure with pb_graph_node connectivity
@@ -1290,6 +1343,8 @@ void alloc_and_load_rr_graph_for_phy_pb(INP t_pb* cur_op_pb,
    * 2. rr_graph in the cur_op_pb
    */ 
   alloc_and_load_phy_pb_rr_graph_net_rr_terminals(cur_op_pb, cur_phy_pb->rr_graph); 
+
+  add_virtual_sources_to_rr_graph_multi_sources(cur_phy_pb->rr_graph);
 
   return;
 }

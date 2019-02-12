@@ -426,8 +426,10 @@ t_heap * get_rr_graph_heap_head(t_rr_graph* local_rr_graph) {
 
   do {
     if (local_rr_graph->heap_tail == 1) { /* Empty heap. */
+      /*
       vpr_printf(TIO_MESSAGE_WARNING, "Empty heap occurred in get_heap_head.\n");
       vpr_printf(TIO_MESSAGE_WARNING, "Some blocks are impossible to connect in this architecture.\n");
+      */
       return (NULL);
     }
 

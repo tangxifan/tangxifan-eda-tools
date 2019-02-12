@@ -450,6 +450,7 @@ boolean breadth_first_route_one_multi_source_net_pb_rr_graph(t_rr_graph* local_r
     printf("\nstart_sink=%d\n", start_isink);
 #endif
     /* Reset the target_flag for sinks to be routed */
+    start_isink = 0;
     for (isink = start_isink; isink < local_rr_graph->net_num_sinks[inet]; isink++) {
       inode = local_rr_graph->net_rr_sinks[inet][isink];
       if (OPEN != inode) {
@@ -596,7 +597,7 @@ boolean feasible_routing_rr_graph(t_rr_graph* local_rr_graph,
   for (inode = 0; inode < local_rr_graph->num_rr_nodes; inode++) {
     if (local_rr_graph->rr_node[inode].occ > local_rr_graph->rr_node[inode].capacity) {
       if (TRUE == verbose) {
-      /*
+        /*
         vpr_printf(TIO_MESSAGE_ERROR, 
                    "(File:%s,[LINE%d]) rr_node[%d] (pin:%s/%s[%d]) occupancy(%d) exceeds its capacity(%d)!\n",
                    __FILE__, __LINE__, 
@@ -606,7 +607,7 @@ boolean feasible_routing_rr_graph(t_rr_graph* local_rr_graph,
                    local_rr_graph->rr_node[inode].pb_graph_pin->pin_number, 
                    local_rr_graph->rr_node[inode].occ, 
                    local_rr_graph->rr_node[inode].capacity);
-      */
+        */
       }
       feasible = FALSE;
     }

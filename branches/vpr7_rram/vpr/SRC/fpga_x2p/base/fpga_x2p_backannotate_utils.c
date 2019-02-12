@@ -2866,7 +2866,9 @@ void alloc_and_load_phy_pb_for_mapped_block(int num_mapped_blocks, t_block* mapp
     }
     /* Backannotate routing results to physical pb_rr_graph */
     backannotate_rr_graph_routing_results_to_net_name(top_phy_pb->rr_graph);
-    vpr_printf(TIO_MESSAGE_INFO, "Backannotate routing results successfully for %d physical pbs!\r", iblk);
+    vpr_printf(TIO_MESSAGE_INFO, 
+               "Backannotate routing results successfully for physical pb (%s)!\n",
+               mapped_block[iblk].pb->name);
     /* Allocate and load child_pb graphs */
     alloc_and_load_phy_pb_children_for_one_mapped_block(mapped_block[iblk].pb, top_phy_pb);
     /* Give top_phy_pb to grid */
