@@ -210,6 +210,60 @@ t_sb* get_chan_rr_node_ending_sb(t_rr_node* src_rr_node,
   get_chan_rr_node_start_coordinate(src_rr_node, &x_start, &y_start);
   get_chan_rr_node_start_coordinate(end_rr_node, &x_end, &y_end);
 
+  /* Case 1:                       
+   *                     end_rr_node(chany[x][y+1]) 
+   *                        /|\ 
+   *                         |  
+   *                     ---------
+   *                    |         | 
+   * src_rr_node ------>| next_sb |-------> end_rr_node
+   * (chanx[x][y])      |  [x][y] |        (chanx[x+1][y]
+   *                     ---------
+   *                         |
+   *                        \|/
+   *                     end_rr_node(chany[x][y])
+   */
+  /* Case 2                            
+   *                     end_rr_node(chany[x][y+1]) 
+   *                        /|\ 
+   *                         |  
+   *                     ---------
+   *                    |         | 
+   * end_rr_node <------| next_sb |<-------- src_rr_node
+   * (chanx[x][y])      |  [x][y] |        (chanx[x+1][y]
+   *                     ---------
+   *                         |
+   *                        \|/
+   *                     end_rr_node(chany[x][y])
+   */
+  /* Case 3                            
+   *                     end_rr_node(chany[x][y+1]) 
+   *                        /|\ 
+   *                         |  
+   *                     ---------
+   *                    |         | 
+   * end_rr_node <------| next_sb |-------> src_rr_node
+   * (chanx[x][y])      |  [x][y] |        (chanx[x+1][y]
+   *                     ---------
+   *                        /|\
+   *                         |
+   *                     src_rr_node(chany[x][y])
+   */
+  /* Case 4                            
+   *                     src_rr_node(chany[x][y+1]) 
+   *                         | 
+   *                        \|/  
+   *                     ---------
+   *                    |         | 
+   * end_rr_node <------| next_sb |--------> end_rr_node
+   * (chanx[x][y])      |  [x][y] |        (chanx[x+1][y]
+   *                     ---------
+   *                         |
+   *                        \|/
+   *                     end_rr_node(chany[x][y])
+   */
+
+ 
   /* Try the xlow, ylow of ending rr_node */
   switch (src_rr_node->type) {
   case CHANX:
@@ -288,12 +342,13 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
                                                      int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                                      t_ivec*** LL_rr_node_indices) {
   int iedge, jedge, inode;
-  int track_idx;
+  int track_idx, side;
   int path_cnt = 0;
   t_sb* next_sb = NULL; 
   t_cb* next_cb = NULL; 
   int x_start, y_start;
   int x_end, y_end;
+  t_rr_type end_chan_rr_type;
 
   /* Check the file handler */
   if (NULL == fp) {
@@ -382,8 +437,13 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
         /* output instance name */
         fprintf(fp, "%s/",
                 gen_verilog_one_sb_instance_name(next_sb));
-        /* Find where the destination pin belongs to */
-        get_chan_rr_node_start_coordinate(&(LL_rr_node[inode]), &x_start, &y_start);
+        /* Find which side the ending pin locates, and determine the coordinate */
+        get_rr_node_side_and_index_in_sb_info(wire_rr_node, *next_sb,
+                                              IN_PORT, &side, &track_idx); 
+        get_chan_rr_node_coorindate_in_sb_info(*next_sb, side, 
+                                               &(end_chan_rr_type),
+                                               &x_end, &y_end);
+        assert (end_chan_rr_type == wire_rr_node->type); 
         /* output pin name */
         fprintf(fp, "%s",
                 gen_verilog_routing_channel_one_pin_name(  wire_rr_node,
