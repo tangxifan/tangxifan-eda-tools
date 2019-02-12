@@ -3028,4 +3028,3 @@ char* gen_verilog_one_sb_instance_name(t_sb* cur_sb_info) {
   return ret;
 }
 
-

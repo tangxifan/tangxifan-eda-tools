@@ -294,7 +294,7 @@ void dump_verilog_grid_side_pin_with_given_index(FILE* fp, t_rr_type pin_type,
     if (TRUE == dump_port_type) {
       fprintf(fp, "%s ", verilog_port_type);
     }
-    fprintf(fp, " grid_%d__%d__pin_%d__%d__%d_", x, y, height, side, pin_index);
+    fprintf(fp, "%s", gen_verilog_grid_one_pin_name(x, y, height, side, pin_index, TRUE));
     if (TRUE == dump_port_type) {
       fprintf(fp, ",\n");
     }
@@ -1165,6 +1165,7 @@ void dump_verilog_routing_switch_box_subckt(t_sram_orgz_info* cur_sram_orgz_info
     }
     /* Dump OPINs of adjacent CLBs */
     for (inode = 0; inode < cur_sb_info->num_opin_rr_nodes[side]; inode++) {
+      fprintf(fp, "  ");
       dump_verilog_grid_side_pin_with_given_index(fp, OPIN, /* This is an input of a SB */
                                                   cur_sb_info->opin_rr_node[side][inode]->ptc_num,
                                                   cur_sb_info->opin_rr_node_grid_side[side][inode],
@@ -1401,7 +1402,7 @@ void dump_verilog_connection_box_short_interc(t_sram_orgz_info* cur_sram_orgz_in
                                               FALSE); /* Do not specify the direction of this pin */
 
   /* End */
-  fprintf(fp, "\n");
+  fprintf(fp, ";\n");
 
   return;
 }

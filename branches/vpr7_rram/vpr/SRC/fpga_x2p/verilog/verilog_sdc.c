@@ -100,7 +100,7 @@ void dump_verilog_one_sb_routing_pin(FILE* fp,
     get_rr_node_side_and_index_in_sb_info(cur_rr_node, 
                                           *cur_sb_info, 
                                           IN_PORT, &side, &track_idx);
-    fprintf(fp, "%s ",
+    fprintf(fp, "%s",
             gen_verilog_routing_channel_one_pin_name(cur_rr_node,
                                                      cur_sb_info->x, cur_sb_info->y, track_idx, 
                                                      IN_PORT));
@@ -311,9 +311,6 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
     return; 
   }
 
-  /* Start printing report timing info  */
-  fprintf(fp, "L%d wire: \n", 
-          abs(wire_rr_node->xlow - wire_rr_node->xhigh + wire_rr_node->ylow - wire_rr_node->yhigh) + 1);
   /* Find the starting points */
   for (iedge = 0; iedge < wire_rr_node->num_drive_rr_nodes; iedge++) {
     /* Find the ending points*/
@@ -335,24 +332,26 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
         /* Driver could be OPIN or CHANX or CHANY,
           * and it must be in the cur_sb_info
           */
-        fprintf(fp, "Path %d: \n", path_cnt); 
-        fprintf(fp, "Starting pin name: "); 
+        /* Start printing report timing info  */
+        fprintf(fp, "# L%d wire, Path %d\n", 
+                abs(wire_rr_node->xlow - wire_rr_node->xhigh + wire_rr_node->ylow - wire_rr_node->yhigh) + 1,
+                path_cnt); 
+        fprintf(fp, "report_timing -from "); 
         /* output instance name */
         fprintf(fp, "%s/", 
                     gen_verilog_one_sb_instance_name(cur_sb_info)); 
         /* output pin name */
         dump_verilog_one_sb_routing_pin(fp, cur_sb_info, 
                                         wire_rr_node->drive_rr_nodes[iedge]);
-        fprintf(fp, "\n"); 
-   
-        fprintf(fp, "Ending pin name: "); 
+        fprintf(fp, " -to "); 
         /* output instance name */
         fprintf(fp, "%s/",
                 gen_verilog_one_cb_instance_name(next_cb));
         /* output pin name */
-        fprintf(fp, "%s\n",
+        fprintf(fp, "%s",
                 gen_verilog_routing_channel_one_midout_name( next_cb,
                                                              track_idx));
+        fprintf(fp, " -unconstrained -point_to_point\n"); 
         path_cnt++;
         break;
       case CHANX:
@@ -367,25 +366,27 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
         /* Driver could be OPIN or CHANX or CHANY,
           * and it must be in the cur_sb_info
           */
-        fprintf(fp, "Path %d: \n", path_cnt); 
-        fprintf(fp, "Starting pin name: "); 
+        /* Start printing report timing info  */
+        fprintf(fp, "# L%d wire, Path %d\n", 
+                abs(wire_rr_node->xlow - wire_rr_node->xhigh + wire_rr_node->ylow - wire_rr_node->yhigh) + 1,
+                path_cnt); 
+        fprintf(fp, "report_timing -from "); 
         /* output instance name */
         fprintf(fp, "%s/", 
                     gen_verilog_one_sb_instance_name(cur_sb_info)); 
         /* output pin name */
         dump_verilog_one_sb_routing_pin(fp, cur_sb_info, 
                                         wire_rr_node->drive_rr_nodes[iedge]);
-        fprintf(fp, "\n"); 
-
-        fprintf(fp, "Ending pin name: "); 
+        fprintf(fp, " -to "); 
         /* output instance name */
         fprintf(fp, "%s/",
                 gen_verilog_one_sb_instance_name(next_sb));
         /* output pin name */
-        fprintf(fp, "%s\n",
+        fprintf(fp, "%s",
                 gen_verilog_routing_channel_one_pin_name( &(LL_rr_node[inode]),
                                                            next_sb->x, next_sb->y, track_idx, 
                                                            IN_PORT));
+        fprintf(fp, " -unconstrained -point_to_point\n"); 
         path_cnt++;
         break;
       default:
