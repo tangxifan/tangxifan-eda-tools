@@ -356,6 +356,7 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
   t_cb* next_cb = NULL; 
   int x_end, y_end;
   t_rr_type end_chan_rr_type;
+  boolean sb_dumped = FALSE;
 
   /* Check the file handler */
   if (NULL == fp) {
@@ -376,10 +377,11 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
 
   /* Find the starting points */
   for (iedge = 0; iedge < wire_rr_node->num_drive_rr_nodes; iedge++) {
+    sb_dumped = FALSE;
     /* Find the ending points*/
     for (jedge = 0; jedge < wire_rr_node->num_edges; jedge++) {
       /* Find where the destination pin belongs to */
-      get_chan_rr_node_start_coordinate(wire_rr_node, &x_end, &y_end);
+      get_chan_rr_node_end_coordinate(wire_rr_node, &x_end, &y_end);
       /* Reciever could be IPIN or CHANX or CHANY */
       inode = wire_rr_node->edges[jedge];
       /* Find the SB/CB block that it belongs to */
@@ -426,6 +428,9 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
            && ((next_sb->x != x_end) || (next_sb->y != y_end))) {
           continue;
         }
+        if (TRUE == sb_dumped) {
+          continue;
+        }
         /* Driver could be OPIN or CHANX or CHANY,
           * and it must be in the cur_sb_info
           */
@@ -458,6 +463,8 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
                                                            IN_PORT));
         fprintf(fp, " -unconstrained -point_to_point\n"); 
         path_cnt++;
+        /* Set the flag */
+        sb_dumped = TRUE;
         break;
       default:
        vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid type of ending point rr_node!\n",

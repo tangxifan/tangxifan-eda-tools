@@ -14,13 +14,13 @@ set arch_xml_file = ARCH/ed_stdcell.xml
 #set arch_xml_file = ARCH/k6_N10_SC_tsmc40nm_chain_TT_yosys.xml 
 #set arch_xml_file = ARCH/k6_N10_sram_chain_SC_gf130_2x2.xml
 #set verilog_reference = ${PWD}/Circuits/alu4_K6_N10_ace.v
-set blif_file = Circuits/spla_K6_N10_ace.blif 
-set act_file = Circuits/spla_K6_N10_ace.act 
+#set blif_file = Circuits/shiftReg.blif 
+#set act_file = Circuits/shiftReg.act 
 #set blif_file = Circuits/simple_gates_prevpr.blif 
 #set act_file = Circuits/simple_gates_prevpr.act 
 set verilog_reference = ${PWD}/Circuits/s298_prevpr.v
-#set blif_file = Circuits/s298_prevpr.blif 
-#set act_file = Circuits/s298_prevpr.act 
+set blif_file = Circuits/s298_prevpr.blif 
+set act_file = Circuits/s298_prevpr.act 
 set vpr_route_chan_width = 200
 
 # Step A: Make sure a clean start 
