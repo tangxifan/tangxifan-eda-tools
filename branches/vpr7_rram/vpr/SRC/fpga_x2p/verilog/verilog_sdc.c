@@ -292,6 +292,7 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
   int path_cnt = 0;
   t_sb* next_sb = NULL; 
   t_cb* next_cb = NULL; 
+  int x_start, y_start;
   int x_end, y_end;
 
   /* Check the file handler */
@@ -381,10 +382,12 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
         /* output instance name */
         fprintf(fp, "%s/",
                 gen_verilog_one_sb_instance_name(next_sb));
+        /* Find where the destination pin belongs to */
+        get_chan_rr_node_start_coordinate(&(LL_rr_node[inode]), &x_start, &y_start);
         /* output pin name */
         fprintf(fp, "%s",
                 gen_verilog_routing_channel_one_pin_name( &(LL_rr_node[inode]),
-                                                           next_sb->x, next_sb->y, track_idx, 
+                                                           x_start, y_start, track_idx, 
                                                            IN_PORT));
         fprintf(fp, " -unconstrained -point_to_point\n"); 
         path_cnt++;

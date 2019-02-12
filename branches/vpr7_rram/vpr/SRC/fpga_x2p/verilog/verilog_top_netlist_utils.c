@@ -817,12 +817,11 @@ void dump_verilog_defined_one_switch_box(t_sram_orgz_info* cur_sram_orgz_info,
 
     fprintf(fp, "//----- %s side channel ports-----\n", convert_side_index_to_string(side));
     for (itrack = 0; itrack < cur_sb_info.chan_width[side]; itrack++) {
-      fprintf(fp, "%s,",
+      fprintf(fp, "%s,\n",
               gen_verilog_routing_channel_one_pin_name(cur_sb_info.chan_rr_node[side][itrack],
                                                        ix, iy, itrack, 
                                                        cur_sb_info.chan_rr_node_direction[side][itrack]));
     }
-    fprintf(fp, "\n");
     fprintf(fp, "//----- %s side inputs: CLB output pins -----\n", convert_side_index_to_string(side));
     /* Dump OPINs of adjacent CLBs */
     for (inode = 0; inode < cur_sb_info.num_opin_rr_nodes[side]; inode++) {
@@ -832,7 +831,7 @@ void dump_verilog_defined_one_switch_box(t_sram_orgz_info* cur_sram_orgz_info,
                                                   cur_sb_info.opin_rr_node[side][inode]->xlow,
                                                   cur_sb_info.opin_rr_node[side][inode]->ylow,
                                                   FALSE); /* Do not specify the direction of port */ 
-      fprintf(fp, ",");
+      fprintf(fp, ", ");
     } 
     fprintf(fp, "\n");
   }

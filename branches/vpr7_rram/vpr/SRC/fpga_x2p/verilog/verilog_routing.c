@@ -1135,7 +1135,6 @@ void dump_verilog_routing_switch_box_subckt(t_sram_orgz_info* cur_sram_orgz_info
   fprintf(fp, "//----- Verilog Module of Switch Box[%d][%d] -----\n", cur_sb_info->x, cur_sb_info->y);
   /* Print the definition of subckt*/
   fprintf(fp, "module %s ( \n", gen_verilog_one_sb_module_name(cur_sb_info));
-  fprintf(fp, "\n");
   /* dump global ports */
   if (0 < dump_verilog_global_ports(fp, global_ports_head, TRUE)) {
     fprintf(fp, ",\n");
