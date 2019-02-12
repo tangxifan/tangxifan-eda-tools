@@ -71,6 +71,8 @@ void dump_verilog_one_sb_routing_pin(FILE* fp,
                                      t_sb* cur_sb_info,
                                      t_rr_node* cur_rr_node) {
   int track_idx, side;
+  int x_start, y_start;
+  t_rr_type chan_rr_type;
 
   /* Check the file handler */
   if (NULL == fp) {
@@ -96,13 +98,19 @@ void dump_verilog_one_sb_routing_pin(FILE* fp,
     break; 
   case CHANX:
   case CHANY:
+    /* Get the coordinate of chanx or chany*/
     /* Find the coordinate of the cur_rr_node */  
     get_rr_node_side_and_index_in_sb_info(cur_rr_node, 
-                                          *cur_sb_info, 
-                                          IN_PORT, &side, &track_idx);
+                                          *cur_sb_info,
+                                          IN_PORT, &side, &track_idx); 
+    get_chan_rr_node_coorindate_in_sb_info(*cur_sb_info, side, 
+                                           &(chan_rr_type),
+                                           &x_start, &y_start);
+    assert (chan_rr_type == cur_rr_node->type); 
+    /* Print the pin of the cur_rr_node */  
     fprintf(fp, "%s",
             gen_verilog_routing_channel_one_pin_name(cur_rr_node,
-                                                     cur_sb_info->x, cur_sb_info->y, track_idx, 
+                                                     x_start, y_start, track_idx, 
                                                      IN_PORT));
     break;
   default:
@@ -346,7 +354,6 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
   int path_cnt = 0;
   t_sb* next_sb = NULL; 
   t_cb* next_cb = NULL; 
-  int x_start, y_start;
   int x_end, y_end;
   t_rr_type end_chan_rr_type;
 
