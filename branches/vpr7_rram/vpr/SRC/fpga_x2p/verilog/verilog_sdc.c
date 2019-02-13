@@ -44,6 +44,7 @@ struct s_sdc_trpt_opts {
   boolean longest_path_only;
   boolean report_cb_timing;
   boolean report_sb_timing;
+  boolean print_thru_pins;
 };
 
 /***** Subroutine Functions *****/
@@ -63,6 +64,42 @@ void dump_verilog_sdc_file_header(FILE* fp,
   fprintf(fp,"#############################################\n");
   fprintf(fp,"\n");
 
+  return;
+}
+
+void dump_verilog_one_sb_chan_pin(FILE* fp, 
+                                  t_sb* cur_sb_info,
+                                  t_rr_node* cur_rr_node,
+                                  enum PORTS port_type) {
+  int track_idx, side;
+  int x_start, y_start;
+  t_rr_type chan_rr_type;
+
+  /* Check the file handler */
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  /* Check */
+  assert ((CHANX == cur_rr_node->type)
+        ||(CHANY == cur_rr_node->type));
+  /* Get the coordinate of chanx or chany*/
+  /* Find the coordinate of the cur_rr_node */  
+  get_rr_node_side_and_index_in_sb_info(cur_rr_node, 
+                                        *cur_sb_info,
+                                        port_type, &side, &track_idx); 
+  get_chan_rr_node_coorindate_in_sb_info(*cur_sb_info, side, 
+                                         &(chan_rr_type),
+                                         &x_start, &y_start);
+  assert (chan_rr_type == cur_rr_node->type); 
+  /* Print the pin of the cur_rr_node */  
+  fprintf(fp, "%s",
+          gen_verilog_routing_channel_one_pin_name(cur_rr_node,
+                                                   x_start, y_start, track_idx, 
+                                                   port_type));
   return;
 }
 
@@ -98,20 +135,7 @@ void dump_verilog_one_sb_routing_pin(FILE* fp,
     break; 
   case CHANX:
   case CHANY:
-    /* Get the coordinate of chanx or chany*/
-    /* Find the coordinate of the cur_rr_node */  
-    get_rr_node_side_and_index_in_sb_info(cur_rr_node, 
-                                          *cur_sb_info,
-                                          IN_PORT, &side, &track_idx); 
-    get_chan_rr_node_coorindate_in_sb_info(*cur_sb_info, side, 
-                                           &(chan_rr_type),
-                                           &x_start, &y_start);
-    assert (chan_rr_type == cur_rr_node->type); 
-    /* Print the pin of the cur_rr_node */  
-    fprintf(fp, "%s",
-            gen_verilog_routing_channel_one_pin_name(cur_rr_node,
-                                                     x_start, y_start, track_idx, 
-                                                     IN_PORT));
+    dump_verilog_one_sb_chan_pin(fp, cur_sb_info, cur_rr_node, IN_PORT); 
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid type of ending point rr_node!\n",
@@ -336,6 +360,218 @@ t_sb* get_chan_rr_node_ending_sb(t_rr_node* src_rr_node,
   return next_sb;
 }
 
+/* Print the pins of SBs that a routing wire will go through 
+ * from the src_rr_node to the des_rr_node 
+ */
+void dump_verilog_sb_through_routing_pins(FILE* fp,
+                                          t_sb* src_sb_info,
+                                          t_rr_node* src_rr_node, 
+                                          t_rr_node* des_rr_node) {
+  int ix, iy;
+  int cur_sb_x, cur_sb_y;
+  int end_sb_x, end_sb_y;
+  t_cb* next_cb;
+  t_sb* next_sb;
+
+  /* Check the file handler */
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  /* Check */
+  assert ((INC_DIRECTION == src_rr_node->direction)
+        ||(DEC_DIRECTION == src_rr_node->direction));
+  assert ((CHANX == src_rr_node->type)
+        ||(CHANY == src_rr_node->type));
+
+  /* Switch depends on the type of des_rr_node  */
+  switch(des_rr_node->type) {
+  /* Range of SBs that on the path                        
+   *                             ---------
+   *                            |         |        
+   *                            |  des_sb |
+   *                            | [x][y]  |        
+   *                             ---------
+   *                                /|\ 
+   *                                 |  
+   *                             ---------
+   *                            |         |        
+   *                            | thru_cb |
+   *                            |         |        
+   *                             ---------
+   *                                /|\ 
+   *                                 |  
+   *  --------      -------      ---------      -------      --------
+   * |        |    |       |    |         |    |       |    |        |
+   * | des_sb |<---|thru_cb|<---| src_sb  |--->|thru_cb|--->| des_sb |
+   * |[x-1][y]|    | [x][y]|    |         |    | [x][y]|    |[x][y]  |
+   *  --------      -------      ---------      -------      --------
+   *                                 |
+   *                                \|/
+   *                             ---------
+   *                            |         |        
+   *                            | thru_cb |
+   *                            |         |        
+   *                             ---------
+   *                                 |
+   *                                \|/
+   *                             ---------
+   *                            |         |        
+   *                            |  des_sb |
+   *                            | [x][y-1]|        
+   *                             ---------
+   */
+  case IPIN: 
+    /* Get the coordinate of ending CB */
+    next_cb = get_chan_rr_node_ending_cb(src_rr_node, des_rr_node);
+    assert(next_cb->type == src_rr_node->type);
+    /* 4 cases: */
+    if ((INC_DIRECTION == src_rr_node->direction) 
+       &&(CHANX == src_rr_node->type)) {
+      end_sb_x = next_cb->x; 
+      end_sb_y = next_cb->y;
+    } else if ((INC_DIRECTION == src_rr_node->direction) 
+       &&(CHANY == src_rr_node->type)) {
+      end_sb_x = next_cb->x; 
+      end_sb_y = next_cb->y;
+    } else if ((DEC_DIRECTION == src_rr_node->direction) 
+       &&(CHANX == src_rr_node->type)) {
+      end_sb_x = next_cb->x - 1; 
+      end_sb_y = next_cb->y;
+    } else if ((DEC_DIRECTION == src_rr_node->direction) 
+       &&(CHANY == src_rr_node->type)) {
+      end_sb_x = next_cb->x; 
+      end_sb_y = next_cb->y - 1;
+    }
+    break;
+  /* Range of SBs that on the path                        
+   *                             ---------
+   *                            |         |        
+   *                            |  des_sb |
+   *                            | [x][y+1]|        
+   *                             ---------
+   *                                /|\ 
+   *                                 |  
+   *                             ---------
+   *                            |         |        
+   *                            | thru_sb |
+   *                            |         |        
+   *                             ---------
+   *                                /|\ 
+   *                                 |  
+   *  --------      -------      ---------      -------      --------
+   * |        |    |       |    |         |    |       |    |        |
+   * | des_sb |<---|thru_sb|<---| src_sb  |--->|thru_sb|--->| des_sb |
+   * |[x-1][y]|    | [x][y]|    |         |    | [x][y]|    |[x+1][y]|
+   *  --------      -------      ---------      -------      --------
+   *                                 |
+   *                                \|/
+   *                             ---------
+   *                            |         |        
+   *                            | thru_sb |
+   *                            |         |        
+   *                             ---------
+   *                                 |
+   *                                \|/
+   *                             ---------
+   *                            |         |        
+   *                            |  des_sb |
+   *                            | [x][y-1]|        
+   *                             ---------
+   */
+  case CHANX:
+  case CHANY:
+    /* Get the coordinate of ending CB */
+    next_sb = get_chan_rr_node_ending_sb(src_rr_node, des_rr_node);
+    end_sb_x = next_sb->x; 
+    end_sb_y = next_sb->y;
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid type of rr_node!\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  /* Get the base coordinate of src_sb */
+  cur_sb_x = src_sb_info->x;
+  cur_sb_y = src_sb_info->y;
+  /* 4 cases: */
+  if ((INC_DIRECTION == src_rr_node->direction) 
+     &&(CHANX == src_rr_node->type)) {
+    /* Follow the graph above, go through X channel */
+    for (ix = src_sb_info->x + 1; ix < end_sb_x; ix++) {
+      /* Print an IN_PORT*/ 
+      fprintf(fp, " ");
+      /* output instance name */
+      fprintf(fp, "%s/", 
+              gen_verilog_one_sb_instance_name(&sb_info[ix][cur_sb_y])); 
+      dump_verilog_one_sb_chan_pin(fp, &(sb_info[ix][cur_sb_y]), src_rr_node, IN_PORT); 
+      /* Print an OUT_PORT*/ 
+      fprintf(fp, " ");
+      /* output instance name */
+      fprintf(fp, "%s/", 
+              gen_verilog_one_sb_instance_name(&sb_info[ix][cur_sb_y])); 
+      dump_verilog_one_sb_chan_pin(fp, &(sb_info[ix][cur_sb_y]), src_rr_node, OUT_PORT); 
+    }
+  } else if ((INC_DIRECTION == src_rr_node->direction) 
+     &&(CHANY == src_rr_node->type)) {
+    /* Follow the graph above, go through Y channel */
+    for (iy = src_sb_info->y + 1; iy < end_sb_y; iy++) {
+      /* Print an IN_PORT*/ 
+      fprintf(fp, " ");
+      /* output instance name */
+      fprintf(fp, "%s/", 
+              gen_verilog_one_sb_instance_name(&sb_info[cur_sb_x][iy])); 
+      dump_verilog_one_sb_chan_pin(fp, &(sb_info[cur_sb_x][iy]), src_rr_node, IN_PORT); 
+      /* Print an OUT_PORT*/ 
+      fprintf(fp, " ");
+      /* output instance name */
+      fprintf(fp, "%s/", 
+              gen_verilog_one_sb_instance_name(&sb_info[cur_sb_x][iy])); 
+      dump_verilog_one_sb_chan_pin(fp, &(sb_info[cur_sb_x][iy]), src_rr_node, OUT_PORT); 
+    }
+  } else if ((DEC_DIRECTION == src_rr_node->direction) 
+     &&(CHANX == src_rr_node->type)) {
+    /* Follow the graph above, go through X channel */
+    for (ix = src_sb_info->x - 1; ix > end_sb_x; ix--) {
+      /* Print an IN_PORT*/ 
+      fprintf(fp, " ");
+      /* output instance name */
+      fprintf(fp, "%s/", 
+              gen_verilog_one_sb_instance_name(&sb_info[ix][cur_sb_y])); 
+      dump_verilog_one_sb_chan_pin(fp, &(sb_info[ix][cur_sb_y]), src_rr_node, IN_PORT); 
+      /* Print an OUT_PORT*/ 
+      fprintf(fp, " ");
+      /* output instance name */
+      fprintf(fp, "%s/", 
+              gen_verilog_one_sb_instance_name(&sb_info[ix][cur_sb_y])); 
+      dump_verilog_one_sb_chan_pin(fp, &(sb_info[ix][cur_sb_y]), src_rr_node, OUT_PORT); 
+    }
+  } else if ((DEC_DIRECTION == src_rr_node->direction) 
+     &&(CHANY == src_rr_node->type)) {
+    /* Follow the graph above, go through Y channel */
+    for (iy = src_sb_info->y - 1; iy > end_sb_y; iy--) {
+      /* Print an IN_PORT*/ 
+      fprintf(fp, " ");
+      /* output instance name */
+      fprintf(fp, "%s/", 
+              gen_verilog_one_sb_instance_name(&sb_info[cur_sb_x][iy])); 
+      dump_verilog_one_sb_chan_pin(fp, &(sb_info[cur_sb_x][iy]), src_rr_node, IN_PORT); 
+      /* Print an OUT_PORT*/ 
+      fprintf(fp, " ");
+      /* output instance name */
+      fprintf(fp, "%s/", 
+              gen_verilog_one_sb_instance_name(&sb_info[cur_sb_x][iy])); 
+      dump_verilog_one_sb_chan_pin(fp, &(sb_info[cur_sb_x][iy]), src_rr_node, OUT_PORT); 
+    }
+  }
+
+  return;
+}
+
 /* Report timing for a routing wire,
  * Support uni-directional routing architecture
  * Each routing wire start from an OPIN 
@@ -416,6 +652,11 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
         fprintf(fp, "%s",
                 gen_verilog_routing_channel_one_midout_name( next_cb,
                                                              track_idx));
+        /* Print through pins */
+        if (TRUE == sdc_opts.print_thru_pins) { 
+          fprintf(fp, " -through_pins "); 
+          dump_verilog_sb_through_routing_pins(fp, cur_sb_info, wire_rr_node, &(LL_rr_node[inode]));
+        }
         fprintf(fp, " -unconstrained -point_to_point\n"); 
         path_cnt++;
         break;
@@ -450,17 +691,14 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
         fprintf(fp, "%s/",
                 gen_verilog_one_sb_instance_name(next_sb));
         /* Find which side the ending pin locates, and determine the coordinate */
-        get_rr_node_side_and_index_in_sb_info(wire_rr_node, *next_sb,
-                                              IN_PORT, &side, &track_idx); 
-        get_chan_rr_node_coorindate_in_sb_info(*next_sb, side, 
-                                               &(end_chan_rr_type),
-                                               &x_end, &y_end);
-        assert (end_chan_rr_type == wire_rr_node->type); 
-        /* output pin name */
-        fprintf(fp, "%s",
-                gen_verilog_routing_channel_one_pin_name(  wire_rr_node,
-                                                           x_end, y_end, track_idx, 
-                                                           IN_PORT));
+        dump_verilog_one_sb_routing_pin(fp, next_sb, 
+                                        wire_rr_node);
+        /* Print through pins */
+        if (TRUE == sdc_opts.print_thru_pins) { 
+          fprintf(fp, " -through_pins "); 
+          dump_verilog_sb_through_routing_pins(fp, cur_sb_info, 
+                                               wire_rr_node, &(LL_rr_node[inode]));
+        }
         fprintf(fp, " -unconstrained -point_to_point\n"); 
         path_cnt++;
         /* Set the flag */
@@ -615,8 +853,8 @@ void verilog_generate_routing_report_timing(t_sram_orgz_info* cur_sram_orgz_info
   sdc_trpt_opts.report_sb_timing = TRUE;
   sdc_trpt_opts.report_cb_timing = TRUE;
   sdc_trpt_opts.longest_path_only = TRUE;
+  sdc_trpt_opts.print_thru_pins = TRUE;
   sdc_trpt_opts.sdc_dir = my_strdup(sdc_dir);
- 
 
   /* Part 1. Output routing constraints for routing tracks */
 
