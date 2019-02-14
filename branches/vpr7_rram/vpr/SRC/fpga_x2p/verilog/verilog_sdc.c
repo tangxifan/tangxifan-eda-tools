@@ -160,7 +160,7 @@ void verilog_generate_sdc_break_loop_mux(FILE* fp,
               "set_disable_timing [get_pins -filter \"name =~ %s*\" ",
               output_ports[0]->prefix);
       fprintf(fp, 
-              "-of [get_cells -hier -filter \"ref_lib_cell_name == %s%s*\"]]\n",
+              "-of [get_cells -hier -filter \"ref_lib_cell_name =~ %s%s*\"]]\n",
               gen_verilog_one_mux_module_name(cur_spice_mux_model->spice_model, cur_spice_mux_model->size),
               SPC_cell_suffix);
     }

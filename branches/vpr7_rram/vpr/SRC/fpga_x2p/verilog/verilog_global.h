@@ -43,7 +43,9 @@ extern char* essentials_verilog_file_name;
 extern char* config_peripheral_verilog_file_name;
 extern char* user_defined_template_verilog_file_name;
 
+extern char* trpt_sb_file_name;
 extern char* trpt_routing_file_name;
+
 extern char* sdc_break_loop_file_name;
 extern char* sdc_clock_period_file_name;
 

@@ -52,6 +52,7 @@ char* config_peripheral_verilog_file_name = "config_peripherals.v";
 char* user_defined_template_verilog_file_name = "user_defined_templates.v";
 
 /* File names for Report Timing */
+char* trpt_sb_file_name = "report_timing_sb.tcl";
 char* trpt_routing_file_name = "report_timing_routing.tcl";
 
 /* File names for SDC*/

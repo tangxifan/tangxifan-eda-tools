@@ -343,10 +343,10 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
   /* Output routing report_timing script :
    */
   if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_report_timing_tcl) {
-    verilog_generate_routing_report_timing(sram_verilog_orgz_info, tcl_dir_path,
-                                           Arch, &vpr_setup.RoutingArch,
-                                           num_rr_nodes, rr_node, rr_node_indices,
-                                           vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts);
+    verilog_generate_report_timing(sram_verilog_orgz_info, tcl_dir_path,
+                                   Arch, &vpr_setup.RoutingArch,
+                                   num_rr_nodes, rr_node, rr_node_indices,
+                                   vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts);
   }
 
   if ((TRUE == vpr_setup.FPGA_SPICE_Opts.BitstreamGenOpts.gen_bitstream)

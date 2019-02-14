@@ -46,6 +46,7 @@ struct s_trpt_opts {
   boolean report_pb_timing;
   boolean report_cb_timing;
   boolean report_sb_timing;
+  boolean report_routing_timing;
   boolean print_thru_pins;
 };
 
@@ -344,8 +345,10 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
         if (TRUE == sdc_opts.print_thru_pins) { 
           fprintf(fp, " -through_pins "); 
           dump_verilog_sb_through_routing_pins(fp, cur_sb_info, wire_rr_node, &(LL_rr_node[inode]));
+          fprintf(fp, " -point_to_point\n"); 
+        } else {
+          fprintf(fp, " -unconstrained\n"); 
         }
-        fprintf(fp, " -unconstrained -point_to_point\n"); 
         path_cnt++;
         break;
       case CHANX:
@@ -386,8 +389,10 @@ void verilog_generate_one_routing_wire_report_timing(FILE* fp,
           fprintf(fp, " -through_pins "); 
           dump_verilog_sb_through_routing_pins(fp, cur_sb_info, 
                                                wire_rr_node, &(LL_rr_node[inode]));
+          fprintf(fp, " -point_to_point\n"); 
+        } else {
+          fprintf(fp, " -unconstrained\n"); 
         }
-        fprintf(fp, " -unconstrained -point_to_point\n"); 
         path_cnt++;
         /* Set the flag */
         sb_dumped = TRUE;
@@ -467,7 +472,7 @@ void verilog_generate_sb_report_timing(t_sram_orgz_info* cur_sram_orgz_info,
   int L_max = OPEN;
 
   /* Create the file handler */
-  sdc_fname = my_strcat(format_dir_path(sdc_opts.sdc_dir), trpt_routing_file_name);
+  sdc_fname = my_strcat(format_dir_path(sdc_opts.sdc_dir), trpt_sb_file_name);
 
   /* Create a file*/
   fp = fopen(sdc_fname, "w");
@@ -527,20 +532,151 @@ void verilog_generate_sb_report_timing(t_sram_orgz_info* cur_sram_orgz_info,
   return;
 }
 
-/* Output a log file to guide routing report_timing */
+/* Report timing for a routing wire divided in segements,
+ * Support uni-directional routing architecture
+ * Each routing wire start from an OPIN 
+ * We check each fan-out to find all possible ending point:
+ * An ending point is supposed to be an OPIN or CHANX or CHANY
+ * We consider the farest ending point and report timing for each segements on the path
+ * We output TCL commands to sum up the segmental delay 
+ */
+void verilog_generate_one_routing_segmental_report_timing(FILE* fp, 
+                                                          t_trpt_opts sdc_opts,
+                                                          t_sb* cur_sb_info,
+                                                          t_rr_node* wire_rr_node,
+                                                          int LL_num_rr_nodes, t_rr_node* LL_rr_node,
+                                                          t_ivec*** LL_rr_node_indices) {
+  int iedge, jedge, inode;
+  int track_idx;
+  int path_cnt = 0;
+  t_sb* next_sb = NULL; 
+  t_cb* next_cb = NULL; 
+  int x_end, y_end;
+  boolean sb_dumped = FALSE;
+  int num_end_rr_nodes = 0;
+  t_rr_node** end_rr_node = NULL;
+
+  /* Check the file handler */
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  assert(  ( CHANX == wire_rr_node->type )
+        || ( CHANY == wire_rr_node->type ));
+  track_idx = wire_rr_node->ptc_num;
+ 
+  /* Find where the destination pin belongs to */
+  get_chan_rr_node_end_coordinate(wire_rr_node, &x_end, &y_end);
+
+  /* Find the farest ending points!*/
+  for (jedge = 0; jedge < wire_rr_node->num_edges; jedge++) {
+    /* Build a list of ending rr_node we care */
+  }
+
+  /* Find the starting points */
+  for (iedge = 0; iedge < wire_rr_node->num_drive_rr_nodes; iedge++) {
+    sb_dumped = FALSE;
+    /* Find the ending points*/
+    for (jedge = 0; jedge < wire_rr_node->num_edges; jedge++) {
+      /* Find where the destination pin belongs to */
+      /* Reciever could be IPIN or CHANX or CHANY */
+    }
+  }
+
+  return;
+}
+
 void verilog_generate_routing_report_timing(t_sram_orgz_info* cur_sram_orgz_info,
-                                            char* sdc_dir,
+                                            t_trpt_opts sdc_opts,
                                             t_arch arch,
                                             t_det_routing_arch* routing_arch,
                                             int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                             t_ivec*** LL_rr_node_indices,
                                             t_syn_verilog_opts fpga_verilog_opts) {
+  char* sdc_fname = NULL;
+  FILE* fp = NULL;
+  int ix, iy;
+  int side, itrack;
+  t_sb* cur_sb_info = NULL;
+
+  /* Create the file handler */
+  sdc_fname = my_strcat(format_dir_path(sdc_opts.sdc_dir), trpt_routing_file_name);
+
+  /* Create a file*/
+  fp = fopen(sdc_fname, "w");
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Failure in create SDC constraints %s",
+               __FILE__, __LINE__, sdc_fname); 
+    exit(1);
+  } 
+
+  /* Generate SDC header */
+  dump_verilog_sdc_file_header(fp, "Report Timing for Switch blocks");
+
+  vpr_printf(TIO_MESSAGE_INFO,
+             "Generating TCL script to report timing for Switch Blocks: %s\n",
+             sdc_fname);
+
+  /* Check the file handler */
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  /* We start from a SB[x][y] */
+  for (ix = 0; ix < (nx + 1); ix++) {
+    for (iy = 0; iy < (ny + 1); iy++) {
+      cur_sb_info = &(sb_info[ix][iy]);
+      for (side = 0; side < cur_sb_info->num_sides; side++) {
+        for (itrack = 0; itrack < cur_sb_info->chan_width[side]; itrack++) {
+          assert((CHANX == cur_sb_info->chan_rr_node[side][itrack]->type)
+               ||(CHANY == cur_sb_info->chan_rr_node[side][itrack]->type));
+          /* We only care the output port and it should indicate a SB mux */
+          if ( (OUT_PORT != cur_sb_info->chan_rr_node_direction[side][itrack]) 
+             || (FALSE != check_drive_rr_node_imply_short(*cur_sb_info, cur_sb_info->chan_rr_node[side][itrack], side))) {
+            continue; 
+          }
+          /* Bypass if we have only 1 driving node */
+          if (1 == cur_sb_info->chan_rr_node[side][itrack]->num_drive_rr_nodes) {
+            continue; 
+          }
+          verilog_generate_one_routing_segmental_report_timing(fp, sdc_opts, cur_sb_info, 
+                                                               cur_sb_info->chan_rr_node[side][itrack], 
+                                                               LL_num_rr_nodes, LL_rr_node, 
+                                                               LL_rr_node_indices);
+        }
+      }
+    }
+  }
+
+  /* close file*/
+  fclose(fp);
+
+  return;
+}
+
+/* Output a log file to guide routing report_timing */
+void verilog_generate_report_timing(t_sram_orgz_info* cur_sram_orgz_info,
+                                    char* sdc_dir,
+                                    t_arch arch,
+                                    t_det_routing_arch* routing_arch,
+                                    int LL_num_rr_nodes, t_rr_node* LL_rr_node,
+                                    t_ivec*** LL_rr_node_indices,
+                                    t_syn_verilog_opts fpga_verilog_opts) {
   t_trpt_opts trpt_opts;
 
   /* Initialize */
   trpt_opts.report_pb_timing = TRUE;
   trpt_opts.report_sb_timing = TRUE;
   trpt_opts.report_cb_timing = TRUE;
+  trpt_opts.report_routing_timing = TRUE;
   trpt_opts.longest_path_only = TRUE;
   trpt_opts.print_thru_pins = TRUE;
   trpt_opts.sdc_dir = my_strdup(sdc_dir);
@@ -555,6 +691,14 @@ void verilog_generate_routing_report_timing(t_sram_orgz_info* cur_sram_orgz_info
                                       arch, routing_arch,
                                       LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices,
                                       fpga_verilog_opts);
+  }
+
+  /* Part 3. */
+  if (TRUE == trpt_opts.report_routing_timing) {
+    verilog_generate_routing_report_timing(cur_sram_orgz_info, trpt_opts,
+                                           arch, routing_arch,
+                                           LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices,
+                                           fpga_verilog_opts);
   }
 
   return;
