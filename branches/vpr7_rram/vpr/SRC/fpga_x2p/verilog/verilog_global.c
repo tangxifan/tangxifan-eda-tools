@@ -18,6 +18,7 @@ char* default_verilog_dir_name = "syn_verilogs/";
 char* default_lb_dir_name = "lb/";
 char* default_rr_dir_name = "routing/";
 char* default_submodule_dir_name = "sub_module/";
+char* default_tcl_dir_name = "tcl/";
 char* default_modelsim_dir_name = "msim_projects/";
 char* autocheck_testbench_postfix = "_autocheck";
 
@@ -50,7 +51,12 @@ char* essentials_verilog_file_name = "inv_buf_passgate.v";
 char* config_peripheral_verilog_file_name = "config_peripherals.v";
 char* user_defined_template_verilog_file_name = "user_defined_templates.v";
 
-char* routing_sdc_file_name = "routing.sdc";
+/* File names for Report Timing */
+char* trpt_routing_file_name = "report_timing_routing.tcl";
+
+/* File names for SDC*/
+char* sdc_break_loop_file_name = "break_loop.sdc";
+char* sdc_clock_period_file_name = "clock.sdc";
 
 char* verilog_mux_basis_posfix = "_basis";
 char* verilog_mux_special_basis_posfix = "_special_basis";

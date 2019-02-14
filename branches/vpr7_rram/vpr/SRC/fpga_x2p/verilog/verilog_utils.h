@@ -242,3 +242,6 @@ char* gen_verilog_one_routing_channel_module_name(t_rr_type chan_type,
 char* gen_verilog_one_routing_channel_instance_name(t_rr_type chan_type,
                                                     int x, int y);
 
+char* gen_verilog_one_mux_module_name(t_spice_model* spice_model, 
+                                      int mux_size);
+

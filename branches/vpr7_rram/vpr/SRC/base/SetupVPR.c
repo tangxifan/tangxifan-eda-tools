@@ -1083,6 +1083,8 @@ static void SetupSynVerilogOpts(t_options Options,
   syn_verilog_opts->modelsim_ini_path = NULL;
   syn_verilog_opts->print_user_defined_template = FALSE;
   syn_verilog_opts->print_report_timing_tcl = FALSE;
+  syn_verilog_opts->print_sdc_pnr = FALSE;
+  syn_verilog_opts->print_sdc_analysis = FALSE;
 
   /* Turn on Syn_verilog options */
   if (Options.Count[OT_FPGA_VERILOG_SYN]) {
@@ -1131,6 +1133,14 @@ static void SetupSynVerilogOpts(t_options Options,
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_REPORT_TIMING_TCL]) {
     syn_verilog_opts->print_report_timing_tcl = TRUE;
+  }
+
+  if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_SDC_PNR]) {
+    syn_verilog_opts->print_sdc_pnr = TRUE;
+  }
+
+  if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_SDC_ANALYSIS]) {
+    syn_verilog_opts->print_sdc_analysis = TRUE;
   }
 
   /* SynVerilog needs the input from spice modeling */

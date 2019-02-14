@@ -3060,3 +3060,17 @@ char* gen_verilog_one_routing_channel_instance_name(t_rr_type chan_type,
   return ret;
 }
 
+/* Generate the subckt name for a MUX module/submodule */
+char* gen_verilog_one_mux_module_name(t_spice_model* spice_model, 
+                                      int mux_size) {
+  char* mux_subckt_name = NULL;
+
+  mux_subckt_name = (char*)my_malloc(sizeof(char)*(strlen(spice_model->name) + 5 
+                                     + strlen(my_itoa(mux_size)) + 1)); 
+  sprintf(mux_subckt_name, "%s_size%d",
+          spice_model->name, mux_size);
+
+  return mux_subckt_name;
+}
+
+

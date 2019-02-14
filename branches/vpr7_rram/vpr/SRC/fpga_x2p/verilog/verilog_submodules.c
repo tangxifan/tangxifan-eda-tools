@@ -1530,7 +1530,8 @@ void dump_verilog_cmos_mux_submodule(FILE* fp,
   } else {
     fprintf(fp, "//----- CMOS MUX info: spice_model_name=%s, size=%d, structure: %s -----\n", 
             spice_model.name, mux_size, gen_str_spice_model_structure(spice_model.design_tech_info.mux_info->structure));
-    fprintf(fp, "module %s_size%d (", spice_model.name, mux_size);
+    fprintf(fp, "module %s (", 
+            gen_verilog_one_mux_module_name(&spice_model, mux_size));
     /* Print input ports*/
     fprintf(fp, "input wire [0:%d] %s,\n", mux_size - 1,  input_port[0]->prefix);
     /* Print output ports*/
@@ -1988,7 +1989,8 @@ void dump_verilog_rram_mux_submodule(FILE* fp,
   } else {
     fprintf(fp, "//----- RRAM MUX info: spice_model_name=%s, size=%d, structure: %s -----\n", 
             spice_model.name, mux_size, gen_str_spice_model_structure(spice_model.design_tech_info.mux_info->structure));
-    fprintf(fp, "module %s_size%d( \n", spice_model.name, mux_size);
+    fprintf(fp, "module %s ( \n",
+            gen_verilog_one_mux_module_name(&spice_model, mux_size));
   }
   /* Dump global ports */
   if  (0 < rec_dump_verilog_spice_model_global_ports(fp, &spice_model, TRUE, FALSE, FALSE)) {

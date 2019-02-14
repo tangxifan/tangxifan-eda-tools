@@ -10,6 +10,7 @@ extern char* default_verilog_dir_name;
 extern char* default_lb_dir_name;
 extern char* default_rr_dir_name;
 extern char* default_submodule_dir_name;
+extern char* default_tcl_dir_name;
 extern char* default_modelsim_dir_name;
 extern char* autocheck_testbench_postfix;
 
@@ -42,7 +43,9 @@ extern char* essentials_verilog_file_name;
 extern char* config_peripheral_verilog_file_name;
 extern char* user_defined_template_verilog_file_name;
 
-extern char* routing_sdc_file_name;
+extern char* trpt_routing_file_name;
+extern char* sdc_break_loop_file_name;
+extern char* sdc_clock_period_file_name;
 
 extern char* verilog_mux_basis_posfix;
 extern char* verilog_mux_special_basis_posfix;

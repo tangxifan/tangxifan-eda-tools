@@ -36,840 +36,272 @@
 #include "verilog_global.h"
 #include "verilog_utils.h"
 #include "verilog_routing.h"
+#include "verilog_tcl_utils.h"
 
 /* options for report timing */
-typedef struct s_sdc_trpt_opts t_sdc_trpt_opts;
-struct s_sdc_trpt_opts {
+typedef struct s_sdc_opts t_sdc_opts;
+struct s_sdc_opts {
   char* sdc_dir;
-  boolean longest_path_only;
-  boolean report_cb_timing;
-  boolean report_sb_timing;
-  boolean print_thru_pins;
+  boolean break_loops;
 };
 
-/***** Subroutine Functions *****/
-void dump_verilog_sdc_file_header(FILE* fp,
-                                  char* usage) {
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,"(FILE:%s, LINE[%d]) FileHandle is NULL!\n",__FILE__,__LINE__); 
-    exit(1);
-  } 
-  fprintf(fp,"#############################################\n");
-  fprintf(fp,"#     Synopsys Design Constraints (SDC)    # \n");
-  fprintf(fp,"#    FPGA Synthesizable Verilog Netlist    # \n");
-  fprintf(fp,"#    Description: %s \n",usage);
-  fprintf(fp,"#           Author: Xifan TANG             # \n");
-  fprintf(fp,"#        Organization: EPFL/IC/LSI         # \n");
-  fprintf(fp,"#    Date: %s \n", my_gettime());
-  fprintf(fp,"#############################################\n");
-  fprintf(fp,"\n");
+/* TO avoid combinational loops caused by memories
+ * We disable all the timing paths starting from an output of memory cell
+ */
+void verilog_generate_sdc_break_loop_sram(FILE* fp, 
+                                          t_sram_orgz_info* cur_sram_orgz_info) {
+  t_spice_model* mem_model = NULL;
+  int iport, ipin; 
+  char* port_name = NULL;
 
-  return;
-}
-
-void dump_verilog_one_sb_chan_pin(FILE* fp, 
-                                  t_sb* cur_sb_info,
-                                  t_rr_node* cur_rr_node,
-                                  enum PORTS port_type) {
-  int track_idx, side;
-  int x_start, y_start;
-  t_rr_type chan_rr_type;
-
-  /* Check the file handler */
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,
-               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
-               __FILE__, __LINE__); 
-    exit(1);
-  } 
+  int num_output_ports = 0;
+  t_spice_model_port** output_ports = NULL;
 
   /* Check */
-  assert ((CHANX == cur_rr_node->type)
-        ||(CHANY == cur_rr_node->type));
-  /* Get the coordinate of chanx or chany*/
-  /* Find the coordinate of the cur_rr_node */  
-  get_rr_node_side_and_index_in_sb_info(cur_rr_node, 
-                                        *cur_sb_info,
-                                        port_type, &side, &track_idx); 
-  get_chan_rr_node_coorindate_in_sb_info(*cur_sb_info, side, 
-                                         &(chan_rr_type),
-                                         &x_start, &y_start);
-  assert (chan_rr_type == cur_rr_node->type); 
-  /* Print the pin of the cur_rr_node */  
-  fprintf(fp, "%s",
-          gen_verilog_routing_channel_one_pin_name(cur_rr_node,
-                                                   x_start, y_start, track_idx, 
-                                                   port_type));
-  return;
-}
-
-/* Output the pin name of a routing wire in a SB */
-void dump_verilog_one_sb_routing_pin(FILE* fp,
-                                     t_sb* cur_sb_info,
-                                     t_rr_node* cur_rr_node) {
-  int track_idx, side;
-  int x_start, y_start;
-  t_rr_type chan_rr_type;
-
-  /* Check the file handler */
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,
-               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
-               __FILE__, __LINE__); 
-    exit(1);
-  } 
-
-  /* Get the top-level pin name and print it out */
-  /* Depends on the type of node */
-  switch (cur_rr_node->type) {
-  case OPIN:
-    /* Identify the side of OPIN on a grid */
-    side = get_grid_pin_side(cur_rr_node->xlow, cur_rr_node->ylow, cur_rr_node->ptc_num);
-    assert (OPEN != side);
-    dump_verilog_grid_side_pin_with_given_index(fp, OPIN,
-                                                cur_rr_node->ptc_num,
-                                                side,
-                                                cur_rr_node->xlow,
-                                                cur_rr_node->ylow, 
-                                                FALSE); /* Do not specify direction of port */
-    break; 
-  case CHANX:
-  case CHANY:
-    dump_verilog_one_sb_chan_pin(fp, cur_sb_info, cur_rr_node, IN_PORT); 
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid type of ending point rr_node!\n",
-               __FILE__, __LINE__);
- 
+              "(FILE:%s,LINE[%d])Invalid file handler!\n",
+              __FILE__, __LINE__); 
     exit(1);
   }
 
-  return;
-}
+  get_sram_orgz_info_mem_model(cur_sram_orgz_info, &mem_model);
+  assert (NULL != mem_model);
+  
+  /* Find the output ports of mem_model */
+  output_ports = find_spice_model_ports(mem_model, SPICE_MODEL_PORT_OUTPUT, &num_output_ports, TRUE);
 
-/** Given a starting rr_node (CHANX or CHANY) 
- *  and a ending rr_node (IPIN) 
- *  return the cb contains both (the ending CB of the routing wire)
- */
-t_cb* get_chan_rr_node_ending_cb(t_rr_node* src_rr_node, 
-                                t_rr_node* end_rr_node) {
-  int num_ipin_sides = 2;
-  int* ipin_side = (int*)my_calloc(num_ipin_sides, sizeof(int));
-  int num_chan_sides = 2;
-  int* chan_side = (int*)my_calloc(num_chan_sides, sizeof(int));
-  int iside, next_cb_x, next_cb_y;
-  int node_exist;
-  t_cb* next_cb = NULL;
- 
-  /* Type of connection block depends on the src_rr_node */
-  switch (src_rr_node->type) {
-  case CHANX:
-    /* the x of CB is same as end_rr_node,
-     * the y of CB should be same as src_rr_node
-     */
-    assert (end_rr_node->xlow == end_rr_node->xhigh);
-    next_cb_x = end_rr_node->xlow;
-    assert (src_rr_node->ylow == src_rr_node->yhigh);
-    next_cb_y = src_rr_node->ylow;
-    /* Side will be either on TOP or BOTTOM */
-    ipin_side[0] = TOP;
-    ipin_side[1] = BOTTOM;
-    chan_side[0] = RIGHT;
-    chan_side[1] = LEFT;
-    next_cb = &(cbx_info[next_cb_x][next_cb_y]); 
-    break;
-  case CHANY:
-    /* the x of CB is same as src_rr_node,
-     * the y of CB should be same as end_rr_node
-     */
-    assert (src_rr_node->xlow == src_rr_node->xhigh);
-    next_cb_x = src_rr_node->xlow;
-    assert (end_rr_node->ylow == end_rr_node->yhigh);
-    next_cb_y = end_rr_node->ylow;
-    /* Side will be either on RIGHT or LEFT */
-    ipin_side[0] = LEFT;
-    ipin_side[1] = RIGHT;
-    chan_side[0] = BOTTOM;
-    chan_side[1] = TOP;
-    next_cb = &(cby_info[next_cb_x][next_cb_y]); 
-    break;
-  default:
-   vpr_printf(TIO_MESSAGE_ERROR, 
-              "(File: %s [LINE%d]) Invalid type of src_rr_node!\n",
-               __FILE__, __LINE__);
- 
-    exit(1);
-  }
-
-  /* Double check if src_rr_node is in the IN_PORT list */
-  node_exist = 0;
-  for (iside = 0; iside < num_chan_sides; iside++) {
-    if (OPEN != get_rr_node_index_in_cb_info( src_rr_node,
-                                              *next_cb, 
-                                              chan_side[iside], IN_PORT)) {   
-      node_exist++;
-    }
-  }
-  assert (0 < node_exist);
-
-  /* Double check if end_rr_node is in the OUT_PORT list */
-  node_exist = 0;
-  for (iside = 0; iside < num_ipin_sides; iside++) {
-    if (OPEN != get_rr_node_index_in_cb_info( end_rr_node,
-                                              *next_cb, 
-                                              ipin_side[iside], OUT_PORT)) {
-      node_exist++;
-    }
-  }
-  assert (0 < node_exist);
-
-  return next_cb;
-}
-
-/** Given a starting rr_node (CHANX or CHANY) 
- *  and a ending rr_node (IPIN) 
- *  return the sb contains both (the ending CB of the routing wire)
- */
-t_sb* get_chan_rr_node_ending_sb(t_rr_node* src_rr_node, 
-                                 t_rr_node* end_rr_node) {
-  int side;
-  int x_start, y_start;
-  int x_end, y_end;
-  int next_sb_x, next_sb_y;
-  int node_exist;
-  t_sb* next_sb = NULL;
-
-  get_chan_rr_node_start_coordinate(src_rr_node, &x_start, &y_start);
-  get_chan_rr_node_start_coordinate(end_rr_node, &x_end, &y_end);
-
-  /* Case 1:                       
-   *                     end_rr_node(chany[x][y+1]) 
-   *                        /|\ 
-   *                         |  
-   *                     ---------
-   *                    |         | 
-   * src_rr_node ------>| next_sb |-------> end_rr_node
-   * (chanx[x][y])      |  [x][y] |        (chanx[x+1][y]
-   *                     ---------
-   *                         |
-   *                        \|/
-   *                     end_rr_node(chany[x][y])
-   */
-  /* Case 2                            
-   *                     end_rr_node(chany[x][y+1]) 
-   *                        /|\ 
-   *                         |  
-   *                     ---------
-   *                    |         | 
-   * end_rr_node <------| next_sb |<-------- src_rr_node
-   * (chanx[x][y])      |  [x][y] |        (chanx[x+1][y]
-   *                     ---------
-   *                         |
-   *                        \|/
-   *                     end_rr_node(chany[x][y])
-   */
-  /* Case 3                            
-   *                     end_rr_node(chany[x][y+1]) 
-   *                        /|\ 
-   *                         |  
-   *                     ---------
-   *                    |         | 
-   * end_rr_node <------| next_sb |-------> src_rr_node
-   * (chanx[x][y])      |  [x][y] |        (chanx[x+1][y]
-   *                     ---------
-   *                        /|\
-   *                         |
-   *                     src_rr_node(chany[x][y])
-   */
-  /* Case 4                            
-   *                     src_rr_node(chany[x][y+1]) 
-   *                         | 
-   *                        \|/  
-   *                     ---------
-   *                    |         | 
-   * end_rr_node <------| next_sb |--------> end_rr_node
-   * (chanx[x][y])      |  [x][y] |        (chanx[x+1][y]
-   *                     ---------
-   *                         |
-   *                        \|/
-   *                     end_rr_node(chany[x][y])
-   */
-
- 
-  /* Try the xlow, ylow of ending rr_node */
-  switch (src_rr_node->type) {
-  case CHANX:
-    next_sb_x = x_end;
-    next_sb_y = y_start;
-    break;
-  case CHANY:
-    next_sb_x = x_start;
-    next_sb_y = y_end;
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid type of rr_node!\n",
-               __FILE__, __LINE__);
-    exit(1);
-  }
-
-  switch (src_rr_node->direction) {
-  case INC_DIRECTION:
-    get_chan_rr_node_end_coordinate(src_rr_node, &x_end, &y_end);
-    if (next_sb_x > x_end) {
-      next_sb_x = x_end;
-    }
-    if (next_sb_y > y_end) {
-      next_sb_y = y_end;
-    }
-    break;
-  case DEC_DIRECTION:
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid type of rr_node!\n",
-               __FILE__, __LINE__);
-    exit(1);
-  }
-
-  /* Double check if src_rr_node is in the list */
-  node_exist = 0;
-  for (side = 0; side < 4; side++) {
-    if( OPEN != get_rr_node_index_in_sb_info(src_rr_node, 
-                                             sb_info[next_sb_x][next_sb_y],
-                                             side, IN_PORT)) {
-      node_exist++;
-    }
-  }
-  assert (1 == node_exist);                                        
-
-  /* Double check if end_rr_node is in the list */
-  node_exist = 0;
-  for (side = 0; side < 4; side++) {
-    if (OPEN != get_rr_node_index_in_sb_info(end_rr_node, 
-                                             sb_info[next_sb_x][next_sb_y],
-                                             side, OUT_PORT)) {
-      node_exist++;
-    }
-  }
-  if (1 != node_exist) {
-    assert (1 == node_exist);                                        
-  }
-
-  /* Passing the check, assign ending sb */
-  next_sb = &(sb_info[next_sb_x][next_sb_y]);
-
-  return next_sb;
-}
-
-/* Print the pins of SBs that a routing wire will go through 
- * from the src_rr_node to the des_rr_node 
- */
-void dump_verilog_sb_through_routing_pins(FILE* fp,
-                                          t_sb* src_sb_info,
-                                          t_rr_node* src_rr_node, 
-                                          t_rr_node* des_rr_node) {
-  int ix, iy;
-  int cur_sb_x, cur_sb_y;
-  int end_sb_x, end_sb_y;
-  t_cb* next_cb;
-  t_sb* next_sb;
-
-  /* Check the file handler */
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,
-               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
-               __FILE__, __LINE__); 
-    exit(1);
-  } 
-
-  /* Check */
-  assert ((INC_DIRECTION == src_rr_node->direction)
-        ||(DEC_DIRECTION == src_rr_node->direction));
-  assert ((CHANX == src_rr_node->type)
-        ||(CHANY == src_rr_node->type));
-
-  /* Switch depends on the type of des_rr_node  */
-  switch(des_rr_node->type) {
-  /* Range of SBs that on the path                        
-   *                             ---------
-   *                            |         |        
-   *                            |  des_sb |
-   *                            | [x][y]  |        
-   *                             ---------
-   *                                /|\ 
-   *                                 |  
-   *                             ---------
-   *                            |         |        
-   *                            | thru_cb |
-   *                            |         |        
-   *                             ---------
-   *                                /|\ 
-   *                                 |  
-   *  --------      -------      ---------      -------      --------
-   * |        |    |       |    |         |    |       |    |        |
-   * | des_sb |<---|thru_cb|<---| src_sb  |--->|thru_cb|--->| des_sb |
-   * |[x-1][y]|    | [x][y]|    |         |    | [x][y]|    |[x][y]  |
-   *  --------      -------      ---------      -------      --------
-   *                                 |
-   *                                \|/
-   *                             ---------
-   *                            |         |        
-   *                            | thru_cb |
-   *                            |         |        
-   *                             ---------
-   *                                 |
-   *                                \|/
-   *                             ---------
-   *                            |         |        
-   *                            |  des_sb |
-   *                            | [x][y-1]|        
-   *                             ---------
-   */
-  case IPIN: 
-    /* Get the coordinate of ending CB */
-    next_cb = get_chan_rr_node_ending_cb(src_rr_node, des_rr_node);
-    assert(next_cb->type == src_rr_node->type);
-    /* 4 cases: */
-    if ((INC_DIRECTION == src_rr_node->direction) 
-       &&(CHANX == src_rr_node->type)) {
-      end_sb_x = next_cb->x; 
-      end_sb_y = next_cb->y;
-    } else if ((INC_DIRECTION == src_rr_node->direction) 
-       &&(CHANY == src_rr_node->type)) {
-      end_sb_x = next_cb->x; 
-      end_sb_y = next_cb->y;
-    } else if ((DEC_DIRECTION == src_rr_node->direction) 
-       &&(CHANX == src_rr_node->type)) {
-      end_sb_x = next_cb->x - 1; 
-      end_sb_y = next_cb->y;
-    } else if ((DEC_DIRECTION == src_rr_node->direction) 
-       &&(CHANY == src_rr_node->type)) {
-      end_sb_x = next_cb->x; 
-      end_sb_y = next_cb->y - 1;
-    }
-    break;
-  /* Range of SBs that on the path                        
-   *                             ---------
-   *                            |         |        
-   *                            |  des_sb |
-   *                            | [x][y+1]|        
-   *                             ---------
-   *                                /|\ 
-   *                                 |  
-   *                             ---------
-   *                            |         |        
-   *                            | thru_sb |
-   *                            |         |        
-   *                             ---------
-   *                                /|\ 
-   *                                 |  
-   *  --------      -------      ---------      -------      --------
-   * |        |    |       |    |         |    |       |    |        |
-   * | des_sb |<---|thru_sb|<---| src_sb  |--->|thru_sb|--->| des_sb |
-   * |[x-1][y]|    | [x][y]|    |         |    | [x][y]|    |[x+1][y]|
-   *  --------      -------      ---------      -------      --------
-   *                                 |
-   *                                \|/
-   *                             ---------
-   *                            |         |        
-   *                            | thru_sb |
-   *                            |         |        
-   *                             ---------
-   *                                 |
-   *                                \|/
-   *                             ---------
-   *                            |         |        
-   *                            |  des_sb |
-   *                            | [x][y-1]|        
-   *                             ---------
-   */
-  case CHANX:
-  case CHANY:
-    /* Get the coordinate of ending CB */
-    next_sb = get_chan_rr_node_ending_sb(src_rr_node, des_rr_node);
-    end_sb_x = next_sb->x; 
-    end_sb_y = next_sb->y;
-    break;
-  default:
-    vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid type of rr_node!\n",
-               __FILE__, __LINE__);
-    exit(1);
-  }
-
-  /* Get the base coordinate of src_sb */
-  cur_sb_x = src_sb_info->x;
-  cur_sb_y = src_sb_info->y;
-  /* 4 cases: */
-  if ((INC_DIRECTION == src_rr_node->direction) 
-     &&(CHANX == src_rr_node->type)) {
-    /* Follow the graph above, go through X channel */
-    for (ix = src_sb_info->x + 1; ix < end_sb_x; ix++) {
-      /* Print an IN_PORT*/ 
-      fprintf(fp, " ");
-      /* output instance name */
-      fprintf(fp, "%s/", 
-              gen_verilog_one_sb_instance_name(&sb_info[ix][cur_sb_y])); 
-      dump_verilog_one_sb_chan_pin(fp, &(sb_info[ix][cur_sb_y]), src_rr_node, IN_PORT); 
-      /* Print an OUT_PORT*/ 
-      fprintf(fp, " ");
-      /* output instance name */
-      fprintf(fp, "%s/", 
-              gen_verilog_one_sb_instance_name(&sb_info[ix][cur_sb_y])); 
-      dump_verilog_one_sb_chan_pin(fp, &(sb_info[ix][cur_sb_y]), src_rr_node, OUT_PORT); 
-    }
-  } else if ((INC_DIRECTION == src_rr_node->direction) 
-     &&(CHANY == src_rr_node->type)) {
-    /* Follow the graph above, go through Y channel */
-    for (iy = src_sb_info->y + 1; iy < end_sb_y; iy++) {
-      /* Print an IN_PORT*/ 
-      fprintf(fp, " ");
-      /* output instance name */
-      fprintf(fp, "%s/", 
-              gen_verilog_one_sb_instance_name(&sb_info[cur_sb_x][iy])); 
-      dump_verilog_one_sb_chan_pin(fp, &(sb_info[cur_sb_x][iy]), src_rr_node, IN_PORT); 
-      /* Print an OUT_PORT*/ 
-      fprintf(fp, " ");
-      /* output instance name */
-      fprintf(fp, "%s/", 
-              gen_verilog_one_sb_instance_name(&sb_info[cur_sb_x][iy])); 
-      dump_verilog_one_sb_chan_pin(fp, &(sb_info[cur_sb_x][iy]), src_rr_node, OUT_PORT); 
-    }
-  } else if ((DEC_DIRECTION == src_rr_node->direction) 
-     &&(CHANX == src_rr_node->type)) {
-    /* Follow the graph above, go through X channel */
-    for (ix = src_sb_info->x - 1; ix > end_sb_x; ix--) {
-      /* Print an IN_PORT*/ 
-      fprintf(fp, " ");
-      /* output instance name */
-      fprintf(fp, "%s/", 
-              gen_verilog_one_sb_instance_name(&sb_info[ix][cur_sb_y])); 
-      dump_verilog_one_sb_chan_pin(fp, &(sb_info[ix][cur_sb_y]), src_rr_node, IN_PORT); 
-      /* Print an OUT_PORT*/ 
-      fprintf(fp, " ");
-      /* output instance name */
-      fprintf(fp, "%s/", 
-              gen_verilog_one_sb_instance_name(&sb_info[ix][cur_sb_y])); 
-      dump_verilog_one_sb_chan_pin(fp, &(sb_info[ix][cur_sb_y]), src_rr_node, OUT_PORT); 
-    }
-  } else if ((DEC_DIRECTION == src_rr_node->direction) 
-     &&(CHANY == src_rr_node->type)) {
-    /* Follow the graph above, go through Y channel */
-    for (iy = src_sb_info->y - 1; iy > end_sb_y; iy--) {
-      /* Print an IN_PORT*/ 
-      fprintf(fp, " ");
-      /* output instance name */
-      fprintf(fp, "%s/", 
-              gen_verilog_one_sb_instance_name(&sb_info[cur_sb_x][iy])); 
-      dump_verilog_one_sb_chan_pin(fp, &(sb_info[cur_sb_x][iy]), src_rr_node, IN_PORT); 
-      /* Print an OUT_PORT*/ 
-      fprintf(fp, " ");
-      /* output instance name */
-      fprintf(fp, "%s/", 
-              gen_verilog_one_sb_instance_name(&sb_info[cur_sb_x][iy])); 
-      dump_verilog_one_sb_chan_pin(fp, &(sb_info[cur_sb_x][iy]), src_rr_node, OUT_PORT); 
-    }
-  }
-
-  return;
-}
-
-/* Report timing for a routing wire,
- * Support uni-directional routing architecture
- * Each routing wire start from an OPIN 
- * We check each fan-out to find all possible ending point:
- * An ending point is supposed to be an OPIN or CHANX or CHANY
- */
-void verilog_generate_one_routing_wire_report_timing(FILE* fp, 
-                                                     t_sdc_trpt_opts sdc_opts,
-                                                     int L_wire,
-                                                     t_sb* cur_sb_info,
-                                                     t_rr_node* wire_rr_node,
-                                                     int LL_num_rr_nodes, t_rr_node* LL_rr_node,
-                                                     t_ivec*** LL_rr_node_indices) {
-  int iedge, jedge, inode;
-  int track_idx, side;
-  int path_cnt = 0;
-  t_sb* next_sb = NULL; 
-  t_cb* next_cb = NULL; 
-  int x_end, y_end;
-  t_rr_type end_chan_rr_type;
-  boolean sb_dumped = FALSE;
-
-  /* Check the file handler */
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,
-               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
-               __FILE__, __LINE__); 
-    exit(1);
-  } 
-
-  assert(  ( CHANX == wire_rr_node->type )
-        || ( CHANY == wire_rr_node->type ));
-  track_idx = wire_rr_node->ptc_num;
-
-  /* We only care a specific length of wires */
-  if (L_wire != (abs(wire_rr_node->xlow - wire_rr_node->xhigh + wire_rr_node->ylow - wire_rr_node->yhigh) + 1)) {
-    return; 
-  }
-
-  /* Find the starting points */
-  for (iedge = 0; iedge < wire_rr_node->num_drive_rr_nodes; iedge++) {
-    sb_dumped = FALSE;
-    /* Find the ending points*/
-    for (jedge = 0; jedge < wire_rr_node->num_edges; jedge++) {
-      /* Find where the destination pin belongs to */
-      get_chan_rr_node_end_coordinate(wire_rr_node, &x_end, &y_end);
-      /* Reciever could be IPIN or CHANX or CHANY */
-      inode = wire_rr_node->edges[jedge];
-      /* Find the SB/CB block that it belongs to */
-      switch (LL_rr_node[inode].type) {
-      case IPIN:
-        /* Get the coordinate of ending CB */
-        next_cb = get_chan_rr_node_ending_cb(wire_rr_node, &(LL_rr_node[inode]));
-        /* This will not be the longest path unless the cb is close to the ending SB */
-        if ((TRUE == sdc_opts.longest_path_only)
-           && ((next_cb->x != x_end) || (next_cb->y != y_end))) {
-          continue;
-        }
-        /* Driver could be OPIN or CHANX or CHANY,
-          * and it must be in the cur_sb_info
-          */
-        /* Start printing report timing info  */
-        fprintf(fp, "# L%d wire, Path %d\n", 
-                abs(wire_rr_node->xlow - wire_rr_node->xhigh + wire_rr_node->ylow - wire_rr_node->yhigh) + 1,
-                path_cnt); 
-        fprintf(fp, "report_timing -from "); 
-        /* output instance name */
-        fprintf(fp, "%s/", 
-                    gen_verilog_one_sb_instance_name(cur_sb_info)); 
-        /* output pin name */
-        dump_verilog_one_sb_routing_pin(fp, cur_sb_info, 
-                                        wire_rr_node->drive_rr_nodes[iedge]);
-        fprintf(fp, " -to "); 
-        /* output instance name */
-        fprintf(fp, "%s/",
-                gen_verilog_one_cb_instance_name(next_cb));
-        /* output pin name */
-        fprintf(fp, "%s",
-                gen_verilog_routing_channel_one_midout_name( next_cb,
-                                                             track_idx));
-        /* Print through pins */
-        if (TRUE == sdc_opts.print_thru_pins) { 
-          fprintf(fp, " -through_pins "); 
-          dump_verilog_sb_through_routing_pins(fp, cur_sb_info, wire_rr_node, &(LL_rr_node[inode]));
-        }
-        fprintf(fp, " -unconstrained -point_to_point\n"); 
-        path_cnt++;
-        break;
-      case CHANX:
-      case CHANY:
-        /* Get the coordinate of ending SB */
-        next_sb = get_chan_rr_node_ending_sb(wire_rr_node, &(LL_rr_node[inode]));
-        /* This will not be the longest path unless the cb is close to the ending SB */
-        if ((TRUE == sdc_opts.longest_path_only)
-           && ((next_sb->x != x_end) || (next_sb->y != y_end))) {
-          continue;
-        }
-        if (TRUE == sb_dumped) {
-          continue;
-        }
-        /* Driver could be OPIN or CHANX or CHANY,
-          * and it must be in the cur_sb_info
-          */
-        /* Start printing report timing info  */
-        fprintf(fp, "# L%d wire, Path %d\n", 
-                abs(wire_rr_node->xlow - wire_rr_node->xhigh + wire_rr_node->ylow - wire_rr_node->yhigh) + 1,
-                path_cnt); 
-        fprintf(fp, "report_timing -from "); 
-        /* output instance name */
-        fprintf(fp, "%s/", 
-                    gen_verilog_one_sb_instance_name(cur_sb_info)); 
-        /* output pin name */
-        dump_verilog_one_sb_routing_pin(fp, cur_sb_info, 
-                                        wire_rr_node->drive_rr_nodes[iedge]);
-        fprintf(fp, " -to "); 
-        /* output instance name */
-        fprintf(fp, "%s/",
-                gen_verilog_one_sb_instance_name(next_sb));
-        /* Find which side the ending pin locates, and determine the coordinate */
-        dump_verilog_one_sb_routing_pin(fp, next_sb, 
-                                        wire_rr_node);
-        /* Print through pins */
-        if (TRUE == sdc_opts.print_thru_pins) { 
-          fprintf(fp, " -through_pins "); 
-          dump_verilog_sb_through_routing_pins(fp, cur_sb_info, 
-                                               wire_rr_node, &(LL_rr_node[inode]));
-        }
-        fprintf(fp, " -unconstrained -point_to_point\n"); 
-        path_cnt++;
-        /* Set the flag */
-        sb_dumped = TRUE;
-        break;
-      default:
-       vpr_printf(TIO_MESSAGE_ERROR, "(File: %s [LINE%d]) Invalid type of ending point rr_node!\n",
-                   __FILE__, __LINE__);
- 
-        exit(1);
+  for (iport = 0; iport < num_output_ports; iport++) {
+    for (ipin = 0; ipin < output_ports[iport]->size; ipin++) { 
+      if (TRUE == mem_model->dump_explicit_port_map) {
+        port_name = output_ports[iport]->lib_name;
+      } else {
+        port_name = output_ports[iport]->prefix;
       }
-      /* Get the user-constrained delay of this routing wire */
-      /* Find the pins/ports of SBs that this wire may across */
-      /* Output the Report Timing commands */
+      /* Disable the timing for all the memory cells */
+      fprintf(fp, 
+              "set_disable_timing [get_pins -filter \"name == %s",
+               port_name);
+      if (1 < output_ports[iport]->size) {
+        fprintf(fp, "[%d]", ipin);
+      }
+      fprintf(fp, "\" ");
+      fprintf(fp, 
+              "-of [get_cells -hier -filter \"ref_lib_cell_name == %s\"]]\n",
+              mem_model->name);
     }
   }
+
+  /* Free */
+  my_free(output_ports);
 
   return;
 }
 
-/* Generate report timing for each routing wires/segments */
-void verilog_generate_routing_wires_report_timing(FILE* fp, 
-                                                  t_sdc_trpt_opts sdc_opts,
-                                                  int L_wire, 
-                                                  int LL_num_rr_nodes, t_rr_node* LL_rr_node,
-                                                  t_ivec*** LL_rr_node_indices) {
-  int ix, iy;
-  int side, itrack;
-  t_sb* cur_sb_info = NULL;
+/* Statisitcs for input sizes and structures of MUXes 
+ * used in FPGA architecture
+ * Disable timing starting from any MUX outputs 
+ */
+void verilog_generate_sdc_break_loop_mux(FILE* fp,
+                                         int num_switch,
+                                         t_switch_inf* switches,
+                                         t_spice* spice,
+                                         t_det_routing_arch* routing_arch) {
+  /* We have linked list whichs stores spice model information of multiplexer*/
+  t_llist* muxes_head = NULL; 
+  t_llist* temp = NULL;
+  t_spice_mux_model* cur_spice_mux_model = NULL;
 
-  /* Check the file handler */
+  int num_input_ports = 0;
+  t_spice_model_port** input_ports = NULL;
+  int num_output_ports = 0;
+  t_spice_model_port** output_ports = NULL;
+
+  char* SPC_cell_suffix = "_SPC";
+
+  /* Check */
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,
-               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
-               __FILE__, __LINE__); 
+              "(FILE:%s,LINE[%d])Invalid file handler!\n",
+              __FILE__, __LINE__); 
     exit(1);
   } 
 
-  /* We start from a SB[x][y] */
-  for (ix = 0; ix < (nx + 1); ix++) {
-    for (iy = 0; iy < (ny + 1); iy++) {
-      cur_sb_info = &(sb_info[ix][iy]);
-      for (side = 0; side < cur_sb_info->num_sides; side++) {
-        for (itrack = 0; itrack < cur_sb_info->chan_width[side]; itrack++) {
-          assert((CHANX == cur_sb_info->chan_rr_node[side][itrack]->type)
-               ||(CHANY == cur_sb_info->chan_rr_node[side][itrack]->type));
-          /* We only care the output port and it should indicate a SB mux */
-          if ( (OUT_PORT != cur_sb_info->chan_rr_node_direction[side][itrack]) 
-             || (FALSE != check_drive_rr_node_imply_short(*cur_sb_info, cur_sb_info->chan_rr_node[side][itrack], side))) {
-            continue; 
-          }
-          /* Bypass if we have only 1 driving node */
-          if (1 == cur_sb_info->chan_rr_node[side][itrack]->num_drive_rr_nodes) {
-            continue; 
-          }
-          /* Reach here, it means a valid starting point of a routing wire */
-          verilog_generate_one_routing_wire_report_timing(fp, sdc_opts, L_wire, &(sb_info[ix][iy]),
-                                                          cur_sb_info->chan_rr_node[side][itrack],
-                                                          LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
-        }
-      } 
+  /* Alloc the muxes*/
+  muxes_head = stats_spice_muxes(num_switch, switches, spice, routing_arch);
+
+  /* Print mux netlist one by one*/
+  temp = muxes_head;
+  while(temp) {
+    assert(NULL != temp->dptr);
+    cur_spice_mux_model = (t_spice_mux_model*)(temp->dptr);
+    input_ports = find_spice_model_ports(cur_spice_mux_model->spice_model, SPICE_MODEL_PORT_INPUT, &num_input_ports, TRUE);
+    output_ports = find_spice_model_ports(cur_spice_mux_model->spice_model, SPICE_MODEL_PORT_OUTPUT, &num_output_ports, TRUE);
+    assert(1 == num_input_ports);
+    assert(1 == num_input_ports);
+    /* Check the Input port size */
+    if ( (NULL != cur_spice_mux_model->spice_model->verilog_netlist) 
+      && (cur_spice_mux_model->size != input_ports[0]->size)) {
+      vpr_printf(TIO_MESSAGE_ERROR, 
+                 "(File:%s,[LINE%d])User-defined MUX SPICE MODEL(%s) size(%d) unmatch with the architecture needs(%d)!\n",
+                 __FILE__, __LINE__, cur_spice_mux_model->spice_model->name, input_ports[0]->size,cur_spice_mux_model->size);
+      exit(1);
     }
+    /* Use the user defined ports, Bypass LUT MUXes */
+    if (SPICE_MODEL_MUX == cur_spice_mux_model->spice_model->type) {
+      fprintf(fp, 
+              "set_disable_timing [get_pins -filter \"name =~ %s*\" ",
+              output_ports[0]->prefix);
+      fprintf(fp, 
+              "-of [get_cells -hier -filter \"ref_lib_cell_name == %s\"]]\n",
+              gen_verilog_one_mux_module_name(cur_spice_mux_model->spice_model, cur_spice_mux_model->size));
+      /* For SPC cells*/
+      fprintf(fp, 
+              "set_disable_timing [get_pins -filter \"name =~ %s*\" ",
+              output_ports[0]->prefix);
+      fprintf(fp, 
+              "-of [get_cells -hier -filter \"ref_lib_cell_name == %s%s*\"]]\n",
+              gen_verilog_one_mux_module_name(cur_spice_mux_model->spice_model, cur_spice_mux_model->size),
+              SPC_cell_suffix);
+    }
+    /* Free */
+    my_free(output_ports);
+    my_free(input_ports);
+    /* Move on to the next*/
+    temp = temp->next;
   }
+
+  /* remember to free the linked list*/
+  free_muxes_llist(muxes_head);
 
   return;
 }
 
-void verilog_generate_sb_report_timing(t_sram_orgz_info* cur_sram_orgz_info,
-                                       t_sdc_trpt_opts sdc_opts,
-                                       t_arch arch,
-                                       t_det_routing_arch* routing_arch,
-                                       int LL_num_rr_nodes, t_rr_node* LL_rr_node,
-                                       t_ivec*** LL_rr_node_indices,
-                                       t_syn_verilog_opts fpga_verilog_opts) {
-  char* sdc_fname = NULL;
+void verilog_generate_sdc_clock_period(t_sdc_opts sdc_opts) {
   FILE* fp = NULL;
-  int iseg;
-  int L_max = OPEN;
+  char* fname = my_strcat(sdc_opts.sdc_dir, sdc_clock_period_file_name);
+  t_llist* temp = NULL;
+  t_spice_model_port* temp_port = NULL;
+  int ipin;
+  float clock_period = 10.;
 
-  /* Create the file handler */
-  sdc_fname = my_strcat(format_dir_path(sdc_opts.sdc_dir), routing_sdc_file_name);
-
-  /* Create a file*/
-  fp = fopen(sdc_fname, "w");
-
+  vpr_printf(TIO_MESSAGE_INFO, 
+             "Generating SDC for constraining clocks in P&R flow: %s ...\n",
+             fname);
+  
+  /* Print the muxes netlist*/
+  fp = fopen(fname, "w");
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,
-               "(FILE:%s,LINE[%d])Failure in create SDC constraints %s",
-               __FILE__, __LINE__, sdc_fname); 
+              "(FILE:%s,LINE[%d])Failure in create SDC constraints %s",
+              __FILE__, __LINE__, fname); 
     exit(1);
   } 
+  /* Generate the descriptions*/
+  dump_verilog_sdc_file_header(fp, "Clock contraints for PnR");
 
-  /* Generate SDC header */
-  dump_verilog_sdc_file_header(fp, "Report Timing for Switch blocks");
-
-  vpr_printf(TIO_MESSAGE_INFO,
-             "Generating TCL script to report timing for Switch Blocks: %s\n",
-             sdc_fname);
-  /* Find the longest wires: we only care defined length of wires? */
-  for (iseg = 0; iseg < arch.num_segments; iseg++) {
-    /* Bypass zero frequency sgements */
-    if (0 == arch.Segments[iseg].frequency) {
+  /* Find the global clock ports */
+  temp = global_ports_head; 
+  while (NULL != temp) {
+    /* Get the port */
+    temp_port = (t_spice_model_port*)(temp->dptr);
+    /* We only care clock ports */
+    if (SPICE_MODEL_PORT_CLOCK == temp_port->type) {
+      /* Go to next */
+      temp = temp->next;
       continue;
     }
-    if ((OPEN == L_max) || (L_max < arch.Segments[iseg].length)) {
-      L_max = arch.Segments[iseg].length;
+    /* Create clock */
+    for (ipin = 0; ipin < temp_port->size; ipin++) {
+      fprintf(fp, 
+              "create_clock -name {%s[%d]} -period %.2g -waveform {0.00 %.2g} [list [get_ports {%s[%d]}]]\n",
+              temp_port->prefix, ipin,
+              clock_period, clock_period/2,
+              temp_port->prefix, ipin);
+      fprintf(fp, 
+              "set_drive 0 %s[%d]\n", 
+              temp_port->prefix, ipin);
     }
-  }
-  /* In some case, FPGA array size is smaller than any segments.
-   * Therefore, to be strict non-segment timing will be reported
-   * We added the FPGA array size for report timing 
-   */
-  if ((L_max > nx) && (L_max > ny)) { 
-    if (nx != ny) {
-      verilog_generate_routing_wires_report_timing(fp, sdc_opts,
-                                                   nx, LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
-      verilog_generate_routing_wires_report_timing(fp, sdc_opts,
-                                                   ny, LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
-    } else {
-      verilog_generate_routing_wires_report_timing(fp, sdc_opts,
-                                                   nx, LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
-    }
-  } else {
-    /* We only care defined length of wires? */
-    for (iseg = 0; iseg < arch.num_segments; iseg++) {
-      /* Bypass zero frequency sgements */
-      if (0 == arch.Segments[iseg].frequency) {
-        continue;
-      }
-      verilog_generate_routing_wires_report_timing(fp, sdc_opts, arch.Segments[iseg].length, 
-                                                   LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
-    }
+    /* Go to next */
+    temp = temp->next;
   }
 
-  /* close file*/
+  /* close file */
   fclose(fp);
 
   return;
 }
 
-/* Output a log file to guide routing report_timing */
-void verilog_generate_routing_report_timing(t_sram_orgz_info* cur_sram_orgz_info,
-                                            char* sdc_dir,
-                                            t_arch arch,
-                                            t_det_routing_arch* routing_arch,
-                                            int LL_num_rr_nodes, t_rr_node* LL_rr_node,
-                                            t_ivec*** LL_rr_node_indices,
-                                            t_syn_verilog_opts fpga_verilog_opts) {
-  t_sdc_trpt_opts sdc_trpt_opts;
+void verilog_generate_sdc_break_loops(t_sram_orgz_info* cur_sram_orgz_info,
+                                      t_sdc_opts sdc_opts,
+                                      int num_switch,
+                                      t_switch_inf* switches,
+                                      t_spice* spice,
+                                      t_det_routing_arch* routing_arch) {
+  FILE* fp = NULL;
+  char* fname = my_strcat(sdc_opts.sdc_dir, sdc_break_loop_file_name);
 
-  /* Initialize */
-  sdc_trpt_opts.report_sb_timing = TRUE;
-  sdc_trpt_opts.report_cb_timing = TRUE;
-  sdc_trpt_opts.longest_path_only = TRUE;
-  sdc_trpt_opts.print_thru_pins = TRUE;
-  sdc_trpt_opts.sdc_dir = my_strdup(sdc_dir);
+  vpr_printf(TIO_MESSAGE_INFO, 
+             "Generating SDC for breaking combinational loops in P&R flow: %s ...\n",
+             fname);
 
-  /* Part 1. Output routing constraints for routing tracks */
+  /* Print the muxes netlist*/
+  fp = fopen(fname, "w");
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+              "(FILE:%s,LINE[%d])Failure in create SDC constraints %s",
+              __FILE__, __LINE__, fname); 
+    exit(1);
+  } 
+  /* Generate the descriptions*/
+  dump_verilog_sdc_file_header(fp, "Break Combinational Loops for PnR");
 
-  /* Part 2. Output routing constraints for Switch Blocks */
+  /* 1. Break loops from Memory Cells */
+  verilog_generate_sdc_break_loop_sram(fp, cur_sram_orgz_info);
 
-  /* Part 3. Output routing constraints for Connection Blocks */
+  /* 2. Break loops from Multiplexer Output */
+  verilog_generate_sdc_break_loop_mux(fp, num_switch, switches, spice, routing_arch);
 
-  /* Part 4. Report timing for routing wires */
-  if (TRUE == sdc_trpt_opts.report_sb_timing) {
-    verilog_generate_sb_report_timing(cur_sram_orgz_info, sdc_trpt_opts,
-                                      arch, routing_arch,
-                                      LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices,
-                                      fpga_verilog_opts);
-  }
+  /* Close the file*/
+  fclose(fp);
+
+  /* Free strings */
+  my_free(fname);
 
   return;
 }
+
+void verilog_generate_sdc_pnr(t_sram_orgz_info* cur_sram_orgz_info,
+                              char* sdc_dir,
+                              t_arch arch,
+                              t_det_routing_arch* routing_arch,
+                              int LL_num_rr_nodes, t_rr_node* LL_rr_node,
+                              t_ivec*** LL_rr_node_indices,
+                              t_syn_verilog_opts fpga_verilog_opts) {
+  t_sdc_opts sdc_opts;
+
+  /* Initialize */
+  sdc_opts.sdc_dir = my_strdup(sdc_dir);
+  sdc_opts.break_loops = TRUE;
+
+  /* Part 1. Constrain clock cycles */
+  verilog_generate_sdc_clock_period(sdc_opts);
+
+  /* Part 2. Output Design Constraints for breaking loops */
+  if (TRUE == sdc_opts.break_loops) {
+    verilog_generate_sdc_break_loops(cur_sram_orgz_info, sdc_opts, 
+                                     routing_arch->num_switch, switch_inf,
+                                     arch.spice,
+                                     routing_arch); 
+  } 
+
+  /* Part 3. Output routing constraints for Switch Blocks */
+
+  /* Part 4. Output routing constraints for Connection Blocks */
+
+  /* Part 5. Output routing constraints for Programmable blocks */
+
+  return;
+}
+
 

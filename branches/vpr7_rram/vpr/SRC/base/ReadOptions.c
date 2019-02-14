@@ -539,6 +539,10 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
       return Args;
     case OT_FPGA_VERILOG_SYN_PRINT_REPORT_TIMING_TCL:
       return Args;
+    case OT_FPGA_VERILOG_SYN_PRINT_SDC_PNR:
+      return Args;
+    case OT_FPGA_VERILOG_SYN_PRINT_SDC_ANALYSIS:
+      return Args;
     /* Xifan TANG: Bitstream generator */
     case OT_FPGA_BITSTREAM_GENERATOR:
       return Args;
