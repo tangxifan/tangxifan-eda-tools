@@ -1133,6 +1133,7 @@ static void SetupSynVerilogOpts(t_options Options,
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_REPORT_TIMING_TCL]) {
     syn_verilog_opts->print_report_timing_tcl = TRUE;
+    syn_verilog_opts->report_timing_path = my_strdup(Options.fpga_verilog_report_timing_path);
   }
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_SDC_PNR]) {

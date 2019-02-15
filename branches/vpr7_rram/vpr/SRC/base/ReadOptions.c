@@ -538,7 +538,7 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
     case OT_FPGA_VERILOG_SYN_PRINT_USER_DEFINED_TEMPLATE:
       return Args;
     case OT_FPGA_VERILOG_SYN_PRINT_REPORT_TIMING_TCL:
-      return Args;
+      return ReadString(Args, &Options->fpga_verilog_report_timing_path);
     case OT_FPGA_VERILOG_SYN_PRINT_SDC_PNR:
       return Args;
     case OT_FPGA_VERILOG_SYN_PRINT_SDC_ANALYSIS:

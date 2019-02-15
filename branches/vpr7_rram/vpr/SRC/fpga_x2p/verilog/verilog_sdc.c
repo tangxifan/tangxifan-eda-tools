@@ -42,9 +42,21 @@
 typedef struct s_sdc_opts t_sdc_opts;
 struct s_sdc_opts {
   char* sdc_dir;
+  boolean constrain_sbs;
+  boolean constrain_cbs;
+  boolean constrain_pbs;
+  boolean constrain_routing_channels;
   boolean break_loops;
   boolean break_loops_mux;
 };
+
+float get_switch_sdc_tmax (t_switch_inf* cur_switch_inf) {
+  return cur_switch_inf->R * cur_switch_inf->Cout + cur_switch_inf->Tdel;
+}
+
+float get_routing_seg_sdc_tmax (t_segment_inf* cur_seg) {
+  return cur_seg->Rmetal * cur_seg->Cmetal;
+}
 
 /* TO avoid combinational loops caused by memories
  * We disable all the timing paths starting from an output of memory cell
@@ -235,7 +247,6 @@ void verilog_generate_sdc_clock_period(t_sdc_opts sdc_opts) {
  
 void verilog_generate_sdc_break_loop_sb(FILE* fp) {
   int ix, iy;
-  int side, itrack;
   t_sb* cur_sb_info = NULL;
 
   /* Check the file handler */
@@ -303,17 +314,440 @@ void verilog_generate_sdc_break_loops(t_sram_orgz_info* cur_sram_orgz_info,
   return;
 }
 
+/* Constrain a path within a Switch block,
+ * If this indicates a metal wire, we constraint to be 0 delay 
+ */
+void verilog_generate_sdc_constrain_one_sb_path(FILE* fp,
+                                                t_sb* cur_sb_info,
+                                                t_rr_node* src_rr_node,
+                                                t_rr_node* des_rr_node, 
+                                                float tmax) {
+  /* Check the file handler */
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  /* Check */
+  assert ((OPIN == src_rr_node->type)
+        ||(CHANX == src_rr_node->type)
+        ||(CHANY == src_rr_node->type));
+  assert ((CHANX == des_rr_node->type)
+        ||(CHANY == des_rr_node->type));
+
+  fprintf(fp, "set_max_delay");
+
+  fprintf(fp, " -from ");
+  fprintf(fp, "%s/", 
+          gen_verilog_one_sb_instance_name(cur_sb_info)); 
+  dump_verilog_one_sb_routing_pin(fp, cur_sb_info, src_rr_node); 
+
+  fprintf(fp, " -to ");
+ 
+  fprintf(fp, "%s/", 
+          gen_verilog_one_sb_instance_name(cur_sb_info)); 
+  dump_verilog_one_sb_chan_pin(fp, cur_sb_info, des_rr_node, OUT_PORT); 
+
+  /* If src_node == des_node, this is a metal wire */
+  fprintf(fp, " %.2g", tmax);
+
+  fprintf(fp, "\n");
+ 
+  return; 
+}
+
+void verilog_generate_sdc_constrain_one_sb_mux(FILE* fp,
+                                               t_sb* cur_sb_info,
+                                               t_rr_node* wire_rr_node) {
+  int iedge, switch_id;
+  float switch_delay = 0.;
+
+  /* Check the file handler */
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  assert(  ( CHANX == wire_rr_node->type )
+        || ( CHANY == wire_rr_node->type ));
+
+  /* Find the starting points */
+  for (iedge = 0; iedge < wire_rr_node->num_drive_rr_nodes; iedge++) {
+    /* Get the switch delay */
+    switch_id = wire_rr_node->drive_switches[iedge];
+    switch_delay = get_switch_sdc_tmax (&(switch_inf[switch_id]));
+    /* Constrain a path */
+    verilog_generate_sdc_constrain_one_sb_path(fp, cur_sb_info,
+                                               wire_rr_node->drive_rr_nodes[iedge],
+                                               wire_rr_node,
+                                               switch_delay);
+  }
+
+  return;
+}
+
+/* Constrain a path within a Switch block,
+ * If this indicates a metal wire, we constraint to be 0 delay 
+ */
+void verilog_generate_sdc_constrain_one_cb_path(FILE* fp,
+                                                t_cb* cur_cb_info,
+                                                t_rr_node* src_rr_node,
+                                                t_rr_node* des_rr_node, 
+                                                int des_rr_node_grid_side, 
+                                                float tmax) {
+  /* Check the file handler */
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  /* Check */
+  assert ((INC_DIRECTION == src_rr_node->direction)
+        ||(DEC_DIRECTION == src_rr_node->direction));
+  assert ((CHANX == src_rr_node->type)
+        ||(CHANY == src_rr_node->type));
+  assert (IPIN == des_rr_node->type);
+
+  fprintf(fp, "set_max_delay");
+
+  fprintf(fp, " -from ");
+  fprintf(fp, "%s/", 
+          gen_verilog_one_cb_instance_name(cur_cb_info)); 
+  fprintf(fp, "%s",
+          gen_verilog_routing_channel_one_midout_name( cur_cb_info,
+                                                       src_rr_node->ptc_num));
+
+  fprintf(fp, " -to ");
+ 
+  fprintf(fp, "%s/", 
+          gen_verilog_one_cb_instance_name(cur_cb_info)); 
+
+  dump_verilog_grid_side_pin_with_given_index(fp, IPIN, /* This is an output of a connection box */
+                                              des_rr_node->ptc_num,
+                                              des_rr_node_grid_side,
+                                              des_rr_node->xlow,
+                                              des_rr_node->ylow,
+                                              FALSE); 
+
+  /* If src_node == des_node, this is a metal wire */
+  fprintf(fp, " %.2g", tmax);
+
+  fprintf(fp, "\n");
+ 
+  return; 
+}
+
+
+/* Constrain the inputs and outputs of SBs, with the Switch delays */
+void verilog_generate_sdc_constrain_sbs(t_sram_orgz_info* cur_sram_orgz_info,
+                                        t_sdc_opts sdc_opts,
+                                        int num_switch,
+                                        t_switch_inf* switches,
+                                        t_spice* spice) {
+  FILE* fp = NULL;
+  int ix, iy;
+  int side, itrack;
+  t_sb* cur_sb_info = NULL;
+  char* fname = my_strcat(sdc_opts.sdc_dir, sdc_constrain_sb_file_name);
+
+  vpr_printf(TIO_MESSAGE_INFO, 
+             "Generating SDC for constraining Switch Blocks in P&R flow: %s ...\n",
+             fname);
+
+  /* Print the muxes netlist*/
+  fp = fopen(fname, "w");
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+              "(FILE:%s,LINE[%d])Failure in create SDC constraints %s",
+              __FILE__, __LINE__, fname); 
+    exit(1);
+  } 
+  /* Generate the descriptions*/
+  dump_verilog_sdc_file_header(fp, "Constrain Switch Blocks for PnR");
+
+
+  /* We start from a SB[x][y] */
+  for (ix = 0; ix < (nx + 1); ix++) {
+    for (iy = 0; iy < (ny + 1); iy++) {
+      cur_sb_info = &(sb_info[ix][iy]);
+      for (side = 0; side < cur_sb_info->num_sides; side++) {
+        for (itrack = 0; itrack < cur_sb_info->chan_width[side]; itrack++) {
+          assert((CHANX == cur_sb_info->chan_rr_node[side][itrack]->type)
+               ||(CHANY == cur_sb_info->chan_rr_node[side][itrack]->type));
+          /* We only care the output port and it should indicate a SB mux */
+          if (OUT_PORT != cur_sb_info->chan_rr_node_direction[side][itrack]) {
+            continue; 
+          }
+          /* Constrain thru wires */
+          if (FALSE != check_drive_rr_node_imply_short(*cur_sb_info, cur_sb_info->chan_rr_node[side][itrack], side)) {
+            /* Set the max, min delay to 0? */ 
+            verilog_generate_sdc_constrain_one_sb_path(fp, cur_sb_info,
+                                                       cur_sb_info->chan_rr_node[side][itrack],
+                                                       cur_sb_info->chan_rr_node[side][itrack],
+                                                       0.);
+            continue;
+          } 
+          /* This is a MUX, constrain all the paths from an input to an output */
+          verilog_generate_sdc_constrain_one_sb_mux(fp, cur_sb_info,
+                                                    cur_sb_info->chan_rr_node[side][itrack]);
+        }
+      }
+    }
+  }
+
+  /* Close the file*/
+  fclose(fp);
+
+  /* Free strings */
+  my_free(fname);
+
+  return;
+}
+
+void verilog_generate_sdc_constrain_one_cb(FILE* fp,
+                                           t_cb* cur_cb_info) {
+  int side, side_cnt;
+  int inode, iedge, switch_id;
+  float switch_delay = 0.;
+
+  /* Check the file handler */
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  side_cnt = 0;
+  /* Print the ports of grids*/
+  /* only check ipin_rr_nodes of cur_cb_info */
+  for (side = 0; side < cur_cb_info->num_sides; side++) {
+    /* Bypass side with zero IPINs*/
+    if (0 == cur_cb_info->num_ipin_rr_nodes[side]) {
+      continue;
+    }
+    side_cnt++;
+    assert(0 < cur_cb_info->num_ipin_rr_nodes[side]);
+    assert(NULL != cur_cb_info->ipin_rr_node[side]);
+    for (inode = 0; inode < cur_cb_info->num_ipin_rr_nodes[side]; inode++) {
+      for (iedge = 0; iedge < cur_cb_info->ipin_rr_node[side][inode]->num_drive_rr_nodes; iedge++) {
+        /* Get the switch delay */
+        switch_id = cur_cb_info->ipin_rr_node[side][inode]->drive_switches[iedge];
+        switch_delay = get_switch_sdc_tmax (&(switch_inf[switch_id]));
+
+        /* Print each INPUT Pins of a grid */
+        verilog_generate_sdc_constrain_one_cb_path(fp, cur_cb_info,
+                                                   cur_cb_info->ipin_rr_node[side][inode]->drive_rr_nodes[iedge],
+                                                   cur_cb_info->ipin_rr_node[side][inode],
+                                                   cur_cb_info->ipin_rr_node_grid_side[side][inode],
+                                                   switch_delay); 
+      }
+    }
+  }
+  /* Make sure only 2 sides of IPINs are printed */
+  assert((1 == side_cnt)||(2 == side_cnt));
+
+  return;
+}
+
+/* Constrain the inputs and outputs of Connection Blocks, with the Switch delays */
+void verilog_generate_sdc_constrain_cbs(t_sram_orgz_info* cur_sram_orgz_info,
+                                        t_sdc_opts sdc_opts,
+                                        int num_switch,
+                                        t_switch_inf* switches,
+                                        t_spice* spice) {
+  FILE* fp = NULL;
+  int ix, iy;
+  char* fname = my_strcat(sdc_opts.sdc_dir, sdc_constrain_cb_file_name);
+
+  vpr_printf(TIO_MESSAGE_INFO, 
+             "Generating SDC for constraining Connection Blocks in P&R flow: %s ...\n",
+             fname);
+
+  /* Print the muxes netlist*/
+  fp = fopen(fname, "w");
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+              "(FILE:%s,LINE[%d])Failure in create SDC constraints %s",
+              __FILE__, __LINE__, fname); 
+    exit(1);
+  } 
+  /* Generate the descriptions*/
+  dump_verilog_sdc_file_header(fp, "Constrain Connection Blocks for PnR");
+
+  /* Connection Boxes */
+  /* X - channels [1...nx][0..ny]*/
+  for (iy = 0; iy < (ny + 1); iy++) {
+    for (ix = 1; ix < (nx + 1); ix++) {
+      if ((TRUE == is_cb_exist(CHANX, ix, iy))
+         &&(0 < count_cb_info_num_ipin_rr_nodes(cbx_info[ix][iy]))) {
+        verilog_generate_sdc_constrain_one_cb(fp, &(cbx_info[ix][iy]));
+      }
+    }
+  }
+  /* Y - channels [1...ny][0..nx]*/
+  for (ix = 0; ix < (nx + 1); ix++) {
+    for (iy = 1; iy < (ny + 1); iy++) {
+      if ((TRUE == is_cb_exist(CHANY, ix, iy)) 
+         &&(0 < count_cb_info_num_ipin_rr_nodes(cby_info[ix][iy]))) {
+        verilog_generate_sdc_constrain_one_cb(fp, &(cby_info[ix][iy]));
+      }
+    }
+  }
+
+  /* Close the file*/
+  fclose(fp);
+
+  /* Free strings */
+  my_free(fname);
+
+  return;
+}
+
+void verilog_generate_sdc_constrain_one_chan(FILE* fp, 
+                                             t_rr_type chan_type,
+                                             int x, int y,
+                                             t_arch arch,
+                                             int LL_num_rr_nodes, t_rr_node* LL_rr_node,
+                                             t_ivec*** LL_rr_node_indices,
+                                             t_rr_indexed_data* LL_rr_indexed_data) {
+  int chan_width = 0;
+  t_rr_node** chan_rr_nodes = NULL;
+  int cost_index, iseg, itrack;
+
+  /* Check the file handler */
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  /* Collect rr_nodes for Tracks for chanx[ix][iy] */
+  chan_rr_nodes = get_chan_rr_nodes(&chan_width, chan_type, x, y,
+                                    LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
+
+  for (itrack = 0; itrack < chan_width; itrack++) {
+    fprintf(fp, "set_max_delay");
+    fprintf(fp, " -from ");
+
+    fprintf(fp, "%s/in%d", 
+            gen_verilog_one_routing_channel_module_name(chan_type, x, y),
+            itrack);
+
+    fprintf(fp, " -to ");
+
+    fprintf(fp, "%s/out%d", 
+            gen_verilog_one_routing_channel_module_name(chan_type, x, y), 
+            itrack);
+    /* Find the segment delay ! */
+    cost_index = chan_rr_nodes[itrack]->cost_index;
+    iseg = LL_rr_indexed_data[cost_index].seg_index; 
+    /* Check */
+    assert((!(iseg < 0))&&(iseg < arch.num_segments));
+    fprintf(fp, " %.2g", get_routing_seg_sdc_tmax(&(arch.Segments[iseg])));
+    fprintf(fp, "\n");
+
+    fprintf(fp, "set_max_delay");
+    fprintf(fp, " -from ");
+
+    fprintf(fp, "%s/in%d", 
+            gen_verilog_one_routing_channel_module_name(chan_type, x, y),
+            itrack);
+
+    fprintf(fp, " -to ");
+
+    fprintf(fp, "%s/mid_out%d", 
+            gen_verilog_one_routing_channel_module_name(chan_type, x, y), 
+            itrack);
+    /* Check */
+    fprintf(fp, " %.2g", get_routing_seg_sdc_tmax(&(arch.Segments[iseg])));
+    fprintf(fp, "\n");
+
+  }
+
+  /* Free */
+  my_free(chan_rr_nodes);
+
+  return;
+}
+
+/* Constrain the inputs and outputs of Connection Blocks, with the Switch delays */
+void verilog_generate_sdc_constrain_routing_channels(t_sram_orgz_info* cur_sram_orgz_info,
+                                                     t_sdc_opts sdc_opts,
+                                                     t_arch arch,
+                                                     int LL_num_rr_nodes, t_rr_node* LL_rr_node,
+                                                     t_ivec*** LL_rr_node_indices,
+                                                     t_rr_indexed_data* LL_rr_indexed_data,
+                                                     t_spice* spice) {
+  FILE* fp = NULL;
+  int ix, iy;
+  char* fname = my_strcat(sdc_opts.sdc_dir, sdc_constrain_routing_chan_file_name);
+
+  vpr_printf(TIO_MESSAGE_INFO, 
+             "Generating SDC for constraining Routing Channels in P&R flow: %s ...\n",
+             fname);
+
+  /* Print the muxes netlist*/
+  fp = fopen(fname, "w");
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+              "(FILE:%s,LINE[%d])Failure in create SDC constraints %s",
+              __FILE__, __LINE__, fname); 
+    exit(1);
+  } 
+  /* Generate the descriptions*/
+  dump_verilog_sdc_file_header(fp, "Constrain Routing Channels for PnR");
+
+  /* Routing channels */
+  /* X - channels [1...nx][0..ny]*/
+  for (iy = 0; iy < (ny + 1); iy++) {
+    for (ix = 1; ix < (nx + 1); ix++) {
+      verilog_generate_sdc_constrain_one_chan(fp, CHANX, ix, iy, arch,
+                                              LL_num_rr_nodes, LL_rr_node, 
+                                              LL_rr_node_indices, LL_rr_indexed_data);
+    }
+  }
+  /* Y - channels [1...ny][0..nx]*/
+  for (ix = 0; ix < (nx + 1); ix++) {
+    for (iy = 1; iy < (ny + 1); iy++) {
+      verilog_generate_sdc_constrain_one_chan(fp, CHANY, ix, iy, arch,
+                                              LL_num_rr_nodes, LL_rr_node, 
+                                              LL_rr_node_indices, LL_rr_indexed_data);
+    }
+  }
+
+  /* Close the file*/
+  fclose(fp);
+
+  /* Free strings */
+  my_free(fname);
+
+  return;
+}
+
 void verilog_generate_sdc_pnr(t_sram_orgz_info* cur_sram_orgz_info,
                               char* sdc_dir,
                               t_arch arch,
                               t_det_routing_arch* routing_arch,
                               int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                               t_ivec*** LL_rr_node_indices,
+                              t_rr_indexed_data* LL_rr_indexed_data,
                               t_syn_verilog_opts fpga_verilog_opts) {
   t_sdc_opts sdc_opts;
 
   /* Initialize */
   sdc_opts.sdc_dir = my_strdup(sdc_dir);
+  sdc_opts.constrain_pbs = TRUE;
+  sdc_opts.constrain_routing_channels = TRUE;
+  sdc_opts.constrain_sbs = TRUE;
+  sdc_opts.constrain_cbs = TRUE;
   sdc_opts.break_loops = TRUE;
   sdc_opts.break_loops_mux = FALSE; /* By default, we turn it off to avoid a overkill */
 
@@ -329,10 +763,30 @@ void verilog_generate_sdc_pnr(t_sram_orgz_info* cur_sram_orgz_info,
   } 
 
   /* Part 3. Output routing constraints for Switch Blocks */
+  if (TRUE == sdc_opts.constrain_sbs) {
+    verilog_generate_sdc_constrain_sbs(cur_sram_orgz_info, sdc_opts, 
+                                       routing_arch->num_switch, switch_inf,
+                                       arch.spice); 
+  }
 
   /* Part 4. Output routing constraints for Connection Blocks */
+  if (TRUE == sdc_opts.constrain_cbs) {
+    verilog_generate_sdc_constrain_cbs(cur_sram_orgz_info, sdc_opts, 
+                                       routing_arch->num_switch, switch_inf,
+                                       arch.spice); 
+  }
 
-  /* Part 5. Output routing constraints for Programmable blocks */
+  /* Part 5. Output routing constraints for Connection Blocks */
+  if (TRUE == sdc_opts.constrain_routing_channels) {
+    verilog_generate_sdc_constrain_routing_channels(cur_sram_orgz_info, sdc_opts, arch, 
+                                                    LL_num_rr_nodes, LL_rr_node, 
+                                                    LL_rr_node_indices, LL_rr_indexed_data,
+                                                    arch.spice); 
+  }
+
+  /* Part 6. Output routing constraints for Programmable blocks */
+  if (TRUE == sdc_opts.constrain_pbs) {
+  }
 
   return;
 }

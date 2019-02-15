@@ -136,7 +136,9 @@ int create_dir_path(char* dir_path) {
      return 1;
    case -1:
      if (EEXIST == errno) {
-       vpr_printf(TIO_MESSAGE_WARNING,"Directory(%s) already exists. Will overwrite SPICE netlists\n",dir_path);
+       vpr_printf(TIO_MESSAGE_WARNING,
+                  "Directory(%s) already exists. Will overwrite contents\n",
+                  dir_path);
        return 1;
      }
    default:

@@ -7,10 +7,12 @@ extern char* verilog_signal_init_preproc_flag; // the flag to enable signal init
 extern char* verilog_formal_verification_preproc_flag; // the flag to enable formal verification during compilation
 
 extern char* default_verilog_dir_name;
+extern char* default_src_dir_name;
 extern char* default_lb_dir_name;
 extern char* default_rr_dir_name;
 extern char* default_submodule_dir_name;
 extern char* default_tcl_dir_name;
+extern char* default_sdc_dir_name;
 extern char* default_modelsim_dir_name;
 extern char* autocheck_testbench_postfix;
 
@@ -46,6 +48,9 @@ extern char* user_defined_template_verilog_file_name;
 extern char* trpt_sb_file_name;
 extern char* trpt_routing_file_name;
 
+extern char* sdc_constrain_routing_chan_file_name;
+extern char* sdc_constrain_cb_file_name;
+extern char* sdc_constrain_sb_file_name;
 extern char* sdc_break_loop_file_name;
 extern char* sdc_clock_period_file_name;
 

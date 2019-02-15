@@ -54,15 +54,98 @@ struct s_trpt_opts {
 typedef struct s_wireL_cnt t_wireL_cnt;
 struct s_wireL_cnt {
   int L_wire;
+  FILE* file_handler;
   int cnt;
 };
+
+/***** Subroutines *****/
+char* gen_verilog_one_routing_report_timing_Lwire_dir_path(char* report_timing_path, 
+                                                           int L_wire) {
+  char* ret = NULL;
+  char* formatted_path = format_dir_path(report_timing_path);
+
+  /* The report will be named after L<lenght>_path<ID>*/
+  ret = (char*) my_malloc (sizeof(char) * (strlen(formatted_path)
+                           + 1 + strlen(my_itoa(L_wire))
+                           + 6 + 1));
+
+  sprintf(ret, 
+          "%sL%d_wire/",
+          formatted_path, L_wire);
+
+  return ret;
+}
+
+char* gen_verilog_one_routing_report_timing_rpt_name(char* report_timing_path,
+                                                     int L_wire, int path_id) {
+  char* ret = NULL;
+  char* formatted_path = gen_verilog_one_routing_report_timing_Lwire_dir_path(report_timing_path, L_wire);
+
+  /* The report will be named after L<lenght>_path<ID>*/
+  ret = (char*) my_malloc (sizeof(char) * (strlen(formatted_path)
+                           + 1 + strlen(my_itoa(L_wire))
+                           + 5 + strlen(my_itoa(path_id)) + 5));
+
+  sprintf(ret, 
+          "%sL%d_path%d.rpt",
+          formatted_path, L_wire, path_id);
+
+  return ret;
+}
+
+FILE* create_wireL_report_timing_tcl_file_handler(t_trpt_opts trpt_opts, 
+                                                  int L_wire) {
+  FILE* fp = NULL;
+  char* sdc_dir_path = NULL;
+  char* L_wire_str = (char*) my_malloc(sizeof(char) * (1 + strlen(my_itoa(L_wire)) + 2));
+  char* descr = NULL;
+  char* sdc_fname = NULL;
+
+  sprintf(L_wire_str, "L%d_", L_wire);
+
+  sdc_dir_path = gen_verilog_one_routing_report_timing_Lwire_dir_path(trpt_opts.sdc_dir, L_wire); 
+  
+  /* Create dir path*/
+  create_dir_path(sdc_dir_path);
+
+  /* Create the file handler */
+  sdc_fname = my_strcat(sdc_dir_path, L_wire_str);
+  sdc_fname = my_strcat(sdc_fname, trpt_routing_file_name);
+
+  /* Create a file*/
+  fp = fopen(sdc_fname, "w");
+
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Failure in create SDC constraints %s",
+               __FILE__, __LINE__, sdc_fname); 
+    exit(1);
+  } 
+
+  descr = (char*)my_malloc(sizeof(char) * (strlen("Report Timing for L-")
+                                         + strlen(my_itoa(L_wire))
+                                         + strlen(" wires") + 1));
+  sprintf(descr, "Report Timing for L-%d wires", L_wire); 
+
+  /* Generate SDC header */
+  dump_verilog_sdc_file_header(fp, descr);
+
+  /* Free */
+  my_free(descr);
+  my_free(sdc_dir_path);
+  my_free(L_wire_str);
+  my_free(sdc_fname);
+
+  return fp;
+}
 
 /* Find a wire length in the linked list,
  * And return the counter if we found,
  * Otherwise, we allocate a new member to the linked list */
 t_llist* get_wire_L_counter_in_llist(t_llist* rr_path_cnt, 
+                                     t_trpt_opts trpt_opts,
                                      int L_wire,
-                                     int* path_cnt) {
+                                     t_wireL_cnt** ret_cnt) {
   t_llist* temp = rr_path_cnt;
   t_wireL_cnt* temp_cnt = NULL;
   
@@ -70,7 +153,7 @@ t_llist* get_wire_L_counter_in_llist(t_llist* rr_path_cnt,
     temp_cnt = (t_wireL_cnt*)(temp->dptr);
     if (L_wire == temp_cnt->L_wire) {
       /* We find it! Return here */ 
-      (*path_cnt) = temp_cnt->cnt;
+      (*ret_cnt) = temp_cnt;
       return rr_path_cnt;
     }
     /* Go to next */
@@ -81,16 +164,32 @@ t_llist* get_wire_L_counter_in_llist(t_llist* rr_path_cnt,
     temp = insert_llist_node_before_head(rr_path_cnt);
     /* Allocate new wireL */
     temp_cnt = (t_wireL_cnt*)my_malloc(sizeof(t_wireL_cnt));
+    /* Initialization */
     temp_cnt->L_wire = L_wire;
+    temp_cnt->file_handler = create_wireL_report_timing_tcl_file_handler(trpt_opts, L_wire);
     temp_cnt->cnt = 0;
     temp->dptr = (void*)temp_cnt;
     /* Prepare the counter to return */ 
-    (*path_cnt) = 0;
+    (*ret_cnt) = temp_cnt;
   }
 
   return temp;
 }
 
+void fclose_wire_L_file_handler_in_llist(t_llist* rr_path_cnt) {
+  t_llist* temp = rr_path_cnt;
+  t_wireL_cnt* temp_cnt = NULL;
+
+  while (NULL != temp) {
+    temp_cnt = (t_wireL_cnt*)(temp->dptr);
+    fclose(temp_cnt->file_handler);
+    /* Go to next */
+    temp = temp->next;
+  }
+
+  return;
+} 
+                                   
 void update_wire_L_counter_in_llist(t_llist* rr_path_cnt, 
                                     int L_wire,
                                     int path_cnt) {
@@ -127,21 +226,6 @@ void free_wire_L_llist(t_llist* rr_path_cnt) {
   free_llist(rr_path_cnt);
 
   return;
-}
-
-char* gen_verilog_one_routing_report_timing_rpt_name(int L_wire, int path_id) {
-  char* ret = NULL;
-
-  /* The report will be named after L<lenght>_path<ID>*/
-  ret = (char*) my_malloc (sizeof(char) * (
-                           1 + strlen(my_itoa(L_wire))
-                           + 5 + strlen(my_itoa(path_id)) + 5));
-
-  sprintf(ret, 
-          "L%d_path%d.rpt",
-          L_wire, path_id);
-
-  return ret;
 }
 
 /* Reporting timing from a SB input to an output
@@ -462,6 +546,7 @@ void verilog_generate_report_timing_one_sb_ending_segments(FILE* fp,
  * from the src_rr_node to the des_rr_node 
  */
 void dump_verilog_one_sb_wire_segemental_report_timing(FILE* fp,
+                                                       t_syn_verilog_opts fpga_verilog_opts,
                                                        t_sb* src_sb_info,
                                                        t_rr_node* drive_rr_node, 
                                                        t_rr_node* src_rr_node, 
@@ -492,7 +577,8 @@ void dump_verilog_one_sb_wire_segemental_report_timing(FILE* fp,
   L_wire = get_rr_node_wire_length(src_rr_node);
 
   /* Get report name */
-  rpt_name = gen_verilog_one_routing_report_timing_rpt_name(L_wire, path_cnt);
+  rpt_name = gen_verilog_one_routing_report_timing_rpt_name(fpga_verilog_opts.report_timing_path,
+                                                            L_wire, path_cnt);
   /* Start printing report timing info  */
   fprintf(fp, "# L%d wire, Path ID: %d\n", 
           L_wire,
@@ -1192,7 +1278,7 @@ void verilog_generate_sb_report_timing(t_sram_orgz_info* cur_sram_orgz_info,
  * We output TCL commands to sum up the segmental delay 
  */
 void verilog_generate_one_routing_segmental_report_timing(FILE* fp, 
-                                                          t_trpt_opts sdc_opts,
+                                                          t_syn_verilog_opts fpga_verilog_opts,
                                                           t_sb* cur_sb_info,
                                                           t_rr_node* wire_rr_node,
                                                           int LL_num_rr_nodes, t_rr_node* LL_rr_node,
@@ -1221,7 +1307,8 @@ void verilog_generate_one_routing_segmental_report_timing(FILE* fp,
   for (iedge = 0; iedge < wire_rr_node->num_drive_rr_nodes; iedge++) {
     /* Find the ending points*/
     for (jedge = 0; jedge < num_end_rr_nodes; jedge++) {
-      dump_verilog_one_sb_wire_segemental_report_timing(fp, cur_sb_info, 
+      dump_verilog_one_sb_wire_segemental_report_timing(fp, fpga_verilog_opts, 
+                                                        cur_sb_info, 
                                                         wire_rr_node->drive_rr_nodes[iedge],
                                                         wire_rr_node,
                                                         end_rr_node[jedge],
@@ -1238,40 +1325,23 @@ void verilog_generate_one_routing_segmental_report_timing(FILE* fp,
 }
 
 void verilog_generate_routing_report_timing(t_sram_orgz_info* cur_sram_orgz_info,
-                                            t_trpt_opts sdc_opts,
+                                            t_trpt_opts trpt_opts,
                                             t_arch arch,
                                             t_det_routing_arch* routing_arch,
                                             int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                             t_ivec*** LL_rr_node_indices,
                                             t_syn_verilog_opts fpga_verilog_opts) {
-  char* sdc_fname = NULL;
   FILE* fp = NULL;
   int ix, iy;
   int L_wire;
   int side, itrack;
   t_sb* cur_sb_info = NULL;
   t_llist* rr_path_cnt = NULL;
+  t_wireL_cnt* wireL_cnt = NULL;
   int path_cnt = 0;
 
-  /* Create the file handler */
-  sdc_fname = my_strcat(format_dir_path(sdc_opts.sdc_dir), trpt_routing_file_name);
-
-  /* Create a file*/
-  fp = fopen(sdc_fname, "w");
-
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,
-               "(FILE:%s,LINE[%d])Failure in create SDC constraints %s",
-               __FILE__, __LINE__, sdc_fname); 
-    exit(1);
-  } 
-
-  /* Generate SDC header */
-  dump_verilog_sdc_file_header(fp, "Report Timing for Switch blocks");
-
   vpr_printf(TIO_MESSAGE_INFO,
-             "Generating TCL script to report timing for Switch Blocks: %s\n",
-             sdc_fname);
+             "Generating TCL script to report timing for routing wires\n");
 
   /* We start from a SB[x][y] */
   for (ix = 0; ix < (nx + 1); ix++) {
@@ -1293,8 +1363,16 @@ void verilog_generate_routing_report_timing(t_sram_orgz_info* cur_sram_orgz_info
           /* Check if L_wire exists in the linked list */
           L_wire = get_rr_node_wire_length(cur_sb_info->chan_rr_node[side][itrack]);
           /* Get counter */
-          rr_path_cnt = get_wire_L_counter_in_llist(rr_path_cnt, L_wire, &path_cnt);
-          verilog_generate_one_routing_segmental_report_timing(fp, sdc_opts, cur_sb_info, 
+          rr_path_cnt = get_wire_L_counter_in_llist(rr_path_cnt, trpt_opts, L_wire, &wireL_cnt);
+          path_cnt = wireL_cnt->cnt;
+          fp = wireL_cnt->file_handler;
+          /* This is a new L-wire, create the file handler and the mkdir command to the TCL script */
+          if (0 == path_cnt) {
+            fprintf(fp, "exec mkdir %s\n",
+                    gen_verilog_one_routing_report_timing_Lwire_dir_path(fpga_verilog_opts.report_timing_path, L_wire)); 
+          }
+          verilog_generate_one_routing_segmental_report_timing(fp, fpga_verilog_opts,
+                                                               cur_sb_info, 
                                                                cur_sb_info->chan_rr_node[side][itrack], 
                                                                LL_num_rr_nodes, LL_rr_node, 
                                                                LL_rr_node_indices, &path_cnt);
@@ -1306,7 +1384,7 @@ void verilog_generate_routing_report_timing(t_sram_orgz_info* cur_sram_orgz_info
   }
 
   /* close file*/
-  fclose(fp);
+  fclose_wire_L_file_handler_in_llist(rr_path_cnt);
 
   /* Free */
   free_wire_L_llist(rr_path_cnt);

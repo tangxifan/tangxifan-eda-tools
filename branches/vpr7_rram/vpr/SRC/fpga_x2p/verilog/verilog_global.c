@@ -15,10 +15,12 @@ char* verilog_signal_init_preproc_flag = "ENABLE_SIGNAL_INITIALIZATION"; // the 
 char* verilog_formal_verification_preproc_flag = "ENABLE_FORMAL_VERIFICATION"; // the flag to enable formal verification during compilation
 
 char* default_verilog_dir_name = "syn_verilogs/";
+char* default_src_dir_name = "SRC/";
 char* default_lb_dir_name = "lb/";
 char* default_rr_dir_name = "routing/";
 char* default_submodule_dir_name = "sub_module/";
-char* default_tcl_dir_name = "tcl/";
+char* default_tcl_dir_name = "SCRIPTS/";
+char* default_sdc_dir_name = "SDC/";
 char* default_modelsim_dir_name = "msim_projects/";
 char* autocheck_testbench_postfix = "_autocheck";
 
@@ -57,6 +59,9 @@ char* trpt_routing_file_name = "report_timing_routing.tcl";
 
 /* File names for SDC*/
 char* sdc_break_loop_file_name = "break_loop.sdc";
+char* sdc_constrain_routing_chan_file_name = "routing_channels.sdc";
+char* sdc_constrain_cb_file_name = "cb.sdc";
+char* sdc_constrain_sb_file_name = "sb.sdc";
 char* sdc_clock_period_file_name = "clock.sdc";
 
 char* verilog_mux_basis_posfix = "_basis";

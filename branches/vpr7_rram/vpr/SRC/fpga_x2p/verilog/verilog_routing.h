@@ -6,6 +6,7 @@ void dump_verilog_routing_chan_subckt(t_sram_orgz_info* cur_sram_orgz_info,
                                       t_rr_type chan_type, 
                                       int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                       t_ivec*** LL_rr_node_indices,
+                                      t_rr_indexed_data* LL_rr_indexed_data,
                                       int num_segment, t_segment_inf* segments,
                                       t_syn_verilog_opts fpga_verilog_opts);
 
@@ -120,5 +121,6 @@ void dump_verilog_routing_resources(t_sram_orgz_info* cur_sram_orgz_info,
                                     t_det_routing_arch* routing_arch,
                                     int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                     t_ivec*** LL_rr_node_indices,
+                                    t_rr_indexed_data* LL_rr_indexed_data,
                                     t_syn_verilog_opts fpga_verilog_opts);
 

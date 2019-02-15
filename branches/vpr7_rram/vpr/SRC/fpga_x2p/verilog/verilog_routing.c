@@ -44,6 +44,7 @@ void dump_verilog_routing_chan_subckt(t_sram_orgz_info* cur_sram_orgz_info,
                                       t_rr_type chan_type, 
                                       int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                       t_ivec*** LL_rr_node_indices,
+                                      t_rr_indexed_data* LL_rr_indexed_data,
                                       int num_segment, t_segment_inf* segments,
                                       t_syn_verilog_opts fpga_verilog_opts) {
   int itrack, iseg, cost_index;
@@ -143,7 +144,7 @@ void dump_verilog_routing_chan_subckt(t_sram_orgz_info* cur_sram_orgz_info,
   /* Print segments models*/
   for (itrack = 0; itrack < chan_width; itrack++) {
     cost_index = chan_rr_nodes[itrack]->cost_index;
-    iseg = rr_indexed_data[cost_index].seg_index; 
+    iseg = LL_rr_indexed_data[cost_index].seg_index; 
     /* Check */
     assert((!(iseg < 0))&&(iseg < num_segment));
     /* short connecting inputs and outputs: 
@@ -1799,10 +1800,9 @@ void dump_verilog_routing_connection_box_subckt(t_sram_orgz_info* cur_sram_orgz_
     assert (0 < cur_cb_info->chan_width[side]);
     side_cnt++;
     for (itrack = 0; itrack < cur_cb_info->chan_width[side]; itrack++) {
-      fprintf(fp, "input %s_%d__%d__midout_%d_, \n",
-              convert_chan_type_to_string(cur_cb_info->type),
-              cur_cb_info->x, cur_cb_info->y, itrack);
-      fprintf(fp, "\n");
+      fprintf(fp, "%s, \n",
+              gen_verilog_routing_channel_one_midout_name( cur_cb_info,
+                                                           itrack));
     }
   }
   /*check side_cnt */
@@ -1939,6 +1939,7 @@ void dump_verilog_routing_resources(t_sram_orgz_info* cur_sram_orgz_info,
                                     t_det_routing_arch* routing_arch,
                                     int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                     t_ivec*** LL_rr_node_indices,
+                                    t_rr_indexed_data* LL_rr_indexed_data,
                                     t_syn_verilog_opts fpga_verilog_opts) {
   int ix, iy; 
  
@@ -1967,7 +1968,7 @@ void dump_verilog_routing_resources(t_sram_orgz_info* cur_sram_orgz_info,
   for (iy = 0; iy < (ny + 1); iy++) {
     for (ix = 1; ix < (nx + 1); ix++) {
       dump_verilog_routing_chan_subckt(cur_sram_orgz_info, verilog_dir, subckt_dir, ix, iy, CHANX, 
-                                       LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices, 
+                                       LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices, LL_rr_indexed_data, 
                                        arch.num_segments, arch.Segments, fpga_verilog_opts);
     }
   }
@@ -1976,7 +1977,7 @@ void dump_verilog_routing_resources(t_sram_orgz_info* cur_sram_orgz_info,
   for (ix = 0; ix < (nx + 1); ix++) {
     for (iy = 1; iy < (ny + 1); iy++) {
       dump_verilog_routing_chan_subckt(cur_sram_orgz_info, verilog_dir, subckt_dir, ix, iy, CHANY,
-                                       LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices, 
+                                       LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices, LL_rr_indexed_data, 
                                        arch.num_segments, arch.Segments, fpga_verilog_opts);
     }
   }
