@@ -43,6 +43,7 @@ typedef struct s_sdc_opts t_sdc_opts;
 struct s_sdc_opts {
   char* sdc_dir;
   boolean break_loops;
+  boolean break_loops_mux;
 };
 
 /* TO avoid combinational loops caused by memories
@@ -231,6 +232,48 @@ void verilog_generate_sdc_clock_period(t_sdc_opts sdc_opts) {
 
   return;
 }
+ 
+void verilog_generate_sdc_break_loop_sb(FILE* fp) {
+  int ix, iy;
+  int side, itrack;
+  t_sb* cur_sb_info = NULL;
+
+  /* Check the file handler */
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  /* Go for each SB */
+  for (ix = 0; ix < (nx + 1); ix++) {
+    for (iy = 0; iy < (ny + 1); iy++) {
+      cur_sb_info = &(sb_info[ix][iy]);
+      for (side = 0; side < cur_sb_info->num_sides; side++) {
+        for (itrack = 0; itrack < cur_sb_info->chan_width[side]; itrack++) {
+          assert((CHANX == cur_sb_info->chan_rr_node[side][itrack]->type)
+               ||(CHANY == cur_sb_info->chan_rr_node[side][itrack]->type));
+          /* We only care the output port and it should indicate a SB mux */
+          if ( (OUT_PORT != cur_sb_info->chan_rr_node_direction[side][itrack]) 
+             || (FALSE != check_drive_rr_node_imply_short(*cur_sb_info, cur_sb_info->chan_rr_node[side][itrack], side))) {
+            continue; 
+          }
+          /* Bypass if we have only 1 driving node */
+          if (1 == cur_sb_info->chan_rr_node[side][itrack]->num_drive_rr_nodes) {
+            continue; 
+          }
+          fprintf(fp, 
+                  "set_disable_timing [get_pins -filter \"direction == out\" -of %s]\n",
+                  gen_verilog_one_sb_instance_name(cur_sb_info));
+        }
+      }
+    }
+  }
+
+  
+  return;
+}
 
 void verilog_generate_sdc_break_loops(t_sram_orgz_info* cur_sram_orgz_info,
                                       t_sdc_opts sdc_opts,
@@ -260,7 +303,12 @@ void verilog_generate_sdc_break_loops(t_sram_orgz_info* cur_sram_orgz_info,
   verilog_generate_sdc_break_loop_sram(fp, cur_sram_orgz_info);
 
   /* 2. Break loops from Multiplexer Output */
-  verilog_generate_sdc_break_loop_mux(fp, num_switch, switches, spice, routing_arch);
+  if (TRUE == sdc_opts.break_loops_mux) {
+    verilog_generate_sdc_break_loop_mux(fp, num_switch, switches, spice, routing_arch); 
+  }
+
+  /* 3. Break loops from any SB output */
+  verilog_generate_sdc_break_loop_sb(fp);
 
   /* Close the file*/
   fclose(fp);
@@ -283,6 +331,7 @@ void verilog_generate_sdc_pnr(t_sram_orgz_info* cur_sram_orgz_info,
   /* Initialize */
   sdc_opts.sdc_dir = my_strdup(sdc_dir);
   sdc_opts.break_loops = TRUE;
+  sdc_opts.break_loops_mux = FALSE; /* By default, we turn it off to avoid a overkill */
 
   /* Part 1. Constrain clock cycles */
   verilog_generate_sdc_clock_period(sdc_opts);
