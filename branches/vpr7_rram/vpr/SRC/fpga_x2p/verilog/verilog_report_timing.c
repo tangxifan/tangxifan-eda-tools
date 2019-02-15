@@ -51,6 +51,84 @@ struct s_trpt_opts {
   boolean print_thru_pins;
 };
 
+typedef struct s_wireL_cnt t_wireL_cnt;
+struct s_wireL_cnt {
+  int L_wire;
+  int cnt;
+};
+
+/* Find a wire length in the linked list,
+ * And return the counter if we found,
+ * Otherwise, we allocate a new member to the linked list */
+t_llist* get_wire_L_counter_in_llist(t_llist* rr_path_cnt, 
+                                     int L_wire,
+                                     int* path_cnt) {
+  t_llist* temp = rr_path_cnt;
+  t_wireL_cnt* temp_cnt = NULL;
+  
+  while (NULL != temp) {
+    temp_cnt = (t_wireL_cnt*)(temp->dptr);
+    if (L_wire == temp_cnt->L_wire) {
+      /* We find it! Return here */ 
+      (*path_cnt) = temp_cnt->cnt;
+      return rr_path_cnt;
+    }
+    /* Go to next */
+    temp = temp->next;
+  }
+  /* If temp is empty, we have to allocate a new node */
+  if (NULL == temp) {
+    temp = insert_llist_node_before_head(rr_path_cnt);
+    /* Allocate new wireL */
+    temp_cnt = (t_wireL_cnt*)my_malloc(sizeof(t_wireL_cnt));
+    temp_cnt->L_wire = L_wire;
+    temp_cnt->cnt = 0;
+    temp->dptr = (void*)temp_cnt;
+    /* Prepare the counter to return */ 
+    (*path_cnt) = 0;
+  }
+
+  return temp;
+}
+
+void update_wire_L_counter_in_llist(t_llist* rr_path_cnt, 
+                                    int L_wire,
+                                    int path_cnt) {
+  t_llist* temp = rr_path_cnt;
+  t_wireL_cnt* temp_cnt = NULL;
+  
+  while (NULL != temp) {
+    temp_cnt = (t_wireL_cnt*)(temp->dptr);
+    if (L_wire == temp_cnt->L_wire) {
+      /* We find it! Return here */ 
+      temp_cnt->cnt = path_cnt;
+      return;
+    }
+    /* Go to next */
+    temp = temp->next;
+  }
+
+  /* We must find something! */
+  assert (NULL != temp);
+
+  return;
+}
+
+void free_wire_L_llist(t_llist* rr_path_cnt) {
+  t_llist* temp = rr_path_cnt;
+
+  while (NULL != temp) {
+    my_free(temp->dptr); 
+    temp->dptr = NULL;
+    /* Go to next */
+    temp = temp->next;
+  }
+  
+  free_llist(rr_path_cnt);
+
+  return;
+}
+
 char* gen_verilog_one_routing_report_timing_rpt_name(int L_wire, int path_id) {
   char* ret = NULL;
 
@@ -411,7 +489,7 @@ void dump_verilog_one_sb_wire_segemental_report_timing(FILE* fp,
   assert ((CHANX == src_rr_node->type)
         ||(CHANY == src_rr_node->type));
 
-  L_wire = abs(src_rr_node->xlow - src_rr_node->xhigh + src_rr_node->ylow - src_rr_node->yhigh) + 1,
+  L_wire = get_rr_node_wire_length(src_rr_node);
 
   /* Get report name */
   rpt_name = gen_verilog_one_routing_report_timing_rpt_name(L_wire, path_cnt);
@@ -1121,7 +1199,6 @@ void verilog_generate_one_routing_segmental_report_timing(FILE* fp,
                                                           t_ivec*** LL_rr_node_indices,
                                                           int* path_cnt) {
   int iedge, jedge;
-
   int num_end_rr_nodes = 0;
   t_rr_node** end_rr_node = NULL;
 
@@ -1170,8 +1247,10 @@ void verilog_generate_routing_report_timing(t_sram_orgz_info* cur_sram_orgz_info
   char* sdc_fname = NULL;
   FILE* fp = NULL;
   int ix, iy;
+  int L_wire;
   int side, itrack;
   t_sb* cur_sb_info = NULL;
+  t_llist* rr_path_cnt = NULL;
   int path_cnt = 0;
 
   /* Create the file handler */
@@ -1194,14 +1273,6 @@ void verilog_generate_routing_report_timing(t_sram_orgz_info* cur_sram_orgz_info
              "Generating TCL script to report timing for Switch Blocks: %s\n",
              sdc_fname);
 
-  /* Check the file handler */
-  if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR,
-               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
-               __FILE__, __LINE__); 
-    exit(1);
-  } 
-
   /* We start from a SB[x][y] */
   for (ix = 0; ix < (nx + 1); ix++) {
     for (iy = 0; iy < (ny + 1); iy++) {
@@ -1219,10 +1290,16 @@ void verilog_generate_routing_report_timing(t_sram_orgz_info* cur_sram_orgz_info
           if (1 == cur_sb_info->chan_rr_node[side][itrack]->num_drive_rr_nodes) {
             continue; 
           }
+          /* Check if L_wire exists in the linked list */
+          L_wire = get_rr_node_wire_length(cur_sb_info->chan_rr_node[side][itrack]);
+          /* Get counter */
+          rr_path_cnt = get_wire_L_counter_in_llist(rr_path_cnt, L_wire, &path_cnt);
           verilog_generate_one_routing_segmental_report_timing(fp, sdc_opts, cur_sb_info, 
                                                                cur_sb_info->chan_rr_node[side][itrack], 
                                                                LL_num_rr_nodes, LL_rr_node, 
                                                                LL_rr_node_indices, &path_cnt);
+          /* Update the wire L*/
+          update_wire_L_counter_in_llist(rr_path_cnt, L_wire, path_cnt);
         }
       }
     }
@@ -1230,6 +1307,9 @@ void verilog_generate_routing_report_timing(t_sram_orgz_info* cur_sram_orgz_info
 
   /* close file*/
   fclose(fp);
+
+  /* Free */
+  free_wire_L_llist(rr_path_cnt);
 
   return;
 }
@@ -1265,7 +1345,7 @@ void verilog_generate_report_timing(t_sram_orgz_info* cur_sram_orgz_info,
                                       fpga_verilog_opts);
   }
 
-  /* Part 3. */
+  /* Part 3. Report timing for routing segments of SB wires */
   if (TRUE == trpt_opts.report_routing_timing) {
     verilog_generate_routing_report_timing(cur_sram_orgz_info, trpt_opts,
                                            arch, routing_arch,

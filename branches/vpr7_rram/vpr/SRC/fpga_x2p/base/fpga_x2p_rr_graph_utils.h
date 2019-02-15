@@ -104,3 +104,5 @@ void get_chan_rr_node_start_coordinate(t_rr_node* chan_rr_node,
 
 void get_chan_rr_node_end_coordinate(t_rr_node* chan_rr_node,
                                      int* x_end, int* y_end);
+
+int get_rr_node_wire_length(t_rr_node* src_rr_node);

@@ -250,27 +250,11 @@ void verilog_generate_sdc_break_loop_sb(FILE* fp) {
   for (ix = 0; ix < (nx + 1); ix++) {
     for (iy = 0; iy < (ny + 1); iy++) {
       cur_sb_info = &(sb_info[ix][iy]);
-      for (side = 0; side < cur_sb_info->num_sides; side++) {
-        for (itrack = 0; itrack < cur_sb_info->chan_width[side]; itrack++) {
-          assert((CHANX == cur_sb_info->chan_rr_node[side][itrack]->type)
-               ||(CHANY == cur_sb_info->chan_rr_node[side][itrack]->type));
-          /* We only care the output port and it should indicate a SB mux */
-          if ( (OUT_PORT != cur_sb_info->chan_rr_node_direction[side][itrack]) 
-             || (FALSE != check_drive_rr_node_imply_short(*cur_sb_info, cur_sb_info->chan_rr_node[side][itrack], side))) {
-            continue; 
-          }
-          /* Bypass if we have only 1 driving node */
-          if (1 == cur_sb_info->chan_rr_node[side][itrack]->num_drive_rr_nodes) {
-            continue; 
-          }
-          fprintf(fp, 
-                  "set_disable_timing [get_pins -filter \"direction == out\" -of %s]\n",
-                  gen_verilog_one_sb_instance_name(cur_sb_info));
-        }
-      }
+      fprintf(fp, 
+              "set_disable_timing [get_pins -filter \"direction == out\" -of %s]\n",
+              gen_verilog_one_sb_instance_name(cur_sb_info));
     }
   }
-
   
   return;
 }

@@ -1147,3 +1147,10 @@ void get_chan_rr_node_end_coordinate(t_rr_node* chan_rr_node,
 
   return;
 }
+
+int get_rr_node_wire_length(t_rr_node* src_rr_node) {
+  assert ( (CHANX == src_rr_node->type)
+        || (CHANY == src_rr_node->type));
+
+  return (abs(src_rr_node->xlow - src_rr_node->xhigh + src_rr_node->ylow - src_rr_node->yhigh) + 1);
+}
