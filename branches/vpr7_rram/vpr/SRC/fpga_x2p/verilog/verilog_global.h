@@ -13,6 +13,7 @@ extern char* default_rr_dir_name;
 extern char* default_submodule_dir_name;
 extern char* default_tcl_dir_name;
 extern char* default_sdc_dir_name;
+extern char* default_msim_dir_name;
 extern char* default_modelsim_dir_name;
 extern char* autocheck_testbench_postfix;
 

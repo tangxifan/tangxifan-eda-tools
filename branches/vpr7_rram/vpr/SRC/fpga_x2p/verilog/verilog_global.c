@@ -21,6 +21,7 @@ char* default_rr_dir_name = "routing/";
 char* default_submodule_dir_name = "sub_module/";
 char* default_tcl_dir_name = "SCRIPTS/";
 char* default_sdc_dir_name = "SDC/";
+char* default_msim_dir_name = "MSIM/";
 char* default_modelsim_dir_name = "msim_projects/";
 char* autocheck_testbench_postfix = "_autocheck";
 
