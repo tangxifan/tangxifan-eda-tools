@@ -34,6 +34,7 @@ my $rpt_ptr = \%rpt_h;
 my @benchmark_names;
 my %benchmarks;
 my $benchmarks_ptr = \%benchmarks;
+my $verilog_benchmark;
 
 # Supported flows
 my @supported_flows = ("standard", 
@@ -173,6 +174,8 @@ sub print_usage()
   print "      \t-vpr_fpga_verilog_include_timing : turn on printing delay specification in Verilog files\n";
   print "      \t-vpr_fpga_verilog_include_signal_init : turn on printing signal initialization in Verilog files\n";
   print "      \t-vpr_fpga_verilog_print_autocheck_top_testbench: turn on printing autochecked top-level testbench for Verilog Generator of VPR FPGA SPICE\n";
+  print "      \t-vpr_fpga_verilog_formal_verification_top_netlist : turn on printing formal top Verilog files\n";
+
   print "      \t-vpr_fpga_verilog_print_top_tb : turn on printing top-level testbench for Verilog Generator of VPR FPGA SPICE\n";
   print "      \t-vpr_fpga_verilog_print_input_blif_tb : turn on printing testbench for input blif file in Verilog Generator of VPR FPGA SPICE\n";
   print "      \t-vpr_fpga_verilog_print_modelsim_autodeck <modelsim.ini_path>: turn on printing modelsim simulation script\n";
@@ -352,6 +355,7 @@ sub opts_read()
   &read_opt_into_hash("vpr_fpga_verilog_print_modelsim_autodeck","on","off");
   &read_opt_into_hash("vpr_fpga_verilog_include_timing","off","off");
   &read_opt_into_hash("vpr_fpga_verilog_include_signal_init","off","off");
+  &read_opt_into_hash("vpr_fpga_verilog_formal_verification_top_netlist","off","off");
 
   &print_opts(); 
 
@@ -572,6 +576,48 @@ sub run_abc_libmap($ $ $)
   # !!! For standard library, we cannot use sweep ???
   system("/bin/csh -cx './$abc_name -c \"read_blif $bm; resyn2; read_library $mpack1_stdlib; $abc_seq_optimize map -v; write_blif $blif_out; quit;\" > $log'");
   chdir $cwd;
+}
+
+# Rewrite the verilog after optimization
+sub run_rewrite_verilog($ $ $ $ $) {
+  my ($blif, $path, $benchmark, $bm, $log) = @_;
+  my ($new_verilog) = "$path/$benchmark".".v";
+  my ($cmd_log) = ($log);
+  $cmd_log =~ s/\.log$/rewrite_verilog\.ys/;
+
+  # Get Yosys path
+  my ($yosys_dir,$yosys_name) = &split_prog_path($conf_ptr->{dir_path}->{yosys_path}->{val});
+
+  print "Entering $yosys_dir\n";
+  chdir $yosys_dir;
+  my ($lut_num) = $opt_ptr->{K_val};
+
+  # Create yosys synthesize script
+  my ($YOSYS_CMD_FH) = (FileHandle->new);
+  if ($YOSYS_CMD_FH->open("> $cmd_log")) {
+    print "INFO: auto generating cmds for Yosys ($cmd_log) ...\n";
+  } else {
+    die "ERROR: fail to auto generating cmds for Yosys ($cmd_log) ...\n";
+  }
+  # Output the standard format (refer to VTR_flow script)
+  print $YOSYS_CMD_FH "# Yosys rewriting verilog script for $bm\n";
+  print $YOSYS_CMD_FH "read_blif $blif\n";
+  print $YOSYS_CMD_FH "write_verilog $new_verilog\n";
+
+  close($YOSYS_CMD_FH);
+  #
+  # Create a local copy for the commands 
+
+  system("/bin/tcsh -cx './$yosys_name $cmd_log > $log'");
+
+  if (!(-e $new_verilog)) {
+    die "ERROR: Yosys fail at rewriting benchmark $bm.\n";
+  }
+
+  print "Leaving $yosys_dir\n";
+  chdir $cwd;
+
+  return ($new_verilog);
 }
 
 # Run yosys synthesis with ABC LUT mapping 
@@ -1235,13 +1281,20 @@ sub run_std_vpr($ $ $ $ $ $ $ $ $)
       $vpr_spice_opts = $vpr_spice_opts." --fpga_verilog_print_input_blif_testbench";
     }
     if ("on" eq $opt_ptr->{vpr_fpga_verilog_print_autocheck_top_testbench}) {
-      $vpr_spice_opts = $vpr_spice_opts." --fpga_verilog_print_autocheck_top_testbench $conf_ptr->{dir_path}->{benchmark_dir}->{val}"."/$bm/$bm.v";
+      if($verilog_benchmark eq undef){
+        $vpr_spice_opts = $vpr_spice_opts." --fpga_verilog_print_autocheck_top_testbench $conf_ptr->{dir_path}->{benchmark_dir}->{val}"."/$bm/$bm.v";
+      } else {
+        $vpr_spice_opts = $vpr_spice_opts." --fpga_verilog_print_autocheck_top_testbench $verilog_benchmark";
+      }
     }
     if ("on" eq $opt_ptr->{vpr_fpga_verilog_include_timing}) {
       $vpr_spice_opts = $vpr_spice_opts." --fpga_verilog_include_timing";
     }
     if ("on" eq $opt_ptr->{vpr_fpga_verilog_include_signal_init}) {
       $vpr_spice_opts = $vpr_spice_opts." --fpga_verilog_include_signal_init";
+    }
+    if ("on" eq $opt_ptr->{vpr_fpga_verilog_formal_verification_top_netlist}) {
+      $vpr_spice_opts = $vpr_spice_opts." --fpga_verilog_print_formal_verification_top_netlist";
     }
     if ("on" eq $opt_ptr->{vpr_fpga_verilog_print_modelsim_autodeck}) {
       $vpr_spice_opts = $vpr_spice_opts." --fpga_verilog_print_modelsim_autodeck $opt_ptr->{vpr_fpga_verilog_print_modelsim_autodeck_val}";
@@ -1696,7 +1749,7 @@ sub run_yosys_vpr_flow($ $ $ $ $)
   &run_yosys_fpgamap($benchmark, $yosys_bm, $yosys_blif_out, $yosys_log);
 
   # Files for ace 
-  my ($act_file,$ace_new_blif,$ace_log) = ("$prefix"."ace.act","$prefix"."ace.blif","$prefix"."ace.log");
+  my ($act_file,$ace_new_blif,$ace_log) = ("$rpt_dir/$benchmark".".act","$rpt_dir/$benchmark".".blif","$prefix"."ace.log");
   &run_ace_in_flow($prefix, $yosys_blif_out, $act_file, $ace_new_blif, $ace_log);
 
   # Files for VPR
@@ -1708,7 +1761,10 @@ sub run_yosys_vpr_flow($ $ $ $ $)
   $vpr_log = "$prefix"."vpr.log";
   $vpr_reroute_log = "$prefix"."vpr_reroute.log";
 
-  &run_vpr_in_flow($tag, $benchmark, $benchmark_file, $yosys_blif_out, $vpr_arch, $act_file, $vpr_net, $vpr_place, $vpr_route, $vpr_log, $vpr_reroute_log, $parse_results);
+# Need to add a regenation of the verilog from the optimized blif -> write verilog from blif + correct the name of the verilog for the testbench
+  $verilog_benchmark = &run_rewrite_verilog($ace_new_blif, $rpt_dir, $benchmark, $benchmark, $yosys_log);
+
+  &run_vpr_in_flow($tag, $benchmark, $benchmark_file, $ace_new_blif, $vpr_arch, $act_file, $vpr_net, $vpr_place, $vpr_route, $vpr_log, $vpr_reroute_log, $parse_results);
 
   return;
 }
@@ -1731,7 +1787,7 @@ sub parse_yosys_vpr_flow_results($ $ $ $)
   # Run Yosys flow
   $yosys_bm = "$conf_ptr->{dir_path}->{benchmark_dir}->{val}"."/$benchmark_file";
   $prefix = "$rpt_dir/$benchmark\_"."K$opt_ptr->{K_val}\_"."N$opt_ptr->{N_val}\_";
-  $yosys_blif_out = "$prefix"."yosys.blif";
+  $yosys_blif_out = "$rpt_dir/$benchmark".".blif";
   $yosys_log = "$prefix"."yosys.log";
 
   # Files for ace 

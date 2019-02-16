@@ -198,7 +198,7 @@ int determine_lut_truth_table_on_set(int truth_table_len,
   }
 
   /* Prefer on_set if both are true */
-  if (1 == (on_set + off_set)) {
+  if (2 == (on_set + off_set)) {
     on_set = 1; off_set = 0;
   }
 
