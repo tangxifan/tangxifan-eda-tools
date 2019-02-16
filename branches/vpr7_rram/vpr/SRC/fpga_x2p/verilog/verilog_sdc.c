@@ -638,13 +638,13 @@ void verilog_generate_sdc_constrain_one_chan(FILE* fp,
     fprintf(fp, " -from ");
 
     fprintf(fp, "%s/in%d", 
-            gen_verilog_one_routing_channel_module_name(chan_type, x, y),
+            gen_verilog_one_routing_channel_instance_name(chan_type, x, y),
             itrack);
 
     fprintf(fp, " -to ");
 
     fprintf(fp, "%s/out%d", 
-            gen_verilog_one_routing_channel_module_name(chan_type, x, y), 
+            gen_verilog_one_routing_channel_instance_name(chan_type, x, y), 
             itrack);
     /* Find the segment delay ! */
     cost_index = chan_rr_nodes[itrack]->cost_index;
@@ -658,13 +658,13 @@ void verilog_generate_sdc_constrain_one_chan(FILE* fp,
     fprintf(fp, " -from ");
 
     fprintf(fp, "%s/in%d", 
-            gen_verilog_one_routing_channel_module_name(chan_type, x, y),
+            gen_verilog_one_routing_channel_instance_name(chan_type, x, y),
             itrack);
 
     fprintf(fp, " -to ");
 
     fprintf(fp, "%s/mid_out%d", 
-            gen_verilog_one_routing_channel_module_name(chan_type, x, y), 
+            gen_verilog_one_routing_channel_instance_name(chan_type, x, y), 
             itrack);
     /* Check */
     fprintf(fp, " %.2g", get_routing_seg_sdc_tmax(&(arch.Segments[iseg])));
