@@ -51,11 +51,12 @@ extern char* user_defined_template_verilog_file_name;
 extern char* trpt_sb_file_name;
 extern char* trpt_routing_file_name;
 
+extern char* sdc_analysis_file_name;
+extern char* sdc_break_loop_file_name;
+extern char* sdc_clock_period_file_name;
 extern char* sdc_constrain_routing_chan_file_name;
 extern char* sdc_constrain_cb_file_name;
 extern char* sdc_constrain_sb_file_name;
-extern char* sdc_break_loop_file_name;
-extern char* sdc_clock_period_file_name;
 
 extern char* verilog_mux_basis_posfix;
 extern char* verilog_mux_special_basis_posfix;

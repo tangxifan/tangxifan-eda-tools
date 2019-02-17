@@ -61,6 +61,7 @@ char* trpt_sb_file_name = "report_timing_sb.tcl";
 char* trpt_routing_file_name = "report_timing_routing.tcl";
 
 /* File names for SDC*/
+char* sdc_analysis_file_name = "fpga_top_analysis.sdc";
 char* sdc_break_loop_file_name = "break_loop.sdc";
 char* sdc_constrain_routing_chan_file_name = "routing_channels.sdc";
 char* sdc_constrain_cb_file_name = "cb.sdc";
