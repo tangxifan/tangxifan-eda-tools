@@ -122,6 +122,7 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
   char* tcl_dir_path = NULL;
   char* sdc_dir_path = NULL;
   char* msim_dir_path = NULL;
+  char* fm_dir_path = NULL;
   char* top_netlist_file = NULL;
   char* top_netlist_path = NULL;
   char* top_testbench_file_name = NULL;
@@ -168,7 +169,7 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
   if (NULL != vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.syn_verilog_dump_dir) {
     verilog_dir_formatted = format_dir_path(vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.syn_verilog_dump_dir);
   } else { 
-    verilog_dir_formatted = format_dir_path(my_strcat(format_dir_path(chomped_parent_dir),default_verilog_dir_name));
+    verilog_dir_formatted = format_dir_path(my_strcat(format_dir_path(chomped_parent_dir), default_verilog_dir_name));
   }
 
   /* SRC directory */
@@ -185,9 +186,15 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
   tcl_dir_path = my_strcat(verilog_dir_formatted, default_tcl_dir_name);
   /* msim_dir_path */
   msim_dir_path = my_strcat(verilog_dir_formatted, default_msim_dir_name);
+  /* fm_dir_path */
+  fm_dir_path = my_strcat(verilog_dir_formatted, default_snpsfm_dir_name);
   /* Top netlists dir_path */
   top_netlist_file = my_strcat(chomped_circuit_name, verilog_top_postfix);
   top_netlist_path = my_strcat(src_dir_path, top_netlist_file);
+  /* Report timing directory */
+  if (NULL == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.report_timing_path) {
+    vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.report_timing_path = my_strcat(verilog_dir_formatted, default_report_timing_rpt_dir_name);
+  }
   
   /* Create directories */
   create_dir_path(verilog_dir_formatted);
@@ -196,6 +203,7 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
   create_dir_path(rr_dir_path);
   create_dir_path(sdc_dir_path);
   create_dir_path(tcl_dir_path);
+  create_dir_path(fm_dir_path);
   create_dir_path(msim_dir_path);
   create_dir_path(submodule_dir_path);
 
@@ -315,11 +323,11 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
                                                  formal_verification_top_netlist_file_path, src_dir_path,
                                                  num_clocks, 
                                                  vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts, *(Arch.spice));
-	write_formality_script(vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts,
-							verilog_dir_formatted,
-							chomped_circuit_name,
-							*(Arch.spice));
-*/
+    /* Output script for formality */
+    write_formality_script(vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts,
+                           fm_dir_path,
+                           chomped_circuit_name,
+                           *(Arch.spice));
     /* Free */
     my_free(formal_verification_top_netlist_file_name);
     my_free(formal_verification_top_netlist_file_path);
@@ -352,6 +360,14 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
                              Arch, &vpr_setup.RoutingArch,
                              num_rr_nodes, rr_node, rr_node_indices, rr_indexed_data,
                              vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts);
+  }
+  /* Output SDC to contrain the P&R flow
+   */
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_sdc_analysis) {
+    verilog_generate_sdc_analysis(sram_verilog_orgz_info, sdc_dir_path,
+                                  Arch, &vpr_setup.RoutingArch,
+                                  num_rr_nodes, rr_node, rr_node_indices, rr_indexed_data,
+                                  vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts);
   }
   /* Output routing report_timing script :
    */
@@ -388,6 +404,7 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
   my_free(lb_dir_path);
   my_free(rr_dir_path);
   my_free(msim_dir_path);
+  my_free(fm_dir_path);
   my_free(sdc_dir_path);
   my_free(tcl_dir_path);
   my_free(top_netlist_file);

@@ -1499,6 +1499,18 @@ void init_rr_nodes_vpack_net_num_changed(int LL_num_rr_nodes,
   return;
 }
 
+void init_rr_nodes_is_parasitic_net(int LL_num_rr_nodes,
+                                    t_rr_node* LL_rr_node) {
+  int inode;
+
+  for (inode = 0; inode < LL_num_rr_nodes; inode++) {
+    LL_rr_node[inode].is_parasitic_net = FALSE;
+  }
+
+  return;
+}
+
+
 /* Check if this net is connected to a PI*/
 boolean is_net_pi(t_net* cur_net) {
   int src_blk_idx;

@@ -14,7 +14,9 @@ extern char* default_submodule_dir_name;
 extern char* default_tcl_dir_name;
 extern char* default_sdc_dir_name;
 extern char* default_msim_dir_name;
+extern char* default_snpsfm_dir_name;
 extern char* default_modelsim_dir_name;
+extern char* default_report_timing_rpt_dir_name;
 extern char* autocheck_testbench_postfix;
 
 extern char* modelsim_project_name_postfix;

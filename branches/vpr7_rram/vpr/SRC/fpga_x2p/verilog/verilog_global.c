@@ -22,7 +22,9 @@ char* default_submodule_dir_name = "sub_module/";
 char* default_tcl_dir_name = "SCRIPTS/";
 char* default_sdc_dir_name = "SDC/";
 char* default_msim_dir_name = "MSIM/";
+char* default_snpsfm_dir_name = "SNPS_FM/";
 char* default_modelsim_dir_name = "msim_projects/";
+char* default_report_timing_rpt_dir_name = "RPT/";
 char* autocheck_testbench_postfix = "_autocheck";
 
 char* modelsim_project_name_postfix = "_fpga_msim";

@@ -972,6 +972,7 @@ struct s_rr_node {
     int* drive_switches;
     /* Xifan TANG: for parasitic net estimation */
     boolean vpack_net_num_changed;
+    boolean is_parasitic_net;
     /* Xifan TANG: pb_pin_eq_auto_detect support */
     boolean is_in_heap;
     /* SPECIAL: For switch box muxes */

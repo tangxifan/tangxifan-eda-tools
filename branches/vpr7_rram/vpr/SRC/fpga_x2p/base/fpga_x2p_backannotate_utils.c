@@ -646,6 +646,11 @@ void rec_backannotate_rr_node_net_num(int LL_num_rr_nodes,
     if (src_node_index == LL_rr_node[to_node].prev_node) {
       assert(iedge == LL_rr_node[to_node].prev_edge);
       /* assert(LL_rr_node[src_node_index].net_num == LL_rr_node[to_node].net_num); */
+      /* Label parasitic net */
+      if ((OPEN == LL_rr_node[to_node].net_num) 
+        && (OPEN != LL_rr_node[src_node_index].net_num)) { 
+        LL_rr_node[to_node].is_parasitic_net = TRUE;
+      }
       /* Propagate the net_num */
       LL_rr_node[to_node].net_num = LL_rr_node[src_node_index].net_num; 
       /* Make the flag which indicates a changing has been made */
@@ -948,7 +953,7 @@ void back_annotate_one_pb_rr_node_map_info_rec(t_pb* cur_pb,
            * synchronize the net num 
            */
           back_annotate_one_pb_rr_node_map_info_rec(NULL,
-                                                    &(cur_pb_graph_node->child_pb_graph_nodes[select_mode_index][ipb][jpb]),
+                                                    &(cur_pb_graph_node->child_pb_graph_nodes[imode][ipb][jpb]),
                                                     pb_rr_nodes);
         }
       }
@@ -1161,6 +1166,8 @@ void backannotate_one_pb_rr_nodes_net_info_rec(t_phy_pb* cur_pb) {
           /* If we find an OPEN net, try to find the parasitic net_num*/
           if (OPEN == pb_rr_nodes[node_index].net_num) {
             set_one_pb_rr_node_net_num(pb_rr_nodes, &(child_pb_graph_node->input_pins[iport][ipin])); 
+            /* Label this net as parasitic net */
+            pb_rr_nodes[node_index].is_parasitic_net = TRUE;
           }
         }
       }
@@ -1172,7 +1179,9 @@ void backannotate_one_pb_rr_nodes_net_info_rec(t_phy_pb* cur_pb) {
           node_index = child_pb_graph_node->clock_pins[iport][ipin].rr_node_index_physical_pb;
           /* If we find an OPEN net, try to find the parasitic net_num*/
           if (OPEN == pb_rr_nodes[node_index].net_num) {
-              set_one_pb_rr_node_net_num(pb_rr_nodes, &(child_pb_graph_node->clock_pins[iport][ipin])); 
+            set_one_pb_rr_node_net_num(pb_rr_nodes, &(child_pb_graph_node->clock_pins[iport][ipin])); 
+            /* Label this net as parasitic net */
+            pb_rr_nodes[node_index].is_parasitic_net = TRUE;
           }
         }
       }
@@ -1205,6 +1214,8 @@ void backannotate_one_pb_rr_nodes_net_info_rec(t_phy_pb* cur_pb) {
       /* If we find an OPEN net, try to find the parasitic net_num*/
       if (OPEN == pb_rr_nodes[node_index].net_num) {
         set_one_pb_rr_node_net_num(pb_rr_nodes, &(cur_pb->pb_graph_node->output_pins[iport][ipin])); 
+        /* Label this net as parasitic net */
+        pb_rr_nodes[node_index].is_parasitic_net = TRUE;
       }
     }
   }
@@ -1658,6 +1669,11 @@ void update_one_used_grid_pb_pins_parasitic_nets(t_phy_pb* cur_pb,
       cur_pin = local_rr_graph[ipin].pb_graph_pin->rr_node_index_physical_pb;
       //rr_node[pin_global_rr_node_id].net_num = vpack_to_clb_net_mapping[local_rr_graph[ipin].net_num]; 
       rr_node[pin_global_rr_node_id].vpack_net_num = local_rr_graph[cur_pin].vpack_net_num;
+      if ( (OPEN == rr_node[pin_global_rr_node_id].vpack_net_num) 
+        && (OPEN != local_rr_graph[cur_pin].vpack_net_num)) {
+        /* Label this net as parasitic net */
+        rr_node[pin_global_rr_node_id].is_parasitic_net = TRUE;
+      }
     } else if (RECEIVER == type->class_inf[class_id].type) {
       /* Find the global rr_node net_num and update pb net_num */
       pin_global_rr_node_id = get_rr_node_index(ix, iy, IPIN, ipin, rr_node_indices);
@@ -1670,6 +1686,11 @@ void update_one_used_grid_pb_pins_parasitic_nets(t_phy_pb* cur_pb,
       cur_pin = local_rr_graph[ipin].pb_graph_pin->rr_node_index_physical_pb;
       local_rr_graph[cur_pin].net_num = rr_node[pin_global_rr_node_id].vpack_net_num;
       local_rr_graph[cur_pin].vpack_net_num = rr_node[pin_global_rr_node_id].vpack_net_num;
+      if ( (OPEN == local_rr_graph[cur_pin].vpack_net_num) 
+        && (OPEN == rr_node[pin_global_rr_node_id].vpack_net_num)) { 
+        /* Label this net as parasitic net */
+        local_rr_graph[cur_pin].is_parasitic_net = TRUE;
+      }
     } else {
       continue; /* OPEN PIN */
     }
@@ -2542,6 +2563,9 @@ void parasitic_net_estimation() {
 
     init_rr_nodes_vpack_net_num_changed(num_rr_nodes,
                                         rr_node);
+
+    init_rr_nodes_is_parasitic_net(num_rr_nodes,
+                                   rr_node);
 
     /*
      * vpr_printf(TIO_MESSAGE_INFO, "Backannotating local routing net...\n");
