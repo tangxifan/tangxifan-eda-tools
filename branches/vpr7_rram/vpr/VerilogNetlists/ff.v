@@ -5,7 +5,7 @@
 // Coder       : Xifan TANG
 //-----------------------------------------------------
 //------ Include defines: preproc flags -----
-`include "/research/ece/lnis/USERS/alacchi/clone_github/tangxifan-eda-tools/branches/vpr7_rram/vpr/lookalike_test_formality/fpga_defines.v"
+`include "/research/ece/lnis/USERS/alacchi/clone_github/my_branch/tangxifan-eda-tools/branches/vpr7_rram/vpr/lookalike_adder_formal/fpga_defines.v"
 module static_dff (
 /* Global ports go first */
 input set,     // set input

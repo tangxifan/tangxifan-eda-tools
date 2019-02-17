@@ -315,7 +315,7 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
                                                  formal_verification_top_netlist_file_path, src_dir_path,
                                                  num_clocks, 
                                                  vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts, *(Arch.spice));
-/*	write_formality_script(vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts,
+	write_formality_script(vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts,
 							verilog_dir_formatted,
 							chomped_circuit_name,
 							*(Arch.spice));
