@@ -424,7 +424,7 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
   for (iz = 0; iz < phy_block_type->capacity; iz++) {
     /* Local Vdd and Gnd, subckt name*/
     fprintf(fp, "%s ", compact_verilog_get_grid_phy_block_subckt_name(phy_block_type, iz, subckt_name_prefix));
-    fprintf(fp, " grid_%s_%d_ (", phy_block_type->name, iz);
+    fprintf(fp, " %s (", gen_verilog_one_phy_block_instance_name(phy_block_type, iz));
     fprintf(fp, "\n");
     /* dump global ports */
     if (0 < dump_verilog_global_ports(fp, global_ports_head, FALSE)) {
@@ -609,7 +609,7 @@ void dump_compact_verilog_defined_one_grid(t_sram_orgz_info* cur_sram_orgz_info,
   fprintf(fp, "//----- BEGIN Call Grid[%d][%d] module -----\n", ix, iy);
   /* Print the Grid module */
   fprintf(fp, "%s  ", subckt_name); /* Call the name of subckt */ 
-  fprintf(fp, "grid_%d__%d_ ", ix, iy);
+  fprintf(fp, "%s ", gen_verilog_one_grid_instance_name(ix, iy));
   fprintf(fp, "(");
   fprintf(fp, "\n");
   /* dump global ports */

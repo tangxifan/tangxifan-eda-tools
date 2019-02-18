@@ -245,3 +245,18 @@ char* gen_verilog_one_routing_channel_instance_name(t_rr_type chan_type,
 char* gen_verilog_one_mux_module_name(t_spice_model* spice_model, 
                                       int mux_size);
 
+char* gen_verilog_one_grid_instance_name(int grid_x, int grid_y);
+
+char* gen_verilog_one_grid_module_name(int grid_x, int grid_y);
+
+char* gen_verilog_one_block_instance_name(int grid_x, int grid_y, int grid_z);
+
+char* gen_verilog_one_phy_block_instance_name(t_type_ptr cur_type_ptr, 
+                                              int block_z);
+
+char* gen_verilog_one_pb_graph_node_instance_name(t_pb_graph_node* cur_pb_graph_node);
+
+char* gen_verilog_one_pb_type_pin_name(char* prefix, 
+                                       t_port* cur_port, int pin_number);
+
+char* gen_verilog_one_pb_graph_pin_full_name_in_hierarchy(t_pb_graph_pin* cur_pb_graph_pin);

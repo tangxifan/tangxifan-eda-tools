@@ -579,7 +579,8 @@ void dump_verilog_pb_type_ports(FILE* fp,
         fprintf(fp, ".%s(", 
                 pb_type_inout_ports[iport]->spice_model_port->lib_name);
       }
-      fprintf(fp, "%s__%s_%d_ ", formatted_port_prefix, pb_type_inout_ports[iport]->name, ipin);
+      fprintf(fp, "%s ", 
+              gen_verilog_one_pb_type_pin_name(formatted_port_prefix, pb_type_inout_ports[iport], ipin));
       if ((FALSE == dump_port_type) 
        && (NULL != cur_pb_type->spice_model) 
        && (TRUE == require_explicit_port_map)
@@ -621,7 +622,8 @@ void dump_verilog_pb_type_ports(FILE* fp,
         fprintf(fp, ".%s(", 
                 pb_type_input_ports[iport]->spice_model_port->lib_name);
       }
-      fprintf(fp, " %s__%s_%d_", formatted_port_prefix, pb_type_input_ports[iport]->name, ipin);
+      fprintf(fp, "%s ", 
+              gen_verilog_one_pb_type_pin_name(formatted_port_prefix, pb_type_input_ports[iport], ipin));
       if ((FALSE == dump_port_type) 
        && (NULL != cur_pb_type->spice_model) 
        && (TRUE == require_explicit_port_map)
@@ -662,7 +664,8 @@ void dump_verilog_pb_type_ports(FILE* fp,
         fprintf(fp, ".%s(", 
                 pb_type_output_ports[iport]->spice_model_port->lib_name);
       }
-      fprintf(fp, " %s__%s_%d_", formatted_port_prefix, pb_type_output_ports[iport]->name, ipin);
+      fprintf(fp, "%s ", 
+              gen_verilog_one_pb_type_pin_name(formatted_port_prefix, pb_type_output_ports[iport], ipin));
       if ((FALSE == dump_port_type) 
        && (NULL != cur_pb_type->spice_model) 
        && (TRUE == require_explicit_port_map)
@@ -706,7 +709,8 @@ void dump_verilog_pb_type_ports(FILE* fp,
         fprintf(fp, ".%s(", 
                 pb_type_clk_ports[iport]->spice_model_port->lib_name);
       }
-      fprintf(fp, " %s__%s_%d_", formatted_port_prefix, pb_type_clk_ports[iport]->name, ipin);
+      fprintf(fp, "%s ", 
+              gen_verilog_one_pb_type_pin_name(formatted_port_prefix, pb_type_clk_ports[iport], ipin));
       if ((FALSE == dump_port_type) 
        && (NULL != cur_pb_type->spice_model) 
        && (TRUE == require_explicit_port_map)
@@ -1755,7 +1759,8 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
 
       /* <formatted_subckt_prefix>mode[<mode_name>]_<child_pb_type_name>[<ipb>]
        */
-      fprintf(fp, "%s_%d_ (", cur_pb_type->modes[mode_index].pb_type_children[ipb].name, jpb);
+      fprintf(fp, "%s (", 
+              gen_verilog_one_pb_graph_node_instance_name(&(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb])));
       fprintf(fp, "\n");
       /* dump global ports */
       /* If the child node is a primitive, we only dump global ports belonging to this primitive */
@@ -2438,7 +2443,7 @@ void dump_verilog_physical_grid_blocks(t_sram_orgz_info* cur_sram_orgz_info,
   fprintf(fp, "//----- Grid[%d][%d], Capactity: %d -----\n", ix, iy, capacity);
   fprintf(fp, "//----- Top Protocol -----\n");
   /* Definition */
-  fprintf(fp, "module grid_%d__%d_( \n", ix, iy);
+  fprintf(fp, "module %s ( \n", gen_verilog_one_grid_module_name(ix, iy));
   fprintf(fp, "\n");
   /* dump global ports */
   if (0 < dump_verilog_global_ports(fp, global_ports_head, TRUE)) {
@@ -2510,7 +2515,7 @@ void dump_verilog_physical_grid_blocks(t_sram_orgz_info* cur_sram_orgz_info,
   for (iz = 0; iz < capacity; iz++) {
     /* Local Vdd and Gnd, subckt name*/
     fprintf(fp, "%s ", verilog_get_grid_phy_block_subckt_name(ix, iy, iz, subckt_name, NULL));
-    fprintf(fp, " grid_%d__%d__%d_ (", ix, iy, iz);
+    fprintf(fp, " %s (", gen_verilog_one_block_instance_name(ix, iy, iz));
     fprintf(fp, "\n");
     /* dump global ports */
     if (0 < dump_verilog_global_ports(fp, global_ports_head, FALSE)) {

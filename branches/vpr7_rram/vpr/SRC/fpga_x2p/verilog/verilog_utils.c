@@ -3073,4 +3073,109 @@ char* gen_verilog_one_mux_module_name(t_spice_model* spice_model,
   return mux_subckt_name;
 }
 
+/* Generate the full path of a pb_graph_pin in the hierarchy of verilog netlists
+ * For example: grid_<x>__<y>_/grid_<mode_name>_<z>/.../<port_name>_<pin_number>_
+ */
+char* gen_verilog_one_grid_instance_name(int grid_x, int grid_y) {
+  char* ret = NULL;
+  
+  ret = (char*)my_malloc(sizeof(char) * 
+                        ( 5 + strlen(my_itoa(grid_x))
+                        + 2 + strlen(my_itoa(grid_y))
+                        + 1 + 1));
 
+  sprintf(ret, "grid_%d__%d_",
+          grid_x, grid_y);
+
+  return ret;
+}
+
+char* gen_verilog_one_grid_module_name(int grid_x, int grid_y) {
+  return gen_verilog_one_grid_instance_name(grid_x, grid_y);
+}
+
+char* gen_verilog_one_block_instance_name(int grid_x, int grid_y, int grid_z) {
+  char* ret = NULL;
+  
+  ret = (char*)my_malloc(sizeof(char) * 
+                        ( 5 + strlen(my_itoa(grid_x))
+                        + 2 + strlen(my_itoa(grid_y))
+                        + 2 + strlen(my_itoa(grid_z))
+                        + 1 + 1));
+
+  sprintf(ret, "grid_%d__%d__%d_",
+          grid_x, grid_y, grid_z);
+
+  return ret;
+}
+
+char* gen_verilog_one_phy_block_instance_name(t_type_ptr cur_type_ptr, 
+                                              int block_z) {
+  char* ret = NULL;
+  
+  ret = (char*)my_malloc(sizeof(char) * 
+                        ( 5 + strlen(cur_type_ptr->name)
+                        + 1 + strlen(my_itoa(block_z))
+                        + 1 + 1));
+
+  sprintf(ret, "grid_%s_%d_",
+          cur_type_ptr->name, block_z);
+
+  return ret;
+}
+
+char* gen_verilog_one_pb_graph_node_instance_name(t_pb_graph_node* cur_pb_graph_node) {
+  char* ret = NULL;
+  
+  ret = (char*)my_malloc(sizeof(char) * 
+                        ( strlen(cur_pb_graph_node->pb_type->name)
+                        + 1 + strlen(my_itoa(cur_pb_graph_node->placement_index))
+                        + 1 + 1));
+
+  sprintf(ret, "%s_%d_",
+          cur_pb_graph_node->pb_type->name, cur_pb_graph_node->placement_index);
+
+  return ret;
+}
+
+char* gen_verilog_one_pb_type_pin_name(char* prefix, 
+                                       t_port* cur_port, int pin_number) {
+  char* ret = NULL;
+  
+  ret = (char*)my_malloc(sizeof(char) * 
+                        (strlen(prefix) + 2 
+                        + strlen(cur_port->name)
+                        + 1 + strlen(my_itoa(pin_number))
+                        + 1 + 1));
+
+  sprintf(ret, "%s__%s_%d_",
+          prefix, cur_port->name, pin_number);
+   
+  return ret;
+}
+
+/* Generate the full path of a pb_graph_pin in the hierarchy of verilog netlists
+ * For example: grid_<x>__<y>_/grid_<mode_name>_<z>/.../<port_name>_<pin_number>_
+ */
+char* gen_verilog_one_pb_graph_pin_full_name_in_hierarchy(t_pb_graph_pin* cur_pb_graph_pin) {
+  char* full_name = NULL;
+  char* cur_name = NULL;
+  t_pb_graph_node* temp = cur_pb_graph_pin->parent_node;
+
+  /* Give the pin name */
+  full_name = gen_verilog_one_pb_type_pin_name(cur_pb_graph_pin->parent_node->pb_type->name, 
+                                               cur_pb_graph_pin->port, 
+                                               cur_pb_graph_pin->pin_number);
+
+  while (NULL != temp) {
+    /* For top node, we do not put a slash at the beginning */
+    cur_name = gen_verilog_one_pb_graph_node_instance_name(temp);
+    cur_name = my_strcat(cur_name, "/");
+    full_name = my_strcat(cur_name, full_name);
+    /* Go to upper level */
+    temp = temp->parent_pb_graph_node;
+    my_free(cur_name);
+  }
+ 
+  return full_name;
+}

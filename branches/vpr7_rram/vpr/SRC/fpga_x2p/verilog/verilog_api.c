@@ -368,7 +368,7 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
     verilog_generate_sdc_analysis(sram_verilog_orgz_info, sdc_dir_path,
                                   Arch, &vpr_setup.RoutingArch,
                                   num_rr_nodes, rr_node, rr_node_indices, rr_indexed_data,
-                                  nx, ny, grid,
+                                  nx, ny, grid, block,
                                   vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts);
   }
   /* Output routing report_timing script :

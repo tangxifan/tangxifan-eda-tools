@@ -1421,13 +1421,6 @@ void update_one_io_grid_pack_net_num(int x, int y) {
       assert(block[blk_id].y == y);
       assert(OPEN != blk_id);
     }
-    /* Bypass invalide block id 
-     * block id could be invalid in IO blocks
-     * TODO: figure out why, now I just bypass  
-     */
-    if (OPEN == blk_id) {  
-      continue;
-    }
     pb = block[blk_id].pb;
     assert(NULL != pb);
     rec_sync_pb_post_routing_vpack_net_num(pb);
@@ -3009,6 +3002,81 @@ void backannotate_pb_wired_luts(int num_mapped_blocks, t_block* mapped_block,
   return;
 }
 
+int find_matched_block_id_for_one_grid(int x, int y) {
+  int iblk, jblk, blk_id;
+  boolean already_exist = FALSE;
+
+  /* We need to find a valid block ID here */
+  for (iblk = 0; iblk < num_blocks; iblk++) {
+    /* We only care the matched x,y coordinate */
+    if ( (x != block[iblk].x)
+      || (y != block[iblk].y)) {
+      continue;
+    }
+    /* Now, we double check if the block is already in the list */
+    already_exist = FALSE;
+    for (jblk = 0; jblk < grid[x][y].usage; jblk++) {
+      blk_id = grid[x][y].blocks[jblk];
+      if (iblk != blk_id) {
+        continue;
+      }
+      /* Already in the list, we do not return the value */
+      already_exist = TRUE;
+      break;
+    }
+    /* Return if does not exist */
+    if (FALSE == already_exist) {
+      return iblk;
+    }
+  } 
+
+  return OPEN;
+}
+
+/* Some IO blocks has an invalid BLOCK ID but with a >0 usage 
+ * We go through the block list and find the missing block ID
+ */
+void annotate_grid_block_info() {
+  int ix, iy;
+  t_type_ptr type = NULL;
+  int iblk, blk_id;
+
+  for (ix = 0; ix < (nx + 2); ix++) {
+    for (iy = 0; iy < (ny + 2); iy++) {
+      type = grid[ix][iy].type;
+      /* bypass EMPTY type */
+      if ((NULL == type) || (EMPTY_TYPE == type)) {
+        continue;
+      }
+      if (IO_TYPE != type) {
+        continue;
+      } 
+      for (iblk = 0; iblk < grid[ix][iy].usage; iblk++) {
+        blk_id = grid[ix][iy].blocks[iblk];
+        if (OPEN != blk_id) {
+          continue;
+        }
+        vpr_printf(TIO_MESSAGE_INFO, 
+                   "Detect an invalid block id for grid[%d][%d] (usage:%d, blk_id:%d), trying to find a matched block from list!\n",
+                   ix, iy, grid[ix][iy].usage, iblk);
+        /* We detect an invalid blk_id, try to find one in the block list  */
+        grid[ix][iy].blocks[iblk] = find_matched_block_id_for_one_grid(ix, iy);
+        if (OPEN == grid[ix][iy].blocks[iblk]) { 
+          vpr_printf(TIO_MESSAGE_WARNING,
+                     "Fail to find a valid block id for grid[%d][%d] (usage:%d, blk_id:%d) in the block list!\n",
+                     ix, iy, grid[ix][iy].usage, iblk);
+        } else {
+          vpr_printf(TIO_MESSAGE_INFO,
+                     "Manage to find a valid block id (=%d) for grid[%d][%d]!\n",
+                     grid[ix][iy].blocks[iblk], ix, iy);
+        }
+      }
+    }
+  }
+
+  return;
+}
+
 /* Back-Annotate post routing results to the VPR routing-resource graphs */
 void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
                                             boolean read_activity_file,
@@ -3049,6 +3117,8 @@ void spice_backannotate_vpr_post_route_info(t_det_routing_arch RoutingArch,
 
   /* Update local_rr_graphs to match post-route results*/
   vpr_printf(TIO_MESSAGE_INFO, "Update CLB local routing graph to match post-route results...\n");
+  /* Complete the grid block information */
+  annotate_grid_block_info();
   update_grid_pbs_post_route_rr_graph();
 
   vpr_printf(TIO_MESSAGE_INFO,"Back annotating mapping information to local routing resource nodes...\n");

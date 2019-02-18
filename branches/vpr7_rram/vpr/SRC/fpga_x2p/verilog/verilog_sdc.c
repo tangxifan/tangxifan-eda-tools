@@ -4,6 +4,7 @@
 /***********************************/
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <time.h>
 #include <assert.h>
@@ -708,6 +709,16 @@ void verilog_generate_sdc_disable_one_unused_chan(FILE* fp,
     exit(1);
   } 
 
+  /* Print comments */
+  fprintf(fp,
+          "##################################################\n"); 
+  fprintf(fp, 
+          "### Disable Timing for an %s[%d][%d] ###\n",
+          convert_chan_type_to_string(chan_type),
+          x, y);
+  fprintf(fp,
+          "##################################################\n"); 
+
   /* Collect rr_nodes for Tracks for chanx[ix][iy] */
   chan_rr_nodes = get_chan_rr_nodes(&chan_width, chan_type, x, y,
                                     LL_num_rr_nodes, LL_rr_node, LL_rr_node_indices);
@@ -821,6 +832,14 @@ void verilog_generate_sdc_disable_unused_sbs(FILE* fp,
   for (ix = 0; ix < (LL_nx + 1); ix++) {
     for (iy = 0; iy < (LL_ny + 1); iy++) {
       cur_sb_info = &(sb_info[ix][iy]);
+      /* Print comments */
+      fprintf(fp,
+              "##################################################\n"); 
+      fprintf(fp, 
+              "### Disable Timing for an Switch block[%d][%d] ###\n",
+              ix, iy);
+      fprintf(fp,
+              "##################################################\n"); 
       for (side = 0; side < cur_sb_info->num_sides; side++) {
         for (itrack = 0; itrack < cur_sb_info->chan_width[side]; itrack++) {
           /* Disable Channel inputs and outputs*/
@@ -870,6 +889,16 @@ void verilog_generate_sdc_disable_one_unused_cb(FILE* fp,
                __FILE__, __LINE__); 
     exit(1);
   } 
+
+  /* Print comments */
+  fprintf(fp,
+          "##################################################\n"); 
+  fprintf(fp, 
+          "### Disable Timing for an %s[%d][%d] ###\n",
+          convert_cb_type_to_string(cur_cb_info->type),
+          cur_cb_info->x, cur_cb_info->y);
+  fprintf(fp,
+          "##################################################\n"); 
 
   side_cnt = 0;
   /* Print the ports of grids*/
@@ -978,8 +1007,57 @@ void verilog_generate_sdc_disable_unused_routing_channels(FILE* fp,
   return;
 }
 
+/* Go recursively in the hierarchy 
+ * and disable all the pb_types 
+ */
+void rec_verilog_generate_sdc_disable_unused_pb_types(FILE* fp, 
+                                                      char* prefix,
+                                                      t_pb_type* cur_pb_type) {
+  int ipb;
+  int mode_index;
+  char* pass_on_prefix = NULL;
+
+  /* generate pass_on_prefix */
+  pass_on_prefix = (char*) my_malloc(sizeof(char) * 
+                                     ( strlen(prefix) + 1 
+                                     + strlen(cur_pb_type->name) + 1 + 1)); 
+  sprintf(pass_on_prefix, "%s/%s*",
+          prefix, cur_pb_type->name); 
+
+  /* Disable everything in this pb_type */
+  fprintf(fp, "set_disable_timing ");
+  /* Print top-level hierarchy */
+  fprintf(fp, "%s/*", 
+          pass_on_prefix);
+  fprintf(fp, "\n");
+
+  /* Return if this is the primitive pb_type */
+  if (TRUE == is_primitive_pb_type(cur_pb_type)) {
+    return;
+  }
+
+
+  /* Go recursively */
+  mode_index = find_pb_type_physical_mode_index(*cur_pb_type);
+  for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+     rec_verilog_generate_sdc_disable_unused_pb_types(fp, pass_on_prefix, 
+                                                      &(cur_pb_type->modes[mode_index].pb_type_children[ipb])); 
+  }
+
+  /* Free */
+  my_free(pass_on_prefix);
+
+  return;
+}
+
+/* This block is totally unused.
+ * We just go through each pb_type and disable all the ports using wildcards
+ */
 void verilog_generate_sdc_disable_one_unused_grid(FILE* fp,
-                                                  t_grid_tile* cur_grid) {
+                                                  t_type_ptr cur_grid_type,
+                                                  int block_x, int block_y,
+                                                  int block_z) {
+  char* prefix = NULL;
 
   /* Check the file handler */
   if (NULL == fp) {
@@ -989,11 +1067,49 @@ void verilog_generate_sdc_disable_one_unused_grid(FILE* fp,
     exit(1);
   } 
 
+  /* Build prefix, which is the top-level hierarchy */
+  prefix = (char*) my_malloc(sizeof(char) * 
+                            ( strlen(gen_verilog_one_grid_instance_name(block_x, block_y))
+                            + 1 
+                            + strlen(gen_verilog_one_phy_block_instance_name(cur_grid_type, block_z))
+                            + 2)); 
+  sprintf(prefix, "%s/%s*",
+          gen_verilog_one_grid_instance_name(block_x, block_y),
+          gen_verilog_one_phy_block_instance_name(cur_grid_type, block_z)); 
+
+  /* Print comments */
+  fprintf(fp,
+          "####################################################\n"); 
+  fprintf(fp, 
+          "### Disable Timing for an unused Grid[%d][%d][%d] ###\n",
+          block_x, block_y, block_z);
+  fprintf(fp,
+          "#####################################################\n"); 
+          
+  /* Disable everything under this level */
+  fprintf(fp, "set_disable_timing ");
+  fprintf(fp, "%s/*", prefix);
+  fprintf(fp, "\n");
+
+  /* Go recursively in the pb_type hierarchy */
+  rec_verilog_generate_sdc_disable_unused_pb_types(fp, prefix,
+                                                   cur_grid_type->pb_type); 
+                                                  
+  /* Free */
+  my_free(prefix);
+
   return;
 }
 
+/* The block is used for mapping logic circuits
+ * But typically, only part of the logic resources are used.
+ * This function will search the local_rr_graph of a phy_pb of the block
+ * And disable the unused resources in a SDC format
+ */
 void verilog_generate_sdc_disable_one_unused_block(FILE* fp,
                                                    t_block* cur_block) {
+  int inode;
+  t_phy_pb* cur_phy_pb = NULL;
 
   /* Check the file handler */
   if (NULL == fp) {
@@ -1003,15 +1119,54 @@ void verilog_generate_sdc_disable_one_unused_block(FILE* fp,
     exit(1);
   } 
 
+  /* Get the phy_pb */
+  cur_phy_pb = (t_phy_pb*)(cur_block->phy_pb);
+
+  /* Print comments */
+  fprintf(fp,
+          "####################################################\n"); 
+  fprintf(fp, 
+          "### Disable Timing for a mapped Grid[%d][%d][%d] ###\n",
+          cur_block->x, cur_block->y, cur_block->z);
+  fprintf(fp,
+          "####################################################\n"); 
+
+  /* Search every nodes in the local_rr_graph */
+  for (inode = 0; inode < cur_phy_pb->rr_graph->num_rr_nodes; inode++) {
+    /* Focus on the SOURCE and SINK rr_nodes */
+    if  ((SOURCE != cur_phy_pb->rr_graph->rr_node[inode].type)
+      && (SINK   != cur_phy_pb->rr_graph->rr_node[inode].type)) {
+       continue; 
+    }
+    /* Identify if the rr_node is usused */
+    if (FALSE == is_rr_node_to_be_disable_for_analysis(&(cur_phy_pb->rr_graph->rr_node[inode]))) {
+      continue;
+    }
+    /* Get the pb_graph_pin */
+    assert (NULL != cur_phy_pb->rr_graph->rr_node[inode].pb_graph_pin);
+    /* Disable the timing of this node */
+    fprintf(fp, "set_disable_timing ");
+    /* Print top-level hierarchy */
+    fprintf(fp, "%s/", 
+            gen_verilog_one_grid_instance_name(cur_block->x, cur_block->y));
+    fprintf(fp, "%s/", 
+            gen_verilog_one_phy_block_instance_name(cur_block->type, cur_block->z)); 
+    fprintf(fp, "%s", 
+            gen_verilog_one_pb_graph_pin_full_name_in_hierarchy(cur_phy_pb->rr_graph->rr_node[inode].pb_graph_pin));
+    fprintf(fp, "\n");
+  } 
+
   return;
 }
-
 
 void verilog_generate_sdc_disable_unused_grids(FILE* fp, 
                                                int LL_nx, int LL_ny, 
-                                               t_grid_tile** LL_grid) {
+                                               t_grid_tile** LL_grid,
+                                               t_block* LL_block) {
   int ix, iy, iblk; 
+  int blk_id;
   t_type_ptr type = NULL;
+  boolean* grid_usage = NULL;
 
   /* Check the file handler */
   if (NULL == fp) {
@@ -1028,19 +1183,45 @@ void verilog_generate_sdc_disable_unused_grids(FILE* fp,
       if ((NULL == type) || (EMPTY_TYPE == type)) {
         continue;
       }
+      /* Allocate usage and initialize to unused */
+      grid_usage = (boolean*) my_calloc(type->capacity, sizeof(boolean));
+      for (iblk = 0; iblk < type->capacity; iblk++) {
+        grid_usage[iblk] = FALSE;
+      }
+      /* Print comments */
+      fprintf(fp,
+             "#######################################\n"); 
+      fprintf(fp, 
+             "### Disable Timing for Grid[%d][%d] ###\n",
+              ix, iy);
+      fprintf(fp,
+             "#######################################\n"); 
       /* For used grid, find the unused rr_node in the local rr_graph and disable the pb_graph_pin */
       for (iblk = 0; iblk < LL_grid[ix][iy].usage; iblk++) {
+        blk_id = LL_grid[ix][iy].blocks[iblk];
+        assert( (OPEN < LL_block[blk_id].z) && (LL_block[blk_id].z < type->capacity) ); 
+        /* Label the grid_usage */
+        grid_usage[LL_block[blk_id].z] = TRUE;
         verilog_generate_sdc_disable_one_unused_block(fp,
-                                                      &(block[LL_grid[ix][iy].blocks[iblk]]));
+                                                      &(LL_block[blk_id]));
       }
       /* For unused grid, disable all the pins in the physical_pb_type */
-      for (iblk = LL_grid[ix][iy].usage; iblk < LL_grid[ix][iy].type->capacity; iblk++) {
+      for (iblk = 0; iblk < type->capacity; iblk++) {
+        /* Bypass used blocks */
+        if (TRUE == grid_usage[iblk]) {
+          continue;
+        } 
         verilog_generate_sdc_disable_one_unused_grid(fp,
-                                                     &(LL_grid[ix][iy]));
+                                                     LL_grid[ix][iy].type, 
+                                                     ix, iy, 
+                                                     iblk);
         continue;
       }
     }
   }
+
+  /* Free */
+  my_free(grid_usage);
 
   return;
 }
@@ -1119,6 +1300,7 @@ void verilog_generate_sdc_analysis(t_sram_orgz_info* cur_sram_orgz_info,
                                    t_ivec*** LL_rr_node_indices,
                                    t_rr_indexed_data* LL_rr_indexed_data,
                                    int LL_nx, int LL_ny, t_grid_tile** LL_grid,
+                                   t_block* LL_block,
                                    t_syn_verilog_opts fpga_verilog_opts) {
   FILE* fp = NULL;
   char* fname = my_strcat(sdc_dir, sdc_analysis_file_name);
@@ -1155,7 +1337,7 @@ void verilog_generate_sdc_analysis(t_sram_orgz_info* cur_sram_orgz_info,
                                           arch.spice); 
 
   /* Apply to Grids */
-  verilog_generate_sdc_disable_unused_grids(fp, LL_nx, LL_ny, LL_grid);
+  verilog_generate_sdc_disable_unused_grids(fp, LL_nx, LL_ny, LL_grid, LL_block);
          
   /* Close the file*/
   fclose(fp);
