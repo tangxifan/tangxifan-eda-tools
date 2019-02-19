@@ -35,7 +35,9 @@ void formality_include_user_defined_verilog_netlists(FILE* fp,
 
   /* A valid file handler*/
   if (NULL == fp) {
-    vpr_printf(TIO_MESSAGE_ERROR, "(File:%s, [LINE%d])Invalid File Handler!\n", __FILE__, __LINE__);
+    vpr_printf(TIO_MESSAGE_ERROR, 
+               "(File:%s, [LINE%d])Invalid File Handler!\n", 
+               __FILE__, __LINE__);
     exit(1);
   }
 
@@ -54,7 +56,8 @@ void formality_include_user_defined_verilog_netlists(FILE* fp,
 }
 
 void write_formality_script (t_syn_verilog_opts fpga_verilog_opts,
-                            char* verilog_dir_formatted,
+                            char* fm_dir_formatted,
+                            char* src_dir_formatted,
                             char* chomped_circuit_name, 
 							t_spice spice){
 	int iblock;
@@ -65,34 +68,42 @@ void write_formality_script (t_syn_verilog_opts fpga_verilog_opts,
 //	int output_length;
 //	int pos;
 	FILE* fp = NULL;
-	if(fpga_verilog_opts.print_autocheck_top_testbench == TRUE){
+
+	if(TRUE == fpga_verilog_opts.print_autocheck_top_testbench){
 		benchmark_path = fpga_verilog_opts.reference_verilog_benchmark_file;
 	} else {
 		benchmark_path = "Insert verilog benchmark path";
 	}
-	formality_script_file_name = my_strcat(verilog_dir_formatted, my_strcat(chomped_circuit_name, formality_script_name_postfix));
+	formality_script_file_name = my_strcat(fm_dir_formatted, my_strcat(chomped_circuit_name, formality_script_name_postfix));
 	fp = fopen(formality_script_file_name, "w");
+    if (NULL == fp) {
+      vpr_printf(TIO_MESSAGE_ERROR,
+                "(FILE:%s,LINE[%d])Failure in create formality script %s",
+                __FILE__, __LINE__, formality_script_file_name); 
+      exit(1);
+    } 
+
 	// Load Verilog benchmark as reference
 	fprintf(fp, "read_verilog -container r -libname WORK -05 { %s }\n", benchmark_path);
 	// Set reference top
 	fprintf(fp, "set_top r:/WORK/%s\n", chomped_circuit_name);
 	// Load generated verilog as implemnetation
 	fprintf(fp, "read_verilog -container i -libname WORK -05 { ");
-	fprintf(fp, "%s%s%s ", verilog_dir_formatted, 
+	fprintf(fp, "%s%s%s ",  src_dir_formatted, 
 							chomped_circuit_name, 
 							verilog_top_postfix);
-	fprintf(fp, "%s%s%s ", verilog_dir_formatted, 
+	fprintf(fp, "%s%s%s ",  src_dir_formatted, 
 							chomped_circuit_name, 
 							formal_verification_verilog_file_postfix);
 	init_include_user_defined_verilog_netlists(spice);
 	formality_include_user_defined_verilog_netlists(fp, spice);
-	fprintf(fp, "%s%s%s ", verilog_dir_formatted, 
+	fprintf(fp, "%s%s%s ",  src_dir_formatted, 
 							default_rr_dir_name, 
 							routing_verilog_file_name);
-	fprintf(fp, "%s%s%s ", verilog_dir_formatted, 
+	fprintf(fp, "%s%s%s ",  src_dir_formatted, 
 							default_lb_dir_name, 
 							logic_block_verilog_file_name);
-	fprintf(fp, "%s%s%s ", verilog_dir_formatted, 
+	fprintf(fp, "%s%s%s ",  src_dir_formatted, 
 							default_submodule_dir_name, 
 							submodule_verilog_file_name);
 	fprintf(fp, "}\n");

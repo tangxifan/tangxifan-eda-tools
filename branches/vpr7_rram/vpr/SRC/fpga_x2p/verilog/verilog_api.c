@@ -326,6 +326,7 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
     /* Output script for formality */
     write_formality_script(vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts,
                            fm_dir_path,
+                           src_dir_path,
                            chomped_circuit_name,
                            *(Arch.spice));
     /* Free */
