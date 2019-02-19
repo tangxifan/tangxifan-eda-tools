@@ -1368,7 +1368,7 @@ void verilog_generate_routing_report_timing(t_sram_orgz_info* cur_sram_orgz_info
           fp = wireL_cnt->file_handler;
           /* This is a new L-wire, create the file handler and the mkdir command to the TCL script */
           if (0 == path_cnt) {
-            fprintf(fp, "exec mkdir %s\n",
+            fprintf(fp, "exec mkdir -p %s\n",
                     gen_verilog_one_routing_report_timing_Lwire_dir_path(fpga_verilog_opts.report_timing_path, L_wire)); 
           }
           verilog_generate_one_routing_segmental_report_timing(fp, fpga_verilog_opts,
