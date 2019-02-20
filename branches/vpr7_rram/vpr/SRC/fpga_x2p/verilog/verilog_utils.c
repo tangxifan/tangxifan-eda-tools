@@ -3167,8 +3167,13 @@ char* gen_verilog_one_pb_graph_pin_full_name_in_hierarchy(t_pb_graph_pin* cur_pb
                                                cur_pb_graph_pin->port, 
                                                cur_pb_graph_pin->pin_number);
 
-  while (NULL != temp) {
-    /* For top node, we do not put a slash at the beginning */
+  /* The instance name of the top-level graph node is very special 
+   * we output it in another function  
+   */
+  while (NULL != temp->parent_pb_graph_node) {
+    /* Generate the instance name of current pb_graph_node
+     * and add a slash to separate the upper level 
+     */
     cur_name = gen_verilog_one_pb_graph_node_instance_name(temp);
     cur_name = my_strcat(cur_name, "/");
     full_name = my_strcat(cur_name, full_name);

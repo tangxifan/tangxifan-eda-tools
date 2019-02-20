@@ -572,14 +572,14 @@ void dump_verilog_pb_type_ports(FILE* fp,
         }
       }
       if (TRUE == dump_port_type) {
-        fprintf(fp, "inout wire");
+        fprintf(fp, "inout wire ");
       } else if ((NULL != cur_pb_type->spice_model) 
               && (TRUE == require_explicit_port_map)
               && (TRUE == cur_pb_type->spice_model->dump_explicit_port_map)) {
         fprintf(fp, ".%s(", 
                 pb_type_inout_ports[iport]->spice_model_port->lib_name);
       }
-      fprintf(fp, "%s ", 
+      fprintf(fp, "%s", 
               gen_verilog_one_pb_type_pin_name(formatted_port_prefix, pb_type_inout_ports[iport], ipin));
       if ((FALSE == dump_port_type) 
        && (NULL != cur_pb_type->spice_model) 
@@ -615,14 +615,14 @@ void dump_verilog_pb_type_ports(FILE* fp,
         }
       }
       if (TRUE == dump_port_type) {
-        fprintf(fp, "input wire");
+        fprintf(fp, "input wire ");
       } else if ((NULL != cur_pb_type->spice_model) 
               && (TRUE == require_explicit_port_map)
               && (TRUE == cur_pb_type->spice_model->dump_explicit_port_map)) {
         fprintf(fp, ".%s(", 
                 pb_type_input_ports[iport]->spice_model_port->lib_name);
       }
-      fprintf(fp, "%s ", 
+      fprintf(fp, "%s", 
               gen_verilog_one_pb_type_pin_name(formatted_port_prefix, pb_type_input_ports[iport], ipin));
       if ((FALSE == dump_port_type) 
        && (NULL != cur_pb_type->spice_model) 
@@ -657,14 +657,14 @@ void dump_verilog_pb_type_ports(FILE* fp,
         }
       }
       if (TRUE == dump_port_type) {
-        fprintf(fp, "output wire");
+        fprintf(fp, "output wire ");
       } else if ((NULL != cur_pb_type->spice_model) 
               && (TRUE == require_explicit_port_map)
               && (TRUE == cur_pb_type->spice_model->dump_explicit_port_map)) {
         fprintf(fp, ".%s(", 
                 pb_type_output_ports[iport]->spice_model_port->lib_name);
       }
-      fprintf(fp, "%s ", 
+      fprintf(fp, "%s", 
               gen_verilog_one_pb_type_pin_name(formatted_port_prefix, pb_type_output_ports[iport], ipin));
       if ((FALSE == dump_port_type) 
        && (NULL != cur_pb_type->spice_model) 
@@ -702,14 +702,14 @@ void dump_verilog_pb_type_ports(FILE* fp,
         }
       }
       if (TRUE == dump_port_type) {
-        fprintf(fp, "input wire");
+        fprintf(fp, "input wire ");
       } else if ((NULL != cur_pb_type->spice_model) 
               && (TRUE == require_explicit_port_map)
               && (TRUE == cur_pb_type->spice_model->dump_explicit_port_map)) {
         fprintf(fp, ".%s(", 
                 pb_type_clk_ports[iport]->spice_model_port->lib_name);
       }
-      fprintf(fp, "%s ", 
+      fprintf(fp, "%s", 
               gen_verilog_one_pb_type_pin_name(formatted_port_prefix, pb_type_clk_ports[iport], ipin));
       if ((FALSE == dump_port_type) 
        && (NULL != cur_pb_type->spice_model) 

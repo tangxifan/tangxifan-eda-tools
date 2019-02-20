@@ -1017,22 +1017,12 @@ void rec_verilog_generate_sdc_disable_unused_pb_types(FILE* fp,
   int mode_index;
   char* pass_on_prefix = NULL;
 
-  /* Return if this is the primitive pb_type */
-  if (TRUE == is_primitive_pb_type(cur_pb_type)) {
-    /* generate pass_on_prefix */
-    pass_on_prefix = (char*) my_malloc(sizeof(char) * 
-                                       ( strlen(prefix) + 1 
-                                       + strlen(cur_pb_type->spice_model->name) + 1 + 1)); 
-    sprintf(pass_on_prefix, "%s/%s*",
-            prefix, cur_pb_type->spice_model->name); 
-  } else {
-    /* generate pass_on_prefix */
-    pass_on_prefix = (char*) my_malloc(sizeof(char) * 
-                                       ( strlen(prefix) + 1 
-                                       + strlen(cur_pb_type->name) + 1 + 1)); 
-    sprintf(pass_on_prefix, "%s/%s*",
-            prefix, cur_pb_type->name); 
-  }
+  /* generate pass_on_prefix */
+  pass_on_prefix = (char*) my_malloc(sizeof(char) * 
+                                     ( strlen(prefix) + 1 
+                                     + strlen(cur_pb_type->name) + 1 + 1)); 
+  sprintf(pass_on_prefix, "%s/%s*",
+          prefix, cur_pb_type->name); 
 
   /* Disable everything in this pb_type
    * Use the spice_model_name of current pb_type 
@@ -1043,6 +1033,7 @@ void rec_verilog_generate_sdc_disable_unused_pb_types(FILE* fp,
           pass_on_prefix);
   fprintf(fp, "\n");
 
+  /* Return if this is the primitive pb_type */
   if (TRUE == is_primitive_pb_type(cur_pb_type)) {
     return;
   }
