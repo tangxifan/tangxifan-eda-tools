@@ -1371,11 +1371,23 @@ void verilog_generate_routing_report_timing(t_sram_orgz_info* cur_sram_orgz_info
             fprintf(fp, "exec mkdir -p %s\n",
                     gen_verilog_one_routing_report_timing_Lwire_dir_path(fpga_verilog_opts.report_timing_path, L_wire)); 
           }
+          /* Restore the disable_timing for the SB outputs on the path */
+          fprintf(fp, "# Restore disable timing for the following Switch Block output:\n");
+          restore_disable_timing_one_sb_output(fp, 
+                                               cur_sb_info,
+                                               cur_sb_info->chan_rr_node[side][itrack]);
+          fprintf(fp, "# Report timing for all the paths using this output:\n");
+          /* Dump report_timing command */
           verilog_generate_one_routing_segmental_report_timing(fp, fpga_verilog_opts,
                                                                cur_sb_info, 
                                                                cur_sb_info->chan_rr_node[side][itrack], 
                                                                LL_num_rr_nodes, LL_rr_node, 
                                                                LL_rr_node_indices, &path_cnt);
+          /* Disable the timing again */
+          fprintf(fp, "# Set disable timing for the following Switch Block output:\n");
+          set_disable_timing_one_sb_output(fp, 
+                                           cur_sb_info,
+                                           cur_sb_info->chan_rr_node[side][itrack]);
           /* Update the wire L*/
           update_wire_L_counter_in_llist(rr_path_cnt, L_wire, path_cnt);
         }
