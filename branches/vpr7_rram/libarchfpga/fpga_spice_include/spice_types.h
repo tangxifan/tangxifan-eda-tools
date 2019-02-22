@@ -81,6 +81,13 @@ enum e_spice_model_port_type {
   SPICE_MODEL_PORT_WLB
 };
 
+/* For process corner */
+enum e_process_corner {
+ BEST_CORNER,
+ TYPICAL_CORNER,
+ WORST_CORNER
+};
+
 /* For SRAM */
 enum e_sram_orgz {
   SPICE_SRAM_STANDALONE,

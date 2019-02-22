@@ -77,18 +77,22 @@ char* gen_verilog_one_routing_report_timing_Lwire_dir_path(char* report_timing_p
 }
 
 char* gen_verilog_one_routing_report_timing_rpt_name(char* report_timing_path,
-                                                     int L_wire, int path_id) {
+                                                     int L_wire, 
+                                                     enum e_process_corner process_corner, 
+                                                     int path_id) {
   char* ret = NULL;
   char* formatted_path = gen_verilog_one_routing_report_timing_Lwire_dir_path(report_timing_path, L_wire);
 
   /* The report will be named after L<lenght>_path<ID>*/
   ret = (char*) my_malloc (sizeof(char) * (strlen(formatted_path)
                            + 1 + strlen(my_itoa(L_wire))
-                           + 5 + strlen(my_itoa(path_id)) + 5));
+                           + 5 + strlen(my_itoa(path_id)) 
+                           + 1 + strlen(convert_process_corner_to_string(process_corner)) + 5));
 
   sprintf(ret, 
-          "%sL%d_path%d.rpt",
-          formatted_path, L_wire, path_id);
+          "%sL%d_path%d_%s.rpt",
+          formatted_path, L_wire, path_id, 
+          convert_process_corner_to_string(process_corner));
 
   return ret;
 }
@@ -457,6 +461,7 @@ void verilog_generate_report_timing_one_sb_thru_segments(FILE* fp,
                                                          t_rr_node* src_rr_node, 
                                                          t_sb* des_sb_info,
                                                          t_rr_node* des_rr_node,
+                                                         enum e_process_corner process_corner, 
                                                          char* rpt_name) {
   /* Check the file handler */
   if (NULL == fp) {
@@ -470,6 +475,12 @@ void verilog_generate_report_timing_one_sb_thru_segments(FILE* fp,
   /* Report timing for the downstream segements, from a SB output to an adjacent SB input */
   verilog_generate_one_report_timing_sb_to_sb(fp, src_sb_info, src_rr_node, 
                                               des_sb_info, des_rr_node);
+
+  /* Print process corners */
+  fprintf (fp, " -view %s", 
+           convert_process_corner_to_string(process_corner));
+
+
   if (NULL != rpt_name) {
     fprintf(fp, " >> %s\n", rpt_name); 
   } else {
@@ -479,6 +490,11 @@ void verilog_generate_report_timing_one_sb_thru_segments(FILE* fp,
   /* Report timing for the downstream segements, within a SB */
   verilog_generate_one_report_timing_within_sb(fp, des_sb_info,
                                                des_rr_node, des_rr_node);
+
+  /* Print process corners */
+  fprintf (fp, " -view %s", 
+           convert_process_corner_to_string(process_corner));
+
   if (NULL != rpt_name) {
     fprintf(fp, " >> %s\n", rpt_name); 
   } else {
@@ -500,6 +516,7 @@ void verilog_generate_report_timing_one_sb_ending_segments(FILE* fp,
                                                            t_sb* src_sb_info,
                                                            t_rr_node* src_rr_node, 
                                                            t_rr_node* des_rr_node,
+                                                           enum e_process_corner process_corner, 
                                                            char* rpt_name) {
   t_cb* next_cb = NULL;
   t_sb* next_sb = NULL;
@@ -533,6 +550,10 @@ void verilog_generate_report_timing_one_sb_ending_segments(FILE* fp,
     exit(1);
   }
 
+  /* Print process corners */
+  fprintf (fp, " -view %s", 
+           convert_process_corner_to_string(process_corner));
+
   if (NULL != rpt_name) {
     fprintf(fp, " >> %s\n", rpt_name); 
   } else {
@@ -551,6 +572,7 @@ void dump_verilog_one_sb_wire_segemental_report_timing(FILE* fp,
                                                        t_rr_node* drive_rr_node, 
                                                        t_rr_node* src_rr_node, 
                                                        t_rr_node* des_rr_node,
+                                                       enum e_process_corner process_corner, 
                                                        int path_cnt) {
   int L_wire;
   int ix, iy;
@@ -578,7 +600,8 @@ void dump_verilog_one_sb_wire_segemental_report_timing(FILE* fp,
 
   /* Get report name */
   rpt_name = gen_verilog_one_routing_report_timing_rpt_name(fpga_verilog_opts.report_timing_path,
-                                                            L_wire, path_cnt);
+                                                            L_wire, process_corner, path_cnt);
+
   /* Start printing report timing info  */
   fprintf(fp, "# L%d wire, Path ID: %d\n", 
           L_wire,
@@ -714,6 +737,7 @@ void dump_verilog_one_sb_wire_segemental_report_timing(FILE* fp,
         verilog_generate_report_timing_one_sb_ending_segments(fp,
                                                               &(sb_info[ix][cur_sb_y]), src_rr_node, 
                                                               des_rr_node, 
+                                                              process_corner, 
                                                               rpt_name); 
 
         continue;
@@ -722,6 +746,7 @@ void dump_verilog_one_sb_wire_segemental_report_timing(FILE* fp,
       verilog_generate_report_timing_one_sb_thru_segments(fp,
                                                           &(sb_info[ix][cur_sb_y]), src_rr_node, 
                                                           &(sb_info[ix + 1][cur_sb_y]), src_rr_node,
+                                                          process_corner, 
                                                           rpt_name); 
     }
   } else if ((INC_DIRECTION == src_rr_node->direction) 
@@ -733,6 +758,7 @@ void dump_verilog_one_sb_wire_segemental_report_timing(FILE* fp,
         verilog_generate_report_timing_one_sb_ending_segments(fp,
                                                               &(sb_info[cur_sb_x][iy]), src_rr_node, 
                                                               des_rr_node, 
+                                                              process_corner, 
                                                               rpt_name); 
         continue;
       }
@@ -740,6 +766,7 @@ void dump_verilog_one_sb_wire_segemental_report_timing(FILE* fp,
       verilog_generate_report_timing_one_sb_thru_segments(fp,
                                                           &(sb_info[cur_sb_x][iy]), src_rr_node, 
                                                           &(sb_info[cur_sb_x][iy + 1]), src_rr_node,
+                                                          process_corner, 
                                                           rpt_name); 
     }
   } else if ((DEC_DIRECTION == src_rr_node->direction) 
@@ -751,6 +778,7 @@ void dump_verilog_one_sb_wire_segemental_report_timing(FILE* fp,
         verilog_generate_report_timing_one_sb_ending_segments(fp,
                                                               &(sb_info[ix][cur_sb_y]), src_rr_node, 
                                                               des_rr_node, 
+                                                              process_corner, 
                                                               rpt_name); 
         continue;
       }
@@ -758,6 +786,7 @@ void dump_verilog_one_sb_wire_segemental_report_timing(FILE* fp,
       verilog_generate_report_timing_one_sb_thru_segments(fp,
                                                           &(sb_info[ix][cur_sb_y]), src_rr_node, 
                                                           &(sb_info[ix - 1][cur_sb_y]), src_rr_node,
+                                                          process_corner, 
                                                           rpt_name); 
     }
   } else if ((DEC_DIRECTION == src_rr_node->direction) 
@@ -769,6 +798,7 @@ void dump_verilog_one_sb_wire_segemental_report_timing(FILE* fp,
         verilog_generate_report_timing_one_sb_ending_segments(fp,
                                                               &(sb_info[cur_sb_x][iy]), src_rr_node, 
                                                               des_rr_node, 
+                                                              process_corner, 
                                                               rpt_name); 
         continue;
       }
@@ -776,6 +806,7 @@ void dump_verilog_one_sb_wire_segemental_report_timing(FILE* fp,
       verilog_generate_report_timing_one_sb_thru_segments(fp,
                                                           &(sb_info[cur_sb_x][iy]), src_rr_node, 
                                                           &(sb_info[cur_sb_x][iy - 1]), src_rr_node,
+                                                          process_corner, 
                                                           rpt_name); 
     }
   }
@@ -1284,9 +1315,15 @@ void verilog_generate_one_routing_segmental_report_timing(FILE* fp,
                                                           int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                                           t_ivec*** LL_rr_node_indices,
                                                           int* path_cnt) {
-  int iedge, jedge;
+  int iedge, jedge, icorner;
   int num_end_rr_nodes = 0;
   t_rr_node** end_rr_node = NULL;
+  int num_corners = 2;
+  enum e_process_corner* process_corner = (enum e_process_corner*)my_calloc(num_corners, sizeof(enum e_process_corner));
+  
+  /* Initialize the corner */
+  process_corner[0] = TYPICAL_CORNER;
+  process_corner[1] = WORST_CORNER;
 
   /* Check the file handler */
   if (NULL == fp) {
@@ -1307,18 +1344,23 @@ void verilog_generate_one_routing_segmental_report_timing(FILE* fp,
   for (iedge = 0; iedge < wire_rr_node->num_drive_rr_nodes; iedge++) {
     /* Find the ending points*/
     for (jedge = 0; jedge < num_end_rr_nodes; jedge++) {
-      dump_verilog_one_sb_wire_segemental_report_timing(fp, fpga_verilog_opts, 
-                                                        cur_sb_info, 
-                                                        wire_rr_node->drive_rr_nodes[iedge],
-                                                        wire_rr_node,
-                                                        end_rr_node[jedge],
-                                                        *path_cnt);
+      for (icorner = 0; icorner < num_corners; icorner++) { 
+        /* Report timing */
+        dump_verilog_one_sb_wire_segemental_report_timing(fp, fpga_verilog_opts, 
+                                                          cur_sb_info, 
+                                                          wire_rr_node->drive_rr_nodes[iedge],
+                                                          wire_rr_node,
+                                                          end_rr_node[jedge],
+                                                          process_corner[icorner],
+                                                          *path_cnt);
+      }
       /* Update counter */
       (*path_cnt)++;
     }
   }
 
   /* Free */
+  my_free(process_corner);
   my_free(end_rr_node);
 
   return;

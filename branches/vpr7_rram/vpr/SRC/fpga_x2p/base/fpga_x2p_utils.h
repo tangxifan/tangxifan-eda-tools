@@ -83,6 +83,8 @@ int get_opposite_side(int side);
 
 char* convert_side_index_to_string(int side);
 
+char* convert_process_corner_to_string(enum e_process_corner process_corner);
+
 char* convert_chan_type_to_string(t_rr_type chan_type);
 
 char* convert_cb_type_to_string(t_rr_type chan_type);
