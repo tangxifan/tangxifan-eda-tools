@@ -258,6 +258,7 @@ void verilog_generate_sdc_break_loop_sb(FILE* fp,
                                         int LL_nx, int LL_ny) {
   int ix, iy;
   t_sb* cur_sb_info = NULL;
+  int side, itrack;
 
   /* Check the file handler */
   if (NULL == fp) {
@@ -271,9 +272,24 @@ void verilog_generate_sdc_break_loop_sb(FILE* fp,
   for (ix = 0; ix < (LL_nx + 1); ix++) {
     for (iy = 0; iy < (LL_ny + 1); iy++) {
       cur_sb_info = &(sb_info[ix][iy]);
-      fprintf(fp, 
-              "set_disable_timing [get_pins -filter \"direction == out\" -of %s]\n",
-              gen_verilog_one_sb_instance_name(cur_sb_info));
+      for (side = 0; side < cur_sb_info->num_sides; side++) {
+        for (itrack = 0; itrack < cur_sb_info->chan_width[side]; itrack++) {
+          assert((CHANX == cur_sb_info->chan_rr_node[side][itrack]->type)
+               ||(CHANY == cur_sb_info->chan_rr_node[side][itrack]->type));
+          /* We only care the output port and it should indicate a SB mux */
+          if ( (OUT_PORT != cur_sb_info->chan_rr_node_direction[side][itrack]) 
+             || (FALSE != check_drive_rr_node_imply_short(*cur_sb_info, cur_sb_info->chan_rr_node[side][itrack], side))) {
+            continue; 
+          }
+          /* Bypass if we have only 1 driving node */
+          if (1 == cur_sb_info->chan_rr_node[side][itrack]->num_drive_rr_nodes) {
+            continue; 
+          }
+          /* Disable timing here */
+          set_disable_timing_one_sb_output(fp, cur_sb_info, 
+                                           cur_sb_info->chan_rr_node[side][itrack]); 
+        }
+      }
     }
   }
   
@@ -811,6 +827,75 @@ void verilog_generate_sdc_constrain_routing_channels(t_sram_orgz_info* cur_sram_
   return;
 }
 
+/* Disable the timing for all the global port
+ * Except the clock ports
+ */
+void verilog_generate_sdc_disable_global_ports(FILE* fp) {
+  t_llist* temp = global_ports_head;
+  t_spice_model_port* cur_port = NULL;
+
+  /* Check the file handler */
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  /* Print comments */
+  fprintf(fp,
+          "##################################################\n"); 
+  fprintf(fp, 
+          "### Disable Timing for global ports ###\n");
+  fprintf(fp,
+          "##################################################\n"); 
+
+  while (NULL != temp) {
+    /* Get the port */
+    cur_port = (t_spice_model_port*)(temp->dptr);
+    /* Only focus on the non-clock ports */
+    if ( (SPICE_MODEL_PORT_CLOCK == cur_port->type) 
+      && (FALSE == cur_port->is_prog) ) {
+      /* Go to the next */
+      temp = temp->next;
+      continue;
+    }
+    /* Output disable timing command */
+    fprintf(fp, 
+            "set_disable_timing %s\n",
+            cur_port->prefix);
+    /* Go to the next */
+    temp = temp->next;
+  }
+
+  return;
+}
+
+/* Disable the timing for SRAM outputs */
+void verilog_generate_sdc_disable_sram_orgz(FILE* fp, 
+                                            t_sram_orgz_info* cur_sram_orgz_info) {
+  
+  /* Check the file handler */
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  /* Print comments */
+  fprintf(fp,
+          "##################################################\n"); 
+  fprintf(fp, 
+          "### Disable Timing for configuration memories ###\n");
+  fprintf(fp,
+          "##################################################\n"); 
+
+  verilog_generate_sdc_break_loop_sram(fp, cur_sram_orgz_info); 
+
+  return;
+}
+
 void verilog_generate_sdc_disable_unused_sbs(FILE* fp,
                                              int LL_nx, int LL_ny, 
                                              int num_switch,
@@ -1320,6 +1405,12 @@ void verilog_generate_sdc_analysis(t_sram_orgz_info* cur_sram_orgz_info,
   } 
   /* Generate the descriptions*/
   dump_verilog_sdc_file_header(fp, "Constrain for Timing/Power analysis on the mapped FPGA");
+
+  /* Disable the timing for global ports */
+  verilog_generate_sdc_disable_global_ports(fp);
+
+  /* Disable the timing for configuration cells */ 
+  verilog_generate_sdc_disable_sram_orgz(fp, cur_sram_orgz_info);
 
   /* Disable timing for un-used resources */
   /* Apply to Routing Channels */

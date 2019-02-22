@@ -349,3 +349,56 @@ t_sb* get_chan_rr_node_ending_sb(t_rr_node* src_rr_node,
   return next_sb;
 }
 
+/* Restore the disabled timing for the sb wire */
+void restore_disable_timing_one_sb_output(FILE* fp, 
+                                          t_sb* cur_sb_info,
+                                          t_rr_node* wire_rr_node) {
+  /* Check the file handler */
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  assert(  ( CHANX == wire_rr_node->type )
+        || ( CHANY == wire_rr_node->type ));
+
+  /* Restore disabled timing for wire_rr_node as an SB output */
+  fprintf(fp, "reset_disable_timing "); 
+  /* output instance name */
+  fprintf(fp, "%s/", 
+          gen_verilog_one_sb_instance_name(cur_sb_info)); 
+  dump_verilog_one_sb_chan_pin(fp, cur_sb_info, wire_rr_node, OUT_PORT); 
+  fprintf(fp, "\n"); 
+
+  return;
+}
+
+/* Restore the disabled timing for the sb wire */
+void set_disable_timing_one_sb_output(FILE* fp, 
+                                      t_sb* cur_sb_info,
+                                      t_rr_node* wire_rr_node) {
+  /* Check the file handler */
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  assert(  ( CHANX == wire_rr_node->type )
+        || ( CHANY == wire_rr_node->type ));
+
+  /* Restore disabled timing for wire_rr_node as an SB output */
+  fprintf(fp, "set_disable_timing "); 
+  /* output instance name */
+  fprintf(fp, "%s/", 
+          gen_verilog_one_sb_instance_name(cur_sb_info)); 
+  dump_verilog_one_sb_chan_pin(fp, cur_sb_info, wire_rr_node, OUT_PORT); 
+  fprintf(fp, "\n"); 
+
+  return;
+}
+
+

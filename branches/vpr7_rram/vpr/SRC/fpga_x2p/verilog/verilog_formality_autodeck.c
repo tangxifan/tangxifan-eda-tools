@@ -65,8 +65,8 @@ void write_formality_script (t_syn_verilog_opts fpga_verilog_opts,
 	char* formal_verification_top_module_port_postfix = "_fm";
 	char* benchmark_path = NULL;
 	char* original_output_name = NULL;
-//	int output_length;
-//	int pos;
+/*	int output_length; */
+/*	int pos; */
 	FILE* fp = NULL;
 
 	if(TRUE == fpga_verilog_opts.print_autocheck_top_testbench){
@@ -74,6 +74,7 @@ void write_formality_script (t_syn_verilog_opts fpga_verilog_opts,
 	} else {
 		benchmark_path = "Insert verilog benchmark path";
 	}
+
 	formality_script_file_name = my_strcat(fm_dir_formatted, my_strcat(chomped_circuit_name, formality_script_name_postfix));
 	fp = fopen(formality_script_file_name, "w");
     if (NULL == fp) {
@@ -83,11 +84,11 @@ void write_formality_script (t_syn_verilog_opts fpga_verilog_opts,
       exit(1);
     } 
 
-	// Load Verilog benchmark as reference
+	/* Load Verilog benchmark as reference */
 	fprintf(fp, "read_verilog -container r -libname WORK -05 { %s }\n", benchmark_path);
-	// Set reference top
+	/* Set reference top */
 	fprintf(fp, "set_top r:/WORK/%s\n", chomped_circuit_name);
-	// Load generated verilog as implemnetation
+	/* Load generated verilog as implemnetation */
 	fprintf(fp, "read_verilog -container i -libname WORK -05 { ");
 	fprintf(fp, "%s%s%s ",  src_dir_formatted, 
 							chomped_circuit_name, 
@@ -107,11 +108,11 @@ void write_formality_script (t_syn_verilog_opts fpga_verilog_opts,
 							default_submodule_dir_name, 
 							submodule_verilog_file_name);
 	fprintf(fp, "}\n");
-	// Set implementation top
+	/* Set implementation top */
 	fprintf(fp, "set_top i:/WORK/%s\n", my_strcat(chomped_circuit_name, formal_verification_top_postfix));
-	// Run matching
+	/* Run matching */
 	fprintf(fp, "match\n");
-	// Add manual matching for the outputs
+	/* Add manual matching for the outputs */
 	for (iblock = 0; iblock < num_logical_blocks; iblock++) {
     	original_output_name = NULL;
     	if (iopad_verilog_model == logical_block[iblock].mapped_spice_model) {
@@ -119,9 +120,9 @@ void write_formality_script (t_syn_verilog_opts fpga_verilog_opts,
       		assert((VPACK_INPAD == logical_block[iblock].type)
         	  	 ||(VPACK_OUTPAD == logical_block[iblock].type));
       		if(VPACK_OUTPAD == logical_block[iblock].type){
-			//	output_length = strlen(logical_block[iblock].name);
+			/* output_length = strlen(logical_block[iblock].name); */
 				original_output_name = logical_block[iblock].name + 4;
-				printf("%s", original_output_name);
+				/* printf("%s", original_output_name); */
         		fprintf(fp, "set_user_match r:/WORK/%s/%s i:/WORK/%s/%s[0] -type port -noninverted\n", 
 						chomped_circuit_name,
                 		original_output_name, 
@@ -130,9 +131,9 @@ void write_formality_script (t_syn_verilog_opts fpga_verilog_opts,
       		}
 		}
 	}
-	// Run verification
+	/* Run verification */
 	fprintf(fp, "verify\n");
-	// Script END
+	/* Script END */
 	fclose(fp);
 
 	return;
