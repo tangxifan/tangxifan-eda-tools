@@ -193,6 +193,13 @@ void dump_verilog_preproc(FILE* fp,
     fprintf(fp, "\n");
   } 
 
+  /* To enable functional verfication with Icarus */
+  if (TRUE == fpga_verilog_opts.include_icarus_simulator) {
+    fprintf(fp, "`define %s 1\n",
+                 icarus_simulator_flag); // the flag to enable formal verification during compilation
+    fprintf(fp, "\n");
+  } 
+
   return;
 }
 

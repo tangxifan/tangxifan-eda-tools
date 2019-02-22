@@ -1222,6 +1222,7 @@ struct s_syn_verilog_opts {
   boolean print_formal_verification_top_netlist;
   boolean include_timing;
   boolean include_signal_init;
+  boolean include_icarus_simulator;
   boolean print_modelsim_autodeck;
   char* modelsim_ini_path;
   char* report_timing_path;
