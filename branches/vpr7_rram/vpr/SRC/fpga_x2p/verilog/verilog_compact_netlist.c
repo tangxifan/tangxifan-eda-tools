@@ -404,7 +404,7 @@ void dump_compact_verilog_one_physical_block(t_sram_orgz_info* cur_sram_orgz_inf
     dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
                                                 0, 
                                                 temp_conf_bits_msb - 1,
-                                                VERILOG_PORT_OUTPUT);
+                                                VERILOG_PORT_INPUT);	// Should be modified to be VERILOG_PORT_INPUT
     fprintf(fp, "\n");
     fprintf(fp, "`endif\n");
   }

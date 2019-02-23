@@ -413,7 +413,8 @@ void dump_verilog_modelsim_top_auto_script(char* modelsim_top_auto_script_filena
                                 	       char* modelsim_project_name,
                                 	       float sim_time, 
                                 	       char* sim_time_unit, 
-                                	       t_spice spice) {
+                                	       t_spice spice, 
+                                	       char* src_dir_path) {
   FILE* fp = NULL;
 
   /* Create Modelsim proc file */
@@ -440,7 +441,8 @@ void dump_verilog_modelsim_top_auto_script(char* modelsim_top_auto_script_filena
   fprintf(fp, "\n");
   
   fprintf(fp, "#Path were the verilog files are located\n");
-  fprintf(fp, "set verilog_path \"%s\"\n", modelsim_project_path);
+  fprintf(fp, "set script_path \"%s\"\n", modelsim_project_path);
+  fprintf(fp, "set verilog_path \"%s\"\n", src_dir_path);
   fprintf(fp, "set verilog_files [list \\\n");
   /* TODO: include verilog files */
   fprintf(fp, "  ${verilog_path}${benchmark}%s \\\n", 
@@ -461,7 +463,7 @@ void dump_verilog_modelsim_top_auto_script(char* modelsim_top_auto_script_filena
   fprintf(fp, "\n");
   
   fprintf(fp, "#Source the tcl script\n");
-  fprintf(fp, "source ${verilog_path}%s\n", modelsim_proc_auto_script_filename);
+  fprintf(fp, "source ${script_path}%s\n", modelsim_proc_auto_script_filename);
   fprintf(fp, "\n");
   
   fprintf(fp, "#Execute the top level procedure\n");
@@ -483,7 +485,8 @@ void dump_verilog_modelsim_autodeck(t_sram_orgz_info* cur_sram_orgz_info,
                                     t_spice spice,
                                     int num_operating_clock_cycles,
                                     char* verilog_dir_formatted,
-                                    char* chomped_circuit_name) {
+                                    char* chomped_circuit_name,
+                                    char* src_dir_path) {
   char* modelsim_project_name = NULL;
   char* modelsim_proc_script_filename = NULL; 
   char* modelsim_top_script_filename = NULL; 
@@ -547,7 +550,8 @@ void dump_verilog_modelsim_autodeck(t_sram_orgz_info* cur_sram_orgz_info,
                                           verilog_dir_formatted, 
                                           chomped_circuit_name, modelsim_project_name,
                                           simulation_time_period, modelsim_simulation_time_unit,
-                                          spice);
+                                          spice,
+										  src_dir_path);
   }
 
   /* Free */
