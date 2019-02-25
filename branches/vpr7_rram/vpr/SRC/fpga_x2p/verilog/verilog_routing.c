@@ -1828,7 +1828,6 @@ void dump_verilog_routing_connection_box_subckt(t_sram_orgz_info* cur_sram_orgz_
                                                   cur_cb_info->ipin_rr_node[side][inode]->ylow,
                                                   TRUE); 
 
-      fprintf(fp, "\n");
     }
   }
   /* Make sure only 2 sides of IPINs are printed */

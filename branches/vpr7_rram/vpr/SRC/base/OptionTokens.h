@@ -105,6 +105,7 @@ enum e_OptionBaseToken {
     OT_FPGA_VERILOG_SYN_PRINT_FORMAL_VERIFICATION_TOP_NETLIST, /* Xifan Tang: Synthesizable Verilog, turn on option: output netlists in a compact way */
     OT_FPGA_VERILOG_SYN_INCLUDE_TIMING, /* Xifan TANG: Include timing constraints in Verilog */
     OT_FPGA_VERILOG_SYN_INCLUDE_SIGNAL_INIT, /* Xifan TANG: Include timing constraints in Verilog */
+	OT_FPGA_VERILOG_SYN_INCLUDE_ICARUS_SIMULATOR,
     OT_FPGA_VERILOG_SYN_PRINT_MODELSIM_AUTODECK,
     OT_FPGA_VERILOG_SYN_PRINT_USER_DEFINED_TEMPLATE,
     OT_FPGA_VERILOG_SYN_PRINT_REPORT_TIMING_TCL,

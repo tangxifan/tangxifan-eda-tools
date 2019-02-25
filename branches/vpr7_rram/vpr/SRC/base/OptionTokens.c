@@ -88,6 +88,7 @@ struct s_TokenPair OptionBaseTokenList[] = {
         { "fpga_verilog_print_formal_verification_top_netlist", OT_FPGA_VERILOG_SYN_PRINT_FORMAL_VERIFICATION_TOP_NETLIST },
         { "fpga_verilog_include_timing", OT_FPGA_VERILOG_SYN_INCLUDE_TIMING }, /* Include timing constraints in Verilog netlists */
         { "fpga_verilog_include_signal_init", OT_FPGA_VERILOG_SYN_INCLUDE_SIGNAL_INIT }, /* Include signal initialization in Verilog netlists */
+        { "fpga_verilog_include_icarus_simulator", OT_FPGA_VERILOG_SYN_INCLUDE_ICARUS_SIMULATOR }, /* Include/activate Icarus required functions in Verilog netlists */
         { "fpga_verilog_print_modelsim_autodeck", OT_FPGA_VERILOG_SYN_PRINT_MODELSIM_AUTODECK }, /* Generate autodeck scripts for modelsim */
         { "fpga_verilog_print_user_defined_template", OT_FPGA_VERILOG_SYN_PRINT_USER_DEFINED_TEMPLATE }, /* Specify the simulator path for Verilog netlists */
         { "fpga_verilog_print_report_timing_tcl", OT_FPGA_VERILOG_SYN_PRINT_REPORT_TIMING_TCL }, /* Specify the simulator path for Verilog netlists */

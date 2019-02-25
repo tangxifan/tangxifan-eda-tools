@@ -533,6 +533,8 @@ ProcessOption(INP char **Args, INOUTP t_options * Options) {
       return Args;
     case OT_FPGA_VERILOG_SYN_INCLUDE_SIGNAL_INIT:
       return Args;
+    case OT_FPGA_VERILOG_SYN_INCLUDE_ICARUS_SIMULATOR:
+      return Args;
     case OT_FPGA_VERILOG_SYN_PRINT_MODELSIM_AUTODECK:
       return ReadString(Args, &Options->fpga_verilog_modelsim_ini_path);
     case OT_FPGA_VERILOG_SYN_PRINT_USER_DEFINED_TEMPLATE:

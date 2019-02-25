@@ -47,6 +47,7 @@
 #include "verilog_sdc.h"
 #include "verilog_formality_autodeck.h"
 #include "verilog_sdc_pb_types.h"
+#include "verilog_include_netlists.h"
 
 /***** Subroutines *****/
 /* Alloc array that records Configuration bits for :
@@ -352,7 +353,9 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
                                    vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts,
                                    *(Arch.spice),
                                    Arch.spice->spice_params.meas_params.sim_num_clock_cycle,
-                                   msim_dir_path, chomped_circuit_name);
+                                   msim_dir_path, 
+								   chomped_circuit_name,
+								   src_dir_path);
   }
 
   /* Output SDC to contrain the P&R flow
@@ -392,6 +395,10 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
     free_sram_orgz_info(sram_verilog_orgz_info,
                         sram_verilog_orgz_info->type);
   }
+
+  write_include_netlists(src_dir_path,
+                           chomped_circuit_name,
+                           *(Arch.spice) );
 
   /* End time count */
   t_end = clock();

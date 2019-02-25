@@ -4,7 +4,7 @@
 # Set variables
 # For FPGA-Verilog ONLY 
 set verilog_output_dirname = sram_fpga_hetero
-set verilog_output_dirpath = $PWD
+set verilog_output_dirpath = /var/tmp/xtang/vpr7
 set modelsim_ini_file = /uusoc/facility/cad_tools/Mentor/modelsim10.7b/modeltech/modelsim.ini
 # VPR critical inputs
 #set arch_xml_file = ARCH/k6_N10_MD_tsmc40nm_chain_TT.xml 

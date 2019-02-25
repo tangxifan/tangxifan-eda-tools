@@ -1720,7 +1720,7 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
     dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
                                                 stamped_sram_cnt, 
                                                 stamped_sram_cnt + num_conf_bits - 1,
-                                                VERILOG_PORT_OUTPUT);
+                                                VERILOG_PORT_INPUT);
     fprintf(fp, "\n");
     fprintf(fp, "`endif\n");
   }
@@ -2490,7 +2490,7 @@ void dump_verilog_physical_grid_blocks(t_sram_orgz_info* cur_sram_orgz_info,
     dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
                                                 cur_num_mem_bit, 
                                                 get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info) - 1, 
-                                                VERILOG_PORT_OUTPUT);
+                                                VERILOG_PORT_INPUT);
     fprintf(fp, "\n");
     fprintf(fp, "`endif\n");
   }
@@ -2563,7 +2563,7 @@ void dump_verilog_physical_grid_blocks(t_sram_orgz_info* cur_sram_orgz_info,
       dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
                                                   temp_conf_bits_lsb, 
                                                   temp_conf_bits_msb - 1, 
-                                                  VERILOG_PORT_OUTPUT);
+                                                  VERILOG_PORT_INPUT);
       fprintf(fp, "\n");
       fprintf(fp, "`endif\n");
     }
