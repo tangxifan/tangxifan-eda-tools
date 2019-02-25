@@ -41,7 +41,7 @@
 #include "verilog_compact_netlist.h"
 #include "verilog_top_testbench.h"
 #include "verilog_autocheck_top_testbench.h"
-#include "verilog_formal_random_top_testbench.h"
+//#include "verilog_formal_random_top_testbench.h"
 #include "verilog_verification_top_netlist.h"
 #include "verilog_modelsim_autodeck.h"
 #include "verilog_report_timing.h"
@@ -333,11 +333,11 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
                            src_dir_path,
                            chomped_circuit_name,
                            *(Arch.spice));
-    random_top_testbench_file_name = my_strcat(chomped_circuit_name, random_top_testbench_verilog_file_postfix);
+/*    random_top_testbench_file_name = my_strcat(chomped_circuit_name, random_top_testbench_verilog_file_postfix);
     random_top_testbench_file_path = my_strcat(src_dir_path, random_top_testbench_file_name);
 	dump_verilog_random_top_testbench(sram_verilog_orgz_info, chomped_circuit_name, 
                                          random_top_testbench_file_path, src_dir_path, num_clocks, 
-                                         vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts, *(Arch.spice));
+                                         vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts, *(Arch.spice)); */
     /* Free */
     my_free(formal_verification_top_netlist_file_name);
     my_free(formal_verification_top_netlist_file_path);
