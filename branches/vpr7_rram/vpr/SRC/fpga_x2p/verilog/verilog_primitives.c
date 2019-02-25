@@ -174,7 +174,7 @@ void dump_verilog_pb_generic_primitive(t_sram_orgz_info* cur_sram_orgz_info,
     dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
                                                 cur_num_sram,
                                                 cur_num_sram + num_conf_bits - 1,
-                                                VERILOG_PORT_OUTPUT);
+                                                VERILOG_PORT_INPUT);
     fprintf(fp, "\n");
     fprintf(fp, "`endif\n");
   }
@@ -570,7 +570,7 @@ void dump_verilog_pb_primitive_lut(t_sram_orgz_info* cur_sram_orgz_info,
     dump_verilog_formal_verification_sram_ports(fp, cur_sram_orgz_info, 
                                                 cur_num_sram,
                                                 cur_num_sram + num_conf_bits - 1,
-                                                VERILOG_PORT_OUTPUT);
+                                                VERILOG_PORT_INPUT);
     fprintf(fp, "\n");
     fprintf(fp, "`endif\n");
   }

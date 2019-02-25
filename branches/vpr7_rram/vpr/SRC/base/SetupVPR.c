@@ -1085,6 +1085,7 @@ static void SetupSynVerilogOpts(t_options Options,
   syn_verilog_opts->print_report_timing_tcl = FALSE;
   syn_verilog_opts->print_sdc_pnr = FALSE;
   syn_verilog_opts->print_sdc_analysis = FALSE;
+  syn_verilog_opts->include_icarus_simulator = FALSE;
 
   /* Turn on Syn_verilog options */
   if (Options.Count[OT_FPGA_VERILOG_SYN]) {
@@ -1120,6 +1121,10 @@ static void SetupSynVerilogOpts(t_options Options,
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_INCLUDE_SIGNAL_INIT]) {
     syn_verilog_opts->include_signal_init = TRUE;
+  }
+
+  if (Options.Count[OT_FPGA_VERILOG_SYN_INCLUDE_ICARUS_SIMULATOR]) {
+    syn_verilog_opts->include_icarus_simulator = TRUE;
   }
 
   if (Options.Count[OT_FPGA_VERILOG_SYN_PRINT_MODELSIM_AUTODECK]) {

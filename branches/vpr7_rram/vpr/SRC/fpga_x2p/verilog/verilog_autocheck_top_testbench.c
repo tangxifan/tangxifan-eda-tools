@@ -244,6 +244,47 @@ void dump_verilog_top_auto_testbench_call_benchmark(FILE* fp,
   return;
 }
 
+static 
+int get_simulation_time(int num_prog_clock_cycles,
+                          float prog_clock_period,
+                          int num_op_clock_cycles,
+                          float op_clock_period) {
+  int total_time_period = 0;
+
+  /* Take into account the prog_reset and reset cycles */
+  total_time_period = ((num_prog_clock_cycles + 2) * prog_clock_period + (2 * num_op_clock_cycles * op_clock_period)) * 1000000000; // * 1000000000 is to change the unit to ns rather than second
+
+  return total_time_period; 
+}
+
+static
+void dump_verilog_timeout_and_vcd(FILE * fp,
+									char* circuit_name,
+									t_spice verilog,
+									t_sram_orgz_info* cur_sram_orgz_info){
+	int simulation_time;
+
+	simulation_time = get_simulation_time(get_sram_orgz_info_num_mem_bit(cur_sram_orgz_info),
+										  1./verilog.spice_params.stimulate_params.prog_clock_freq,
+                                          verilog.spice_params.meas_params.sim_num_clock_cycle,
+                                          1./verilog.spice_params.stimulate_params.op_clock_freq);
+										  
+	fprintf(fp, "  // Begin Icarus requirement\n");
+	fprintf(fp, "`ifdef %s\n", icarus_simulator_flag);
+	fprintf(fp, "  initial begin\n");
+	fprintf(fp, "    $dumpfile(%s_autochecked.vcd);\n", circuit_name);
+	fprintf(fp, "    $dumpvars(1, %s%s);\n", circuit_name,
+											modelsim_autocheck_testbench_module_postfix);
+	fprintf(fp, "  end\n\n");
+	fprintf(fp, "  initial begin\n");
+	fprintf(fp, "    $display(\"Simulation start\");\n");
+	fprintf(fp, "    #%i // Can be changed by the user for his need\n", simulation_time);
+	fprintf(fp, "    $display(\"Simulation End: Time's up\");\n");
+	fprintf(fp, "  end\n");
+	fprintf(fp, "`endif\n\n");
+	return;
+}
+
 static
 void dump_verilog_top_auto_testbench_check(FILE* fp){
   int iblock, iopad_idx;
@@ -336,6 +377,9 @@ void dump_verilog_autocheck_top_testbench(t_sram_orgz_info* cur_sram_orgz_info,
 
   /* Add output autocheck */
   dump_verilog_top_auto_testbench_check(fp);
+
+  /* Add Icarus requirement */
+  dump_verilog_timeout_and_vcd(fp, circuit_name , verilog, cur_sram_orgz_info);
 
   /* Testbench ends*/
   fprintf(fp, "endmodule\n");
