@@ -49,6 +49,7 @@ static char* gfpga_postfix = "_gfpga";
 static char* bench_postfix = "_bench";
 static char* flag_postfix = "_flag";
 static char* def_clk_name = "clk";
+static char* clock_input_name = NULL;
 
 /* Local Subroutines declaration */
 
@@ -211,7 +212,7 @@ static
 void dump_verilog_top_random_testbench_check(FILE* fp){
   int iblock, iopad_idx;
   fprintf(fp, "  // Begin checking\n");
-  fprintf(fp, "  always@(negedge %s) begin\n", top_tb_op_clock_port_name);
+  fprintf(fp, "  always@(negedge %s) begin\n", clock_input_name);
   for (iblock = 0; iblock < num_logical_blocks; iblock++) {
     if (iopad_verilog_model == logical_block[iblock].mapped_spice_model) {
       iopad_idx = logical_block[iblock].mapped_spice_model_index;
@@ -227,7 +228,7 @@ void dump_verilog_top_random_testbench_check(FILE* fp){
                 									bench_postfix);
       }
     }
-  }
+  } 
   fprintf(fp, "  end\n\n");
   for (iblock = 0; iblock < num_logical_blocks; iblock++) {
     if (iopad_verilog_model == logical_block[iblock].mapped_spice_model) {
@@ -286,7 +287,6 @@ static
 void dump_verilog_top_random_stimuli(FILE* fp,
                                      t_spice verilog){
   int iblock, iopad_idx;
-  char* clock_input_name = NULL;
   char* reset_input_name = NULL;
 
   fprintf(fp, "//----- Initialization\n");
@@ -378,7 +378,7 @@ void dump_verilog_random_top_testbench(t_sram_orgz_info* cur_sram_orgz_info,
 
   /* Print preprocessing flags */
   verilog_include_defines_preproc_file(fp, verilog_dir_path);
-  //verilog_include_defines_preproc_file(fp, sim_def_dir_path);
+  verilog_include_simulation_defines_file(fp, verilog_dir_path);
 
   /* Start of testbench */
   dump_verilog_top_random_testbench_ports(fp, cur_sram_orgz_info, circuit_name, fpga_verilog_opts);
