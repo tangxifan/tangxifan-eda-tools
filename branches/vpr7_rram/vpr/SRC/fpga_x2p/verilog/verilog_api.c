@@ -47,6 +47,7 @@
 #include "verilog_report_timing.h"
 #include "verilog_sdc.h"
 #include "verilog_formality_autodeck.h"
+#include "verilog_sdc_pb_types.h"
 #include "verilog_include_netlists.h"
 
 /***** Subroutines *****/

@@ -132,3 +132,4 @@ char* top_tb_op_clock_port_name = "op_clock";
 char* top_tb_prog_clock_port_name = "prog_clock";
 char* top_tb_inout_reg_postfix = "_reg";
 char* top_tb_clock_reg_postfix = "_reg";
+

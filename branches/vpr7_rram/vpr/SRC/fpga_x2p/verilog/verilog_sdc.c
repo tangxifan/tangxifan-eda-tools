@@ -38,6 +38,7 @@
 #include "verilog_utils.h"
 #include "verilog_routing.h"
 #include "verilog_tcl_utils.h"
+#include "verilog_sdc_pb_types.h"
 
 /* options for report timing */
 typedef struct s_sdc_opts t_sdc_opts;
@@ -1379,7 +1380,8 @@ void verilog_generate_sdc_pnr(t_sram_orgz_info* cur_sram_orgz_info,
 
   /* Part 6. Output routing constraints for Programmable blocks */
   if (TRUE == sdc_opts.constrain_pbs) {
-    /* TODO */
+    verilog_generate_sdc_constrain_pb_types(cur_sram_orgz_info,
+                                            sdc_dir);
   }
 
   return;
