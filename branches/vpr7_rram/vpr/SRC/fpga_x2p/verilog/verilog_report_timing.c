@@ -77,14 +77,16 @@ char* gen_verilog_one_routing_report_timing_Lwire_dir_path(char* report_timing_p
 }
 
 char* gen_verilog_one_routing_report_timing_rpt_name(char* report_timing_path,
-                                                     int L_wire, int path_id) {
+                                                     int L_wire, 
+                                                     int path_id) {
   char* ret = NULL;
   char* formatted_path = gen_verilog_one_routing_report_timing_Lwire_dir_path(report_timing_path, L_wire);
 
   /* The report will be named after L<lenght>_path<ID>*/
   ret = (char*) my_malloc (sizeof(char) * (strlen(formatted_path)
                            + 1 + strlen(my_itoa(L_wire))
-                           + 5 + strlen(my_itoa(path_id)) + 5));
+                           + 5 + strlen(my_itoa(path_id)) 
+                           + 5));
 
   sprintf(ret, 
           "%sL%d_path%d.rpt",
@@ -470,6 +472,7 @@ void verilog_generate_report_timing_one_sb_thru_segments(FILE* fp,
   /* Report timing for the downstream segements, from a SB output to an adjacent SB input */
   verilog_generate_one_report_timing_sb_to_sb(fp, src_sb_info, src_rr_node, 
                                               des_sb_info, des_rr_node);
+
   if (NULL != rpt_name) {
     fprintf(fp, " >> %s\n", rpt_name); 
   } else {
@@ -479,6 +482,7 @@ void verilog_generate_report_timing_one_sb_thru_segments(FILE* fp,
   /* Report timing for the downstream segements, within a SB */
   verilog_generate_one_report_timing_within_sb(fp, des_sb_info,
                                                des_rr_node, des_rr_node);
+
   if (NULL != rpt_name) {
     fprintf(fp, " >> %s\n", rpt_name); 
   } else {
@@ -579,6 +583,7 @@ void dump_verilog_one_sb_wire_segemental_report_timing(FILE* fp,
   /* Get report name */
   rpt_name = gen_verilog_one_routing_report_timing_rpt_name(fpga_verilog_opts.report_timing_path,
                                                             L_wire, path_cnt);
+
   /* Start printing report timing info  */
   fprintf(fp, "# L%d wire, Path ID: %d\n", 
           L_wire,
@@ -1287,7 +1292,7 @@ void verilog_generate_one_routing_segmental_report_timing(FILE* fp,
   int iedge, jedge;
   int num_end_rr_nodes = 0;
   t_rr_node** end_rr_node = NULL;
-
+  
   /* Check the file handler */
   if (NULL == fp) {
     vpr_printf(TIO_MESSAGE_ERROR,
@@ -1307,6 +1312,7 @@ void verilog_generate_one_routing_segmental_report_timing(FILE* fp,
   for (iedge = 0; iedge < wire_rr_node->num_drive_rr_nodes; iedge++) {
     /* Find the ending points*/
     for (jedge = 0; jedge < num_end_rr_nodes; jedge++) {
+      /* Report timing */
       dump_verilog_one_sb_wire_segemental_report_timing(fp, fpga_verilog_opts, 
                                                         cur_sb_info, 
                                                         wire_rr_node->drive_rr_nodes[iedge],

@@ -866,6 +866,22 @@ char* convert_side_index_to_string(int side) {
   }
 }
 
+char* convert_process_corner_to_string(enum e_process_corner process_corner) {
+  switch(process_corner) {
+  case BEST_CORNER:
+    return "bc";
+  case TYPICAL_CORNER:
+    return "tc";
+  case WORST_CORNER:
+    return "wc";
+  default: 
+    vpr_printf(TIO_MESSAGE_ERROR, 
+               "(File:%s, [LINE%d])Invalid process_corner !\n",
+                __FILE__, __LINE__);
+    exit(1);
+  }
+}
+
 char* convert_cb_type_to_string(t_rr_type chan_type) {
   switch(chan_type) {
   case CHANX:

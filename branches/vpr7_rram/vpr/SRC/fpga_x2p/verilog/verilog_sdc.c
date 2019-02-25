@@ -926,8 +926,8 @@ void verilog_generate_sdc_disable_unused_sbs(FILE* fp,
       fprintf(fp,
               "##################################################\n"); 
       for (side = 0; side < cur_sb_info->num_sides; side++) {
+        /* Disable Channel inputs and outputs*/
         for (itrack = 0; itrack < cur_sb_info->chan_width[side]; itrack++) {
-          /* Disable Channel inputs and outputs*/
           assert((CHANX == cur_sb_info->chan_rr_node[side][itrack]->type)
                ||(CHANY == cur_sb_info->chan_rr_node[side][itrack]->type));
           if (FALSE == is_rr_node_to_be_disable_for_analysis(cur_sb_info->chan_rr_node[side][itrack])) {
@@ -1102,21 +1102,29 @@ void rec_verilog_generate_sdc_disable_unused_pb_types(FILE* fp,
   int mode_index;
   char* pass_on_prefix = NULL;
 
-  /* generate pass_on_prefix */
-  pass_on_prefix = (char*) my_malloc(sizeof(char) * 
-                                     ( strlen(prefix) + 1 
-                                     + strlen(cur_pb_type->name) + 1 + 1)); 
-  sprintf(pass_on_prefix, "%s/%s*",
-          prefix, cur_pb_type->name); 
-
-  /* Disable everything in this pb_type
-   * Use the spice_model_name of current pb_type 
+  /* Skip print the level for the top-level pb_type, 
+   * it has been printed outside
    */
-  fprintf(fp, "set_disable_timing ");
-  /* Print top-level hierarchy */
-  fprintf(fp, "%s/*", 
-          pass_on_prefix);
-  fprintf(fp, "\n");
+  if (NULL == cur_pb_type->parent_mode) {
+    pass_on_prefix = my_strdup(prefix);
+  } else {
+    /* Special prefix for primitive node*/
+    /* generate pass_on_prefix */
+    pass_on_prefix = (char*) my_malloc(sizeof(char) * 
+                                       ( strlen(prefix) + 1 
+                                       + strlen(cur_pb_type->name) + 1 + 1)); 
+    sprintf(pass_on_prefix, "%s/%s*",
+            prefix, cur_pb_type->name); 
+
+    /* Disable everything in this pb_type
+     * Use the spice_model_name of current pb_type 
+     */
+    fprintf(fp, "set_disable_timing ");
+    /* Print top-level hierarchy */
+    fprintf(fp, "%s/*", 
+            pass_on_prefix);
+    fprintf(fp, "\n");
+  } 
 
   /* Return if this is the primitive pb_type */
   if (TRUE == is_primitive_pb_type(cur_pb_type)) {
@@ -1159,7 +1167,7 @@ void verilog_generate_sdc_disable_one_unused_grid(FILE* fp,
                             + 1 
                             + strlen(gen_verilog_one_phy_block_instance_name(cur_grid_type, block_z))
                             + 2)); 
-  sprintf(prefix, "%s/%s*",
+  sprintf(prefix, "%s/%s",
           gen_verilog_one_grid_instance_name(block_x, block_y),
           gen_verilog_one_phy_block_instance_name(cur_grid_type, block_z)); 
 
