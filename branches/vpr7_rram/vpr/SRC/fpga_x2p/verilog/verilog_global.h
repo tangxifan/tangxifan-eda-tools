@@ -5,6 +5,9 @@ extern float verilog_sim_timescale;
 extern char* verilog_timing_preproc_flag; // the flag to enable timing definition during compilation
 extern char* verilog_signal_init_preproc_flag; // the flag to enable signal initialization during compilation
 extern char* verilog_formal_verification_preproc_flag; // the flag to enable formal verification during compilation
+extern char* initial_simulation_flag;
+extern char* autochecked_simulation_flag;
+extern char* formal_simulation_flag;
 
 extern char* default_verilog_dir_name;
 extern char* default_src_dir_name;
@@ -39,8 +42,10 @@ extern char* verilog_top_postfix;
 extern char* formal_verification_verilog_file_postfix;
 extern char* top_testbench_verilog_file_postfix;
 extern char* autocheck_top_testbench_verilog_file_postfix; 
+extern char* random_top_testbench_verilog_file_postfix; 
 extern char* blif_testbench_verilog_file_postfix;
 extern char* defines_verilog_file_name;
+extern char* defines_verilog_simulation_file_name;
 extern char* submodule_verilog_file_name;
 extern char* logic_block_verilog_file_name;
 extern char* luts_verilog_file_name;
