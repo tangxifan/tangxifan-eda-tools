@@ -247,6 +247,9 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
   dump_verilog_defines_preproc(src_dir_path,
                                vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts);
 
+  dump_verilog_simulation_preproc(src_dir_path,
+                               vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts);
+
   /* Dump routing resources: switch blocks, connection blocks and channel tracks */
   dump_verilog_routing_resources(sram_verilog_orgz_info, src_dir_path, rr_dir_path, Arch, &vpr_setup.RoutingArch,
                                  num_rr_nodes, rr_node, rr_node_indices, rr_indexed_data,
