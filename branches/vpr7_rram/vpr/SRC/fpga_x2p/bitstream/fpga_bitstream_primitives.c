@@ -208,14 +208,12 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(FILE* fp,
                                                     t_pb_type* prim_pb_type,
                                                     t_sram_orgz_info* cur_sram_orgz_info) {
 
-  int i, j, offset;
+  int i, j;
   int* lut_sram_bits = NULL; /* decoded SRAM bits */ 
   int* mode_sram_bits = NULL; /* decoded SRAM bits */ 
   int* sram_bits = NULL; /* decoded SRAM bits */ 
   int* truth_table_length = 0;
   char*** truth_table = NULL;
-  int lut_truth_table_length = 0;
-  char** lut_truth_table = NULL;
   int lut_size = 0;
   int num_input_port = 0;
   t_spice_model_port** input_ports = NULL;
@@ -377,24 +375,8 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(FILE* fp,
         fprintf(fp, "%s\n", truth_table[i][j]);
       }
     }
-    /* Conject all the truth tables we have */
-    lut_truth_table_length = 0;
-    for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
-      lut_truth_table_length += truth_table_length[i];
-    }
-    /* Allocate */
-    lut_truth_table = (char**) my_malloc (sizeof(char*) * lut_truth_table_length);
-    /* FIll the truth table */
-    offset = 0;
-    for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
-      for (j = 0; j < truth_table_length[i]; j++) {
-        lut_truth_table[offset + j] = truth_table[i][j];
-      }
-      offset += truth_table_length[i];
-    }
-    /* Generate sram bits*/
-    lut_sram_bits = generate_lut_sram_bits(lut_truth_table_length, lut_truth_table, 
-                                           lut_size, lut_sram_port->default_val);
+    /* Generate base sram bits*/
+    lut_sram_bits = generate_frac_lut_sram_bits(prim_phy_pb, truth_table_length, truth_table, lut_sram_port->default_val);
   }
   
   /* Add mode bits */
@@ -460,8 +442,6 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(FILE* fp,
   }
 
   /* Print the encoding in SPICE netlist for debugging */
-  if (NULL != prim_phy_pb) {
-  }
   fprintf(fp, "***** LUT SRAM bits for %s[%d] *****\n", 
           verilog_model->name, verilog_model->cnt);
   fprintf(fp, "*****");
@@ -485,7 +465,6 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(FILE* fp,
   /*Free*/
   if (NULL != prim_phy_pb) {
     my_free(lut_pin_net);
-    my_free(lut_truth_table);
     for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
       for (j = 0; j < truth_table_length[i]; j++) {
         my_free(truth_table[i][j]);

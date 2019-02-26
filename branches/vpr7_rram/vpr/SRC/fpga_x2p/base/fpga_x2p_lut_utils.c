@@ -31,6 +31,7 @@
 #include "fpga_x2p_globals.h"
 #include "fpga_x2p_utils.h"
 #include "fpga_x2p_pbtypes_utils.h"
+#include "fpga_x2p_lut_utils.h"
 
 
 char* complete_truth_table_line(int lut_size,
@@ -205,6 +206,11 @@ int determine_lut_truth_table_on_set(int truth_table_len,
   return on_set;
 }
 
+/* Generate the LUT SRAM bits for a given truth table
+ * As truth tables may come from different logic blocks, truth tables could be in on and off sets
+ * We first build a base SRAM bits, where different parts are set to tbe on/off sets 
+ * Then, we can decode SRAM bits as regular process 
+ */
 int* generate_lut_sram_bits(int truth_table_len,
                             char** truth_table,
                             int lut_size,
@@ -269,6 +275,60 @@ int* generate_lut_sram_bits(int truth_table_len,
 
   return ret;
 }
+
+/* Generate the base SRAM bits:
+ * Check type of truth table of each mapped logical block
+ * if it is on-set, we give a all 0 base sram-bit 
+ * if it is off-set, we give a all 1 base sram-bit */
+int* generate_frac_lut_sram_bits(t_phy_pb* lut_phy_pb,
+                                 int* truth_table_length,
+                                 char*** truth_table,
+                                 int default_sram_bit_value) {
+  int num_sram, lut_size;
+  int* sram_bits = NULL;
+  int* temp_sram_bits = NULL;
+  int ilb; 
+  int lut_frac_level, lut_output_mask;
+  int num_input_port = 0;
+  t_spice_model_port** input_ports = NULL;
+  int offset, len_to_cpy;
+
+  /* Find the input ports for LUT size */
+  input_ports = find_spice_model_ports(lut_phy_pb->pb_graph_node->pb_type->spice_model, SPICE_MODEL_PORT_INPUT, &num_input_port, TRUE);
+  assert(1 == num_input_port);
+  lut_size = input_ports[0]->size;
+  num_sram = (int)pow(2.,(double)(lut_size));
+  sram_bits = (int*)my_calloc(num_sram, sizeof(int)); 
+
+  /* Initialization */
+  for (ilb = 0; ilb < num_sram; ilb++) {
+    sram_bits[ilb] = default_sram_bit_value;
+  }
+
+  for (ilb = 0; ilb < lut_phy_pb->num_logical_blocks; ilb++) {
+    /* find the corresponding SPICE model output port and assoicated lut_output_mask */
+    lut_frac_level = get_pb_graph_pin_lut_frac_level(lut_phy_pb->lut_output_pb_graph_pin[ilb]);
+    lut_output_mask = get_pb_graph_pin_lut_output_mask(lut_phy_pb->lut_output_pb_graph_pin[ilb]);
+    /* Decode lut sram bits */
+    temp_sram_bits = generate_lut_sram_bits(truth_table_length[ilb], truth_table[ilb], lut_size, default_sram_bit_value); 
+    /* Depending on the frac-level, we get the location(starting/end points) of sram bits */
+    len_to_cpy = (int)pow(2., (double)(lut_frac_level)); 
+    offset = len_to_cpy * lut_output_mask; 
+    /*TODO: copy to the sram_bits to return:
+     * Should check if we will overwrite anything! 
+     */
+    memcpy(sram_bits + offset, temp_sram_bits + offset, 
+           len_to_cpy * sizeof(int));
+    /* Free */
+    my_free(temp_sram_bits);
+  }
+
+  /* Free */
+  my_free(input_ports);
+
+  return sram_bits; 
+}
+
 
 /* Provide the truth table of a mapped logical block 
  * 1. Reorgainze the truth table to be consistent with the mapped nets of a LUT

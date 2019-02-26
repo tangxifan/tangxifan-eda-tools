@@ -434,14 +434,12 @@ void fprint_pb_primitive_lut(FILE* fp,
                              t_pb_type* prim_pb_type,
                              int index,
                              t_spice_model* spice_model) {
-  int i, j, offset;
+  int i, j;
   int* lut_sram_bits = NULL; /* decoded SRAM bits */ 
   int* mode_sram_bits = NULL; /* decoded SRAM bits */ 
   int* sram_bits = NULL; /* decoded SRAM bits */ 
   int* truth_table_length = 0;
   char*** truth_table = NULL;
-  int lut_truth_table_length = 0;
-  char** lut_truth_table = NULL;
 
   int lut_size = 0;
   int num_input_port = 0;
@@ -575,24 +573,8 @@ void fprint_pb_primitive_lut(FILE* fp,
         fprintf(fp, "*%s\n", truth_table[i][j]);
       }
     }
-    /* Conject all the truth tables we have */
-    lut_truth_table_length = 0;
-    for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
-      lut_truth_table_length += truth_table_length[i];
-    }
-    /* Allocate */
-    lut_truth_table = (char**) my_malloc (sizeof(char*) * lut_truth_table_length);
-    /* FIll the truth table */
-    offset = 0;
-    for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
-      for (j = 0; j < truth_table_length[i]; j++) {
-        lut_truth_table[offset + j] = truth_table[i][j];
-      }
-      offset += truth_table_length[i];
-    }
-    /* Generate sram bits*/
-    lut_sram_bits = generate_lut_sram_bits(lut_truth_table_length, lut_truth_table, 
-                                           lut_size, lut_sram_port->default_val);
+    /* Generate base sram bits*/
+    lut_sram_bits = generate_frac_lut_sram_bits(prim_phy_pb, truth_table_length, truth_table, lut_sram_port->default_val);
   }
   
   /* Add mode bits */
@@ -613,7 +595,6 @@ void fprint_pb_primitive_lut(FILE* fp,
   if (NULL != mode_bit_port) {
     memcpy(sram_bits + num_lut_sram, mode_sram_bits, num_mode_sram * sizeof(int));
   }
-
 
   /* Subckt definition*/
   fprintf(fp, ".subckt %s%s[%d] ", formatted_subckt_prefix, cur_pb_type->name, index);

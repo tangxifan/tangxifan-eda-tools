@@ -12,6 +12,11 @@ int* generate_lut_sram_bits(int truth_table_len,
                             int lut_size,
                             int default_sram_bit_value);
 
+int* generate_frac_lut_sram_bits(t_phy_pb* lut_phy_pb,
+                                 int* truth_table_length,
+                                 char*** truth_table,
+                                 int default_sram_bit_value);
+
 char** assign_lut_truth_table(t_logical_block* mapped_logical_block,
                               int* truth_table_length);
 
