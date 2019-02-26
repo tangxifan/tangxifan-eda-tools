@@ -3278,3 +3278,13 @@ char* gen_verilog_one_pb_graph_pin_full_name_in_hierarchy(t_pb_graph_pin* cur_pb
  
   return full_name;
 }
+
+char* gen_verilog_top_module_io_port_prefix(char* global_prefix, 
+                                            char* io_port_prefix) {
+  char* port_name = NULL;
+
+  port_name = (char*)my_malloc(sizeof(char)*(strlen(global_prefix) + strlen(io_port_prefix) + 1));
+  sprintf(port_name, "%s%s", global_prefix, io_port_prefix);
+
+  return port_name;
+}

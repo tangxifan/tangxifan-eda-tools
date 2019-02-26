@@ -716,7 +716,7 @@ void verilog_generate_sdc_disable_one_unused_chan(FILE* fp,
                                                   t_rr_indexed_data* LL_rr_indexed_data) {
   int chan_width = 0;
   t_rr_node** chan_rr_nodes = NULL;
-  int cost_index, iseg, itrack;
+  int itrack;
 
   /* Check the file handler */
   if (NULL == fp) {
@@ -966,7 +966,7 @@ void verilog_generate_sdc_disable_unused_sbs(FILE* fp,
 void verilog_generate_sdc_disable_one_unused_cb(FILE* fp, 
                                                 t_cb* cur_cb_info) {
   int side, side_cnt;
-  int inode, iedge, switch_id;
+  int inode;
 
   /* Check the file handler */
   if (NULL == fp) {
@@ -1321,6 +1321,122 @@ void verilog_generate_sdc_disable_unused_grids(FILE* fp,
   return;
 }
 
+/* Generate SDC constaints for inputs and outputs
+ * We consider the top module in formal verification purpose here
+ * which is easier 
+ */
+void verilog_generate_sdc_input_output_delays(FILE* fp,
+                                              char* circuit_name,
+                                              float critical_path_delay) {
+  int iopad_idx, iblock, iport;
+  int found_mapped_inpad;
+  char* port_name = NULL;
+  int num_clock_ports = 0;
+  t_spice_model_port** clock_port = NULL;
+
+  /* Check the file handler */
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,
+               "(FILE:%s,LINE[%d])Invalid file handler for SDC generation",
+               __FILE__, __LINE__); 
+    exit(1);
+  } 
+
+  /* Get clock port from the global port */
+  get_fpga_x2p_global_op_clock_ports(global_ports_head, &num_clock_ports, &clock_port);
+
+  /* Print comments */
+  fprintf(fp,
+          "##################################################\n"); 
+  fprintf(fp, 
+          "###             Create clock                     #\n");
+  fprintf(fp,
+          "##################################################\n"); 
+
+  /* Create a clock */
+  for (iport = 0; iport < num_clock_ports; iport++) {
+    fprintf(fp, "create_clock ");
+    fprintf(fp, "%s -period %.2g -waveform {0 %.2g}\n",
+            clock_port[iport]->prefix, 
+            critical_path_delay, critical_path_delay/2);
+  }
+
+  /* Print comments */
+  fprintf(fp,
+          "##################################################\n"); 
+  fprintf(fp, 
+          "###        Create input and output delays        #\n");
+  fprintf(fp,
+          "##################################################\n"); 
+
+  assert(NULL != iopad_verilog_model);
+  for (iopad_idx = 0; iopad_idx < iopad_verilog_model->cnt; iopad_idx++) {
+    /* Find if this inpad is mapped to a logical block */
+    found_mapped_inpad = 0;
+    /* Malloc and assign port_name */
+    port_name = gen_verilog_top_module_io_port_prefix(gio_inout_prefix, iopad_verilog_model->prefix);
+    /* Find the linked logical block */
+    for (iblock = 0; iblock < num_logical_blocks; iblock++) {
+      /* Bypass OUTPAD: donot put any voltage stimuli */
+      /* Make sure We find the correct logical block !*/
+      if ((iopad_verilog_model == logical_block[iblock].mapped_spice_model)
+         &&(iopad_idx == logical_block[iblock].mapped_spice_model_index)) {
+        /* Output PAD only need a short connection */
+        if (VPACK_OUTPAD == logical_block[iblock].type) {
+          fprintf(fp, "set_output_delay ");
+          dump_verilog_generic_port(fp, VERILOG_PORT_CONKT, 
+                                    port_name, 
+                                    iopad_idx, iopad_idx);
+          fprintf(fp, " %.2g ", 
+                  critical_path_delay);
+          fprintf(fp, "-clock ");
+          for (iport = 0; iport < num_clock_ports; iport++) {
+            fprintf(fp, "%s ",
+                  clock_port[iport]->prefix);
+          }
+          fprintf(fp, "\n");
+          found_mapped_inpad = 1;
+          break;
+        }
+        /* Input PAD only need a short connection */
+        assert(VPACK_INPAD == logical_block[iblock].type);
+        fprintf(fp, "set_input_delay ");
+        dump_verilog_generic_port(fp, VERILOG_PORT_CONKT, 
+                                  port_name, 
+                                  iopad_idx, iopad_idx);
+        fprintf(fp, " 0 ");
+        fprintf(fp, "-clock ");
+        for (iport = 0; iport < num_clock_ports; iport++) {
+          fprintf(fp, "%s ",
+                clock_port[iport]->prefix);
+        }
+        fprintf(fp, "\n");
+        found_mapped_inpad++;
+      }
+    } 
+    assert((0 == found_mapped_inpad)||(1 == found_mapped_inpad));
+    /* If we find one iopad already, we finished in this round here */
+    if (1 == found_mapped_inpad) {
+      /* Free */
+      my_free(port_name);
+      continue;
+    }
+    /* if we cannot find any mapped inpad from tech.-mapped netlist, set the disable timing! */
+    fprintf(fp, "set_disable_timing ");
+    dump_verilog_generic_port(fp, VERILOG_PORT_CONKT, 
+                              port_name, 
+                              iopad_idx, iopad_idx);
+    fprintf(fp, "\n");
+    /* Free */
+    my_free(port_name);
+  }
+
+  /* Free */
+  my_free(clock_port);
+
+  return;
+}
+
 void verilog_generate_sdc_pnr(t_sram_orgz_info* cur_sram_orgz_info,
                               char* sdc_dir,
                               t_arch arch,
@@ -1390,13 +1506,14 @@ void verilog_generate_sdc_pnr(t_sram_orgz_info* cur_sram_orgz_info,
 /* Output a SDC file to constrain a FPGA mapped with a benchmark */
 void verilog_generate_sdc_analysis(t_sram_orgz_info* cur_sram_orgz_info,
                                    char* sdc_dir,
+                                   char* circuit_name,
                                    t_arch arch,
                                    t_det_routing_arch* routing_arch,
                                    int LL_num_rr_nodes, t_rr_node* LL_rr_node,
                                    t_ivec*** LL_rr_node_indices,
                                    t_rr_indexed_data* LL_rr_indexed_data,
                                    int LL_nx, int LL_ny, t_grid_tile** LL_grid,
-                                   t_block* LL_block,
+                                   t_block* LL_block, 
                                    t_syn_verilog_opts fpga_verilog_opts) {
   FILE* fp = NULL;
   char* fname = my_strcat(sdc_dir, sdc_analysis_file_name);
@@ -1415,6 +1532,10 @@ void verilog_generate_sdc_analysis(t_sram_orgz_info* cur_sram_orgz_info,
   } 
   /* Generate the descriptions*/
   dump_verilog_sdc_file_header(fp, "Constrain for Timing/Power analysis on the mapped FPGA");
+  
+  /* Create clock and set input/output delays */
+  verilog_generate_sdc_input_output_delays(fp, circuit_name, 
+                                           arch.spice->spice_params.stimulate_params.vpr_crit_path_delay);
 
   /* Disable the timing for global ports */
   verilog_generate_sdc_disable_global_ports(fp);

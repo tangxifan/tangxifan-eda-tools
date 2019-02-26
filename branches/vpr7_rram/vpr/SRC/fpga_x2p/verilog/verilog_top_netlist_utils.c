@@ -278,8 +278,7 @@ void dump_verilog_top_module_ports(t_sram_orgz_info* cur_sram_orgz_info,
       actual_dump_port_type = VERILOG_PORT_INOUT;
     }
     /* Malloc and assign port_name */
-    port_name = (char*)my_malloc(sizeof(char)*(strlen(gio_inout_prefix) + strlen(iopad_verilog_model->prefix) + 1));
-    sprintf(port_name, "%s%s", gio_inout_prefix, iopad_verilog_model->prefix);
+    port_name = gen_verilog_top_module_io_port_prefix(gio_inout_prefix, iopad_verilog_model->prefix);
     /* Dump a register port */
     dump_verilog_generic_port(fp, actual_dump_port_type, 
                               port_name, iopad_verilog_model->cnt - 1, 0);

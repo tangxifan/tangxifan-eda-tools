@@ -38,10 +38,6 @@
 #include "verilog_top_netlist_utils.h"
 #include "verilog_top_testbench.h"
 
-static char* formal_verification_top_module_postfix = "_top_formal_verification";
-static char* formal_verification_top_module_port_postfix = "_fm";
-static char* formal_verification_top_module_uut_name = "U0_formal_verification";
-
 static 
 void dump_verilog_formal_verification_top_netlist_ports(t_sram_orgz_info* cur_sram_orgz_info, 
                                                         FILE* fp, 

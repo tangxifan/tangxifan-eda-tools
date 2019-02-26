@@ -277,6 +277,16 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
 								   *(Arch.spice));
    
   /* Dump SDC constraints */
+  /* Output SDC to contrain the P&R flow
+   */
+  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_sdc_pnr) {
+    verilog_generate_sdc_pnr(sram_verilog_orgz_info, sdc_dir_path,
+                             Arch, &vpr_setup.RoutingArch,
+                             num_rr_nodes, rr_node, rr_node_indices, rr_indexed_data,
+                             nx, ny, grid,
+                             vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts);
+  }
+
   /* dump_verilog_sdc_file(); */
   
   /* dump verilog testbench only for input blif */
@@ -340,8 +350,8 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
     random_top_testbench_file_name = my_strcat(chomped_circuit_name, random_top_testbench_verilog_file_postfix);
     random_top_testbench_file_path = my_strcat(src_dir_path, random_top_testbench_file_name);
 	dump_verilog_random_top_testbench(sram_verilog_orgz_info, chomped_circuit_name, 
-                                         random_top_testbench_file_path, src_dir_path, num_clocks, 
-                                         vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts, *(Arch.spice));
+                                      random_top_testbench_file_path, src_dir_path, num_clocks, 
+                                      vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts, *(Arch.spice));
     /* Free */
     my_free(formal_verification_top_netlist_file_name);
     my_free(formal_verification_top_netlist_file_path);
@@ -369,20 +379,11 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
 								   src_dir_path);
   }
 
-  /* Output SDC to contrain the P&R flow
-   */
-  if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_sdc_pnr) {
-    verilog_generate_sdc_pnr(sram_verilog_orgz_info, sdc_dir_path,
-                             Arch, &vpr_setup.RoutingArch,
-                             num_rr_nodes, rr_node, rr_node_indices, rr_indexed_data,
-                             nx, ny, grid,
-                             vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts);
-  }
-  /* Output SDC to contrain the P&R flow
+  /* Output SDC to contrain the mapped FPGA in timing-analysis purpose
    */
   if (TRUE == vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts.print_sdc_analysis) {
     verilog_generate_sdc_analysis(sram_verilog_orgz_info, sdc_dir_path,
-                                  Arch, &vpr_setup.RoutingArch,
+                                  chomped_circuit_name, Arch, &vpr_setup.RoutingArch,
                                   num_rr_nodes, rr_node, rr_node_indices, rr_indexed_data,
                                   nx, ny, grid, block,
                                   vpr_setup.FPGA_SPICE_Opts.SynVerilogOpts);
@@ -408,8 +409,8 @@ void vpr_fpga_verilog(t_vpr_setup vpr_setup,
   }
 
   write_include_netlists(src_dir_path,
-                           chomped_circuit_name,
-                           *(Arch.spice) );
+                         chomped_circuit_name,
+                         *(Arch.spice) );
 
   /* End time count */
   t_end = clock();

@@ -42,9 +42,6 @@
 
 /* Local variables */
 static char* formal_random_top_tb_postfix = "_top_formal_verification_random_tb";
-static char* formal_verification_top_module_postfix = "_top_formal_verification";
-static char* formal_verification_top_module_port_postfix = "_fm";
-static char* formal_verification_top_module_uut_name = "U0_formal_verification";
 static char* gfpga_postfix = "_gfpga";
 static char* bench_postfix = "_bench";
 static char* flag_postfix = "_flag";

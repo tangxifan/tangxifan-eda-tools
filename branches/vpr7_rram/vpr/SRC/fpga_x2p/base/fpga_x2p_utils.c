@@ -3424,3 +3424,48 @@ int get_lut_logical_block_index_with_output_vpack_net_num(int target_vpack_net_n
   return matched_lb_index;
 }
 
+/* Get the operational clock port from the global port linked list */
+void get_fpga_x2p_global_op_clock_ports(t_llist* head,
+                                        int* num_clock_ports,
+                                        t_spice_model_port*** clock_port) {
+  t_llist* temp = head;
+  t_spice_model_port* cur_port = NULL;
+  int cnt = 0;
+
+  /* Get the number of clock ports */
+  while (NULL != temp) {
+    cur_port = (t_spice_model_port*)(temp->dptr); 
+    if ( (SPICE_MODEL_PORT_CLOCK == cur_port->type)
+      && (FALSE == cur_port->is_prog)) { 
+      cnt++;
+    }
+    /* Go to the next */
+    temp = temp->next;
+  }
+
+  /* Initialize the counter */
+  (*num_clock_ports) = cnt;
+
+  /* Malloc */
+  (*clock_port) = (t_spice_model_port**)my_calloc((*num_clock_ports), sizeof(t_spice_model_port*));
+
+  /* Reset the counter */
+  temp = head;
+  cnt = 0;
+  /* Fill the return array */
+  while (NULL != temp) {
+    cur_port = (t_spice_model_port*)(temp->dptr); 
+    if ( (SPICE_MODEL_PORT_CLOCK == cur_port->type)
+      && (FALSE == cur_port->is_prog)) { 
+      (*clock_port)[cnt] = cur_port;
+      cnt++;
+    }
+    /* Go to the next */
+    temp = temp->next;
+  }
+
+  assert (cnt == (*num_clock_ports));
+ 
+  return;
+}
+                   

@@ -29,6 +29,10 @@ extern char* modelsim_testbench_module_postfix;
 extern char* modelsim_autocheck_testbench_module_postfix;
 extern char* modelsim_simulation_time_unit;
 
+extern char* formal_verification_top_module_postfix;
+extern char* formal_verification_top_module_port_postfix;
+extern char* formal_verification_top_module_uut_name;
+
 // Formality script generation variables
 extern char* formality_script_name_postfix;
 extern char* formal_verification_top_postfix;

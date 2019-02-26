@@ -37,6 +37,10 @@ char* modelsim_testbench_module_postfix = "_top_tb";
 char* modelsim_autocheck_testbench_module_postfix = "_autocheck_top_tb";
 char* modelsim_simulation_time_unit = "ms";
 
+char* formal_verification_top_module_postfix = "_top_formal_verification";
+char* formal_verification_top_module_port_postfix = "_fm";
+char* formal_verification_top_module_uut_name = "U0_formal_verification";
+
 // Formality script generation variables
 char* formality_script_name_postfix = "_formality_script.tcl";
 char* formal_verification_top_postfix = "_top_formal_verification";
