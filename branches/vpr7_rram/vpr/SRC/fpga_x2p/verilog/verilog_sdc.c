@@ -1384,11 +1384,11 @@ void verilog_generate_sdc_input_output_delays(FILE* fp,
         /* Output PAD only need a short connection */
         if (VPACK_OUTPAD == logical_block[iblock].type) {
           fprintf(fp, "set_output_delay ");
+          fprintf(fp, " %.2g ", 
+                  critical_path_delay);
           dump_verilog_generic_port(fp, VERILOG_PORT_CONKT, 
                                     port_name, 
                                     iopad_idx, iopad_idx);
-          fprintf(fp, " %.2g ", 
-                  critical_path_delay);
           fprintf(fp, "-clock ");
           for (iport = 0; iport < num_clock_ports; iport++) {
             fprintf(fp, "%s ",
@@ -1401,10 +1401,10 @@ void verilog_generate_sdc_input_output_delays(FILE* fp,
         /* Input PAD only need a short connection */
         assert(VPACK_INPAD == logical_block[iblock].type);
         fprintf(fp, "set_input_delay ");
+        fprintf(fp, " 0 ");
         dump_verilog_generic_port(fp, VERILOG_PORT_CONKT, 
                                   port_name, 
                                   iopad_idx, iopad_idx);
-        fprintf(fp, " 0 ");
         fprintf(fp, "-clock ");
         for (iport = 0; iport < num_clock_ports; iport++) {
           fprintf(fp, "%s ",
