@@ -45,7 +45,7 @@ void init_rr_graph(INOUTP t_rr_graph* local_rr_graph) {
   local_rr_graph->net_rr_sources = NULL;
   local_rr_graph->net_rr_sinks = NULL;
   local_rr_graph->net_rr_terminals = NULL;
-  local_rr_graph->rr_mem_ch = {NULL, 0, NULL}; 
+  memset(&(local_rr_graph->rr_mem_ch), 0, sizeof(t_chunk)); 
 
   local_rr_graph->num_rr_indexed_data = 0;
   local_rr_graph->rr_indexed_data = NULL;
@@ -56,19 +56,20 @@ void init_rr_graph(INOUTP t_rr_graph* local_rr_graph) {
   local_rr_graph->trace_head = NULL; 
   local_rr_graph->trace_tail = NULL;
   local_rr_graph->trace_free_head = NULL;     
-  local_rr_graph->trace_ch = {NULL, 0, NULL}; 
+  memset(&(local_rr_graph->trace_ch), 0, sizeof(t_chunk)); 
 
   local_rr_graph->heap = NULL;
   local_rr_graph->heap_size = 0;
   local_rr_graph->heap_tail = 0;
 
   local_rr_graph->heap_free_head = NULL;     
-  local_rr_graph->heap_ch = {NULL, 0, NULL}; 
+  memset(&(local_rr_graph->heap_ch), 0, sizeof(t_chunk)); 
 
   local_rr_graph->rr_modified_head = NULL;
   local_rr_graph->linked_f_pointer_free_head = NULL;
 
-  local_rr_graph->linked_f_pointer_ch = {NULL, 0, NULL}; 
+  //local_rr_graph->linked_f_pointer_ch = {NULL, 0, NULL}; 
+  memset(&(local_rr_graph->linked_f_pointer_ch), 0, sizeof(t_chunk)); 
 
   #ifdef DEBUG
   local_rr_graph->num_trace_allocated = 0;

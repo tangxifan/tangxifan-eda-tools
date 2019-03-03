@@ -60,8 +60,6 @@ static void SetupFpgaSpiceOpts(t_options Options,
                                t_arch* arch);
 /* end */
 /* Xifan Tang: Parse CLB to CLB direct connections */
-static void alloc_and_init_globals_clb_to_clb_directs(int num_directs, 
-                                                      t_direct_inf* directs);
 
 /* mrFPGA */
 static void SetupSwitches_mrFPGA(INP t_arch Arch,
@@ -72,6 +70,77 @@ static void add_wire_to_switch(struct s_det_routing_arch *det_routing_arch);
 static void set_max_pins_per_side();
 static void hack_switch_to_rram(struct s_det_routing_arch *det_routing_arch);
 /* end */
+
+void VPRSetupArch(t_arch* arch, 
+                  t_det_routing_arch* RoutingArch,
+		          t_segment_inf ** Segments,
+                  /*Xifan TANG: Switch Segment Pattern Support*/
+                  t_swseg_pattern_inf** swseg_patterns,
+                  t_model** user_models, 
+                  t_model** library_models) {
+  int i, j;
+
+  (*user_models) = arch->models;
+  (*library_models) = arch->model_library;
+
+  /* TODO: this is inelegant, I should be populating this information in XmlReadArch */
+  EMPTY_TYPE = NULL;
+  FILL_TYPE = NULL;
+  IO_TYPE = NULL;
+  for (i = 0; i < num_types; i++) {
+    if (strcmp(type_descriptors[i].name, "<EMPTY>") == 0) {
+      EMPTY_TYPE = &type_descriptors[i];
+    } else if (strcmp(type_descriptors[i].name, "io") == 0) {
+      IO_TYPE = &type_descriptors[i];
+    } else {
+      for (j = 0; j < type_descriptors[i].num_grid_loc_def; j++) {
+        if (type_descriptors[i].grid_loc_def[j].grid_loc_type == FILL) {
+          assert(FILL_TYPE == NULL);
+          FILL_TYPE = &type_descriptors[i];
+        }
+      }
+    }
+  }
+  assert(EMPTY_TYPE != NULL && FILL_TYPE != NULL && IO_TYPE != NULL);
+
+  *Segments = arch->Segments;
+  RoutingArch->num_segment = arch->num_segments;
+  /*Xifan TANG: Switch Segment Pattern Support*/
+  (*swseg_patterns) = arch->swseg_patterns;
+  RoutingArch->num_swseg_pattern = arch->num_swseg_pattern;
+  /* END */    
+
+  /* mrFPGA */
+  sync_arch_mrfpga_globals(arch->arch_mrfpga);
+  if (is_mrFPGA) {
+    SetupSwitches_mrFPGA(*arch, RoutingArch, 
+                         arch->Switches, arch->num_switches, arch->Segments);
+    /* Xifan TANG: added by bjxiao */
+    set_max_pins_per_side();
+    hack_switch_to_rram(RoutingArch);
+  } else {
+    /* Normal Setup VPR switches */
+    // Xifan TANG: Add Connection Blocks Switches
+    SetupSwitches(*arch, RoutingArch, 
+                  arch->Switches, arch->num_switches);
+  }
+  /* END */    
+
+  /* end */
+  if(!is_mrFPGA && is_stack) {
+    add_wire_to_switch(RoutingArch);
+  }
+  /* end */
+  /* Xifan TANG: mrFPGA */
+  if (is_junction) {
+    setup_junction_switch(RoutingArch);
+  }
+  /* end */
+
+  SetupRoutingArch(*arch, RoutingArch);
+
+  return;
+}
 
 /* Sets VPR parameters and defaults. Does not do any error checking
  * as this should have been done by the various input checkers */
@@ -90,7 +159,7 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
         /*Xifan TANG: Switch Segment Pattern Support*/
         t_swseg_pattern_inf** swseg_patterns,
         t_fpga_spice_opts* fpga_spice_opts) {
-	int i, j, len;
+	int len;
 
 	len = strlen(Options->CircuitName) + 6; /* circuit_name.blif/0*/
 	if (Options->out_file_prefix != NULL ) {
@@ -216,62 +285,8 @@ void SetupVPR(INP t_options *Options, INP boolean TimingEnabled,
 				&num_types);
 	}
 
-	*user_models = Arch->models;
-	*library_models = Arch->model_library;
+    VPRSetupArch(Arch, RoutingArch, Segments, swseg_patterns, user_models, library_models);
 
-	/* TODO: this is inelegant, I should be populating this information in XmlReadArch */
-	EMPTY_TYPE = NULL;
-	FILL_TYPE = NULL;
-	IO_TYPE = NULL;
-	for (i = 0; i < num_types; i++) {
-		if (strcmp(type_descriptors[i].name, "<EMPTY>") == 0) {
-			EMPTY_TYPE = &type_descriptors[i];
-		} else if (strcmp(type_descriptors[i].name, "io") == 0) {
-			IO_TYPE = &type_descriptors[i];
-		} else {
-			for (j = 0; j < type_descriptors[i].num_grid_loc_def; j++) {
-				if (type_descriptors[i].grid_loc_def[j].grid_loc_type == FILL) {
-					assert(FILL_TYPE == NULL);
-					FILL_TYPE = &type_descriptors[i];
-				}
-			}
-		}
-	}
-	assert(EMPTY_TYPE != NULL && FILL_TYPE != NULL && IO_TYPE != NULL);
-
-	*Segments = Arch->Segments;
-	RoutingArch->num_segment = Arch->num_segments;
-    /*Xifan TANG: Switch Segment Pattern Support*/
-    (*swseg_patterns) = Arch->swseg_patterns;
-    RoutingArch->num_swseg_pattern = Arch->num_swseg_pattern;
-    /* END */    
-
-    /* mrFPGA */
-    sync_arch_mrfpga_globals(Arch->arch_mrfpga);
-    if (is_mrFPGA) {
-      SetupSwitches_mrFPGA(*Arch, RoutingArch, Arch->Switches, Arch->num_switches, Arch->Segments);
-      /* Xifan TANG: added by bjxiao */
-      set_max_pins_per_side();
-      hack_switch_to_rram(RoutingArch);
-    } else {
-      /* Normal Setup VPR switches */
-      // Xifan TANG: Add Connection Blocks Switches
-	  SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
-    }
-    /* END */    
-
-    /* end */
-    if(!is_mrFPGA && is_stack) {
-      add_wire_to_switch(RoutingArch);
-    }
-    /* end */
-    /* Xifan TANG: mrFPGA */
-    if (is_junction) {
-      setup_junction_switch(RoutingArch);
-    }
-    /* end */
-
-	SetupRoutingArch(*Arch, RoutingArch);
 	SetupTiming(*Options, *Arch, TimingEnabled, *Operation, *PlacerOpts,
 			*RouterOpts, Timing);
 	SetupPackerOpts(*Options, TimingEnabled, *Arch, Options->NetFile,
@@ -1239,7 +1254,6 @@ static void SetupFpgaSpiceOpts(t_options Options,
 }
 
 /* Initialize the global variables for clb to clb directs */
-static 
 void alloc_and_init_globals_clb_to_clb_directs(int num_directs, 
                                                t_direct_inf* directs) {
   num_clb2clb_directs = num_directs;

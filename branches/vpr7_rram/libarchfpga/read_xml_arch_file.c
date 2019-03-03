@@ -2811,7 +2811,18 @@ void XmlReadArch(INP const char *ArchFile, INP boolean timing_enabled,
     /* Xifan TANG: HSPICE Support*/
     Next = FindElement(Cur,"spice_settings", arch->read_xml_spice); // Not mandatory options but we will check it later
     if (Next) {
-      ProcessSpiceSettings(Next,arch->spice);
+      /* This information still needs to be read, even if it is just
+	   * thrown away.
+	   */
+      /* Allocate */
+      if (TRUE == arch->read_xml_spice) {
+        vpr_printf(TIO_MESSAGE_INFO, "Parsing XML syntax for FPGA X2P...\n");
+        ProcessSpiceSettings(Next,arch->spice);
+      } else {
+        t_spice* spice_fake = (t_spice*) my_calloc(1, sizeof(t_spice)); 
+        ProcessSpiceSettings(Next, spice_fake);
+	    free(spice_fake);
+      }
       FreeNode(Next);
     }
     /* end */

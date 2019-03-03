@@ -108,4 +108,7 @@ t_trace* vpr_resync_post_route_netlist_to_TI_CLAY_v1_architecture(
 #include "mrfpga_api.h"
 /* END */
 
+/* APIs to be call by the interactive shell*/
+void vpr_init_file_handler() ;
+
 #endif

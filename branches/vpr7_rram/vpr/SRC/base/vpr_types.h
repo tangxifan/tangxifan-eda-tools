@@ -622,6 +622,8 @@ struct s_file_name_opts {
 	char *PowerFile;
 	char *CmosTechFile;
 	char *out_file_prefix;
+    /* For shell-like interface */
+	char *SDCFile;
 };
 
 /* Options for packing

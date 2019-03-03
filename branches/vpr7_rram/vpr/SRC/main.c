@@ -18,20 +18,6 @@
 
 #include "vpr_api.h"
 
-#include <readline/readline.h>
-#include <readline/history.h>
-
-/*
-int main(int argc, char ** argv) {
-  while(1) {
-    char * line = readline("> ");
-    if(!line) break;
-    if(*line) add_history(line);
-    free(line);
-  }
-}
-*/
-
 /**
  * VPR program
  * Generate FPGA architecture given architecture description
