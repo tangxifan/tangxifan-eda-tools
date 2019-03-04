@@ -85,14 +85,14 @@ void init_one_rr_node_pack_cost_for_phy_graph_node(INP t_pb_graph_pin* cur_pb_gr
     /* Routing costs : INPUT pins 
      * need to normalize better than 5 and 10, bias router to use earlier inputs pins 
      */
-    local_rr_graph->rr_node[cur_rr_node_index].pack_intrinsic_cost = 1 + (float) local_rr_graph->rr_node[cur_rr_node_index].num_edges / 5 
-                                                                       + ((float)cur_pb_graph_pin->pin_number / (float)cur_pb_graph_pin->port->num_pins) / (float)10; 
+    local_rr_graph->rr_node[cur_rr_node_index].pack_intrinsic_cost = 1 + 1 * (float) local_rr_graph->rr_node[cur_rr_node_index].num_edges / 5 
+                                                                       + 1 * ((float)cur_pb_graph_pin->pin_number / (float)cur_pb_graph_pin->port->num_pins) / (float)10; 
     break;
   case OUT_PORT:
     /* Routing costs : OUTPUT pins  
      * need to normalize better than 5 
      */
-    local_rr_graph->rr_node[cur_rr_node_index].pack_intrinsic_cost = 1 + (float) local_rr_graph->rr_node[cur_rr_node_index].num_edges / 5; 
+    local_rr_graph->rr_node[cur_rr_node_index].pack_intrinsic_cost = 1 + 1 * (float) local_rr_graph->rr_node[cur_rr_node_index].num_edges / 5; 
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR, 

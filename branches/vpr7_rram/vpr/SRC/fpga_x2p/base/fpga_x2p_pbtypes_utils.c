@@ -100,15 +100,18 @@ void gen_spice_name_tag_phy_pb_rec(t_phy_pb* cur_phy_pb,
   /* Generate the name_tag */
   if ((0 < cur_phy_pb->pb_graph_node->pb_type->num_modes)
     &&(NULL == cur_phy_pb->pb_graph_node->pb_type->spice_model_name)) {
-    prefix_rec = (char*)my_malloc(sizeof(char)*(strlen(prefix) + 1 + strlen(cur_phy_pb->pb_graph_node->pb_type->name) + 1
-                                              + strlen(my_itoa(cur_phy_pb->pb_graph_node->placement_index)) + 7 + strlen(cur_phy_pb->pb_graph_node->pb_type->modes[mode_index].name) + 2 ));
+    prefix_rec = (char*)my_malloc(sizeof(char)*(strlen(prefix) + 1 
+                                              + strlen(cur_phy_pb->pb_graph_node->pb_type->name) + 1
+                                              + strlen(my_itoa(cur_phy_pb->pb_graph_node->placement_index)) + 7 
+                                              + strlen(cur_phy_pb->pb_graph_node->pb_type->modes[mode_index].name) + 2 ));
     sprintf(prefix_rec, "%s_%s[%d]_mode[%s]", 
             prefix, cur_phy_pb->pb_graph_node->pb_type->name, cur_phy_pb->pb_graph_node->placement_index, cur_phy_pb->pb_graph_node->pb_type->modes[mode_index].name);
     cur_phy_pb->spice_name_tag = my_strdup(prefix_rec);
   } else {
     assert((0 == cur_phy_pb->pb_graph_node->pb_type->num_modes)
           ||(NULL != cur_phy_pb->pb_graph_node->pb_type->spice_model_name));
-    prefix_rec = (char*)my_malloc(sizeof(char)*(strlen(prefix) + 1 + strlen(cur_phy_pb->pb_graph_node->pb_type->name) + 1
+    prefix_rec = (char*)my_malloc(sizeof(char)*(strlen(prefix) + 1 
+                                              + strlen(cur_phy_pb->pb_graph_node->pb_type->name) + 1
                                               + strlen(my_itoa(cur_phy_pb->pb_graph_node->placement_index)) + 2 ));
     sprintf(prefix_rec, "%s_%s[%d]", 
             prefix, cur_phy_pb->pb_graph_node->pb_type->name, cur_phy_pb->pb_graph_node->placement_index);

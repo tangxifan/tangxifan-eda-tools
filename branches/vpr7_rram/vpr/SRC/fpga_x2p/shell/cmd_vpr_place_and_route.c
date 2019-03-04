@@ -1,3 +1,4 @@
+#include <string.h>
 /* Include vpr structs*/
 #include "util.h"
 #include "arch_types.h"

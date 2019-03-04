@@ -7,9 +7,9 @@ vpr_pack
 vpr_place_and_route 
 # Run FPGA SPICE
 fpga_x2p_setup
-fpga_spice
+#fpga_spice
 # FPGA Verilog
 #fpga_verilog
 # Bitstream generation
-#fpga_bitstream
+fpga_bitstream
 # END

@@ -467,9 +467,9 @@ void fpga_spice_generate_bitstream_pb_primitive_lut(FILE* fp,
     my_free(lut_pin_net);
     for (i = 0; i < prim_phy_pb->num_logical_blocks; i++) {
       for (j = 0; j < truth_table_length[i]; j++) {
-        my_free(truth_table[i][j]);
+        /* my_free(truth_table[i][j]); */
       }
-      my_free(truth_table[i]);
+      /*my_free(truth_table[i]);*/
     }
     my_free(truth_table_length);
   }
