@@ -58,6 +58,7 @@ boolean process_arg_opt(INP char** argv,
         *(iarg) += 1;
         //cur->val = my_strdup(*(argv+(*iarg)));    
         cur->val = my_strdup((argv[*iarg]));    
+        cur->opt_def = OPT_DEF;
         return TRUE;
       } else if (OPT_NONVAL == cur->with_val) {
         /*Do not need next argument, return*/
