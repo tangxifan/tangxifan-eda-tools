@@ -10,25 +10,10 @@
  3.  globals.h - Defines the global variables used by VPR.
  */
 
+#include <shell_api.h>
 
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
-#include <time.h>
-
-#include "vpr_api.h"
-
-#include "interactive_shell.h" 
 
 int main(int argc, char ** argv) {
-  
-  /* Parse the options and decide which interface to go */
-  /* Interface 1: run through -c, --command */ 
-  /* Interface 2: run through -f, --file */
-  /* Interface 3: run through -i, --interactive */
 
-  /* Start the interactive shell */
-  vpr_launch_interactive_shell();
+  run_shell(argc, argv);
 }
-
-
