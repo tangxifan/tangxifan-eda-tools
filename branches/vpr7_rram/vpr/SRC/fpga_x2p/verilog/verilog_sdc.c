@@ -61,8 +61,15 @@ float get_routing_seg_sdc_tmax (t_segment_inf* cur_seg) {
 }
 
 boolean is_rr_node_to_be_disable_for_analysis(t_rr_node* cur_rr_node) {
+  /* Conditions to enable timing analysis for a node 
+   * 1st condition: it have a valid vpack_net_number 
+   * 2nd condition: it is not an parasitic net 
+   * 3rd condition: it is not a global net
+   */
   if ( (OPEN != cur_rr_node->vpack_net_num) 
-    && (FALSE == cur_rr_node->is_parasitic_net)) {
+    && (FALSE == cur_rr_node->is_parasitic_net)
+    && (FALSE == vpack_net[cur_rr_node->vpack_net_num].is_global)
+    && (FALSE == vpack_net[cur_rr_node->vpack_net_num].is_const_gen) ){
     return FALSE;
   }
   return TRUE;
@@ -1398,8 +1405,12 @@ void verilog_generate_sdc_input_output_delays(FILE* fp,
           found_mapped_inpad = 1;
           break;
         }
-        /* Input PAD only need a short connection */
+        /* Input PAD may drive a clock net or a constant generator */
         assert(VPACK_INPAD == logical_block[iblock].type);
+        /* clock net or constant generator should be disabled in timing analysis */
+        if (TRUE == logical_block[iblock].is_clock) {
+          break;
+        }
         fprintf(fp, "set_input_delay ");
         fprintf(fp, " 0 ");
         dump_verilog_generic_port(fp, VERILOG_PORT_CONKT, 
@@ -1411,7 +1422,7 @@ void verilog_generate_sdc_input_output_delays(FILE* fp,
                 clock_port[iport]->prefix);
         }
         fprintf(fp, "\n");
-        found_mapped_inpad++;
+        found_mapped_inpad = 1;
       }
     } 
     assert((0 == found_mapped_inpad)||(1 == found_mapped_inpad));
