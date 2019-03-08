@@ -53,8 +53,8 @@ struct s_cmd_info {
 #define HELP_OPT_TAG "help"
 #define HELP_OPT_NAME "-h,--help"
 
-#define LAST_OPT_TAG "EOO"
-#define LAST_OPT_NAME "EOO"
+#define LAST_OPT_TAG NULL
+#define LAST_OPT_NAME NULL
 
 /* Return flag */
 #define SHELL_SUCCESS 0
