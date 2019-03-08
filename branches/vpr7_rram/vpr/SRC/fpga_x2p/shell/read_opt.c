@@ -8,6 +8,10 @@
 
 /* External function */
 void my_free(void* ptr);
+char** fpga_spice_strtok(char* str, 
+                         char* delims, 
+                         int* len);
+
 
 /**
  * Read the integer in option list 
@@ -49,29 +53,46 @@ boolean process_arg_opt(INP char** argv,
                         INOUTP int* iarg,
                         INP char* curarg,
                         t_opt_info* cur) {
+  int itok = 0;
+  int num_tokens = 0;
+  char** token = NULL;
 
-  while (0 != strcmp(LAST_OPT_NAME, cur->name)) { 
+  while (0 != strcmp(LAST_OPT_TAG, cur->tag)) { 
+    /* Tokenize the opt_name*/
+    token = fpga_spice_strtok(cur->name, ",", &num_tokens);  
     /*Process Match Arguments*/
-    if (0 == strcmp(curarg,cur->name)) {
-      /*A value is stored in next argument*/
-      if (OPT_WITHVAL == cur->with_val) {
-        *(iarg) += 1;
-        //cur->val = my_strdup(*(argv+(*iarg)));    
-        cur->val = my_strdup((argv[*iarg]));    
+    for (itok = 0; itok < num_tokens; itok++) { 
+      if (0 == strcmp(curarg, token[itok])) {
+        /* Check the defined flag if yes, return with error! */
+        if (OPT_DEF == cur->opt_def) {
+          vpr_printf(TIO_MESSAGE_ERROR, 
+                     "Intend to redefine the option(%s) with (%s)!\n",
+                     cur->name, token[itok]);
+          return FALSE;
+        }
         cur->opt_def = OPT_DEF;
-        return TRUE;
-      } else if (OPT_NONVAL == cur->with_val) {
-        /*Do not need next argument, return*/
-        cur->opt_def = OPT_DEF;
-        return TRUE;
-      } else {
-        vpr_printf(TIO_MESSAGE_ERROR, 
-                   "(FILE:%s, [LINE%d]) Unknown type of Option with_Val! Abort.\n",
-                   __FILE__, __LINE__);
-        return FALSE;
+        /*A value is stored in next argument*/
+        if (OPT_WITHVAL == cur->with_val) {
+          *(iarg) += 1;
+          cur->val = my_strdup((argv[*iarg]));    
+          return TRUE;
+        } else if (OPT_NONVAL == cur->with_val) {
+          /*Do not need next argument, return*/
+          return TRUE;
+        } else {
+          vpr_printf(TIO_MESSAGE_ERROR, 
+                     "(FILE:%s, [LINE%d]) Unknown type of Option with_Val! Abort.\n",
+                     __FILE__, __LINE__);
+          return FALSE;
+        }
       }
     }
     cur++;
+    /* Free */
+    for (itok = 0; itok < num_tokens; itok++) { 
+      my_free(token[itok]);
+    }
+    my_free(token);
   }
  
   return FALSE;
@@ -102,7 +123,7 @@ void print_opt_info_help_desk(t_opt_info* cur_opt_info) {
   /* Get the maximum string length of options
    * We can align to the longest string when outputing the help desk
    */
-  while (0 != strcmp(LAST_OPT_NAME, cur->name)) { 
+  while (0 != strcmp(LAST_OPT_TAG, cur->tag)) { 
     if ( (-1 == max_str_len) 
       || (max_str_len < strlen(cur->name)) ) {
       max_str_len = strlen(cur->name) + 1;
@@ -123,7 +144,7 @@ void print_opt_info_help_desk(t_opt_info* cur_opt_info) {
   str_fixed_len[max_str_len] = str_end;
   vpr_printf(TIO_MESSAGE_INFO, "%s  Status     Description\n", str_fixed_len);
   cur = cur_opt_info;
-  while (0 != strcmp(LAST_OPT_NAME, cur->name)) { 
+  while (0 != strcmp(LAST_OPT_TAG, cur->tag)) { 
     memset(str_fixed_len, ' ', max_str_len);
     strcpy(str_fixed_len, cur->name);
     str_fixed_len[strlen(cur->name)] = ' ';
@@ -160,7 +181,6 @@ boolean read_options(INP int argc,
     curarg = argv[iarg]; 
     /*Process the option start with hyphone*/
     if (0 == strncmp("-", curarg, 1)) {
-      curarg += 1; /*Eliminate the '-'*/ 
       arg_processed = process_arg_opt(argv, &iarg, curarg, cur_opt_info); 
       if (FALSE == arg_processed) {
         vpr_printf(TIO_MESSAGE_WARNING,
@@ -176,13 +196,13 @@ boolean read_options(INP int argc,
   }
 
   /* Search the command help */ 
-  if (TRUE == is_opt_set(cur_opt_info, "help", FALSE)) {
+  if (TRUE == is_opt_set(cur_opt_info, LAST_OPT_TAG, FALSE)) {
     print_opt_info_help_desk(cur_opt_info);
     return FALSE;
   }
 
   /* Check if REQUIRED options are processed */
-  while (0 != strcmp(LAST_OPT_NAME, cur->name)) { 
+  while (0 != strcmp(LAST_OPT_TAG, cur->tag)) { 
     if ( (NULL == cur->val)
       && (OPT_REQ == cur->mandatory)) { 
       vpr_printf(TIO_MESSAGE_WARNING,
@@ -211,7 +231,7 @@ int show_opt_list(t_opt_info* cur) {
 
   vpr_printf(TIO_MESSAGE_INFO, 
              "List Options:\n");
-  while (0 != strcmp(LAST_OPT_NAME, cur->name)) { 
+  while (0 != strcmp(LAST_OPT_TAG, cur->tag)) { 
     vpr_printf(TIO_MESSAGE_INFO, 
                "Name=%s, Value=%s.\n", 
                cur->name, cur->val);
@@ -222,8 +242,8 @@ int show_opt_list(t_opt_info* cur) {
 }
 
 boolean is_opt_set(t_opt_info* opts, char* opt_name, boolean default_val) {
-  while (0 != strcmp(LAST_OPT_NAME, opts->name)) {
-    if ( 0 != strcmp(opts->name, opt_name)) {
+  while (0 != strcmp(LAST_OPT_TAG, opts->tag)) {
+    if ( 0 != strcmp(opts->tag, opt_name)) {
       opts++;
       continue;
     }
@@ -239,8 +259,8 @@ boolean is_opt_set(t_opt_info* opts, char* opt_name, boolean default_val) {
 }
 
 char* get_opt_val(t_opt_info* opts, char* opt_name) {
-  while (0 != strcmp(LAST_OPT_NAME, opts->name)) {
-    if ( 0 != strcmp(opts->name, opt_name)) {
+  while (0 != strcmp(LAST_OPT_TAG, opts->tag)) {
+    if ( 0 != strcmp(opts->tag, opt_name)) {
       opts++;
       continue;
     }

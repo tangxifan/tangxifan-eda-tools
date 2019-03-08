@@ -34,6 +34,7 @@ enum opt_val_type {
 /*Basic struct stores option information*/
 typedef struct s_opt_info t_opt_info;
 struct s_opt_info {
+  char* tag; /* tag of option */
   char* name; /*The name of option*/
   char* val;  /*The value*/
   enum opt_with_val with_val;
@@ -49,5 +50,14 @@ struct s_cmd_info {
   t_opt_info opts[];
 };
 
-#define LAST_OPT_NAME "help"
+#define HELP_OPT_TAG "help"
+#define HELP_OPT_NAME "-h,--help"
+
+#define LAST_OPT_TAG "EOO"
+#define LAST_OPT_NAME "EOO"
+
+/* Return flag */
+#define SHELL_SUCCESS 0
+#define SHELL_FAIL 1
+#define SHELL_ERROR 2
 
