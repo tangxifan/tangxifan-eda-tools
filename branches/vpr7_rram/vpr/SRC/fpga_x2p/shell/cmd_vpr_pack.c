@@ -17,9 +17,9 @@
 #include "pack.h"
 #include "vpr_api.h"
 
-#include "shell_types.h"
 #include "read_opt_types.h"
 #include "read_opt.h"
+#include "shell_types.h"
 
 void shell_execute_vpr_pack(t_shell_env* env, 
                             t_opt_info* opts) {
