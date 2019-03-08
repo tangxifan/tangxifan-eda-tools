@@ -466,7 +466,8 @@ char** assign_post_routing_lut_truth_table(t_logical_block* mapped_logical_block
     truth_table[cur] = (char*) my_malloc((lut_size + 3) * sizeof(char));
     /* Initialize */
     lb_truth_table_size = strlen((char*)(head->data_vptr));
-    memcpy(truth_table[cur] + lut_size, (char*)(head->data_vptr) + lb_truth_table_size - 2, 3);
+    strcpy(truth_table[cur] + lut_size, (char*)(head->data_vptr) + lb_truth_table_size - 2);
+    truth_table[cur][lut_size + 2] = '\0';
     /* Add */
     for (inet = 0; inet < lut_size; inet++) {
       /* Open net implies a don't care, or some nets are not in the list  */
@@ -478,7 +479,7 @@ char** assign_post_routing_lut_truth_table(t_logical_block* mapped_logical_block
       /* Find the desired truth table bit */
       truth_table[cur][inet] = ((char*)(head->data_vptr))[lut_to_lb_net_mapping[inet]];
     }
-    
+
     head = head->next;
     cur++;
   }

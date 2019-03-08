@@ -101,12 +101,6 @@ libvpr.a: $(OBJ) Makefile libarchfpga
 	@ ar rcs $@ $(OBJ)
 	@ ar d $@ main.o
 
-libvpr_shell.a: $(OBJ) Makefile libarchfpga
-	@ cp ../libarchfpga/libarchfpga.a $@
-	@ ar rcs $@ $(OBJ)
-	@ ar d $@ shell_main.o
-
-
 # Enable a second round of expansion so that we may include
 # the target directory as a prerequisite of the object file.
 .SECONDEXPANSION:
@@ -126,14 +120,14 @@ $(OBJ_DIRS):
 
 .PHONY: all vpr shell_vpr
 
-all: vpr shell_vpr
+all: $(EXE) $(SHELL_EXE)
 
 vpr: $(EXE)
 
 shell_vpr: $(SHELL_EXE)
 
 clean:
-	rm -f $(SHELL_EXE) $(EXE) $(OBJ) $(DEP) libvpr.a libvpr_shell.a
+	rm -f $(SHELL_EXE) $(EXE) $(OBJ) $(DEP) libvpr.a 
 	cd ../libarchfpga && make clean
 
 clean_coverage: clean
