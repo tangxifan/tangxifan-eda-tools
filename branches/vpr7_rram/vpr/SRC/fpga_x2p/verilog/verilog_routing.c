@@ -1800,7 +1800,7 @@ void dump_verilog_routing_connection_box_subckt(t_sram_orgz_info* cur_sram_orgz_
     assert (0 < cur_cb_info->chan_width[side]);
     side_cnt++;
     for (itrack = 0; itrack < cur_cb_info->chan_width[side]; itrack++) {
-      fprintf(fp, "%s, \n",
+      fprintf(fp, "input %s, \n",
               gen_verilog_routing_channel_one_midout_name( cur_cb_info,
                                                            itrack));
     }

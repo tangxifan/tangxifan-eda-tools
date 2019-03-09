@@ -334,6 +334,45 @@ boolean breadth_first_route_one_single_source_net_pb_rr_graph(t_rr_graph* local_
         }
 
         breadth_first_expand_rr_graph_neighbours(local_rr_graph, inode, new_pcost, inet, first_time);
+
+        if ( (0 == strcmp("_18363_", local_rr_graph->net[inet]->name))
+           && (0 == strcmp("fle", local_rr_graph->rr_node[inode].pb_graph_pin->parent_node->pb_type->name))
+           && (0 == strcmp("out", local_rr_graph->rr_node[inode].pb_graph_pin->port->name))
+           && (2 == local_rr_graph->rr_node[inode].pb_graph_pin->parent_node->placement_index) 
+           && (1 == local_rr_graph->rr_node[inode].pb_graph_pin->pin_number) ) {
+          vpr_printf(TIO_MESSAGE_INFO,
+                     "Expanding to node: %s/%s[%d], cost=%.5g\n",
+                     get_pb_graph_full_name_in_hierarchy(local_rr_graph->rr_node[inode].pb_graph_pin->parent_node),
+                     local_rr_graph->rr_node[inode].pb_graph_pin->port->name,
+                     local_rr_graph->rr_node[inode].pb_graph_pin->pin_number,
+                     new_pcost);
+        }
+
+        if ( (0 == strcmp("_18363_", local_rr_graph->net[inet]->name))
+           && (0 == strcmp("fle", local_rr_graph->rr_node[inode].pb_graph_pin->parent_node->pb_type->name))
+           && (0 == strcmp("out", local_rr_graph->rr_node[inode].pb_graph_pin->port->name))
+           && (3 == local_rr_graph->rr_node[inode].pb_graph_pin->parent_node->placement_index) 
+           && (0 == local_rr_graph->rr_node[inode].pb_graph_pin->pin_number) ) {
+          vpr_printf(TIO_MESSAGE_INFO,
+                     "Expanding to node: %s/%s[%d], cost=%.5g\n",
+                     get_pb_graph_full_name_in_hierarchy(local_rr_graph->rr_node[inode].pb_graph_pin->parent_node),
+                     local_rr_graph->rr_node[inode].pb_graph_pin->port->name,
+                     local_rr_graph->rr_node[inode].pb_graph_pin->pin_number,
+                     new_pcost);
+        }
+
+        if ( (0 == strcmp("_18363_", local_rr_graph->net[inet]->name))
+           && (0 == strcmp("fle", local_rr_graph->rr_node[inode].pb_graph_pin->parent_node->pb_type->name))
+           && (0 == strcmp("regout", local_rr_graph->rr_node[inode].pb_graph_pin->port->name))
+           && (2 == local_rr_graph->rr_node[inode].pb_graph_pin->parent_node->placement_index) 
+           && (0 == local_rr_graph->rr_node[inode].pb_graph_pin->pin_number) ) {
+          vpr_printf(TIO_MESSAGE_INFO,
+                     "Expanding to node: %s/%s[%d], cost=%.5g\n",
+                     get_pb_graph_full_name_in_hierarchy(local_rr_graph->rr_node[inode].pb_graph_pin->parent_node),
+                     local_rr_graph->rr_node[inode].pb_graph_pin->port->name,
+                     local_rr_graph->rr_node[inode].pb_graph_pin->pin_number,
+                     new_pcost);
+        }
       }
 
       free_rr_graph_heap_data(local_rr_graph, current);
@@ -346,13 +385,8 @@ boolean breadth_first_route_one_single_source_net_pb_rr_graph(t_rr_graph* local_
       }
 
       inode = current->index;
-      /*
-      vpr_printf(TIO_MESSAGE_INFO,
-                 "Expanding to node: port=%s[%d], pb_type=%s\n",
-                 local_rr_graph->rr_node[inode].pb_graph_pin->port->name,
-                 local_rr_graph->rr_node[inode].pb_graph_pin->pin_number,
-                 get_pb_graph_full_name_in_hierarchy(local_rr_graph->rr_node[inode].pb_graph_pin->parent_node));
-      */
+
+
     }
 
     /* Impossible routing, try another iteration */
@@ -597,7 +631,6 @@ boolean feasible_routing_rr_graph(t_rr_graph* local_rr_graph,
   for (inode = 0; inode < local_rr_graph->num_rr_nodes; inode++) {
     if (local_rr_graph->rr_node[inode].occ > local_rr_graph->rr_node[inode].capacity) {
       if (TRUE == verbose) {
-        /*
         vpr_printf(TIO_MESSAGE_ERROR, 
                    "(File:%s,[LINE%d]) rr_node[%d] (pin:%s/%s[%d]) occupancy(%d) exceeds its capacity(%d)!\n",
                    __FILE__, __LINE__, 
@@ -607,7 +640,6 @@ boolean feasible_routing_rr_graph(t_rr_graph* local_rr_graph,
                    local_rr_graph->rr_node[inode].pb_graph_pin->pin_number, 
                    local_rr_graph->rr_node[inode].occ, 
                    local_rr_graph->rr_node[inode].capacity);
-        */
       }
       feasible = FALSE;
     }
@@ -726,11 +758,20 @@ boolean try_breadth_first_route_pb_rr_graph(t_rr_graph* local_rr_graph) {
    * pres_fac high even for the first iteration.                            */
 
   /* sets up a fast breadth-first router */
-  router_opts.first_iter_pres_fac = 10;
+  router_opts.first_iter_pres_fac = 10; 
   router_opts.max_router_iterations = 20;
-  router_opts.initial_pres_fac = 10;
-  router_opts.pres_fac_mult = 2;
-  router_opts.acc_fac = 1;
+  router_opts.initial_pres_fac = 10; 
+  router_opts.pres_fac_mult = 2; 
+  router_opts.acc_fac = 1; 
+
+  /* Default breath-first router opts */
+  /* 
+  router_opts.first_iter_pres_fac = 0; 
+  router_opts.max_router_iterations = 50;
+  router_opts.initial_pres_fac = 0.5; 
+  router_opts.pres_fac_mult = 1.3;
+  router_opts.acc_fac = 0.2;
+  */
 
   reset_rr_graph_rr_node_route_structs(local_rr_graph); /* Clear all prior rr_graph history */
 
