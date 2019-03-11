@@ -982,6 +982,9 @@ struct s_rr_node {
     t_rr_node** sb_drive_rr_nodes;
     int* sb_drive_switches;
     t_pb* pb;
+    /* BC: Supports SDC for SBs*/
+    char* name_mux;
+    int id_path;
     // int seg_index; /* Valid only for CHANX or CHANY*/
     /* END */
 
