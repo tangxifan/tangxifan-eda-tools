@@ -21,3 +21,4 @@ void verilog_generate_sdc_analysis(t_sram_orgz_info* cur_sram_orgz_info,
                                    t_block* LL_block, 
                                    t_syn_verilog_opts fpga_verilog_opts);
 
+void verilog_generate_sdc_disable_unused_sbs_muxs(FILE* fp, int LL_nx, int LL_ny);

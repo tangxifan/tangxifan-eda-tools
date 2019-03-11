@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <string.h>
 
 /* Include vpr structs*/
 #include "util.h"
@@ -680,7 +681,10 @@ void dump_verilog_switch_box_mux(t_sram_orgz_info* cur_sram_orgz_info,
   fprintf(fp, "wire [0:%d] %s_size%d_%d_inbus;\n",
           mux_size - 1,
           verilog_model->prefix, mux_size, verilog_model->cnt);
-
+  cur_rr_node->name_mux = (char *) my_malloc(sizeof(char)*(strlen(verilog_model->prefix) + 5
+                                                    + strlen(my_itoa(mux_size)) + 1 
+                                                    + strlen(my_itoa(verilog_model->cnt)) + 7));
+  sprintf(cur_rr_node->name_mux, "%s_size%d_%d_inbus", verilog_model->prefix, mux_size, verilog_model->cnt);
   /* Input ports*/
   /* Connect input ports to bus */
   for (inode = 0; inode < mux_size; inode++) {
@@ -788,7 +792,8 @@ void dump_verilog_switch_box_mux(t_sram_orgz_info* cur_sram_orgz_info,
   path_id = DEFAULT_PATH_ID;
   for (inode = 0; inode < mux_size; inode++) {
     if (drive_rr_nodes[inode] == &(rr_node[cur_rr_node->prev_node])) {
-      path_id = inode;
+      path_id = inode; 
+      cur_rr_node->id_path = inode;
       break;
     }
   }
