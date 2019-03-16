@@ -1045,6 +1045,8 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
   int cur_bl, cur_wl;
   t_spice_model* mem_model = NULL;
   char* mem_subckt_name = NULL;
+  char* hierarchical_name = NULL;
+  char* mux_name = NULL;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -1146,6 +1148,22 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
     /* Create a local bus */
     fprintf(fp, "wire [0:%d] in_bus_%s_size%d_%d_ ;\n", fan_in - 1, 
             cur_interc->spice_model->name, fan_in, cur_interc->spice_model->cnt);
+
+      /* Generation of the hierarchical name for the SDC */
+
+      hierarchical_name = gen_verilog_one_pb_graph_pin_full_hierarchy(des_pb_graph_pin);
+      // testing without the hierarchy because this functions includes the current nodes sometimes whereas there should be nothing about certain muxes
+      hierarchical_name = "";
+    
+      mux_name = (char *) my_malloc(sizeof(char)*(strlen(cur_interc->spice_model->name)
+                     + 5 + strlen(my_itoa(fan_in)) + 1 + strlen(my_itoa(cur_interc->spice_model->cnt + 2))));
+	  sprintf(mux_name, "%s_size%d_%d_", 
+              cur_interc->spice_model->name, fan_in, cur_interc->spice_model->cnt);
+      des_pb_graph_pin->name_mux = my_strcat(hierarchical_name,mux_name);
+      //printf("%s", des_pb_graph_pin->name_mux);
+      des_pb_graph_pin->fan_in = fan_in;
+      free(mux_name);
+
     ipin = 0;
     for (iedge = 0; iedge < des_pb_graph_pin->num_input_edges; iedge++) {
       if (cur_mode != des_pb_graph_pin->input_edges[iedge]->interconnect->parent_mode) {
@@ -1157,6 +1175,7 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
       src_pb_graph_pin = des_pb_graph_pin->input_edges[iedge]->input_pins[0];
       src_pb_graph_node = src_pb_graph_pin->parent_node;
       src_pb_type = src_pb_graph_node->pb_type;
+
       /* Des pin, node, pb_type */
       des_pb_graph_node  = des_pb_graph_pin->parent_node;
       /* Generate the pin_prefix for src_pb_graph_node and des_pb_graph_node*/

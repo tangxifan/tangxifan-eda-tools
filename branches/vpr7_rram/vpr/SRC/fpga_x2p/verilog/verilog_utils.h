@@ -46,6 +46,10 @@ void dump_verilog_generic_port(FILE* fp,
                                enum e_dump_verilog_port_type dump_port_type,
                                char* port_name, int port_lsb, int port_msb); 
 
+void dump_verilog_generic_port_no_repeat(FILE* fp, 
+                               enum e_dump_verilog_port_type dump_port_type,
+                               char* port_name, int port_lsb, int port_msb); 
+
 
 char* chomp_verilog_node_prefix(char* verilog_node_prefix);
 
@@ -270,6 +274,7 @@ char* gen_verilog_one_pb_type_pin_name(char* prefix,
                                        t_port* cur_port, int pin_number);
 
 char* gen_verilog_one_pb_graph_pin_full_name_in_hierarchy(t_pb_graph_pin* cur_pb_graph_pin);
+char* gen_verilog_one_pb_graph_pin_full_hierarchy(t_pb_graph_pin* cur_pb_graph_pin);
 
 char* gen_verilog_top_module_io_port_prefix(char* global_prefix, 
                                             char* io_port_prefix);

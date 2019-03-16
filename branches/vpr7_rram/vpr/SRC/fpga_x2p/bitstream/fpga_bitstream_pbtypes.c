@@ -196,6 +196,7 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(FILE* fp,
           } else {
             /* Find the path_id */
             path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
+            pb_rr_nodes->id_path = path_id;
             assert(DEFAULT_PATH_ID != path_id);
           }
           if (OPEN != pb_rr_nodes[node_index].vpack_net_num) {
@@ -232,6 +233,7 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(FILE* fp,
           } else {
             /* Find the path_id */
             path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
+            pb_rr_nodes->id_path = path_id;
             assert(DEFAULT_PATH_ID != path_id);
           }
           if (OPEN != pb_rr_nodes[node_index].vpack_net_num) {
@@ -268,6 +270,7 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(FILE* fp,
           } else {
             /* Find the path_id */
             path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
+            pb_rr_nodes->id_path = path_id;
             assert(DEFAULT_PATH_ID != path_id);
           }
           if (OPEN != pb_rr_nodes[node_index].vpack_net_num) {

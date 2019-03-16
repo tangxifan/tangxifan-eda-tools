@@ -681,10 +681,13 @@ void dump_verilog_switch_box_mux(t_sram_orgz_info* cur_sram_orgz_info,
   fprintf(fp, "wire [0:%d] %s_size%d_%d_inbus;\n",
           mux_size - 1,
           verilog_model->prefix, mux_size, verilog_model->cnt);
-  cur_rr_node->name_mux = (char *) my_malloc(sizeof(char)*(strlen(verilog_model->prefix) + 5
+  char* name_mux = (char *) my_malloc(sizeof(char)*(strlen(verilog_model->prefix) + 5
                                                     + strlen(my_itoa(mux_size)) + 1 
-                                                    + strlen(my_itoa(verilog_model->cnt)) + 7));
-  sprintf(cur_rr_node->name_mux, "%s_size%d_%d_inbus", verilog_model->prefix, mux_size, verilog_model->cnt);
+                                                    + strlen(my_itoa(verilog_model->cnt)) + 5));
+  sprintf(name_mux, "/%s_size%d_%d_/in", verilog_model->prefix, mux_size, verilog_model->cnt);
+  char* path_hierarchy = (char *) my_malloc(sizeof(char)*(strlen(gen_verilog_one_sb_instance_name(cur_sb_info)))); 
+  path_hierarchy = gen_verilog_one_sb_instance_name(cur_sb_info);
+  cur_rr_node->name_mux = my_strcat(path_hierarchy,name_mux);
   /* Input ports*/
   /* Connect input ports to bus */
   for (inode = 0; inode < mux_size; inode++) {
@@ -1449,13 +1452,22 @@ void dump_verilog_connection_box_mux(t_sram_orgz_info* cur_sram_orgz_info,
   for (inode = 0; inode < mux_size; inode++) {
     if (drive_rr_nodes[inode] == &(rr_node[src_rr_node->prev_node])) {
       path_id = inode;
+      src_rr_node->id_path = inode;
       break;
     }
   }
-
   switch_index = src_rr_node->drive_switches[DEFAULT_SWITCH_ID];
 
   verilog_model = switch_inf[switch_index].spice_model;
+
+
+  char* name_mux = (char *) my_malloc(sizeof(char)*(strlen(verilog_model->prefix) + 5
+                                                    + strlen(my_itoa(mux_size)) + 1 
+                                                    + strlen(my_itoa(verilog_model->cnt)) + 5));
+  sprintf(name_mux, "/%s_size%d_%d_/in", verilog_model->prefix, mux_size, verilog_model->cnt);
+  char* path_hierarchy = (char *) my_malloc(sizeof(char)*(strlen(gen_verilog_one_cb_instance_name(cur_cb_info)))); 
+  path_hierarchy = gen_verilog_one_cb_instance_name(cur_cb_info);
+  src_rr_node->name_mux = my_strcat(path_hierarchy,name_mux);
 
   /* Specify the input bus */
   fprintf(fp, "wire [0:%d] %s_size%d_%d_inbus;\n",

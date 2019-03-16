@@ -457,7 +457,7 @@ void verilog_generate_sdc_constrain_one_cb_path(FILE* fp,
           gen_verilog_one_cb_instance_name(cur_cb_info)); 
   fprintf(fp, "%s",
           gen_verilog_routing_channel_one_midout_name( cur_cb_info,
-                                                       src_rr_node->ptc_num));
+                                                      src_rr_node->ptc_num));
 
   fprintf(fp, " -to ");
  
@@ -921,7 +921,6 @@ t_sb* cur_sb_info;
               ix, iy);
       fprintf(fp,
               "########################################################\n"); 
-      
       for (side = 0; side < cur_sb_info->num_sides; side++) {
         for (itrack = 0; itrack < cur_sb_info->chan_width[side]; itrack++) {
           if (OUT_PORT == cur_sb_info->chan_rr_node_direction[side][itrack]) {
@@ -930,8 +929,7 @@ t_sb* cur_sb_info;
               if (imux == cur_rr_node->id_path) {
                 fprintf(fp, "#"); // comments out if the node is active
               }
-              assert(cur_rr_node->name_mux != NULL);
-              fprintf(fp, "set_disable_timing [get_pins -hierarchical %s[%d]]\n", 
+              fprintf(fp, "set_disable_timing  %s[%d]\n", 
                       cur_rr_node->name_mux, imux);
             }
           }
@@ -940,6 +938,71 @@ t_sb* cur_sb_info;
     }
   }
 return;
+}
+
+void verilog_generate_sdc_disable_unused_cbs_muxs(FILE* fp) {
+
+  int ix, iy, iside, inode, imux;
+  t_cb* cur_cb_info;
+  t_rr_node* cur_rr_node;
+
+  for (iy = 0; iy < (ny + 1); iy++) {
+    for (ix = 1; ix < (nx + 1); ix++) {
+      if (0 < count_cb_info_num_ipin_rr_nodes(cbx_info[ix][iy])) {
+        cur_cb_info = &(cbx_info[ix][iy]);
+        /* Print comments */
+        fprintf(fp,
+              "##############################################################\n"); 
+        fprintf(fp, 
+              "### Disable Timing for MUXES in Connection block X[%d][%d] ###\n",
+              ix, iy);
+        fprintf(fp,
+              "##############################################################\n"); 
+      
+        for (iside = 0; iside < cur_cb_info->num_sides; iside++) {
+          for (inode = 0; inode < cur_cb_info->num_ipin_rr_nodes[iside]; inode++) {
+             cur_rr_node = cur_cb_info->ipin_rr_node[iside][inode];
+            for (imux = 0 ; imux < cur_rr_node-> fan_in; imux++) {
+              if (imux == cur_rr_node->id_path) {
+                fprintf(fp, "#"); // comments out if the node is active
+              }
+			  fprintf(fp, "set_disable_timing %s[%d]\n", 
+                      cur_rr_node->name_mux, imux);
+            }
+          }
+        }
+      }
+    }
+  }
+  for (iy = 1; iy < (ny + 1); iy++) {
+    for (ix = 0; ix < (nx + 1); ix++) {
+      if (0 < count_cb_info_num_ipin_rr_nodes(cby_info[ix][iy])) {
+        cur_cb_info = &(cby_info[ix][iy]);
+        /* Print comments */
+        fprintf(fp,
+              "##############################################################\n"); 
+        fprintf(fp, 
+              "### Disable Timing for MUXES in Connection block Y[%d][%d] ###\n",
+              ix, iy);
+        fprintf(fp,
+              "##############################################################\n"); 
+        for (iside = 0; iside < cur_cb_info->num_sides; iside++) {
+          for (inode = 0; inode < cur_cb_info->num_ipin_rr_nodes[iside]; inode++) {
+             cur_rr_node = cur_cb_info->ipin_rr_node[iside][inode];
+            for (imux = 0 ; imux < cur_rr_node-> fan_in; imux++) {
+              if (imux == cur_rr_node->id_path) {
+                fprintf(fp, "#"); // comments out if the node is active
+              }
+              fprintf(fp, "set_disable_timing %s[%d]\n", 
+                      cur_rr_node->name_mux, imux);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return;
 }
 
 void verilog_generate_sdc_disable_unused_sbs(FILE* fp,
@@ -1366,6 +1429,211 @@ void verilog_generate_sdc_disable_unused_grids(FILE* fp,
   return;
 }
 
+void verilog_generate_sdc_disable_unused_grids_muxs(FILE* fp,
+                                                   int LL_nx, int LL_ny,
+                                                   t_grid_tile** LL_grid,
+                                                   t_block* LL_block) {
+
+  int ix, iy, iblk, itype, i_num_rr_nodes, i_fan_in;
+  int blk_id;
+  t_type_ptr type;
+  t_phy_pb* cur_phy_pb;
+  t_rr_graph* cur_rr_graph;
+  t_rr_node* cur_rr_node;
+  char* grid_instance_name=NULL;
+  char* grid_sub_instance_name=NULL;
+  char* grid_prefix=NULL;
+  
+  
+
+  for (ix = 1; ix < (LL_nx + 1); ix++) {
+    for (iy = 1; iy < (LL_ny + 1); iy++) {
+      type = LL_grid[ix][iy].type;
+      /* Print comments */
+      fprintf(fp,
+             "###########################################\n"); 
+      fprintf(fp, 
+             "### Disable Timing for Grid[%d][%d] MUXES ###\n",
+              ix, iy);
+      fprintf(fp,
+             "###########################################\n"); 
+
+      grid_instance_name = (char *) my_malloc(sizeof(char) * strlen(gen_verilog_one_grid_instance_name(ix, iy)));
+      grid_instance_name = gen_verilog_one_grid_instance_name(ix, iy);
+      for (iblk = 0; iblk < LL_grid[ix][iy].usage; iblk++) {
+        blk_id = LL_grid[ix][iy].blocks[iblk];
+        grid_sub_instance_name = gen_verilog_one_phy_block_instance_name(type, LL_block[blk_id].z);
+        grid_prefix = (char *) my_malloc(sizeof(char) * (strlen(grid_instance_name) + 1 + strlen(grid_sub_instance_name))); 
+        sprintf (grid_prefix, "%s/%s", grid_instance_name, grid_sub_instance_name); 
+        cur_phy_pb = (t_phy_pb*) LL_block[blk_id].phy_pb;
+        if (NULL != cur_phy_pb) { 
+          cur_rr_graph = cur_phy_pb->rr_graph;
+          for (itype = 0; itype < num_types; itype++){
+            if (FILL_TYPE == &type_descriptors[itype]){
+              dump_sdc_one_clb_muxes(fp, grid_prefix, cur_rr_graph, type_descriptors[itype].pb_graph_head);
+            }
+          }
+        }
+      my_free(grid_sub_instance_name); 
+      my_free(grid_prefix); 
+      }
+    my_free(grid_instance_name); 
+    }
+  }
+  return;
+}
+
+/* Head function of the recursive generation of the sdc constraints
+ * on the muxes inside of the CLBs */
+void dump_sdc_one_clb_muxes(FILE* fp,
+                      char* grid_instance_name,
+                      t_rr_graph* rr_graph,
+                      t_pb_graph_node* pb_graph_head) {
+
+  /* Give head of the pb_graph to the recursive function*/
+  dump_sdc_rec_one_pb_muxes(fp, grid_instance_name, rr_graph, pb_graph_head);
+
+  return;
+}
+
+/* Recursive function going to the leaf nodes of the graph and dumping
+ * the sdc constraints for the current node. We use the id present inside
+ * of the rr_graph to comment the active path and the fan_in and name 
+ * inside of the pb_graph to dump the name of the port we need to disable*/
+void dump_sdc_rec_one_pb_muxes(FILE* fp,
+                      char* grid_instance_name,
+                      t_rr_graph* rr_graph,
+                      t_pb_graph_node* cur_pb_graph_node) {
+
+  int mode_index;
+  int ipb, jpb, child_mode_index;
+  t_pb_type* cur_pb_type = NULL;
+
+  cur_pb_type = cur_pb_graph_node->pb_type;
+ 
+/* Recursively finish all the child pb types */
+  if (FALSE == is_primitive_pb_type(cur_pb_type)) {
+    /* Find the mode that defines the physical mode*/
+  mode_index = find_pb_type_physical_mode_index(*cur_pb_type);
+    for(ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+	  for(jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+        dump_sdc_rec_one_pb_muxes(fp, grid_instance_name, rr_graph, 
+                                  &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]));
+	  }
+	}
+  }
+  dump_sdc_cur_pb_graph_pin_muxes(fp, grid_instance_name, rr_graph,
+                                    cur_pb_graph_node, mode_index);
+  
+  return;
+}
+
+void dump_sdc_cur_pb_graph_pin_muxes(FILE* fp,
+                              char* grid_instance_name,
+                              t_rr_graph* rr_graph,
+							  t_pb_graph_node* cur_pb_graph_node,
+							  int select_mode_index) {
+  int ipb, jpb;
+  t_mode* cur_mode = NULL;
+  t_pb_type* cur_pb_type = cur_pb_graph_node->pb_type;
+  t_pb_graph_node* child_pb_graph_node = NULL;
+  
+
+  /* Assign current mode */
+  cur_mode = &(cur_pb_graph_node->pb_type->modes[select_mode_index]);
+
+  dump_sdc_cur_pb_graph_port_interc_muxes(fp,grid_instance_name,
+                                rr_graph, cur_pb_graph_node, 
+                                SPICE_PB_PORT_OUTPUT/*,
+                                cur_mode*/);
+  
+//  for (ipb = 0; ipb < cur_pb_type->modes[select_mode_index].num_pb_type_children; ipb++) {
+//    for (jpb = 0; jpb < cur_pb_type->modes[select_mode_index].pb_type_children[ipb].num_pb; jpb++) {
+//      child_pb_graph_node = &(cur_pb_graph_node->child_pb_graph_nodes[select_mode_index][ipb][jpb]);
+//      /* For each child_pb_graph_node input pins*/
+//      dump_sdc_cur_pb_graph_port_interc_muxes(fp,grid_instance_name,
+//                                rr_graph, cur_pb_graph_node, 
+//                                SPICE_PB_PORT_INPUT/*,
+//                                cur_mode*/);
+//      /* TODO: for clock pins, we should do the same work */
+//      dump_sdc_cur_pb_graph_port_interc_muxes(fp,grid_instance_name,
+//                                rr_graph, cur_pb_graph_node, 
+//                                SPICE_PB_PORT_CLOCK/*,
+//                                cur_mode*/);
+//    }
+//  }
+  return; 
+}
+
+/* Print the SPICE interconnections of a port defined in pb_graph */
+void dump_sdc_cur_pb_graph_port_interc_muxes(FILE* fp,
+                                             char* grid_instance_name,
+                                             t_rr_graph* rr_graph,
+							                 t_pb_graph_node* cur_pb_graph_node,
+                                             enum e_spice_pb_port_type pb_port_type/*,
+							                 int select_mode_index*/) {
+  int iport, ipin;
+
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf (TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+    for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
+        /* If this is a idle block, we set 0 to the selected edge*/
+        /* Get the selected edge of current pin*/
+        dump_sdc_pb_graph_pin_interc_muxes (fp,
+                                         grid_instance_name, 
+                                         rr_graph,
+                                         &(cur_pb_graph_node->input_pins[iport][ipin]));
+      }
+    }
+    for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
+        dump_sdc_pb_graph_pin_interc_muxes (fp,
+                                         grid_instance_name, 
+                                         rr_graph,
+                                         &(cur_pb_graph_node->output_pins[iport][ipin]));
+      }
+    }
+    for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
+      for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
+        dump_sdc_pb_graph_pin_interc_muxes (fp,
+                                         grid_instance_name, 
+                                         rr_graph, 
+                                         &(cur_pb_graph_node->clock_pins[iport][ipin]));
+      }
+    }
+  return;
+}
+
+void dump_sdc_pb_graph_pin_interc_muxes (FILE* fp,
+                                         char* grid_instance_name, 
+                                         t_rr_graph* rr_graph, 
+                                         t_pb_graph_pin* pb_graph_pin) {
+  int i_fan_in;
+  t_rr_node* cur_node = &(rr_graph->rr_node[pb_graph_pin->rr_node_index_physical_pb]); 
+  
+          for (i_fan_in=0 ; i_fan_in < pb_graph_pin->fan_in ; i_fan_in++) {  
+            if (i_fan_in == cur_node->id_path) {
+              fprintf(fp, "#");
+            }
+            fprintf(fp, "set_disable_timing [get_pins -filter \"hierarchical_name =");
+            fprintf(fp, "~ *%s/in[%d]\" -of_objects [get_cells -hier -filter ", 
+                    pb_graph_pin->name_mux, i_fan_in);
+            printf("%s", pb_graph_pin->name_mux);
+
+            fprintf(fp, "\"hierarchical_name =~ %s*\"]]",
+                    grid_instance_name);
+            // Might need to comment here the name of the verilog pin connected to ease the debugging
+            fprintf(fp, "\n");
+          }
+  return;
+}
+
 /* Generate SDC constaints for inputs and outputs
  * We consider the top module in formal verification purpose here
  * which is easier 
@@ -1401,11 +1669,13 @@ void verilog_generate_sdc_input_output_delays(FILE* fp,
   /* Create a clock */
   for (iport = 0; iport < num_clock_ports; iport++) {
     fprintf(fp, "create_clock ");
-    fprintf(fp, "%s -period %.2g -waveform {0 %.2g}\n",
+    fprintf(fp, "%s -period %.4g -waveform {0 %.4g}\n",
             clock_port[iport]->prefix, 
             critical_path_delay, critical_path_delay/2);
   }
-
+  fprintf(fp, "set input_pins \"\"\n");
+  fprintf(fp, "set output_pins \"\"\n");
+  
   /* Print comments */
   fprintf(fp,
           "##################################################\n"); 
@@ -1429,18 +1699,20 @@ void verilog_generate_sdc_input_output_delays(FILE* fp,
         /* Output PAD only need a short connection */
         if (VPACK_OUTPAD == logical_block[iblock].type) {
           fprintf(fp, "set_output_delay ");
-          fprintf(fp, " %.2g ", 
-                  critical_path_delay);
-          dump_verilog_generic_port(fp, VERILOG_PORT_CONKT, 
-                                    port_name, 
-                                    iopad_idx, iopad_idx);
           fprintf(fp, "-clock ");
-          for (iport = 0; iport < num_clock_ports; iport++) {
+          /*for (iport = 0; iport < num_clock_ports; iport++) {
             fprintf(fp, "%s ",
                   clock_port[iport]->prefix);
-          }
+          }*/
+          fprintf(fp, "[get_clocks] ");
+          fprintf(fp, "-max %.4g ", 
+                  critical_path_delay);
+          dump_verilog_generic_port_no_repeat(fp, VERILOG_PORT_CONKT, 
+                                    port_name, 
+                                    iopad_idx, iopad_idx);
           fprintf(fp, "\n");
           found_mapped_inpad = 1;
+        fprintf(fp, "append output_pins \"%s[%d] \"\n",port_name ,iopad_idx);
           break;
         }
         /* Input PAD may drive a clock net or a constant generator */
@@ -1450,17 +1722,20 @@ void verilog_generate_sdc_input_output_delays(FILE* fp,
           break;
         }
         fprintf(fp, "set_input_delay ");
-        fprintf(fp, " 0 ");
-        dump_verilog_generic_port(fp, VERILOG_PORT_CONKT, 
-                                  port_name, 
-                                  iopad_idx, iopad_idx);
         fprintf(fp, "-clock ");
-        for (iport = 0; iport < num_clock_ports; iport++) {
+        /*for (iport = 0; iport < num_clock_ports; iport++) {
           fprintf(fp, "%s ",
                 clock_port[iport]->prefix);
-        }
+        }*/
+        fprintf(fp, "[get_clocks] ");
+        fprintf(fp, "-max 0 ");
+        dump_verilog_generic_port_no_repeat(fp, VERILOG_PORT_CONKT, 
+                                  port_name, 
+                                  iopad_idx, iopad_idx);
         fprintf(fp, "\n");
         found_mapped_inpad = 1;
+        fprintf(fp, "append input_pins \"%s[%d] \"\n",port_name ,iopad_idx);
+        
       }
     } 
     assert((0 == found_mapped_inpad)||(1 == found_mapped_inpad));
@@ -1472,7 +1747,7 @@ void verilog_generate_sdc_input_output_delays(FILE* fp,
     }
     /* if we cannot find any mapped inpad from tech.-mapped netlist, set the disable timing! */
     fprintf(fp, "set_disable_timing ");
-    dump_verilog_generic_port(fp, VERILOG_PORT_CONKT, 
+    dump_verilog_generic_port_no_repeat(fp, VERILOG_PORT_CONKT, 
                               port_name, 
                               iopad_idx, iopad_idx);
     fprintf(fp, "\n");
@@ -1581,7 +1856,7 @@ void verilog_generate_sdc_analysis(t_sram_orgz_info* cur_sram_orgz_info,
   } 
   /* Generate the descriptions*/
   dump_verilog_sdc_file_header(fp, "Constrain for Timing/Power analysis on the mapped FPGA");
-  
+ 
   /* Create clock and set input/output delays */
   verilog_generate_sdc_input_output_delays(fp, circuit_name, 
                                            arch.spice->spice_params.stimulate_params.vpr_crit_path_delay);
@@ -1602,6 +1877,7 @@ void verilog_generate_sdc_analysis(t_sram_orgz_info* cur_sram_orgz_info,
   verilog_generate_sdc_disable_unused_cbs(fp, LL_nx, LL_ny,
                                           routing_arch->num_switch, switch_inf,
                                           arch.spice); 
+  verilog_generate_sdc_disable_unused_cbs_muxs(fp);
 
   /* Apply to Switch blocks */
   verilog_generate_sdc_disable_unused_sbs(fp, LL_nx, LL_ny,
@@ -1612,6 +1888,7 @@ void verilog_generate_sdc_analysis(t_sram_orgz_info* cur_sram_orgz_info,
 
   /* Apply to Grids */
   verilog_generate_sdc_disable_unused_grids(fp, LL_nx, LL_ny, LL_grid, LL_block);
+  verilog_generate_sdc_disable_unused_grids_muxs(fp, LL_nx, LL_ny, LL_grid, LL_block);
          
   /* Close the file*/
   fclose(fp);
