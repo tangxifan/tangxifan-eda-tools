@@ -1511,19 +1511,17 @@ void dump_sdc_rec_one_pb_muxes(FILE* fp,
 
   cur_pb_type = cur_pb_graph_node->pb_type;
  
-/* Recursively finish all the child pb types */
-  if (FALSE == is_primitive_pb_type(cur_pb_type)) {
-    /* Find the mode that defines the physical mode*/
   mode_index = find_pb_type_physical_mode_index(*cur_pb_type);
-    for(ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
-	  for(jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+  for(ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+	for(jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
         dump_sdc_rec_one_pb_muxes(fp, grid_instance_name, rr_graph, 
                                   &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]));
-	  }
 	}
   }
-  dump_sdc_pb_graph_node_muxes(fp, grid_instance_name, rr_graph,
+  if (FALSE == is_primitive_pb_type(cur_pb_type)) {
+    dump_sdc_pb_graph_node_muxes(fp, grid_instance_name, rr_graph,
                                     cur_pb_graph_node);
+  }
   return;
 }
 
