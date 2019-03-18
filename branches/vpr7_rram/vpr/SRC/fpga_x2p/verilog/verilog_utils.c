@@ -525,8 +525,8 @@ void dump_verilog_generic_port(FILE* fp,
     break;
   case VERILOG_PORT_CONKT:
     if (TRUE == dump_single_port) {
-      fprintf(fp,"%s ", 
-              port_name);
+      fprintf(fp,"%s[%d] ", 
+              port_name, port_lsb);
     } else {
       assert(FALSE == dump_single_port);
       fprintf(fp,"%s[%d:%d] ", 
@@ -543,6 +543,100 @@ void dump_verilog_generic_port(FILE* fp,
   return;
 }
 
+/* Dump a generic Verilog port */
+void dump_verilog_generic_port_no_repeat(FILE* fp, 
+                               enum e_dump_verilog_port_type dump_port_type,
+                               char* port_name, int port_lsb, int port_msb) {  
+  boolean dump_single_port = FALSE;
+  /* Check the file handler*/ 
+  if (NULL == fp) {
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid file handler.\n", 
+               __FILE__, __LINE__); 
+    exit(1);
+  }
+
+  /* Check */
+  assert((!(port_lsb < 0))&&(!(port_msb < 0)));
+  if (port_lsb == port_msb) {
+    dump_single_port = TRUE;
+  }
+  //dump_single_port = FALSE; /* Disable it for a clear synthesis */
+
+  switch (dump_port_type) {
+  case VERILOG_PORT_INPUT:
+    if (TRUE == dump_single_port) {
+      fprintf(fp,"input %s ", 
+              port_name);
+    } else {
+      assert(FALSE == dump_single_port);
+      fprintf(fp,"input [%d:%d] %s ", 
+              port_lsb, port_msb,
+              port_name);
+    }
+    break;
+  case VERILOG_PORT_OUTPUT:
+    if (TRUE == dump_single_port) {
+      fprintf(fp,"output %s ", 
+              port_name);
+    } else {
+      assert(FALSE == dump_single_port);
+      fprintf(fp,"output [%d:%d] %s ", 
+              port_lsb, port_msb,
+              port_name);
+    }
+    break;
+  case VERILOG_PORT_INOUT:
+    if (TRUE == dump_single_port) {
+      fprintf(fp,"inout %s ", 
+              port_name);
+    } else {
+      assert(FALSE == dump_single_port);
+      fprintf(fp,"inout [%d:%d] %s ", 
+              port_lsb, port_msb,
+              port_name);
+    }
+    break;
+  case VERILOG_PORT_WIRE:
+    if (TRUE == dump_single_port) {
+      fprintf(fp,"wire %s ", 
+              port_name);
+    } else {
+      assert(FALSE == dump_single_port);
+      fprintf(fp,"wire [%d:%d] %s ", 
+              port_lsb, port_msb,
+              port_name);
+    }
+    break;
+  case VERILOG_PORT_REG:
+    if (TRUE == dump_single_port) {
+      fprintf(fp,"reg %s ", 
+              port_name);
+    } else {
+      assert(FALSE == dump_single_port);
+      fprintf(fp,"reg [%d:%d] %s ", 
+              port_lsb, port_msb,
+              port_name);
+    }
+    break;
+  case VERILOG_PORT_CONKT:
+    if (TRUE == dump_single_port) {
+      fprintf(fp,"%s[%d] ", 
+              port_name, port_lsb);
+    } else {
+      assert(FALSE == dump_single_port);
+      fprintf(fp,"%s[%d:%d] ", 
+              port_name,
+              port_lsb, port_msb);
+    }
+    break;
+  default:
+    vpr_printf(TIO_MESSAGE_ERROR,"(File:%s,[LINE%d])Invalid type of Verilog port to be dumped !\n",
+               __FILE__, __LINE__);
+    exit(1);
+  }
+
+  return;
+}
 
 char* chomp_verilog_node_prefix(char* verilog_node_prefix) {
   int len = 0;
@@ -3288,3 +3382,28 @@ char* gen_verilog_top_module_io_port_prefix(char* global_prefix,
 
   return port_name;
 }
+
+char* gen_verilog_one_pb_graph_pin_full_name_in_hierarchy_parent_node(t_pb_graph_pin* cur_pb_graph_pin) {
+  char* full_name = NULL;
+  char* cur_name = NULL;
+  t_pb_graph_node* temp = cur_pb_graph_pin->parent_node->parent_pb_graph_node;
+
+  full_name = "";
+  /* The instance name of the top-level graph node is very special 
+   * we output it in another function  
+   */
+  while (NULL != temp->parent_pb_graph_node) {
+    /* Generate the instance name of current pb_graph_node
+     * and add a slash to separate the upper level 
+     */
+    cur_name = gen_verilog_one_pb_graph_node_instance_name(temp);
+    cur_name = my_strcat(cur_name, "/");
+    full_name = my_strcat(cur_name, full_name);
+    /* Go to upper level */
+    temp = temp->parent_pb_graph_node;
+    my_free(cur_name);
+  }
+ 
+  return full_name;
+}
+

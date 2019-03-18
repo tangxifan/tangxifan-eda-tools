@@ -41,21 +41,13 @@ void dump_sdc_rec_one_pb_muxes(FILE* fp,
                       t_rr_graph* rr_graph,
                       t_pb_graph_node* cur_pb_graph_node);
 
-void dump_sdc_cur_pb_graph_pin_muxes(FILE* fp,
+void dump_sdc_pb_graph_node_muxes(FILE* fp,
                               char* grid_instance_name,
                               t_rr_graph* rr_graph,
-							  t_pb_graph_node* cur_pb_graph_node,
-							  int select_mode_index);
+							  t_pb_graph_node* cur_pb_graph_node);
 
-void dump_sdc_cur_pb_graph_port_interc_muxes(FILE* fp,
-                                             char* grid_instance_name,
-                                             t_rr_graph* rr_graph,
-							                 t_pb_graph_node* cur_pb_graph_node,
-                                             enum e_spice_pb_port_type pb_port_type/*,
-							                 int select_mode_index*/);
-
-void dump_sdc_pb_graph_pin_interc_muxes (FILE* fp,
+void dump_sdc_pb_graph_pin_muxes (FILE* fp,
                                          char* grid_instance_name, 
                                          t_rr_graph* rr_graph, 
-                                         t_pb_graph_pin* pb_graph_pin); 
+                                         t_pb_graph_pin pb_graph_pin); 
 

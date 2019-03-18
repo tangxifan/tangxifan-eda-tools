@@ -1522,114 +1522,63 @@ void dump_sdc_rec_one_pb_muxes(FILE* fp,
 	  }
 	}
   }
-  dump_sdc_cur_pb_graph_pin_muxes(fp, grid_instance_name, rr_graph,
-                                    cur_pb_graph_node, mode_index);
-  
+  dump_sdc_pb_graph_node_muxes(fp, grid_instance_name, rr_graph,
+                                    cur_pb_graph_node);
   return;
 }
 
-void dump_sdc_cur_pb_graph_pin_muxes(FILE* fp,
-                              char* grid_instance_name,
-                              t_rr_graph* rr_graph,
-							  t_pb_graph_node* cur_pb_graph_node,
-							  int select_mode_index) {
-  int ipb, jpb;
-  t_mode* cur_mode = NULL;
-  t_pb_type* cur_pb_type = cur_pb_graph_node->pb_type;
-  t_pb_graph_node* child_pb_graph_node = NULL;
-  
-
-  /* Assign current mode */
-  cur_mode = &(cur_pb_graph_node->pb_type->modes[select_mode_index]);
-
-  dump_sdc_cur_pb_graph_port_interc_muxes(fp,grid_instance_name,
-                                rr_graph, cur_pb_graph_node, 
-                                SPICE_PB_PORT_OUTPUT/*,
-                                cur_mode*/);
-  
-//  for (ipb = 0; ipb < cur_pb_type->modes[select_mode_index].num_pb_type_children; ipb++) {
-//    for (jpb = 0; jpb < cur_pb_type->modes[select_mode_index].pb_type_children[ipb].num_pb; jpb++) {
-//      child_pb_graph_node = &(cur_pb_graph_node->child_pb_graph_nodes[select_mode_index][ipb][jpb]);
-//      /* For each child_pb_graph_node input pins*/
-//      dump_sdc_cur_pb_graph_port_interc_muxes(fp,grid_instance_name,
-//                                rr_graph, cur_pb_graph_node, 
-//                                SPICE_PB_PORT_INPUT/*,
-//                                cur_mode*/);
-//      /* TODO: for clock pins, we should do the same work */
-//      dump_sdc_cur_pb_graph_port_interc_muxes(fp,grid_instance_name,
-//                                rr_graph, cur_pb_graph_node, 
-//                                SPICE_PB_PORT_CLOCK/*,
-//                                cur_mode*/);
-//    }
-//  }
-  return; 
-}
-
-/* Print the SPICE interconnections of a port defined in pb_graph */
-void dump_sdc_cur_pb_graph_port_interc_muxes(FILE* fp,
-                                             char* grid_instance_name,
-                                             t_rr_graph* rr_graph,
-							                 t_pb_graph_node* cur_pb_graph_node,
-                                             enum e_spice_pb_port_type pb_port_type/*,
-							                 int select_mode_index*/) {
-  int iport, ipin;
-
-  /* Check the file handler*/ 
-  if (NULL == fp) {
-    vpr_printf (TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid file handler.\n", 
-               __FILE__, __LINE__); 
-    exit(1);
-  }
-
-    for (iport = 0; iport < cur_pb_graph_node->num_input_ports; iport++) {
-      for (ipin = 0; ipin < cur_pb_graph_node->num_input_pins[iport]; ipin++) {
-        /* If this is a idle block, we set 0 to the selected edge*/
-        /* Get the selected edge of current pin*/
-        dump_sdc_pb_graph_pin_interc_muxes (fp,
-                                         grid_instance_name, 
-                                         rr_graph,
-                                         &(cur_pb_graph_node->input_pins[iport][ipin]));
-      }
-    }
-    for (iport = 0; iport < cur_pb_graph_node->num_output_ports; iport++) {
-      for (ipin = 0; ipin < cur_pb_graph_node->num_output_pins[iport]; ipin++) {
-        dump_sdc_pb_graph_pin_interc_muxes (fp,
-                                         grid_instance_name, 
-                                         rr_graph,
-                                         &(cur_pb_graph_node->output_pins[iport][ipin]));
-      }
-    }
-    for (iport = 0; iport < cur_pb_graph_node->num_clock_ports; iport++) {
-      for (ipin = 0; ipin < cur_pb_graph_node->num_clock_pins[iport]; ipin++) {
-        dump_sdc_pb_graph_pin_interc_muxes (fp,
-                                         grid_instance_name, 
-                                         rr_graph, 
-                                         &(cur_pb_graph_node->clock_pins[iport][ipin]));
-      }
-    }
-  return;
-}
-
-void dump_sdc_pb_graph_pin_interc_muxes (FILE* fp,
+void dump_sdc_pb_graph_node_muxes (FILE* fp,
                                          char* grid_instance_name, 
                                          t_rr_graph* rr_graph, 
-                                         t_pb_graph_pin* pb_graph_pin) {
+                                         t_pb_graph_node* pb_graph_node) {
+  int i_pin, i_port;
+  // Input pins
+  for (i_port = 0; i_port< pb_graph_node->num_input_ports; i_port++) {
+    for (i_pin = 0; i_pin < pb_graph_node->num_input_pins[i_port]; i_pin++) {
+      dump_sdc_pb_graph_pin_muxes (fp, grid_instance_name, rr_graph, pb_graph_node->input_pins[i_port][i_pin]);
+    }
+  }
+  // Output pins
+  for (i_port = 0; i_port< pb_graph_node->num_output_ports; i_port++) {
+    for (i_pin = 0; i_pin < pb_graph_node->num_output_pins[i_port]; i_pin++) {
+      dump_sdc_pb_graph_pin_muxes (fp, grid_instance_name, rr_graph, pb_graph_node->output_pins[i_port][i_pin]);
+    }
+  }
+  // Clock pins
+  for (i_port = 0; i_port< pb_graph_node->num_clock_ports; i_port++) {
+    for (i_pin = 0; i_pin < pb_graph_node->num_clock_pins[i_port]; i_pin++) {
+      dump_sdc_pb_graph_pin_muxes (fp, grid_instance_name, rr_graph, pb_graph_node->clock_pins[i_port][i_pin]);
+    }
+  }
+  return;
+}
+
+void dump_sdc_pb_graph_pin_muxes (FILE* fp,
+                                         char* grid_instance_name, 
+                                         t_rr_graph* rr_graph, 
+                                         t_pb_graph_pin pb_graph_pin) {
   int i_fan_in;
-  t_rr_node* cur_node = &(rr_graph->rr_node[pb_graph_pin->rr_node_index_physical_pb]); 
+  t_rr_node cur_node = rr_graph->rr_node[pb_graph_pin.rr_node_index_physical_pb]; 
   
-          for (i_fan_in=0 ; i_fan_in < pb_graph_pin->fan_in ; i_fan_in++) {  
-            if (i_fan_in == cur_node->id_path) {
+          for (i_fan_in=0 ; i_fan_in < pb_graph_pin.fan_in ; i_fan_in++) {  
+            if (i_fan_in == cur_node.id_path) {
               fprintf(fp, "#");
             }
-            fprintf(fp, "set_disable_timing [get_pins -filter \"hierarchical_name =");
-            fprintf(fp, "~ *%s/in[%d]\" -of_objects [get_cells -hier -filter ", 
-                    pb_graph_pin->name_mux, i_fan_in);
-            printf("%s", pb_graph_pin->name_mux);
+            fprintf(fp, "set_disable_timing ");
+            fprintf(fp, "%s/%s%s/in[%d]\n", grid_instance_name, 
+                    gen_verilog_one_pb_graph_pin_full_name_in_hierarchy_parent_node(cur_node.pb_graph_pin),
+                    pb_graph_pin.name_mux, i_fan_in);
 
-            fprintf(fp, "\"hierarchical_name =~ %s*\"]]",
-                    grid_instance_name);
+            // Hierarchical dumping. Might be broken if extending the software hence going through a more direct method.
+            //fprintf(fp, "set_disable_timing [get_pins -filter \"hierarchical_name =");
+            //fprintf(fp, "~ *%s/in[%d]\" -of_objects [get_cells -hier -filter ", 
+            //        pb_graph_pin->name_mux, i_fan_in);
+            //printf("%s", pb_graph_pin->name_mux);
+
+            //fprintf(fp, "\"hierarchical_name =~ %s*\"]]",
+            //        grid_instance_name);
             // Might need to comment here the name of the verilog pin connected to ease the debugging
-            fprintf(fp, "\n");
+            //fprintf(fp, "\n");
           }
   return;
 }

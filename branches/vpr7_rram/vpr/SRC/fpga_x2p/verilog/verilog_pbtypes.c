@@ -1151,7 +1151,8 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
 
       /* Generation of the hierarchical name for the SDC */
 
-      hierarchical_name = gen_verilog_one_pb_graph_pin_full_hierarchy(des_pb_graph_pin);
+      // It is actually better to generate the hierarchical name with the pin because otherwise we have issues with the path and miss some of them.
+      //hierarchical_name = gen_verilog_one_pb_graph_pin_full_name_in_hierarchy_parent_node(des_pb_graph_pin);
       // testing without the hierarchy because this functions includes the current nodes sometimes whereas there should be nothing about certain muxes
       hierarchical_name = "";
     
@@ -1160,7 +1161,6 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
 	  sprintf(mux_name, "%s_size%d_%d_", 
               cur_interc->spice_model->name, fan_in, cur_interc->spice_model->cnt);
       des_pb_graph_pin->name_mux = my_strcat(hierarchical_name,mux_name);
-      //printf("%s", des_pb_graph_pin->name_mux);
       des_pb_graph_pin->fan_in = fan_in;
       free(mux_name);
 
