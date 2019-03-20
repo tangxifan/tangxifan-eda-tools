@@ -147,3 +147,6 @@ void dump_verilog_idle_block(t_sram_orgz_info* cur_sram_orgz_info,
 
 void dump_verilog_logic_blocks(t_sram_orgz_info* cur_sram_orgz_info,
                                char* subckt_dir, t_arch* arch);
+
+void rec_copy_name_mux_in_node(t_pb_graph_node* master_node, 
+                           t_pb_graph_node* target_node);

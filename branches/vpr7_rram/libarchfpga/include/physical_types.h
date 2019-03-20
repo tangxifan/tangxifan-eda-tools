@@ -433,7 +433,6 @@ struct s_pb_graph_pin {
 	int rr_node_index_physical_pb; /* rr_node in the physical pb rr_graph*/
     t_pb_graph_pin* physical_pb_graph_pin;
     char* name_mux;
-    int fan_in;
     /* END */
 
 	int scratch_pad; /* temporary data structure useful to store traversal info */

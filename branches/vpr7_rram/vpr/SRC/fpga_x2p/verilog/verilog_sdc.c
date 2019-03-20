@@ -1511,17 +1511,19 @@ void dump_sdc_rec_one_pb_muxes(FILE* fp,
 
   cur_pb_type = cur_pb_graph_node->pb_type;
  
-  mode_index = find_pb_type_physical_mode_index(*cur_pb_type);
+  if (TRUE == is_primitive_pb_type(cur_pb_type )) {
+    return;
+  }
+  mode_index = find_pb_type_physical_mode_index(*cur_pb_type);  
   for(ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
-	for(jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
-        dump_sdc_rec_one_pb_muxes(fp, grid_instance_name, rr_graph, 
+    for(jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+      dump_sdc_rec_one_pb_muxes(fp, grid_instance_name, rr_graph, 
                                   &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]));
 	}
   }
-  if (FALSE == is_primitive_pb_type(cur_pb_type)) {
-    dump_sdc_pb_graph_node_muxes(fp, grid_instance_name, rr_graph,
+  dump_sdc_pb_graph_node_muxes(fp, grid_instance_name, rr_graph,
                                     cur_pb_graph_node);
-  }
+ 
   return;
 }
 
@@ -1555,17 +1557,41 @@ void dump_sdc_pb_graph_pin_muxes (FILE* fp,
                                          char* grid_instance_name, 
                                          t_rr_graph* rr_graph, 
                                          t_pb_graph_pin pb_graph_pin) {
-  int i_fan_in;
+  int i_fan_in, datapath_id, fan_in;
+  int mode_index;
+  int num_mux_input;
+  t_spice_model* mux_spice_model;
   t_rr_node cur_node = rr_graph->rr_node[pb_graph_pin.rr_node_index_physical_pb]; 
-  
-          for (i_fan_in=0 ; i_fan_in < pb_graph_pin.fan_in ; i_fan_in++) {  
-            if (i_fan_in == cur_node.id_path) {
-              fprintf(fp, "#");
-            }
-            fprintf(fp, "set_disable_timing ");
-            fprintf(fp, "%s/%s%s/in[%d]\n", grid_instance_name, 
-                    gen_verilog_one_pb_graph_pin_full_name_in_hierarchy_parent_node(cur_node.pb_graph_pin),
-                    pb_graph_pin.name_mux, i_fan_in);
+  t_pb_type* cur_pb_type = pb_graph_pin.parent_node->pb_type;
+  int cur_mode_index = find_pb_type_physical_mode_index(*cur_pb_type);  
+  t_interconnect* cur_interc; 
+ 
+  find_interc_fan_in_des_pb_graph_pin(&pb_graph_pin, &(cur_pb_type->modes[cur_mode_index]), &cur_interc, &fan_in);
+
+  if (0 == fan_in || 1 == fan_in) {
+    return; /* Returns if there is no mux */
+  }
+  /* Handle DEFAULT PATH ID */
+  datapath_id = cur_node.id_path;
+  if (DEFAULT_PATH_ID == datapath_id) {
+    mux_spice_model = cur_interc->spice_model;
+    datapath_id = get_mux_default_path_id(mux_spice_model, fan_in, datapath_id);
+    /* Either the default is the last pin or the num 0. If fan_in was 0, we wouldn't be here
+    * so if the next condition works, datapath_id is actually 1 too far */
+    if (fan_in == datapath_id) {
+      datapath_id --;
+    }
+  } else { 
+    assert((DEFAULT_PATH_ID < datapath_id)&&(datapath_id < fan_in));
+  }
+  for (i_fan_in=0 ; i_fan_in < fan_in ; i_fan_in++) {  
+    if (i_fan_in == datapath_id) {
+      fprintf(fp, "#");
+    }
+    fprintf(fp, "set_disable_timing ");
+    fprintf(fp, "%s/%s%s/in[%d]\n", grid_instance_name, 
+            gen_verilog_one_pb_graph_pin_full_name_in_hierarchy_parent_node(cur_node.pb_graph_pin),
+            pb_graph_pin.name_mux, i_fan_in);
 
             // Hierarchical dumping. Might be broken if extending the software hence going through a more direct method.
             //fprintf(fp, "set_disable_timing [get_pins -filter \"hierarchical_name =");
@@ -1577,7 +1603,7 @@ void dump_sdc_pb_graph_pin_muxes (FILE* fp,
             //        grid_instance_name);
             // Might need to comment here the name of the verilog pin connected to ease the debugging
             //fprintf(fp, "\n");
-          }
+  }
   return;
 }
 

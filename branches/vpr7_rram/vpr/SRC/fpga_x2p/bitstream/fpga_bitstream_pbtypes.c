@@ -192,13 +192,15 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(FILE* fp,
           /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
           /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
           if (OPEN == prev_node) {
-            path_id = DEFAULT_PATH_ID; //
+            path_id = DEFAULT_PATH_ID; 
           } else {
             /* Find the path_id */
             path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-            pb_rr_nodes->id_path = path_id;
             assert(DEFAULT_PATH_ID != path_id);
           }
+          /* Path id for the sdc generation */
+          pb_rr_nodes[node_index].id_path = path_id;
+
           if (OPEN != pb_rr_nodes[node_index].vpack_net_num) {
             fprintf(fp, "***** Net name: %s *****\n", 
                     vpack_net[pb_rr_nodes[node_index].vpack_net_num].name);
@@ -229,13 +231,15 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(FILE* fp,
           /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
           /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
           if (OPEN == prev_node) {
-            path_id = DEFAULT_PATH_ID; //
+            path_id = DEFAULT_PATH_ID; 
           } else {
             /* Find the path_id */
             path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-            pb_rr_nodes->id_path = path_id;
             assert(DEFAULT_PATH_ID != path_id);
           }
+          // Path id for the sdc generation
+          pb_rr_nodes[node_index].id_path = path_id;
+
           if (OPEN != pb_rr_nodes[node_index].vpack_net_num) {
             fprintf(fp, "***** Net name: %s *****\n", 
                     vpack_net[pb_rr_nodes[node_index].vpack_net_num].name);
@@ -266,13 +270,15 @@ void fpga_spice_generate_bitstream_pb_graph_port_interc(FILE* fp,
           /* prev_edge = pb_rr_nodes[node_index].prev_edge; */
           /* Make sure this pb_rr_node is not OPEN and is not a primitive output*/
           if (OPEN == prev_node) {
-            path_id = DEFAULT_PATH_ID; //
+            path_id = DEFAULT_PATH_ID; 
           } else {
             /* Find the path_id */
             path_id = find_path_id_between_pb_rr_nodes(pb_rr_nodes, prev_node, node_index);
-            pb_rr_nodes->id_path = path_id;
             assert(DEFAULT_PATH_ID != path_id);
           }
+          // Path id for the sdc generation
+          pb_rr_nodes[node_index].id_path = path_id;
+
           if (OPEN != pb_rr_nodes[node_index].vpack_net_num) {
             fprintf(fp, "***** Net name: %s *****\n", 
                     vpack_net[pb_rr_nodes[node_index].vpack_net_num].name);

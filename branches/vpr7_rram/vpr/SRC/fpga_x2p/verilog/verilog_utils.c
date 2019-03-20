@@ -3386,7 +3386,8 @@ char* gen_verilog_top_module_io_port_prefix(char* global_prefix,
 char* gen_verilog_one_pb_graph_pin_full_name_in_hierarchy_parent_node(t_pb_graph_pin* cur_pb_graph_pin) {
   char* full_name = NULL;
   char* cur_name = NULL;
-  t_pb_graph_node* temp = cur_pb_graph_pin->parent_node->parent_pb_graph_node;
+  t_pb_graph_node* temp = cur_pb_graph_pin->parent_node;
+  //t_pb_graph_node* temp = cur_pb_graph_pin->parent_node->parent_pb_graph_node;
 
   full_name = "";
   /* The instance name of the top-level graph node is very special 

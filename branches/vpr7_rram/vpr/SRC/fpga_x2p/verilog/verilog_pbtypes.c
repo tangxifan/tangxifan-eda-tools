@@ -1161,7 +1161,6 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
 	  sprintf(mux_name, "%s_size%d_%d_", 
               cur_interc->spice_model->name, fan_in, cur_interc->spice_model->cnt);
       des_pb_graph_pin->name_mux = my_strcat(hierarchical_name,mux_name);
-      des_pb_graph_pin->fan_in = fan_in;
       free(mux_name);
 
     ipin = 0;
@@ -1189,7 +1188,6 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
               src_pin_prefix, src_pb_graph_pin->port->name, src_pb_graph_pin->pin_number);
       ipin++;
       /* Free */
-      my_free(src_pin_prefix);
       my_free(des_pin_prefix);
       src_pin_prefix = NULL;
       des_pin_prefix = NULL;
@@ -1615,6 +1613,10 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
       verilog_module_dumped = FALSE;
       for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
         if (TRUE == verilog_module_dumped) {
+          /* Necessary step for the SDC generation, since the name is copied inside 
+           * pf the verilog dumping and we skip it here */
+          rec_copy_name_mux_in_node(&(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][0]), 
+                                &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]));
           continue;
         }
         /* Pass the SPICE mode prefix on, 
@@ -1875,6 +1877,52 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
   return;
 }
 
+void rec_copy_name_mux_in_node(t_pb_graph_node* master_node, 
+                           t_pb_graph_node* target_node) {
+
+  int ipb, jpb, mode_index; 
+  int i_pin, i_port;
+  t_pb_type* cur_pb_type = NULL;
+  
+  /* Desend to the leaf nodes */
+  cur_pb_type = master_node->pb_type;
+
+  /* Recursively finish all the child pb_types*/
+  if (FALSE == is_primitive_pb_type(cur_pb_type)) { 
+    /* Find the mode that define_idle_mode*/
+    mode_index = find_pb_type_physical_mode_index((*cur_pb_type));
+    for (ipb = 0; ipb < cur_pb_type->modes[mode_index].num_pb_type_children; ipb++) {
+      for (jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++) {
+          rec_copy_name_mux_in_node(&(master_node->child_pb_graph_nodes[mode_index][ipb][0]), 
+                                &(target_node->child_pb_graph_nodes[mode_index][ipb][jpb]));
+      }
+    }
+  } 
+  
+
+
+  /* Input pins */
+  for (i_port = 0; i_port< master_node->num_input_ports; i_port++) {
+    for (i_pin = 0; i_pin < master_node->num_input_pins[i_port]; i_pin++) {
+      target_node->input_pins[i_port][i_pin].name_mux = master_node->input_pins[i_port][i_pin].name_mux;
+    }
+  }
+  /* Output pins */
+  for (i_port = 0; i_port< master_node->num_output_ports; i_port++) {
+    for (i_pin = 0; i_pin < master_node->num_output_pins[i_port]; i_pin++) {
+      target_node->output_pins[i_port][i_pin].name_mux = master_node->output_pins[i_port][i_pin].name_mux;
+      
+    }
+  }
+  /* Clock pins */
+  for (i_port = 0; i_port< master_node->num_clock_ports; i_port++) {
+    for (i_pin = 0; i_pin < master_node->num_clock_pins[i_port]; i_pin++) {
+      target_node->clock_pins[i_port][i_pin].name_mux = master_node->clock_pins[i_port][i_pin].name_mux;
+    }
+  }
+
+  return;
+}
 /* Print an physical logic block
  * Find the physical_mode in arch files,
  * And print the verilog netlist into file
