@@ -2,7 +2,6 @@
 .model s298.bench
 .inputs G0 G1 G2 clk
 .outputs G117 G132 G66 G118 G133 G67
-
 .latch        n21        G10 re        clk  0
 .latch        n26        G11 re        clk  0
 .latch        n31        G12 re        clk  0
@@ -17,7 +16,6 @@
 .latch        n76        G21 re        clk  0
 .latch        n81        G22 re        clk  0
 .latch        n86        G23 re        clk  0
-
 .names G0 G10 n21
 00 1
 .names G0 G10 G11 G12 G13 n26
