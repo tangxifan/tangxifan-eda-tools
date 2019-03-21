@@ -275,6 +275,7 @@ char* gen_verilog_one_pb_type_pin_name(char* prefix,
 
 char* gen_verilog_one_pb_graph_pin_full_name_in_hierarchy(t_pb_graph_pin* cur_pb_graph_pin);
 char* gen_verilog_one_pb_graph_pin_full_name_in_hierarchy_parent_node(t_pb_graph_pin* cur_pb_graph_pin);
+char* gen_verilog_one_pb_graph_pin_full_name_in_hierarchy_grand_parent_node(t_pb_graph_pin* cur_pb_graph_pin); 
 
 char* gen_verilog_top_module_io_port_prefix(char* global_prefix, 
                                             char* io_port_prefix);
