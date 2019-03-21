@@ -1558,15 +1558,29 @@ void dump_sdc_pb_graph_pin_muxes (FILE* fp,
                                          t_rr_graph* rr_graph, 
                                          t_pb_graph_pin pb_graph_pin) {
   int i_fan_in, datapath_id, fan_in;
+  int level_changing = 0;
   int mode_index;
   int num_mux_input;
   t_spice_model* mux_spice_model;
   t_rr_node cur_node = rr_graph->rr_node[pb_graph_pin.rr_node_index_physical_pb]; 
-  t_pb_type* cur_pb_type = pb_graph_pin.parent_node->pb_type;
-  int cur_mode_index = find_pb_type_physical_mode_index(*cur_pb_type);  
+  t_pb_type* cur_pb_type = pb_graph_pin.parent_node->pb_type; 
+  int cur_mode_index = find_pb_type_physical_mode_index(*cur_pb_type);
+  t_mode* cur_mode = cur_pb_type->modes;  
   t_interconnect* cur_interc; 
+
+  /* There are three types of interconnection: same level, going down a level, going up a level
+   * Since we check the fan_in, we need to get the right input edge mode */
+  if (0 == pb_graph_pin.num_input_edges || 0 == pb_graph_pin.num_output_edges) {
+  return;
+  }
+  if (pb_graph_pin.input_edges[cur_mode_index]->interconnect->parent_mode != pb_graph_pin.output_edges[cur_mode_index]->interconnect->parent_mode) {
+    if (pb_graph_pin.input_edges[cur_mode_index]->interconnect->parent_mode != cur_mode) {
+      cur_mode = pb_graph_pin.input_edges[cur_mode_index]->interconnect->parent_mode;
+      level_changing = 1;
+    }
+  } 
  
-  find_interc_fan_in_des_pb_graph_pin(&pb_graph_pin, &(cur_pb_type->modes[cur_mode_index]), &cur_interc, &fan_in);
+  find_interc_fan_in_des_pb_graph_pin(&pb_graph_pin, cur_mode, &cur_interc, &fan_in);
 
   if (0 == fan_in || 1 == fan_in) {
     return; /* Returns if there is no mux */
@@ -1587,12 +1601,19 @@ void dump_sdc_pb_graph_pin_muxes (FILE* fp,
   for (i_fan_in=0 ; i_fan_in < fan_in ; i_fan_in++) {  
     if (i_fan_in == datapath_id) {
       fprintf(fp, "#");
+	}
+    if (0 == level_changing) {
+      fprintf(fp, "set_disable_timing ");
+      fprintf(fp, "%s/%s%s/in[%d]\n", grid_instance_name, 
+              gen_verilog_one_pb_graph_pin_full_name_in_hierarchy_parent_node(cur_node.pb_graph_pin),
+              pb_graph_pin.name_mux, i_fan_in);
     }
-    fprintf(fp, "set_disable_timing ");
-    fprintf(fp, "%s/%s%s/in[%d]\n", grid_instance_name, 
-            gen_verilog_one_pb_graph_pin_full_name_in_hierarchy_parent_node(cur_node.pb_graph_pin),
-            pb_graph_pin.name_mux, i_fan_in);
-
+    if (1 == level_changing) {
+      fprintf(fp, "set_disable_timing ");
+      fprintf(fp, "%s/%s%s/in[%d]\n", grid_instance_name, 
+              gen_verilog_one_pb_graph_pin_full_name_in_hierarchy_grand_parent_node(cur_node.pb_graph_pin),
+              pb_graph_pin.name_mux, i_fan_in);
+     } 
             // Hierarchical dumping. Might be broken if extending the software hence going through a more direct method.
             //fprintf(fp, "set_disable_timing [get_pins -filter \"hierarchical_name =");
             //fprintf(fp, "~ *%s/in[%d]\" -of_objects [get_cells -hier -filter ", 

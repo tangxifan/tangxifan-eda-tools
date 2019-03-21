@@ -1149,7 +1149,7 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
     fprintf(fp, "wire [0:%d] in_bus_%s_size%d_%d_ ;\n", fan_in - 1, 
             cur_interc->spice_model->name, fan_in, cur_interc->spice_model->cnt);
 
-      /* Generation of the hierarchical name for the SDC */
+      /* Generation of the name for the SDC */
 
       // It is actually better to generate the hierarchical name with the pin because otherwise we have issues with the path and miss some of them.
       //hierarchical_name = gen_verilog_one_pb_graph_pin_full_name_in_hierarchy_parent_node(des_pb_graph_pin);
@@ -1160,6 +1160,7 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
                      + 5 + strlen(my_itoa(fan_in)) + 1 + strlen(my_itoa(cur_interc->spice_model->cnt + 2))));
 	  sprintf(mux_name, "%s_size%d_%d_", 
               cur_interc->spice_model->name, fan_in, cur_interc->spice_model->cnt);
+      
       des_pb_graph_pin->name_mux = my_strcat(hierarchical_name,mux_name);
       free(mux_name);
 
