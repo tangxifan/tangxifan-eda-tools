@@ -110,6 +110,8 @@ void dump_sdc_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
 
   t_pb_graph_node* des_pb_graph_node = NULL;
 
+  char* from_path_int = NULL;
+  char* to_path_int = NULL;
   char* from_path = NULL;
   char* to_path = NULL;
 
@@ -169,8 +171,12 @@ void dump_sdc_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
     des_pb_graph_node  = des_pb_graph_pin->parent_node;
     
 	// Generation of the paths for the dumping of the annotations
-	from_path = gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin);	
-	to_path = gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin);	
+	// quick fix / to be changed by the real thing by getthing the name of the type_descriptors
+
+    from_path = (char *) my_malloc(sizeof(char)*(11 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin)) + 1));	
+    sprintf (from_path,"grid_clb_0_/%s", gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin));
+    to_path = (char *) my_malloc(sizeof(char)*(11 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin)) + 1));	
+     to_path = my_strcat("grid_clb_0_/", gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin));
 
 	// Dumping of the annotations	
 	sdc_dump_annotation (from_path, to_path, fp, cur_interc[0]);	
@@ -199,8 +205,11 @@ void dump_sdc_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
       des_pb_graph_node  = des_pb_graph_pin->parent_node;
 	  
 	  // Generation of the paths for the dumping of the annotations
-	  from_path = gen_verilog_one_pb_graph_pin_full_name_in_hierarchy(src_pb_graph_pin);	
-	  to_path = gen_verilog_one_pb_graph_pin_full_name_in_hierarchy(des_pb_graph_pin);	
+    from_path = (char *) my_malloc(sizeof(char)*(11 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin)) + 1));	
+    sprintf (from_path,"grid_clb_0_/%s", gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin));
+    to_path = (char *) my_malloc(sizeof(char)*(11 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin)) + 1));	
+     to_path = my_strcat("grid_clb_0_/", gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin));
+
 	
 	  // Dumping of the annotations
 	  sdc_dump_annotation (from_path, to_path, fp, cur_interc[0]);	

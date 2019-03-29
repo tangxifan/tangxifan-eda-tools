@@ -929,6 +929,7 @@ t_sb* cur_sb_info;
               if (imux == cur_rr_node->id_path) {
                 fprintf(fp, "#"); // comments out if the node is active
               }
+//if(cur_rr_node->name_mux == NULL) assert (NULL != cur_rr_node->name_mux);
               fprintf(fp, "set_disable_timing  %s[%d]\n", 
                       cur_rr_node->name_mux, imux);
             }
@@ -1458,12 +1459,12 @@ void verilog_generate_sdc_disable_unused_grids_muxs(FILE* fp,
       fprintf(fp,
              "###########################################\n"); 
 
-      grid_instance_name = (char *) my_malloc(sizeof(char) * strlen(gen_verilog_one_grid_instance_name(ix, iy)));
+      grid_instance_name = (char *) my_malloc(sizeof(char) * strlen(gen_verilog_one_grid_instance_name(ix, iy)) + 1);
       grid_instance_name = gen_verilog_one_grid_instance_name(ix, iy);
       for (iblk = 0; iblk < LL_grid[ix][iy].usage; iblk++) {
         blk_id = LL_grid[ix][iy].blocks[iblk];
         grid_sub_instance_name = gen_verilog_one_phy_block_instance_name(type, LL_block[blk_id].z);
-        grid_prefix = (char *) my_malloc(sizeof(char) * (strlen(grid_instance_name) + 1 + strlen(grid_sub_instance_name))); 
+        grid_prefix = (char *) my_malloc(sizeof(char) * (strlen(grid_instance_name) + 1 + strlen(grid_sub_instance_name) + 1)); 
         sprintf (grid_prefix, "%s/%s", grid_instance_name, grid_sub_instance_name); 
         cur_phy_pb = (t_phy_pb*) LL_block[blk_id].phy_pb;
         if (NULL != cur_phy_pb) { 
@@ -1474,10 +1475,10 @@ void verilog_generate_sdc_disable_unused_grids_muxs(FILE* fp,
             }
           }
         }
-      my_free(grid_sub_instance_name); 
-      my_free(grid_prefix); 
+        my_free(grid_sub_instance_name); 
+        my_free(grid_prefix); 
       }
-    my_free(grid_instance_name); 
+      my_free(grid_instance_name); 
     }
   }
   return;
