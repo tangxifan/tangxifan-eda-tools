@@ -830,7 +830,7 @@ void dump_verilog_dangling_des_pb_graph_pin_interc(FILE* fp,
     if (des_pb_type == cur_mode->parent_pb_type) { /* Interconnection from parent pb_type*/
       des_pin_prefix = (char*)my_malloc(sizeof(char)*
                            (5 + strlen(cur_mode->name) + 2 ));
-      sprintf(des_pin_prefix, "mode_%s_", cur_mode->name);
+      sprintf(des_pin_prefix, "%s_", cur_mode->name);
     } else {
       des_pin_prefix = (char*)my_malloc(sizeof(char)*
                           (strlen(des_pb_type->name) + 1 + strlen(my_itoa(des_pb_type_index)) + 1 + 1));
@@ -906,7 +906,7 @@ void generate_verilog_src_des_pb_graph_pin_prefix(t_pb_graph_pin* src_pb_graph_p
       /*Simplify the prefix, make the SPICE netlist readable*/
       (*src_pin_prefix) = (char*)my_malloc(sizeof(char)*
                            (5 + strlen(des_pb_type->parent_mode->name) + 2));
-      sprintf((*src_pin_prefix), "mode_%s_", des_pb_type->parent_mode->name);
+      sprintf((*src_pin_prefix), "%s_", des_pb_type->parent_mode->name);
     } else {
       /*
       (*src_pin_prefix) = (char*)my_malloc(sizeof(char)*
@@ -956,7 +956,7 @@ void generate_verilog_src_des_pb_graph_pin_prefix(t_pb_graph_pin* src_pb_graph_p
       /*Simplify the prefix, make the SPICE netlist readable*/
       (*src_pin_prefix) = (char*)my_malloc(sizeof(char)*
                            (5 + strlen(pin2pin_interc->parent_mode->name) + 2));
-      sprintf((*src_pin_prefix), "mode_%s_", pin2pin_interc->parent_mode->name);
+      sprintf((*src_pin_prefix), "%s_", pin2pin_interc->parent_mode->name);
     } else {
       (*src_pin_prefix) = (char*)my_malloc(sizeof(char)*
                           (strlen(src_pb_type->name) + 1 + strlen(my_itoa(src_pb_type_index)) + 1 + 1));
@@ -969,7 +969,7 @@ void generate_verilog_src_des_pb_graph_pin_prefix(t_pb_graph_pin* src_pb_graph_p
     /*Simplify the prefix, make the SPICE netlist readable*/
     (*des_pin_prefix) = (char*)my_malloc(sizeof(char)*
                          (5 + strlen(pin2pin_interc->parent_mode->name) + 2));
-    sprintf((*des_pin_prefix), "mode_%s_", pin2pin_interc->parent_mode->name);
+    sprintf((*des_pin_prefix), "%s_", pin2pin_interc->parent_mode->name);
     break;
   default:
     vpr_printf(TIO_MESSAGE_ERROR,"(File:%s [LINE%d])Invalid pin to pin interconnection type!\n",
@@ -1697,7 +1697,7 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
   /* Inputs, outputs, inouts, clocks */
   subckt_port_prefix = (char*)my_malloc(sizeof(char)*
                                        (5 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1));
-  sprintf(subckt_port_prefix, "mode_%s_", cur_pb_type->modes[mode_index].name);
+  sprintf(subckt_port_prefix, "%s_", cur_pb_type->modes[mode_index].name);
   /*
   dump_verilog_pb_type_ports(fp, subckt_name, 0, cur_pb_type);
   */
