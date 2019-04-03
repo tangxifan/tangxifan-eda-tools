@@ -98,7 +98,8 @@ void dump_sdc_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
                                       FILE* fp,
                                       enum e_spice_pin2pin_interc_type pin2pin_interc_type,
                                       t_pb_graph_pin* des_pb_graph_pin,
-                                      t_mode* cur_mode) {
+                                      t_mode* cur_mode,
+                                      char* instance_name) {
   int iedge, ipin;
   int fan_in = 0;
   t_interconnect* cur_interc = NULL; 
@@ -170,13 +171,11 @@ void dump_sdc_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
     /* Des pin, node, pb_type */
     des_pb_graph_node  = des_pb_graph_pin->parent_node;
     
-	// Generation of the paths for the dumping of the annotations
-	// quick fix / to be changed by the real thing by getthing the name of the type_descriptors
-
-    from_path = (char *) my_malloc(sizeof(char)*(11 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin)) + 1));	
-    sprintf (from_path,"grid_clb_0_/%s", gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin));
-    to_path = (char *) my_malloc(sizeof(char)*(11 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin)) + 1));	
-     to_path = my_strcat("grid_clb_0_/", gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin));
+	  // Generation of the paths for the dumping of the annotations
+    from_path = (char *) my_malloc(sizeof(char)*(strlen(instance_name) + 1 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin)) + 1));	
+    sprintf (from_path, "%s/%s", instance_name, gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin));
+    to_path = (char *) my_malloc(sizeof(char)*(strlen(instance_name) + 1 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin)) + 1));	
+    sprintf (to_path, "%s/%s", instance_name, gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin));
 
 	// Dumping of the annotations	
 	sdc_dump_annotation (from_path, to_path, fp, cur_interc[0]);	
@@ -205,10 +204,10 @@ void dump_sdc_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
       des_pb_graph_node  = des_pb_graph_pin->parent_node;
 	  
 	  // Generation of the paths for the dumping of the annotations
-    from_path = (char *) my_malloc(sizeof(char)*(11 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin)) + 1));	
-    sprintf (from_path,"grid_clb_0_/%s", gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin));
-    to_path = (char *) my_malloc(sizeof(char)*(11 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin)) + 1));	
-     to_path = my_strcat("grid_clb_0_/", gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin));
+    from_path = (char *) my_malloc(sizeof(char)*(strlen(instance_name) + 1 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin)) + 1));	
+    sprintf (from_path, "%s/%s", instance_name, gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin));
+    to_path = (char *) my_malloc(sizeof(char)*(strlen(instance_name) + 1 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin)) + 1));	
+    sprintf (to_path, "%s/%s", instance_name, gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin));
 
 	
 	  // Dumping of the annotations
@@ -231,7 +230,8 @@ void dump_sdc_pb_graph_port_interc(t_sram_orgz_info* cur_sram_orgz_info,
                                        FILE* fp,
                                        t_pb_graph_node* cur_pb_graph_node,
                                        enum e_spice_pb_port_type pb_port_type,
-                                       t_mode* cur_mode) {
+                                       t_mode* cur_mode,
+                                       char* instance_name) {
   int iport, ipin;
 
   /* Check the file handler*/ 
@@ -251,7 +251,8 @@ void dump_sdc_pb_graph_port_interc(t_sram_orgz_info* cur_sram_orgz_info,
                                          fp, 
                                          INPUT2INPUT_INTERC,
                                          &(cur_pb_graph_node->input_pins[iport][ipin]),
-                                         cur_mode);
+                                         cur_mode,
+                                         instance_name);
       }
     }
     break;
@@ -262,7 +263,8 @@ void dump_sdc_pb_graph_port_interc(t_sram_orgz_info* cur_sram_orgz_info,
                                          fp, 
                                          OUTPUT2OUTPUT_INTERC,
                                          &(cur_pb_graph_node->output_pins[iport][ipin]),
-                                         cur_mode);
+                                         cur_mode,
+                                         instance_name);
       }
     }
     break;
@@ -273,7 +275,8 @@ void dump_sdc_pb_graph_port_interc(t_sram_orgz_info* cur_sram_orgz_info,
                                          fp, 
                                          INPUT2INPUT_INTERC,
                                          &(cur_pb_graph_node->clock_pins[iport][ipin]),
-                                         cur_mode);
+                                         cur_mode,
+                                         instance_name);
       }
     }
     break;
@@ -289,7 +292,8 @@ void dump_sdc_pb_graph_port_interc(t_sram_orgz_info* cur_sram_orgz_info,
 void sdc_dump_cur_node_constraints(t_sram_orgz_info* cur_sram_orgz_info,
 							  FILE*  fp,
 							  t_pb_graph_node* cur_pb_graph_node,
-							  int select_mode_index) {
+							  int select_mode_index,
+                              char* instance_name) {
   int ipb, jpb;
   t_mode* cur_mode = NULL;
   t_pb_type* cur_pb_type = cur_pb_graph_node->pb_type;
@@ -322,7 +326,8 @@ void sdc_dump_cur_node_constraints(t_sram_orgz_info* cur_sram_orgz_info,
   dump_sdc_pb_graph_port_interc(cur_sram_orgz_info, fp,
                                     cur_pb_graph_node, 
                                     SPICE_PB_PORT_OUTPUT,
-                                    cur_mode);
+                                    cur_mode,
+                                    instance_name);
   
   /* We check input_pins of child_pb_graph_node and its the input_edges
    * Built the interconnections between inputs of cur_pb_graph_node and inputs of child_pb_graph_node
@@ -338,12 +343,14 @@ void sdc_dump_cur_node_constraints(t_sram_orgz_info* cur_sram_orgz_info,
       dump_sdc_pb_graph_port_interc(cur_sram_orgz_info, fp,
                                          child_pb_graph_node, 
                                          SPICE_PB_PORT_INPUT,
-                                         cur_mode);
+                                         cur_mode,
+                                         instance_name);
       /* TODO: for clock pins, we should do the same work */
       dump_sdc_pb_graph_port_interc(cur_sram_orgz_info, fp,
                                         child_pb_graph_node, 
                                         SPICE_PB_PORT_CLOCK,
-                                        cur_mode);
+                                        cur_mode,
+                                        instance_name);
     }
   }
   return; 
@@ -351,7 +358,8 @@ void sdc_dump_cur_node_constraints(t_sram_orgz_info* cur_sram_orgz_info,
 
 void sdc_rec_dump_child_pb_graph_node(t_sram_orgz_info* cur_sram_orgz_info,
 									 FILE* fp,
-									 t_pb_graph_node* cur_pb_graph_node) {
+									 t_pb_graph_node* cur_pb_graph_node,
+                                     char* instance_name) {
 
   int mode_index, ipb, jpb, child_mode_index;
   t_pb_type* cur_pb_type = NULL;
@@ -380,10 +388,10 @@ void sdc_rec_dump_child_pb_graph_node(t_sram_orgz_info* cur_sram_orgz_info,
 		for(jpb = 0; jpb < cur_pb_type->modes[mode_index].pb_type_children[ipb].num_pb; jpb++){
 		/* Contrary to the verilog, we do not need to keep the prefix 
  * We go done to every child node to dump the constraints now*/ 		
-		  sdc_rec_dump_child_pb_graph_node(cur_sram_orgz_info, fp, &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]));
+		  sdc_rec_dump_child_pb_graph_node(cur_sram_orgz_info, fp, &(cur_pb_graph_node->child_pb_graph_nodes[mode_index][ipb][jpb]), instance_name);
 	  }
 	}
-    sdc_dump_cur_node_constraints(cur_sram_orgz_info, fp, cur_pb_graph_node, mode_index); // graph_head only has one pb_type
+    sdc_dump_cur_node_constraints(cur_sram_orgz_info, fp, cur_pb_graph_node, mode_index, instance_name); // graph_head only has one pb_type
   }
 
 return;
@@ -391,17 +399,19 @@ return;
 
 void sdc_dump_all_pb_graph_nodes(FILE* fp,
 							t_sram_orgz_info* cur_sram_orgz_info,
-							int type_descriptors_mode){
+							int type_descriptors_mode,
+                            char* instance_name){
 
   // Give head of the pb_graph to the recursive function
-  sdc_rec_dump_child_pb_graph_node (cur_sram_orgz_info, fp, type_descriptors[type_descriptors_mode].pb_graph_head);
+  sdc_rec_dump_child_pb_graph_node (cur_sram_orgz_info, fp, type_descriptors[type_descriptors_mode].pb_graph_head, instance_name);
 
 return;
 }
 
 void dump_sdc_physical_blocks(t_sram_orgz_info* cur_sram_orgz_info,
 							char* sdc_path,
-							int type_descriptor_mode) {
+							int type_descriptor_mode,
+                            char* instance_name) {
 
 	FILE* fp;
 
@@ -417,7 +427,7 @@ void dump_sdc_physical_blocks(t_sram_orgz_info* cur_sram_orgz_info,
 
 
   // Launch a recursive function to visit all the nodes of the correct mode
-  sdc_dump_all_pb_graph_nodes(fp, cur_sram_orgz_info, type_descriptor_mode);
+  sdc_dump_all_pb_graph_nodes(fp, cur_sram_orgz_info, type_descriptor_mode, instance_name);
 
 
 /* close file */ 
@@ -433,12 +443,14 @@ void verilog_generate_sdc_constrain_pb_types(t_sram_orgz_info* cur_sram_orgz_inf
   int itype;
   char* sdc_path;
   char* fpga_verilog_sdc_pb_types = "pb_types.sdc";
+  char* instance_name;
 
   sdc_path = my_strcat (sdc_dir,fpga_verilog_sdc_pb_types); // Global var
 
   for (itype = 0; itype < num_types; itype++){
     if (FILL_TYPE == &type_descriptors[itype]){
-	  dump_sdc_physical_blocks(cur_sram_orgz_info, sdc_path, itype);
+      instance_name = gen_verilog_one_phy_block_instance_name(&type_descriptors[itype],0); /* it is 0 because the CLBs only have 1 block.*/
+	  dump_sdc_physical_blocks(cur_sram_orgz_info, sdc_path, itype, instance_name);
     }
   }
 return;
