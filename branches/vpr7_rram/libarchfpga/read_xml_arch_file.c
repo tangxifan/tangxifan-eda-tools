@@ -1377,6 +1377,9 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
             mode->interconnect[i].spice_model_sram_offset = GetIntProperty(Cur, "spice_model_sram_offset", FALSE, 0); 
             ezxml_set_attr(Cur, "spice_model_sram_offset", NULL);
             /* END */
+            /* Baudouin Chauviere: SDC generation */
+            mode->interconnect[i].is_loop_breaker = FALSE;
+            /* END */
  
 			mode->interconnect[i].line_num = Cur->line;
 
@@ -1394,6 +1397,11 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 			Prop = FindProperty(Cur, "name", TRUE);
 			mode->interconnect[i].name = my_strdup(Prop);
 			ezxml_set_attr(Cur, "name", NULL);
+
+			if (FindProperty(Cur, "loop_breaker", FALSE)) {
+			  mode->interconnect[i].is_loop_breaker = TRUE;
+            }
+			ezxml_set_attr(Cur, "loop_breaker", NULL);
 
 			/* Process delay and capacitance annotations */
 			num_annotations = 0;

@@ -53,13 +53,20 @@
 void sdc_dump_annotation(char* from_path, // includes the cell
 						char* to_path,
 						FILE* fp,
-						t_interconnect interconnect
-						){
+						t_interconnect interconnect,
+                        boolean is_disabled){
   char* min_value = NULL;
   char* max_value = NULL;
   int i,j;
-
-// Find in the annotations the min and max
+ 
+  // Check if the timing is disabled through the path and return if so
+ 
+  if (is_disabled) {
+  fprintf (fp, "set_disable_timing -from %s -to %s \n", from_path,to_path); 
+  return;
+  }
+  
+  // Find in the annotations the min and max
 
   for (i=0; i < interconnect.num_annotations; i++) {
     if (E_ANNOT_PIN_TO_PIN_DELAY == interconnect.annotations[i].type) {
@@ -73,22 +80,24 @@ void sdc_dump_annotation(char* from_path, // includes the cell
       }
     }
   }
-// Dump the annotation
-// If no annotation was found, dump 0
+  // Dump the annotation
+  // If no annotation was found, dump 0
 
-fprintf (fp, "set_min_delay -from %s -to %s ", from_path,to_path);
-  if (NULL != min_value) {
-    fprintf(fp, "%s\n", min_value);
+  fprintf (fp, "set_min_delay -from %s -to %s ", from_path,to_path);
+    if (NULL != min_value) {
+      fprintf(fp, "%s\n", min_value);
     } else {
-    fprintf(fp, "0\n");
+      fprintf(fp, "0\n");
     }
 
-fprintf (fp, "set_max_delay -from %s -to %s ", from_path, to_path);
-  if (max_value != NULL){
-    fprintf (fp,"%s\n",max_value);
-  } else {
-    fprintf (fp,"0\n");
-  }
+  fprintf (fp, "set_max_delay -from %s -to %s ", from_path, to_path);
+    if (max_value != NULL){
+      fprintf (fp,"%s\n",max_value);
+    } else {
+      fprintf (fp,"0\n");
+    }
+
+
 
 return;
 }
@@ -115,6 +124,7 @@ void dump_sdc_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
   char* to_path_int = NULL;
   char* from_path = NULL;
   char* to_path = NULL;
+  boolean interc_is_disabled = FALSE;
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -171,14 +181,19 @@ void dump_sdc_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
     /* Des pin, node, pb_type */
     des_pb_graph_node  = des_pb_graph_pin->parent_node;
     
-	  // Generation of the paths for the dumping of the annotations
+	// Generation of the paths for the dumping of the annotations
     from_path = (char *) my_malloc(sizeof(char)*(strlen(instance_name) + 1 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin)) + 1));	
     sprintf (from_path, "%s/%s", instance_name, gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin));
     to_path = (char *) my_malloc(sizeof(char)*(strlen(instance_name) + 1 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin)) + 1));	
     sprintf (to_path, "%s/%s", instance_name, gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin));
 
+    // Check if the path is to be disabled or not
+    if (cur_interc[0].is_loop_breaker) {
+      interc_is_disabled = TRUE;
+    }
+
 	// Dumping of the annotations	
-	sdc_dump_annotation (from_path, to_path, fp, cur_interc[0]);	
+	sdc_dump_annotation (from_path, to_path, fp, cur_interc[0], interc_is_disabled);	
   break;
   case COMPLETE_INTERC:
   case MUX_INTERC:
@@ -209,9 +224,13 @@ void dump_sdc_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
     to_path = (char *) my_malloc(sizeof(char)*(strlen(instance_name) + 1 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin)) + 1));	
     sprintf (to_path, "%s/%s", instance_name, gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin));
 
+    // Check if the path is to be disabled or not
+    if (cur_interc[0].is_loop_breaker) {
+      interc_is_disabled = TRUE;
+    }
 	
 	  // Dumping of the annotations
-	  sdc_dump_annotation (from_path, to_path, fp, cur_interc[0]);	
+	  sdc_dump_annotation (from_path, to_path, fp, cur_interc[0], interc_is_disabled);	
     }
 	break;
 
