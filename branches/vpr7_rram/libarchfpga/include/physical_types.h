@@ -337,6 +337,9 @@ struct s_interconnect {
     int num_mux;
     int spice_model_sram_offset;
     /* END */
+    /* Baudouin Chauviere: SDC Generation */
+    boolean is_loop_breaker;
+    /* END */
 
 	t_interconnect_power * interconnect_power;
 };
