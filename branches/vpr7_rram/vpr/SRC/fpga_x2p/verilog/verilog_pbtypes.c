@@ -829,7 +829,7 @@ void dump_verilog_dangling_des_pb_graph_pin_interc(FILE* fp,
     */
     if (des_pb_type == cur_mode->parent_pb_type) { /* Interconnection from parent pb_type*/
       des_pin_prefix = (char*)my_malloc(sizeof(char)*
-                           (5 + strlen(cur_mode->name) + 2 ));
+                           (strlen(cur_mode->name) + 1 + 1 ));
       sprintf(des_pin_prefix, "%s_", cur_mode->name);
     } else {
       des_pin_prefix = (char*)my_malloc(sizeof(char)*
@@ -905,7 +905,7 @@ void generate_verilog_src_des_pb_graph_pin_prefix(t_pb_graph_pin* src_pb_graph_p
       */
       /*Simplify the prefix, make the SPICE netlist readable*/
       (*src_pin_prefix) = (char*)my_malloc(sizeof(char)*
-                           (5 + strlen(des_pb_type->parent_mode->name) + 2));
+                           (strlen(des_pb_type->parent_mode->name) + 1 + 1));
       sprintf((*src_pin_prefix), "%s_", des_pb_type->parent_mode->name);
     } else {
       /*
@@ -955,7 +955,7 @@ void generate_verilog_src_des_pb_graph_pin_prefix(t_pb_graph_pin* src_pb_graph_p
       */
       /*Simplify the prefix, make the SPICE netlist readable*/
       (*src_pin_prefix) = (char*)my_malloc(sizeof(char)*
-                           (5 + strlen(pin2pin_interc->parent_mode->name) + 2));
+                           (strlen(pin2pin_interc->parent_mode->name) + 1 + 1));
       sprintf((*src_pin_prefix), "%s_", pin2pin_interc->parent_mode->name);
     } else {
       (*src_pin_prefix) = (char*)my_malloc(sizeof(char)*
@@ -968,7 +968,7 @@ void generate_verilog_src_des_pb_graph_pin_prefix(t_pb_graph_pin* src_pb_graph_p
     */
     /*Simplify the prefix, make the SPICE netlist readable*/
     (*des_pin_prefix) = (char*)my_malloc(sizeof(char)*
-                         (5 + strlen(pin2pin_interc->parent_mode->name) + 2));
+                         (strlen(pin2pin_interc->parent_mode->name) + 1 + 1));
     sprintf((*des_pin_prefix), "%s_", pin2pin_interc->parent_mode->name);
     break;
   default:
@@ -1696,7 +1696,7 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
   fprintf(fp, "module %s (", subckt_name);
   /* Inputs, outputs, inouts, clocks */
   subckt_port_prefix = (char*)my_malloc(sizeof(char)*
-                                       (5 + strlen(cur_pb_type->modes[mode_index].name) + 1 + 1));
+                                       (strlen(cur_pb_type->modes[mode_index].name) + 1 + 1));
   sprintf(subckt_port_prefix, "%s_", cur_pb_type->modes[mode_index].name);
   /*
   dump_verilog_pb_type_ports(fp, subckt_name, 0, cur_pb_type);
