@@ -1363,6 +1363,7 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 				mode->interconnect[i].type = MUX_INTERC;
 			}
 
+
             /* Xifan TANG: SPICE Support */
             Prop = FindProperty(Cur, "spice_model_name", FALSE);
             /* Default spice_model will be define later*/
@@ -1376,9 +1377,6 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
             /* Get sram offset */
             mode->interconnect[i].spice_model_sram_offset = GetIntProperty(Cur, "spice_model_sram_offset", FALSE, 0); 
             ezxml_set_attr(Cur, "spice_model_sram_offset", NULL);
-            /* END */
-            /* Baudouin Chauviere: SDC generation */
-            mode->interconnect[i].is_loop_breaker = FALSE;
             /* END */
  
 			mode->interconnect[i].line_num = Cur->line;
@@ -1398,10 +1396,22 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 			mode->interconnect[i].name = my_strdup(Prop);
 			ezxml_set_attr(Cur, "name", NULL);
 
-			if (FindProperty(Cur, "loop_breaker", FALSE)) {
+            /* Baudouin Chauviere: SDC generation */
+            mode->interconnect[i].is_loop_breaker = FALSE;
+            /* Check if property exists */
+			if (FindProperty(Cur, "loop_breaker", FALSE)) { 
+            /* Check if property exists and is true */
+			/*if (0 == strcmp(Prop,"TRUE") || 0 == strcmp(Prop,"true")) {*/
+			  if (0 == strcmp(Cur->name, "direct")) {
+			    vpr_printf(TIO_MESSAGE_ERROR,
+			    "[Line %d] loop_breaker not supported for '%s'.\n",
+					Parent->line, Cur->name);
+			    exit(1);
+		      }
 			  mode->interconnect[i].is_loop_breaker = TRUE;
             }
 			ezxml_set_attr(Cur, "loop_breaker", NULL);
+            /* END */
 
 			/* Process delay and capacitance annotations */
 			num_annotations = 0;
