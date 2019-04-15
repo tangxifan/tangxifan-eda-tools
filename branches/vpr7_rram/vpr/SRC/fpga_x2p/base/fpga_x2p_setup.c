@@ -203,11 +203,23 @@ void match_pb_types_spice_model_rec(t_pb_type* cur_pb_type,
           } else {
             cur_pb_type->modes[imode].interconnect[jinterc].spice_model = 
               get_default_spice_model(SPICE_MODEL_MUX,num_spice_model,spice_models);
+            if (NULL != cur_pb_type->modes[imode].interconnect[jinterc].loop_breaker_string) {
+              if (NULL == cur_pb_type->modes[imode].interconnect[jinterc].spice_model->input_buffer) {
+                vpr_printf(TIO_MESSAGE_INFO,"Line[%d] Cannot disable an interconnect without input buffering",
+                cur_pb_type->modes[imode].interconnect[jinterc].line_num);
+              } 
+            }
           } 
           break;
         case MUX_INTERC:
           cur_pb_type->modes[imode].interconnect[jinterc].spice_model = 
             get_default_spice_model(SPICE_MODEL_MUX,num_spice_model,spice_models);
+          if (NULL != cur_pb_type->modes[imode].interconnect[jinterc].loop_breaker_string) {
+            if (NULL == cur_pb_type->modes[imode].interconnect[jinterc].spice_model->input_buffer) {
+              vpr_printf(TIO_MESSAGE_INFO,"Line[%d] Cannot disable an interconnect without input buffering",
+              cur_pb_type->modes[imode].interconnect[jinterc].line_num);
+            } 
+          }
           break;
         default:
           break; 
@@ -246,6 +258,12 @@ void match_pb_types_spice_model_rec(t_pb_type* cur_pb_type,
               exit(1);
             }
           }
+            if (NULL != cur_pb_type->modes[imode].interconnect[jinterc].loop_breaker_string) {
+              if (NULL == cur_pb_type->modes[imode].interconnect[jinterc].spice_model->input_buffer) {
+                vpr_printf(TIO_MESSAGE_INFO,"Line[%d] Cannot disable an interconnect without input buffering",
+                cur_pb_type->modes[imode].interconnect[jinterc].line_num);
+              } 
+            }
           break;
         case MUX_INTERC:
           if (SPICE_MODEL_MUX != cur_pb_type->modes[imode].interconnect[jinterc].spice_model->type) {
@@ -253,6 +271,12 @@ void match_pb_types_spice_model_rec(t_pb_type* cur_pb_type,
                        __FILE__, __LINE__, cur_pb_type->modes[imode].interconnect[jinterc].spice_model_name, cur_pb_type->name);
             exit(1);
           }
+            if (NULL != cur_pb_type->modes[imode].interconnect[jinterc].loop_breaker_string) {
+              if (NULL == cur_pb_type->modes[imode].interconnect[jinterc].spice_model->input_buffer) {
+                vpr_printf(TIO_MESSAGE_INFO,"Line[%d] Cannot disable an interconnect without input buffering",
+                cur_pb_type->modes[imode].interconnect[jinterc].line_num);
+              } 
+            }
           break;
         default:
           break; 

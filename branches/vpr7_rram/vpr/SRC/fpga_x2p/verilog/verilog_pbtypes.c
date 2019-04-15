@@ -1187,6 +1187,12 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
             cur_interc->spice_model->name, fan_in, cur_interc->spice_model->cnt, ipin);
       fprintf(fp, "%s__%s_%d_ ; \n", 
               src_pin_prefix, src_pb_graph_pin->port->name, src_pb_graph_pin->pin_number);
+      /* Baudouin Chauviere: SDC Generation */
+      des_pb_graph_pin->input_edges[iedge]->nb_mux = cur_interc->spice_model->cnt;
+      des_pb_graph_pin->input_edges[iedge]->nb_pin = ipin;
+      /* END */
+      
+
       ipin++;
       /* Free */
       my_free(des_pin_prefix);
