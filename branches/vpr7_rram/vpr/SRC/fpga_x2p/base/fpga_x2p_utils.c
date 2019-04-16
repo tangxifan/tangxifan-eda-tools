@@ -3469,3 +3469,46 @@ void get_fpga_x2p_global_op_clock_ports(t_llist* head,
   return;
 }
                    
+/* Get all the clock ports from the global port linked list */
+void get_fpga_x2p_global_all_clock_ports(t_llist* head,
+                                        int* num_clock_ports,
+                                        t_spice_model_port*** clock_port) {
+  t_llist* temp = head;
+  t_spice_model_port* cur_port = NULL;
+  int cnt = 0;
+
+  /* Get the number of clock ports */
+  while (NULL != temp) {
+    cur_port = (t_spice_model_port*)(temp->dptr); 
+    if ( (SPICE_MODEL_PORT_CLOCK == cur_port->type)) { 
+      cnt++;
+    }
+    /* Go to the next */
+    temp = temp->next;
+  }
+
+  /* Initialize the counter */
+  (*num_clock_ports) = cnt;
+
+  /* Malloc */
+  (*clock_port) = (t_spice_model_port**)my_calloc((*num_clock_ports), sizeof(t_spice_model_port*));
+
+  /* Reset the counter */
+  temp = head;
+  cnt = 0;
+  /* Fill the return array */
+  while (NULL != temp) {
+    cur_port = (t_spice_model_port*)(temp->dptr); 
+    if ( (SPICE_MODEL_PORT_CLOCK == cur_port->type)) { 
+      (*clock_port)[cnt] = cur_port;
+      cnt++;
+    }
+    /* Go to the next */
+    temp = temp->next;
+  }
+
+  assert (cnt == (*num_clock_ports));
+ 
+  return;
+}
+                   

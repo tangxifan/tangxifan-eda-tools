@@ -405,3 +405,7 @@ int get_lut_logical_block_index_with_output_vpack_net_num(int target_vpack_net_n
 void get_fpga_x2p_global_op_clock_ports(t_llist* head,
                                         int* num_clock_ports,
                                         t_spice_model_port*** clock_port);
+
+void get_fpga_x2p_global_all_clock_ports(t_llist* head,
+                                        int* num_clock_ports,
+                                        t_spice_model_port*** clock_port);

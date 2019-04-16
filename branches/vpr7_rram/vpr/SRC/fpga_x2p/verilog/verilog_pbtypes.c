@@ -374,7 +374,7 @@ void dump_verilog_pb_type_bus_ports(FILE* fp,
   int num_pb_type_clk_port = 0;
   t_port** pb_type_clk_ports = NULL;
 
-  char* formatted_port_prefix = chomp_verilog_node_prefix(port_prefix);
+  char* formatted_port_prefix = chomp_verilog_prefix(port_prefix);
   /* A counter to stats the number of dumped ports and pins */
   int num_dumped_port = 0;
 
@@ -536,7 +536,7 @@ void dump_verilog_pb_type_ports(FILE* fp,
   int num_pb_type_clk_port = 0;
   t_port** pb_type_clk_ports = NULL;
 
-  char* formatted_port_prefix = chomp_verilog_node_prefix(port_prefix);
+  char* formatted_port_prefix = chomp_verilog_prefix(port_prefix);
   /* A counter to stats the number of dumped ports and pins */
   int num_dumped_port = 0;
 
@@ -757,7 +757,7 @@ void dump_verilog_dangling_des_pb_graph_pin_interc(FILE* fp,
   char* des_pin_prefix = NULL;
   
   /* char* formatted_parent_pin_prefix = format_verilog_node_prefix(parent_pin_prefix);*/  /* Complete a "_" at the end if needed*/
-  //char* chomped_parent_pin_prefix = chomp_verilog_node_prefix(parent_pin_prefix); /* Remove a "_" at the end if needed*/
+  //char* chomped_parent_pin_prefix = chomp_verilog_prefix(parent_pin_prefix); /* Remove a "_" at the end if needed*/
 
   /* Check the file handler*/ 
   if (NULL == fp) {
@@ -1032,7 +1032,7 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
 
   t_pb_graph_node* des_pb_graph_node = NULL;
 
-  char* formatted_parent_pin_prefix = chomp_verilog_node_prefix(parent_pin_prefix); /* Complete a "_" at the end if needed*/
+  char* formatted_parent_pin_prefix = chomp_verilog_prefix(parent_pin_prefix); /* Complete a "_" at the end if needed*/
   char* src_pin_prefix = NULL;
   char* des_pin_prefix = NULL;
 
@@ -1105,6 +1105,8 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
     /* Generate the pin_prefix for src_pb_graph_node and des_pb_graph_node*/
     generate_verilog_src_des_pb_graph_pin_prefix(src_pb_graph_pin, des_pb_graph_pin, pin2pin_interc_type, 
                                                  cur_interc, formatted_parent_pin_prefix, &src_pin_prefix, &des_pin_prefix);
+    src_pin_prefix = chomp_verilog_prefix(src_pin_prefix);
+    des_pin_prefix = chomp_verilog_prefix(des_pin_prefix);
     /* Call the subckt that has already been defined before */
     fprintf(fp, "%s ", cur_interc->spice_model->name);
     fprintf(fp, "%s_%d_ (", cur_interc->spice_model->prefix, cur_interc->spice_model->cnt); 
@@ -1181,6 +1183,8 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
       /* Generate the pin_prefix for src_pb_graph_node and des_pb_graph_node*/
       generate_verilog_src_des_pb_graph_pin_prefix(src_pb_graph_pin, des_pb_graph_pin, pin2pin_interc_type, 
                                                    cur_interc, formatted_parent_pin_prefix, &src_pin_prefix, &des_pin_prefix);
+      src_pin_prefix = chomp_verilog_prefix(src_pin_prefix);
+      
       /* We need to find out if the des_pb_graph_pin is in the mode we want !*/
       /* Print */
       fprintf(fp, "assign in_bus_%s_size%d_%d_[%d] = ",
@@ -1244,6 +1248,7 @@ void dump_verilog_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
     /* Generate the pin_prefix for src_pb_graph_node and des_pb_graph_node*/
     generate_verilog_src_des_pb_graph_pin_prefix(src_pb_graph_pin, des_pb_graph_pin, pin2pin_interc_type, 
                                                cur_interc, formatted_parent_pin_prefix, &src_pin_prefix, &des_pin_prefix);
+    des_pin_prefix = chomp_verilog_prefix(des_pin_prefix);
     /* Outputs */
     fprintf(fp, "%s__%s_%d_, ", 
             des_pin_prefix, des_pb_graph_pin->port->name, des_pb_graph_pin->pin_number);
@@ -1472,6 +1477,7 @@ void dump_verilog_pb_graph_primitive_node(FILE* fp,
                 + strlen(cur_pb_type->name) + 1
                 + strlen(my_itoa(pb_type_index)) + 1 + 1)); /* Plus the '0' at the end of string*/
   sprintf(subckt_name, "%s%s_%d_", formatted_subckt_prefix, cur_pb_type->name, pb_type_index);
+  subckt_name = chomp_verilog_prefix(subckt_name);
   /* Check if defines an included netlist*/
   if (NULL == verilog_model->model_netlist) {
     if (LUT_CLASS == cur_pb_type->class_type) {

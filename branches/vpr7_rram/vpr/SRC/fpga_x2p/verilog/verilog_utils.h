@@ -51,7 +51,7 @@ void dump_verilog_generic_port_no_repeat(FILE* fp,
                                char* port_name, int port_lsb, int port_msb); 
 
 
-char* chomp_verilog_node_prefix(char* verilog_node_prefix);
+char* chomp_verilog_prefix(char* verilog_node_prefix);
 
 char* format_verilog_node_prefix(char* verilog_node_prefix);
 

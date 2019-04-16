@@ -504,10 +504,9 @@ void verilog_generate_sdc_constrain_pb_types(t_sram_orgz_info* cur_sram_orgz_inf
 
   int itype;
   char* sdc_path;
-  char* fpga_verilog_sdc_pb_types = "pb_types.sdc";
   char* instance_name;
 
-  sdc_path = my_strcat (sdc_dir,fpga_verilog_sdc_pb_types); // Global var
+  sdc_path = my_strcat (sdc_dir, sdc_constrain_pb_type_file_name); // Global var
 
   for (itype = 0; itype < num_types; itype++){
     if (FILL_TYPE == &type_descriptors[itype]){
