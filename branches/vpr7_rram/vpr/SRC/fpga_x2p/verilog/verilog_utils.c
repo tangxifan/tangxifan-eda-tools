@@ -654,11 +654,11 @@ char* chomp_verilog_prefix(char* verilog_node_prefix) {
     my_free(ret);
     return NULL;
   }
-
   strcpy(ret,verilog_node_prefix);
   /* If the path end up with "_" we should remove it*/
-  if ('_' == ret[len-1]) {
+  while ('_' == ret[len-1]) {
     ret[len-1] = ret[len];
+    len--;
   }
 
   return ret;
