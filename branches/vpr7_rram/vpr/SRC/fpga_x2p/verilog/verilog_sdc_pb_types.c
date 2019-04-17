@@ -54,8 +54,8 @@ void sdc_dump_annotation(char* from_path, // includes the cell
 						char* to_path,
 						FILE* fp,
 						t_interconnect interconnect){
-  char* min_value = NULL;
-  char* max_value = NULL;
+  //char* min_value = NULL;
+  float max_value = NULL;
   int i,j;
  
   // Find in the annotations the min and max
@@ -63,15 +63,18 @@ void sdc_dump_annotation(char* from_path, // includes the cell
   for (i=0; i < interconnect.num_annotations; i++) {
     if (E_ANNOT_PIN_TO_PIN_DELAY == interconnect.annotations[i].type) {
       for (j=0; j < interconnect.annotations[i].num_value_prop_pairs; j++) {
-	    if (E_ANNOT_PIN_TO_PIN_DELAY_MIN == interconnect.annotations[i].prop[j]) {
+	   /* if (E_ANNOT_PIN_TO_PIN_DELAY_MIN == interconnect.annotations[i].prop[j]) {
 		    min_value = interconnect.annotations[i].value[j];
-		  }
+		  }*/
 	    if(E_ANNOT_PIN_TO_PIN_DELAY_MAX == interconnect.annotations[i].prop[j]) {
-			max_value = interconnect.annotations[i].value[j];
+			max_value = atof(interconnect.annotations[i].value[j]);
+            max_value = max_value*pow(10,9); /* converts sec in ns */
         }
       }
     }
   }
+
+
   // Dump the annotation
   // If no annotation was found, dump 0
 
@@ -90,7 +93,7 @@ void sdc_dump_annotation(char* from_path, // includes the cell
     }*/
     if (max_value != NULL){
       fprintf (fp, "set_max_delay -from %s -to %s ", from_path, to_path);
-      fprintf (fp,"%s\n",max_value);
+      fprintf (fp,"%f\n", max_value);
     }
 return;
 }
