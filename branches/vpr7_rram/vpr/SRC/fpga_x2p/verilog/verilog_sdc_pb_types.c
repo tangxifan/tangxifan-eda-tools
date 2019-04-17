@@ -75,12 +75,12 @@ void sdc_dump_annotation(char* from_path, // includes the cell
   // Dump the annotation
   // If no annotation was found, dump 0
 
-  fprintf (fp, "set_min_delay -from %s -to %s ", from_path,to_path);
+ /* fprintf (fp, "set_min_delay -from %s -to %s ", from_path,to_path);
     if (NULL != min_value) {
       fprintf(fp, "%s\n", min_value);
     } else {
       fprintf(fp, "0\n");
-    }
+    } */
 
   fprintf (fp, "set_max_delay -from %s -to %s ", from_path, to_path);
     if (max_value != NULL){
@@ -179,15 +179,16 @@ void dump_sdc_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
     /* Des pin, node, pb_type */
     des_pb_graph_node  = des_pb_graph_pin->parent_node;
     
+    /* if clock, clock tree synthesis will take care of the timings */
+    if (TRUE == src_pb_graph_pin->port->is_clock ||
+        TRUE == des_pb_graph_pin->port->is_clock) {
+      return;
+    } 
 	// Generation of the paths for the dumping of the annotations
     from_path = (char *) my_malloc(sizeof(char)*(strlen(instance_name) + 1 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin)) + 1));	
     sprintf (from_path, "%s/%s", instance_name, gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin));
     to_path = (char *) my_malloc(sizeof(char)*(strlen(instance_name) + 1 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin)) + 1));	
     sprintf (to_path, "%s/%s", instance_name, gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin));
-
-    // Check if the path is to be disabled or not
-    //if (cur_interc[0]/*.is_loop_breaker*/) {
-    //}
 
 	// Dumping of the annotations	
 	sdc_dump_annotation (from_path, to_path, fp, cur_interc[0]);	
@@ -264,12 +265,6 @@ void dump_sdc_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
       sprintf (from_path, "%s/%s", instance_name, gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin));
       to_path = (char *) my_malloc(sizeof(char)*(strlen(instance_name) + 1 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin)) + 1));	
       sprintf (to_path, "%s/%s", instance_name, gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin));
-  
-      // Check if the path is to be disabled or not
-      //if (cur_interc[0]/*.is_loop_breaker*/) {
-        interc_is_disabled = TRUE;
-      //}
-  	
   	  // Dumping of the annotations
   	  sdc_dump_annotation (from_path, to_path, fp, cur_interc[0]);	
       }

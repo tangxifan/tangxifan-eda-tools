@@ -1709,7 +1709,8 @@ void dump_verilog_phy_pb_graph_node_rec(t_sram_orgz_info* cur_sram_orgz_info,
   /* Inputs, outputs, inouts, clocks */
   subckt_port_prefix = (char*)my_malloc(sizeof(char)*
                                        (strlen(cur_pb_type->modes[mode_index].name) + 1 + 1));
-  sprintf(subckt_port_prefix, "%s_", cur_pb_type->modes[mode_index].name);
+  /*sprintf(subckt_port_prefix, "%s_", cur_pb_type->modes[mode_index].name);*/
+  sprintf(subckt_port_prefix, "%s_", cur_pb_type->name);
   /*
   dump_verilog_pb_type_ports(fp, subckt_name, 0, cur_pb_type);
   */
