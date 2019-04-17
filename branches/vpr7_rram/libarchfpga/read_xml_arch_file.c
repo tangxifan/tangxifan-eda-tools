@@ -1397,9 +1397,8 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 			ezxml_set_attr(Cur, "name", NULL);
 
             /* Baudouin Chauviere: SDC generation */
-            mode->interconnect[i].is_loop_breaker = FALSE;
             /* Check if property exists */
-			if (FindProperty(Cur, "loop_breaker", FALSE)) { 
+			if (Prop = FindProperty(Cur, "loop_breaker", FALSE)) { 
             /* Check if property exists and is true */
 			/*if (0 == strcmp(Prop,"TRUE") || 0 == strcmp(Prop,"true")) {*/
 			  if (0 == strcmp(Cur->name, "direct")) {
@@ -1408,7 +1407,8 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 					Parent->line, Cur->name);
 			    exit(1);
 		      }
-			  mode->interconnect[i].is_loop_breaker = TRUE;
+              //if (
+			  mode->interconnect[i].loop_breaker_string= my_strdup(Prop);
             }
 			ezxml_set_attr(Cur, "loop_breaker", NULL);
             /* END */

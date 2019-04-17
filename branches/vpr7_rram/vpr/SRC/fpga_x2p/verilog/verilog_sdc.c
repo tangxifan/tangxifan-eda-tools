@@ -208,13 +208,17 @@ void verilog_generate_sdc_break_loop_mux(FILE* fp,
   return;
 }
 
-void verilog_generate_sdc_clock_period(t_sdc_opts sdc_opts) {
+void verilog_generate_sdc_clock_period(t_sdc_opts sdc_opts,
+                                       float critical_path_delay) {
   FILE* fp = NULL;
   char* fname = my_strcat(sdc_opts.sdc_dir, sdc_clock_period_file_name);
   t_llist* temp = NULL;
   t_spice_model_port* temp_port = NULL;
   int ipin;
   float clock_period = 10.;
+  int iport;
+  int num_clock_ports = 0;
+  t_spice_model_port** clock_port = NULL;
 
   vpr_printf(TIO_MESSAGE_INFO, 
              "Generating SDC for constraining clocks in P&R flow: %s ...\n",
@@ -231,6 +235,27 @@ void verilog_generate_sdc_clock_period(t_sdc_opts sdc_opts) {
   /* Generate the descriptions*/
   dump_verilog_sdc_file_header(fp, "Clock contraints for PnR");
 
+  /* Create clock */
+  /* Get clock port from the global port */
+  get_fpga_x2p_global_all_clock_ports(global_ports_head, &num_clock_ports, &clock_port);
+
+  /* Print comments */
+  fprintf(fp,
+          "##################################################\n"); 
+  fprintf(fp, 
+          "###             Create clock                     #\n");
+  fprintf(fp,
+          "##################################################\n"); 
+
+  /* Create a clock */
+  for (iport = 0; iport < num_clock_ports; iport++) {
+    fprintf(fp, "create_clock ");
+    fprintf(fp, "%s -period %.4g -waveform {0 %.4g}\n",
+            clock_port[iport]->prefix, 
+            critical_path_delay, critical_path_delay/2);
+  }
+
+
   /* Find the global clock ports */
   temp = global_ports_head; 
   while (NULL != temp) {
@@ -242,7 +267,7 @@ void verilog_generate_sdc_clock_period(t_sdc_opts sdc_opts) {
       temp = temp->next;
       continue;
     }
-    /* Create clock */
+    
     for (ipin = 0; ipin < temp_port->size; ipin++) {
       fprintf(fp, 
               "create_clock -name {%s[%d]} -period %.2g -waveform {0.00 %.2g} [list [get_ports {%s[%d]}]]\n",
@@ -1668,8 +1693,6 @@ void verilog_generate_sdc_input_output_delays(FILE* fp,
             clock_port[iport]->prefix, 
             critical_path_delay, critical_path_delay/2);
   }
-  fprintf(fp, "set input_pins \"\"\n");
-  fprintf(fp, "set output_pins \"\"\n");
   
   /* Print comments */
   fprintf(fp,
@@ -1679,6 +1702,8 @@ void verilog_generate_sdc_input_output_delays(FILE* fp,
   fprintf(fp,
           "##################################################\n"); 
 
+  fprintf(fp, "set input_pins \"\"\n");
+  fprintf(fp, "set output_pins \"\"\n");
   assert(NULL != iopad_verilog_model);
   for (iopad_idx = 0; iopad_idx < iopad_verilog_model->cnt; iopad_idx++) {
     /* Find if this inpad is mapped to a logical block */
@@ -1777,7 +1802,7 @@ void verilog_generate_sdc_pnr(t_sram_orgz_info* cur_sram_orgz_info,
   sdc_opts.break_loops_mux = FALSE; /* By default, we turn it off to avoid a overkill */
 
   /* Part 1. Constrain clock cycles */
-  verilog_generate_sdc_clock_period(sdc_opts);
+  verilog_generate_sdc_clock_period(sdc_opts, arch.spice->spice_params.stimulate_params.vpr_crit_path_delay);
 
   /* Part 2. Output Design Constraints for breaking loops */
   if (TRUE == sdc_opts.break_loops) {

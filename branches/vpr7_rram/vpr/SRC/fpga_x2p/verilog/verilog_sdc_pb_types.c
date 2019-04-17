@@ -53,19 +53,11 @@
 void sdc_dump_annotation(char* from_path, // includes the cell
 						char* to_path,
 						FILE* fp,
-						t_interconnect interconnect,
-                        boolean is_disabled){
+						t_interconnect interconnect){
   char* min_value = NULL;
   char* max_value = NULL;
   int i,j;
  
-  // Check if the timing is disabled through the path and return if so
- 
-  if (is_disabled) {
-  fprintf (fp, "set_disable_timing -from %s -to %s \n", from_path,to_path); 
-  return;
-  }
-  
   // Find in the annotations the min and max
 
   for (i=0; i < interconnect.num_annotations; i++) {
@@ -126,6 +118,12 @@ void dump_sdc_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
   char* to_path = NULL;
   boolean interc_is_disabled = FALSE;
 
+  char* set_disable_path;
+  t_pb_graph_pin* cur_pin_disable;
+  char* input_buffer_path;
+  char* input_buffer_name;
+  char* input_buffer_in;
+  char* input_buffer_out;
   /* Check the file handler*/ 
   if (NULL == fp) {
     vpr_printf (TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid file handler.\n", 
@@ -188,12 +186,11 @@ void dump_sdc_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
     sprintf (to_path, "%s/%s", instance_name, gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin));
 
     // Check if the path is to be disabled or not
-    if (cur_interc[0].is_loop_breaker) {
-      interc_is_disabled = TRUE;
-    }
+    //if (cur_interc[0]/*.is_loop_breaker*/) {
+    //}
 
 	// Dumping of the annotations	
-	sdc_dump_annotation (from_path, to_path, fp, cur_interc[0], interc_is_disabled);	
+	sdc_dump_annotation (from_path, to_path, fp, cur_interc[0]);	
   break;
   case COMPLETE_INTERC:
   case MUX_INTERC:
@@ -217,22 +214,68 @@ void dump_sdc_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
       src_pb_type = src_pb_graph_node->pb_type;
       /* Des pin, node, pb_type */
       des_pb_graph_node  = des_pb_graph_pin->parent_node;
-	  
-	  // Generation of the paths for the dumping of the annotations
-    from_path = (char *) my_malloc(sizeof(char)*(strlen(instance_name) + 1 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin)) + 1));	
-    sprintf (from_path, "%s/%s", instance_name, gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin));
-    to_path = (char *) my_malloc(sizeof(char)*(strlen(instance_name) + 1 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin)) + 1));	
-    sprintf (to_path, "%s/%s", instance_name, gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin));
 
-    // Check if the path is to be disabled or not
-    if (cur_interc[0].is_loop_breaker) {
-      interc_is_disabled = TRUE;
+    /* If the pin is disabled, the dumping is different. We need to use the 
+     * input and output of the inverter of the mux */ 
+    if (TRUE == des_pb_graph_pin->input_edges[iedge]->is_disabled) {
+      /* We need to find the highest node between src and des */
+      if (src_pb_graph_node->parent_pb_graph_node == des_pb_graph_node->parent_pb_graph_node) {
+        cur_pin_disable = src_pb_graph_pin->parent_node->parent_pb_graph_node->input_pins[0];
+      }
+      else if (src_pb_graph_node->parent_pb_graph_node == des_pb_graph_node) {
+        cur_pin_disable = des_pb_graph_pin;
+      }
+      else {
+        cur_pin_disable = src_pb_graph_pin;
+      }
+      if (cur_interc->spice_model->input_buffer == NULL) {
+        vpr_printf (TIO_MESSAGE_ERROR, "The loop_breaker annotation can only be applied when there is an input buffer"); 
+      }
+      input_buffer_path = (char *) my_malloc(sizeof(char)*(strlen(instance_name) + 1 +
+      strlen (gen_verilog_one_pb_graph_pin_full_name_in_hierarchy_parent_node(cur_pin_disable)) + 1 +
+      strlen (cur_interc->spice_model->name) + 5 + strlen(my_itoa(cur_interc->fan_in)) + 1 +
+      strlen (my_itoa(des_pb_graph_pin->input_edges[iedge]->nb_mux)) + 1 + 1)); 
+      if (0 == strcmp("",gen_verilog_one_pb_graph_pin_full_name_in_hierarchy_parent_node(cur_pin_disable))) {
+      sprintf (input_buffer_path, "%s/%s_size%d_%d_",instance_name,
+               cur_interc->spice_model->name, cur_interc->fan_in, 
+               des_pb_graph_pin->input_edges[iedge]->nb_mux); 
+      }
+      else {
+      sprintf (input_buffer_path, "%s/%s%s_size%d_%d_",instance_name,
+               gen_verilog_one_pb_graph_pin_full_name_in_hierarchy_parent_node(cur_pin_disable),
+               cur_interc->spice_model->name, cur_interc->fan_in ,
+               des_pb_graph_pin->input_edges[iedge]->nb_mux); 
+      }
+      input_buffer_name = cur_interc ->spice_model->input_buffer->spice_model_name;
+      input_buffer_in = cur_interc ->spice_model->input_buffer->spice_model->ports[0].lib_name;
+      input_buffer_out = cur_interc ->spice_model->input_buffer->spice_model->ports[1].lib_name;
+      set_disable_path = (char*) my_malloc(sizeof(char)*(strlen(input_buffer_path) + 1 + strlen(input_buffer_name)
+                         + 1 + strlen(my_itoa(des_pb_graph_pin->input_edges[iedge]->nb_pin)))); 
+      sprintf(set_disable_path, "%s/%s_%d_", input_buffer_path, input_buffer_name,
+              des_pb_graph_pin->input_edges[iedge]->nb_pin); 
+      
+      fprintf (fp, "set_disable_timing -from %s -to %s %s \n", input_buffer_in, input_buffer_out, set_disable_path);
+      free(input_buffer_path);
+      free(set_disable_path);
     }
-	
-	  // Dumping of the annotations
-	  sdc_dump_annotation (from_path, to_path, fp, cur_interc[0], interc_is_disabled);	
-    }
-	break;
+	else { 
+  	  // Generation of the paths for the dumping of the annotations
+      from_path = (char *) my_malloc(sizeof(char)*(strlen(instance_name) + 1 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin)) + 1));	
+      sprintf (from_path, "%s/%s", instance_name, gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (src_pb_graph_pin));
+      to_path = (char *) my_malloc(sizeof(char)*(strlen(instance_name) + 1 + strlen(gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin)) + 1));	
+      sprintf (to_path, "%s/%s", instance_name, gen_verilog_one_pb_graph_pin_full_name_in_hierarchy (des_pb_graph_pin));
+  
+      // Check if the path is to be disabled or not
+      //if (cur_interc[0]/*.is_loop_breaker*/) {
+        interc_is_disabled = TRUE;
+      //}
+  	
+  	  // Dumping of the annotations
+  	  sdc_dump_annotation (from_path, to_path, fp, cur_interc[0]);	
+      }
+    }	
+    break;
+    
 
   default:
     vpr_printf (TIO_MESSAGE_ERROR, "(File:%s,[LINE%d])Invalid interconnection type for %s (Arch[LINE%d])!\n",
@@ -461,10 +504,9 @@ void verilog_generate_sdc_constrain_pb_types(t_sram_orgz_info* cur_sram_orgz_inf
 
   int itype;
   char* sdc_path;
-  char* fpga_verilog_sdc_pb_types = "pb_types.sdc";
   char* instance_name;
 
-  sdc_path = my_strcat (sdc_dir,fpga_verilog_sdc_pb_types); // Global var
+  sdc_path = my_strcat (sdc_dir, sdc_constrain_pb_type_file_name); // Global var
 
   for (itype = 0; itype < num_types; itype++){
     if (FILL_TYPE == &type_descriptors[itype]){

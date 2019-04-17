@@ -79,7 +79,8 @@ char* sdc_break_loop_file_name = "break_loop.sdc";
 char* sdc_constrain_routing_chan_file_name = "routing_channels.sdc";
 char* sdc_constrain_cb_file_name = "cb.sdc";
 char* sdc_constrain_sb_file_name = "sb.sdc";
-char* sdc_clock_period_file_name = "clock.sdc";
+char* sdc_clock_period_file_name = "clb_clock.sdc";
+char* sdc_constrain_pb_type_file_name = "clb_constraints.sdc";
 
 char* verilog_mux_basis_posfix = "_basis";
 char* verilog_mux_special_basis_posfix = "_special_basis";

@@ -317,6 +317,9 @@ struct s_interconnect {
 
 	char *input_string;
 	char *output_string;
+    /* Baudouin Chauviere: SDC generation */
+    char *loop_breaker_string;
+    /* END */   
 
 	t_pin_to_pin_annotation *annotations; /* [0..num_annotations-1] */
 	int num_annotations;
@@ -336,9 +339,6 @@ struct s_interconnect {
     int fan_out;
     int num_mux;
     int spice_model_sram_offset;
-    /* END */
-    /* Baudouin Chauviere: SDC Generation */
-    boolean is_loop_breaker;
     /* END */
 
 	t_interconnect_power * interconnect_power;
@@ -407,6 +407,8 @@ enum e_pb_graph_pin_type {
 	PB_PIN_INPAD,
 	PB_PIN_OUTPAD,
 	PB_PIN_TERMINAL,
+	PB_PIN_INPUT,
+	PB_PIN_OUTPUT,
 	PB_PIN_CLOCK
 };
 
@@ -539,6 +541,11 @@ struct s_pb_graph_edge {
 	int num_pack_patterns;
 	boolean infer_pattern; /*If TRUE, infer pattern based on patterns connected to it*/
 
+    /* Baudouin Chauviere: SDC Generation */
+    boolean is_disabled;
+    int nb_mux;
+    int nb_pin;
+    /* END */
 };
 typedef struct s_pb_graph_edge t_pb_graph_edge;
 
