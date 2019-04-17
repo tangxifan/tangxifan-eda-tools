@@ -82,15 +82,16 @@ void sdc_dump_annotation(char* from_path, // includes the cell
       fprintf(fp, "0\n");
     } */
 
-  fprintf (fp, "set_max_delay -from %s -to %s ", from_path, to_path);
+  /*fprintf (fp, "set_max_delay -from %s -to %s ", from_path, to_path);
     if (max_value != NULL){
       fprintf (fp,"%s\n",max_value);
     } else {
       fprintf (fp,"0\n");
+    }*/
+    if (max_value != NULL){
+      fprintf (fp, "set_max_delay -from %s -to %s ", from_path, to_path);
+      fprintf (fp,"%s\n",max_value);
     }
-
-
-
 return;
 }
 
@@ -230,22 +231,23 @@ void dump_sdc_pb_graph_pin_interc(t_sram_orgz_info* cur_sram_orgz_info,
         cur_pin_disable = src_pb_graph_pin;
       }
       if (cur_interc->spice_model->input_buffer == NULL) {
-        vpr_printf (TIO_MESSAGE_ERROR, "The loop_breaker annotation can only be applied when there is an input buffer"); 
+        vpr_printf (TIO_MESSAGE_ERROR,
+                    "The loop_breaker annotation can only be applied when there is an input buffer"); 
       }
       input_buffer_path = (char *) my_malloc(sizeof(char)*(strlen(instance_name) + 1 +
       strlen (gen_verilog_one_pb_graph_pin_full_name_in_hierarchy_parent_node(cur_pin_disable)) + 1 +
       strlen (cur_interc->spice_model->name) + 5 + strlen(my_itoa(cur_interc->fan_in)) + 1 +
       strlen (my_itoa(des_pb_graph_pin->input_edges[iedge]->nb_mux)) + 1 + 1)); 
       if (0 == strcmp("",gen_verilog_one_pb_graph_pin_full_name_in_hierarchy_parent_node(cur_pin_disable))) {
-      sprintf (input_buffer_path, "%s/%s_size%d_%d_",instance_name,
+        sprintf (input_buffer_path, "%s/%s_size%d_%d_",instance_name,
                cur_interc->spice_model->name, cur_interc->fan_in, 
                des_pb_graph_pin->input_edges[iedge]->nb_mux); 
       }
       else {
-      sprintf (input_buffer_path, "%s/%s%s_size%d_%d_",instance_name,
-               gen_verilog_one_pb_graph_pin_full_name_in_hierarchy_parent_node(cur_pin_disable),
-               cur_interc->spice_model->name, cur_interc->fan_in ,
-               des_pb_graph_pin->input_edges[iedge]->nb_mux); 
+        sprintf (input_buffer_path, "%s/%s%s_size%d_%d_",instance_name,
+                 gen_verilog_one_pb_graph_pin_full_name_in_hierarchy_parent_node(cur_pin_disable),
+                 cur_interc->spice_model->name, cur_interc->fan_in ,
+                 des_pb_graph_pin->input_edges[iedge]->nb_mux); 
       }
       input_buffer_name = cur_interc ->spice_model->input_buffer->spice_model_name;
       input_buffer_in = cur_interc ->spice_model->input_buffer->spice_model->ports[0].lib_name;
