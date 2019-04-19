@@ -1891,6 +1891,7 @@ static void map_loop_breaker_onto_edges(char* loop_breaker_string, int line_num,
     *cur_node = (t_pb_graph_node*) my_realloc(*cur_node, sizeof(t_pb_graph_node) * (msb_pb + 1));
     if (tmp_node->parent_pb_graph_node == NULL) {/* if pb_graph_head */ 
       cur_node[0] = tmp_node;
+      index_cur_node = 1;
     }
     else {
       for (i_pb_type_in_mode = 0 ;
