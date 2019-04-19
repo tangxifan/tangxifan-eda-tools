@@ -92,7 +92,7 @@ void sdc_dump_annotation(char* from_path, // includes the cell
       fprintf (fp,"0\n");
     }*/
     if (max_value != NULL){
-      fprintf (fp, "set_max_delay -from %s -to %s ", from_path, to_path);
+      fprintf (fp, "set_max_delay -combinational_from_to -from %s -to %s ", from_path, to_path);
       fprintf (fp,"%f\n", max_value);
     }
 return;
