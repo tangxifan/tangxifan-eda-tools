@@ -387,7 +387,7 @@ char** assign_post_routing_wired_lut_truth_table(int lut_output_vpack_net_num,
   (*truth_table_length) = 1;
 
   /* Malloc */
-  tt[0] = (char*)my_malloc((lut_size + 3) * sizeof(char));
+  tt[0] = (char*)my_malloc((lut_size + strlen(" 1") + 1) * sizeof(char));
   /* Fill the truth table !!! */
   for (inet = 0; inet < lut_size; inet++) {
     /* Find the vpack_num in the lut_input_pin, we fix it to be 1 */
@@ -398,7 +398,7 @@ char** assign_post_routing_wired_lut_truth_table(int lut_output_vpack_net_num,
       tt[0][inet] = '-'; 
     }
   }
-  memcpy(tt[0] + lut_size, " 1", 3);
+  strcpy(tt[0] + lut_size, " 1");
 
   return tt;
 }
@@ -569,6 +569,11 @@ void adapt_truth_table_for_frac_lut(t_pb_graph_pin* lut_out_pb_graph_pin,
   /* find the corresponding SPICE model output port and assoicated lut_output_mask */
   lut_frac_level = get_pb_graph_pin_lut_frac_level(lut_out_pb_graph_pin);
   lut_output_mask = get_pb_graph_pin_lut_output_mask(lut_out_pb_graph_pin);
+
+  /* For OPEN lut_frac_level, no adaption needed */
+  if (OPEN == lut_frac_level) {
+    return;
+  }
 
   /* Apply modification to the truth table */
   for (i = 0; i < truth_table_length; i++) {

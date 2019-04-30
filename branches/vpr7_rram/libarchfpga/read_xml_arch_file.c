@@ -1398,7 +1398,7 @@ static void ProcessInterconnect(INOUTP ezxml_t Parent, t_mode * mode) {
 
             /* Baudouin Chauviere: SDC generation */
             /* Check if property exists */
-			if (Prop = FindProperty(Cur, "loop_breaker", FALSE)) { 
+			if (Prop == FindProperty(Cur, "loop_breaker", FALSE)) { 
             /* Check if property exists and is true */
 			/*if (0 == strcmp(Prop,"TRUE") || 0 == strcmp(Prop,"true")) {*/
 			  if (0 == strcmp(Cur->name, "direct")) {
