@@ -3,624 +3,600 @@
 !_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
-!_TAG_PROGRAM_VERSION	5.6	//
-ARG_CHAR	./Options.h	/^{ARG_INT,ARG_FLOAT,ARG_CHAR,ARG_DOUBLE};$/;"	e	enum:opt_val_type
-ARG_DEF	./Options.h	/^{ARG_DEF,ARG_NONDEF};$/;"	e	enum:opt_default
-ARG_DOUBLE	./Options.h	/^{ARG_INT,ARG_FLOAT,ARG_CHAR,ARG_DOUBLE};$/;"	e	enum:opt_val_type
-ARG_FLOAT	./Options.h	/^{ARG_INT,ARG_FLOAT,ARG_CHAR,ARG_DOUBLE};$/;"	e	enum:opt_val_type
-ARG_INT	./Options.h	/^{ARG_INT,ARG_FLOAT,ARG_CHAR,ARG_DOUBLE};$/;"	e	enum:opt_val_type
-ARG_MAND	./Options.h	/^{ARG_MAND,ARG_NONMAND};$/;"	e	enum:opt_manda
-ARG_NONDEF	./Options.h	/^{ARG_DEF,ARG_NONDEF};$/;"	e	enum:opt_default
-ARG_NONMAND	./Options.h	/^{ARG_MAND,ARG_NONMAND};$/;"	e	enum:opt_manda
-ARG_NONVAL	./Options.h	/^{ARG_NONVAL,ARG_WITHVAL};$/;"	e	enum:opt_with_val
-ARG_WITHVAL	./Options.h	/^{ARG_NONVAL,ARG_WITHVAL};$/;"	e	enum:opt_with_val
-BLE_IN	./blearch_parser.h	/^{BLE_IN,$/;"	e	enum:ble_port_type
-BLE_LATCH	./mpack_types.h	/^ BLE_LATCH};$/;"	e	enum:ble_inout_type
-BLE_ND	./blearch_parser.h	/^BLE_ND,$/;"	e	enum:ble_port_type
-BLE_NORMAL	./mpack_types.h	/^{BLE_NORMAL,$/;"	e	enum:ble_inout_type
-BLE_OUT	./blearch_parser.h	/^BLE_OUT,$/;"	e	enum:ble_port_type
-BLE_PI	./mpack_types.h	/^ BLE_PI,$/;"	e	enum:ble_inout_type
-BLE_PO	./mpack_types.h	/^ BLE_PO,$/;"	e	enum:ble_inout_type
-BLIF_GATE	./blif_parser.h	/^  BLIF_GATE,$/;"	e	enum:e_blif_type
-BLIF_LATCH	./blif_parser.h	/^  BLIF_LATCH,$/;"	e	enum:e_blif_type
-BLIF_LIBGATE	./blif_parser.h	/^  BLIF_LIBGATE,$/;"	e	enum:e_blif_type
-BLIF_NONE	./blif_parser.h	/^  BLIF_NONE,$/;"	e	enum:e_blif_type
-BUFSIZE	./util.h	14;"	d
-DEBUG	./util.h	8;"	d
-FALSE	./util.h	/^{TRUE,FALSE};$/;"	e	enum:e_bool
-IN	./util.h	10;"	d
-INOUT	./util.h	12;"	d
-ND_ADD	./mpack_types.h	/^ ND_ADD,$/;"	e	enum:lgknd_type
-ND_AND	./mpack_types.h	/^{ND_AND,$/;"	e	enum:lgknd_type
-ND_BUF	./mpack_types.h	/^ ND_BUF,$/;"	e	enum:lgknd_type
-ND_CARRY	./mpack_types.h	/^ ND_CARRY,$/;"	e	enum:lgknd_type
-ND_INV	./mpack_types.h	/^ ND_INV,$/;"	e	enum:lgknd_type
-ND_LATCH	./mpack_types.h	/^ ND_LATCH,$/;"	e	enum:lgknd_type
-ND_LUT	./mpack_types.h	/^ ND_LUT,$/;"	e	enum:lgknd_type
-ND_NADD	./mpack_types.h	/^ ND_NADD,$/;"	e	enum:lgknd_type
-ND_NAND	./mpack_types.h	/^ ND_NAND,$/;"	e	enum:lgknd_type
-ND_NCARRY	./mpack_types.h	/^ ND_NCARRY,$/;"	e	enum:lgknd_type
-ND_ONE	./mpack_types.h	/^ ND_ONE,$/;"	e	enum:lgknd_type
-ND_PI	./mpack_types.h	/^ ND_PI,$/;"	e	enum:lgknd_type
-ND_PO	./mpack_types.h	/^ ND_PO};$/;"	e	enum:lgknd_type
-ND_XNOR	./mpack_types.h	/^ ND_XNOR,$/;"	e	enum:lgknd_type
-ND_XOR	./mpack_types.h	/^ ND_XOR,$/;"	e	enum:lgknd_type
-ND_ZERO	./mpack_types.h	/^ ND_ZERO,$/;"	e	enum:lgknd_type
-OP_ALPHA	./Options.h	/^ OP_ALPHA,$/;"	e	enum:opt_offset
-OP_BETA	./Options.h	/^ OP_BETA,$/;"	e	enum:opt_offset
-OP_BLEARCH	./Options.h	/^ OP_BLEARCH,$/;"	e	enum:opt_offset
-OP_BLIF	./Options.h	/^{OP_BLIF,$/;"	e	enum:opt_offset
-OP_END	./Options.h	/^ OP_END};$/;"	e	enum:opt_offset
-OP_HELP	./Options.h	/^ OP_HELP,$/;"	e	enum:opt_offset
-OP_INTER_CLUSTER_DELAY	./Options.h	/^ OP_INTER_CLUSTER_DELAY,$/;"	e	enum:opt_offset
-OP_MPACKBLIF	./Options.h	/^ OP_MPACKBLIF,$/;"	e	enum:opt_offset
-OP_NET	./Options.h	/^ OP_NET,$/;"	e	enum:opt_offset
-OP_PACKER_ALGORITHM	./Options.h	/^ OP_PACKER_ALGORITHM,$/;"	e	enum:opt_offset
-OP_PACKER_AREA_ATTRACTION	./Options.h	/^ OP_PACKER_AREA_ATTRACTION,$/;"	e	enum:opt_offset
-OP_PATTERN_MEMBER_TYPE	./Options.h	/^ OP_PATTERN_MEMBER_TYPE,$/;"	e	enum:opt_offset
-OP_READ_STDLIB_BLIF	./Options.h	/^ OP_READ_STDLIB_BLIF,$/;"	e	enum:opt_offset
-OP_STATS	./Options.h	/^ OP_STATS,$/;"	e	enum:opt_offset
-OP_TIMING_ANALYSIS	./Options.h	/^ OP_TIMING_ANALYSIS,$/;"	e	enum:opt_offset
-OP_VERBOSE	./Options.h	/^ OP_VERBOSE,$/;"	e	enum:opt_offset
-OP_VPRARCH	./Options.h	/^ OP_VPRARCH,$/;"	e	enum:opt_offset
-OUT	./util.h	11;"	d
-PACKER_ALGORITHM_PATTERN	./mpack_conf.h	/^PACKER_ALGORITHM_PATTERN,$/;"	e	enum:e_packer_algorithm
-PACKER_ALGORITHM_SAT	./mpack_conf.h	/^PACKER_ALGORITHM_SAT,$/;"	e	enum:e_packer_algorithm
-PACKER_ALGORITHM_SEED	./mpack_conf.h	/^PACKER_ALGORITHM_SEED,$/;"	e	enum:e_packer_algorithm
-PACKER_AREA_ATTRACTION_AAPACK	./mpack_conf.h	/^PACKER_AREA_ATTRACTION_AAPACK,$/;"	e	enum:e_packer_area_attraction
-PACKER_AREA_ATTRACTION_VPACK	./mpack_conf.h	/^PACKER_AREA_ATTRACTION_VPACK,$/;"	e	enum:e_packer_area_attraction
-PATTERN_MEMBER_COMBONLY	./mpack_conf.h	/^PATTERN_MEMBER_COMBONLY,$/;"	e	enum:e_pattern_member_type
-PATTERN_MEMBER_NORMAL	./mpack_conf.h	/^PATTERN_MEMBER_NORMAL,$/;"	e	enum:e_pattern_member_type
-TRUE	./util.h	/^{TRUE,FALSE};$/;"	e	enum:e_bool
-abs	./util.h	16;"	d
-add_buf_latches	./lgkntwk_common.c	/^int add_buf_latches(t_lgkntwk* lgkntwk,$/;"	f
-add_input_bufs_lgknd_lgkntwk	./lgkntwk_common.c	/^int add_input_bufs_lgknd_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
-add_num	./mpack_conf.h	/^  int add_num;$/;"	m	struct:s_libgate_stats
-add_one_buf_lgknd	./lgkntwk_common.c	/^int add_one_buf_lgknd(t_lgknd* cur,$/;"	f
-add_pi_latch_buf	./lgkntwk_common.c	/^int add_pi_latch_buf(t_lgknd* cur,$/;"	f
-alpha	./mpack_conf.h	/^  float alpha;$/;"	m	struct:s_mpack_conf
-and_num	./mpack_conf.h	/^  int and_num;$/;"	m	struct:s_libgate_stats
-area	./blearch_parser.h	/^  float area;$/;"	m	struct:s_ble_arch
-assign_ble_candidates_ptr	./blearch_parser.c	/^int assign_ble_candidates_ptr(t_ble_arch* ble_arch)$/;"	f
-assign_conkts_to_lgknds	./setup_mpack.c	/^int assign_conkts_to_lgknds(t_blif_arch* blif_arch,$/;"	f
-assign_conkts_to_luts	./setup_mpack.c	/^int assign_conkts_to_luts(t_blif_arch* blif_arch,$/;"	f
-assign_inv_2cell_muxes	./sat_solver.c	/^int assign_inv_2cell_muxes(t_ble_arch* ble_arch,$/;"	f
-assign_inv_3cell_muxes	./sat_solver.c	/^int assign_inv_3cell_muxes(t_ble_arch* ble_arch,$/;"	f
-assign_latch	./setup_mpack.c	/^int assign_latch(t_lgkntwk* lgkntwk,$/;"	f
-assign_latch_conkts	./setup_mpack.c	/^int assign_latch_conkts(t_blif_arch* blif_arch,$/;"	f
-assign_lgknds_net_name	./setup_mpack.c	/^int assign_lgknds_net_name(t_blif_arch* blif_arch,$/;"	f
-assign_libgate	./setup_mpack.c	/^int assign_libgate(t_lgkntwk* lgkntwk,$/;"	f
-assign_libgate_conkts	./setup_mpack.c	/^int assign_libgate_conkts(t_blif_arch* blif_arch,$/;"	f
-assign_libgate_latch_conkt_po	./setup_mpack.c	/^int assign_libgate_latch_conkt_po(t_blif_arch* blif_arch,$/;"	f
-assign_logic_nodes	./setup_mpack.c	/^int assign_logic_nodes(t_blif_arch* blif_arch,$/;"	f
-assign_lut	./setup_mpack.c	/^int assign_lut(t_lgkntwk* lgkntwk,$/;"	f
-assign_lut_conkts	./setup_mpack.c	/^int assign_lut_conkts(t_blif_arch* blif_arch,$/;"	f
-assign_lut_latch_conkts	./setup_mpack.c	/^int assign_lut_latch_conkts(t_blif_arch* blif_arch,$/;"	f
-assign_lut_lgknds_net_name	./setup_mpack.c	/^int assign_lut_lgknds_net_name(t_blif_arch* blif_arch,$/;"	f
-assign_lut_logic_nodes	./setup_mpack.c	/^int assign_lut_logic_nodes(t_blif_arch* blif_arch,$/;"	f
-assign_pi	./setup_mpack.c	/^int assign_pi(t_lgkntwk* lgkntwk,$/;"	f
-assign_pi_conkts	./setup_mpack.c	/^int assign_pi_conkts(t_blif_arch* blif_arch,$/;"	f
-assign_po	./setup_mpack.c	/^int assign_po(t_lgkntwk* lgkntwk,$/;"	f
-assign_po_conkts	./setup_mpack.c	/^int assign_po_conkts(t_blif_arch* blif_arch,$/;"	f
-avg_lt10	./mpack_conf.h	/^  float avg_lt10;$/;"	m	struct:s_stats
-back_annotate_net_name	./main.c	/^void back_annotate_net_name(t_blif_arch* blif_arch,$/;"	f
-beta	./mpack_conf.h	/^  float beta;$/;"	m	struct:s_mpack_conf
-blank_ble_info	./mpack_util.c	/^int blank_ble_info(t_ble_arch* ble_arch,$/;"	f
-ble_arch	./mpack_conf.h	/^  char* ble_arch;$/;"	m	struct:s_mpack_conf
-ble_arch_parser_flow	./parsers.c	/^void ble_arch_parser_flow(char* ble_arch_file,$/;"	f
-ble_cell_idx	./mpack_types.h	/^  int ble_cell_idx;$/;"	m	struct:s_lgknd
-ble_fill_rate	./mpack_conf.h	/^  float ble_fill_rate;$/;"	m	struct:s_stats
-ble_idx	./mpack_types.h	/^  int ble_idx;$/;"	m	struct:s_lgknd
-ble_info	./mpack_types.h	/^  void* ble_info;$/;"	m	struct:s_lgknd
-ble_inout_type	./mpack_types.h	/^enum ble_inout_type$/;"	g
-ble_num	./mpack_conf.h	/^  int ble_num;$/;"	m	struct:s_stats
-ble_port_type	./blearch_parser.h	/^enum ble_port_type$/;"	g
-blend_idx	./blearch_parser.h	/^  int blend_idx;$/;"	m	struct:s_bleport
-blend_lgknd_input_idxes	./mpack_types.h	/^  int** blend_lgknd_input_idxes;$/;"	m	struct:s_ble_info
-blend_lgknds	./mpack_types.h	/^  t_lgknd** blend_lgknds;$/;"	m	struct:s_ble_info
-blend_muxes	./mpack_types.h	/^  int** blend_muxes;$/;"	m	struct:s_ble_info
-blend_num	./blearch_parser.h	/^  int blend_num;$/;"	m	struct:s_ble_arch
-blend_num	./mpack_types.h	/^  int blend_num;$/;"	m	struct:s_ble_info
-blend_port_used	./mpack_types.h	/^  int** blend_port_used;$/;"	m	struct:s_ble_info
-blend_used	./mpack_types.h	/^  int* blend_used;$/;"	m	struct:s_ble_info
-blends	./blearch_parser.h	/^  t_blend* blends;$/;"	m	struct:s_ble_arch
-blif	./mpack_conf.h	/^  char* blif;$/;"	m	struct:s_mpack_conf
-blif_parser	./blif_parser.c	/^int blif_parser(IN char* blifname,$/;"	f
-blif_parser_flow	./parsers.c	/^void blif_parser_flow(char* blifname,$/;"	f
-bool	./util.h	/^typedef enum e_bool bool;$/;"	t	typeref:enum:e_bool
-bubble_sort_depth_ble_dfsnds	./check_ble_arch.c	/^int bubble_sort_depth_ble_dfsnds(int num_dfsnd,$/;"	f
-bubble_sort_depth_lgk_dfsnds	./lgkntwk_common.c	/^int bubble_sort_depth_lgk_dfsnds(int num_dfsnd,$/;"	f
-buf_num	./mpack_conf.h	/^  int buf_num;$/;"	m	struct:s_libgate_stats
-build_nets	./blif_parser.c	/^t_conkt* build_nets(t_blif_arch* blif_arch)$/;"	f
-cand_num	./blearch_parser.h	/^  int cand_num;$/;"	m	struct:s_bleport
-cands	./blearch_parser.h	/^  t_bleport** cands;$/;"	m	struct:s_bleport
-candtoks	./blearch_parser.h	/^  char** candtoks;$/;"	m	struct:s_bleport
-carry_num	./mpack_conf.h	/^  int carry_num;$/;"	m	struct:s_libgate_stats
-cat_ble_lists	./mpack_util.c	/^t_ble_info* cat_ble_lists(t_ble_info* head1,$/;"	f
-cat_conkt_lists	./blif_parser.c	/^t_conkt* cat_conkt_lists(t_conkt* head1,$/;"	f
-cat_lgknd_lists	./mpack_util.c	/^t_lgknd* cat_lgknd_lists(t_lgknd* head1,$/;"	f
-cat_llists	./util.c	/^t_llist* cat_llists(t_llist* head1,$/;"	f
-cell_delay	./blearch_parser.h	/^  float cell_delay;$/;"	m	struct:s_ble_arch
-check_all_mapped	./packing.c	/^int check_all_mapped(t_lgkntwk* lgkntwk)$/;"	f
-check_blank_ble_info	./mpack_util.c	/^int check_blank_ble_info(t_ble_arch* ble_arch,$/;"	f
-check_ble_absorb_lgknd_output	./mpack_util.c	/^int check_ble_absorb_lgknd_output(t_ble_info* ble_info,$/;"	f
-check_ble_arch	./check_ble_arch.c	/^int check_ble_arch(t_ble_arch* ble_arch)$/;"	f
-check_ble_input_conkted_cells	./sat_solver.c	/^int check_ble_input_conkted_cells(t_ble_arch* ble_arch,$/;"	f
-check_bleport_conkt	./mpack_util.c	/^int check_bleport_conkt(t_ble_arch* ble_arch,$/;"	f
-check_blif_netlist	./setup_mpack.c	/^int check_blif_netlist(t_blif_arch* blif_arch)$/;"	f
-check_cell_input_number	./check_ble_arch.c	/^int check_cell_input_number(t_ble_arch* ble_arch)$/;"	f
-check_cells_conkted	./check_ble_arch.c	/^int check_cells_conkted(t_blend* cella,$/;"	f
-check_conkt_ble_input	./check_ble_arch.c	/^int check_conkt_ble_input(t_bleport* port,$/;"	f
-check_fully_sat2_cell	./check_ble_arch.c	/^int** check_fully_sat2_cell(t_ble_arch* ble_arch,$/;"	f
-check_fully_sat3_cell	./check_ble_arch.c	/^int** check_fully_sat3_cell(t_ble_arch* ble_arch,$/;"	f
-check_independent_cell	./check_ble_arch.c	/^int check_independent_cell(t_ble_arch* ble_arch,$/;"	f
-check_inv_cell	./check_ble_arch.c	/^int check_inv_cell(t_ble_arch* ble_arch,$/;"	f
-check_lgknd_input_lgknd_output_conkt	./sat_solver.c	/^int check_lgknd_input_lgknd_output_conkt(t_lgknd* src,$/;"	f
-check_lgknd_input_remap	./sat_api.c	/^int check_lgknd_input_remap(t_ble_arch* ble_arch,$/;"	f
-check_lgkntwk	./lgkntwk_common.c	/^int check_lgkntwk(t_lgkntwk* lgkntwk)$/;"	f
-check_lut_blif_netlist	./setup_mpack.c	/^int check_lut_blif_netlist(t_blif_arch* blif_arch) {$/;"	f
-check_mpackopts	./config_mpack.c	/^int check_mpackopts(t_mpack_conf* mpackopts_ptr)$/;"	f
-check_opt_list	./read_opts.c	/^int check_opt_list()$/;"	f
-check_port_conkt_cell	./check_ble_arch.c	/^int* check_port_conkt_cell(t_ble_arch* ble_arch,$/;"	f
-check_sat	./check_ble_arch.c	/^int check_sat(int sat_type,$/;"	f
-check_sat2_conkts	./check_ble_arch.c	/^int check_sat2_conkts(t_ble_arch* ble_arch,$/;"	f
-check_sat3_conkts	./check_ble_arch.c	/^int check_sat3_conkts(t_ble_arch* ble_arch,$/;"	f
-check_sat_fail	./sat_solver.c	/^int check_sat_fail(t_lgknd* cur)$/;"	f
-check_shared_inputs	./check_ble_arch.c	/^int check_shared_inputs(t_bleport* porta,$/;"	f
-check_tree_conkts	./check_ble_arch.c	/^int check_tree_conkts(t_blend* root,$/;"	f
-clear_po_outputs	./setup_mpack.c	/^int clear_po_outputs(t_lgkntwk* lgkntwk)$/;"	f
-clear_tmp_redund_output_num	./lgkntwk_common.c	/^int clear_tmp_redund_output_num(int lgknd_num,$/;"	f
-climb_pack	./climb.c	/^int climb_pack(t_lgkntwk* lgkntwk,$/;"	f
-clk	./blif_parser.h	/^  char* clk;$/;"	m	struct:s_blif_latch
-clk_names	./blif_parser.h	/^  t_blif_ios* clk_names;$/;"	m	struct:s_blif_arch
-clk_num	./blif_parser.h	/^  int clk_num;$/;"	m	struct:s_blif_arch
-cmetal	./blearch_parser.h	/^  float cmetal;$/;"	m	struct:s_ble_arch
-coarse_pack	./packing.c	/^t_ble_info* coarse_pack(t_lgkntwk* lgkntwk,$/;"	f
-comb_num	./mpack_types.h	/^  int comb_num;$/;"	m	struct:s_lgknd
-config_mpack	./config_mpack.c	/^int config_mpack(t_mpack_conf* mpackopts_ptr,$/;"	f
-conkt	./blif_parser.h	/^  t_conkt* conkt;$/;"	m	struct:s_blif_ios
-copy_ble_info	./mpack_util.c	/^int copy_ble_info(t_ble_arch* ble_arch,$/;"	f
-count_cell_used	./climb.c	/^int count_cell_used(t_ble_info* ble_info,$/;"	f
-count_lgknds_comb_num	./sat_api.c	/^int count_lgknds_comb_num(int lgknd_num,$/;"	f
-count_lgknds_comb_num_ble	./sat_api.c	/^int count_lgknds_comb_num_ble(t_ble_info* ble_info,$/;"	f
-count_used_ble_outputs	./sat_api.c	/^int count_used_ble_outputs(t_ble_info* ble_info,$/;"	f
-count_used_blend	./sat_api.c	/^int count_used_blend(t_ble_info* ble_info,$/;"	f
-create_ble_list	./mpack_util.c	/^t_ble_info* create_ble_list(int len,$/;"	f
-create_conkt_list	./blif_parser.c	/^t_conkt* create_conkt_list(int len,$/;"	f
-create_lgknd_list	./mpack_util.c	/^t_lgknd* create_lgknd_list(int len,$/;"	f
-create_llist	./util.c	/^t_llist* create_llist(int len,$/;"	f
-critical_delay	./mpack_types.h	/^  float critical_delay;$/;"	m	struct:s_lgkntwk
-critical_delay_lgkntwk	./lgkntwk_common.c	/^float critical_delay_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
-critical_input_paths_affect_lgknd	./lgkntwk_common.c	/^int critical_input_paths_affect_lgknd(t_lgknd* lgknd,$/;"	f
-critical_output_paths_affect_lgknd	./lgkntwk_common.c	/^int critical_output_paths_affect_lgknd(t_lgknd* lgknd,$/;"	f
-critical_paths_affect_lgkntwk	./lgkntwk_common.c	/^int critical_paths_affect_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
-cur_edge	./mpack_types.h	/^  int cur_edge;$/;"	m	struct:s_lgknd
-curin	./blearch_parser.h	/^  int curin;$/;"	m	struct:s_blend
-curnd	./blearch_parser.h	/^  int curnd;$/;"	m	struct:s_ble_arch
-delay	./mpack_types.h	/^  float delay;$/;"	m	struct:s_edge
-delay	./mpack_types.h	/^  float delay;$/;"	m	struct:s_lgknd
-depth	./blearch_parser.h	/^  int depth;$/;"	m	struct:s_blend
-depth	./blearch_parser.h	/^  int depth;$/;"	m	struct:s_bleport
-depth	./mpack_types.h	/^  int depth;$/;"	m	struct:s_lgknd
-depth_local_router	./sat_api.c	/^int depth_local_router(int sat_lgknd_num,$/;"	f
-depth_source	./mpack_types.h	/^  float depth_source;$/;"	m	struct:s_lgknd
-depth_weight	./mpack_types.h	/^  float depth_weight;$/;"	m	struct:s_edge
-depth_weighting_lgkntwk	./lgkntwk_common.c	/^int depth_weighting_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
-detect_blend_conflict	./sat_solver.c	/^int detect_blend_conflict(t_ble_arch* ble_arch,$/;"	f
-determine_max_sat_type	./sat_api.c	/^int determine_max_sat_type(t_ble_arch* ble_arch,$/;"	f
-determine_unused_blend_num	./sat_api.c	/^int determine_unused_blend_num(t_ble_arch* ble_arch,$/;"	f
-dff_td	./arch_timing.h	/^static float dff_td = 1.24e-10;$/;"	v
-dff_tsu	./arch_timing.h	/^static float dff_tsu = 6.6e-11;$/;"	v
-dfs_ble_arch	./check_ble_arch.c	/^int dfs_ble_arch(t_ble_arch* ble_arch,$/;"	f
-dfs_lgknd_tree_depth	./lgkntwk_common.c	/^int dfs_lgknd_tree_depth(t_lgknd* root,$/;"	f
-dfs_lgkntwk_depth	./lgkntwk_common.c	/^int dfs_lgkntwk_depth(t_lgkntwk* lgkntwk,$/;"	f
-dfsed	./mpack_types.h	/^  int dfsed;$/;"	m	struct:s_lgknd
-dptr	./util.h	/^  void* dptr;$/;"	m	struct:s_llist
-e_blif_type	./blif_parser.h	/^enum e_blif_type$/;"	g
-e_bool	./util.h	/^enum e_bool$/;"	g
-e_packer_algorithm	./mpack_conf.h	/^enum e_packer_algorithm {$/;"	g
-e_packer_area_attraction	./mpack_conf.h	/^enum e_packer_area_attraction {$/;"	g
-e_pattern_member_type	./mpack_conf.h	/^enum e_pattern_member_type {$/;"	g
-echo_libgate_stats	./setup_mpack.c	/^void echo_libgate_stats(t_stats* stats)$/;"	f
-fanout_buf_num	./mpack_types.h	/^  int fanout_buf_num;$/;"	m	struct:s_lgknd
-ff_delay	./mpack_types.h	/^  float ff_delay;$/;"	m	struct:s_delay_info
-ff_mux_delay	./mpack_types.h	/^  float ff_mux_delay;$/;"	m	struct:s_delay_info
-ff_tsu	./mpack_types.h	/^  float ff_tsu;$/;"	m	struct:s_delay_info
-fill_ble	./climb.c	/^int fill_ble(t_lgkntwk* lgkntwk,$/;"	f
-fill_ble_arch_blends	./blearch_parser.c	/^int fill_ble_arch_blends(t_ble_arch* ble_arch,$/;"	f
-fill_ble_arch_combouts	./blearch_parser.c	/^int fill_ble_arch_combouts(t_ble_arch* ble_arch,$/;"	f
-fill_ble_arch_inputs	./blearch_parser.c	/^int fill_ble_arch_inputs(t_ble_arch* ble_arch,$/;"	f
-fill_ble_arch_name	./blearch_parser.c	/^int fill_ble_arch_name(t_ble_arch* ble_arch,$/;"	f
-fill_ble_arch_outputs	./blearch_parser.c	/^int fill_ble_arch_outputs(t_ble_arch* ble_arch,$/;"	f
-fill_blif_arch_clk	./blif_parser.c	/^int fill_blif_arch_clk(t_blif_arch* blif_arch,$/;"	f
-fill_blif_arch_gates	./blif_parser.c	/^int fill_blif_arch_gates(t_blif_arch* blif_arch,$/;"	f
-fill_blif_arch_inputs	./blif_parser.c	/^int fill_blif_arch_inputs(t_blif_arch* blif_arch,$/;"	f
-fill_blif_arch_latches	./blif_parser.c	/^int fill_blif_arch_latches(t_blif_arch* blif_arch,$/;"	f
-fill_blif_arch_libgates	./blif_parser.c	/^int fill_blif_arch_libgates(t_blif_arch* blif_arch,$/;"	f
-fill_blif_arch_model	./blif_parser.c	/^int fill_blif_arch_model(t_blif_arch* blif_arch,$/;"	f
-fill_blif_arch_outputs	./blif_parser.c	/^int fill_blif_arch_outputs(t_blif_arch* blif_arch,$/;"	f
-find_min_fanout_pred	./lgkntwk_common.c	/^int find_min_fanout_pred(t_lgknd* lgknd,$/;"	f
-free_all_resrc	./main.c	/^void free_all_resrc(t_blif_arch* blif_arch,$/;"	f
-free_ble_arch	./blearch_parser.c	/^void free_ble_arch(t_ble_arch* ble_arch)$/;"	f
-free_ble_comb_out_cell	./sat_solver.c	/^int free_ble_comb_out_cell(t_ble_arch* ble_arch,$/;"	f
-free_ble_info	./mpack_util.c	/^void free_ble_info(t_ble_info* ble_info)$/;"	f
-free_ble_info_list	./mpack_util.c	/^void free_ble_info_list(t_ble_info* head)$/;"	f
-free_ble_port	./blearch_parser.c	/^void free_ble_port(t_bleport* ble_port)$/;"	f
-free_blend	./blearch_parser.c	/^void free_blend(t_blend* blend)$/;"	f
-free_blif_arch	./blif_parser.c	/^void free_blif_arch(t_blif_arch* blif_arch)$/;"	f
-free_blif_gate	./blif_parser.c	/^void free_blif_gate(t_blif_gate* blif_gate)$/;"	f
-free_blif_ios	./blif_parser.c	/^void free_blif_ios(t_blif_ios* blif_ios)$/;"	f
-free_blif_latch	./blif_parser.c	/^void free_blif_latch(t_blif_latch* blif_latch)$/;"	f
-free_blif_libgate	./blif_parser.c	/^void free_blif_libgate(t_blif_libgate* blif_libgate)$/;"	f
-free_conkt	./blif_parser.c	/^void free_conkt(t_conkt* conkt)$/;"	f
-free_conkts_list	./blif_parser.c	/^void free_conkts_list(t_conkt* head)$/;"	f
-free_edge	./mpack_util.c	/^void free_edge(t_edge* edge) {$/;"	f
-free_int_ptr_ary	./util.c	/^int free_int_ptr_ary(int len_ary,$/;"	f
-free_lgknd	./mpack_util.c	/^void free_lgknd(t_lgknd* lgknd)$/;"	f
-free_lgknd_inputs_in_ble	./sat_api.c	/^int free_lgknd_inputs_in_ble(t_ble_arch* ble_arch,$/;"	f
-free_lgkntwk	./mpack_util.c	/^void free_lgkntwk(t_lgkntwk* lgkntwk)$/;"	f
-free_tokens	./util.c	/^void free_tokens(char** tokens,$/;"	f
-full_freadlns	./util.c	/^char*  full_freadlns(char* buf,$/;"	f
-gate_delay	./mpack_types.h	/^  float gate_delay;$/;"	m	struct:s_delay_info
-gate_num	./blif_parser.h	/^  int gate_num;$/;"	m	struct:s_blif_arch
-gates	./blif_parser.h	/^  t_blif_gate* gates;$/;"	m	struct:s_blif_arch
-gen_lgknd_ble_cands	./sat_solver.c	/^int** gen_lgknd_ble_cands(int num_cands,$/;"	f
-get_port_used_mux	./check_ble_arch.c	/^int get_port_used_mux(t_bleport* port,$/;"	f
-help	./mpack_conf.h	/^  int help;$/;"	m	struct:s_mpack_conf
-idx	./blearch_parser.h	/^  int idx; $/;"	m	struct:s_blend
-idx	./blearch_parser.h	/^  int idx;$/;"	m	struct:s_bleport
-idx	./blif_parser.h	/^  int idx;$/;"	m	struct:s_blif_gate
-idx	./blif_parser.h	/^  int idx;$/;"	m	struct:s_blif_ios
-idx	./blif_parser.h	/^  int idx;$/;"	m	struct:s_blif_latch
-idx	./blif_parser.h	/^  int idx;$/;"	m	struct:s_blif_libgate
-idx	./blif_parser.h	/^  int idx;$/;"	m	struct:s_conkt
-idx	./mpack_types.h	/^  int idx;$/;"	m	struct:s_ble_info
-idx	./mpack_types.h	/^  int idx;$/;"	m	struct:s_lgknd
-in_edges	./mpack_types.h	/^  t_edge* in_edges;$/;"	m	struct:s_lgknd
-init_ble_arch	./blearch_parser.c	/^void init_ble_arch(t_ble_arch* ble_arch)$/;"	f
-init_ble_info	./mpack_util.c	/^int init_ble_info(t_ble_arch* ble_arch,$/;"	f
-init_blend	./blearch_parser.c	/^void init_blend(t_blend* blend)$/;"	f
-init_bleport	./blearch_parser.c	/^void init_bleport(t_bleport* bleport)$/;"	f
-init_blif_arch	./blif_parser.c	/^int init_blif_arch(t_blif_arch* blif_arch)$/;"	f
-init_conkt	./blif_parser.c	/^void init_conkt(t_conkt* conkt)$/;"	f
-init_delay_info	./mpack_util.c	/^void init_delay_info(t_delay_info* delay_info,$/;"	f
-init_edge	./mpack_util.c	/^void init_edge(t_edge* edge) {$/;"	f
-init_lgknd	./mpack_util.c	/^void init_lgknd(t_lgknd* lgknd)$/;"	f
-init_lgkntwk	./mpack_util.c	/^void init_lgkntwk(t_lgkntwk* lgkntwk)$/;"	f
-init_lgkntwk_edges	./lgkntwk_common.c	/^int init_lgkntwk_edges(t_lgkntwk* lgkntwk,$/;"	f
-init_stats	./mpack_util.c	/^void init_stats(t_stats* stats)$/;"	f
-init_timing_lgkntwk	./lgkntwk_common.c	/^int init_timing_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
-init_val	./blif_parser.h	/^  int   init_val;$/;"	m	struct:s_blif_latch
-init_val	./mpack_types.h	/^  int init_val; $/;"	m	struct:s_lgknd
-initial_lgkntwk_try_pattern_types	./lgkntwk_common.c	/^int initial_lgkntwk_try_pattern_types(t_lgkntwk* lgkntwk) {$/;"	f
-inner_cluster_delay	./blearch_parser.h	/^  float inner_cluster_delay;$/;"	m	struct:s_ble_arch
-inner_cluster_delay	./mpack_conf.h	/^  float inner_cluster_delay;$/;"	m	struct:s_mpack_conf
-inner_cluster_delay	./mpack_types.h	/^  float inner_cluster_delay;$/;"	m	struct:s_delay_info
-inpad_delay	./mpack_types.h	/^  float inpad_delay;$/;"	m	struct:s_delay_info
-input	./blif_parser.h	/^  t_blif_ios input;$/;"	m	struct:s_blif_latch
-input_conkts	./mpack_types.h	/^  int* input_conkts; \/\/ index of conkts$/;"	m	struct:s_ble_info
-input_conkts_type	./mpack_types.h	/^  int* input_conkts_type; \/\/ type of conkts$/;"	m	struct:s_ble_info
-input_lgknds	./mpack_types.h	/^  t_lgknd** input_lgknds;$/;"	m	struct:s_ble_info
-input_lgknds_input_idx	./mpack_types.h	/^  int* input_lgknds_input_idx;$/;"	m	struct:s_ble_info
-input_num	./blearch_parser.h	/^  int input_num;$/;"	m	struct:s_ble_arch
-input_num	./blearch_parser.h	/^  int input_num;$/;"	m	struct:s_blend
-input_num	./blif_parser.h	/^  int input_num;$/;"	m	struct:s_blif_arch
-input_num	./blif_parser.h	/^  int input_num;$/;"	m	struct:s_blif_gate
-input_num	./blif_parser.h	/^  int input_num;$/;"	m	struct:s_blif_libgate
-input_num	./blif_parser.h	/^  int input_num;$/;"	m	struct:s_conkt
-input_num	./mpack_types.h	/^  int input_num;$/;"	m	struct:s_ble_info
-input_num	./mpack_types.h	/^  int input_num;$/;"	m	struct:s_lgknd
-input_pad_td	./arch_timing.h	/^static float input_pad_td = 4.243e-11;$/;"	v
-input_paths_affect	./mpack_types.h	/^  float input_paths_affect;$/;"	m	struct:s_lgknd
-input_used	./mpack_types.h	/^  int* input_used; \/\/ 1 used, 0 unused$/;"	m	struct:s_ble_info
-inputs	./blearch_parser.h	/^  t_bleport* inputs;$/;"	m	struct:s_ble_arch
-inputs	./blearch_parser.h	/^  t_bleport* inputs;$/;"	m	struct:s_blend
-inputs	./blif_parser.h	/^  int inputs;$/;"	m	struct:s_conkt
-inputs	./blif_parser.h	/^  t_blif_ios* inputs;$/;"	m	struct:s_blif_arch
-inputs	./blif_parser.h	/^  t_blif_ios* inputs;$/;"	m	struct:s_blif_gate
-inputs	./blif_parser.h	/^  t_blif_ios* inputs;$/;"	m	struct:s_blif_libgate
-inputs	./mpack_types.h	/^  t_lgknd** inputs;$/;"	m	struct:s_lgknd
-inputs_types	./blif_parser.h	/^  enum e_blif_type inputs_types;$/;"	m	struct:s_conkt	typeref:enum:s_conkt::e_blif_type
-insert_ble_list_node	./mpack_util.c	/^t_ble_info* insert_ble_list_node(t_ble_info* cur,$/;"	f
-insert_conkt_list_node	./blif_parser.c	/^t_conkt* insert_conkt_list_node(t_conkt* cur,$/;"	f
-insert_lgknd_list_node	./mpack_util.c	/^t_lgknd* insert_lgknd_list_node(t_lgknd* cur,$/;"	f
-insert_llist_node	./util.c	/^t_llist* insert_llist_node(t_llist* cur,$/;"	f
-inter_clb_td	./arch_timing.h	/^static float inter_clb_td = 1.60e-9;$/;"	v
-inter_cluster_delay	./mpack_conf.h	/^  float inter_cluster_delay;$/;"	m	struct:s_mpack_conf
-inter_cluster_delay	./mpack_types.h	/^  float inter_cluster_delay;$/;"	m	struct:s_delay_info
-inter_cluster_delay_per_unit	./mpack_types.h	/^  float inter_cluster_delay_per_unit;$/;"	m	struct:s_delay_info
-inv_capable	./blearch_parser.h	/^  int inv_capable;$/;"	m	struct:s_bleport
-inv_num	./mpack_conf.h	/^  int inv_num;$/;"	m	struct:s_libgate_stats
-io_name	./mpack_types.h	/^  char* io_name;$/;"	m	struct:s_lgknd
-iout	./blif_parser.h	/^  int iout; $/;"	m	struct:s_conkt
-is_buf	./blif_parser.h	/^  int is_buf;$/;"	m	struct:s_blif_gate
-is_comb	./blearch_parser.h	/^  int is_comb;$/;"	m	struct:s_bleport
-is_pi	./blif_parser.h	/^  int is_pi;$/;"	m	struct:s_conkt
-is_po	./blif_parser.h	/^  int is_po;$/;"	m	struct:s_conkt
-join_preds_ble	./climb.c	/^int join_preds_ble(t_lgkntwk* lgkntwk,$/;"	f
-latch_absorb_in_subgraph	./sat_api.c	/^int latch_absorb_in_subgraph(int num,$/;"	f
-latch_conkt	./mpack_types.h	/^  int latch_conkt;$/;"	m	struct:s_lgknd
-latch_head	./mpack_types.h	/^  t_lgknd* latch_head;$/;"	m	struct:s_lgkntwk
-latch_num	./blif_parser.h	/^  int latch_num;$/;"	m	struct:s_blif_arch
-latch_num	./mpack_conf.h	/^  int latch_num; $/;"	m	struct:s_stats
-latch_num	./mpack_types.h	/^  int latch_num;$/;"	m	struct:s_lgkntwk
-latch_ptrs	./mpack_types.h	/^  t_lgknd** latch_ptrs;$/;"	m	struct:s_lgkntwk
-latches	./blif_parser.h	/^  t_blif_latch* latches;$/;"	m	struct:s_blif_arch
-legality_check	./sat_api.c	/^int legality_check(int sat_lgknd_num,$/;"	f
-lgknd_fanout_comb_num	./lgkntwk_common.c	/^int lgknd_fanout_comb_num(t_lgknd* lgknd) {$/;"	f
-lgknd_input_sum_weight_subgraph	./sat_api.c	/^int lgknd_input_sum_weight_subgraph(int num,$/;"	f
-lgknd_type	./mpack_types.h	/^enum lgknd_type$/;"	g
-lgknds_sat_type	./sat_api.c	/^int lgknds_sat_type(t_lgknd* root,$/;"	f
-libgate_head	./mpack_types.h	/^  t_lgknd* libgate_head;$/;"	m	struct:s_lgkntwk
-libgate_latch_fanout_avg	./mpack_conf.h	/^  float libgate_latch_fanout_avg;$/;"	m	struct:s_stats
-libgate_num	./blif_parser.h	/^  int libgate_num;$/;"	m	struct:s_blif_arch
-libgate_num	./mpack_conf.h	/^  int libgate_num;$/;"	m	struct:s_stats
-libgate_num	./mpack_types.h	/^  int libgate_num;$/;"	m	struct:s_lgkntwk
-libgate_ptrs	./mpack_types.h	/^  t_lgknd** libgate_ptrs;$/;"	m	struct:s_lgkntwk
-libgates	./blif_parser.h	/^  t_blif_libgate* libgates;$/;"	m	struct:s_blif_arch
-local_dfs_ble_cell	./check_ble_arch.c	/^int* local_dfs_ble_cell(t_ble_arch* ble_arch,$/;"	f
-local_dfs_lgknds	./lgkntwk_common.c	/^int* local_dfs_lgknds(int num_dfsnds,$/;"	f
-logic_equivalent	./mpack_types.h	/^  int logic_equivalent;$/;"	m	struct:s_lgknd
-logic_td	./arch_timing.h	/^static float logic_td = 1.30e-10;$/;"	v
-lut_stats	./mpack_conf.h	/^  int* lut_stats;$/;"	m	struct:s_stats
-main	./main.c	/^int main(int argc,char **argv)$/;"	f
-mandatory	./Options.h	/^  enum opt_manda mandatory;$/;"	m	struct:s_optinfo	typeref:enum:s_optinfo::opt_manda
-map_climb	./mpack_types.h	/^  int map_climb;$/;"	m	struct:s_lgknd
-map_one_cell	./sat_solver.c	/^int map_one_cell(t_ble_arch* ble_arch,$/;"	f
-mapped	./mpack_types.h	/^  int mapped;$/;"	m	struct:s_lgknd
-mark_fully_sat_cells_ble	./check_ble_arch.c	/^int mark_fully_sat_cells_ble(t_ble_arch* ble_arch,$/;"	f
-mark_invs_ble	./check_ble_arch.c	/^int mark_invs_ble(t_ble_arch* ble_arch,$/;"	f
-mark_lgknd_outputs_mapped	./sat_api.c	/^int mark_lgknd_outputs_mapped(t_lgkntwk* lgkntwk,$/;"	f
-mark_pi_po_conkt	./blif_parser.c	/^void mark_pi_po_conkt(t_blif_arch* blif_arch,$/;"	f
-max	./util.h	17;"	d
-max_lut_size	./mpack_conf.h	/^  int max_lut_size;$/;"	m	struct:s_stats
-max_slack	./mpack_types.h	/^  float max_slack;$/;"	m	struct:s_lgkntwk
-merge_weights_lgkntwk	./lgkntwk_common.c	/^int merge_weights_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
-min	./util.h	18;"	d
-mini_sat_solver	./sat_api.c	/^int mini_sat_solver(int sat_type,$/;"	f
-model	./blif_parser.h	/^  char* model;$/;"	m	struct:s_blif_arch
-mpack_blif	./mpack_conf.h	/^  char* mpack_blif;$/;"	m	struct:s_mpack_conf
-mux_min_size_td	./arch_timing.h	/^static float mux_min_size_td = 1.5e-12; $/;"	v
-my_atof	./util.c	/^float my_atof(char* arg)$/;"	f
-my_atoi	./util.c	/^int my_atoi(char* arg)$/;"	f
-my_calloc	./util.c	/^my_calloc(size_t num,$/;"	f
-my_fopen	./util.c	/^FILE* my_fopen(char* fname,$/;"	f
-my_freadln	./util.c	/^int   my_freadln(char* buf,$/;"	f
-my_init_int_ary	./mpack_util.c	/^void my_init_int_ary(int ary_len, int* ary, int init_val)$/;"	f
-my_malloc	./util.c	/^my_malloc(size_t size)$/;"	f
-my_realloc	./util.c	/^my_realloc(void* org, size_t size)$/;"	f
-my_strdup	./util.c	/^my_strdup(const char* str)$/;"	f
-my_strtok	./util.c	/^char** my_strtok(char* str, $/;"	f
-name	./Options.h	/^  char* name; \/*The name of option*\/$/;"	m	struct:s_optinfo
-name	./blearch_parser.h	/^  char* name;$/;"	m	struct:s_ble_arch
-name	./blearch_parser.h	/^  char* name;$/;"	m	struct:s_blend
-name	./blearch_parser.h	/^  char* name;$/;"	m	struct:s_bleport
-name	./blif_parser.h	/^  char* name; \/\/ mapping name$/;"	m	struct:s_blif_ios
-name	./blif_parser.h	/^  char* name;$/;"	m	struct:s_blif_libgate
-name	./blif_parser.h	/^  char* name;$/;"	m	struct:s_conkt
-net	./mpack_conf.h	/^  char* net;$/;"	m	struct:s_mpack_conf
-net_name	./mpack_types.h	/^  char* net_name;$/;"	m	struct:s_lgknd
-nets	./blif_parser.h	/^  t_conkt* nets;$/;"	m	struct:s_blif_arch
-new_fill_ble	./climb.c	/^int new_fill_ble(t_lgkntwk* lgkntwk,$/;"	f
-new_fill_ble_once	./climb.c	/^int new_fill_ble_once(t_lgkntwk* lgkntwk,$/;"	f
-next	./blif_parser.h	/^  t_conkt* next;$/;"	m	struct:s_conkt
-next	./mpack_types.h	/^  t_ble_info* next;$/;"	m	struct:s_ble_info
-next	./mpack_types.h	/^  t_lgknd* next;$/;"	m	struct:s_lgknd
-next	./util.h	/^  t_llist* next;$/;"	m	struct:s_llist
-one_num	./mpack_conf.h	/^  int one_num;$/;"	m	struct:s_libgate_stats
-opt_def	./Options.h	/^  enum opt_default opt_def;$/;"	m	struct:s_optinfo	typeref:enum:s_optinfo::opt_default
-opt_default	./Options.h	/^enum opt_default$/;"	g
-opt_list	./init_opts.h	/^t_optinfo opt_list[] = $/;"	v
-opt_manda	./Options.h	/^enum opt_manda$/;"	g
-opt_offset	./Options.h	/^enum opt_offset$/;"	g
-opt_val_type	./Options.h	/^enum opt_val_type$/;"	g
-opt_with_val	./Options.h	/^enum opt_with_val$/;"	g
-out_edges	./mpack_types.h	/^  t_edge** out_edges;$/;"	m	struct:s_lgknd
-outpad_delay	./mpack_types.h	/^  float outpad_delay;$/;"	m	struct:s_delay_info
-output	./blif_parser.h	/^  t_blif_ios output; $/;"	m	struct:s_blif_gate
-output	./blif_parser.h	/^  t_blif_ios output;$/;"	m	struct:s_blif_latch
-output	./blif_parser.h	/^  t_blif_ios output;$/;"	m	struct:s_blif_libgate
-output_conkt	./mpack_types.h	/^  int output_conkt;$/;"	m	struct:s_lgknd
-output_conkts	./mpack_types.h	/^  int* output_conkts; \/\/ Index of conkt$/;"	m	struct:s_ble_info
-output_conkts_type	./mpack_types.h	/^  int* output_conkts_type; \/\/ type of conkts$/;"	m	struct:s_ble_info
-output_lgknds	./mpack_types.h	/^  t_lgknd** output_lgknds;$/;"	m	struct:s_ble_info
-output_muxes	./mpack_types.h	/^  int* output_muxes;  $/;"	m	struct:s_ble_info
-output_num	./blearch_parser.h	/^  int output_num;$/;"	m	struct:s_ble_arch
-output_num	./blif_parser.h	/^  int output_num;$/;"	m	struct:s_blif_arch
-output_num	./blif_parser.h	/^  int output_num;$/;"	m	struct:s_conkt
-output_num	./mpack_types.h	/^  int output_num;$/;"	m	struct:s_ble_info
-output_num	./mpack_types.h	/^  int output_num;$/;"	m	struct:s_lgknd
-output_pad_td	./arch_timing.h	/^static float output_pad_td = 1.394e-11;$/;"	v
-output_paths_affect	./mpack_types.h	/^  float output_paths_affect;$/;"	m	struct:s_lgknd
-output_types	./mpack_types.h	/^  int* output_types; \/\/ Seq:0 Comb:1$/;"	m	struct:s_ble_info
-output_used	./mpack_types.h	/^  int* output_used;$/;"	m	struct:s_ble_info
-outputs	./blearch_parser.h	/^  t_bleport* outputs; $/;"	m	struct:s_ble_arch
-outputs	./blif_parser.h	/^  int* outputs;$/;"	m	struct:s_conkt
-outputs	./blif_parser.h	/^  t_blif_ios* outputs; $/;"	m	struct:s_blif_arch
-outputs	./mpack_types.h	/^  t_lgknd** outputs;$/;"	m	struct:s_lgknd
-outputs_types	./blif_parser.h	/^  enum e_blif_type* outputs_types;$/;"	m	struct:s_conkt	typeref:enum:s_conkt::e_blif_type
-pack_BLEs	./packing.c	/^t_ble_info* pack_BLEs(t_lgkntwk* lgkntwk,$/;"	f
-packer_algorithm	./mpack_conf.h	/^  enum e_packer_algorithm packer_algorithm;$/;"	m	struct:s_mpack_conf	typeref:enum:s_mpack_conf::e_packer_algorithm
-packer_area_attraction	./mpack_conf.h	/^  enum e_packer_area_attraction packer_area_attraction;$/;"	m	struct:s_mpack_conf	typeref:enum:s_mpack_conf::e_packer_area_attraction
-parse_ble_arch	./blearch_parser.c	/^int parse_ble_arch(char* ble_arch_file,$/;"	f
-pattern_member_type	./mpack_conf.h	/^  enum e_pattern_member_type pattern_member_type; $/;"	m	struct:s_mpack_conf	typeref:enum:s_mpack_conf::e_pattern_member_type
-pattern_pack	./packing.c	/^t_ble_info* pattern_pack(t_lgkntwk* lgkntwk,$/;"	f
-pattern_type	./blearch_parser.h	/^  int pattern_type;$/;"	m	struct:s_blend
-pi_head	./mpack_types.h	/^  t_lgknd* pi_head;$/;"	m	struct:s_lgkntwk
-pi_idx	./blif_parser.h	/^  int pi_idx;$/;"	m	struct:s_conkt
-pi_num	./mpack_conf.h	/^  int pi_num;$/;"	m	struct:s_stats
-pi_num	./mpack_types.h	/^  int pi_num;$/;"	m	struct:s_lgkntwk
-pi_ptrs	./mpack_types.h	/^  t_lgknd** pi_ptrs;$/;"	m	struct:s_lgkntwk
-pick_cell_idx_from_ble_arch	./check_ble_arch.c	/^int pick_cell_idx_from_ble_arch(t_ble_arch* ble_arch,$/;"	f
-pick_pattern_fit_ble	./sat_api.c	/^int pick_pattern_fit_ble(t_lgkntwk* lgkntwk,$/;"	f
-pick_position_from_ble_arch	./check_ble_arch.c	/^int pick_position_from_ble_arch(t_ble_arch* ble_arch,$/;"	f
-pick_sat_lgknd_from_lgkntwk	./sat_api.c	/^t_lgknd* pick_sat_lgknd_from_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
-pick_seed	./packing.c	/^t_lgknd* pick_seed(t_lgkntwk* lgkntwk)$/;"	f
-pio_conkt	./mpack_types.h	/^  int pio_conkt;$/;"	m	struct:s_lgknd
-po_head	./mpack_types.h	/^  t_lgknd* po_head;$/;"	m	struct:s_lgkntwk
-po_idx	./blif_parser.h	/^  int po_idx;$/;"	m	struct:s_conkt
-po_num	./mpack_conf.h	/^  int po_num;$/;"	m	struct:s_stats
-po_num	./mpack_types.h	/^  int po_num;$/;"	m	struct:s_lgkntwk
-po_ptrs	./mpack_types.h	/^  t_lgknd** po_ptrs;$/;"	m	struct:s_lgkntwk
-port	./blif_parser.h	/^  char* port; \/\/ port name$/;"	m	struct:s_blif_ios
-print_blif	./print_blif.c	/^int print_blif(char* output_blif_name,$/;"	f
-print_block_cells	./print_vpr_netlist.c	/^int print_block_cells(FILE* fnet,$/;"	f
-print_block_inputs	./print_vpr_netlist.c	/^int print_block_inputs(FILE* fnet,$/;"	f
-print_block_latches	./print_vpr_netlist.c	/^int print_block_latches(FILE* fnet,$/;"	f
-print_block_mux_input	./print_vpr_netlist.c	/^int print_block_mux_input(FILE* fnet,$/;"	f
-print_block_outputs	./print_vpr_netlist.c	/^int print_block_outputs(FILE* fnet,$/;"	f
-print_stats	./stats.c	/^void print_stats(char* fstats_name,$/;"	f
-print_title	./main.c	/^void print_title()$/;"	f
-print_usage	./main.c	/^void print_usage()$/;"	f
-print_vpr7_arch	./print_vpr_arch.c	/^int print_vpr7_arch(t_ble_arch* ble_arch,$/;"	f
-print_vpr7_arch_comb_part_inputs	./print_vpr_arch.c	/^int print_vpr7_arch_comb_part_inputs(t_ble_arch* ble_arch,$/;"	f
-print_vpr7_arch_comb_part_outputs	./print_vpr_arch.c	/^int print_vpr7_arch_comb_part_outputs(t_ble_arch* ble_arch,$/;"	f
-print_vpr7_arch_follower_interconnect	./print_vpr_arch.c	/^int print_vpr7_arch_follower_interconnect(t_ble_arch* ble_arch,$/;"	f
-print_vpr7_arch_followers	./print_vpr_arch.c	/^int print_vpr7_arch_followers(t_ble_arch* ble_arch,$/;"	f
-print_vpr7_arch_mux_inputs	./print_vpr_arch.c	/^int print_vpr7_arch_mux_inputs(t_ble_arch* ble_arch,$/;"	f
-print_vpr7_netlist	./print_vpr_netlist.c	/^int print_vpr7_netlist(char* net_file,$/;"	f
-priority	./blearch_parser.h	/^  float priority;$/;"	m	struct:s_blend
-process_arg_opt	./read_opts.c	/^int process_arg_opt(IN char** argv,$/;"	f
-read_options	./read_opts.c	/^t_optinfo* read_options(IN int argc,$/;"	f
-read_stdlib_blif	./mpack_conf.h	/^  int read_stdlib_blif;$/;"	m	struct:s_mpack_conf
-ready_new_conkt	./blif_parser.c	/^t_conkt* ready_new_conkt(t_conkt* cur,$/;"	f
-redund_output_num	./mpack_types.h	/^  int redund_output_num;$/;"	m	struct:s_lgknd
-remap_cell_ble_output	./sat_solver.c	/^int remap_cell_ble_output(t_ble_arch* ble_arch,$/;"	f
-remove_ble_info_from_llist	./mpack_util.c	/^void remove_ble_info_from_llist(t_ble_info* head,$/;"	f
-remove_ble_list_node	./mpack_util.c	/^void remove_ble_list_node(t_ble_info* cur)$/;"	f
-remove_buf_lgkntwk	./lgkntwk_common.c	/^int remove_buf_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
-remove_conkt_list_node	./blif_parser.c	/^void remove_conkt_list_node(t_conkt* cur)$/;"	f
-remove_hanging_latch_lgkntwk	./lgkntwk_common.c	/^int remove_hanging_latch_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
-remove_isolated_pi_lgkntwk	./lgkntwk_common.c	/^int remove_isolated_pi_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
-remove_isolated_po_lgkntwk	./lgkntwk_common.c	/^int remove_isolated_po_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
-remove_lgknd_list_node	./mpack_util.c	/^void remove_lgknd_list_node(t_lgknd* cur)$/;"	f
-remove_llist_node	./util.c	/^void remove_llist_node(t_llist* cur)$/;"	f
-remove_one_buf_lgknd	./lgkntwk_common.c	/^int remove_one_buf_lgknd(t_lgknd* cur,$/;"	f
-reset_dfs_tags_lgkntwk	./lgkntwk_common.c	/^int reset_dfs_tags_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
-reset_lgkntwk_try_pattern_types	./lgkntwk_common.c	/^int reset_lgkntwk_try_pattern_types(t_lgkntwk* lgkntwk) {$/;"	f
-reset_lgkntwk_try_sat	./lgkntwk_common.c	/^void reset_lgkntwk_try_sat(t_lgkntwk* lgkntwk)$/;"	f
-rmetal	./blearch_parser.h	/^  float rmetal;$/;"	m	struct:s_ble_arch
-run_sat_solver	./sat_api.c	/^int run_sat_solver(t_lgkntwk* lgkntwk,$/;"	f
-s_ble_arch	./blearch_parser.h	/^struct s_ble_arch$/;"	s
-s_ble_info	./mpack_types.h	/^struct s_ble_info$/;"	s
-s_blend	./blearch_parser.h	/^struct s_blend$/;"	s
-s_bleport	./blearch_parser.h	/^struct s_bleport$/;"	s
-s_blif_arch	./blif_parser.h	/^struct s_blif_arch$/;"	s
-s_blif_gate	./blif_parser.h	/^struct s_blif_gate$/;"	s
-s_blif_ios	./blif_parser.h	/^struct s_blif_ios$/;"	s
-s_blif_latch	./blif_parser.h	/^struct s_blif_latch$/;"	s
-s_blif_libgate	./blif_parser.h	/^struct s_blif_libgate$/;"	s
-s_conkt	./blif_parser.h	/^struct s_conkt$/;"	s
-s_delay_info	./mpack_types.h	/^struct s_delay_info {$/;"	s
-s_edge	./mpack_types.h	/^struct s_edge {$/;"	s
-s_lgknd	./mpack_types.h	/^struct s_lgknd$/;"	s
-s_lgkntwk	./mpack_types.h	/^struct s_lgkntwk$/;"	s
-s_libgate_stats	./mpack_conf.h	/^struct s_libgate_stats$/;"	s
-s_llist	./util.h	/^struct s_llist$/;"	s
-s_mpack_conf	./mpack_conf.h	/^struct s_mpack_conf$/;"	s
-s_optinfo	./Options.h	/^struct s_optinfo$/;"	s
-s_stats	./mpack_conf.h	/^struct s_stats$/;"	s
-s_typepair	./mpack_types.h	/^struct s_typepair$/;"	s
-sat2_capable	./blearch_parser.h	/^  int sat2_capable;$/;"	m	struct:s_blend
-sat3_capable	./blearch_parser.h	/^  int sat3_capable;$/;"	m	struct:s_blend
-sat_ble_out	./sat_api.c	/^int sat_ble_out(t_ble_arch* ble_arch,$/;"	f
-sat_cell_in_ble_port	./sat_solver.c	/^int sat_cell_in_ble_port(t_ble_arch* ble_arch,$/;"	f
-sat_cell_in_cell_out_conkt	./sat_solver.c	/^int sat_cell_in_cell_out_conkt(t_ble_arch* ble_arch,$/;"	f
-sat_cell_inv	./sat_solver.c	/^int sat_cell_inv(t_ble_arch* ble_arch,$/;"	f
-sat_cell_output	./sat_solver.c	/^int sat_cell_output(t_ble_arch* ble_arch,$/;"	f
-sat_cell_port_target_lgknd	./sat_api.c	/^int sat_cell_port_target_lgknd(t_ble_arch* ble_arch,$/;"	f
-sat_cell_redundant_ports	./sat_api.c	/^int sat_cell_redundant_ports(t_ble_arch* ble_arch, $/;"	f
-sat_lgknd_ble_input	./sat_solver.c	/^int sat_lgknd_ble_input(t_ble_arch* ble_arch,$/;"	f
-sat_lgknd_input_ble_input	./sat_solver.c	/^int sat_lgknd_input_ble_input(t_ble_arch* ble_arch,$/;"	f
-sat_lgknd_input_cell_port	./sat_api.c	/^int sat_lgknd_input_cell_port(t_ble_arch* ble_arch, $/;"	f
-sat_lgknd_inputs	./sat_api.c	/^int sat_lgknd_inputs(t_ble_arch* ble_arch, $/;"	f
-sat_lgknd_outputs	./sat_api.c	/^int sat_lgknd_outputs(t_ble_arch* ble_arch,$/;"	f
-sat_lgknds_ble_average_weight	./sat_api.c	/^float sat_lgknds_ble_average_weight(int sat_lgknd_num,$/;"	f
-sat_lgknds_ble_paths_affect	./sat_api.c	/^float sat_lgknds_ble_paths_affect(int sat_lgknd_num,$/;"	f
-sat_mapper	./sat_api.c	/^int sat_mapper(t_lgkntwk* lgkntwk,$/;"	f
-sat_pack	./packing.c	/^t_ble_info* sat_pack(t_lgkntwk* lgkntwk,$/;"	f
-sat_pred_ble_output	./sat_solver.c	/^int sat_pred_ble_output(int sat_type,$/;"	f
-sat_solver	./sat_solver.c	/^int sat_solver(int sat_type,$/;"	f
-sat_src_port_des_port	./sat_api.c	/^int sat_src_port_des_port(t_ble_arch* ble_arch,$/;"	f
-setup_mpack	./setup_mpack.c	/^int setup_mpack(t_blif_arch* blif_arch,$/;"	f
-show_opt_list	./read_opts.c	/^int show_opt_list()$/;"	f
-slack	./mpack_types.h	/^  float slack;$/;"	m	struct:s_edge
-slack	./mpack_types.h	/^  float slack;$/;"	m	struct:s_lgknd
-split_lgknd_output	./lgkntwk_common.c	/^int split_lgknd_output(t_lgkntwk* lgkntwk,$/;"	f
-split_lgkntwk_lgknds_outputs	./lgkntwk_common.c	/^int split_lgkntwk_lgknds_outputs(t_lgkntwk* lgkntwk,$/;"	f
-spot_cand_ptr	./blearch_parser.c	/^t_bleport* spot_cand_ptr(t_ble_arch* ble_arch,$/;"	f
-spot_conkt_name	./blif_parser.c	/^t_conkt* spot_conkt_name(t_conkt* head,$/;"	f
-spot_index_lgknd_array	./mpack_util.c	/^int spot_index_lgknd_array(int lgknd_num,$/;"	f
-spot_lgknd_ble_cell_idx	./sat_api.c	/^int spot_lgknd_ble_cell_idx(t_ble_info* ble_info,$/;"	f
-spot_lgknd_ble_output_idx	./sat_api.c	/^int spot_lgknd_ble_output_idx(t_ble_info* ble_info,$/;"	f
-stats	./mpack_conf.h	/^  char* stats;$/;"	m	struct:s_mpack_conf
-stats_ble_num	./stats.c	/^int stats_ble_num(t_ble_arch* ble_arch,$/;"	f
-stats_ble_resource_util	./stats.c	/^float stats_ble_resource_util(t_ble_arch* ble_arch,$/;"	f
-stats_lgkntwk	./stats.c	/^int stats_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
-stats_net_num	./stats.c	/^int stats_net_num(t_lgkntwk* lgkntwk,$/;"	f
-stdgate_stats	./mpack_conf.h	/^  int stdgate_stats[13]; $/;"	m	struct:s_stats
-strict	./mpack_types.h	/^  int strict;$/;"	m	struct:s_lgknd
-subgraph_legality_check	./sat_api.c	/^int subgraph_legality_check(int num,$/;"	f
-sum_cell_input_num	./check_ble_arch.c	/^int sum_cell_input_num(t_ble_arch* ble_arch,$/;"	f
-sum_ff_num	./check_ble_arch.c	/^int sum_ff_num(t_ble_arch* ble_arch,$/;"	f
-t_arrival	./mpack_types.h	/^  float t_arrival;$/;"	m	struct:s_edge
-t_arrival	./mpack_types.h	/^  float t_arrival;$/;"	m	struct:s_lgknd
-t_ble_arch	./blearch_parser.h	/^typedef struct s_ble_arch t_ble_arch;$/;"	t	typeref:struct:s_ble_arch
-t_ble_info	./mpack_types.h	/^typedef struct s_ble_info t_ble_info;$/;"	t	typeref:struct:s_ble_info
-t_blend	./blearch_parser.h	/^typedef struct s_blend t_blend;$/;"	t	typeref:struct:s_blend
-t_bleport	./blearch_parser.h	/^typedef struct s_bleport t_bleport;$/;"	t	typeref:struct:s_bleport
-t_blif_arch	./blif_parser.h	/^typedef struct s_blif_arch t_blif_arch;$/;"	t	typeref:struct:s_blif_arch
-t_blif_gate	./blif_parser.h	/^typedef struct s_blif_gate t_blif_gate;$/;"	t	typeref:struct:s_blif_gate
-t_blif_ios	./blif_parser.h	/^typedef struct s_blif_ios t_blif_ios;$/;"	t	typeref:struct:s_blif_ios
-t_blif_latch	./blif_parser.h	/^typedef struct s_blif_latch t_blif_latch;$/;"	t	typeref:struct:s_blif_latch
-t_blif_libgate	./blif_parser.h	/^typedef struct s_blif_libgate t_blif_libgate;$/;"	t	typeref:struct:s_blif_libgate
-t_conkt	./blif_parser.h	/^typedef struct s_conkt t_conkt;$/;"	t	typeref:struct:s_conkt
-t_delay_info	./mpack_types.h	/^typedef struct s_delay_info t_delay_info;$/;"	t	typeref:struct:s_delay_info
-t_edge	./mpack_types.h	/^typedef struct s_edge t_edge;$/;"	t	typeref:struct:s_edge
-t_lgknd	./mpack_types.h	/^typedef struct s_lgknd t_lgknd;$/;"	t	typeref:struct:s_lgknd
-t_lgkntwk	./mpack_types.h	/^typedef struct s_lgkntwk t_lgkntwk;$/;"	t	typeref:struct:s_lgkntwk
-t_libgate_stats	./mpack_conf.h	/^typedef struct s_libgate_stats t_libgate_stats;$/;"	t	typeref:struct:s_libgate_stats
-t_llist	./util.h	/^typedef struct s_llist t_llist;$/;"	t	typeref:struct:s_llist
-t_mpack_conf	./mpack_conf.h	/^typedef struct s_mpack_conf t_mpack_conf;$/;"	t	typeref:struct:s_mpack_conf
-t_optinfo	./Options.h	/^typedef struct s_optinfo t_optinfo;$/;"	t	typeref:struct:s_optinfo
-t_required	./mpack_types.h	/^  float t_required;$/;"	m	struct:s_edge
-t_required	./mpack_types.h	/^  float t_required;$/;"	m	struct:s_lgknd
-t_stats	./mpack_conf.h	/^typedef struct s_stats t_stats;$/;"	t	typeref:struct:s_stats
-t_typepair	./mpack_types.h	/^typedef struct s_typepair t_typepair;$/;"	t	typeref:struct:s_typepair
-timing_analysis	./mpack_conf.h	/^  int timing_analysis;$/;"	m	struct:s_mpack_conf
-timing_analysis_lgknd	./lgkntwk_common.c	/^int timing_analysis_lgknd(t_lgknd* root,$/;"	f
-timing_analysis_lgkntwk	./lgkntwk_common.c	/^int timing_analysis_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
-timing_max_slack_lgkntwk	./lgkntwk_common.c	/^float timing_max_slack_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
-timing_required_lgknd	./lgkntwk_common.c	/^int timing_required_lgknd(t_lgknd* root,$/;"	f
-timing_required_lgkntwk	./lgkntwk_common.c	/^int timing_required_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
-timing_slack_lgkntwk	./lgkntwk_common.c	/^int timing_slack_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
-timing_weight	./mpack_types.h	/^  float timing_weight;$/;"	m	struct:s_edge
-timing_weighting_lgkntwk	./lgkntwk_common.c	/^int timing_weighting_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
-tmp_redund_output_num	./mpack_types.h	/^  int tmp_redund_output_num;$/;"	m	struct:s_lgknd
-total	./mpack_conf.h	/^  int total;$/;"	m	struct:s_libgate_stats
-try_join_ble	./climb.c	/^int try_join_ble(t_lgkntwk* lgkntwk,$/;"	f
-try_lgknd_share_ble_input	./sat_solver.c	/^int try_lgknd_share_ble_input(t_ble_arch* ble_arch,$/;"	f
-try_pack_one_BLE	./packing.c	/^int try_pack_one_BLE(t_lgkntwk* lgkntwk,$/;"	f
-try_pattern_types	./mpack_types.h	/^  int* try_pattern_types;$/;"	m	struct:s_lgknd
-try_sat	./mpack_types.h	/^  int try_sat;$/;"	m	struct:s_lgknd
-try_sat2	./sat_solver.c	/^int try_sat2(t_ble_arch* ble_arch,$/;"	f
-try_sat3	./sat_solver.c	/^int try_sat3(t_ble_arch* ble_arch,$/;"	f
-try_sat_preds_conkts	./sat_solver.c	/^int try_sat_preds_conkts(int sat_type,$/;"	f
-type	./blearch_parser.h	/^  enum ble_port_type type;$/;"	m	struct:s_bleport	typeref:enum:s_bleport::ble_port_type
-type	./blif_parser.h	/^  char* type;$/;"	m	struct:s_blif_latch
-type	./mpack_types.h	/^  enum lgknd_type type;$/;"	m	struct:s_lgknd	typeref:enum:s_lgknd::lgknd_type
-type_id	./mpack_types.h	/^  int type_id;$/;"	m	struct:s_typepair
-type_name	./mpack_types.h	/^  char* type_name;$/;"	m	struct:s_typepair
-typepair_list	./init_mpack_types.h	/^static t_typepair typepair_list[] = {$/;"	v
-update_ble_cell_input_mux	./sat_solver.c	/^int update_ble_cell_input_mux(t_ble_info* ble_info,$/;"	f
-update_ble_info_cell_used	./sat_solver.c	/^int update_ble_info_cell_used(t_ble_info* ble_info,$/;"	f
-update_lut_stats	./setup_mpack.c	/^int update_lut_stats(t_blif_arch* blif_arch,$/;"	f
-update_redund_output_num	./lgkntwk_common.c	/^int update_redund_output_num(int lgknd_num,$/;"	f
-val	./Options.h	/^  char* val;  \/*The value*\/$/;"	m	struct:s_optinfo
-val_type	./Options.h	/^  enum opt_val_type val_type; $/;"	m	struct:s_optinfo	typeref:enum:s_optinfo::opt_val_type
-verbose	./mpack_conf.h	/^  int verbose;$/;"	m	struct:s_mpack_conf
-vpr_arch	./mpack_conf.h	/^  char* vpr_arch;$/;"	m	struct:s_mpack_conf
-weight	./mpack_types.h	/^  float weight;$/;"	m	struct:s_edge
-with_val	./Options.h	/^  enum opt_with_val with_val;$/;"	m	struct:s_optinfo	typeref:enum:s_optinfo::opt_with_val
-xnor_num	./mpack_conf.h	/^  int xnor_num;$/;"	m	struct:s_libgate_stats
-zero_num	./mpack_conf.h	/^  int zero_num;$/;"	m	struct:s_libgate_stats
+!_TAG_PROGRAM_VERSION	5.8	//
+ARG_CHAR	Options.h	/^{ARG_INT,ARG_FLOAT,ARG_CHAR,ARG_DOUBLE};$/;"	e	enum:opt_val_type
+ARG_DEF	Options.h	/^{ARG_DEF,ARG_NONDEF};$/;"	e	enum:opt_default
+ARG_DOUBLE	Options.h	/^{ARG_INT,ARG_FLOAT,ARG_CHAR,ARG_DOUBLE};$/;"	e	enum:opt_val_type
+ARG_FLOAT	Options.h	/^{ARG_INT,ARG_FLOAT,ARG_CHAR,ARG_DOUBLE};$/;"	e	enum:opt_val_type
+ARG_INT	Options.h	/^{ARG_INT,ARG_FLOAT,ARG_CHAR,ARG_DOUBLE};$/;"	e	enum:opt_val_type
+ARG_MAND	Options.h	/^{ARG_MAND,ARG_NONMAND};$/;"	e	enum:opt_manda
+ARG_NONDEF	Options.h	/^{ARG_DEF,ARG_NONDEF};$/;"	e	enum:opt_default
+ARG_NONMAND	Options.h	/^{ARG_MAND,ARG_NONMAND};$/;"	e	enum:opt_manda
+ARG_NONVAL	Options.h	/^{ARG_NONVAL,ARG_WITHVAL};$/;"	e	enum:opt_with_val
+ARG_WITHVAL	Options.h	/^{ARG_NONVAL,ARG_WITHVAL};$/;"	e	enum:opt_with_val
+BLE_IN	blearch_parser.h	/^{BLE_IN,$/;"	e	enum:ble_port_type
+BLE_LATCH	mpack_types.h	/^ BLE_LATCH};$/;"	e	enum:ble_inout_type
+BLE_ND	blearch_parser.h	/^BLE_ND,$/;"	e	enum:ble_port_type
+BLE_NORMAL	mpack_types.h	/^{BLE_NORMAL,$/;"	e	enum:ble_inout_type
+BLE_OUT	blearch_parser.h	/^BLE_OUT,$/;"	e	enum:ble_port_type
+BLE_PI	mpack_types.h	/^ BLE_PI,$/;"	e	enum:ble_inout_type
+BLE_PO	mpack_types.h	/^ BLE_PO,$/;"	e	enum:ble_inout_type
+BLIF_GATE	blif_parser.h	/^  BLIF_GATE,$/;"	e	enum:e_blif_type
+BLIF_LATCH	blif_parser.h	/^  BLIF_LATCH,$/;"	e	enum:e_blif_type
+BLIF_LIBGATE	blif_parser.h	/^  BLIF_LIBGATE,$/;"	e	enum:e_blif_type
+BLIF_NONE	blif_parser.h	/^  BLIF_NONE,$/;"	e	enum:e_blif_type
+BUFSIZE	util.h	14;"	d
+DEBUG	util.h	8;"	d
+FALSE	util.h	/^{TRUE,FALSE};$/;"	e	enum:e_bool
+IN	util.h	10;"	d
+INOUT	util.h	12;"	d
+ND_ADD	mpack_types.h	/^ ND_ADD,$/;"	e	enum:lgknd_type
+ND_AND	mpack_types.h	/^{ND_AND,$/;"	e	enum:lgknd_type
+ND_BUF	mpack_types.h	/^ ND_BUF,$/;"	e	enum:lgknd_type
+ND_CARRY	mpack_types.h	/^ ND_CARRY,$/;"	e	enum:lgknd_type
+ND_INV	mpack_types.h	/^ ND_INV,$/;"	e	enum:lgknd_type
+ND_LATCH	mpack_types.h	/^ ND_LATCH,$/;"	e	enum:lgknd_type
+ND_LUT	mpack_types.h	/^ ND_LUT,$/;"	e	enum:lgknd_type
+ND_NADD	mpack_types.h	/^ ND_NADD,$/;"	e	enum:lgknd_type
+ND_NAND	mpack_types.h	/^ ND_NAND,$/;"	e	enum:lgknd_type
+ND_NCARRY	mpack_types.h	/^ ND_NCARRY,$/;"	e	enum:lgknd_type
+ND_ONE	mpack_types.h	/^ ND_ONE,$/;"	e	enum:lgknd_type
+ND_PI	mpack_types.h	/^ ND_PI,$/;"	e	enum:lgknd_type
+ND_PO	mpack_types.h	/^ ND_PO};$/;"	e	enum:lgknd_type
+ND_XNOR	mpack_types.h	/^ ND_XNOR,$/;"	e	enum:lgknd_type
+ND_XOR	mpack_types.h	/^ ND_XOR,$/;"	e	enum:lgknd_type
+ND_ZERO	mpack_types.h	/^ ND_ZERO,$/;"	e	enum:lgknd_type
+OP_ALPHA	Options.h	/^ OP_ALPHA,$/;"	e	enum:opt_offset
+OP_BETA	Options.h	/^ OP_BETA,$/;"	e	enum:opt_offset
+OP_BLEARCH	Options.h	/^ OP_BLEARCH,$/;"	e	enum:opt_offset
+OP_BLIF	Options.h	/^{OP_BLIF,$/;"	e	enum:opt_offset
+OP_END	Options.h	/^ OP_END};$/;"	e	enum:opt_offset
+OP_FORBID_UNRELATED_CLUSTERING	Options.h	/^ OP_FORBID_UNRELATED_CLUSTERING,$/;"	e	enum:opt_offset
+OP_HELP	Options.h	/^ OP_HELP,$/;"	e	enum:opt_offset
+OP_INTER_CLUSTER_DELAY	Options.h	/^ OP_INTER_CLUSTER_DELAY,$/;"	e	enum:opt_offset
+OP_MPACKBLIF	Options.h	/^ OP_MPACKBLIF,$/;"	e	enum:opt_offset
+OP_NET	Options.h	/^ OP_NET,$/;"	e	enum:opt_offset
+OP_PACKER_ALGORITHM	Options.h	/^ OP_PACKER_ALGORITHM,$/;"	e	enum:opt_offset
+OP_PACKER_AREA_ATTRACTION	Options.h	/^ OP_PACKER_AREA_ATTRACTION,$/;"	e	enum:opt_offset
+OP_PATTERN_MEMBER_TYPE	Options.h	/^ OP_PATTERN_MEMBER_TYPE,$/;"	e	enum:opt_offset
+OP_READ_STDLIB_BLIF	Options.h	/^ OP_READ_STDLIB_BLIF,$/;"	e	enum:opt_offset
+OP_STATS	Options.h	/^ OP_STATS,$/;"	e	enum:opt_offset
+OP_TIMING_ANALYSIS	Options.h	/^ OP_TIMING_ANALYSIS,$/;"	e	enum:opt_offset
+OP_VERBOSE	Options.h	/^ OP_VERBOSE,$/;"	e	enum:opt_offset
+OP_VPRARCH	Options.h	/^ OP_VPRARCH,$/;"	e	enum:opt_offset
+OUT	util.h	11;"	d
+PACKER_ALGORITHM_PATTERN	mpack_conf.h	/^PACKER_ALGORITHM_PATTERN,$/;"	e	enum:e_packer_algorithm
+PACKER_ALGORITHM_SAT	mpack_conf.h	/^PACKER_ALGORITHM_SAT,$/;"	e	enum:e_packer_algorithm
+PACKER_ALGORITHM_SEED	mpack_conf.h	/^PACKER_ALGORITHM_SEED,$/;"	e	enum:e_packer_algorithm
+PACKER_AREA_ATTRACTION_AAPACK	mpack_conf.h	/^PACKER_AREA_ATTRACTION_AAPACK,$/;"	e	enum:e_packer_area_attraction
+PACKER_AREA_ATTRACTION_VPACK	mpack_conf.h	/^PACKER_AREA_ATTRACTION_VPACK,$/;"	e	enum:e_packer_area_attraction
+PATTERN_MEMBER_COMBONLY	mpack_conf.h	/^PATTERN_MEMBER_COMBONLY,$/;"	e	enum:e_pattern_member_type
+PATTERN_MEMBER_NORMAL	mpack_conf.h	/^PATTERN_MEMBER_NORMAL,$/;"	e	enum:e_pattern_member_type
+TRUE	util.h	/^{TRUE,FALSE};$/;"	e	enum:e_bool
+abs	util.h	16;"	d
+add_buf_latches	lgkntwk_common.c	/^int add_buf_latches(t_lgkntwk* lgkntwk,$/;"	f
+add_input_bufs_lgknd_lgkntwk	lgkntwk_common.c	/^int add_input_bufs_lgknd_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
+add_num	mpack_conf.h	/^  int add_num;$/;"	m	struct:s_libgate_stats
+add_one_buf_lgknd	lgkntwk_common.c	/^int add_one_buf_lgknd(t_lgknd* cur,$/;"	f
+add_pi_latch_buf	lgkntwk_common.c	/^int add_pi_latch_buf(t_lgknd* cur,$/;"	f
+alpha	mpack_conf.h	/^  float alpha;$/;"	m	struct:s_mpack_conf
+and_num	mpack_conf.h	/^  int and_num;$/;"	m	struct:s_libgate_stats
+area	blearch_parser.h	/^  float area;$/;"	m	struct:s_ble_arch
+assign_ble_candidates_ptr	blearch_parser.c	/^int assign_ble_candidates_ptr(t_ble_arch* ble_arch)$/;"	f
+assign_conkts_to_lgknds	setup_mpack.c	/^int assign_conkts_to_lgknds(t_blif_arch* blif_arch,$/;"	f
+assign_conkts_to_luts	setup_mpack.c	/^int assign_conkts_to_luts(t_blif_arch* blif_arch,$/;"	f
+assign_latch	setup_mpack.c	/^int assign_latch(t_lgkntwk* lgkntwk,$/;"	f
+assign_latch_conkts	setup_mpack.c	/^int assign_latch_conkts(t_blif_arch* blif_arch,$/;"	f
+assign_lgknds_net_name	setup_mpack.c	/^int assign_lgknds_net_name(t_blif_arch* blif_arch,$/;"	f
+assign_libgate	setup_mpack.c	/^int assign_libgate(t_lgkntwk* lgkntwk,$/;"	f
+assign_libgate_conkts	setup_mpack.c	/^int assign_libgate_conkts(t_blif_arch* blif_arch,$/;"	f
+assign_libgate_latch_conkt_po	setup_mpack.c	/^int assign_libgate_latch_conkt_po(t_blif_arch* blif_arch,$/;"	f
+assign_logic_nodes	setup_mpack.c	/^int assign_logic_nodes(t_blif_arch* blif_arch,$/;"	f
+assign_lut	setup_mpack.c	/^int assign_lut(t_lgkntwk* lgkntwk,$/;"	f
+assign_lut_conkts	setup_mpack.c	/^int assign_lut_conkts(t_blif_arch* blif_arch,$/;"	f
+assign_lut_latch_conkts	setup_mpack.c	/^int assign_lut_latch_conkts(t_blif_arch* blif_arch,$/;"	f
+assign_lut_lgknds_net_name	setup_mpack.c	/^int assign_lut_lgknds_net_name(t_blif_arch* blif_arch,$/;"	f
+assign_lut_logic_nodes	setup_mpack.c	/^int assign_lut_logic_nodes(t_blif_arch* blif_arch,$/;"	f
+assign_pi	setup_mpack.c	/^int assign_pi(t_lgkntwk* lgkntwk,$/;"	f
+assign_pi_conkts	setup_mpack.c	/^int assign_pi_conkts(t_blif_arch* blif_arch,$/;"	f
+assign_po	setup_mpack.c	/^int assign_po(t_lgkntwk* lgkntwk,$/;"	f
+assign_po_conkts	setup_mpack.c	/^int assign_po_conkts(t_blif_arch* blif_arch,$/;"	f
+avg_lt10	mpack_conf.h	/^  float avg_lt10;$/;"	m	struct:s_stats
+back_annotate_net_name	main.c	/^void back_annotate_net_name(t_blif_arch* blif_arch,$/;"	f
+beta	mpack_conf.h	/^  float beta;$/;"	m	struct:s_mpack_conf
+blank_ble_info	mpack_util.c	/^int blank_ble_info(t_ble_arch* ble_arch,$/;"	f
+ble_arch	mpack_conf.h	/^  char* ble_arch;$/;"	m	struct:s_mpack_conf
+ble_arch_parser_flow	parsers.c	/^void ble_arch_parser_flow(char* ble_arch_file,$/;"	f
+ble_cell_idx	mpack_types.h	/^  int ble_cell_idx;$/;"	m	struct:s_lgknd
+ble_fill_rate	mpack_conf.h	/^  float ble_fill_rate;$/;"	m	struct:s_stats
+ble_idx	mpack_types.h	/^  int ble_idx;$/;"	m	struct:s_lgknd
+ble_info	mpack_types.h	/^  void* ble_info;$/;"	m	struct:s_lgknd
+ble_inout_type	mpack_types.h	/^enum ble_inout_type$/;"	g
+ble_num	mpack_conf.h	/^  int ble_num;$/;"	m	struct:s_stats
+ble_port_type	blearch_parser.h	/^enum ble_port_type$/;"	g
+blend_idx	blearch_parser.h	/^  int blend_idx;$/;"	m	struct:s_bleport
+blend_lgknd_input_idxes	mpack_types.h	/^  int** blend_lgknd_input_idxes;$/;"	m	struct:s_ble_info
+blend_lgknds	mpack_types.h	/^  t_lgknd** blend_lgknds;$/;"	m	struct:s_ble_info
+blend_muxes	mpack_types.h	/^  int** blend_muxes;$/;"	m	struct:s_ble_info
+blend_num	blearch_parser.h	/^  int blend_num;$/;"	m	struct:s_ble_arch
+blend_num	mpack_types.h	/^  int blend_num;$/;"	m	struct:s_ble_info
+blend_port_used	mpack_types.h	/^  int** blend_port_used;$/;"	m	struct:s_ble_info
+blend_used	mpack_types.h	/^  int* blend_used;$/;"	m	struct:s_ble_info
+blends	blearch_parser.h	/^  t_blend* blends;$/;"	m	struct:s_ble_arch
+blif	mpack_conf.h	/^  char* blif;$/;"	m	struct:s_mpack_conf
+blif_parser	blif_parser.c	/^int blif_parser(IN char* blifname,$/;"	f
+blif_parser_flow	parsers.c	/^void blif_parser_flow(char* blifname,$/;"	f
+bool	util.h	/^typedef enum e_bool bool;$/;"	t	typeref:enum:e_bool
+bubble_sort_depth_ble_dfsnds	check_ble_arch.c	/^int bubble_sort_depth_ble_dfsnds(int num_dfsnd,$/;"	f
+bubble_sort_depth_lgk_dfsnds	lgkntwk_common.c	/^int bubble_sort_depth_lgk_dfsnds(int num_dfsnd,$/;"	f
+buf_num	mpack_conf.h	/^  int buf_num;$/;"	m	struct:s_libgate_stats
+build_nets	blif_parser.c	/^t_conkt* build_nets(t_blif_arch* blif_arch)$/;"	f
+cand_num	blearch_parser.h	/^  int cand_num;$/;"	m	struct:s_bleport
+cands	blearch_parser.h	/^  t_bleport** cands;$/;"	m	struct:s_bleport
+candtoks	blearch_parser.h	/^  char** candtoks;$/;"	m	struct:s_bleport
+carry_num	mpack_conf.h	/^  int carry_num;$/;"	m	struct:s_libgate_stats
+cat_ble_lists	mpack_util.c	/^t_ble_info* cat_ble_lists(t_ble_info* head1,$/;"	f
+cat_conkt_lists	blif_parser.c	/^t_conkt* cat_conkt_lists(t_conkt* head1,$/;"	f
+cat_lgknd_lists	mpack_util.c	/^t_lgknd* cat_lgknd_lists(t_lgknd* head1,$/;"	f
+cat_llists	util.c	/^t_llist* cat_llists(t_llist* head1,$/;"	f
+cell_delay	blearch_parser.h	/^  float cell_delay;$/;"	m	struct:s_ble_arch
+check_all_mapped	packing.c	/^int check_all_mapped(t_lgkntwk* lgkntwk,$/;"	f
+check_blank_ble_info	mpack_util.c	/^int check_blank_ble_info(t_ble_arch* ble_arch,$/;"	f
+check_ble_absorb_lgknd_output	mpack_util.c	/^int check_ble_absorb_lgknd_output(t_ble_info* ble_info,$/;"	f
+check_ble_arch	check_ble_arch.c	/^int check_ble_arch(t_ble_arch* ble_arch)$/;"	f
+check_bleport_conkt	mpack_util.c	/^int check_bleport_conkt(t_ble_arch* ble_arch,$/;"	f
+check_blif_netlist	setup_mpack.c	/^int check_blif_netlist(t_blif_arch* blif_arch)$/;"	f
+check_cell_input_number	check_ble_arch.c	/^int check_cell_input_number(t_ble_arch* ble_arch)$/;"	f
+check_cells_conkted	check_ble_arch.c	/^int check_cells_conkted(t_blend* cella,$/;"	f
+check_conkt_ble_input	check_ble_arch.c	/^int check_conkt_ble_input(t_bleport* port,$/;"	f
+check_fully_sat2_cell	check_ble_arch.c	/^int** check_fully_sat2_cell(t_ble_arch* ble_arch,$/;"	f
+check_fully_sat3_cell	check_ble_arch.c	/^int** check_fully_sat3_cell(t_ble_arch* ble_arch,$/;"	f
+check_independent_cell	check_ble_arch.c	/^int check_independent_cell(t_ble_arch* ble_arch,$/;"	f
+check_inv_cell	check_ble_arch.c	/^int check_inv_cell(t_ble_arch* ble_arch,$/;"	f
+check_lgknd_input_remap	sat_api.c	/^int check_lgknd_input_remap(t_ble_arch* ble_arch,$/;"	f
+check_lgkntwk	lgkntwk_common.c	/^int check_lgkntwk(t_lgkntwk* lgkntwk)$/;"	f
+check_lut_blif_netlist	setup_mpack.c	/^int check_lut_blif_netlist(t_blif_arch* blif_arch) {$/;"	f
+check_mpackopts	config_mpack.c	/^int check_mpackopts(t_mpack_conf* mpackopts_ptr)$/;"	f
+check_opt_list	read_opts.c	/^int check_opt_list()$/;"	f
+check_port_conkt_cell	check_ble_arch.c	/^int* check_port_conkt_cell(t_ble_arch* ble_arch,$/;"	f
+check_sat	check_ble_arch.c	/^int check_sat(int sat_type,$/;"	f
+check_sat2_conkts	check_ble_arch.c	/^int check_sat2_conkts(t_ble_arch* ble_arch,$/;"	f
+check_sat3_conkts	check_ble_arch.c	/^int check_sat3_conkts(t_ble_arch* ble_arch,$/;"	f
+check_shared_inputs	check_ble_arch.c	/^int check_shared_inputs(t_bleport* porta,$/;"	f
+check_tree_conkts	check_ble_arch.c	/^int check_tree_conkts(t_blend* root,$/;"	f
+clear_po_outputs	setup_mpack.c	/^int clear_po_outputs(t_lgkntwk* lgkntwk)$/;"	f
+clear_tmp_redund_output_num	lgkntwk_common.c	/^int clear_tmp_redund_output_num(int lgknd_num,$/;"	f
+climb_pack	climb.c	/^int climb_pack(t_lgkntwk* lgkntwk,$/;"	f
+clk	blif_parser.h	/^  char* clk;$/;"	m	struct:s_blif_latch
+clk_names	blif_parser.h	/^  t_blif_ios* clk_names;$/;"	m	struct:s_blif_arch
+clk_num	blif_parser.h	/^  int clk_num;$/;"	m	struct:s_blif_arch
+cmetal	blearch_parser.h	/^  float cmetal;$/;"	m	struct:s_ble_arch
+comb_num	mpack_types.h	/^  int comb_num;$/;"	m	struct:s_lgknd
+config_mpack	config_mpack.c	/^int config_mpack(t_mpack_conf* mpackopts_ptr,$/;"	f
+conkt	blif_parser.h	/^  t_conkt* conkt;$/;"	m	struct:s_blif_ios
+copy_ble_info	mpack_util.c	/^int copy_ble_info(t_ble_arch* ble_arch,$/;"	f
+count_cell_used	climb.c	/^int count_cell_used(t_ble_info* ble_info,$/;"	f
+count_lgknds_comb_num	sat_api.c	/^int count_lgknds_comb_num(int lgknd_num,$/;"	f
+count_lgknds_comb_num_ble	sat_api.c	/^int count_lgknds_comb_num_ble(t_ble_info* ble_info,$/;"	f
+count_used_ble_outputs	sat_api.c	/^int count_used_ble_outputs(t_ble_info* ble_info,$/;"	f
+count_used_blend	sat_api.c	/^int count_used_blend(t_ble_info* ble_info,$/;"	f
+create_ble_list	mpack_util.c	/^t_ble_info* create_ble_list(int len,$/;"	f
+create_conkt_list	blif_parser.c	/^t_conkt* create_conkt_list(int len,$/;"	f
+create_lgknd_list	mpack_util.c	/^t_lgknd* create_lgknd_list(int len,$/;"	f
+create_llist	util.c	/^t_llist* create_llist(int len,$/;"	f
+critical_delay	mpack_types.h	/^  float critical_delay;$/;"	m	struct:s_lgkntwk
+critical_delay_lgkntwk	lgkntwk_common.c	/^float critical_delay_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
+critical_input_paths_affect_lgknd	lgkntwk_common.c	/^int critical_input_paths_affect_lgknd(t_lgknd* lgknd,$/;"	f
+critical_output_paths_affect_lgknd	lgkntwk_common.c	/^int critical_output_paths_affect_lgknd(t_lgknd* lgknd,$/;"	f
+critical_paths_affect_lgkntwk	lgkntwk_common.c	/^int critical_paths_affect_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
+cur_edge	mpack_types.h	/^  int cur_edge;$/;"	m	struct:s_lgknd
+curin	blearch_parser.h	/^  int curin;$/;"	m	struct:s_blend
+curnd	blearch_parser.h	/^  int curnd;$/;"	m	struct:s_ble_arch
+delay	mpack_types.h	/^  float delay;$/;"	m	struct:s_edge
+delay	mpack_types.h	/^  float delay;$/;"	m	struct:s_lgknd
+depth	blearch_parser.h	/^  int depth;$/;"	m	struct:s_blend
+depth	blearch_parser.h	/^  int depth;$/;"	m	struct:s_bleport
+depth	mpack_types.h	/^  int depth;$/;"	m	struct:s_lgknd
+depth_local_router	sat_api.c	/^int depth_local_router(int sat_lgknd_num,$/;"	f
+depth_source	mpack_types.h	/^  float depth_source;$/;"	m	struct:s_lgknd
+depth_weight	mpack_types.h	/^  float depth_weight;$/;"	m	struct:s_edge
+depth_weighting_lgkntwk	lgkntwk_common.c	/^int depth_weighting_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
+determine_max_sat_type	sat_api.c	/^int determine_max_sat_type(t_ble_arch* ble_arch,$/;"	f
+determine_unused_blend_num	sat_api.c	/^int determine_unused_blend_num(t_ble_arch* ble_arch,$/;"	f
+dff_td	arch_timing.h	/^static float dff_td = 1.24e-10;$/;"	v
+dff_tsu	arch_timing.h	/^static float dff_tsu = 6.6e-11;$/;"	v
+dfs_ble_arch	check_ble_arch.c	/^int dfs_ble_arch(t_ble_arch* ble_arch,$/;"	f
+dfs_lgknd_tree_depth	lgkntwk_common.c	/^int dfs_lgknd_tree_depth(t_lgknd* root,$/;"	f
+dfs_lgkntwk_depth	lgkntwk_common.c	/^int dfs_lgkntwk_depth(t_lgkntwk* lgkntwk,$/;"	f
+dfsed	mpack_types.h	/^  int dfsed;$/;"	m	struct:s_lgknd
+dptr	util.h	/^  void* dptr;$/;"	m	struct:s_llist
+e_blif_type	blif_parser.h	/^enum e_blif_type$/;"	g
+e_bool	util.h	/^enum e_bool$/;"	g
+e_packer_algorithm	mpack_conf.h	/^enum e_packer_algorithm {$/;"	g
+e_packer_area_attraction	mpack_conf.h	/^enum e_packer_area_attraction {$/;"	g
+e_pattern_member_type	mpack_conf.h	/^enum e_pattern_member_type {$/;"	g
+echo_libgate_stats	setup_mpack.c	/^void echo_libgate_stats(t_stats* stats)$/;"	f
+fanout_buf_num	mpack_types.h	/^  int fanout_buf_num;$/;"	m	struct:s_lgknd
+ff_delay	mpack_types.h	/^  float ff_delay;$/;"	m	struct:s_delay_info
+ff_mux_delay	mpack_types.h	/^  float ff_mux_delay;$/;"	m	struct:s_delay_info
+ff_tsu	mpack_types.h	/^  float ff_tsu;$/;"	m	struct:s_delay_info
+fill_ble	climb.c	/^int fill_ble(t_lgkntwk* lgkntwk,$/;"	f
+fill_ble_arch_blends	blearch_parser.c	/^int fill_ble_arch_blends(t_ble_arch* ble_arch,$/;"	f
+fill_ble_arch_combouts	blearch_parser.c	/^int fill_ble_arch_combouts(t_ble_arch* ble_arch,$/;"	f
+fill_ble_arch_inputs	blearch_parser.c	/^int fill_ble_arch_inputs(t_ble_arch* ble_arch,$/;"	f
+fill_ble_arch_name	blearch_parser.c	/^int fill_ble_arch_name(t_ble_arch* ble_arch,$/;"	f
+fill_ble_arch_outputs	blearch_parser.c	/^int fill_ble_arch_outputs(t_ble_arch* ble_arch,$/;"	f
+fill_blif_arch_clk	blif_parser.c	/^int fill_blif_arch_clk(t_blif_arch* blif_arch,$/;"	f
+fill_blif_arch_gates	blif_parser.c	/^int fill_blif_arch_gates(t_blif_arch* blif_arch,$/;"	f
+fill_blif_arch_inputs	blif_parser.c	/^int fill_blif_arch_inputs(t_blif_arch* blif_arch,$/;"	f
+fill_blif_arch_latches	blif_parser.c	/^int fill_blif_arch_latches(t_blif_arch* blif_arch,$/;"	f
+fill_blif_arch_libgates	blif_parser.c	/^int fill_blif_arch_libgates(t_blif_arch* blif_arch,$/;"	f
+fill_blif_arch_model	blif_parser.c	/^int fill_blif_arch_model(t_blif_arch* blif_arch,$/;"	f
+fill_blif_arch_outputs	blif_parser.c	/^int fill_blif_arch_outputs(t_blif_arch* blif_arch,$/;"	f
+find_min_fanout_pred	lgkntwk_common.c	/^int find_min_fanout_pred(t_lgknd* lgknd,$/;"	f
+forbid_unrelated_clustering	mpack_conf.h	/^  int forbid_unrelated_clustering;$/;"	m	struct:s_mpack_conf
+free_all_resrc	main.c	/^void free_all_resrc(t_blif_arch* blif_arch,$/;"	f
+free_ble_arch	blearch_parser.c	/^void free_ble_arch(t_ble_arch* ble_arch)$/;"	f
+free_ble_info	mpack_util.c	/^void free_ble_info(t_ble_info* ble_info)$/;"	f
+free_ble_info_list	mpack_util.c	/^void free_ble_info_list(t_ble_info* head)$/;"	f
+free_ble_port	blearch_parser.c	/^void free_ble_port(t_bleport* ble_port)$/;"	f
+free_blend	blearch_parser.c	/^void free_blend(t_blend* blend)$/;"	f
+free_blif_arch	blif_parser.c	/^void free_blif_arch(t_blif_arch* blif_arch)$/;"	f
+free_blif_gate	blif_parser.c	/^void free_blif_gate(t_blif_gate* blif_gate)$/;"	f
+free_blif_ios	blif_parser.c	/^void free_blif_ios(t_blif_ios* blif_ios)$/;"	f
+free_blif_latch	blif_parser.c	/^void free_blif_latch(t_blif_latch* blif_latch)$/;"	f
+free_blif_libgate	blif_parser.c	/^void free_blif_libgate(t_blif_libgate* blif_libgate)$/;"	f
+free_conkt	blif_parser.c	/^void free_conkt(t_conkt* conkt)$/;"	f
+free_conkts_list	blif_parser.c	/^void free_conkts_list(t_conkt* head)$/;"	f
+free_edge	mpack_util.c	/^void free_edge(t_edge* edge) {$/;"	f
+free_int_ptr_ary	util.c	/^int free_int_ptr_ary(int len_ary,$/;"	f
+free_lgknd	mpack_util.c	/^void free_lgknd(t_lgknd* lgknd)$/;"	f
+free_lgknd_inputs_in_ble	sat_api.c	/^int free_lgknd_inputs_in_ble(t_ble_arch* ble_arch,$/;"	f
+free_lgkntwk	mpack_util.c	/^void free_lgkntwk(t_lgkntwk* lgkntwk)$/;"	f
+free_tokens	util.c	/^void free_tokens(char** tokens,$/;"	f
+full_freadlns	util.c	/^char*  full_freadlns(char* buf,$/;"	f
+gate_delay	mpack_types.h	/^  float gate_delay;$/;"	m	struct:s_delay_info
+gate_num	blif_parser.h	/^  int gate_num;$/;"	m	struct:s_blif_arch
+gates	blif_parser.h	/^  t_blif_gate* gates;$/;"	m	struct:s_blif_arch
+get_port_used_mux	check_ble_arch.c	/^int get_port_used_mux(t_bleport* port,$/;"	f
+help	mpack_conf.h	/^  int help;$/;"	m	struct:s_mpack_conf
+idx	blearch_parser.h	/^  int idx; $/;"	m	struct:s_blend
+idx	blearch_parser.h	/^  int idx;$/;"	m	struct:s_bleport
+idx	blif_parser.h	/^  int idx;$/;"	m	struct:s_blif_gate
+idx	blif_parser.h	/^  int idx;$/;"	m	struct:s_blif_ios
+idx	blif_parser.h	/^  int idx;$/;"	m	struct:s_blif_latch
+idx	blif_parser.h	/^  int idx;$/;"	m	struct:s_blif_libgate
+idx	blif_parser.h	/^  int idx;$/;"	m	struct:s_conkt
+idx	mpack_types.h	/^  int idx;$/;"	m	struct:s_ble_info
+idx	mpack_types.h	/^  int idx;$/;"	m	struct:s_lgknd
+in_edges	mpack_types.h	/^  t_edge* in_edges;$/;"	m	struct:s_lgknd
+init_ble_arch	blearch_parser.c	/^void init_ble_arch(t_ble_arch* ble_arch)$/;"	f
+init_ble_info	mpack_util.c	/^int init_ble_info(t_ble_arch* ble_arch,$/;"	f
+init_blend	blearch_parser.c	/^void init_blend(t_blend* blend)$/;"	f
+init_bleport	blearch_parser.c	/^void init_bleport(t_bleport* bleport)$/;"	f
+init_blif_arch	blif_parser.c	/^int init_blif_arch(t_blif_arch* blif_arch)$/;"	f
+init_conkt	blif_parser.c	/^void init_conkt(t_conkt* conkt)$/;"	f
+init_delay_info	mpack_util.c	/^void init_delay_info(t_delay_info* delay_info,$/;"	f
+init_edge	mpack_util.c	/^void init_edge(t_edge* edge) {$/;"	f
+init_lgknd	mpack_util.c	/^void init_lgknd(t_lgknd* lgknd)$/;"	f
+init_lgkntwk	mpack_util.c	/^void init_lgkntwk(t_lgkntwk* lgkntwk)$/;"	f
+init_lgkntwk_edges	lgkntwk_common.c	/^int init_lgkntwk_edges(t_lgkntwk* lgkntwk,$/;"	f
+init_stats	mpack_util.c	/^void init_stats(t_stats* stats)$/;"	f
+init_timing_lgkntwk	lgkntwk_common.c	/^int init_timing_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
+init_val	blif_parser.h	/^  int   init_val;$/;"	m	struct:s_blif_latch
+init_val	mpack_types.h	/^  int init_val; $/;"	m	struct:s_lgknd
+initial_lgkntwk_try_pattern_types	lgkntwk_common.c	/^int initial_lgkntwk_try_pattern_types(t_lgkntwk* lgkntwk) {$/;"	f
+inner_cluster_delay	blearch_parser.h	/^  float inner_cluster_delay;$/;"	m	struct:s_ble_arch
+inner_cluster_delay	mpack_conf.h	/^  float inner_cluster_delay;$/;"	m	struct:s_mpack_conf
+inner_cluster_delay	mpack_types.h	/^  float inner_cluster_delay;$/;"	m	struct:s_delay_info
+inpad_delay	mpack_types.h	/^  float inpad_delay;$/;"	m	struct:s_delay_info
+input	blif_parser.h	/^  t_blif_ios input;$/;"	m	struct:s_blif_latch
+input_conkts	mpack_types.h	/^  int* input_conkts; \/\/ index of conkts$/;"	m	struct:s_ble_info
+input_conkts_type	mpack_types.h	/^  int* input_conkts_type; \/\/ type of conkts$/;"	m	struct:s_ble_info
+input_lgknds	mpack_types.h	/^  t_lgknd** input_lgknds;$/;"	m	struct:s_ble_info
+input_lgknds_input_idx	mpack_types.h	/^  int* input_lgknds_input_idx;$/;"	m	struct:s_ble_info
+input_num	blearch_parser.h	/^  int input_num;$/;"	m	struct:s_ble_arch
+input_num	blearch_parser.h	/^  int input_num;$/;"	m	struct:s_blend
+input_num	blif_parser.h	/^  int input_num;$/;"	m	struct:s_blif_arch
+input_num	blif_parser.h	/^  int input_num;$/;"	m	struct:s_blif_gate
+input_num	blif_parser.h	/^  int input_num;$/;"	m	struct:s_blif_libgate
+input_num	blif_parser.h	/^  int input_num;$/;"	m	struct:s_conkt
+input_num	mpack_types.h	/^  int input_num;$/;"	m	struct:s_ble_info
+input_num	mpack_types.h	/^  int input_num;$/;"	m	struct:s_lgknd
+input_pad_td	arch_timing.h	/^static float input_pad_td = 4.243e-11;$/;"	v
+input_paths_affect	mpack_types.h	/^  float input_paths_affect;$/;"	m	struct:s_lgknd
+input_used	mpack_types.h	/^  int* input_used; \/\/ 1 used, 0 unused$/;"	m	struct:s_ble_info
+inputs	blearch_parser.h	/^  t_bleport* inputs;$/;"	m	struct:s_ble_arch
+inputs	blearch_parser.h	/^  t_bleport* inputs;$/;"	m	struct:s_blend
+inputs	blif_parser.h	/^  int inputs;$/;"	m	struct:s_conkt
+inputs	blif_parser.h	/^  t_blif_ios* inputs;$/;"	m	struct:s_blif_arch
+inputs	blif_parser.h	/^  t_blif_ios* inputs;$/;"	m	struct:s_blif_gate
+inputs	blif_parser.h	/^  t_blif_ios* inputs;$/;"	m	struct:s_blif_libgate
+inputs	mpack_types.h	/^  t_lgknd** inputs;$/;"	m	struct:s_lgknd
+inputs_types	blif_parser.h	/^  enum e_blif_type inputs_types;$/;"	m	struct:s_conkt	typeref:enum:s_conkt::e_blif_type
+insert_ble_list_node	mpack_util.c	/^t_ble_info* insert_ble_list_node(t_ble_info* cur,$/;"	f
+insert_conkt_list_node	blif_parser.c	/^t_conkt* insert_conkt_list_node(t_conkt* cur,$/;"	f
+insert_lgknd_list_node	mpack_util.c	/^t_lgknd* insert_lgknd_list_node(t_lgknd* cur,$/;"	f
+insert_llist_node	util.c	/^t_llist* insert_llist_node(t_llist* cur,$/;"	f
+inter_clb_td	arch_timing.h	/^static float inter_clb_td = 1.60e-9;$/;"	v
+inter_cluster_delay	mpack_conf.h	/^  float inter_cluster_delay;$/;"	m	struct:s_mpack_conf
+inter_cluster_delay	mpack_types.h	/^  float inter_cluster_delay;$/;"	m	struct:s_delay_info
+inter_cluster_delay_per_unit	mpack_types.h	/^  float inter_cluster_delay_per_unit;$/;"	m	struct:s_delay_info
+inv_capable	blearch_parser.h	/^  int inv_capable;$/;"	m	struct:s_bleport
+inv_num	mpack_conf.h	/^  int inv_num;$/;"	m	struct:s_libgate_stats
+io_name	mpack_types.h	/^  char* io_name;$/;"	m	struct:s_lgknd
+iout	blif_parser.h	/^  int iout; $/;"	m	struct:s_conkt
+is_buf	blif_parser.h	/^  int is_buf;$/;"	m	struct:s_blif_gate
+is_comb	blearch_parser.h	/^  int is_comb;$/;"	m	struct:s_bleport
+is_pi	blif_parser.h	/^  int is_pi;$/;"	m	struct:s_conkt
+is_po	blif_parser.h	/^  int is_po;$/;"	m	struct:s_conkt
+join_preds_ble	climb.c	/^int join_preds_ble(t_lgkntwk* lgkntwk,$/;"	f
+latch_absorb_in_subgraph	sat_api.c	/^int latch_absorb_in_subgraph(int num,$/;"	f
+latch_conkt	mpack_types.h	/^  int latch_conkt;$/;"	m	struct:s_lgknd
+latch_head	mpack_types.h	/^  t_lgknd* latch_head;$/;"	m	struct:s_lgkntwk
+latch_num	blif_parser.h	/^  int latch_num;$/;"	m	struct:s_blif_arch
+latch_num	mpack_conf.h	/^  int latch_num; $/;"	m	struct:s_stats
+latch_num	mpack_types.h	/^  int latch_num;$/;"	m	struct:s_lgkntwk
+latch_ptrs	mpack_types.h	/^  t_lgknd** latch_ptrs;$/;"	m	struct:s_lgkntwk
+latches	blif_parser.h	/^  t_blif_latch* latches;$/;"	m	struct:s_blif_arch
+legality_check	sat_api.c	/^int legality_check(int sat_lgknd_num,$/;"	f
+lgknd_fanout_comb_num	lgkntwk_common.c	/^int lgknd_fanout_comb_num(t_lgknd* lgknd) {$/;"	f
+lgknd_input_sum_weight_subgraph	sat_api.c	/^int lgknd_input_sum_weight_subgraph(int num,$/;"	f
+lgknd_type	mpack_types.h	/^enum lgknd_type$/;"	g
+lgknds_sat_type	sat_api.c	/^int lgknds_sat_type(t_lgknd* root,$/;"	f
+libgate_head	mpack_types.h	/^  t_lgknd* libgate_head;$/;"	m	struct:s_lgkntwk
+libgate_latch_fanout_avg	mpack_conf.h	/^  float libgate_latch_fanout_avg;$/;"	m	struct:s_stats
+libgate_num	blif_parser.h	/^  int libgate_num;$/;"	m	struct:s_blif_arch
+libgate_num	mpack_conf.h	/^  int libgate_num;$/;"	m	struct:s_stats
+libgate_num	mpack_types.h	/^  int libgate_num;$/;"	m	struct:s_lgkntwk
+libgate_ptrs	mpack_types.h	/^  t_lgknd** libgate_ptrs;$/;"	m	struct:s_lgkntwk
+libgates	blif_parser.h	/^  t_blif_libgate* libgates;$/;"	m	struct:s_blif_arch
+local_dfs_ble_cell	check_ble_arch.c	/^int* local_dfs_ble_cell(t_ble_arch* ble_arch,$/;"	f
+local_dfs_lgknds	lgkntwk_common.c	/^int* local_dfs_lgknds(int num_dfsnds,$/;"	f
+logic_equivalent	mpack_types.h	/^  int logic_equivalent;$/;"	m	struct:s_lgknd
+logic_td	arch_timing.h	/^static float logic_td = 1.30e-10;$/;"	v
+lut_stats	mpack_conf.h	/^  int* lut_stats;$/;"	m	struct:s_stats
+main	main.c	/^int main(int argc,char **argv)$/;"	f
+mandatory	Options.h	/^  enum opt_manda mandatory;$/;"	m	struct:s_optinfo	typeref:enum:s_optinfo::opt_manda
+map_climb	mpack_types.h	/^  int map_climb;$/;"	m	struct:s_lgknd
+mapped	mpack_types.h	/^  int mapped;$/;"	m	struct:s_lgknd
+mark_fully_sat_cells_ble	check_ble_arch.c	/^int mark_fully_sat_cells_ble(t_ble_arch* ble_arch,$/;"	f
+mark_invs_ble	check_ble_arch.c	/^int mark_invs_ble(t_ble_arch* ble_arch,$/;"	f
+mark_lgknd_outputs_mapped	sat_api.c	/^int mark_lgknd_outputs_mapped(t_lgkntwk* lgkntwk,$/;"	f
+mark_pi_po_conkt	blif_parser.c	/^void mark_pi_po_conkt(t_blif_arch* blif_arch,$/;"	f
+max	util.h	17;"	d
+max_lut_size	mpack_conf.h	/^  int max_lut_size;$/;"	m	struct:s_stats
+max_slack	mpack_types.h	/^  float max_slack;$/;"	m	struct:s_lgkntwk
+merge_weights_lgkntwk	lgkntwk_common.c	/^int merge_weights_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
+min	util.h	18;"	d
+mini_sat_solver	sat_api.c	/^int mini_sat_solver(int sat_type,$/;"	f
+model	blif_parser.h	/^  char* model;$/;"	m	struct:s_blif_arch
+mpack_blif	mpack_conf.h	/^  char* mpack_blif;$/;"	m	struct:s_mpack_conf
+mux_min_size_td	arch_timing.h	/^static float mux_min_size_td = 1.5e-12; $/;"	v
+my_atof	util.c	/^float my_atof(char* arg)$/;"	f
+my_atoi	util.c	/^int my_atoi(char* arg)$/;"	f
+my_calloc	util.c	/^my_calloc(size_t num,$/;"	f
+my_fopen	util.c	/^FILE* my_fopen(char* fname,$/;"	f
+my_freadln	util.c	/^int   my_freadln(char* buf,$/;"	f
+my_init_int_ary	mpack_util.c	/^void my_init_int_ary(int ary_len, int* ary, int init_val)$/;"	f
+my_malloc	util.c	/^my_malloc(size_t size)$/;"	f
+my_realloc	util.c	/^my_realloc(void* org, size_t size)$/;"	f
+my_strdup	util.c	/^my_strdup(const char* str)$/;"	f
+my_strtok	util.c	/^char** my_strtok(char* str, $/;"	f
+name	Options.h	/^  char* name; \/*The name of option*\/$/;"	m	struct:s_optinfo
+name	blearch_parser.h	/^  char* name;$/;"	m	struct:s_ble_arch
+name	blearch_parser.h	/^  char* name;$/;"	m	struct:s_blend
+name	blearch_parser.h	/^  char* name;$/;"	m	struct:s_bleport
+name	blif_parser.h	/^  char* name; \/\/ mapping name$/;"	m	struct:s_blif_ios
+name	blif_parser.h	/^  char* name;$/;"	m	struct:s_blif_libgate
+name	blif_parser.h	/^  char* name;$/;"	m	struct:s_conkt
+net	mpack_conf.h	/^  char* net;$/;"	m	struct:s_mpack_conf
+net_name	mpack_types.h	/^  char* net_name;$/;"	m	struct:s_lgknd
+nets	blif_parser.h	/^  t_conkt* nets;$/;"	m	struct:s_blif_arch
+new_fill_ble	climb.c	/^int new_fill_ble(t_lgkntwk* lgkntwk,$/;"	f
+new_fill_ble_once	climb.c	/^int new_fill_ble_once(t_lgkntwk* lgkntwk,$/;"	f
+next	blif_parser.h	/^  t_conkt* next;$/;"	m	struct:s_conkt
+next	mpack_types.h	/^  t_ble_info* next;$/;"	m	struct:s_ble_info
+next	mpack_types.h	/^  t_lgknd* next;$/;"	m	struct:s_lgknd
+next	util.h	/^  t_llist* next;$/;"	m	struct:s_llist
+one_num	mpack_conf.h	/^  int one_num;$/;"	m	struct:s_libgate_stats
+opt_def	Options.h	/^  enum opt_default opt_def;$/;"	m	struct:s_optinfo	typeref:enum:s_optinfo::opt_default
+opt_default	Options.h	/^enum opt_default$/;"	g
+opt_list	init_opts.h	/^t_optinfo opt_list[] = $/;"	v
+opt_manda	Options.h	/^enum opt_manda$/;"	g
+opt_offset	Options.h	/^enum opt_offset$/;"	g
+opt_val_type	Options.h	/^enum opt_val_type$/;"	g
+opt_with_val	Options.h	/^enum opt_with_val$/;"	g
+out_edges	mpack_types.h	/^  t_edge** out_edges;$/;"	m	struct:s_lgknd
+outpad_delay	mpack_types.h	/^  float outpad_delay;$/;"	m	struct:s_delay_info
+output	blif_parser.h	/^  t_blif_ios output; $/;"	m	struct:s_blif_gate
+output	blif_parser.h	/^  t_blif_ios output;$/;"	m	struct:s_blif_latch
+output	blif_parser.h	/^  t_blif_ios output;$/;"	m	struct:s_blif_libgate
+output_conkt	mpack_types.h	/^  int output_conkt;$/;"	m	struct:s_lgknd
+output_conkts	mpack_types.h	/^  int* output_conkts; \/\/ Index of conkt$/;"	m	struct:s_ble_info
+output_conkts_type	mpack_types.h	/^  int* output_conkts_type; \/\/ type of conkts$/;"	m	struct:s_ble_info
+output_lgknds	mpack_types.h	/^  t_lgknd** output_lgknds;$/;"	m	struct:s_ble_info
+output_muxes	mpack_types.h	/^  int* output_muxes;  $/;"	m	struct:s_ble_info
+output_num	blearch_parser.h	/^  int output_num;$/;"	m	struct:s_ble_arch
+output_num	blif_parser.h	/^  int output_num;$/;"	m	struct:s_blif_arch
+output_num	blif_parser.h	/^  int output_num;$/;"	m	struct:s_conkt
+output_num	mpack_types.h	/^  int output_num;$/;"	m	struct:s_ble_info
+output_num	mpack_types.h	/^  int output_num;$/;"	m	struct:s_lgknd
+output_pad_td	arch_timing.h	/^static float output_pad_td = 1.394e-11;$/;"	v
+output_paths_affect	mpack_types.h	/^  float output_paths_affect;$/;"	m	struct:s_lgknd
+output_types	mpack_types.h	/^  int* output_types; \/\/ Seq:0 Comb:1$/;"	m	struct:s_ble_info
+output_used	mpack_types.h	/^  int* output_used;$/;"	m	struct:s_ble_info
+outputs	blearch_parser.h	/^  t_bleport* outputs; $/;"	m	struct:s_ble_arch
+outputs	blif_parser.h	/^  int* outputs;$/;"	m	struct:s_conkt
+outputs	blif_parser.h	/^  t_blif_ios* outputs; $/;"	m	struct:s_blif_arch
+outputs	mpack_types.h	/^  t_lgknd** outputs;$/;"	m	struct:s_lgknd
+outputs_types	blif_parser.h	/^  enum e_blif_type* outputs_types;$/;"	m	struct:s_conkt	typeref:enum:s_conkt::e_blif_type
+pack_BLEs	packing.c	/^t_ble_info* pack_BLEs(t_lgkntwk* lgkntwk,$/;"	f
+packer_algorithm	mpack_conf.h	/^  enum e_packer_algorithm packer_algorithm;$/;"	m	struct:s_mpack_conf	typeref:enum:s_mpack_conf::e_packer_algorithm
+packer_area_attraction	mpack_conf.h	/^  enum e_packer_area_attraction packer_area_attraction;$/;"	m	struct:s_mpack_conf	typeref:enum:s_mpack_conf::e_packer_area_attraction
+parse_ble_arch	blearch_parser.c	/^int parse_ble_arch(char* ble_arch_file,$/;"	f
+pattern_member_type	mpack_conf.h	/^  enum e_pattern_member_type pattern_member_type; $/;"	m	struct:s_mpack_conf	typeref:enum:s_mpack_conf::e_pattern_member_type
+pattern_pack	packing.c	/^t_ble_info* pattern_pack(t_lgkntwk* lgkntwk,$/;"	f
+pattern_type	blearch_parser.h	/^  int pattern_type;$/;"	m	struct:s_blend
+pi_head	mpack_types.h	/^  t_lgknd* pi_head;$/;"	m	struct:s_lgkntwk
+pi_idx	blif_parser.h	/^  int pi_idx;$/;"	m	struct:s_conkt
+pi_num	mpack_conf.h	/^  int pi_num;$/;"	m	struct:s_stats
+pi_num	mpack_types.h	/^  int pi_num;$/;"	m	struct:s_lgkntwk
+pi_ptrs	mpack_types.h	/^  t_lgknd** pi_ptrs;$/;"	m	struct:s_lgkntwk
+pick_cell_idx_from_ble_arch	check_ble_arch.c	/^int pick_cell_idx_from_ble_arch(t_ble_arch* ble_arch,$/;"	f
+pick_pattern_fit_ble	sat_api.c	/^int pick_pattern_fit_ble(t_lgkntwk* lgkntwk,$/;"	f
+pick_position_from_ble_arch	check_ble_arch.c	/^int pick_position_from_ble_arch(t_ble_arch* ble_arch,$/;"	f
+pick_sat_lgknd_from_lgkntwk	sat_api.c	/^t_lgknd* pick_sat_lgknd_from_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
+pick_seed	packing.c	/^t_lgknd* pick_seed(t_lgkntwk* lgkntwk)$/;"	f
+pio_conkt	mpack_types.h	/^  int pio_conkt;$/;"	m	struct:s_lgknd
+po_head	mpack_types.h	/^  t_lgknd* po_head;$/;"	m	struct:s_lgkntwk
+po_idx	blif_parser.h	/^  int po_idx;$/;"	m	struct:s_conkt
+po_num	mpack_conf.h	/^  int po_num;$/;"	m	struct:s_stats
+po_num	mpack_types.h	/^  int po_num;$/;"	m	struct:s_lgkntwk
+po_ptrs	mpack_types.h	/^  t_lgknd** po_ptrs;$/;"	m	struct:s_lgkntwk
+port	blif_parser.h	/^  char* port; \/\/ port name$/;"	m	struct:s_blif_ios
+print_blif	print_blif.c	/^int print_blif(char* output_blif_name,$/;"	f
+print_block_cells	print_vpr_netlist.c	/^int print_block_cells(FILE* fnet,$/;"	f
+print_block_inputs	print_vpr_netlist.c	/^int print_block_inputs(FILE* fnet,$/;"	f
+print_block_latches	print_vpr_netlist.c	/^int print_block_latches(FILE* fnet,$/;"	f
+print_block_mux_input	print_vpr_netlist.c	/^int print_block_mux_input(FILE* fnet,$/;"	f
+print_block_outputs	print_vpr_netlist.c	/^int print_block_outputs(FILE* fnet,$/;"	f
+print_stats	stats.c	/^void print_stats(char* fstats_name,$/;"	f
+print_title	main.c	/^void print_title()$/;"	f
+print_usage	main.c	/^void print_usage()$/;"	f
+print_vpr7_arch	print_vpr_arch.c	/^int print_vpr7_arch(t_ble_arch* ble_arch,$/;"	f
+print_vpr7_arch_comb_part_inputs	print_vpr_arch.c	/^int print_vpr7_arch_comb_part_inputs(t_ble_arch* ble_arch,$/;"	f
+print_vpr7_arch_comb_part_outputs	print_vpr_arch.c	/^int print_vpr7_arch_comb_part_outputs(t_ble_arch* ble_arch,$/;"	f
+print_vpr7_arch_follower_interconnect	print_vpr_arch.c	/^int print_vpr7_arch_follower_interconnect(t_ble_arch* ble_arch,$/;"	f
+print_vpr7_arch_followers	print_vpr_arch.c	/^int print_vpr7_arch_followers(t_ble_arch* ble_arch,$/;"	f
+print_vpr7_arch_mux_inputs	print_vpr_arch.c	/^int print_vpr7_arch_mux_inputs(t_ble_arch* ble_arch,$/;"	f
+print_vpr7_netlist	print_vpr_netlist.c	/^int print_vpr7_netlist(char* net_file,$/;"	f
+priority	blearch_parser.h	/^  float priority;$/;"	m	struct:s_blend
+process_arg_opt	read_opts.c	/^int process_arg_opt(IN char** argv,$/;"	f
+read_options	read_opts.c	/^t_optinfo* read_options(IN int argc,$/;"	f
+read_stdlib_blif	mpack_conf.h	/^  int read_stdlib_blif;$/;"	m	struct:s_mpack_conf
+ready_new_conkt	blif_parser.c	/^t_conkt* ready_new_conkt(t_conkt* cur,$/;"	f
+redund_output_num	mpack_types.h	/^  int redund_output_num;$/;"	m	struct:s_lgknd
+remove_ble_info_from_llist	mpack_util.c	/^void remove_ble_info_from_llist(t_ble_info* head,$/;"	f
+remove_ble_list_node	mpack_util.c	/^void remove_ble_list_node(t_ble_info* cur)$/;"	f
+remove_buf_lgkntwk	lgkntwk_common.c	/^int remove_buf_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
+remove_conkt_list_node	blif_parser.c	/^void remove_conkt_list_node(t_conkt* cur)$/;"	f
+remove_hanging_latch_lgkntwk	lgkntwk_common.c	/^int remove_hanging_latch_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
+remove_isolated_pi_lgkntwk	lgkntwk_common.c	/^int remove_isolated_pi_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
+remove_isolated_po_lgkntwk	lgkntwk_common.c	/^int remove_isolated_po_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
+remove_lgknd_list_node	mpack_util.c	/^void remove_lgknd_list_node(t_lgknd* cur)$/;"	f
+remove_llist_node	util.c	/^void remove_llist_node(t_llist* cur)$/;"	f
+remove_one_buf_lgknd	lgkntwk_common.c	/^int remove_one_buf_lgknd(t_lgknd* cur,$/;"	f
+reset_dfs_tags_lgkntwk	lgkntwk_common.c	/^int reset_dfs_tags_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
+reset_lgkntwk_try_pattern_types	lgkntwk_common.c	/^int reset_lgkntwk_try_pattern_types(t_lgkntwk* lgkntwk) {$/;"	f
+reset_lgkntwk_try_sat	lgkntwk_common.c	/^void reset_lgkntwk_try_sat(t_lgkntwk* lgkntwk)$/;"	f
+rmetal	blearch_parser.h	/^  float rmetal;$/;"	m	struct:s_ble_arch
+run_sat_solver	sat_api.c	/^int run_sat_solver(t_lgkntwk* lgkntwk,$/;"	f
+s_ble_arch	blearch_parser.h	/^struct s_ble_arch$/;"	s
+s_ble_info	mpack_types.h	/^struct s_ble_info$/;"	s
+s_blend	blearch_parser.h	/^struct s_blend$/;"	s
+s_bleport	blearch_parser.h	/^struct s_bleport$/;"	s
+s_blif_arch	blif_parser.h	/^struct s_blif_arch$/;"	s
+s_blif_gate	blif_parser.h	/^struct s_blif_gate$/;"	s
+s_blif_ios	blif_parser.h	/^struct s_blif_ios$/;"	s
+s_blif_latch	blif_parser.h	/^struct s_blif_latch$/;"	s
+s_blif_libgate	blif_parser.h	/^struct s_blif_libgate$/;"	s
+s_conkt	blif_parser.h	/^struct s_conkt$/;"	s
+s_delay_info	mpack_types.h	/^struct s_delay_info {$/;"	s
+s_edge	mpack_types.h	/^struct s_edge {$/;"	s
+s_lgknd	mpack_types.h	/^struct s_lgknd$/;"	s
+s_lgkntwk	mpack_types.h	/^struct s_lgkntwk$/;"	s
+s_libgate_stats	mpack_conf.h	/^struct s_libgate_stats$/;"	s
+s_llist	util.h	/^struct s_llist$/;"	s
+s_mpack_conf	mpack_conf.h	/^struct s_mpack_conf$/;"	s
+s_optinfo	Options.h	/^struct s_optinfo$/;"	s
+s_stats	mpack_conf.h	/^struct s_stats$/;"	s
+s_typepair	mpack_types.h	/^struct s_typepair$/;"	s
+sat2_capable	blearch_parser.h	/^  int sat2_capable;$/;"	m	struct:s_blend
+sat3_capable	blearch_parser.h	/^  int sat3_capable;$/;"	m	struct:s_blend
+sat_ble_out	sat_api.c	/^int sat_ble_out(t_ble_arch* ble_arch,$/;"	f
+sat_cell_port_target_lgknd	sat_api.c	/^int sat_cell_port_target_lgknd(t_ble_arch* ble_arch,$/;"	f
+sat_cell_redundant_ports	sat_api.c	/^int sat_cell_redundant_ports(t_ble_arch* ble_arch, $/;"	f
+sat_lgknd_input_cell_port	sat_api.c	/^int sat_lgknd_input_cell_port(t_ble_arch* ble_arch, $/;"	f
+sat_lgknd_inputs	sat_api.c	/^int sat_lgknd_inputs(t_ble_arch* ble_arch, $/;"	f
+sat_lgknd_outputs	sat_api.c	/^int sat_lgknd_outputs(t_ble_arch* ble_arch,$/;"	f
+sat_lgknds_ble_average_weight	sat_api.c	/^float sat_lgknds_ble_average_weight(int sat_lgknd_num,$/;"	f
+sat_lgknds_ble_paths_affect	sat_api.c	/^float sat_lgknds_ble_paths_affect(int sat_lgknd_num,$/;"	f
+sat_mapper	sat_api.c	/^int sat_mapper(t_lgkntwk* lgkntwk,$/;"	f
+sat_pack	packing.c	/^t_ble_info* sat_pack(t_lgkntwk* lgkntwk,$/;"	f
+sat_src_port_des_port	sat_api.c	/^int sat_src_port_des_port(t_ble_arch* ble_arch,$/;"	f
+setup_mpack	setup_mpack.c	/^int setup_mpack(t_blif_arch* blif_arch,$/;"	f
+show_opt_list	read_opts.c	/^int show_opt_list()$/;"	f
+slack	mpack_types.h	/^  float slack;$/;"	m	struct:s_edge
+slack	mpack_types.h	/^  float slack;$/;"	m	struct:s_lgknd
+split_lgknd_output	lgkntwk_common.c	/^int split_lgknd_output(t_lgkntwk* lgkntwk,$/;"	f
+split_lgkntwk_lgknds_outputs	lgkntwk_common.c	/^int split_lgkntwk_lgknds_outputs(t_lgkntwk* lgkntwk,$/;"	f
+spot_cand_ptr	blearch_parser.c	/^t_bleport* spot_cand_ptr(t_ble_arch* ble_arch,$/;"	f
+spot_conkt_name	blif_parser.c	/^t_conkt* spot_conkt_name(t_conkt* head,$/;"	f
+spot_index_lgknd_array	mpack_util.c	/^int spot_index_lgknd_array(int lgknd_num,$/;"	f
+spot_lgknd_ble_cell_idx	sat_api.c	/^int spot_lgknd_ble_cell_idx(t_ble_info* ble_info,$/;"	f
+spot_lgknd_ble_output_idx	sat_api.c	/^int spot_lgknd_ble_output_idx(t_ble_info* ble_info,$/;"	f
+stats	mpack_conf.h	/^  char* stats;$/;"	m	struct:s_mpack_conf
+stats_ble_num	stats.c	/^int stats_ble_num(t_ble_arch* ble_arch,$/;"	f
+stats_ble_resource_util	stats.c	/^float stats_ble_resource_util(t_ble_arch* ble_arch,$/;"	f
+stats_lgkntwk	stats.c	/^int stats_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
+stats_net_num	stats.c	/^int stats_net_num(t_lgkntwk* lgkntwk,$/;"	f
+stdgate_stats	mpack_conf.h	/^  int stdgate_stats[13]; $/;"	m	struct:s_stats
+strict	mpack_types.h	/^  int strict;$/;"	m	struct:s_lgknd
+subgraph_legality_check	sat_api.c	/^int subgraph_legality_check(int num,$/;"	f
+sum_cell_input_num	check_ble_arch.c	/^int sum_cell_input_num(t_ble_arch* ble_arch,$/;"	f
+sum_ff_num	check_ble_arch.c	/^int sum_ff_num(t_ble_arch* ble_arch,$/;"	f
+t_arrival	mpack_types.h	/^  float t_arrival;$/;"	m	struct:s_edge
+t_arrival	mpack_types.h	/^  float t_arrival;$/;"	m	struct:s_lgknd
+t_ble_arch	blearch_parser.h	/^typedef struct s_ble_arch t_ble_arch;$/;"	t	typeref:struct:s_ble_arch
+t_ble_info	mpack_types.h	/^typedef struct s_ble_info t_ble_info;$/;"	t	typeref:struct:s_ble_info
+t_blend	blearch_parser.h	/^typedef struct s_blend t_blend;$/;"	t	typeref:struct:s_blend
+t_bleport	blearch_parser.h	/^typedef struct s_bleport t_bleport;$/;"	t	typeref:struct:s_bleport
+t_blif_arch	blif_parser.h	/^typedef struct s_blif_arch t_blif_arch;$/;"	t	typeref:struct:s_blif_arch
+t_blif_gate	blif_parser.h	/^typedef struct s_blif_gate t_blif_gate;$/;"	t	typeref:struct:s_blif_gate
+t_blif_ios	blif_parser.h	/^typedef struct s_blif_ios t_blif_ios;$/;"	t	typeref:struct:s_blif_ios
+t_blif_latch	blif_parser.h	/^typedef struct s_blif_latch t_blif_latch;$/;"	t	typeref:struct:s_blif_latch
+t_blif_libgate	blif_parser.h	/^typedef struct s_blif_libgate t_blif_libgate;$/;"	t	typeref:struct:s_blif_libgate
+t_conkt	blif_parser.h	/^typedef struct s_conkt t_conkt;$/;"	t	typeref:struct:s_conkt
+t_delay_info	mpack_types.h	/^typedef struct s_delay_info t_delay_info;$/;"	t	typeref:struct:s_delay_info
+t_edge	mpack_types.h	/^typedef struct s_edge t_edge;$/;"	t	typeref:struct:s_edge
+t_lgknd	mpack_types.h	/^typedef struct s_lgknd t_lgknd;$/;"	t	typeref:struct:s_lgknd
+t_lgkntwk	mpack_types.h	/^typedef struct s_lgkntwk t_lgkntwk;$/;"	t	typeref:struct:s_lgkntwk
+t_libgate_stats	mpack_conf.h	/^typedef struct s_libgate_stats t_libgate_stats;$/;"	t	typeref:struct:s_libgate_stats
+t_llist	util.h	/^typedef struct s_llist t_llist;$/;"	t	typeref:struct:s_llist
+t_mpack_conf	mpack_conf.h	/^typedef struct s_mpack_conf t_mpack_conf;$/;"	t	typeref:struct:s_mpack_conf
+t_optinfo	Options.h	/^typedef struct s_optinfo t_optinfo;$/;"	t	typeref:struct:s_optinfo
+t_required	mpack_types.h	/^  float t_required;$/;"	m	struct:s_edge
+t_required	mpack_types.h	/^  float t_required;$/;"	m	struct:s_lgknd
+t_stats	mpack_conf.h	/^typedef struct s_stats t_stats;$/;"	t	typeref:struct:s_stats
+t_typepair	mpack_types.h	/^typedef struct s_typepair t_typepair;$/;"	t	typeref:struct:s_typepair
+timing_analysis	mpack_conf.h	/^  int timing_analysis;$/;"	m	struct:s_mpack_conf
+timing_analysis_lgknd	lgkntwk_common.c	/^int timing_analysis_lgknd(t_lgknd* root,$/;"	f
+timing_analysis_lgkntwk	lgkntwk_common.c	/^int timing_analysis_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
+timing_max_slack_lgkntwk	lgkntwk_common.c	/^float timing_max_slack_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
+timing_required_lgknd	lgkntwk_common.c	/^int timing_required_lgknd(t_lgknd* root,$/;"	f
+timing_required_lgkntwk	lgkntwk_common.c	/^int timing_required_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
+timing_slack_lgkntwk	lgkntwk_common.c	/^int timing_slack_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
+timing_weight	mpack_types.h	/^  float timing_weight;$/;"	m	struct:s_edge
+timing_weighting_lgkntwk	lgkntwk_common.c	/^int timing_weighting_lgkntwk(t_lgkntwk* lgkntwk,$/;"	f
+tmp_redund_output_num	mpack_types.h	/^  int tmp_redund_output_num;$/;"	m	struct:s_lgknd
+total	mpack_conf.h	/^  int total;$/;"	m	struct:s_libgate_stats
+try_join_ble	climb.c	/^int try_join_ble(t_lgkntwk* lgkntwk,$/;"	f
+try_pattern_types	mpack_types.h	/^  int* try_pattern_types;$/;"	m	struct:s_lgknd
+try_sat	mpack_types.h	/^  int try_sat;$/;"	m	struct:s_lgknd
+type	blearch_parser.h	/^  enum ble_port_type type;$/;"	m	struct:s_bleport	typeref:enum:s_bleport::ble_port_type
+type	blif_parser.h	/^  char* type;$/;"	m	struct:s_blif_latch
+type	mpack_types.h	/^  enum lgknd_type type;$/;"	m	struct:s_lgknd	typeref:enum:s_lgknd::lgknd_type
+type_id	mpack_types.h	/^  int type_id;$/;"	m	struct:s_typepair
+type_name	mpack_types.h	/^  char* type_name;$/;"	m	struct:s_typepair
+typepair_list	init_mpack_types.h	/^static t_typepair typepair_list[] = {$/;"	v
+update_lut_stats	setup_mpack.c	/^int update_lut_stats(t_blif_arch* blif_arch,$/;"	f
+update_redund_output_num	lgkntwk_common.c	/^int update_redund_output_num(int lgknd_num,$/;"	f
+val	Options.h	/^  char* val;  \/*The value*\/$/;"	m	struct:s_optinfo
+val_type	Options.h	/^  enum opt_val_type val_type; $/;"	m	struct:s_optinfo	typeref:enum:s_optinfo::opt_val_type
+verbose	mpack_conf.h	/^  int verbose;$/;"	m	struct:s_mpack_conf
+vpr_arch	mpack_conf.h	/^  char* vpr_arch;$/;"	m	struct:s_mpack_conf
+weight	mpack_types.h	/^  float weight;$/;"	m	struct:s_edge
+with_val	Options.h	/^  enum opt_with_val with_val;$/;"	m	struct:s_optinfo	typeref:enum:s_optinfo::opt_with_val
+xnor_num	mpack_conf.h	/^  int xnor_num;$/;"	m	struct:s_libgate_stats
+zero_num	mpack_conf.h	/^  int zero_num;$/;"	m	struct:s_libgate_stats
