@@ -9,7 +9,7 @@ sb_type = ["subset", "universal", "wilton"];
 fdir_name_postfix = ['_fpga'];
 
 % Define file name variable
-fname_postfix = ['_minW1p3_data'];
+fname_postfix = [''];
 
 % Read source data
 idata = 1;
@@ -30,7 +30,7 @@ for iarch = 1:length(arch_type)
       cd(arch_type(iarch) + fdir_name_postfix);
       % Import the data file to the data base matrix 
       eval(data_fname);
-      raw_db(idata,:,:) = data; 
+      raw_db(idata,:,:) = mdata; 
       % back to directory
       cd('..')
       % Update name tag 
@@ -70,7 +70,7 @@ fig_handle0 = figure;
 b = bar([average_area', average_delay', average_minW']); 
 ch = get(b,'children');
 set(gca,'xlim',[0.5 length(data_name)+0.5],'Fontsize',16);
-set(gca,'ylim',[0.75 1+0.2],'Fontsize',16);
+set(gca,'ylim',[0.75 1+0.5],'Fontsize',16);
 set(gca,'XTick',1:1:length(data_name));
 set(gca,'XTickLabel', data_name);
 set(fig_handle0, 'Position', [1 1 2000 400]);
