@@ -9,7 +9,7 @@ sb_type = ["subset", "universal", "wilton"];
 fdir_name_postfix = ['_fpga'];
 
 % Define file name variable
-fname_postfix = ['_minW1p3_data'];
+fname_postfix = ['_minW1p3'];
 
 % Read source data
 idata = 1;
@@ -30,11 +30,15 @@ for iarch = 1:length(arch_type)
       cd(arch_type(iarch) + fdir_name_postfix);
       % Import the data file to the data base matrix 
       eval(data_fname);
-      raw_db(idata,:,:) = data; 
+      raw_db(idata,:,:) = mdata; 
       % back to directory
       cd('..')
       % Update name tag 
-      data_name(idata) = arch_type(iarch) + '_' + sb_type(isb_type) + '_' + sb_subtype(isb_subtype);
+      if ("classical" == arch_type(iarch)) 
+        data_name(idata) = arch_type(iarch) + '\_' + sb_type(isb_type);
+      else 
+        data_name(idata) = arch_type(iarch) + '\_' + sb_type(isb_type) + '\times' + sb_subtype(isb_subtype);
+      end
       % Pre-process the raw data
       db(idata,:,:) = cell2mat(raw_db(idata,:,2:end));
       % increment counter i
@@ -70,11 +74,12 @@ fig_handle0 = figure;
 b = bar([average_area', average_delay', average_minW']); 
 ch = get(b,'children');
 set(gca,'xlim',[0.5 length(data_name)+0.5],'Fontsize',16);
-set(gca,'ylim',[0.75 1+0.2],'Fontsize',16);
+set(gca,'ylim',[0.75 1+0.1],'Fontsize',16);
 set(gca,'XTick',1:1:length(data_name));
 set(gca,'XTickLabel', data_name);
 set(fig_handle0, 'Position', [1 1 2000 400]);
-legend([{'Area'};{'Delay'};{'minW'}]);
-ylabel('Normalized Area, Delay and minW');
+legend([{'Area'};{'Delay'};{'W_{min}'}]);
+ylabel('Normalized Area, Delay and W_{min}');
+xtickangle(30);
 grid on
 

@@ -9,7 +9,7 @@ sb_type = ["subset", "universal", "wilton"];
 fdir_name_postfix = ['_fpga'];
 
 % Define file name variable
-fname_postfix = [''];
+fname_postfix = ['_W320'];
 
 % Read source data
 idata = 1;
@@ -34,7 +34,7 @@ for iarch = 1:length(arch_type)
       % back to directory
       cd('..')
       % Update name tag 
-      data_name(idata) = arch_type(iarch) + '_' + sb_type(isb_type) + '_' + sb_subtype(isb_subtype);
+      data_name(idata) = arch_type(iarch) + '\_' + sb_type(isb_type) + '\_' + sb_subtype(isb_subtype);
       % Pre-process the raw data
       db(idata,:,:) = cell2mat(raw_db(idata,:,2:end));
       % increment counter i
@@ -46,11 +46,11 @@ end
 %% Pre-process the raw data
 circuit_names = raw_db(1,:,1);
 % Table the area, delay, power
-area = (db(:,:,8) + db(:,:,9))'; % total area = logic_area + routing_area; 
-delay = db(:,:,5)';
+area = (db(:,:,7) + db(:,:,8))'; % total area = logic_area + routing_area; 
+delay = db(:,:,4)';
 minW = db(:,:,2)';
-wirelength = db(:,:,10)';
-sb_mux_size = db(:,:,14)';
+wirelength = db(:,:,9)';
+sb_mux_size = db(:,:,13)';
 % normalize area, delay and power 
 normalize_area = area./area(:,1);
 normalize_delay = delay./delay(:,1);
@@ -76,5 +76,6 @@ set(gca,'XTickLabel', data_name);
 set(fig_handle0, 'Position', [1 1 2000 400]);
 legend([{'Area'};{'Delay'};{'minW'}]);
 ylabel('Normalized Area, Delay and minW');
+xtickangle(45);
 grid on
 
