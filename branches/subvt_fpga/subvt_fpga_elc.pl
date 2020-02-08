@@ -1415,7 +1415,7 @@ sub gen_lut_sp_common($ $ $ $ $ $ $)
  
   &tab_print($spfh,"* Include Circuits Library\n",0);
 
-  &tab_print($spfh,".include $cwd/$opt_ptr->{lut_val}\n",0);
+  &tab_print($spfh,".include \'$cwd/$opt_ptr->{lut_val}\'\n",0);
 
   # Now Call the sub circuit
   &tab_print($spfh,"Xlut_ckt ",0);

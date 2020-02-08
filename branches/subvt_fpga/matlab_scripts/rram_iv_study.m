@@ -30,6 +30,118 @@ time_step = 1e-9;
 % gamma0 = 28; %controls the Vset and Vreset (speed of increase/decrease gap)
 
 %% Fit Device parameters:
+% Vset = Vreset = 1.1V
+% Iset,max = 500uA
+% RLRS = 2.4kOhm, RHRS = 5MOhm
+%gap_max = 2.10e-9;
+%gap_min = 0.10e-9;
+%g0 = 0.25e-9;
+%V0 = 0.8;
+%I0 = 570e-6;
+%beta = 1e-2;
+%gamma0 = 13;
+%Vel0 = 0.68;
+%% Atom spacing
+%a0 = 0.2e-10;
+%Ea = 0.13;
+
+%% Fit Device parameters:
+% Vset = Vreset = 1.1V
+% Iset,max = 500uA
+% RLRS = 2.4kOhm, RHRS = 4MOhm
+%gap_max = 2.05e-9;
+%gap_min = 0.10e-9;
+%g0 = 0.25e-9;
+%V0 = 0.8;
+%I0 = 570e-6;
+%beta = 1e-2;
+%gamma0 = 13;
+%Vel0 = 0.68;
+%% Atom spacing
+%a0 = 0.2e-10;
+%Ea = 0.13;
+
+%% Fit Device parameters:
+% Vset = Vreset = 1.1V
+% Iset,max = 500uA
+% RLRS = 2.4kOhm, RHRS = 3MOhm
+%gap_max = 1.98e-9;
+%gap_min = 0.10e-9;
+%g0 = 0.25e-9;
+%V0 = 0.8;
+%I0 = 570e-6;
+%beta = 1e-2;
+%gamma0 = 13;
+%Vel0 = 0.68;
+%% Atom spacing
+%a0 = 0.2e-10;
+%Ea = 0.13;
+
+%% Fit Device parameters:
+% Vset = Vreset = 1.1V
+% Iset,max = 500uA
+% RLRS = 2.4kOhm, RHRS = 2MOhm
+%gap_max = 1.90e-9;
+%gap_min = 0.10e-9;
+%g0 = 0.25e-9;
+%V0 = 0.8;
+%I0 = 570e-6;
+%beta = 1e-2;
+%gamma0 = 13;
+%Vel0 = 0.68;
+%% Atom spacing
+%a0 = 0.2e-10;
+%Ea = 0.13;
+
+%% Fit Device parameters:
+% Vset = Vreset = 1.1V
+% Iset,max = 500uA
+% RLRS = 2.4kOhm, RHRS = 1MOhm
+gap_max = 1.70e-9;
+gap_min = 0.10e-9;
+g0 = 0.25e-9;
+V0 = 0.8;
+I0 = 570e-6;
+beta = 1e-2;
+gamma0 = 13;
+Vel0 = 0.68;
+% Atom spacing
+a0 = 0.2e-10;
+Ea = 0.13;
+
+%% Fit Device parameters:
+% Vset = Vreset = 1.1V
+% Iset,max = 500uA
+% RLRS = 2.4kOhm, RHRS = 0.5MOhm
+%gap_max = 1.55e-9;
+%gap_min = 0.10e-9;
+%g0 = 0.25e-9;
+%V0 = 0.8;
+%I0 = 570e-6;
+%beta = 1e-2;
+%gamma0 = 13;
+%Vel0 = 0.68;
+%% Atom spacing
+%a0 = 0.2e-10;
+%Ea = 0.13;
+
+%% Fit Device parameters:
+% Vset = Vreset = 1.1V
+% Iset,max = 500uA
+% RLRS = 2.4kOhm, RHRS = 0.1MOhm
+%gap_max = 1.15e-9;
+%gap_min = 0.10e-9;
+%g0 = 0.25e-9;
+%V0 = 0.8;
+%I0 = 570e-6;
+%beta = 1e-2;
+%gamma0 = 13;
+%Vel0 = 0.68;
+%% Atom spacing
+%a0 = 0.2e-10;
+%Ea = 0.13;
+
+%% Fit Device parameters:
 % Vset = Vreset = 1.2V
 % Iset,max = 500uA
 % RLRS = 2.4kOhm, RHRS = 20MOhm
@@ -49,17 +161,17 @@ time_step = 1e-9;
 % Vset = Vreset = 1.1V
 % Iset,max = 500uA
 % RLRS = 2.4kOhm, RHRS = 23MOhm
-gap_max = 2.48e-9;
-gap_min = 0.10e-9;
-g0 = 0.25e-9;
-V0 = 0.8;
-I0 = 570e-6;
-beta = 1e-2;
-gamma0 = 13;
-Vel0 = 0.68;
+%gap_max = 2.48e-9;
+%gap_min = 0.10e-9;
+%g0 = 0.25e-9;
+%V0 = 0.8;
+%I0 = 570e-6;
+%beta = 1e-2;
+%gamma0 = 13;
+%Vel0 = 0.68;
 % Atom spacing
-a0 = 0.2e-10;
-Ea = 0.13;
+%a0 = 0.2e-10;
+%Ea = 0.13;
 
 % Vset = Vreset = 1.0V
 % Iset,max = 500uA

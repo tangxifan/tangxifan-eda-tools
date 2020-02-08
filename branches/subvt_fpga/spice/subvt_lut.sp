@@ -1,6 +1,6 @@
 *.include './UMC180nm_tech.sp'
 *.include './PTM45nm_tech.sp'
-.include '/research/ece/lnis/USERS/tang/tangxifan-eda-tools/branches/subvt_fpga/spice/inv_buf_trans_gate.sp'
+.include '/research/ece/lnis/USERS/tang/github/tangxifan-eda-tools/branches/subvt_fpga/spice/inv_buf_trans_gate.sp'
 
 * 2:1 MUX
 .subckt mux2to1 in0 in1 sel sel_inv out svdd sgnd size=1 

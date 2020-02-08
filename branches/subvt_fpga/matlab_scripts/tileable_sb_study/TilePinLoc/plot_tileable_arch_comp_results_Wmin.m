@@ -79,7 +79,7 @@ set(gca,'ylim',[0.75 1+0.1],'Fontsize',16);
 set(gca,'XTick',1:1:length(data_name));
 set(gca,'XTickLabel', data_name);
 set(fig_handle0, 'Position', [1 1 2000 400]);
-legend([{'Area'};{'Delay'};{'W_{min}'}]);
+legend([{'Total Area'};{'Critical Path Delay'};{'W_{min}'}]);
 ylabel('Normalized Area, Delay and W_{min}');
 xtickangle(30);
 grid on
@@ -185,7 +185,7 @@ set(gca,'XTick',1:1:length(data_name));
 set(gca,'XTickLabel', data_name);
 ytickformat(gca, 'percentage');
 set(fig_handle2, 'Position', [1 1 2000 400]);
-legend([{'Area'};{'Delay'};{'W_{min}'}]);
+legend([{'Total Area'};{'Critical Path Delay'};{'W_{min}'}]);
 ylabel('Normalized Area, Delay and W_{min}');
 xtickangle(30);
 grid on

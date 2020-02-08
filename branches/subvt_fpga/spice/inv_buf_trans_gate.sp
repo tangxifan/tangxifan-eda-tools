@@ -6,6 +6,9 @@
 * Date: Fri Apr 13 17:03:43 2018
  *
 *****************************
+* An option just for leti130nm models
+.param low_noise_option=0
+
 * Inverter
 .subckt inv in out svdd sgnd size=1
 Xn0_inv out in sgnd sgnd elc_nmos L=nl W='size*wn'

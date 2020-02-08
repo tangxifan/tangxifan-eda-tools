@@ -17,10 +17,15 @@
 *.include './process/45nm_LP.pm'
 *.include './process/45nm_HP.pm'
 * TSMC 40nm 2.5V nch
-.lib '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/process/tsmc40nm/toplevel_crn45gs_2d5_v1d1_shrink0d9_embedded_usage.l' TOP_TT
+*.lib '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/process/tsmc40nm/toplevel_crn45gs_2d5_v1d1_shrink0d9_embedded_usage.l' TOP_TT
 * TSMC 40nm 0.9V nch
 *.lib '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/process/tsmc40nm/toplevel_crn45gs_1d2_1d8_ud15_lk_v1d1_shrink0d9_embedded_usage.l' TOP_TT
-.include '/home/xitang/tangxifan-eda-tools/branches/subvt_fpga/spice/nmos_pmos.sp'
+* Leti 130nm 
+.include '/research/ece/lnis/USERS/tang/github/tangxifan-eda-tools/branches/subvt_fpga/process/leti130nm/corners'
+.include '/research/ece/lnis/USERS/tang/github/tangxifan-eda-tools/branches/subvt_fpga/process/leti130nm/CORE9A85L05.spi'
+
+* General-purpose NMOS/PMOS wrapper
+.include '/research/ece/lnis/USERS/tang/github/tangxifan-eda-tools/branches/subvt_fpga/spice/nmos_pmos.sp'
 .temp 25
 .param beta = 3
 .param alpha = 1
@@ -38,14 +43,20 @@
 *.param wp = 'beta*140e-9'
 
 * TSMC 40nm Tech. I/O trans.
-.param nl = 270e-9
-.param pl = 270e-9
-.param wn = '320e-9'
-.param wp = 'beta*320e-9'
 *.param nl = 270e-9
 *.param pl = 270e-9
 *.param wn = '320e-9'
 *.param wp = 'beta*320e-9'
+*.param nl = 270e-9
+*.param pl = 270e-9
+*.param wn = '320e-9'
+*.param wp = 'beta*320e-9'
+
+* Leti 130nm tech. logic trans.
+.param nl = 0.35e-6
+.param pl = 0.35e-6
+.param wn = 0.5e-6
+.param wp = 0.5e-6
 
 .option POST 
 .option captab
@@ -53,7 +64,7 @@
 *Beginning of circuit and device definitions
 ***************************************************
 *Supplies and voltage params:
-.param Supply=2.5
+.param Supply=1.8
 .param Vg='Supply'
 .param Vd='Supply'
 .param Wprog='wn'
